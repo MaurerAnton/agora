@@ -6,16 +6,45 @@ import okhttp3.OkHttpClient
 import okhttp3.Request
 import okhttp3.RequestBody.Companion.toRequestBody
 import okio.BufferedSource
+import java.net.InetSocketAddress
+import java.net.Proxy
 import java.util.concurrent.TimeUnit
 
 object HttpClient {
     private val JSON = "application/json; charset=utf-8".toMediaType()
 
-    val client: OkHttpClient = OkHttpClient.Builder()
-        .connectTimeout(30, TimeUnit.SECONDS)
-        .readTimeout(5, TimeUnit.MINUTES)
-        .writeTimeout(30, TimeUnit.SECONDS)
-        .build()
+    @Volatile
+    private var socksProxyHost: String? = null
+    @Volatile
+    private var socksProxyPort: Int = 9050
+
+    private fun buildClient(): OkHttpClient {
+        val builder = OkHttpClient.Builder()
+            .connectTimeout(30, TimeUnit.SECONDS)
+            .readTimeout(5, TimeUnit.MINUTES)
+            .writeTimeout(30, TimeUnit.SECONDS)
+        val host = socksProxyHost
+        if (!host.isNullOrBlank()) {
+            val proxy = Proxy(Proxy.Type.SOCKS, InetSocketAddress(host, socksProxyPort))
+            builder.proxy(proxy)
+        }
+        return builder.build()
+    }
+
+    @Volatile
+    var client: OkHttpClient = buildClient()
+        private set
+
+    fun setSocksProxy(host: String?, port: Int) {
+        socksProxyHost = host
+        socksProxyPort = port
+        client = buildClient()
+        DebugLog.d("HttpClient", if (host.isNullOrBlank()) "SOCKS proxy disabled" else "SOCKS proxy set to $host:$port")
+    }
+
+    fun disableProxy() {
+        setSocksProxy(null, 9050)
+    }
 
     class StreamHandle(private val response: okhttp3.Response) {
         val code: Int get() = response.code

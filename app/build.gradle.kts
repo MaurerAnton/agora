@@ -19,7 +19,7 @@ android {
         version = release(36)
     }
 
-    ndkVersion = "28.2.13676358"
+    ndkVersion = "26.3.11579264"
 
     defaultConfig {
         applicationId = "com.newoether.agora"

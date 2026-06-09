@@ -145,6 +145,20 @@ class ChatViewModel(
                 }
             }
         }
+        // Apply Tor SOCKS proxy settings
+        viewModelScope.launch(Dispatchers.IO) {
+            combine(
+                settingsManager.torEnabled,
+                settingsManager.torSocksPort
+            ) { enabled, port -> Pair(enabled, port) }
+            .collect { (enabled, port) ->
+                if (enabled) {
+                    com.newoether.agora.api.HttpClient.setSocksProxy("127.0.0.1", port)
+                } else {
+                    com.newoether.agora.api.HttpClient.disableProxy()
+                }
+            }
+        }
         // Auto-clear available models when a provider loses its credentials.
         // Watches all three configuration sources (API keys, active key IDs,
         // and base URLs) and uses the shared isProviderConfigured() to decide
@@ -343,6 +357,8 @@ class ChatViewModel(
     val showDocumentationFab = settingsManager.showDocumentationFab.stateIn(viewModelScope, SharingStarted.Eagerly, true)
     val shellEnabled = settingsManager.shellEnabled.stateIn(viewModelScope, SharingStarted.Eagerly, false)
     val shellDevices = settingsManager.shellDevices.stateIn(viewModelScope, SharingStarted.Eagerly, emptyList())
+    val torEnabled = settingsManager.torEnabled.stateIn(viewModelScope, SharingStarted.Eagerly, false)
+    val torSocksPort = settingsManager.torSocksPort.stateIn(viewModelScope, SharingStarted.Eagerly, 9050)
     val defaultTemperature = settingsManager.defaultTemperature.stateIn(viewModelScope, SharingStarted.Eagerly, null)
     val defaultMaxTokens = settingsManager.defaultMaxTokens.stateIn(viewModelScope, SharingStarted.Eagerly, null)
     val defaultTopP = settingsManager.defaultTopP.stateIn(viewModelScope, SharingStarted.Eagerly, null)
@@ -1228,6 +1244,8 @@ class ChatViewModel(
     fun setWebSearchBaseUrl(url: String) { viewModelScope.launch { settingsManager.saveWebSearchBaseUrl(url) } }
     fun setShowDocumentationFab(enabled: Boolean) { viewModelScope.launch { settingsManager.saveShowDocumentationFab(enabled) } }
     fun setShellEnabled(enabled: Boolean) { viewModelScope.launch { settingsManager.saveShellEnabled(enabled) } }
+    fun setTorEnabled(enabled: Boolean) { viewModelScope.launch { settingsManager.saveTorEnabled(enabled) } }
+    fun setTorSocksPort(port: Int) { viewModelScope.launch { settingsManager.saveTorSocksPort(port) } }
     fun setThinkingEnabled(enabled: Boolean) { viewModelScope.launch { settingsManager.saveThinkingEnabled(enabled) } }
     fun setThinkingLevel(level: String) { viewModelScope.launch { settingsManager.saveThinkingLevel(level) } }
     fun setDefaultTemperature(v: Float?) { viewModelScope.launch { settingsManager.saveDefaultTemperature(v) } }

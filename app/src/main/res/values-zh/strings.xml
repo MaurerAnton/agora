@@ -253,6 +253,16 @@
     <string name="shell_result_exit_code">退出码: %1$d</string>
     <string name="shell_result_server">服务器: %1$s</string>
 
+    <!-- Settings - Tor -->
+    <string name="tor_title">Tor</string>
+    <string name="tor_desc">通过 Tor 网络路由 API 请求</string>
+    <string name="tor_enable">启用 Tor 代理</string>
+    <string name="tor_enable_desc">通过 Tor SOCKS5 代理路由所有 API 请求，实现匿名访问</string>
+    <string name="tor_socks_settings">SOCKS5 代理</string>
+    <string name="tor_socks_port">端口</string>
+    <string name="tor_socks_port_desc">Tor SOCKS5 代理端口 (默认: 9050)</string>
+    <string name="tor_info">需要运行中的 Tor 守护进程及 SOCKS5 代理。可通过 F-Droid 安装 Orbot 或在设备上运行 tor。</string>
+
     <!-- Settings - Title Generation -->
     <string name="title_gen_auto">自动生成标题</string>
     <string name="title_gen_auto_desc">在首次回复后生成标题</string>

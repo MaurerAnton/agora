@@ -145,6 +145,8 @@ class SettingsManager(private val context: Context) {
         val DEFAULT_FREQUENCY_PENALTY = stringPreferencesKey("default_frequency_penalty")
         val DEFAULT_PRESENCE_PENALTY = stringPreferencesKey("default_presence_penalty")
         val CONVERSATION_SETTINGS_JSON = stringPreferencesKey("conversation_settings_json")
+        val TOR_ENABLED = booleanPreferencesKey("tor_enabled")
+        val TOR_SOCKS_PORT = intPreferencesKey("tor_socks_port")
     }
 
     val selectedModel: Flow<String> = context.dataStore.data.map { it[SELECTED_MODEL] ?: "gemini-1.5-flash" }
@@ -258,6 +260,9 @@ class SettingsManager(private val context: Context) {
     val ratingPromptSubmitted: Flow<Boolean> = context.dataStore.data.map { it[RATING_PROMPT_SUBMITTED] ?: false }
     val ratingPromptDismissed: Flow<Boolean> = context.dataStore.data.map { it[RATING_PROMPT_DISMISSED] ?: false }
     val totalMessagesSent: Flow<Int> = context.dataStore.data.map { it[TOTAL_MESSAGES_SENT] ?: 0 }
+
+    val torEnabled: Flow<Boolean> = context.dataStore.data.map { it[TOR_ENABLED] ?: false }
+    val torSocksPort: Flow<Int> = context.dataStore.data.map { it[TOR_SOCKS_PORT] ?: 9050 }
 
     suspend fun saveProviderBaseUrl(provider: String, url: String) {
         context.dataStore.edit { prefs ->
@@ -518,5 +523,13 @@ class SettingsManager(private val context: Context) {
 
     suspend fun incrementMessagesSent() {
         context.dataStore.edit { it[TOTAL_MESSAGES_SENT] = (it[TOTAL_MESSAGES_SENT] ?: 0) + 1 }
+    }
+
+    suspend fun saveTorEnabled(enabled: Boolean) {
+        context.dataStore.edit { it[TOR_ENABLED] = enabled }
+    }
+
+    suspend fun saveTorSocksPort(port: Int) {
+        context.dataStore.edit { it[TOR_SOCKS_PORT] = port.coerceIn(1, 65535) }
     }
 }

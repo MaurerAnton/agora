@@ -8,6 +8,7 @@ import com.newoether.agora.data.local.ChatEntity
 import com.newoether.agora.data.local.MessageEntity
 import com.newoether.agora.model.AttachmentMeta
 import com.newoether.agora.model.MessageStatus
+import com.newoether.agora.util.DebugLog
 import com.newoether.agora.model.Participant
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.first
@@ -26,6 +27,7 @@ class DataImporter(
     private val settingsManager: SettingsManager,
     private val memoryManager: MemoryManager
 ) {
+    private val importJson = Json { ignoreUnknownKeys = true; coerceInputValues = true }
     enum class ImportStrategy { MERGE, REPLACE, SKIP }
 
     @Serializable
@@ -79,8 +81,10 @@ class DataImporter(
         // Copy SAF content to temp file so we can use ZipFile (more reliable than ZipInputStream)
         val tmpFile = File(context.cacheDir, "agora_import_tmp.zip")
         try {
-            context.contentResolver.openInputStream(uri)?.use { input ->
-                tmpFile.outputStream().use { out -> input.copyTo(out) }
+            val input = context.contentResolver.openInputStream(uri)
+                ?: throw IllegalStateException("Cannot open file — permission denied or file unavailable")
+            input.use { stream ->
+                tmpFile.outputStream().use { out -> stream.copyTo(out) }
             }
             ZipFile(tmpFile).use { zip ->
                 val manifestEntry = zip.getEntry("manifest.json")
@@ -96,8 +100,9 @@ class DataImporter(
                     }
                 }
             }
-        } catch (_: Exception) {
-            // Fall through: entries will be empty
+        } catch (e: Exception) {
+            DebugLog.e("DataImporter", "readAllEntries failed: ${e.message}", e)
+            throw e
         } finally {
             tmpFile.delete()
         }
@@ -110,7 +115,7 @@ class DataImporter(
             if (entries.isEmpty()) return@withContext null
             val manifestJson = entries["manifest.json"]?.decodeToString() ?: return@withContext null
             try {
-                Json.decodeFromString<ImportManifest>(manifestJson)
+                importJson.decodeFromString<ImportManifest>(manifestJson)
             } catch (_: Exception) {
                 null
             }
@@ -124,7 +129,7 @@ class DataImporter(
                 ImportManifest(version = 0)
             )
             val manifest = try {
-                Json.decodeFromString<ImportManifest>(manifestJson)
+                importJson.decodeFromString<ImportManifest>(manifestJson)
             } catch (_: Exception) {
                 return@withContext ImportPreview(ImportManifest(version = 0))
             }
@@ -137,14 +142,14 @@ class DataImporter(
 
             entries["conversations.json"]?.let { json ->
                 try {
-                    val data = Json.decodeFromString<ExportConversations>(json.decodeToString())
+                    val data = importJson.decodeFromString<ExportConversations>(json.decodeToString())
                     conversationCount = data.conversations.size
                 } catch (_: Exception) {}
             }
 
             entries["system_prompts.json"]?.let { json ->
                 try {
-                    val data = Json.decodeFromString<List<SystemPromptEntry>>(json.decodeToString())
+                    val data = importJson.decodeFromString<List<SystemPromptEntry>>(json.decodeToString())
                     systemPromptCount = data.size
                 } catch (_: Exception) {}
             }
@@ -185,7 +190,7 @@ class DataImporter(
                 val videoCleanupList = mutableListOf<java.io.File>()
                 try {
                     entries["conversations.json"]?.decodeToString()?.let { json ->
-                        val data = Json.decodeFromString<ExportConversations>(json)
+                        val data = importJson.decodeFromString<ExportConversations>(json)
                         val convEntities = data.conversations.map { c ->
                             ChatEntity(c.id, c.title, c.lastUpdated, c.selectedBranchesJson, c.systemPromptId, c.modelId)
                         }
@@ -242,11 +247,11 @@ class DataImporter(
                             val videoPath = restoredVideos[msg.id]
                             if (videoPath != null && updated.attachmentMeta != null) {
                                 try {
-                                    val meta = Json.decodeFromString<AttachmentMeta>(updated.attachmentMeta!!)
+                                    val meta = importJson.decodeFromString<AttachmentMeta>(updated.attachmentMeta!!)
                                     val adjustedItems = meta.items.map { item ->
                                         if (item.type == "video") item.copy(originalUri = videoPath) else item
                                     }
-                                    updated = updated.copy(attachmentMeta = Json.encodeToString(AttachmentMeta(items = adjustedItems)))
+                                    updated = updated.copy(attachmentMeta = importJson.encodeToString(AttachmentMeta(items = adjustedItems)))
                                 } catch (_: Exception) {}
                             }
                             updated
@@ -325,7 +330,7 @@ class DataImporter(
             if (promptsDecision != null && promptsDecision != ImportStrategy.SKIP) {
                 try {
                     entries["system_prompts.json"]?.decodeToString()?.let { json ->
-                        val prompts = Json.decodeFromString<List<SystemPromptEntry>>(json)
+                        val prompts = importJson.decodeFromString<List<SystemPromptEntry>>(json)
                         if (promptsDecision == ImportStrategy.REPLACE) {
                             settingsManager.saveSystemPrompts(prompts)
                         } else {
@@ -352,7 +357,7 @@ class DataImporter(
             if (settingsDecision != null && settingsDecision != ImportStrategy.SKIP) {
                 try {
                     entries["settings.json"]?.decodeToString()?.let { json ->
-                        val s = Json.decodeFromString<ExportSettings>(json)
+                        val s = importJson.decodeFromString<ExportSettings>(json)
                         settingsManager.saveSelectedModel(s.selectedModel)
                         for ((provider, models) in s.availableModels) {
                             settingsManager.saveAvailableModels(provider, models)
@@ -393,7 +398,7 @@ class DataImporter(
                         // Restore extra settings if present
                         entries["extra_settings.json"]?.decodeToString()?.let { json ->
                             try {
-                                val obj = Json.parseToJsonElement(json).jsonObject
+                                val obj = importJson.parseToJsonElement(json).jsonObject
                                 ExportExtraSettings.restoreFromJsonObject(obj, settingsManager)
                             } catch (_: Exception) { /* older exports may not have extra_settings.json */ }
                         }
@@ -409,7 +414,7 @@ class DataImporter(
             if (keysDecision != null && keysDecision != ImportStrategy.SKIP) {
                 try {
                     entries["api_keys.json"]?.decodeToString()?.let { json ->
-                        val data = Json.decodeFromString<ExportApiKeys>(json)
+                        val data: ExportApiKeys = importJson.decodeFromString(json)
                         if (keysDecision == ImportStrategy.REPLACE) {
                             settingsManager.saveApiKeys(data.apiKeys)
                             data.webSearchApiKeys.forEach { (provider, key) ->

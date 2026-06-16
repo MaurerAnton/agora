@@ -26,12 +26,7 @@ android {
         minSdk = 24
         targetSdk = 36
         versionCode = 14
-        versionName = "1.3.5"
-
-
-        ndk {
-            abiFilters += listOf("arm64-v8a", "armeabi-v7a")
-        }
+        versionName = "1.3.6"
 
         externalNativeBuild {
             cmake {
@@ -39,6 +34,15 @@ android {
                 arguments += listOf("-DANDROID_STL=c++_shared")
                 targets += listOf("agora_llama")
             }
+        }
+    }
+
+    splits {
+        abi {
+            isEnable = true
+            reset()
+            include("arm64-v8a", "armeabi-v7a")
+            isUniversalApk = false
         }
     }
 

@@ -1,0 +1,33 @@
+Submodule thirdparty/llama.cpp contains modified content
+diff --git a/thirdparty/llama.cpp/ggml/src/ggml-cpu/llamafile/sgemm.cpp b/thirdparty/llama.cpp/ggml/src/ggml-cpu/llamafile/sgemm.cpp
+index e13828e3b..3c7dfb850 100644
+--- a/thirdparty/llama.cpp/ggml/src/ggml-cpu/llamafile/sgemm.cpp
++++ b/thirdparty/llama.cpp/ggml/src/ggml-cpu/llamafile/sgemm.cpp
+@@ -305,15 +305,24 @@ template <typename T, typename U> T load(const U *);
+ template <> inline float32x4_t load(const float *p) {
+     return vld1q_f32(p);
+ }
+-#if !defined(_MSC_VER)
+-// FIXME: this should check for __ARM_FEATURE_FP16_VECTOR_ARITHMETIC
++#if defined(__aarch64__) || defined(__ARM_FEATURE_FP16_VECTOR_ARITHMETIC)
++// fp16 vector intrinsics: always available on AArch64, opt-in on ARMv7
+ template <> inline float16x8_t load(const ggml_fp16_t *p) {
+     return vld1q_f16((const float16_t *)p);
+ }
+ template <> inline float32x4_t load(const ggml_fp16_t *p) {
+     return vcvt_f32_f16(vld1_f16((const float16_t *)p));
+ }
+-#endif // _MSC_VER
++#else
++// ARMv7 NEON without fp16 extension — manual conversion
++template <> inline float32x4_t load(const ggml_fp16_t *p) {
++    float tmp[4];
++    for (int i = 0; i < 4; i++) {
++        tmp[i] = GGML_CPU_FP16_TO_FP32(p[i]);
++    }
++    return vld1q_f32(tmp);
++}
++#endif
+ #endif // __ARM_NEON
+ 
+ #if defined(__VXE__) || defined(__VXE2__)

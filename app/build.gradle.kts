@@ -22,15 +22,15 @@ android {
     ndkVersion = "26.3.11579264"
 
     defaultConfig {
-        applicationId = "com.newoether.agora"
+        applicationId = "com.newoether.agora.tor"
         minSdk = 24
         targetSdk = 36
-        versionCode = 13
-        versionName = "1.2.0"
+        versionCode = 14
+        versionName = "1.3.5"
 
 
         ndk {
-            abiFilters += listOf("arm64-v8a")
+            abiFilters += listOf("arm64-v8a", "armeabi-v7a")
         }
 
         externalNativeBuild {

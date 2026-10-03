@@ -23,7 +23,10 @@ import kotlinx.serialization.json.jsonObject
 import kotlinx.serialization.json.put
 
 /**
- * Tool that generates images through an OpenAI-compatible `/images/generations` endpoint.
+ * Tool that generates images through an OpenAI-compatible `/images/generations` endpoint,
+ * or through OpenRouter's dedicated `/images` endpoint when the selected image model
+ * resolves to an `openrouter.ai` base URL (e.g. `openai/gpt-image-2.5-sunburst`,
+ * whose `output_modalities` is image-only and is not served over `/chat/completions`).
  * Successful bytes are persisted by [ToolImageStore] and returned on the owning tool result.
  */
 class ImageGenToolProvider(private val app: Application) : ToolProvider {
@@ -99,16 +102,36 @@ class ImageGenToolProvider(private val app: Application) : ToolProvider {
 
         return withContext(Dispatchers.IO) {
             try {
+                // OpenRouter does not serve `/images/generations`. Its Image API is
+                // `POST {base}/images` with `{model, prompt, aspect_ratio, n}` and
+                // `{data:[{b64_json, media_type}]}`. `size` ("1024x1024") is not a
+                // supported parameter there (checked against
+                // `/api/v1/images/models/openai/gpt-image-2.5-sunburst/endpoints`),
+                // so it is converted to the nearest supported aspect ratio.
+                val openRouter = isOpenRouterEndpoint(baseUrl)
+                val endpoint = if (openRouter) "$baseUrl/images" else "$baseUrl/images/generations"
+                val aspectRatio = if (openRouter) aspectRatioForSize(size) else null
                 val body = buildJsonObject {
                     put("model", model)
                     put("prompt", prompt)
-                    put("size", size)
+                    if (openRouter) {
+                        put("aspect_ratio", aspectRatio ?: "auto")
+                    } else {
+                        put("size", size)
+                    }
                     put("n", 1)
                 }.toString()
+                val headers = buildMap {
+                    put("Authorization", "Bearer $apiKey")
+                    if (openRouter) {
+                        put("HTTP-Referer", "https://github.com/newo-ether/Agora")
+                        put("X-Title", "Agora")
+                    }
+                }
                 val response = HttpClient.post(
-                    "$baseUrl/images/generations",
+                    endpoint,
                     body,
-                    mapOf("Authorization" to "Bearer $apiKey"),
+                    headers,
                     callTimeoutMillis = Constants.IMAGE_GENERATION_TIMEOUT_MS,
                     readTimeoutMillis = Constants.IMAGE_GENERATION_TIMEOUT_MS,
                 ) ?: return@withContext err("no_response", null) to null
@@ -143,6 +166,8 @@ class ImageGenToolProvider(private val app: Application) : ToolProvider {
                     put("type", "image_generation")
                     put("status", "ok")
                     put("size", size)
+                    put("model", model)
+                    if (aspectRatio != null) put("aspect_ratio", aspectRatio)
                 }.toString() to attachment
             } catch (e: CancellationException) {
                 throw e
@@ -158,4 +183,41 @@ class ImageGenToolProvider(private val app: Application) : ToolProvider {
         put("error", code)
         if (!message.isNullOrBlank()) put("message", message)
     }.toString()
+}
+
+/**
+ * True when [baseUrl] targets OpenRouter (`https://openrouter.ai/api/v1` or a custom
+ * provider override pointing there). Those endpoints serve image models such as
+ * `openai/gpt-image-2.5-sunburst` over `POST /images`, not OpenAI's `/images/generations`.
+ */
+internal fun isOpenRouterEndpoint(baseUrl: String): Boolean =
+    baseUrl.contains("openrouter.ai", ignoreCase = true)
+
+/**
+ * Maps an image-tool size (`"1024x1024"`, the `Settings → Image Generation` default) to the
+ * nearest aspect ratio accepted by OpenRouter image endpoints. `gpt-image-2.5-sunburst`
+ * accepts `1:1, 3:2, 2:3, 4:3, 3:4, 16:9, 9:16, 21:9, auto`; unparsable input falls back
+ * to `auto` so the provider chooses instead of failing with 400.
+ */
+internal fun aspectRatioForSize(size: String): String {
+    val match = Regex("""(\d+)\s*[xX×]\s*(\d+)""").find(size.trim())
+        ?: return "auto"
+    val w = match.groupValues[1].toIntOrNull() ?: return "auto"
+    val h = match.groupValues[2].toIntOrNull() ?: return "auto"
+    if (w <= 0 || h <= 0) return "auto"
+    val ratio = w.toDouble() / h.toDouble()
+    val candidates = listOf(
+        "1:1" to 1.0,
+        "4:3" to 4.0 / 3.0,
+        "3:4" to 3.0 / 4.0,
+        "3:2" to 3.0 / 2.0,
+        "2:3" to 2.0 / 3.0,
+        "16:9" to 16.0 / 9.0,
+        "9:16" to 9.0 / 16.0,
+        "21:9" to 21.0 / 9.0,
+    )
+    val logRatio = kotlin.math.ln(ratio)
+    return candidates.minByOrNull {
+        kotlin.math.abs(kotlin.math.ln(it.second) - logRatio)
+    }?.first ?: "auto"
 }

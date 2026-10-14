@@ -24,7 +24,14 @@ fi
 
 # Toolchain: NDK r28 on Linux uses llvm/prebuilt/linux-x86_64
 TC_PREFIX="$NDK/toolchains/llvm/prebuilt/linux-x86_64/bin"
-CROSS_PREFIX="aarch64-linux-android26"
+
+# Target ABI: arm64-v8a (default) or armeabi-v7a. Select with ABI=... env.
+ABI="${ABI:-arm64-v8a}"
+case "$ABI" in
+    arm64-v8a) CROSS_PREFIX="aarch64-linux-android26" ;;
+    armeabi-v7a) CROSS_PREFIX="armv7a-linux-androideabi26" ;;
+    *) echo "ERROR: unsupported ABI '$ABI' (want arm64-v8a or armeabi-v7a)."; exit 1 ;;
+esac
 CC="${TC_PREFIX}/${CROSS_PREFIX}-clang"
 STRIP="${TC_PREFIX}/llvm-strip"
 export PATH="${TC_PREFIX}:$PATH"
@@ -35,13 +42,13 @@ echo "=== build-proot.sh: NDK=$NDK ==="
 TALLOC_SRC="$SCRIPT_DIR/thirdparty/talloc"
 PROOT_SRC="$SCRIPT_DIR/thirdparty/proot/src"
 BLD="$SCRIPT_DIR/.build-proot"
-SYSROOT="$BLD/sysroot/arm64-v8a"
+SYSROOT="$BLD/sysroot/$ABI"
 SYSROOT_LIB="$SYSROOT/lib"
 SYSROOT_INC="$SYSROOT/include"
-BLD_DIR="$BLD/build-proot-arm64-v8a"
+BLD_DIR="$BLD/build-proot-$ABI"
 LOADER_OUT="$BLD_DIR/loader-out"
-JNILIBS="$SCRIPT_DIR/app/src/main/jniLibs/arm64-v8a"
-FDROID_JNILIBS="$SCRIPT_DIR/app/src/fdroid/jniLibs/arm64-v8a"
+JNILIBS="$SCRIPT_DIR/app/src/main/jniLibs/$ABI"
+FDROID_JNILIBS="$SCRIPT_DIR/app/src/fdroid/jniLibs/$ABI"
 
 # ── Ensure readelf is available (GNUmakefile needs it) ─────────
 if ! command -v readelf &>/dev/null; then

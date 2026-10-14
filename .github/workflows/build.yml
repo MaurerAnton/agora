@@ -91,10 +91,14 @@ jobs:
 
       - uses: gradle/actions/setup-gradle@v4
 
+      - name: Apply ARMv7 sgemm fix to llama.cpp
+        run: git apply .github/sgemm-armv7.patch
+
       - name: Build PRoot runtime
         run: |
           chmod +x ./build-proot.sh
           ./build-proot.sh
+          ABI=armeabi-v7a ./build-proot.sh
 
       - name: Build F-Droid Release APK
         run: |
@@ -108,12 +112,14 @@ jobs:
           apk_entries=$(mktemp)
           trap 'rm -f "$apk_entries"' EXIT
           unzip -Z1 "$apk_path" > "$apk_entries"
-          for library in libproot_exec.so libproot_loader.so libtalloc.so; do
-            entry="lib/arm64-v8a/$library"
-            grep -Fxq "$entry" "$apk_entries" || {
-              echo "Missing PRoot runtime library: $library" >&2
-              exit 1
-            }
+          for abi in arm64-v8a armeabi-v7a; do
+            for library in libproot_exec.so libproot_loader.so libtalloc.so libagora_llama.so libagora_proot.so; do
+              entry="lib/$abi/$library"
+              grep -Fxq "$entry" "$apk_entries" || {
+                echo "Missing $entry in $apk_path" >&2
+                exit 1
+              }
+            done
           done
 
       - name: Upload APK

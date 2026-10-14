@@ -1,6 +1,5 @@
 package com.newoether.agora.api.util
 
-import com.newoether.agora.util.DebugLog
 import com.newoether.agora.api.OpenAiContentPart
 import com.newoether.agora.api.OpenAiImageUrl
 import com.newoether.agora.api.OpenAiMessage
@@ -9,7 +8,6 @@ import com.newoether.agora.api.OpenAiRequestToolCall
 import com.newoether.agora.model.ChatMessage
 import com.newoether.agora.model.Participant
 import com.newoether.agora.util.Constants
-import java.io.File
 import java.security.MessageDigest
 
 fun buildToolCallId(toolName: String, arguments: String, prefix: String = Constants.TOOL_CALL_ID_PREFIX): String {
@@ -17,27 +15,30 @@ fun buildToolCallId(toolName: String, arguments: String, prefix: String = Consta
     val input = "$toolName:$arguments"
     val hash = digest.digest(input.toByteArray())
     val shortHash = hash.take(8).joinToString("") { "%02x".format(it) }
-    return "$prefix${toolName}_$shortHash"
+    val safeName = toolName
+        .trim()
+        .replace(Regex("[^A-Za-z0-9_-]+"), "_")
+        .trim('_')
+        .take(32)
+        .ifBlank { "tool" }
+    return "$prefix${safeName}_$shortHash"
 }
 
-fun encodeImageToBase64(imagePath: String): Pair<String, String>? {
-    return try {
-        val file = File(imagePath)
-        if (!file.exists()) return null
-        val bytes = file.readBytes()
-        val base64 = android.util.Base64.encodeToString(bytes, android.util.Base64.NO_WRAP)
-        val mimeType = if (imagePath.endsWith(".png", ignoreCase = true)) "image/png" else "image/jpeg"
-        mimeType to base64
-    } catch (e: Exception) {
-        DebugLog.e("AgoraAPI", "Failed to encode image: $imagePath", e)
-        null
-    }
+/** Maps an image file path to its MIME type. Providers reject a mislabeled payload
+ *  (e.g. a webp sent as image/jpeg), so cover every format the pickers accept. */
+fun imageMimeType(imagePath: String): String = when {
+    imagePath.endsWith(".png", ignoreCase = true) -> "image/png"
+    imagePath.endsWith(".webp", ignoreCase = true) -> "image/webp"
+    imagePath.endsWith(".gif", ignoreCase = true) -> "image/gif"
+    else -> "image/jpeg"
 }
 
-fun convertToOpenAiMessages(
+
+internal fun convertToOpenAiMessages(
     messages: List<ChatMessage>,
     systemPrompt: String? = null,
-    includeImages: Boolean = true
+    includeImages: Boolean = true,
+    base64Files: Base64FileRegistry,
 ): List<OpenAiMessage> {
     val apiMessages = mutableListOf<OpenAiMessage>()
 
@@ -68,21 +69,29 @@ fun convertToOpenAiMessages(
                 }
                 entries.add(OpenAiMessage(
                     role = "assistant",
-                    content = listOf(OpenAiContentPart(type = "text", text = " ")),
+                    content = null,
                     toolCalls = toolCalls,
-                    reasoningContent = thoughtContent?.ifEmpty { null }
+                    reasoningContent = thoughtContent?.ifEmpty { null },
+                    responseOutputItems = toolSegs.firstOrNull {
+                        it.responseOutputItems.isNotEmpty()
+                    }?.responseOutputItems,
+                    responseOutputItemProvider = toolSegs.firstOrNull {
+                        it.responseOutputItems.isNotEmpty()
+                    }?.responseOutputItemProvider,
                 ))
             } else if (msg.toolCall != null) {
                 val tc = msg.toolCall!!
                 val toolId = tc.toolCallId ?: buildToolCallId(tc.toolName, tc.arguments)
                 entries.add(OpenAiMessage(
                     role = "assistant",
-                    content = listOf(OpenAiContentPart(type = "text", text = " ")),
+                    content = null,
                     toolCalls = listOf(OpenAiRequestToolCall(
                         id = toolId,
                         function = OpenAiRequestFunction(name = tc.toolName, arguments = tc.arguments)
                     )),
-                    reasoningContent = thoughtContent?.ifEmpty { null }
+                    reasoningContent = thoughtContent?.ifEmpty { null },
+                    responseOutputItems = tc.responseOutputItems.ifEmpty { null },
+                    responseOutputItemProvider = tc.responseOutputItemProvider,
                 ))
             }
             return@flatMap entries
@@ -118,23 +127,22 @@ fun convertToOpenAiMessages(
             parts.add(OpenAiContentPart(type = "text", text = msg.text))
         }
 
-        if (includeImages) {
+        if (includeImages && msg.participant == Participant.USER) {
             for (imagePath in msg.images) {
-                val encoded = encodeImageToBase64(imagePath)
-                if (encoded != null) {
-                    val (mimeType, base64) = encoded
-                    parts.add(
-                        OpenAiContentPart(
-                            type = "image_url",
-                            imageUrl = OpenAiImageUrl(url = "data:$mimeType;base64,$base64")
-                        )
-                    )
-                }
+                val placeholder = base64Files.register(imagePath) ?: continue
+                parts.add(
+                    OpenAiContentPart(
+                        type = "image_url",
+                        imageUrl = OpenAiImageUrl(
+                            url = "data:${imageMimeType(imagePath)};base64,$placeholder",
+                        ),
+                    ),
+                )
             }
         }
 
         if (parts.isEmpty()) {
-            parts.add(OpenAiContentPart(type = "text", text = " "))
+            parts.add(OpenAiContentPart(type = "text", text = "[Attachment unavailable]"))
         }
 
         entries.add(OpenAiMessage(
@@ -147,14 +155,40 @@ fun convertToOpenAiMessages(
     return apiMessages
 }
 
-fun limitContext(messages: List<ChatMessage>, maxUserMessages: Int): List<ChatMessage> {
-    val result = mutableListOf<ChatMessage>()
-    var userCount = 0
-    for (msg in messages.reversed()) {
-        result.add(0, msg)
-        val isTool = msg.id.startsWith(Constants.TOOL_MSG_PREFIX) || msg.id.startsWith(Constants.RESULT_MSG_PREFIX)
-        if (!isTool) userCount++
-        if (userCount >= maxUserMessages) break
+fun limitContext(messages: List<ChatMessage>, contextTokenBudget: Int): List<ChatMessage> {
+    if (messages.isEmpty()) return emptyList()
+
+    // A tool call and all of its results are one protocol unit. Truncating the flat list can leave
+    // either an orphan result or an unanswered assistant tool call, so window complete units only.
+    val units = protocolAtomicUnits(messages)
+
+    val selected = ArrayDeque<List<ChatMessage>>()
+    var estimatedTokens = 0L
+    var hasNormalUserAnchor = false
+    val tokenBudget = contextTokenBudget.coerceAtLeast(1).toLong()
+    for (unit in units.asReversed()) {
+        val unitCost = ContextTokenEstimator.estimate(unit).toLong()
+        if (
+            selected.isNotEmpty() &&
+            hasNormalUserAnchor &&
+            estimatedTokens + unitCost > tokenBudget
+        ) break
+        selected.addFirst(unit)
+        estimatedTokens = (estimatedTokens + unitCost).coerceAtMost(Int.MAX_VALUE.toLong())
+        if (unit.any {
+                it.participant == Participant.USER && !it.isToolProtocolMessage()
+            }
+        ) hasNormalUserAnchor = true
+        // Always retain a legal user anchor and at least the newest complete protocol unit, even
+        // when that single input already exceeds the configured estimate.
+        if (hasNormalUserAnchor && estimatedTokens >= tokenBudget) break
     }
-    return result
+
+    val flattened = selected.flatten()
+    // All supported chat protocols accept a user-led suffix. Starting at an assistant/tool turn
+    // after truncation is ambiguous and is a common source of provider-side 400 responses.
+    val firstNormalUser = flattened.indexOfFirst {
+        it.participant == Participant.USER && !it.isToolProtocolMessage()
+    }
+    return if (firstNormalUser >= 0) flattened.drop(firstNormalUser) else emptyList()
 }

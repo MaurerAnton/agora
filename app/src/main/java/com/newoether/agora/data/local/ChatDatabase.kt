@@ -5,209 +5,60 @@ import android.database.sqlite.SQLiteDatabase
 import androidx.room.*
 import androidx.room.migration.Migration
 import androidx.sqlite.db.SupportSQLiteDatabase
-import com.newoether.agora.model.MessageStatus
-import com.newoether.agora.model.Participant
-import kotlinx.coroutines.flow.Flow
-import kotlinx.serialization.encodeToString
-import kotlinx.serialization.json.Json
-
-class MessageConverters {
-    @TypeConverter
-    fun fromParticipant(value: Participant) = value.name
-    @TypeConverter
-    fun toParticipant(value: String) = Participant.valueOf(value)
-
-    @TypeConverter
-    fun fromStatus(value: MessageStatus) = value.name
-    @TypeConverter
-    fun toStatus(value: String) = MessageStatus.valueOf(value)
-    
-    @TypeConverter
-    fun fromStringList(value: List<String>?): String {
-        return if (value != null) Json.encodeToString(value) else ""
-    }
-
-    @TypeConverter
-    fun toStringList(value: String?): List<String> {
-        if (value.isNullOrEmpty()) return emptyList()
-        return try {
-            Json.decodeFromString<List<String>>(value)
-        } catch (_: Exception) {
-            // Backward compatibility: old format used "|||" delimiter
-            value.split("|||")
-        }
-    }
-}
-
-@Entity(tableName = "conversations")
-data class ChatEntity(
-    @PrimaryKey val id: String,
-    val title: String,
-    val lastUpdated: Long = System.currentTimeMillis(),
-    val selectedBranchesJson: String? = null,
-    val systemPromptId: String? = null,
-    val modelId: String? = null
-)
-
-@Entity(
-    tableName = "embeddings",
-    indices = [Index(value = ["messageId", "modelId"], unique = true)]
-)
-data class EmbeddingEntity(
-    @PrimaryKey(autoGenerate = true) val id: Long = 0,
-    val messageId: String,
-    val modelId: String,
-    val embedding: ByteArray,
-    val chunkText: String,
-    val dimension: Int
-) {
-    override fun equals(other: Any?): Boolean {
-        if (this === other) return true
-        if (other !is EmbeddingEntity) return false
-        return id == other.id && messageId == other.messageId && modelId == other.modelId
-            && embedding.contentEquals(other.embedding) && chunkText == other.chunkText && dimension == other.dimension
-    }
-
-    override fun hashCode(): Int {
-        var result = id.hashCode()
-        result = 31 * result + messageId.hashCode()
-        result = 31 * result + modelId.hashCode()
-        result = 31 * result + embedding.contentHashCode()
-        result = 31 * result + chunkText.hashCode()
-        result = 31 * result + dimension
-        return result
-    }
-}
-
-@Entity(
-    tableName = "messages",
-    indices = [Index(value = ["conversationId"])],
-    foreignKeys = [
-        ForeignKey(
-            entity = ChatEntity::class,
-            parentColumns = ["id"],
-            childColumns = ["conversationId"],
-            onDelete = ForeignKey.CASCADE
-        )
-    ]
-)
-data class MessageEntity(
-    @PrimaryKey val id: String,
-    val conversationId: String,
-    val parentId: String? = null,
-    val text: String,
-    val images: List<String> = emptyList(),
-    val thoughts: String? = null,
-    val thoughtTitle: String? = null,
-    val tokenCount: Int = 0,
-    val status: MessageStatus = MessageStatus.SUCCESS,
-    val participant: Participant,
-    val timestamp: Long,
-    val thoughtTimeMs: Long? = null,
-    val modelName: String? = null,
-    val toolCallJson: String? = null,
-    val attachmentMeta: String? = null
-)
-
-@Dao
-interface ChatDao {
-    @Query("SELECT * FROM conversations ORDER BY lastUpdated DESC")
-    fun getAllConversations(): Flow<List<ChatEntity>>
-
-    @Query("SELECT * FROM conversations WHERE id = :conversationId")
-    suspend fun getConversation(conversationId: String): ChatEntity?
-
-    @Query("SELECT * FROM messages WHERE conversationId = :conversationId ORDER BY timestamp ASC")
-    fun getMessagesForConversation(conversationId: String): Flow<List<MessageEntity>>
-
-    @Upsert
-    suspend fun upsertConversation(conversation: ChatEntity)
-
-    @Upsert
-    suspend fun upsertMessage(message: MessageEntity)
-
-    @Query("DELETE FROM conversations WHERE id = :conversationId")
-    suspend fun deleteConversation(conversationId: String)
-
-    @Query("DELETE FROM messages WHERE conversationId = :conversationId")
-    suspend fun deleteMessagesByConversation(conversationId: String)
-
-    @Query("DELETE FROM messages WHERE id IN (:ids)")
-    suspend fun deleteMessagesByIds(ids: List<String>)
-
-    @Query("DELETE FROM embeddings WHERE messageId IN (SELECT id FROM messages WHERE conversationId = :conversationId)")
-    suspend fun deleteEmbeddingsByConversation(conversationId: String)
-
-    @Query("DELETE FROM embeddings WHERE messageId NOT IN (SELECT id FROM messages)")
-    suspend fun deleteOrphanedEmbeddings()
-
-    @Query("SELECT m.* FROM messages m INNER JOIN conversations c ON m.conversationId = c.id WHERE (m.text LIKE '%' || :query || '%' OR c.title LIKE '%' || :query || '%') AND m.participant IN ('USER', 'MODEL') AND m.text != '' AND m.id NOT LIKE 'tool_%' AND m.id NOT LIKE 'result_%' ORDER BY m.timestamp DESC LIMIT :limit")
-    suspend fun searchMessages(query: String, limit: Int = 10): List<MessageEntity>
-
-    @Query("SELECT * FROM messages WHERE conversationId = :conversationId ORDER BY timestamp DESC LIMIT 1")
-    suspend fun getLastMessageForConversation(conversationId: String): MessageEntity?
-
-    // Embeddings
-    @Upsert
-    suspend fun upsertEmbedding(embedding: EmbeddingEntity)
-
-    @Query("SELECT * FROM embeddings WHERE messageId = :messageId LIMIT 1")
-    suspend fun getEmbedding(messageId: String): EmbeddingEntity?
-
-    @Query("SELECT * FROM embeddings")
-    suspend fun getAllEmbeddings(): List<EmbeddingEntity>
-
-    @Query("DELETE FROM embeddings WHERE messageId = :messageId")
-    suspend fun deleteEmbedding(messageId: String)
-
-    @Query("SELECT * FROM embeddings WHERE modelId = :modelId")
-    suspend fun getEmbeddingsByModel(modelId: String): List<EmbeddingEntity>
-
-    @Query("DELETE FROM embeddings WHERE modelId = :modelId")
-    suspend fun deleteEmbeddingsByModel(modelId: String)
-
-    @Query("SELECT COUNT(*) FROM embeddings WHERE modelId = :modelId")
-    suspend fun getEmbeddingCountByModel(modelId: String): Int
-
-    @Query("SELECT messageId FROM embeddings WHERE modelId = :modelId")
-    suspend fun getEmbeddedMessageIdsByModel(modelId: String): List<String>
-
-    @Query("SELECT m.* FROM messages m INNER JOIN conversations c ON m.conversationId = c.id WHERE m.participant IN ('USER', 'MODEL') AND m.text != '' AND m.id NOT LIKE 'tool_%' AND m.id NOT LIKE 'result_%'")
-    suspend fun getAllMessagesForIndexing(): List<MessageEntity>
-
-    @Query("SELECT COUNT(*) FROM messages m INNER JOIN conversations c ON m.conversationId = c.id WHERE m.participant IN ('USER', 'MODEL') AND m.text != '' AND m.id NOT LIKE 'tool_%' AND m.id NOT LIKE 'result_%'")
-    suspend fun getIndexableMessageCount(): Int
-
-    @Query("SELECT * FROM messages WHERE id IN (:ids)")
-    suspend fun getMessagesByIds(ids: List<String>): List<MessageEntity>
-
-    // Bulk export/import
-    @Query("SELECT * FROM conversations")
-    suspend fun getAllConversationsList(): List<ChatEntity>
-
-    @Query("SELECT * FROM messages")
-    suspend fun getAllMessagesList(): List<MessageEntity>
-
-    @Query("DELETE FROM conversations")
-    suspend fun deleteAllConversations()
-
-    @Query("SELECT id FROM messages WHERE id IN (:ids)")
-    suspend fun findExistingMessageIds(ids: List<String>): List<String>
-}
+import com.newoether.agora.data.local.migration.MIGRATION_16_17
+import com.newoether.agora.data.local.migration.MIGRATION_17_18
+import com.newoether.agora.data.local.migration.MIGRATION_18_19
+import com.newoether.agora.data.local.migration.MIGRATION_19_20
+import com.newoether.agora.data.local.migration.MIGRATION_20_21
+import com.newoether.agora.data.local.migration.MIGRATION_21_22
+import com.newoether.agora.data.local.migration.MIGRATION_22_23
+import com.newoether.agora.data.local.migration.MIGRATION_23_24
+import com.newoether.agora.data.local.migration.MIGRATION_24_25
+import com.newoether.agora.data.local.migration.MIGRATION_25_26
+import com.newoether.agora.data.local.migration.MIGRATION_26_27
+import com.newoether.agora.data.local.migration.MIGRATION_27_28
+import com.newoether.agora.data.local.migration.MIGRATION_28_29
+import com.newoether.agora.data.local.migration.MIGRATION_29_30
+import com.newoether.agora.data.local.migration.MIGRATION_30_31
+import com.newoether.agora.data.local.migration.MIGRATION_31_32
+import java.util.concurrent.Executor
 
 @Database(
-    entities = [ChatEntity::class, MessageEntity::class, EmbeddingEntity::class],
+    entities = [
+        ChatEntity::class,
+        RunEntity::class,
+        MessageEntity::class,
+        EmbeddingEntity::class,
+        TaskEntity::class,
+        LoopEntity::class,
+        NewChatPersistEntity::class,
+        ConversationSettingsTransferEntity::class,
+        ConversationSettingsImportTransferEntity::class,
+        MaintenanceDebtEntity::class,
+        SemanticIndexLedgerEntity::class,
+        SemanticIndexWorkEntity::class,
+    ],
     version = ChatDatabase.CURRENT_VERSION,
     exportSchema = true
 )@TypeConverters(MessageConverters::class)
 abstract class ChatDatabase : RoomDatabase() {
     abstract fun chatDao(): ChatDao
+    abstract fun maintenanceDebtDao(): MaintenanceDebtDao
+    abstract fun semanticIndexDao(): SemanticIndexDao
 
     companion object {
-        const val CURRENT_VERSION = 12
+        const val CURRENT_VERSION = 32
         const val DB_NAME = "agora_db"
 
         val ALL_MIGRATIONS = listOf(
+            // v1 → v2 added messages.images (List<String> stored as TEXT via converter,
+            // NOT NULL with "" representing an empty list). This step was missing, so any
+            // device still on schema v1 crashed on launch with "migration 1 to 2 not found".
+            object : Migration(1, 2) {
+                override fun migrate(db: SupportSQLiteDatabase) {
+                    db.execSQL("ALTER TABLE messages ADD COLUMN images TEXT NOT NULL DEFAULT ''")
+                }
+            },
             object : Migration(2, 3) {
                 override fun migrate(db: SupportSQLiteDatabase) {
                     db.execSQL("ALTER TABLE conversations ADD COLUMN selectedBranchesJson TEXT")
@@ -268,30 +119,130 @@ abstract class ChatDatabase : RoomDatabase() {
                 override fun migrate(db: SupportSQLiteDatabase) {
                     db.execSQL("ALTER TABLE messages ADD COLUMN attachmentMeta TEXT")
                 }
-            }
+            },
+            // v12 → v13 adds the automation layer: tasks + loops tables, and the
+            // task-execution columns on conversations (origin/taskId/graduated).
+            object : Migration(12, 13) {
+                override fun migrate(db: SupportSQLiteDatabase) {
+                    db.execSQL("ALTER TABLE conversations ADD COLUMN taskId TEXT")
+                    db.execSQL("ALTER TABLE conversations ADD COLUMN origin TEXT NOT NULL DEFAULT 'user'")
+                    db.execSQL("ALTER TABLE conversations ADD COLUMN graduated INTEGER NOT NULL DEFAULT 0")
+                    db.execSQL("CREATE INDEX IF NOT EXISTS index_conversations_taskId ON conversations (taskId)")
+                    db.execSQL("""
+                        CREATE TABLE IF NOT EXISTS tasks (
+                            id TEXT PRIMARY KEY NOT NULL,
+                            name TEXT NOT NULL,
+                            prompt TEXT NOT NULL,
+                            systemPrompt TEXT,
+                            modelId TEXT,
+                            cronExpr TEXT NOT NULL,
+                            nextRunAt INTEGER NOT NULL,
+                            enabled INTEGER NOT NULL DEFAULT 1,
+                            createdAt INTEGER NOT NULL,
+                            lastRunAt INTEGER
+                        )
+                    """)
+                    db.execSQL("""
+                        CREATE TABLE IF NOT EXISTS loops (
+                            conversationId TEXT PRIMARY KEY NOT NULL,
+                            intervalMs INTEGER NOT NULL,
+                            prompt TEXT,
+                            nextFireAt INTEGER NOT NULL,
+                            cycleCount INTEGER NOT NULL DEFAULT 0,
+                            maxCycles INTEGER,
+                            active INTEGER NOT NULL DEFAULT 1,
+                            FOREIGN KEY(conversationId) REFERENCES conversations(id) ON DELETE CASCADE
+                        )
+                    """)
+                }
+            },
+            // v13 → v14 adds an optimistic revision to loop state. A cycle that was
+            // already running can then observe a stop/restart and avoid overwriting it.
+            object : Migration(13, 14) {
+                override fun migrate(db: SupportSQLiteDatabase) {
+                    db.execSQL("ALTER TABLE loops ADD COLUMN revision INTEGER NOT NULL DEFAULT 0")
+                }
+            },
+            // v14 → v15 adds per-conversation draft persistence for the composer.
+            object : Migration(14, 15) {
+                override fun migrate(db: SupportSQLiteDatabase) {
+                    db.execSQL("ALTER TABLE conversations ADD COLUMN draftText TEXT NOT NULL DEFAULT ''")
+                    db.execSQL("ALTER TABLE conversations ADD COLUMN draftAttachments TEXT")
+                }
+            },
+            // v15 → v16 adds one-shot ("run once at an instant") tasks, which a cron cannot express.
+            object : Migration(15, 16) {
+                override fun migrate(db: SupportSQLiteDatabase) {
+                    db.execSQL("ALTER TABLE tasks ADD COLUMN runAt INTEGER")
+                }
+            },
+            MIGRATION_16_17,
+            MIGRATION_17_18,
+            MIGRATION_18_19,
+            MIGRATION_19_20,
+            MIGRATION_20_21,
+            MIGRATION_21_22,
+            MIGRATION_22_23,
+            MIGRATION_23_24,
+            MIGRATION_24_25,
+            MIGRATION_25_26,
+            MIGRATION_26_27,
+            MIGRATION_27_28,
+            MIGRATION_28_29,
+            MIGRATION_29_30,
+            MIGRATION_30_31,
+            MIGRATION_31_32,
         )
 
-        fun getStoredVersion(context: Context): Int {
+        fun inspectCompatibility(context: Context): DatabaseCompatibility {
             val dbPath = context.getDatabasePath(DB_NAME)
-            if (!dbPath.exists()) return 0
-            return try {
-                val db = SQLiteDatabase.openDatabase(dbPath.path, null, SQLiteDatabase.OPEN_READONLY)
-                val version = db.version
-                db.close()
-                version
-            } catch (e: Exception) {
-                0
+            return classifyDatabaseCompatibility(
+                databaseExists = dbPath.exists(),
+                currentVersion = CURRENT_VERSION,
+            ) {
+                SQLiteDatabase.openDatabase(
+                    dbPath.path,
+                    null,
+                    SQLiteDatabase.OPEN_READONLY,
+                ).use { database -> database.version }
             }
         }
 
-        fun build(context: Context): ChatDatabase {
-            return Room.databaseBuilder(
+        /**
+         * Builds and validates the database without any destructive fallback.
+         *
+         * The compatibility check is repeated here as a defense-in-depth boundary for
+         * Workers or future callers that do not enter through AgoraApplication.
+         */
+        fun build(
+            context: Context,
+            queryExecutor: Executor? = null,
+            transactionExecutor: Executor? = null,
+        ): ChatDatabase {
+            val compatibility = inspectCompatibility(context)
+            check(compatibility.canOpen) {
+                "Refusing to open incompatible Agora database: " +
+                    compatibility.javaClass.simpleName
+            }
+
+            val builder = Room.databaseBuilder(
                 context.applicationContext,
                 ChatDatabase::class.java,
-                DB_NAME
+                DB_NAME,
             ).addMigrations(*ALL_MIGRATIONS.toTypedArray())
-                .fallbackToDestructiveMigration(false)
-                .build()
+            queryExecutor?.let { builder.setQueryExecutor(it) }
+            transactionExecutor?.let { builder.setTransactionExecutor(it) }
+            val database = builder.build()
+
+            return try {
+                // Force Room to run supported migrations and schema validation before the
+                // process container or normal UI is published as Ready.
+                database.openHelper.writableDatabase
+                database
+            } catch (error: Exception) {
+                database.close()
+                throw error
+            }
         }
     }
 }

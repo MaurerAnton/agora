@@ -16,7 +16,7 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Close
-import androidx.compose.material3.CircularProgressIndicator
+import com.newoether.agora.ui.motion.MotionAwareCircularProgressIndicator as CircularProgressIndicator
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
@@ -28,6 +28,7 @@ import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableFloatStateOf
 import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.produceState
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
@@ -53,9 +54,40 @@ import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.newoether.agora.R
+import com.newoether.agora.ui.common.AgoraHaptics
+import com.newoether.agora.ui.common.NoOpAgoraHaptics
+import com.newoether.agora.ui.common.rememberAgoraHaptics
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 import kotlin.math.abs
+
+private fun hasVideoExtension(url: String): Boolean {
+    val normalized = url.substringBefore('?').substringBefore('#').lowercase()
+    return normalized.endsWith(".mp4") ||
+        normalized.endsWith(".webm") ||
+        normalized.endsWith(".mov") ||
+        normalized.endsWith(".avi") ||
+        normalized.contains("vid_original_")
+}
+
+@Composable
+private fun rememberIsVideoMedia(url: String): Boolean? {
+    if (hasVideoExtension(url)) return true
+    if (!url.startsWith("content://", ignoreCase = true)) return false
+    val context = LocalContext.current
+    val resolved by produceState<Boolean?>(initialValue = null, url) {
+        value = withContext(Dispatchers.IO) {
+            try {
+                context.contentResolver.getType(Uri.parse(url))?.startsWith("video/") == true
+            } catch (_: Exception) {
+                false
+            }
+        }
+    }
+    return resolved
+}
 
 @Composable
 fun FullScreenMediaViewer(
@@ -65,23 +97,40 @@ fun FullScreenMediaViewer(
     pdfSelectedPages: Set<Int>? = null,
     onTogglePdfPage: ((Int) -> Unit)? = null,
     onClose: () -> Unit,
-    onNavigate: (Int) -> Unit
+    onNavigate: (Int) -> Unit,
+    onMessage: (String) -> Unit = {},
+    hapticsEnabled: Boolean = true
 ) {
     val url = urls.getOrNull(initialIndex) ?: return
-    val isPdf = pdfPages.isNotEmpty()
-    val context = LocalContext.current
-    val mimeType = remember(url) {
-        try { context.contentResolver.getType(Uri.parse(url)) } catch (_: Exception) { null }
+    val haptics = rememberAgoraHaptics(hapticsEnabled)
+    if (pdfPages.isNotEmpty()) {
+        PdfPager(pdfPages, initialIndex, pdfSelectedPages, onTogglePdfPage, onClose, onNavigate)
+        return
     }
-    val isSingleVideo = mimeType?.startsWith("video/") == true ||
-        url.endsWith(".mp4", true) || url.endsWith(".webm", true) ||
-        url.endsWith(".mov", true) || url.endsWith(".avi", true) ||
-        url.contains("vid_original_")
+    if (urls.size > 1) {
+        MediaPager(urls, initialIndex, onClose, onNavigate, onMessage, haptics = haptics)
+        return
+    }
+    val isSingleVideo = rememberIsVideoMedia(url)
 
-    if (isSingleVideo && urls.size == 1) {
+    if (isSingleVideo == null) {
+        BackHandler(onBack = onClose)
+        Box(
+            modifier = Modifier.fillMaxSize(),
+            contentAlignment = Alignment.Center,
+        ) {
+            CircularProgressIndicator(
+                color = MaterialTheme.colorScheme.primary,
+                strokeWidth = MEDIA_LOADING_INDICATOR_STROKE_WIDTH,
+            )
+        }
+        return
+    }
+
+    if (isSingleVideo == true) {
         var showOverlay by remember { mutableStateOf(true) }
         var closing by remember { mutableStateOf(false) }
-        Box(modifier = Modifier.fillMaxSize().background(Color.Black)) {
+        Box(modifier = Modifier.fillMaxSize()) {
             VideoPlayer(uri = url, onClose = onClose, closing = closing)
             AnimatedVisibility(
                 visible = showOverlay,
@@ -102,18 +151,8 @@ fun FullScreenMediaViewer(
         return
     }
 
-    if (isPdf) {
-        PdfPager(pdfPages, url, pdfSelectedPages, onTogglePdfPage, onClose, onNavigate)
-        return
-    }
-
-    if (urls.size > 1) {
-        MediaPager(urls, initialIndex, onClose, onNavigate)
-        return
-    }
-
     // Single image — full zoom/pan experience
-    SingleImage(url = url, onClose = onClose)
+    SingleImage(url = url, onClose = onClose, onMessage = onMessage, haptics = haptics)
 }
 
 // --- PDF pager (existing logic) ---
@@ -121,13 +160,13 @@ fun FullScreenMediaViewer(
 @Composable
 private fun PdfPager(
     pdfPages: List<String>,
-    url: String,
+    initialIndex: Int,
     pdfSelectedPages: Set<Int>? = null,
     onTogglePdfPage: ((Int) -> Unit)? = null,
     onClose: () -> Unit,
     onNavigate: (Int) -> Unit
 ) {
-    val pdfInitialPage = pdfPages.indexOf(url).coerceIn(0, pdfPages.size - 1)
+    val pdfInitialPage = initialIndex.coerceIn(0, pdfPages.size - 1)
     var currentScale by remember { mutableFloatStateOf(1f) }
     var showOverlay by remember { mutableStateOf(true) }
     val pagerState = rememberPagerState(initialPage = pdfInitialPage) { pdfPages.size }
@@ -137,7 +176,7 @@ private fun PdfPager(
     }
     BackHandler { onClose() }
     Box(
-        modifier = Modifier.fillMaxSize().background(Color.Black.copy(alpha = 0.9f))
+        modifier = Modifier.fillMaxSize()
     ) {
         HorizontalPager(
             state = pagerState,
@@ -170,8 +209,8 @@ private fun PdfPager(
                     Text(
                         "${pagerState.currentPage + 1} / ${pdfPages.size}",
                         color = MaterialTheme.colorScheme.onSurface,
-                        style = MaterialTheme.typography.labelMedium,
-                        modifier = Modifier.padding(horizontal = 20.dp, vertical = 14.dp)
+                        style = MaterialTheme.typography.titleSmall,
+                        modifier = Modifier.padding(horizontal = 18.dp, vertical = 10.dp)
                     )
                 }
                 Spacer(Modifier.weight(1f))
@@ -227,18 +266,24 @@ private fun MediaPager(
     urls: List<String>,
     initialIndex: Int,
     onClose: () -> Unit,
-    onNavigate: (Int) -> Unit
+    onNavigate: (Int) -> Unit,
+    onMessage: (String) -> Unit = {},
+    haptics: AgoraHaptics = NoOpAgoraHaptics
 ) {
-    val context = LocalContext.current
     var currentScale by remember { mutableFloatStateOf(1f) }
     var showOverlay by remember { mutableStateOf(true) }
     var closing by remember { mutableStateOf(false) }
+    var actionsForUrl by remember { mutableStateOf<String?>(null) }
     val pagerState = rememberPagerState(initialPage = initialIndex.coerceIn(0, urls.size - 1)) { urls.size }
+    val currentPageIsVideo = rememberIsVideoMedia(urls[pagerState.currentPage])
+    fun requestClose() {
+        if (currentPageIsVideo == true) closing = true
+        else onClose()
+    }
     LaunchedEffect(pagerState.currentPage) { onNavigate(pagerState.currentPage) }
-    LaunchedEffect(closing) { if (closing) { kotlinx.coroutines.delay(400); onClose() } }
-    BackHandler { closing = true }
+    BackHandler { requestClose() }
     Box(
-        modifier = Modifier.fillMaxSize().background(Color.Black.copy(alpha = 0.9f))
+        modifier = Modifier.fillMaxSize()
     ) {
         HorizontalPager(
             state = pagerState,
@@ -247,25 +292,38 @@ private fun MediaPager(
             userScrollEnabled = currentScale <= 1.05f
         ) { page ->
             val mediaUrl = urls[page]
-            val isVideo = remember(mediaUrl) {
-                val mt = try { context.contentResolver.getType(Uri.parse(mediaUrl)) } catch (_: Exception) { null }
-                mt?.startsWith("video/") == true || mediaUrl.endsWith(".mp4", true) ||
-                    mediaUrl.endsWith(".webm", true) || mediaUrl.endsWith(".mov", true) ||
-                    mediaUrl.endsWith(".avi", true) || mediaUrl.contains("vid_original_")
-            }
-            if (isVideo) {
-                if (page == pagerState.currentPage) {
-                    VideoPlayer(uri = mediaUrl, onClose = onClose, closing = closing)
+            when (rememberIsVideoMedia(mediaUrl)) {
+                null -> Box(
+                    modifier = Modifier.fillMaxSize(),
+                    contentAlignment = Alignment.Center,
+                ) {
+                    CircularProgressIndicator(
+                        color = MaterialTheme.colorScheme.primary,
+                        strokeWidth = MEDIA_LOADING_INDICATOR_STROKE_WIDTH,
+                    )
                 }
-            } else {
-                ZoomableImageItem(
-                    url = mediaUrl,
-                    onTap = { showOverlay = !showOverlay },
-                    onScaleChanged = { if (page == pagerState.currentPage) currentScale = it },
-                    consumeConditionally = true
-                )
+                true -> {
+                    if (page == pagerState.currentPage) {
+                        VideoPlayer(uri = mediaUrl, onClose = onClose, closing = closing)
+                    }
+                }
+                false -> {
+                    ZoomableImageItem(
+                        url = mediaUrl,
+                        onTap = { showOverlay = !showOverlay },
+                        onScaleChanged = {
+                            if (page == pagerState.currentPage) currentScale = it
+                        },
+                        onLongPress = {
+                            haptics.longPress()
+                            actionsForUrl = mediaUrl
+                        },
+                        consumeConditionally = true,
+                    )
+                }
             }
         }
+        actionsForUrl?.let { ImageActionsSheet(url = it, onMessage = onMessage, onDismiss = { actionsForUrl = null }) }
         AnimatedVisibility(
             visible = showOverlay,
             enter = fadeIn(),
@@ -285,14 +343,14 @@ private fun MediaPager(
                         Text(
                             "${pagerState.currentPage + 1} / ${urls.size}",
                             color = MaterialTheme.colorScheme.onSurface,
-                            style = MaterialTheme.typography.labelMedium,
-                            modifier = Modifier.padding(horizontal = 20.dp, vertical = 14.dp)
+                            style = MaterialTheme.typography.titleSmall,
+                            modifier = Modifier.padding(horizontal = 18.dp, vertical = 10.dp)
                         )
                     }
                 }
                 Spacer(Modifier.weight(1f))
                 Surface(
-                    onClick = { closing = true },
+                    onClick = { requestClose() },
                     shape = CircleShape,
                     color = MaterialTheme.colorScheme.surfaceContainer,
                     modifier = Modifier.shadow(8.dp, CircleShape)
@@ -309,16 +367,21 @@ private fun MediaPager(
 @Composable
 private fun SingleImage(
     url: String,
-    onClose: () -> Unit
+    onClose: () -> Unit,
+    onMessage: (String) -> Unit = {},
+    haptics: AgoraHaptics = NoOpAgoraHaptics
 ) {
     var showOverlay by remember { mutableStateOf(true) }
+    var showActions by remember { mutableStateOf(false) }
 
-    Box(modifier = Modifier.fillMaxSize().background(Color.Black.copy(alpha = 0.9f))) {
+    Box(modifier = Modifier.fillMaxSize()) {
         ZoomableImageItem(
             url = url,
             onTap = { showOverlay = !showOverlay },
+            onLongPress = { haptics.longPress(); showActions = true },
             consumeConditionally = true
         )
+        if (showActions) ImageActionsSheet(url = url, onMessage = onMessage, onDismiss = { showActions = false })
         AnimatedVisibility(
             visible = showOverlay,
             enter = fadeIn(),

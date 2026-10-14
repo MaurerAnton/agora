@@ -2,172 +2,213 @@ package com.newoether.agora.ui.settings
 
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
+import androidx.compose.animation.Crossfade
+import androidx.compose.animation.core.tween
 import androidx.compose.foundation.clickable
-import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.*
-import androidx.compose.foundation.rememberScrollState
-import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.Cached
 import androidx.compose.material.icons.filled.Chat
 import androidx.compose.material.icons.filled.AutoAwesome
-import androidx.compose.material.icons.filled.ArrowDropDown
-import androidx.compose.material.icons.filled.CheckCircle
-import androidx.compose.material.icons.filled.Close
-import androidx.compose.material.icons.filled.Cloud
-import androidx.compose.material.icons.filled.Download
+import androidx.compose.material.icons.filled.Check
 import androidx.compose.material.icons.filled.ManageSearch
-import androidx.compose.material.icons.filled.Search
 import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.Edit
 import androidx.compose.material.icons.filled.MoreVert
+import androidx.compose.material.icons.filled.Notifications
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.*
+import com.newoether.agora.ui.motion.MotionAwareCircularProgressIndicator as CircularProgressIndicator
 import androidx.compose.runtime.*
-import androidx.compose.runtime.mutableIntStateOf
-import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.clip
-import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
-import androidx.compose.ui.platform.LocalFocusManager
+import androidx.compose.ui.platform.LocalDensity
+import androidx.compose.ui.platform.LocalLayoutDirection
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
-import androidx.compose.ui.text.input.PasswordVisualTransformation
+import androidx.compose.ui.text.rememberTextMeasurer
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.DpSize
 import com.newoether.agora.R
-import com.newoether.agora.util.DebugLog
+import com.newoether.agora.api.ProviderDefaults
+import com.newoether.agora.viewmodel.EmbeddingCacheRowPhase
+import com.newoether.agora.ui.common.PersistedSliderFeedbackGate
+import com.newoether.agora.ui.components.clearFocusOnTap
+import com.newoether.agora.util.Constants
 import com.newoether.agora.viewmodel.ChatViewModel
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 import java.io.File
 
 private data class SearchMethodOption(val key: String, @androidx.annotation.StringRes val labelRes: Int)
 
 private val searchMethods = listOf(
     SearchMethodOption("keyword", R.string.search_method_keyword),
-    SearchMethodOption("rag", R.string.search_method_rag)
+    SearchMethodOption(Constants.SEARCH_METHOD_RAG, R.string.search_method_rag)
 )
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun SettingsSearchPage(viewModel: ChatViewModel, onBack: () -> Unit) {
-    val accessPastConversations by viewModel.accessPastConversations.collectAsState()
-    val autoCacheEnabled by viewModel.autoCacheEnabled.collectAsState()
-    val modelSearchMethod by viewModel.modelSearchMethod.collectAsState()
-    val manualSearchMethod by viewModel.manualSearchMethod.collectAsState()
-    val embeddingModels by viewModel.embeddingModels.collectAsState()
-    val activeEmbeddingModelId by viewModel.activeEmbeddingModelId.collectAsState()
-    val cachingProgress by viewModel.cachingProgress.collectAsState()
-    val cacheCounts by viewModel.cacheCounts.collectAsState()
-    val searchContextWindow by viewModel.searchContextWindow.collectAsState()
-    val searchMatchLimit by viewModel.searchMatchLimit.collectAsState()
-    val ragThreshold by viewModel.ragThreshold.collectAsState()
+    val accessPastConversations by viewModel.settings.accessPastConversations.collectAsState()
+    val autoCacheEnabled by viewModel.settings.autoCacheEnabled.collectAsState()
+    val showUncachedNotification by viewModel.settings.showUncachedNotification.collectAsState()
+    val modelSearchMethod by viewModel.settings.modelSearchMethod.collectAsState()
+    val manualSearchMethod by viewModel.settings.manualSearchMethod.collectAsState()
+    val embeddingModels by viewModel.settings.embeddingModels.collectAsState()
+    val activeEmbeddingModelId by viewModel.settings.activeEmbeddingModelId.collectAsState()
+    val cacheRows by viewModel.ragManager.cacheRows.collectAsState()
+    val searchContextWindow by viewModel.settings.searchContextWindow.collectAsState()
+    val searchMatchLimit by viewModel.settings.searchMatchLimit.collectAsState()
+    val ragThreshold by viewModel.settings.ragThreshold.collectAsState()
 
-    LaunchedEffect(Unit) { viewModel.loadCacheCounts() }
+    val embeddingModelIds = remember(embeddingModels) {
+        embeddingModels.map(com.newoether.agora.data.EmbeddingModelConfig::id)
+    }
+    val actionTextMeasurer = rememberTextMeasurer()
+    val actionLabelSizes = listOf(
+        stringResource(R.string.recache_action),
+        stringResource(R.string.cache_action),
+    ).map { label ->
+        actionTextMeasurer.measure(
+            text = label,
+            style = MaterialTheme.typography.labelLarge,
+            maxLines = 1,
+            softWrap = false,
+        ).size
+    }
+    val actionPadding = ButtonDefaults.TextButtonContentPadding
+    val layoutDirection = LocalLayoutDirection.current
+    // Reserve every action before loading resolves, including localized text and font scaling.
+    val cacheActionSize = with(LocalDensity.current) {
+        DpSize(
+            width = (actionLabelSizes.maxOf { it.width }.toDp() +
+                actionPadding.calculateLeftPadding(layoutDirection) +
+                actionPadding.calculateRightPadding(layoutDirection)).coerceAtLeast(76.dp),
+            height = (actionLabelSizes.maxOf { it.height }.toDp() +
+                actionPadding.calculateTopPadding() +
+                actionPadding.calculateBottomPadding()).coerceAtLeast(48.dp),
+        )
+    }
+    LaunchedEffect(embeddingModelIds) { viewModel.ragManager.loadCacheCounts() }
     var showRemoteDialog by remember { mutableStateOf(false) }
     var showLocalDialog by remember { mutableStateOf(false) }
     var showDeleteDialog by remember { mutableStateOf<String?>(null) }
     var showRenameDialog by remember { mutableStateOf<String?>(null) }
     var showRecacheConfirm by remember { mutableStateOf<String?>(null) }
     var showMenuForModel by remember { mutableStateOf<String?>(null) }
-    var localThreshold by remember { mutableFloatStateOf(ragThreshold) }
-    LaunchedEffect(ragThreshold) { localThreshold = ragThreshold }
+    val searchContextGate = remember {
+        PersistedSliderFeedbackGate(
+            initialPersisted = searchContextWindow,
+            toDisplay = Int::toFloat,
+        )
+    }
+    val searchMatchGate = remember {
+        PersistedSliderFeedbackGate(
+            initialPersisted = searchMatchLimit,
+            toDisplay = Int::toFloat,
+        )
+    }
+    val ragThresholdGate = remember {
+        PersistedSliderFeedbackGate(
+            initialPersisted = ragThreshold,
+            toDisplay = { it },
+            equivalent = { left, right -> kotlin.math.abs(left - right) < 0.0001f },
+        )
+    }
+    LaunchedEffect(searchContextWindow) { searchContextGate.reconcile(searchContextWindow) }
+    LaunchedEffect(searchMatchLimit) { searchMatchGate.reconcile(searchMatchLimit) }
+    LaunchedEffect(ragThreshold) { ragThresholdGate.reconcile(ragThreshold) }
     var renameText by remember { mutableStateOf("") }
     // Embedding provider presets
-    data class EmbeddingProviderPreset(val name: String, val baseUrl: String, val models: List<String>)
     val embeddingProviders = listOf(
-        EmbeddingProviderPreset("OpenAI", "https://api.openai.com/v1", listOf("text-embedding-3-small", "text-embedding-3-large", "text-embedding-ada-002")),
-        EmbeddingProviderPreset("Mistral", "https://api.mistral.ai/v1", listOf("mistral-embed")),
-        EmbeddingProviderPreset("Voyage AI", "https://api.voyageai.com/v1", listOf("voyage-3-large", "voyage-3-lite", "voyage-code-3")),
-        EmbeddingProviderPreset("SiliconFlow", "https://api.siliconflow.cn/v1", listOf("BAAI/bge-m3", "BAAI/bge-large-en-v1.5")),
-        EmbeddingProviderPreset("Ollama", "http://localhost:11434/v1", emptyList()),
+        EmbeddingProviderPreset(Constants.PROVIDER_OPENAI, ProviderDefaults.embeddingBaseUrl(Constants.PROVIDER_OPENAI), listOf("text-embedding-3-small", "text-embedding-3-large", "text-embedding-ada-002")),
+        EmbeddingProviderPreset("Mistral", ProviderDefaults.embeddingBaseUrl("Mistral"), listOf("mistral-embed")),
+        EmbeddingProviderPreset("Voyage AI", ProviderDefaults.embeddingBaseUrl("Voyage AI"), listOf("voyage-3-large", "voyage-3-lite", "voyage-code-3")),
+        EmbeddingProviderPreset("SiliconFlow", ProviderDefaults.embeddingBaseUrl("SiliconFlow"), listOf("BAAI/bge-m3", "BAAI/bge-large-en-v1.5")),
+        EmbeddingProviderPreset(Constants.PROVIDER_OPEN_ROUTER, ProviderDefaults.embeddingBaseUrl(Constants.PROVIDER_OPEN_ROUTER), listOf("openai/text-embedding-3-small", "openai/text-embedding-3-large")),
+        EmbeddingProviderPreset(Constants.PROVIDER_OLLAMA, ProviderDefaults.embeddingBaseUrl(Constants.PROVIDER_OLLAMA), emptyList()),
         EmbeddingProviderPreset("Custom", "", emptyList())
     )
-    var remoteName by remember { mutableStateOf("") }
-    var selectedProviderIdx by remember { mutableIntStateOf(0) }
-    var remoteModelName by remember { mutableStateOf("") }
-    var remoteBaseUrl by remember { mutableStateOf("") }
-    val remoteApiKeys = remember { mutableStateListOf(*Array(embeddingProviders.size) { "" }) }
-    var remoteBatchSize by remember { mutableStateOf("8") }
-    var showRemoteModelDropdown by remember { mutableStateOf(false) }
-    var isCustomModel by remember { mutableStateOf(false) }
+    val remoteState = rememberRemoteEmbeddingDialogState(embeddingProviders.size)
     var localName by remember { mutableStateOf("") }
     var localFilePath by remember { mutableStateOf("") }
     var localBatchSize by remember { mutableStateOf("8") }
     var isImporting by remember { mutableStateOf(false) }
     var showGgufError by remember { mutableStateOf(false) }
-    var testStatus by remember { mutableStateOf<String?>(null) }
-    var isTesting by remember { mutableStateOf(false) }
 
     LaunchedEffect(embeddingModels.size) {
         showMenuForModel = null
     }
-    val showDocFab by viewModel.showDocumentationFab.collectAsState()
+    val showDocFab by viewModel.settings.showDocumentationFab.collectAsState()
 
-    Scaffold(
-        containerColor = MaterialTheme.colorScheme.background,
-        contentWindowInsets = WindowInsets(0.dp),
-        topBar = {
-            TopAppBar(
-                title = { Text(stringResource(R.string.search_title), fontWeight = FontWeight.Bold) },
-                navigationIcon = {
-                    IconButton(onClick = onBack) {
-                        Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = stringResource(R.string.back))
-                    }
-                },
-                colors = TopAppBarDefaults.topAppBarColors(
-                    containerColor = MaterialTheme.colorScheme.background,
-                    titleContentColor = MaterialTheme.colorScheme.onBackground,
+    CollapsingSettingsScaffold(
+        title = stringResource(R.string.search_title),
+        onBack = onBack,
+        floatingActionButton = { if (showDocFab) DocumentationFab("search.md") }
+    ) {
+            SettingsGroupColumn {
+                if (cacheRows.values.any { it.countFailed && it.cached == null && !it.workActive }) {
+                    Text(
+                        text = "${stringResource(R.string.search_title)}: ${stringResource(R.string.tool_state_failed)}",
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    )
+                }
+                SettingsGroup(
+                    title = stringResource(R.string.memory_access_title),
+                    items = listOf(
+                        {
+                            SettingsItem(
+                                headlineContent = { Text(stringResource(R.string.memory_access_past)) },
+                                supportingContent = { Text(stringResource(R.string.memory_access_past_desc)) },
+                                leadingContent = { Icon(Icons.Default.Chat, null, tint = MaterialTheme.colorScheme.primary) },
+                                trailingContent = {
+                                    Switch(checked = accessPastConversations, onCheckedChange = { viewModel.settings.setAccessPastConversations(it) })
+                                },
+                                modifier = Modifier.clickable { viewModel.settings.setAccessPastConversations(!accessPastConversations) }
+                            )
+                        }
+                    )
                 )
-            )
-        },
-        floatingActionButton = { if (showDocFab) DocumentationFab("search.md") },
-        floatingActionButtonPosition = FabPosition.Center,
-    ) { padding ->
-        val fm = LocalFocusManager.current
-        Column(
-            modifier = Modifier
-                .padding(padding)
-                .navigationBarsPadding()
-                .verticalScroll(rememberScrollState())
-                .clickable(indication = null, interactionSource = remember { MutableInteractionSource() }) { fm.clearFocus() }
-                .padding(horizontal = 16.dp, vertical = 16.dp)
-        ) {
-            SettingsGroup(
-                title = stringResource(R.string.memory_access_title),
-                items = listOf(
-                    {
-                        SettingsItem(
-                            headlineContent = { Text(stringResource(R.string.memory_access_past)) },
-                            supportingContent = { Text(stringResource(R.string.memory_access_past_desc)) },
-                            leadingContent = { Icon(Icons.Default.Chat, null, tint = MaterialTheme.colorScheme.primary) },
-                            trailingContent = {
-                                Switch(checked = accessPastConversations, onCheckedChange = { viewModel.setAccessPastConversations(it) })
-                            },
-                            modifier = Modifier.clickable { viewModel.setAccessPastConversations(!accessPastConversations) }
-                        )
-                    }
-                )
-            )
 
-            SettingsGroup(
-                title = stringResource(R.string.auto_cache_title),
-                items = listOf(
-                    {
+                SettingsGroup(
+                    title = stringResource(R.string.auto_cache_title),
+                items = buildList {
+                    add {
                         SettingsItem(
                             headlineContent = { Text(stringResource(R.string.auto_cache)) },
                             supportingContent = { Text(stringResource(R.string.auto_cache_desc)) },
                             leadingContent = { Icon(Icons.Default.Cached, null, tint = MaterialTheme.colorScheme.primary) },
                             trailingContent = {
-                                Switch(checked = autoCacheEnabled, onCheckedChange = { viewModel.setAutoCacheEnabled(it) })
+                                Switch(checked = autoCacheEnabled, onCheckedChange = { viewModel.ragManager.setAutoCacheEnabled(it) })
                             },
-                            modifier = Modifier.clickable { viewModel.setAutoCacheEnabled(!autoCacheEnabled) }
+                            modifier = Modifier.clickable { viewModel.ragManager.setAutoCacheEnabled(!autoCacheEnabled) }
                         )
                     }
-                )
+                    if (!autoCacheEnabled) {
+                        add {
+                            SettingsItem(
+                                headlineContent = { Text(stringResource(R.string.show_uncached_notification)) },
+                                supportingContent = { Text(stringResource(R.string.show_uncached_notification_desc)) },
+                                leadingContent = {
+                                    Icon(Icons.Default.Notifications, null, tint = MaterialTheme.colorScheme.primary)
+                                },
+                                trailingContent = {
+                                    Switch(
+                                        checked = showUncachedNotification,
+                                        onCheckedChange = viewModel.settings::setShowUncachedNotification,
+                                    )
+                                },
+                                modifier = Modifier.clickable {
+                                    viewModel.settings.setShowUncachedNotification(!showUncachedNotification)
+                                }
+                            )
+                        }
+                    }
+                }
             )
 
             SettingsGroup(
@@ -195,16 +236,20 @@ fun SettingsSearchPage(viewModel: ChatViewModel, onBack: () -> Unit) {
                                         onDismissRequest = { expanded = false },
                                         shape = RoundedCornerShape(12.dp)
                                     ) {
+                                        val noEmbedding = embeddingModels.isEmpty()
                                         searchMethods.forEach { method ->
+                                            val ragDisabled = method.key == Constants.SEARCH_METHOD_RAG && noEmbedding
                                             DropdownMenuItem(
-                                                text = { Text(stringResource(method.labelRes)) },
+                                                text = { Text(stringResource(method.labelRes), color = if (ragDisabled) MaterialTheme.colorScheme.onSurface.copy(alpha = 0.38f) else MaterialTheme.colorScheme.onSurface) },
                                                 leadingIcon = {
                                                     if (modelSearchMethod == method.key)
-                                                        Icon(Icons.Default.CheckCircle, null, tint = MaterialTheme.colorScheme.primary)
+                                                        Icon(Icons.Default.Check, null, tint = if (ragDisabled) MaterialTheme.colorScheme.onSurface.copy(alpha = 0.38f) else MaterialTheme.colorScheme.primary)
                                                 },
                                                 onClick = {
-                                                    viewModel.setModelSearchMethod(method.key)
-                                                    expanded = false
+                                                    if (!ragDisabled) {
+                                                        viewModel.settings.setModelSearchMethod(method.key)
+                                                        expanded = false
+                                                    }
                                                 }
                                             )
                                         }
@@ -236,16 +281,20 @@ fun SettingsSearchPage(viewModel: ChatViewModel, onBack: () -> Unit) {
                                         onDismissRequest = { expanded = false },
                                         shape = RoundedCornerShape(12.dp)
                                     ) {
+                                        val noEmbedding = embeddingModels.isEmpty()
                                         searchMethods.forEach { method ->
+                                            val ragDisabled = method.key == Constants.SEARCH_METHOD_RAG && noEmbedding
                                             DropdownMenuItem(
-                                                text = { Text(stringResource(method.labelRes)) },
+                                                text = { Text(stringResource(method.labelRes), color = if (ragDisabled) MaterialTheme.colorScheme.onSurface.copy(alpha = 0.38f) else MaterialTheme.colorScheme.onSurface) },
                                                 leadingIcon = {
                                                     if (manualSearchMethod == method.key)
-                                                        Icon(Icons.Default.CheckCircle, null, tint = MaterialTheme.colorScheme.primary)
+                                                        Icon(Icons.Default.Check, null, tint = if (ragDisabled) MaterialTheme.colorScheme.onSurface.copy(alpha = 0.38f) else MaterialTheme.colorScheme.primary)
                                                 },
                                                 onClick = {
-                                                    viewModel.setManualSearchMethod(method.key)
-                                                    expanded = false
+                                                    if (!ragDisabled) {
+                                                        viewModel.settings.setManualSearchMethod(method.key)
+                                                        expanded = false
+                                                    }
                                                 }
                                             )
                                         }
@@ -264,60 +313,120 @@ fun SettingsSearchPage(viewModel: ChatViewModel, onBack: () -> Unit) {
                     if (embeddingModels.isEmpty()) {
                         add {
                             SettingsItem(
-                                headlineContent = { Text(stringResource(R.string.no_embedding_models), color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.5f)) },
-                                leadingContent = { Icon(Icons.Default.Cloud, null, tint = MaterialTheme.colorScheme.primary) },
-                                modifier = Modifier.padding(vertical = 8.dp)
+                                headlineContent = { Text(stringResource(R.string.no_embedding_models), color = MaterialTheme.colorScheme.onSurfaceVariant) },
+                                leadingContent = { Icon(Icons.Default.Chat, null, tint = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.4f)) },
+                                modifier = Modifier.heightIn(min = 64.dp)
                             )
                         }
                     } else {
                         embeddingModels.forEach { model ->
                             add {
                                 val isActive = model.id == activeEmbeddingModelId
-                                val progress = cachingProgress[model.id]
-                                val isCaching = progress != null
-                                val counts = cacheCounts[model.id]
-                                val allCached = counts != null && counts.second > 0 && counts.first >= counts.second
+                                val cacheRow = cacheRows[model.id]
+                                val visualPhase = cacheRow?.phase
                                 SettingsItem(
                                     headlineContent = { Text(model.name) },
                                     supportingContent = {
                                         val typeLabel = if (model.type == com.newoether.agora.data.EmbeddingModelType.REMOTE)
                                             stringResource(R.string.embedding_type_remote)
                                         else stringResource(R.string.embedding_type_local)
-                                        val cacheLabel = if (isCaching) {
-                                            "${progress!!.second - progress!!.first} ${stringResource(R.string.not_cached)} (${progress!!.first}/${progress!!.second})"
-                                        } else if (counts != null && counts.second > 0) {
-                                            val notCached = (counts.second - counts.first).coerceAtLeast(0)
-                                            if (notCached == 0) stringResource(R.string.cached)
-                                            else "${notCached} ${stringResource(R.string.not_cached)} (${counts.first}/${counts.second})"
-                                        } else {
-                                            stringResource(R.string.not_cached)
+                                        val countLabel = cacheRow?.cached?.let { cached ->
+                                            "$cached/${cacheRow.indexableTotal}"
                                         }
-                                        Text("$typeLabel · $cacheLabel")
+                                        val cacheLabel = when (visualPhase) {
+                                            EmbeddingCacheRowPhase.LOADING ->
+                                                stringResource(R.string.loading_label)
+                                            EmbeddingCacheRowPhase.CACHING -> countLabel
+                                            EmbeddingCacheRowPhase.CACHE -> {
+                                                val cached = requireNotNull(cacheRow?.cached)
+                                                val total = requireNotNull(cacheRow.indexableTotal)
+                                                "${total - cached} " +
+                                                    "${stringResource(R.string.not_cached)} " +
+                                                    "($cached/$total)"
+                                            }
+                                            EmbeddingCacheRowPhase.RECACHE ->
+                                                "${stringResource(R.string.cached)} ($countLabel)"
+                                            null -> null
+                                        }
+                                        Crossfade(
+                                            targetState = listOfNotNull(typeLabel, cacheLabel).joinToString(" · "),
+                                            animationSpec = tween(250),
+                                            label = "embeddingCacheStatus-${model.id}",
+                                        ) { status ->
+                                            Text(status)
+                                        }
                                     },
                                     leadingContent = {
                                         RadioButton(
                                             selected = isActive,
-                                            onClick = { viewModel.setActiveEmbeddingModel(model.id) }
+                                            onClick = { viewModel.ragManager.setActiveEmbeddingModel(model.id) }
                                         )
                                     },
                                     trailingContent = {
                                         Row(verticalAlignment = androidx.compose.ui.Alignment.CenterVertically) {
-                                            if (!isCaching) {
-                                                TextButton(onClick = {
-                                                    if (allCached) {
-                                                        showRecacheConfirm = model.id
-                                                    } else {
-                                                        viewModel.cacheMessagesForModel(model.id)
+                                            Box(
+                                                modifier = Modifier.size(cacheActionSize),
+                                                contentAlignment = androidx.compose.ui.Alignment.Center,
+                                            ) {
+                                                Crossfade(
+                                                    targetState = visualPhase,
+                                                    modifier = Modifier.fillMaxSize(),
+                                                    animationSpec = tween(250),
+                                                    label = "embeddingCacheAction-${model.id}",
+                                                ) { phase ->
+                                                    Box(
+                                                        modifier = Modifier.fillMaxSize(),
+                                                        contentAlignment = androidx.compose.ui.Alignment.Center,
+                                                    ) {
+                                                        when (phase) {
+                                                            EmbeddingCacheRowPhase.CACHING -> {
+                                                                val progress = cacheRow?.progress
+                                                                if (progress == null) {
+                                                                    CircularProgressIndicator(
+                                                                        modifier = Modifier.size(24.dp),
+                                                                        strokeWidth = 3.dp,
+                                                                    )
+                                                                } else {
+                                                                    CircularProgressIndicator(
+                                                                        progress = { progress.fraction },
+                                                                        modifier = Modifier.size(24.dp),
+                                                                        strokeWidth = 3.dp,
+                                                                    )
+                                                                }
+                                                            }
+                                                            EmbeddingCacheRowPhase.LOADING ->
+                                                                CircularProgressIndicator(
+                                                                    modifier = Modifier.size(24.dp),
+                                                                    strokeWidth = 3.dp,
+                                                                )
+                                                            null -> Unit
+                                                            EmbeddingCacheRowPhase.RECACHE -> TextButton(
+                                                                enabled = visualPhase == phase,
+                                                                onClick = { showRecacheConfirm = model.id },
+                                                            ) {
+                                                                Text(
+                                                                    stringResource(R.string.recache_action),
+                                                                    maxLines = 1,
+                                                                    softWrap = false,
+                                                                )
+                                                            }
+                                                            EmbeddingCacheRowPhase.CACHE -> TextButton(
+                                                                enabled = visualPhase == phase,
+                                                                onClick = {
+                                                                    viewModel.ragManager.cacheMessagesForModel(
+                                                                        model.id,
+                                                                    )
+                                                                },
+                                                            ) {
+                                                                Text(
+                                                                    stringResource(R.string.cache_action),
+                                                                    maxLines = 1,
+                                                                    softWrap = false,
+                                                                )
+                                                            }
+                                                        }
                                                     }
-                                                }) { Text(if (allCached) stringResource(R.string.recache_action) else stringResource(R.string.cache_action)) }
-                                            }
-                                            if (isCaching) {
-                                                val ratio = progress!!.first.toFloat() / progress.second.toFloat()
-                                                CircularProgressIndicator(
-                                                    progress = { ratio },
-                                                    modifier = Modifier.size(24.dp),
-                                                    strokeWidth = 2.dp
-                                                )
+                                                }
                                             }
                                             Box {
                                                 IconButton(onClick = { showMenuForModel = model.id }) {
@@ -351,7 +460,7 @@ fun SettingsSearchPage(viewModel: ChatViewModel, onBack: () -> Unit) {
                                             }
                                         }
                                     },
-                                    modifier = Modifier.clickable { viewModel.setActiveEmbeddingModel(model.id) }
+                                    modifier = Modifier.clickable { viewModel.ragManager.setActiveEmbeddingModel(model.id) }
                                 )
                             }
                         }
@@ -362,16 +471,10 @@ fun SettingsSearchPage(viewModel: ChatViewModel, onBack: () -> Unit) {
                             horizontalArrangement = Arrangement.spacedBy(8.dp)
                         ) {
                             TextButton(onClick = {
-                                remoteName = ""
-                                selectedProviderIdx = 0
-                                remoteModelName = embeddingProviders[0].models.firstOrNull() ?: ""
-                                remoteBaseUrl = embeddingProviders[0].baseUrl
-                                for (i in remoteApiKeys.indices) { remoteApiKeys[i] = "" }
-                                remoteApiKeys[0] = viewModel.resolveEmbeddingKeyForProviderExact("OpenAI")?.key ?: ""
-                                remoteBatchSize = "8"
-                                isCustomModel = false
-                                testStatus = null
-                                isTesting = false
+                                remoteState.prepareForNew(
+                                    embeddingProviders[0],
+                                    viewModel.ragManager.resolveEmbeddingKeyForProviderExact(Constants.PROVIDER_OPENAI)?.key ?: ""
+                                )
                                 showRemoteDialog = true
                             }) { Text(stringResource(R.string.add_remote_model)) }
                             TextButton(onClick = {
@@ -385,342 +488,26 @@ fun SettingsSearchPage(viewModel: ChatViewModel, onBack: () -> Unit) {
                 }
             )
 
-            SettingsGroup(
-                title = stringResource(R.string.advanced_title),
-                items = listOf(
-                    {
-                        Column(
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .padding(horizontal = 16.dp, vertical = 16.dp)
-                        ) {
-                            Row(
-                                modifier = Modifier.fillMaxWidth(),
-                                verticalAlignment = androidx.compose.ui.Alignment.Top
-                            ) {
-                                Icon(
-                                    painter = painterResource(id = R.drawable.text_compare_24),
-                                    contentDescription = null,
-                                    tint = MaterialTheme.colorScheme.primary,
-                                    modifier = Modifier.padding(top = 2.dp)
-                                )
-                                Spacer(modifier = Modifier.width(16.dp))
-                                Column(modifier = Modifier.weight(1f)) {
-                                    Text(
-                                        text = stringResource(R.string.search_context_label),
-                                        style = MaterialTheme.typography.bodyLarge,
-                                        color = MaterialTheme.colorScheme.onSurface
-                                    )
-                                    Text(
-                                        text = stringResource(R.string.search_context_desc, searchContextWindow),
-                                        style = MaterialTheme.typography.bodyMedium,
-                                        color = MaterialTheme.colorScheme.onSurfaceVariant,
-                                        modifier = Modifier.padding(top = 4.dp)
-                                    )
-                                    Slider(
-                                        value = searchContextWindow.toFloat(),
-                                        onValueChange = { viewModel.setSearchContextWindow(it.toInt()) },
-                                        valueRange = 4f..32f,
-                                        steps = 6,
-                                        modifier = Modifier.fillMaxWidth().padding(top = 8.dp)
-                                    )
-                                }
-                            }
-                        }
-                    },
-                    {
-                        Column(
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .padding(horizontal = 16.dp, vertical = 16.dp)
-                        ) {
-                            Row(
-                                modifier = Modifier.fillMaxWidth(),
-                                verticalAlignment = androidx.compose.ui.Alignment.Top
-                            ) {
-                                Icon(
-                                    painter = painterResource(id = R.drawable.text_compare_24),
-                                    contentDescription = null,
-                                    tint = MaterialTheme.colorScheme.primary,
-                                    modifier = Modifier.padding(top = 2.dp)
-                                )
-                                Spacer(modifier = Modifier.width(16.dp))
-                                Column(modifier = Modifier.weight(1f)) {
-                                    Text(
-                                        text = stringResource(R.string.search_match_label),
-                                        style = MaterialTheme.typography.bodyLarge,
-                                        color = MaterialTheme.colorScheme.onSurface
-                                    )
-                                    Text(
-                                        text = stringResource(R.string.search_match_desc, searchMatchLimit),
-                                        style = MaterialTheme.typography.bodyMedium,
-                                        color = MaterialTheme.colorScheme.onSurfaceVariant,
-                                        modifier = Modifier.padding(top = 4.dp)
-                                    )
-                                    Slider(
-                                        value = searchMatchLimit.toFloat(),
-                                        onValueChange = { viewModel.setSearchMatchLimit(it.toInt()) },
-                                        valueRange = 5f..30f,
-                                        steps = 4,
-                                        modifier = Modifier.fillMaxWidth().padding(top = 8.dp)
-                                    )
-                                }
-                            }
-                        }
-                    },
-                    {
-                        Column(
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .padding(horizontal = 16.dp, vertical = 16.dp)
-                        ) {
-                            Row(
-                                modifier = Modifier.fillMaxWidth(),
-                                verticalAlignment = androidx.compose.ui.Alignment.Top
-                            ) {
-                                Icon(
-                                    painter = painterResource(id = R.drawable.text_compare_24),
-                                    contentDescription = null,
-                                    tint = MaterialTheme.colorScheme.primary,
-                                    modifier = Modifier.padding(top = 2.dp)
-                                )
-                                Spacer(modifier = Modifier.width(16.dp))
-                                Column(modifier = Modifier.weight(1f)) {
-                                    Text(
-                                        text = stringResource(R.string.rag_threshold_label),
-                                        style = MaterialTheme.typography.bodyLarge,
-                                        color = MaterialTheme.colorScheme.onSurface
-                                    )
-                                    Text(
-                                        text = "≥ ${"%.2f".format(localThreshold)}",
-                                        style = MaterialTheme.typography.bodyMedium,
-                                        color = MaterialTheme.colorScheme.onSurfaceVariant,
-                                        modifier = Modifier.padding(top = 4.dp)
-                                    )
-                                    Slider(
-                                        value = localThreshold,
-                                        onValueChange = { localThreshold = it },
-                                        onValueChangeFinished = { viewModel.setRagThreshold(localThreshold) },
-                                        valueRange = 0f..1f,
-                                        modifier = Modifier.fillMaxWidth().padding(top = 8.dp)
-                                    )
-                                    Spacer(modifier = Modifier.height(12.dp))
-                                }
-                            }
-                        }
-                    }
-                )
+            SearchAdvancedSettings(
+                searchContextWindow = searchContextWindow,
+                searchMatchLimit = searchMatchLimit,
+                ragThreshold = ragThreshold,
+                searchContextGate = searchContextGate,
+                searchMatchGate = searchMatchGate,
+                ragThresholdGate = ragThresholdGate,
+                onSearchContextWindowChange = viewModel.settings::setSearchContextWindow,
+                onSearchMatchLimitChange = viewModel.settings::setSearchMatchLimit,
+                onRagThresholdChange = viewModel.settings::setRagThreshold,
             )
-
+            }
             if (showDocFab) { Spacer(modifier = Modifier.height(80.dp)) }
-        }
 
         if (showRemoteDialog) {
-            val provider = embeddingProviders[selectedProviderIdx]
-            AlertDialog(
-                containerColor = MaterialTheme.colorScheme.surfaceContainer,
-                onDismissRequest = { showRemoteDialog = false; testStatus = null },
-                title = { Text(stringResource(R.string.add_remote_model), fontWeight = FontWeight.Bold) },
-                text = {
-                    Column {
-                        // Provider selector
-                        var provExpanded by remember { mutableStateOf(false) }
-                        OutlinedTextField(
-                            value = provider.name,
-                            onValueChange = { },
-                            readOnly = true,
-                            label = { Text(stringResource(R.string.embedding_provider_label)) },
-                            trailingIcon = {
-                                Box {
-                                    IconButton(onClick = { provExpanded = true }) {
-                                        Icon(Icons.Default.ArrowDropDown, null)
-                                    }
-                                    DropdownMenu(
-                                        expanded = provExpanded,
-                                        onDismissRequest = { provExpanded = false },
-                                        containerColor = MaterialTheme.colorScheme.surfaceContainer,
-                                        shape = RoundedCornerShape(12.dp)
-                                    ) {
-                                        embeddingProviders.forEachIndexed { idx, p ->
-                                            DropdownMenuItem(
-                                                text = { Text(p.name) },
-                                                onClick = {
-                                                    selectedProviderIdx = idx
-                                                    remoteBaseUrl = p.baseUrl
-                                                    if (idx == 0 && remoteApiKeys[0].isBlank()) {
-                                                        remoteApiKeys[0] = viewModel.resolveEmbeddingKeyForProviderExact("OpenAI")?.key ?: ""
-                                                    }
-                                                    if (p.models.isNotEmpty()) {
-                                                        remoteModelName = p.models.first()
-                                                        isCustomModel = false
-                                                    } else {
-                                                        remoteModelName = ""
-                                                        isCustomModel = true
-                                                    }
-                                                    provExpanded = false
-                                                }
-                                            )
-                                        }
-                                    }
-                                }
-                            },
-                            singleLine = true,
-                            shape = RoundedCornerShape(16.dp),
-                            modifier = Modifier.fillMaxWidth()
-                        )
-                        Spacer(modifier = Modifier.height(12.dp))
-                        // API Key
-                        val currentKey = remoteApiKeys[selectedProviderIdx]
-                        OutlinedTextField(
-                            value = currentKey,
-                            onValueChange = { remoteApiKeys[selectedProviderIdx] = it },
-                            label = { Text(stringResource(R.string.embedding_api_key)) },
-                            placeholder = { Text(stringResource(R.string.embedding_api_key_hint)) },
-                            visualTransformation = PasswordVisualTransformation(),
-                            singleLine = true,
-                            shape = RoundedCornerShape(16.dp),
-                            modifier = Modifier.fillMaxWidth()
-                        )
-                        Spacer(modifier = Modifier.height(12.dp))
-                        // Base URL
-                        OutlinedTextField(
-                            value = remoteBaseUrl,
-                            onValueChange = { remoteBaseUrl = it },
-                            readOnly = !isCustomModel,
-                            label = { Text(stringResource(R.string.embedding_base_url_label)) },
-                            singleLine = true,
-                            shape = RoundedCornerShape(16.dp),
-                            modifier = Modifier.fillMaxWidth()
-                        )
-                        Spacer(modifier = Modifier.height(12.dp))
-                        // Model selector (always shows dropdown)
-                        OutlinedTextField(
-                            value = if (isCustomModel) stringResource(R.string.embedding_custom) else remoteModelName,
-                            onValueChange = { },
-                            readOnly = true,
-                            label = { Text(stringResource(R.string.embedding_model_label)) },
-                            trailingIcon = {
-                                Box {
-                                    IconButton(onClick = { showRemoteModelDropdown = true }) {
-                                        Icon(Icons.Default.ArrowDropDown, null)
-                                    }
-                                    DropdownMenu(
-                                        expanded = showRemoteModelDropdown,
-                                        onDismissRequest = { showRemoteModelDropdown = false },
-                                        containerColor = MaterialTheme.colorScheme.surfaceContainer,
-                                        shape = RoundedCornerShape(12.dp)
-                                    ) {
-                                        provider.models.forEach { model ->
-                                            DropdownMenuItem(
-                                                text = { Text(model) },
-                                                onClick = {
-                                                    remoteModelName = model
-                                                    isCustomModel = false
-                                                    showRemoteModelDropdown = false
-                                                }
-                                            )
-                                        }
-                                        DropdownMenuItem(
-                                            text = { Text(stringResource(R.string.embedding_custom)) },
-                                            onClick = {
-                                                remoteModelName = ""
-                                                isCustomModel = true
-                                                showRemoteModelDropdown = false
-                                            }
-                                        )
-                                    }
-                                }
-                            },
-                            singleLine = true,
-                            shape = RoundedCornerShape(16.dp),
-                            modifier = Modifier.fillMaxWidth()
-                        )
-                        if (isCustomModel) {
-                            Spacer(modifier = Modifier.height(8.dp))
-                            OutlinedTextField(
-                                value = remoteModelName,
-                                onValueChange = { remoteModelName = it },
-                                placeholder = { Text("model-name") },
-                                supportingText = { Text(stringResource(R.string.embedding_custom_model_desc)) },
-                                singleLine = true,
-                                shape = RoundedCornerShape(16.dp),
-                                modifier = Modifier.fillMaxWidth()
-                            )
-                        }
-                        Spacer(modifier = Modifier.height(12.dp))
-                        // Display name
-                        OutlinedTextField(
-                            value = remoteName,
-                            onValueChange = { remoteName = it },
-                            label = { Text(stringResource(R.string.model_name_label)) },
-                            placeholder = { Text(remoteModelName) },
-                            singleLine = true,
-                            shape = RoundedCornerShape(16.dp),
-                            modifier = Modifier.fillMaxWidth()
-                        )
-                        Spacer(modifier = Modifier.height(12.dp))
-                        // Batch Size
-                        OutlinedTextField(
-                            value = remoteBatchSize,
-                            onValueChange = { remoteBatchSize = it.filter { c -> c.isDigit() } },
-                            label = { Text(stringResource(R.string.embedding_batch_size)) },
-                            supportingText = { Text(stringResource(R.string.embedding_batch_size_desc)) },
-                            singleLine = true,
-                            shape = RoundedCornerShape(16.dp),
-                            modifier = Modifier.fillMaxWidth()
-                        )
-                        testStatus?.let { status ->
-                            Spacer(modifier = Modifier.height(16.dp))
-                            Text(
-                                text = status,
-                                style = MaterialTheme.typography.bodySmall,
-                                color = if (status.startsWith("OK")) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.error
-                            )
-                        }
-                    }
-                },
-                confirmButton = {
-                    val scope = rememberCoroutineScope()
-                    TextButton(
-                        onClick = {
-                            if (remoteName.isBlank() && remoteModelName.isBlank()) return@TextButton
-                            val finalName = remoteName.ifBlank { remoteModelName }
-                            val finalModel = remoteModelName.ifBlank { remoteName }
-                            if (finalModel.isBlank()) return@TextButton
-                            isTesting = true
-                            testStatus = null
-                            scope.launch {
-                                val result = viewModel.testRemoteEmbedding(finalModel, remoteBaseUrl, remoteApiKeys[selectedProviderIdx])
-                                if (result != null && result.startsWith("OK")) {
-                                    viewModel.addEmbeddingModel(
-                                        com.newoether.agora.data.EmbeddingModelConfig(
-                                            name = finalName,
-                                            type = com.newoether.agora.data.EmbeddingModelType.REMOTE,
-                                            remoteModelName = finalModel,
-                                            remoteBaseUrl = remoteBaseUrl,
-                                            remoteApiKey = remoteApiKeys[selectedProviderIdx],
-                                            batchSize = remoteBatchSize.toIntOrNull() ?: 8
-                                        )
-                                    )
-                                    showRemoteDialog = false
-                                } else {
-                                    testStatus = result ?: "Failed"
-                                }
-                                isTesting = false
-                            }
-                        },
-                        enabled = !isTesting && remoteName.isNotBlank() && remoteModelName.isNotBlank()
-                    ) {
-                        if (isTesting) {
-                            CircularProgressIndicator(modifier = Modifier.size(16.dp), strokeWidth = 2.dp)
-                            Spacer(modifier = Modifier.width(8.dp))
-                        }
-                        Text(stringResource(R.string.add))
-                    }
-                },
-                dismissButton = {
-                    TextButton(onClick = { showRemoteDialog = false }) { Text(stringResource(R.string.cancel)) }
-                }
+            AddRemoteEmbeddingDialog(
+                state = remoteState,
+                providers = embeddingProviders,
+                viewModel = viewModel,
+                onDismiss = { showRemoteDialog = false },
             )
         }
 
@@ -743,32 +530,57 @@ fun SettingsSearchPage(viewModel: ChatViewModel, onBack: () -> Unit) {
                 if (uri != null) {
                     isImporting = true
                     scope.launch {
-                        try {
-                            val destFile = File(context.filesDir, "embedding_${java.util.UUID.randomUUID()}.gguf")
-                            context.contentResolver.openInputStream(uri)?.use { input ->
-                                destFile.outputStream().use { output ->
-                                    input.copyTo(output)
+                        val importedPath = withContext(Dispatchers.IO) {
+                            try {
+                                val destFile = File(
+                                    context.filesDir,
+                                    "embedding_${java.util.UUID.randomUUID()}.gguf",
+                                )
+                                val copied = context.contentResolver
+                                    .openInputStream(uri)
+                                    ?.use { input ->
+                                        destFile.outputStream().use { output ->
+                                            input.copyTo(output)
+                                        }
+                                        true
+                                    } == true
+                                if (!copied) {
+                                    destFile.delete()
+                                    return@withContext null
                                 }
+                                val magic = ByteArray(4)
+                                destFile.inputStream().use { it.read(magic) }
+                                val valid = magic[0] == 'G'.code.toByte() &&
+                                    magic[1] == 'G'.code.toByte() &&
+                                    magic[2] == 'U'.code.toByte() &&
+                                    magic[3] == 'F'.code.toByte()
+                                if (valid) {
+                                    destFile.absolutePath
+                                } else {
+                                    destFile.delete()
+                                    null
+                                }
+                            } catch (_: Exception) {
+                                null
                             }
-                            // Validate GGUF magic bytes
-                            val magic = ByteArray(4)
-                            destFile.inputStream().use { it.read(magic) }
-                            if (magic[0] != 'G'.code.toByte() || magic[1] != 'G'.code.toByte()
-                                || magic[2] != 'U'.code.toByte() || magic[3] != 'F'.code.toByte()) {
-                                destFile.delete()
-                                showGgufError = true
-                            } else {
-                                localFilePath = destFile.absolutePath
-                            }
-                        } catch (_: Exception) { }
+                        }
+                        if (importedPath == null) {
+                            showGgufError = true
+                        } else {
+                            localFilePath = importedPath
+                        }
                         isImporting = false
                     }
                 }
             }
             AlertDialog(
+                modifier = Modifier.clearFocusOnTap(),
                 containerColor = MaterialTheme.colorScheme.surfaceContainer,
                 onDismissRequest = {
-                    if (localFilePath.isNotBlank()) File(localFilePath).delete()
+                    val pathToDelete = localFilePath
+                    if (pathToDelete.isNotBlank()) {
+                        scope.launch(Dispatchers.IO) { File(pathToDelete).delete() }
+                    }
                     showLocalDialog = false
                 },
                 title = { Text(stringResource(R.string.add_local_model), fontWeight = FontWeight.Bold) },
@@ -797,7 +609,7 @@ fun SettingsSearchPage(viewModel: ChatViewModel, onBack: () -> Unit) {
                             SettingsItem(
                                 headlineContent = { Text(stringResource(R.string.local_model_ready)) },
                                 leadingContent = {
-                                    Icon(Icons.Default.CheckCircle, null, tint = MaterialTheme.colorScheme.primary)
+                                    Icon(Icons.Default.Check, null, tint = MaterialTheme.colorScheme.primary)
                                 }
                             )
                         } else {
@@ -813,7 +625,7 @@ fun SettingsSearchPage(viewModel: ChatViewModel, onBack: () -> Unit) {
                 confirmButton = {
                     TextButton(onClick = {
                         if (localName.isNotBlank() && localFilePath.isNotBlank()) {
-                            viewModel.addEmbeddingModel(
+                            viewModel.ragManager.addEmbeddingModel(
                                 com.newoether.agora.data.EmbeddingModelConfig(
                                     name = localName,
                                     type = com.newoether.agora.data.EmbeddingModelType.LOCAL,
@@ -829,7 +641,10 @@ fun SettingsSearchPage(viewModel: ChatViewModel, onBack: () -> Unit) {
                 },
                 dismissButton = {
                     TextButton(onClick = {
-                        if (localFilePath.isNotBlank()) File(localFilePath).delete()
+                        val pathToDelete = localFilePath
+                        if (pathToDelete.isNotBlank()) {
+                            scope.launch(Dispatchers.IO) { File(pathToDelete).delete() }
+                        }
                         showLocalDialog = false
                     }) { Text(stringResource(R.string.cancel)) }
                 }
@@ -845,7 +660,7 @@ fun SettingsSearchPage(viewModel: ChatViewModel, onBack: () -> Unit) {
                 text = { Text(stringResource(R.string.recache_confirm_message)) },
                 confirmButton = {
                     TextButton(onClick = {
-                        viewModel.cacheMessagesForModel(modelId, recache = true)
+                        viewModel.ragManager.cacheMessagesForModel(modelId, recache = true)
                         showRecacheConfirm = null
                     }) { Text(stringResource(R.string.recache_action)) }
                 },
@@ -864,7 +679,7 @@ fun SettingsSearchPage(viewModel: ChatViewModel, onBack: () -> Unit) {
                 text = { Text(stringResource(R.string.delete_model_confirm)) },
                 confirmButton = {
                     TextButton(onClick = {
-                        viewModel.deleteEmbeddingModel(modelId)
+                        viewModel.ragManager.deleteEmbeddingModel(modelId)
                         showDeleteDialog = null
                     }) { Text(stringResource(R.string.delete)) }
                 },
@@ -877,10 +692,11 @@ fun SettingsSearchPage(viewModel: ChatViewModel, onBack: () -> Unit) {
         if (showRenameDialog != null) {
             val modelId = showRenameDialog!!
             var editBatchSize by remember(modelId) {
-                val model = viewModel.embeddingModels.value.find { it.id == modelId }
+                val model = viewModel.settings.embeddingModels.value.find { it.id == modelId }
                 mutableStateOf((model?.batchSize ?: 8).toString())
             }
             AlertDialog(
+                modifier = Modifier.clearFocusOnTap(),
                 containerColor = MaterialTheme.colorScheme.surfaceContainer,
                 onDismissRequest = { showRenameDialog = null },
                 title = { Text(stringResource(R.string.edit), fontWeight = FontWeight.Bold) },
@@ -909,7 +725,7 @@ fun SettingsSearchPage(viewModel: ChatViewModel, onBack: () -> Unit) {
                 confirmButton = {
                     TextButton(onClick = {
                         if (renameText.isNotBlank()) {
-                            viewModel.renameEmbeddingModel(modelId, renameText, editBatchSize.toIntOrNull() ?: 8)
+                            viewModel.ragManager.renameEmbeddingModel(modelId, renameText, editBatchSize.toIntOrNull() ?: 8)
                             showRenameDialog = null
                         }
                     }) { Text(stringResource(R.string.save)) }

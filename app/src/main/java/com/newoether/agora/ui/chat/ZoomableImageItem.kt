@@ -2,9 +2,13 @@ package com.newoether.agora.ui.chat
 
 import androidx.compose.animation.*
 import androidx.compose.animation.core.*
+import androidx.compose.foundation.background
 import androidx.compose.foundation.gestures.*
 import androidx.compose.foundation.layout.*
-import androidx.compose.material3.CircularProgressIndicator
+import com.newoether.agora.ui.motion.MotionAwareCircularProgressIndicator as CircularProgressIndicator
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.BrokenImage
+import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
@@ -30,6 +34,7 @@ import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.platform.LocalViewConfiguration
 import androidx.compose.ui.unit.Velocity
 import androidx.compose.ui.unit.dp
+import com.newoether.agora.ui.motion.LocalAgoraMotionPolicy
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.launch
 import kotlin.math.abs
@@ -39,9 +44,11 @@ internal fun ZoomableImageItem(
     url: String,
     onTap: () -> Unit,
     onScaleChanged: (Float) -> Unit = {},
+    onLongPress: (() -> Unit)? = null,
     consumeConditionally: Boolean = false
 ) {
     val scope = rememberCoroutineScope()
+    val motionPolicy = LocalAgoraMotionPolicy.current
     val density = LocalDensity.current
     val viewConfiguration = LocalViewConfiguration.current
 
@@ -50,6 +57,8 @@ internal fun ZoomableImageItem(
     var offsetY by remember(url) { mutableFloatStateOf(0f) }
     var containerSize by remember { mutableStateOf(Size.Zero) }
     var imageSize by remember(url) { mutableStateOf(Size.Zero) }
+    var loadState by remember(url) { mutableStateOf(MediaLoadPresentation.LOADING) }
+    var presentedState by remember(url) { mutableStateOf(MediaLoadPresentation.LOADING) }
     var animationJob by remember(url) { mutableStateOf<Job?>(null) }
     var lastCentroid by remember(url) { mutableStateOf(Offset.Unspecified) }
     val statusBarHeight = WindowInsets.statusBars.asPaddingValues().calculateTopPadding()
@@ -97,14 +106,18 @@ internal fun ZoomableImageItem(
     LaunchedEffect(Unit) {
         snapshotFlow { visualScale(scale) }.collect { onScaleChanged(it) }
     }
+    LaunchedEffect(loadState) {
+        presentedState = loadState
+    }
 
     Box(
         modifier = Modifier
             .fillMaxSize()
             .onSizeChanged { containerSize = Size(it.width.toFloat(), it.height.toFloat()) }
-            .pointerInput(url) {
+            .pointerInput(url, motionPolicy.allowSpatialTransitions) {
                 detectTapGestures(
                     onTap = { onTap() },
+                    onLongPress = onLongPress?.let { cb -> { _ -> cb() } },
                     onDoubleTap = { tapOffset ->
                         animationJob?.cancel()
                         animationJob = scope.launch {
@@ -118,6 +131,36 @@ internal fun ZoomableImageItem(
                             var prevS = s0
                             var prevOX = offsetX
                             var prevOY = offsetY
+                            if (!motionPolicy.allowSpatialTransitions) {
+                                val r = visualScale(targetScale) / visualScale(s0)
+                                val (maxX, maxY) = getMaxOffsets(targetScale)
+                                if (isZoomIn) {
+                                    val isLandscape =
+                                        imageSize.width / imageSize.height >
+                                            containerSize.width / containerSize.height
+                                    val longO = if (isLandscape) maxX > 0f else maxY > 0f
+                                    val shortO = if (isLandscape) maxY > 0f else maxX > 0f
+                                    val pivX =
+                                        if (shortO) tapRelX
+                                        else if (longO && isLandscape) tapRelX
+                                        else 0f
+                                    val pivY =
+                                        if (shortO) tapRelY
+                                        else if (longO && !isLandscape) tapRelY
+                                        else 0f
+                                    offsetX = (offsetX * r + pivX * (1f - r))
+                                        .coerceIn(-maxX, maxX)
+                                    offsetY = (offsetY * r + pivY * (1f - r))
+                                        .coerceIn(-maxY, maxY)
+                                } else {
+                                    offsetX = (offsetX * r + tapRelX * (1f - r))
+                                        .coerceIn(-maxX, maxX)
+                                    offsetY = (offsetY * r + tapRelY * (1f - r))
+                                        .coerceIn(-maxY, maxY)
+                                }
+                                scale = targetScale
+                                return@launch
+                            }
                             AnimationState(s0).animateTo(targetScale, spring(Spring.DampingRatioNoBouncy, Spring.StiffnessMediumLow, 0.001f)) {
                                 scale = value
                                 val r = visualScale(value) / visualScale(prevS)
@@ -148,10 +191,15 @@ internal fun ZoomableImageItem(
         coil.compose.AsyncImage(
             model = url,
             contentDescription = null,
-            onSuccess = { state -> imageSize = state.painter.intrinsicSize },
+            onLoading = { loadState = MediaLoadPresentation.LOADING },
+            onSuccess = { state ->
+                imageSize = state.painter.intrinsicSize
+                loadState = MediaLoadPresentation.LOADED
+            },
+            onError = { loadState = MediaLoadPresentation.FAILED },
             modifier = Modifier
                 .fillMaxSize()
-                .pointerInput(url) {
+                .pointerInput(url, motionPolicy.allowSpatialTransitions) {
                     val velocityTracker = VelocityTracker()
                     awaitEachGesture {
                         awaitFirstDown(requireUnconsumed = false)
@@ -215,6 +263,14 @@ internal fun ZoomableImageItem(
                             y = if (rawVelocity.y.isNaN()) 0f else rawVelocity.y.coerceIn(-maxV, maxV)
                         )
                         animationJob = scope.launch {
+                            if (!motionPolicy.allowSpatialTransitions) {
+                                val targetScale = scale.coerceIn(1f, 10f)
+                                val (maxX, maxY) = getMaxOffsets(targetScale)
+                                scale = targetScale
+                                offsetX = offsetX.coerceIn(-maxX, maxX)
+                                offsetY = offsetY.coerceIn(-maxY, maxY)
+                                return@launch
+                            }
                             if (scale < 0.95f || scale > 10.05f) {
                                 val sS = scale; val sX = offsetX; val sY = offsetY
                                 val targetS = scale.coerceIn(1f, 10f)
@@ -279,8 +335,39 @@ internal fun ZoomableImageItem(
                 ),
             contentScale = ContentScale.Fit
         )
-        if (imageSize == Size.Zero) {
-            CircularProgressIndicator(modifier = Modifier.align(Alignment.Center), color = Color.White, strokeWidth = 2.dp)
+        Crossfade(
+            targetState = presentedState,
+            animationSpec = tween(MEDIA_STATE_CROSSFADE_MILLIS),
+            label = "zoomableImageState",
+            modifier = Modifier.fillMaxSize(),
+        ) { state ->
+            when (state) {
+                MediaLoadPresentation.LOADING -> Box(
+                    modifier = Modifier
+                        .fillMaxSize()
+                        .background(Color.Black),
+                    contentAlignment = Alignment.Center,
+                ) {
+                    CircularProgressIndicator(
+                        color = MaterialTheme.colorScheme.primary,
+                        strokeWidth = MEDIA_LOADING_INDICATOR_STROKE_WIDTH,
+                    )
+                }
+                MediaLoadPresentation.LOADED -> Spacer(Modifier.fillMaxSize())
+                MediaLoadPresentation.FAILED -> Box(
+                    modifier = Modifier
+                        .fillMaxSize()
+                        .background(Color.Black),
+                    contentAlignment = Alignment.Center,
+                ) {
+                    Icon(
+                        imageVector = Icons.Default.BrokenImage,
+                        contentDescription = null,
+                        tint = Color.White.copy(alpha = 0.65f),
+                        modifier = Modifier.size(44.dp),
+                    )
+                }
+            }
         }
     }
 }

@@ -19,12 +19,16 @@ import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.SolidColor
 import androidx.compose.ui.graphics.asImageBitmap
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.foundation.text.KeyboardOptions
+import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.window.Dialog
 import com.newoether.agora.R
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.withContext
 import kotlin.math.roundToInt
 
 data class VideoSliceResult(
@@ -40,7 +44,10 @@ object VideoSliceDefaults {
             seconds < 10 -> 3
             seconds < 30 -> 5
             seconds < 60 -> 8
-            else -> maxOf(2, minOf(20, (seconds / 5).toInt()))
+            else -> maxOf(
+                2,
+                (seconds / 5).coerceAtMost(Int.MAX_VALUE.toLong()).toInt(),
+            )
         }
     }
 }
@@ -57,27 +64,60 @@ fun VideoSliceDialog(
     val defaultFrames = remember(durationMs) { VideoSliceDefaults.defaultFrameCount(durationMs) }
 
     var useFrameCountMode by remember { mutableStateOf(true) }
-    var frameCount by remember { mutableIntStateOf(defaultFrames) }
+    var frameCountInput by remember(defaultFrames) {
+        mutableStateOf(defaultFrames.toString())
+    }
+    val frameCount = frameCountInput.toIntOrNull()?.takeIf { it >= 2 }
     var intervalSec by remember(durationMs) {
         mutableIntStateOf(maxOf(1, (seconds / defaultFrames).toInt()))
     }
 
-    val effectiveFrameCount = if (useFrameCountMode) frameCount else maxOf(2, (seconds / intervalSec).toInt())
+    val effectiveFrameCount = if (useFrameCountMode) {
+        frameCount ?: 2
+    } else {
+        maxOf(
+            2,
+            (seconds / intervalSec).coerceAtMost(Int.MAX_VALUE.toLong()).toInt(),
+        )
+    }
     val effectiveIntervalMs = if (useFrameCountMode) {
-        if (frameCount > 1) durationMs / frameCount else 0L
+        if (effectiveFrameCount > 1) durationMs / effectiveFrameCount else 0L
     } else {
         intervalSec * 1000L
     }
 
-    val thumbnail = remember(videoUri) {
-        try {
-            val retriever = MediaMetadataRetriever()
-            retriever.setDataSource(context, android.net.Uri.parse(videoUri))
-            val bitmap = retriever.frameAtTime
-            retriever.release()
-            bitmap?.let { Bitmap.createScaledBitmap(it, 512, (512f * it.height / it.width).roundToInt(), true) }
-                ?.also { if (it != bitmap) bitmap.recycle() }
-        } catch (_: Exception) { null }
+    var thumbnail by remember(videoUri) { mutableStateOf<Bitmap?>(null) }
+    LaunchedEffect(videoUri) {
+        thumbnail = withContext(Dispatchers.IO) {
+            try {
+                val retriever = MediaMetadataRetriever()
+                try {
+                    retriever.setDataSource(context, android.net.Uri.parse(videoUri))
+                    val bitmap = retriever.frameAtTime
+                    bitmap?.let {
+                        Bitmap.createScaledBitmap(
+                            it,
+                            512,
+                            (512f * it.height / it.width).roundToInt(),
+                            true,
+                        ).also { scaled ->
+                            if (scaled !== bitmap) bitmap.recycle()
+                        }
+                    }
+                } finally {
+                    retriever.release()
+                }
+            } catch (_: Exception) {
+                null
+            }
+        }
+    }
+    DisposableEffect(videoUri) {
+        onDispose {
+            thumbnail?.let { bitmap ->
+                if (!bitmap.isRecycled) bitmap.recycle()
+            }
+        }
     }
 
     val durationFormatted = remember(durationMs) {
@@ -108,7 +148,8 @@ fun VideoSliceDialog(
 
                 Spacer(Modifier.height(16.dp))
 
-                if (thumbnail != null) {
+                val previewBitmap = thumbnail
+                if (previewBitmap != null) {
                     Box(
                         modifier = Modifier
                             .fillMaxWidth()
@@ -117,7 +158,7 @@ fun VideoSliceDialog(
                             .border(1.dp, MaterialTheme.colorScheme.outlineVariant, RoundedCornerShape(8.dp))
                     ) {
                         Image(
-                            bitmap = thumbnail.asImageBitmap(),
+                            bitmap = previewBitmap.asImageBitmap(),
                             contentDescription = stringResource(R.string.video_preview),
                             modifier = Modifier.fillMaxSize(),
                             contentScale = ContentScale.Crop
@@ -140,31 +181,47 @@ fun VideoSliceDialog(
                 if (useFrameCountMode) {
                     Text(
                         stringResource(R.string.frames_count, effectiveFrameCount),
-                        style = MaterialTheme.typography.bodySmall,
+                        style = MaterialTheme.typography.bodyMedium,
+                        fontWeight = FontWeight.Medium,
                         color = MaterialTheme.colorScheme.primary
                     )
-                    Slider(
-                        value = frameCount.toFloat(),
-                        onValueChange = { frameCount = it.roundToInt().coerceIn(2, 20) },
-                        valueRange = 2f..20f,
-                        steps = 17
+                    OutlinedTextField(
+                        value = frameCountInput,
+                        onValueChange = { input ->
+                            if (input.isEmpty() || input.all(Char::isDigit)) {
+                                frameCountInput = input.trimStart('0').ifEmpty {
+                                    if (input.isEmpty()) "" else "0"
+                                }
+                            }
+                        },
+                        modifier = Modifier.fillMaxWidth(),
+                        singleLine = true,
+                        isError = frameCount == null,
+                        keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
                     )
+                    val betweenLabel = (effectiveIntervalMs / 1000f).let {
+                        if (it < 1) "${(it * 1000).roundToInt()}ms" else "${it.roundToInt()}s"
+                    }
                     Text(
-                        "~${(effectiveIntervalMs / 1000f).let { if (it < 1) "${(it * 1000).roundToInt()}ms" else "${it.roundToInt()}s" }} between frames",
+                        stringResource(R.string.video_between_frames, betweenLabel),
                         style = MaterialTheme.typography.labelSmall,
                         color = MaterialTheme.colorScheme.onSurfaceVariant
                     )
                 } else {
+                    val maxIntervalSec = seconds.coerceIn(1L, 30L).toInt()
                     Text(
                         stringResource(R.string.interval_seconds, effectiveIntervalMs / 1000),
-                        style = MaterialTheme.typography.bodySmall,
+                        style = MaterialTheme.typography.bodyMedium,
+                        fontWeight = FontWeight.Medium,
                         color = MaterialTheme.colorScheme.primary
                     )
                     Slider(
                         value = intervalSec.toFloat(),
-                        onValueChange = { intervalSec = it.roundToInt().coerceIn(1, minOf(30, seconds.toInt())) },
-                        valueRange = 1f..minOf(30f, seconds.toFloat()).coerceAtLeast(2f),
-                        steps = minOf(29, seconds.toInt() - 1)
+                        onValueChange = {
+                            intervalSec = it.roundToInt().coerceIn(1, maxIntervalSec)
+                        },
+                        valueRange = 1f..maxOf(2f, maxIntervalSec.toFloat()),
+                        steps = (maxIntervalSec - 1).coerceIn(0, 29),
                     )
                     Text(
                         stringResource(R.string.frames_count, effectiveFrameCount),
@@ -184,9 +241,19 @@ fun VideoSliceDialog(
                         Text(stringResource(R.string.cancel))
                     }
                     Spacer(Modifier.width(8.dp))
-                    Button(onClick = {
-                        onConfirm(VideoSliceResult(videoUri, effectiveFrameCount, effectiveIntervalMs))
-                    }, shape = RoundedCornerShape(50)) {
+                    Button(
+                        onClick = {
+                            onConfirm(
+                                VideoSliceResult(
+                                    videoUri,
+                                    effectiveFrameCount,
+                                    effectiveIntervalMs,
+                                ),
+                            )
+                        },
+                        enabled = !useFrameCountMode || frameCount != null,
+                        shape = RoundedCornerShape(50),
+                    ) {
                         Text(stringResource(R.string.extract_frames, effectiveFrameCount))
                     }
                 }

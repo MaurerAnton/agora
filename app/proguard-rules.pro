@@ -18,5 +18,9 @@
 # DataStore
 -keepclassmembers class * extends androidx.datastore.preferences.protobuf.GeneratedMessageLite { <fields>; }
 
+# JSch (SSH/SFTP)
+-keep class com.jcraft.jsch.** { *; }
+-dontwarn com.jcraft.jsch.**
+
 # Compose
 -dontwarn androidx.compose.**

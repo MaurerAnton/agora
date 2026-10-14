@@ -4,15 +4,18 @@ import android.annotation.SuppressLint
 import android.view.Surface
 import androidx.activity.compose.BackHandler
 import androidx.compose.animation.AnimatedContent
+import androidx.compose.animation.SizeTransform
 import androidx.compose.animation.animateContentSize
-import androidx.compose.animation.animateColorAsState
+import androidx.compose.animation.fadeIn
+import androidx.compose.animation.fadeOut
+import androidx.compose.animation.scaleIn
+import androidx.compose.animation.togetherWith
+import androidx.compose.animation.core.snap
 import androidx.compose.animation.core.tween
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.foundation.background
-import androidx.compose.ui.draw.clip
 
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
@@ -21,6 +24,7 @@ import androidx.compose.material.icons.automirrored.outlined.PlaylistAdd
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.CalendarMonth
 import androidx.compose.material.icons.filled.Close
+import androidx.compose.material.icons.filled.Extension
 import androidx.compose.material.icons.filled.History
 import androidx.compose.material.icons.filled.KeyboardArrowDown
 import androidx.compose.material.icons.filled.KeyboardArrowUp
@@ -31,20 +35,24 @@ import androidx.compose.material.icons.filled.Schedule
 import androidx.compose.material.icons.filled.TextFields
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
-import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.platform.LocalFocusManager
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.text.style.TextOverflow
+import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import com.newoether.agora.R
+import com.newoether.agora.ui.components.DialogWindowEdgeToEdge
 import com.newoether.agora.data.PredefinedVariables
 import com.newoether.agora.data.PromptItemType
 import com.newoether.agora.data.PromptTemplateItem
 import com.newoether.agora.data.SystemPromptEntry
+import com.newoether.agora.ui.motion.LocalAgoraMotionPolicy
+import com.newoether.agora.ui.motion.MotionAwareModalBottomSheet as ModalBottomSheet
 
 private fun variableDisplayName(key: String): String = when (key) {
     PredefinedVariables.TIME -> "Current Time"
@@ -52,7 +60,11 @@ private fun variableDisplayName(key: String): String = when (key) {
     PredefinedVariables.SENT_TIME -> "Send Time"
     PredefinedVariables.SENT_DATE -> "Send Date"
     PredefinedVariables.ACTIVE_MEMORY -> "Active Memory"
-    PredefinedVariables.MODEL_ID -> "Model ID"
+    PredefinedVariables.SKILL_CATALOG -> "Skill Catalog"
+    PredefinedVariables.CURRENT_MODEL_ID -> "Current Model ID"
+    PredefinedVariables.MESSAGE_MODEL_ID -> "Message Model ID"
+    PredefinedVariables.MODEL_ID -> "Current Model ID (Legacy)"
+    PredefinedVariables.PROMPT -> "Prompt"
     else -> key
 }
 
@@ -62,25 +74,33 @@ private fun variableIcon(key: String): ImageVector = when (key) {
     PredefinedVariables.SENT_TIME -> Icons.Default.History
     PredefinedVariables.SENT_DATE -> Icons.Default.CalendarMonth
     PredefinedVariables.ACTIVE_MEMORY -> Icons.Default.Memory
+    PredefinedVariables.SKILL_CATALOG -> Icons.Default.Extension
+    PredefinedVariables.CURRENT_MODEL_ID,
+    PredefinedVariables.MESSAGE_MODEL_ID,
     PredefinedVariables.MODEL_ID -> Icons.Default.Info
+    PredefinedVariables.PROMPT -> Icons.Default.TextFields
     else -> Icons.Default.Info
 }
+
 
 @SuppressLint("UnusedContentLambdaTargetStateParameter")
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun SystemPromptEditorPage(
     entry: SystemPromptEntry?,
+    isNew: Boolean = false,
+    saveEnabled: Boolean = true,
     onSave: (
         title: String,
         systemItems: List<PromptTemplateItem>,
-        userPrependItems: List<PromptTemplateItem>,
-        userPostpendItems: List<PromptTemplateItem>
+        userItems: List<PromptTemplateItem>,
+        assistantItems: List<PromptTemplateItem>,
     ) -> Unit,
     onBack: () -> Unit,
     showDocFab: Boolean = true
 ) {
-    val isEdit = entry != null
+    val allowSpatialTransitions = LocalAgoraMotionPolicy.current.allowSpatialTransitions
+    val isEdit = entry != null && !isNew
     var title by remember { mutableStateOf(entry?.title ?: "") }
     var selectedTab by remember { mutableIntStateOf(0) }
 
@@ -89,14 +109,14 @@ fun SystemPromptEditorPage(
             entry?.resolvedSystemItems?.let { list.addAll(it) }
         }
     }
-    val userPrependItems = remember {
+    val userItems = remember {
         mutableStateListOf<PromptTemplateItem>().also { list ->
-            entry?.userPrependItems?.let { list.addAll(it) }
+            list.addAll(entry?.resolvedUserItems ?: PredefinedVariables.normalizeMessageTemplate(emptyList()))
         }
     }
-    val userPostpendItems = remember {
+    val assistantItems = remember {
         mutableStateListOf<PromptTemplateItem>().also { list ->
-            entry?.userPostpendItems?.let { list.addAll(it) }
+            list.addAll(entry?.resolvedAssistantItems ?: PredefinedVariables.normalizeMessageTemplate(emptyList()))
         }
     }
 
@@ -106,8 +126,8 @@ fun SystemPromptEditorPage(
 
     val currentItems: MutableList<PromptTemplateItem> = when (selectedTab) {
         0 -> systemItems
-        1 -> userPrependItems
-        else -> userPostpendItems
+        1 -> userItems
+        else -> assistantItems
     }
 
     BackHandler(enabled = showVariablePicker) {
@@ -117,50 +137,30 @@ fun SystemPromptEditorPage(
         onBack()
     }
 
-    Scaffold(
-        containerColor = MaterialTheme.colorScheme.background,
-        contentWindowInsets = WindowInsets(0.dp),
-        topBar = {
-            TopAppBar(
-                title = { Text(if (isEdit) stringResource(R.string.prompts_edit_title) else stringResource(R.string.prompts_add_title), fontWeight = FontWeight.Bold) },
-                navigationIcon = {
-                    IconButton(onClick = onBack) {
-                        Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = stringResource(R.string.back))
+    CollapsingSettingsScaffold(
+        title = if (isEdit) stringResource(R.string.prompts_edit_title) else stringResource(R.string.prompts_add_title),
+        onBack = onBack,
+        actions = {
+            IconButton(
+                enabled = saveEnabled,
+                onClick = {
+                    if (title.isBlank()) {
+                        titleError = true
+                        return@IconButton
                     }
+                    onSave(
+                        title,
+                        systemItems.toList(),
+                        PredefinedVariables.normalizeMessageTemplate(userItems),
+                        PredefinedVariables.normalizeMessageTemplate(assistantItems),
+                    )
                 },
-                actions = {
-                    IconButton(onClick = {
-                        if (title.isBlank()) {
-                            titleError = true
-                            return@IconButton
-                        }
-                        onSave(title, systemItems.toList(), userPrependItems.toList(), userPostpendItems.toList())
-                    }) {
-                        Icon(Icons.Default.Save, contentDescription = stringResource(R.string.provider_save))
-                    }
-                },
-                colors = TopAppBarDefaults.topAppBarColors(
-                    containerColor = MaterialTheme.colorScheme.background,
-                    titleContentColor = MaterialTheme.colorScheme.onBackground
-                )
-            )
+            ) {
+                Icon(Icons.Default.Save, contentDescription = stringResource(R.string.provider_save))
+            }
         },
-        floatingActionButton = { if (showDocFab) DocumentationFab("system-prompts.md") },
-        floatingActionButtonPosition = FabPosition.Center,
-    ) { padding ->
-        val focusManager = LocalFocusManager.current
-        Column(
-            modifier = Modifier
-                .padding(padding)
-                .navigationBarsPadding()
-                .imePadding()
-                .verticalScroll(rememberScrollState())
-                .padding(horizontal = 16.dp, vertical = 12.dp)
-                .clickable(
-                    indication = null,
-                    interactionSource = remember { MutableInteractionSource() }
-                ) { focusManager.clearFocus() }
-        ) {
+        floatingActionButton = { if (showDocFab) DocumentationFab("system-prompts.md") }
+    ) {
             OutlinedTextField(
                 value = title,
                 onValueChange = { title = it; titleError = false },
@@ -178,57 +178,68 @@ fun SystemPromptEditorPage(
 
             val tabLabels = listOf(
                 stringResource(R.string.template_tab_system),
-                stringResource(R.string.template_tab_prepend),
-                stringResource(R.string.template_tab_postpend),
+                stringResource(R.string.template_tab_user),
+                stringResource(R.string.template_tab_assistant),
             )
-            Surface(
-                shape = RoundedCornerShape(24.dp),
-                color = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.3f),
-                modifier = Modifier.fillMaxWidth()
-            ) {
-                Row(
-                    modifier = Modifier.padding(4.dp),
-                    horizontalArrangement = Arrangement.spacedBy(4.dp)
-                ) {
-                    tabLabels.forEachIndexed { index, label ->
-                        val isSelected = selectedTab == index
-                        val bgColor by animateColorAsState(
-                            targetValue = if (isSelected) MaterialTheme.colorScheme.secondaryContainer else Color.Transparent,
-                            animationSpec = tween(250)
-                        )
-                        val textColor by animateColorAsState(
-                            targetValue = if (isSelected) MaterialTheme.colorScheme.onSecondaryContainer else MaterialTheme.colorScheme.onSurfaceVariant,
-                            animationSpec = tween(250)
-                        )
-                        Box(
-                            modifier = Modifier
-                                .weight(1f)
-                                .background(bgColor, RoundedCornerShape(20.dp))
-                                .clip(RoundedCornerShape(20.dp))
-                                .clickable { selectedTab = index }
-                                .padding(horizontal = 12.dp, vertical = 10.dp),
-                            contentAlignment = Alignment.Center
-                        ) {
-                            Text(
-                                text = label,
-                                maxLines = 1,
-                                softWrap = false,
-                                style = MaterialTheme.typography.labelMedium,
-                                fontWeight = if (isSelected) FontWeight.SemiBold else FontWeight.Normal,
-                                color = textColor
-                            )
-                        }
-                    }
-                }
-            }
+            val tabDescriptions = listOf(
+                stringResource(R.string.template_tab_system_desc),
+                stringResource(R.string.template_tab_user_desc),
+                stringResource(R.string.template_tab_assistant_desc),
+            )
+            PillTabSwitcher(
+                tabs = tabLabels,
+                selectedIndex = selectedTab,
+                onSelect = { selectedTab = it },
+                allowLabelOverflow = true,
+            )
 
             Spacer(modifier = Modifier.height(12.dp))
+
+            Text(
+                text = tabDescriptions[selectedTab],
+                modifier = Modifier.fillMaxWidth().padding(horizontal = 4.dp),
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                textAlign = TextAlign.Center
+            )
 
             Spacer(modifier = Modifier.height(12.dp))
 
             // Tab content
             AnimatedContent(
-                targetState = selectedTab
+                targetState = selectedTab,
+                transitionSpec = {
+                    if (allowSpatialTransitions) {
+                        (
+                            fadeIn(
+                                animationSpec = tween(
+                                    durationMillis = 220,
+                                    delayMillis = 90,
+                                ),
+                            ) +
+                                scaleIn(
+                                    initialScale = 0.92f,
+                                    animationSpec = tween(
+                                        durationMillis = 220,
+                                        delayMillis = 90,
+                                    ),
+                                )
+                            ).togetherWith(
+                            fadeOut(animationSpec = tween(durationMillis = 90)),
+                        )
+                    } else {
+                        fadeIn(animationSpec = tween(durationMillis = 220))
+                            .togetherWith(
+                                fadeOut(animationSpec = tween(durationMillis = 90)),
+                            )
+                            .using(
+                                SizeTransform(
+                                    clip = false,
+                                    sizeAnimationSpec = { _, _ -> snap() },
+                                ),
+                            )
+                    }
+                },
             ) {
                 Column {
                     if (currentItems.isEmpty()) {
@@ -253,6 +264,7 @@ fun SystemPromptEditorPage(
 
                     for (i in currentItems.indices) {
                         val item = currentItems[i]
+                        val isPrompt = PredefinedVariables.isPromptItem(item)
 
                         InsertBetweenButton(
                             onInsertText = {
@@ -267,23 +279,19 @@ fun SystemPromptEditorPage(
                         TemplateItemRow(
                             item = item,
                             onChange = { updated -> currentItems[i] = updated },
-                            onDelete = { currentItems.removeAt(i) },
-                            onMoveUp = if (i > 0) {
+                            onDelete = if (isPrompt) null else ({ currentItems.removeAt(i) }),
+                            onMoveUp = if (!isPrompt && i > 0) {
                                 {
-                                    val moved = currentItems.removeAt(i); currentItems.add(
-                                    i - 1,
-                                    moved
-                                )
+                                    val moved = currentItems.removeAt(i)
+                                    currentItems.add(i - 1, moved)
                                 }
                             } else null,
-                            onMoveDown = if (i < currentItems.lastIndex) {
+                            onMoveDown = if (!isPrompt && i < currentItems.lastIndex) {
                                 {
-                                    val moved = currentItems.removeAt(i); currentItems.add(
-                                    i + 1,
-                                    moved
-                                )
+                                    val moved = currentItems.removeAt(i)
+                                    currentItems.add(i + 1, moved)
                                 }
-                            } else null
+                            } else null,
                         )
                     }
 
@@ -305,8 +313,6 @@ fun SystemPromptEditorPage(
                 }
             }
 
-            Spacer(modifier = Modifier.height(12.dp))
-
             // Preview
             Spacer(modifier = Modifier.height(12.dp))
             Text(
@@ -319,7 +325,15 @@ fun SystemPromptEditorPage(
                 shape = RoundedCornerShape(16.dp),
                 color = MaterialTheme.colorScheme.surfaceContainer,
                 tonalElevation = 8.dp,
-                modifier = Modifier.fillMaxWidth().animateContentSize(tween(200))
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .then(
+                        if (allowSpatialTransitions) {
+                            Modifier.animateContentSize(tween(200))
+                        } else {
+                            Modifier
+                        },
+                    )
             ) {
                 val previewText = PredefinedVariables.compile(
                     items = currentItems.toList(),
@@ -333,7 +347,6 @@ fun SystemPromptEditorPage(
             }
 
             if (showDocFab) { Spacer(modifier = Modifier.height(80.dp)) }
-        }
     }
 
     // Variable picker bottom sheet
@@ -344,6 +357,7 @@ fun SystemPromptEditorPage(
             shape = RoundedCornerShape(topStart = 16.dp, topEnd = 16.dp),
             containerColor = MaterialTheme.colorScheme.surfaceContainer
         ) {
+            DialogWindowEdgeToEdge()
             Text(
                 text = stringResource(R.string.template_variable_picker_title),
                 style = MaterialTheme.typography.titleLarge,
@@ -430,27 +444,31 @@ private fun InsertBetweenButton(
 private fun TemplateItemRow(
     item: PromptTemplateItem,
     onChange: (PromptTemplateItem) -> Unit,
-    onDelete: () -> Unit,
+    onDelete: (() -> Unit)?,
     onMoveUp: (() -> Unit)? = null,
     onMoveDown: (() -> Unit)? = null
 ) {
     Column(modifier = Modifier.fillMaxWidth()) {
-        Row(
-            modifier = Modifier.fillMaxWidth(),
-            horizontalArrangement = Arrangement.End
-        ) {
-            if (onMoveUp != null) {
-                IconButton(onClick = onMoveUp, modifier = Modifier.size(28.dp)) {
-                    Icon(Icons.Default.KeyboardArrowUp, contentDescription = stringResource(R.string.template_move_up), modifier = Modifier.size(18.dp))
+        if (onMoveUp != null || onMoveDown != null || onDelete != null) {
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.End
+            ) {
+                if (onMoveUp != null) {
+                    IconButton(onClick = onMoveUp, modifier = Modifier.size(28.dp)) {
+                        Icon(Icons.Default.KeyboardArrowUp, contentDescription = stringResource(R.string.template_move_up), modifier = Modifier.size(18.dp))
+                    }
                 }
-            }
-            if (onMoveDown != null) {
-                IconButton(onClick = onMoveDown, modifier = Modifier.size(28.dp)) {
-                    Icon(Icons.Default.KeyboardArrowDown, contentDescription = stringResource(R.string.template_move_down), modifier = Modifier.size(18.dp))
+                if (onMoveDown != null) {
+                    IconButton(onClick = onMoveDown, modifier = Modifier.size(28.dp)) {
+                        Icon(Icons.Default.KeyboardArrowDown, contentDescription = stringResource(R.string.template_move_down), modifier = Modifier.size(18.dp))
+                    }
                 }
-            }
-            IconButton(onClick = onDelete, modifier = Modifier.size(28.dp)) {
-                Icon(Icons.Default.Close, contentDescription = stringResource(R.string.provider_delete), modifier = Modifier.size(18.dp))
+                if (onDelete != null) {
+                    IconButton(onClick = onDelete, modifier = Modifier.size(28.dp)) {
+                        Icon(Icons.Default.Close, contentDescription = stringResource(R.string.provider_delete), modifier = Modifier.size(18.dp))
+                    }
+                }
             }
         }
         when (item.type) {
@@ -488,7 +506,7 @@ private fun TemplateItemRow(
                         Column(modifier = Modifier.weight(1f)) {
                             Text(
                                 text = variableDisplayName(item.value),
-                                style = MaterialTheme.typography.bodyLarge,
+                                style = MaterialTheme.typography.bodyLarge.copy(fontWeight = FontWeight.Medium),
                                 fontWeight = FontWeight.Medium
                             )
                             Text(

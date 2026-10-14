@@ -13,6 +13,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import com.newoether.agora.R
 import com.newoether.agora.data.ConversationSettings
+import com.newoether.agora.model.ContextBudget
 import java.util.Locale
 
 @Composable
@@ -30,7 +31,7 @@ fun AdvancedSettingsDialog(
     var frequencyPenalty by remember { mutableStateOf(overrides.frequencyPenalty) }
     var presencePenalty by remember { mutableStateOf(overrides.presencePenalty) }
 
-    fun currentSettings() = ConversationSettings(
+    fun currentSettings() = overrides.copy(
         contextWindow = contextWindow,
         temperature = temperature,
         maxTokens = maxTokens,
@@ -53,11 +54,11 @@ fun AdvancedSettingsDialog(
                 // Context Window
                 AdvancedParamRow(
                     label = stringResource(R.string.context_window),
-                    value = contextWindow?.toFloat(),
-                    defaultVal = gDefaults.contextWindow?.toFloat(),
-                    valueRange = 5f..100f,
-                    format = { it.toInt().toString() },
-                    onChange = { contextWindow = it.toInt() },
+                    value = contextWindow?.let(ContextBudget::normalize),
+                    defaultVal = gDefaults.contextWindow?.let(ContextBudget::normalize),
+                    presets = ContextBudget.PRESETS,
+                    format = ContextBudget::compactLabel,
+                    onChange = { contextWindow = it },
                     onReset = { contextWindow = null }
                 )
                 // Temperature
@@ -190,7 +191,7 @@ private fun AdvancedParamRow(
                 Text(
                     text = stringResource(R.string.gen_not_specified),
                     style = MaterialTheme.typography.labelSmall,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.6f)
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
                 )
             }
         }
@@ -256,7 +257,7 @@ private fun AdvancedParamRow(
                 Text(
                     text = stringResource(R.string.gen_not_specified),
                     style = MaterialTheme.typography.labelSmall,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.6f)
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
                 )
             }
         }

@@ -1,6 +1,7 @@
 package com.newoether.agora.ui.chat
 
 import android.net.Uri
+import android.view.LayoutInflater
 import androidx.activity.compose.BackHandler
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.core.animateFloatAsState
@@ -126,6 +127,7 @@ fun VideoPlayer(
 
     LaunchedEffect(effectiveClosing) {
         if (effectiveClosing) {
+            player.pause()
             delay(400)
             onClose()
         }
@@ -147,7 +149,7 @@ fun VideoPlayer(
         return "${m}:${sec.toString().padStart(2, '0')}"
     }
 
-    Box(modifier = modifier.fillMaxSize().background(Color.Black)) {
+    Box(modifier = modifier.fillMaxSize()) {
         // Video surface (no built-in controls)
         Box(
             modifier = Modifier
@@ -162,10 +164,16 @@ fun VideoPlayer(
         ) {
             AndroidView(
                 factory = { ctx ->
-                    androidx.media3.ui.PlayerView(ctx).apply {
+                    (LayoutInflater.from(ctx).inflate(
+                        R.layout.view_texture_video_player,
+                        null,
+                        false,
+                    ) as androidx.media3.ui.PlayerView).apply {
                         this.player = player
-                        useController = false
                     }
+                },
+                update = { view ->
+                    if (view.player !== player) view.player = player
                 },
                 modifier = Modifier.fillMaxSize()
             )

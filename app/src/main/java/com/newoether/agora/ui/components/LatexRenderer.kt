@@ -2,81 +2,216 @@ package com.newoether.agora.ui.components
 
 import android.graphics.Bitmap
 import android.graphics.Canvas
-import android.util.Base64
 
-import androidx.compose.foundation.Image
-
-import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.Spacer
-import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.height
-import androidx.compose.foundation.text.BasicText
-import androidx.compose.foundation.text.InlineTextContent
-import androidx.compose.foundation.text.appendInlineContent
+import androidx.compose.animation.core.Animatable
+import androidx.compose.animation.core.tween
+import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.padding
+import androidx.compose.ui.unit.dp
+import com.newoether.agora.model.MarkdownImage
+import com.newoether.agora.ui.chat.message.MarkdownImageThumbnail
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.geometry.Size
+import androidx.compose.ui.geometry.isUnspecified
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.ImageBitmap
 import androidx.compose.ui.graphics.asImageBitmap
-import androidx.compose.ui.graphics.painter.BitmapPainter
+import androidx.compose.ui.graphics.drawscope.DrawScope
+import androidx.compose.ui.graphics.painter.ColorPainter
+import androidx.compose.ui.graphics.painter.Painter
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalDensity
-import androidx.compose.ui.text.AnnotatedString
-import androidx.compose.ui.text.Placeholder
-import androidx.compose.ui.text.PlaceholderVerticalAlign
-import androidx.compose.ui.text.SpanStyle
-import androidx.compose.ui.text.TextLinkStyles
-import androidx.compose.ui.text.TextStyle
-import androidx.compose.ui.text.buildAnnotatedString
-import androidx.compose.ui.text.font.FontWeight
-import androidx.compose.ui.text.style.TextDecoration
 import androidx.compose.ui.unit.Density
-import androidx.compose.ui.unit.dp
-import androidx.compose.ui.unit.sp
-import com.mikepenz.markdown.annotator.AnnotatorSettings
-import com.mikepenz.markdown.annotator.annotatorSettings
-import com.mikepenz.markdown.annotator.buildMarkdownAnnotatedString
+import androidx.compose.ui.unit.IntSize
 import com.mikepenz.markdown.model.ImageData
 import com.mikepenz.markdown.model.ImageTransformer
 import com.mikepenz.markdown.model.ImageWidth
 import com.mikepenz.markdown.model.PlaceholderConfig
-import com.mikepenz.markdown.model.ReferenceLinkHandlerImpl
+import androidx.compose.ui.text.PlaceholderVerticalAlign
+import kotlinx.coroutines.CompletableDeferred
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.CancellationException
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.Deferred
+import kotlinx.coroutines.SupervisorJob
+import kotlinx.coroutines.launch
 import ru.noties.jlatexmath.JLatexMathDrawable
+import kotlin.io.encoding.Base64
+import kotlin.math.roundToInt
 
 data class LatexSpan(
     val isLatex: Boolean,
     val content: String,
     val display: Boolean = false,
-    val bold: Boolean = false,
-    val strikethrough: Boolean = false,
 )
 
-private val dollarAmountPattern = Regex("""\$\d+(?!\$)(?!\w)""")
+// ── Patterns ──────────────────────────────────────────────────────────
+
+/** Greek letters (U+0370–U+03FF) and math symbols (U+2200–U+2AFF). */
+private val MATH_UNICODE = Regex("""[Ͱ-Ͽ∀-⫿]""")
+
+/** LaTeX command — backslash + letters, e.g. \frac \alpha \text \sum. */
+private val LATEX_COMMAND = Regex("""\\[a-zA-Z]+""")
+
+/** Escaped dollar sign — strong LaTeX signal (not used in prose). */
+private val ESCAPED_DOLLAR = Regex("""\\\$""")
+
+/** Math structural markers — sub/superscript braces, begin/end. */
+private val MATH_STRUCTURE = Regex("""[\^_]\{|\\begin|\\end""")
+
+/** Pure number or percentage explicitly wrapped in $...$ */
+private val PURE_NUM = Regex("""^-?\d+(\.\d+)?\\?%?$""")
+
+/** Math operators — presence strongly suggests LaTeX, not prose. */
+private val MATH_OPS = Regex("""[+\-*/=<>|^_]""")
+
+/** English prose stop-words — signals natural language, not math. */
+private val PROSE_WORD = Regex(
+    """\b(and|or|the|a|an|in|on|to|for|of|is|are|was|were|be|it|we|you|he|she|they|""" +
+    """costs?|price|dollar|another|other|this|that|each|per|total|only|about|""" +
+    """more|less|than|with|from|by|can|will|would|should|could|may|not|but|""" +
+    """one|two|three|four|five|ten|new|old|some|all|any|just|also|has|have|had|what)\b""",
+    RegexOption.IGNORE_CASE
+)
+
+/** Sentence-ending punctuation followed by space — strong prose signal. */
+private val SENTENCE_PUNCT = Regex("""[.!?;:]["») \t]""")
+
+private const val LATEX_URL_PREFIX = "latex://"
+private const val LATEX_URL_INLINE = "inline/"
+private const val LATEX_URL_DISPLAY = "display/"
+private val LATEX_BASE64 = Base64.UrlSafe
+
+private data class LatexImageRequest(
+    val latex: String,
+    val display: Boolean,
+)
+
+private data class ProtectedRange(
+    val start: Int,
+    val endExclusive: Int,
+)
+
+private fun findMarkdownProtectedRanges(src: String): List<ProtectedRange> {
+    val ranges = mutableListOf<ProtectedRange>()
+    var i = 0
+    while (i < src.length) {
+        if (src.startsWith("```", i)) {
+            val end = src.indexOf("```", startIndex = i + 3)
+            val endExclusive = if (end >= 0) end + 3 else src.length
+            ranges.add(ProtectedRange(i, endExclusive))
+            i = endExclusive
+            continue
+        }
+
+        if (src[i] == '`') {
+            val lineEnd = src.indexOf('\n', startIndex = i + 1)
+                .let { if (it >= 0) it else src.length }
+            val end = src.indexOf('`', startIndex = i + 1)
+            val endExclusive = if (end >= 0 && end < lineEnd) end + 1 else lineEnd
+            ranges.add(ProtectedRange(i, endExclusive))
+            i = endExclusive
+            continue
+        }
+
+        i++
+    }
+    return ranges
+}
+
+// ── Unicode gate ──────────────────────────────────────────────────────
+
+/**
+ * Returns true if every non-ASCII character in [s] is safely inside `{…}`,
+ * OR is a Greek / math-symbol Unicode codepoint.
+ * This permits braced non-ASCII content and commands such as `\alpha` while rejecting bare prose.
+ */
+private fun nonAsciiInsideBraces(s: String): Boolean {
+    var depth = 0
+    var esc = false
+    for (ch in s) {
+        if (esc) { esc = false; continue }
+        if (ch == '\\') { esc = true; continue }
+        if (ch == '{') { depth++; continue }
+        if (ch == '}' && depth > 0) { depth--; continue }
+        if (ch.code > 127 && depth == 0 && !MATH_UNICODE.matches(ch.toString()) && ch.isLetter()) {
+            return false
+        }
+    }
+    return true
+}
+
+// ── Content discriminator for $...$ ────────────────────────────────────
+
+/**
+ * Heuristic: given the trimmed content between a pair of `$` delimiters,
+ * decide whether it is more likely LaTeX or natural-language prose.
+ */
+private fun isLikelyLatex(content: String): Boolean {
+    val t = content.trim()
+    if (t.isEmpty()) return false
+
+    // Non-ASCII outside braces → prose (check BEFORE positive signals —
+    // a rogue Chinese char must veto even if \mathrm or = is present)
+    if (!nonAsciiInsideBraces(t)) return false
+
+    // Strong positive signals — these are almost certainly LaTeX
+    if (LATEX_COMMAND.containsMatchIn(t)) return true
+    if (ESCAPED_DOLLAR.containsMatchIn(t)) return true
+    if (MATH_STRUCTURE.containsMatchIn(t)) return true
+    if (PURE_NUM.matches(t)) return true
+    // Single character — math variable (not the article "a" / "A")
+    if (t.length == 1 && t[0].isLetterOrDigit()) return true
+    val hasMathOps = MATH_OPS.containsMatchIn(t)
+
+    // Strong negative signals — these are almost certainly prose
+    if (SENTENCE_PUNCT.containsMatchIn(t)) return false
+
+    // Prose stop-words: fatal unless math operators are also present.
+    // Single-letter matches are excluded — they are math variables.
+    val words = t.split(Regex("""\s+"""))
+    val hasProseWord = words.any { w -> w.length > 1 && PROSE_WORD.matches(w) }
+    if (hasProseWord && !hasMathOps) return false
+
+    // Many whitespace-delimited tokens → prose (unless math ops dominate)
+    if (words.size > 5 && !hasMathOps) return false
+
+    // No letters at all, no math ops, not pure number → not LaTeX
+    // (catches "800–" where – is non-ASCII punctuation)
+    if (t.none { it.isLetter() } && !hasMathOps) return false
+
+    // Short, no prose signals — default to LaTeX
+    return true
+}
+
+// ── Markdown escape ────────────────────────────────────────────────────
 
 fun String.escapeDollarForMarkdown(): String = buildString {
     val src = this@escapeDollarForMarkdown
+    val protectedRanges = findMarkdownProtectedRanges(src)
+    var protectedIndex = 0
     var i = 0
     while (i < src.length) {
-        val ch = src[i]
-        val remaining = src.substring(i)
+        while (protectedIndex < protectedRanges.size && protectedRanges[protectedIndex].endExclusive <= i) {
+            protectedIndex++
+        }
+        val protected = protectedRanges.getOrNull(protectedIndex)
+        if (protected != null && i >= protected.start) {
+            append(src, i, protected.endExclusive)
+            i = protected.endExclusive
+            protectedIndex++
+            continue
+        }
 
-        // ``` fenced code block — pass through
-        if (remaining.startsWith("```")) {
-            val end = remaining.indexOf("```", 3)
-            if (end >= 0) {
-                append(remaining.substring(0, end + 3))
-                i += end + 3; continue
-            }
-        }
-        // ` inline code — pass through
-        if (ch == '`') {
-            val end = remaining.indexOf('`', 1)
-            if (end >= 0) {
-                append(remaining.substring(0, end + 1))
-                i += end + 1; continue
-            }
-        }
+        val ch = src[i]
         // Bare $ → \$ (but not already-escaped \$)
         if (ch == '$' && (i == 0 || src[i - 1] != '\\')) {
             append('\\')
@@ -86,117 +221,135 @@ fun String.escapeDollarForMarkdown(): String = buildString {
     }
 }
 
-fun parseLatexSpans(text: String): List<LatexSpan> {
+// ── Span parser ────────────────────────────────────────────────────────
+
+fun parseLatexSpans(
+    text: String,
+    parseInlineDollarMath: Boolean = false,
+): List<LatexSpan> {
     val spans = mutableListOf<LatexSpan>()
     val buf = StringBuilder()
+    val protectedRanges = findMarkdownProtectedRanges(text)
+    var protectedIndex = 0
     var i = 0
     while (i < text.length) {
-        val remaining = text.substring(i)
-
-        // ``` fenced code block — skip until closing ```
-        if (remaining.startsWith("```")) {
-            val end = remaining.indexOf("```", 3)
-            if (end >= 0) {
-                if (buf.isNotEmpty()) { spans.add(LatexSpan(false, buf.toString())); buf.clear() }
-                spans.add(LatexSpan(false, remaining.substring(0, end + 3)))
-                i += end + 3
-                continue
-            }
+        while (protectedIndex < protectedRanges.size && protectedRanges[protectedIndex].endExclusive <= i) {
+            protectedIndex++
         }
-
-        // ` inline code — skip until closing `
-        if (remaining[0] == '`' && !remaining.startsWith("```")) {
-            val end = remaining.indexOf('`', 1)
-            if (end >= 0) {
-                buf.append(remaining.substring(0, end + 1))
-                i += end + 1
-                continue
-            }
+        val protected = protectedRanges.getOrNull(protectedIndex)
+        if (protected != null && i >= protected.start) {
+            buf.append(text, i, protected.endExclusive)
+            i = protected.endExclusive
+            protectedIndex++
+            continue
         }
 
         // $$ display math
-        if (remaining.startsWith("$$")) {
-            val end = remaining.indexOf("$$", 2)
+        if (text.startsWith("$$", i)) {
+            val end = text.indexOf("$$", startIndex = i + 2)
             if (end >= 0) {
-                val latex = remaining.substring(2, end).trim()
-                if (latex.isNotBlank() && latex.none { it.code > 127 }) {
+                val latex = text.substring(i + 2, end).trim()
+                if (latex.isNotBlank() && nonAsciiInsideBraces(latex)) {
                     if (buf.isNotEmpty()) { spans.add(LatexSpan(false, buf.toString())); buf.clear() }
                     spans.add(LatexSpan(true, latex, true))
+                    i = end + 2
+                    continue
                 } else if (latex.isNotBlank()) {
-                    buf.append(remaining.substring(0, end + 2))
+                    // Invalid display candidate. Keep recovery local so a stray
+                    // "$$" cannot consume a later valid display opener/closer.
+                    buf.append("$$")
+                    i += 2
+                    continue
                 }
-                i += end + 2
+                buf.append("$$")
+                i += 2
                 continue
             }
         }
 
         // \[ display math
-        if (remaining.startsWith("\\[")) {
-            val end = remaining.indexOf("\\]", 2)
+        if (text.startsWith("\\[", i)) {
+            val end = text.indexOf("\\]", startIndex = i + 2)
             if (end >= 0) {
-                val latex = remaining.substring(2, end).trim()
-                if (latex.isNotBlank() && latex.none { it.code > 127 }) {
+                val latex = text.substring(i + 2, end).trim()
+                if (latex.isNotBlank() && nonAsciiInsideBraces(latex)) {
                     if (buf.isNotEmpty()) { spans.add(LatexSpan(false, buf.toString())); buf.clear() }
                     spans.add(LatexSpan(true, latex, true))
+                    i = end + 2
+                    continue
                 } else if (latex.isNotBlank()) {
-                    buf.append(remaining.substring(0, end + 2))
+                    buf.append("\\[")
+                    i += 2
+                    continue
                 }
-                i += end + 2
+                buf.append("\\[")
+                i += 2
                 continue
             }
         }
 
         // \( inline math
-        if (remaining.startsWith("\\(")) {
-            val end = remaining.indexOf("\\)", 2)
+        if (text.startsWith("\\(", i)) {
+            val end = text.indexOf("\\)", startIndex = i + 2)
             if (end >= 0) {
-                val latex = remaining.substring(2, end).trim()
-                if (latex.isNotBlank() && latex.none { it.code > 127 }) {
+                val latex = text.substring(i + 2, end).trim()
+                if (latex.isNotBlank() && nonAsciiInsideBraces(latex)) {
                     if (buf.isNotEmpty()) { spans.add(LatexSpan(false, buf.toString())); buf.clear() }
                     spans.add(LatexSpan(true, latex, false))
+                    i = end + 2
+                    continue
                 } else if (latex.isNotBlank()) {
-                    buf.append(remaining.substring(0, end + 2))
+                    buf.append("\\(")
+                    i += 2
+                    continue
                 }
-                i += end + 2
+                buf.append("\\(")
+                i += 2
                 continue
             }
         }
 
         // $ inline math — skip if preceded by \ (escaped)
-        if (remaining[0] == '$' && !remaining.startsWith("$$")) {
-            val nextChar = if (remaining.length > 1) remaining[1] else ' '
+        if (parseInlineDollarMath && text[i] == '$' && !text.startsWith("$$", i)) {
             val prevChar = if (i > 0) text[i - 1] else ' '
             if (prevChar != '\\') {
-                // $<digits> followed by non-$ non-word → dollar amount, not math
-                if (dollarAmountPattern.find(remaining)?.range?.first == 0) {
+                // Find real closing $ on the same line (skip escaped \$)
+                val newline = text.indexOf('\n', startIndex = i + 1)
+                val lineEnd = if (newline < 0) text.length else newline
+                var end = text.indexOf('$', startIndex = i + 1)
+                while (end in (i + 1)..<lineEnd && text[end - 1] == '\\') {
+                    end = text.indexOf('$', startIndex = end + 1)
+                }
+                if (end in (i + 1)..<lineEnd) {
+                    val latex = text.substring(i + 1, end).trim()
+                    if (latex.isNotEmpty() && isLikelyLatex(latex)) {
+                        if (buf.isNotEmpty()) { spans.add(LatexSpan(false, buf.toString())); buf.clear() }
+                        spans.add(LatexSpan(true, latex, false))
+                        i = end + 1
+                        continue
+                    }
+                    // Content looks like prose → only treat the opening $ as literal.
+                    // Don't consume the closing $ — it may belong to a valid LaTeX pair later.
                     buf.append('$')
                     i++
                     continue
                 }
-                val end = remaining.indexOf('$', 1)
-                val closingOk = end >= 0 && (end == remaining.length - 1 || remaining[end - 1] != '\\')
-                if (closingOk) {
-                    val latex = remaining.substring(1, end).trim()
-                    if (latex.isNotBlank() && latex.none { it.code > 127 }) {
-                        if (buf.isNotEmpty()) { spans.add(LatexSpan(false, buf.toString())); buf.clear() }
-                        spans.add(LatexSpan(true, latex, false))
-                    } else if (latex.isNotBlank()) {
-                        buf.append(remaining.substring(0, end + 1))
-                    }
-                    i += end + 1
-                    continue
-                }
+
+                // No real same-line closing $ → treat $ as literal (could be a dollar amount)
+                buf.append('$')
+                i++
+                continue
             }
         }
 
         // Escaped \$ → literal $
-        if (remaining.startsWith("\\$")) {
+        if (text.startsWith("\\$", i)) {
             buf.append('$')
             i += 2
             continue
         }
 
-        buf.append(remaining[0])
+        buf.append(text[i])
         i++
     }
     if (buf.isNotEmpty()) spans.add(LatexSpan(false, buf.toString()))
@@ -224,107 +377,19 @@ fun parseLatexSpans(text: String): List<LatexSpan> {
         }
     }
 
-    // FSM: bridge markdown formatting markers (** __ ~~) across inline LaTeX spans
-    data class Pending(val marker: String, val fromIdx: Int)
-    val stack = mutableListOf<Pending>()
-    val markers = listOf("**", "__", "~~")
-    val isBold: (String) -> Boolean = { it == "**" || it == "__" }
-
-    for (idx in spans.indices) {
-        val span = spans[idx]
-        if (span.isLatex) continue
-        val s = span.content
-        // Skip spans where the marker is already self-contained
-        if (markers.any { s.startsWith(it) && s.endsWith(it) && s.length >= it.length * 2 }) continue
-
-        var resolved = false
-        for (m in markers) {
-            val pending = stack.lastOrNull { it.marker == m }
-            if (pending == null) continue
-
-            if (s.startsWith(m)) {
-                // pending.end ← m: resolve, marker was at end of pending, at start here
-                stack.remove(pending)
-                val bold = isBold(m)
-                for (j in pending.fromIdx..idx) {
-                    val old = spans[j]
-                    spans[j] = old.copy(bold = old.bold || bold, strikethrough = old.strikethrough || !bold)
-                }
-                spans[pending.fromIdx] = spans[pending.fromIdx].copy(content = spans[pending.fromIdx].content.removeSuffix(m))
-                spans[idx] = spans[idx].copy(content = s.removePrefix(m))
-                resolved = true
-                break
-            }
-            if (s.endsWith(m)) {
-                // pending.start ← m: resolve, marker was at start of pending, at end here
-                stack.remove(pending)
-                val bold = isBold(m)
-                for (j in pending.fromIdx..idx) {
-                    val old = spans[j]
-                    spans[j] = old.copy(bold = old.bold || bold, strikethrough = old.strikethrough || !bold)
-                }
-                spans[pending.fromIdx] = spans[pending.fromIdx].copy(content = spans[pending.fromIdx].content.removePrefix(m))
-                spans[idx] = spans[idx].copy(content = s.removeSuffix(m))
-                resolved = true
-                break
-            }
-        }
-        if (resolved) continue
-
-        // No match on stack — push unmatched marker as pending
-        for (m in markers) {
-            val t = spans[idx].content
-            if (t.startsWith(m)) {
-                stack.add(Pending(m, idx))
-                spans[idx] = spans[idx].copy(content = t.removePrefix(m))
-                break
-            }
-            if (t.endsWith(m)) {
-                stack.add(Pending(m, idx))
-                spans[idx] = spans[idx].copy(content = t.removeSuffix(m))
-                break
-            }
-        }
-    }
-
     return spans
 }
 
-fun splitParagraphs(text: String): List<String> {
-    val result = mutableListOf<String>()
-    val buf = StringBuilder()
-    var i = 0
-    while (i < text.length) {
-        val remaining = text.substring(i)
+// ── Rendering ──────────────────────────────────────────────────────────
 
-        // ``` fenced code block — keep as an atomic paragraph
-        if (remaining.startsWith("```")) {
-            val end = remaining.indexOf("```", 3)
-            if (end >= 0) {
-                if (buf.isNotBlank()) { result.add(buf.toString().trim()); buf.clear() }
-                result.add(remaining.substring(0, end + 3))
-                i += end + 3
-                continue
-            }
-        }
-
-        // \n\n paragraph separator
-        if (remaining.startsWith("\n\n")) {
-            if (buf.isNotBlank()) { result.add(buf.toString().trim()); buf.clear() }
-            i += 2
-            // skip additional consecutive newlines
-            while (i < text.length && text[i] == '\n') i++
-            continue
-        }
-
-        buf.append(remaining[0])
-        i++
-    }
-    if (buf.isNotBlank()) result.add(buf.toString().trim())
-    return result
-}
-
-fun renderLatexToBitmap(latex: String, textSize: Float = 48f, color: Int = 0xFF000000.toInt(), fallbackW: Int = 800, fallbackH: Int = 200, minW: Int = 0): Bitmap? {
+fun renderLatexToBitmap(
+    latex: String,
+    textSize: Float = 48f,
+    color: Int = 0xFF000000.toInt(),
+    fallbackW: Int = 800,
+    fallbackH: Int = 200,
+    minW: Int = 0,
+): Bitmap? {
     return try {
         val drawable = JLatexMathDrawable.builder(latex)
             .textSize(textSize)
@@ -334,8 +399,6 @@ fun renderLatexToBitmap(latex: String, textSize: Float = 48f, color: Int = 0xFF0
         val ih = drawable.intrinsicHeight
         val w = maxOf(iw.takeIf { it > 0 } ?: fallbackW, minW)
         val h = ih.takeIf { it > 0 } ?: fallbackH
-        val usedFallbackW = iw <= 0 || iw < minW
-        val usedFallbackH = ih <= 0
         val bmp = Bitmap.createBitmap(w, h, Bitmap.Config.ARGB_8888)
         val canvas = Canvas(bmp)
         drawable.setBounds(0, 0, w, h)
@@ -353,16 +416,42 @@ fun canRenderLatex(latex: String): Boolean {
     } catch (_: Exception) { false }
 }
 
-private fun encodeLatexUrl(latex: String): String {
-    return Base64.encodeToString(latex.toByteArray(Charsets.UTF_8), Base64.URL_SAFE or Base64.NO_WRAP)
+private fun encodeLatexUrl(latex: String, display: Boolean = false): String {
+    val mode = if (display) LATEX_URL_DISPLAY else LATEX_URL_INLINE
+    val encoded = LATEX_BASE64.encode(latex.toByteArray(Charsets.UTF_8))
+    return "$mode$encoded"
 }
 
 private fun decodeLatexUrl(encoded: String): String {
-    return Base64.decode(encoded, Base64.URL_SAFE).decodeToString()
+    return LATEX_BASE64.decode(encoded).decodeToString()
+}
+
+private fun decodeLatexLink(link: String): LatexImageRequest? {
+    if (!link.startsWith(LATEX_URL_PREFIX)) return null
+    val payload = link.removePrefix(LATEX_URL_PREFIX)
+    val (display, encoded) = when {
+        payload.startsWith(LATEX_URL_DISPLAY) -> true to payload.removePrefix(LATEX_URL_DISPLAY)
+        payload.startsWith(LATEX_URL_INLINE) -> false to payload.removePrefix(LATEX_URL_INLINE)
+        else -> false to payload
+    }
+    return try {
+        LatexImageRequest(decodeLatexUrl(encoded), display)
+    } catch (_: Exception) {
+        null
+    }
+}
+
+internal fun isDisplayLatexLink(link: String?): Boolean {
+    return link?.let(::decodeLatexLink)?.display == true
 }
 
 fun inlineLatexToMarkdown(latexContent: String): String {
-    return "![latex](latex://${encodeLatexUrl(latexContent)})"
+    return latexToMarkdown(latexContent, display = false)
+}
+
+fun latexToMarkdown(latexContent: String, display: Boolean): String {
+    val image = "![latex]($LATEX_URL_PREFIX${encodeLatexUrl(latexContent, display)})"
+    return if (display) "\n\n$image\n\n" else image
 }
 
 private fun renderTextToBitmap(text: String, textSize: Float, color: Int): Bitmap {
@@ -381,40 +470,179 @@ private fun renderTextToBitmap(text: String, textSize: Float, color: Int): Bitma
     return bmp
 }
 
+private data class LatexRenderKey(
+    val latex: String,
+    val textSize: Float,
+    val color: Int,
+)
+
+private object LatexBitmapCache {
+    private const val MAX_ENTRIES = 128
+
+    private val lock = Any()
+    private val renderScope = CoroutineScope(SupervisorJob() + Dispatchers.Default)
+    private val inFlight = mutableMapOf<LatexRenderKey, Deferred<Bitmap>>()
+    private val bitmaps = object : LinkedHashMap<LatexRenderKey, Bitmap>(MAX_ENTRIES, 0.75f, true) {
+        override fun removeEldestEntry(eldest: MutableMap.MutableEntry<LatexRenderKey, Bitmap>?): Boolean {
+            return size > MAX_ENTRIES
+        }
+    }
+
+    fun get(key: LatexRenderKey): Bitmap? = synchronized(lock) {
+        bitmaps[key]
+    }
+
+    fun renderAsync(key: LatexRenderKey): Deferred<Bitmap> = synchronized(lock) {
+        bitmaps[key]?.let { return CompletableDeferred(it) }
+        inFlight[key]?.let { return it }
+
+        val deferred = CompletableDeferred<Bitmap>()
+        inFlight[key] = deferred
+        renderScope.launch {
+            try {
+                val rendered = renderBitmap(key)
+                synchronized(lock) {
+                    bitmaps[key] = rendered
+                    if (inFlight[key] === deferred) {
+                        inFlight.remove(key)
+                    }
+                }
+                deferred.complete(rendered)
+            } catch (e: CancellationException) {
+                synchronized(lock) {
+                    if (inFlight[key] === deferred) {
+                        inFlight.remove(key)
+                    }
+                }
+                deferred.completeExceptionally(e)
+                throw e
+            } catch (t: Throwable) {
+                synchronized(lock) {
+                    if (inFlight[key] === deferred) {
+                        inFlight.remove(key)
+                    }
+                }
+                deferred.completeExceptionally(t)
+            }
+        }
+        deferred
+    }
+
+    suspend fun awaitRendered(key: LatexRenderKey): Bitmap {
+        get(key)?.let { return it }
+        return renderAsync(key).await()
+    }
+
+    private fun renderBitmap(key: LatexRenderKey): Bitmap {
+        val fw = (key.textSize * 10).toInt()
+        val fh = (key.textSize * 2).toInt()
+        return renderLatexToBitmap(
+            key.latex,
+            key.textSize,
+            key.color,
+            fallbackW = fw,
+            fallbackH = fh,
+            minW = 0,
+        ) ?: renderTextToBitmap("$${key.latex}$", key.textSize, key.color)
+    }
+}
+
+private fun estimateLatexPlaceholderSize(latex: String, textSize: Float, display: Boolean): Size {
+    val charCount = latex.length.coerceAtLeast(1)
+    val minWidth = textSize * if (display) 4f else 1.4f
+    val maxWidth = textSize * if (display) 18f else 8f
+    val width = (charCount * textSize * if (display) 0.46f else 0.38f)
+        .coerceIn(minWidth, maxWidth)
+    val height = textSize * if (display) 1.45f else 1.05f
+    return Size(width, height)
+}
+
+// ── Image transformer ──────────────────────────────────────────────────
+
 class LatexImageTransformer(
     private val textSize: Float = 40f,
     private val color: Int = 0xFF000000.toInt(),
+    private val inlineImages: Map<String, MarkdownImage> = emptyMap(),
+    private val onMediaClick: (List<String>, Int) -> Unit = { _, _ -> },
 ) : ImageTransformer {
-    private val cache = object : LinkedHashMap<String, Bitmap>(64, 0.75f, true) {
-        override fun removeEldestEntry(eldest: MutableMap.MutableEntry<String, Bitmap>?): Boolean = size > 64
+    private fun inlineImage(link: String): MarkdownImage? {
+        fun decoded(value: String) = android.net.Uri.decode(value.removeSurrounding("<", ">"))
+        return inlineImages[link] ?: inlineImages.entries.firstOrNull { decoded(it.key) == decoded(link) }?.value
+    }
+    @Composable
+    fun renderInlineImage(link: String): Boolean {
+        val image = inlineImage(link) ?: return false
+        val paths = remember(inlineImages) {
+            inlineImages.values.mapNotNull { it.attachment?.path }.distinct()
+        }
+        Box(Modifier.padding(vertical = 8.dp)) {
+            MarkdownImageThumbnail(link, image) {
+                val index = paths.indexOf(image.attachment?.path)
+                if (index >= 0) onMediaClick(paths, index)
+            }
+        }
+        return true
     }
 
     @Composable
     override fun transform(link: String): ImageData? {
-        if (!link.startsWith("latex://")) return null
-        val latex = try {
-            decodeLatexUrl(link.removePrefix("latex://"))
-        } catch (_: Exception) {
-            return null
-        }
-
-        val bmp: Bitmap = synchronized(cache) {
-            cache.getOrPut("$latex|$textSize|$color") {
-                val fw = (textSize * 10).toInt()
-                val fh = (textSize * 2).toInt()
-                val rendered = renderLatexToBitmap(latex, textSize, color, fallbackW = fw, fallbackH = fh, minW = 0)
-                if (rendered != null) {
-                    rendered
-                } else {
-                    val fallback = renderTextToBitmap("$$latex$", textSize, color)
-                    fallback
+        // Markdown measures the slot here; both image components render the shared viewport.
+        if (inlineImage(link) != null) {
+            val side = with(LocalDensity.current) { 300.dp.toPx() }
+            val verticalSpace = with(LocalDensity.current) { 16.dp.toPx() }
+            val viewport = remember(side, verticalSpace) {
+                object : Painter() {
+                    override val intrinsicSize = Size(side, side + verticalSpace)
+                    override fun DrawScope.onDraw() = Unit
                 }
             }
+            // A known size promotes the image to a measured block before decoding.
+            // An unspecified transparent painter leaves it in the text line, whose
+            // height can be smaller than the actual thumbnail on Android.
+            return ImageData(painter = viewport)
+        }
+        val request = decodeLatexLink(link) ?: return null
+        val key = LatexRenderKey(request.latex, textSize, color)
+        var bitmap by remember(key) { mutableStateOf(LatexBitmapCache.get(key)) }
+        val fade = remember(key) { Animatable(if (bitmap != null) 1f else 0f) }
+        LaunchedEffect(key) {
+            val cached = LatexBitmapCache.get(key)
+            if (cached != null) {
+                bitmap = cached
+                fade.snapTo(1f)
+                return@LaunchedEffect
+            }
+
+            bitmap = null
+            fade.snapTo(0f)
+            val rendered = try {
+                LatexBitmapCache.awaitRendered(key)
+            } catch (e: CancellationException) {
+                throw e
+            } catch (_: Throwable) {
+                null
+            }
+            if (rendered != null) {
+                bitmap = rendered
+                fade.snapTo(0f)
+                fade.animateTo(1f, tween(durationMillis = 180))
+            }
+        }
+        val bmp: Bitmap? = bitmap
+        val density = LocalDensity.current
+        val placeholderModifier = if (bmp == null) {
+            val estimated = estimateLatexPlaceholderSize(request.latex, textSize, request.display)
+            with(density) {
+                Modifier.size(estimated.width.toDp(), estimated.height.toDp())
+            }
+        } else {
+            Modifier
         }
         return ImageData(
-            painter = BitmapPainter(bmp.asImageBitmap()),
-            contentDescription = latex,
-            modifier = Modifier.fillMaxWidth(),
+            painter = bmp?.let { FadingBitmapPainter(it.asImageBitmap(), fade.value) }
+                ?: ColorPainter(Color.Transparent),
+            contentDescription = request.latex,
+            modifier = placeholderModifier,
             alignment = Alignment.CenterStart,
             contentScale = ContentScale.Fit,
         )
@@ -426,176 +654,50 @@ class LatexImageTransformer(
         containerSize: Size,
         imageWidth: ImageWidth,
         imageSize: Size,
-        imageSizeChanged: ((link: String, Size) -> Unit)?
+        imageSizeChanged: ((link: String, Size) -> Unit)?,
     ): PlaceholderConfig {
-        return PlaceholderConfig(size = Size(60f, 22f), verticalAlign = PlaceholderVerticalAlign.Center)
-    }
-}
-
-// Data class for paragraph groups, tracking \n count for proportional spacing
-private data class ParaGroup(val spans: List<LatexSpan>, val spacingBefore: Float)
-
-private fun buildParaGroups(inlineSpans: List<LatexSpan>, paragraphSpacing: Float): List<ParaGroup> {
-    val groups = mutableListOf<ParaGroup>()
-    val currentSpans = mutableListOf<LatexSpan>()
-    var pendingSpacing = paragraphSpacing
-
-    fun flush() {
-        if (currentSpans.isNotEmpty()) {
-            groups.add(ParaGroup(currentSpans.toList(), pendingSpacing))
-            currentSpans.clear()
-            pendingSpacing = 0f
-        } else {
-            pendingSpacing += paragraphSpacing
-        }
-    }
-
-    for (span in inlineSpans) {
-        if (span.isLatex) {
-            currentSpans.add(span)
-        } else {
-            var remaining = span.content
-            while (remaining.isNotEmpty()) {
-                val nlIdx = remaining.indexOf('\n')
-                if (nlIdx < 0) {
-                    currentSpans.add(LatexSpan(false, remaining, bold = span.bold, strikethrough = span.strikethrough))
-                    break
-                }
-                if (nlIdx > 0) {
-                    currentSpans.add(LatexSpan(false, remaining.substring(0, nlIdx), bold = span.bold, strikethrough = span.strikethrough))
-                }
-                remaining = remaining.substring(nlIdx + 1)
-                flush()
-                pendingSpacing = paragraphSpacing
-                while (remaining.startsWith('\n')) {
-                    pendingSpacing += paragraphSpacing
-                    remaining = remaining.substring(1)
-                }
+        if (inlineImage(link) != null) {
+            val side = with(density) {
+                if (containerSize.isUnspecified) 300f else containerSize.width.toDp().value.coerceIn(1f, 300f)
             }
+            return PlaceholderConfig(Size(side, side + 16f))
         }
-    }
-    flush()
-    return groups
-}
-
-private fun buildParagraphStrings(
-    groups: List<ParaGroup>,
-    textStyle: TextStyle,
-    settings: AnnotatorSettings,
-): List<AnnotatedString> {
-    var latexIdx = 0
-    return groups.map { group ->
-        buildAnnotatedString {
-            for (span in group.spans) {
-                if (span.isLatex) {
-                    appendInlineContent("LATEX_$latexIdx", span.content)
-                    latexIdx++
-                } else if (span.content.isNotBlank()) {
-                    if (span.bold || span.strikethrough) {
-                        val start = length
-                        append(span.content)
-                        addStyle(
-                            SpanStyle(
-                                fontWeight = if (span.bold) FontWeight.Bold else null,
-                                textDecoration = if (span.strikethrough) TextDecoration.LineThrough else null,
-                            ),
-                            start,
-                            length,
-                        )
-                    } else {
-                        append(span.content.buildMarkdownAnnotatedString(textStyle, settings))
-                    }
-                }
-            }
-        }
-    }
-}
-
-private data class LatexBitmapEntry(val tag: String, val bitmap: Bitmap?, val content: String)
-
-private data class LatexRenderState(
-    val entries: List<LatexBitmapEntry>,
-    val inlineContent: Map<String, InlineTextContent>,
-    val paragraphStrings: List<AnnotatedString>,
-    val paragraphGroups: List<ParaGroup>,
-)
-
-@Composable
-fun LatexAwareText(
-    spans: List<LatexSpan>,
-    modifier: Modifier = Modifier,
-    textStyle: TextStyle,
-    latexTextSize: Float = 56f,
-    latexColor: Int,
-    codeSpanStyle: SpanStyle = SpanStyle(),
-    paragraphSpacing: Float = 10f,
-) {
-    val density = LocalDensity.current
-    val inlineSpans = remember(spans) { spans.filter { !it.display } }
-    val settings = annotatorSettings(
-        linkTextSpanStyle = TextLinkStyles(style = textStyle.toSpanStyle()),
-        codeSpanStyle = codeSpanStyle,
-        referenceLinkHandler = ReferenceLinkHandlerImpl(),
-    )
-
-    val state = remember(inlineSpans, settings, latexTextSize, latexColor, density, paragraphSpacing) {
-        if (inlineSpans.isEmpty()) return@remember null
-        val entries = inlineSpans.filter { it.isLatex }.mapIndexed { idx, span ->
-            val tag = "LATEX_$idx"
-            val bmp = renderLatexToBitmap(span.content, latexTextSize, latexColor)
-            LatexBitmapEntry(tag, bmp, span.content)
-        }
-        val ic = buildMap<String, InlineTextContent> {
-            entries.forEach { entry ->
-                if (entry.bitmap != null) {
-                    val rawW = with(density) { entry.bitmap.width.toSp().value }
-                    val rawH = with(density) { entry.bitmap.height.toSp().value }
-                    val maxH = if (textStyle.lineHeight.isSp) textStyle.lineHeight.value
-                               else textStyle.fontSize.value * 1.4f
-                    val scale = if (rawH > maxH) maxH / rawH else 1f
-                    val pw = maxOf(rawW * scale, 24f)
-                    val ph = maxOf(rawH * scale, 16f)
-                    put(entry.tag, InlineTextContent(
-                        Placeholder(width = pw.sp, height = ph.sp, placeholderVerticalAlign = PlaceholderVerticalAlign.Center)
-                    ) { _ ->
-                        Image(
-                            painter = BitmapPainter(entry.bitmap.asImageBitmap()),
-                            contentDescription = entry.content,
-                            modifier = Modifier.fillMaxWidth(),
-                            contentScale = ContentScale.Fit,
-                        )
-                    })
-                }
-            }
-        }
-        val groups = buildParaGroups(inlineSpans, paragraphSpacing)
-        val paraStrings = buildParagraphStrings(groups, textStyle, settings)
-        LatexRenderState(entries, ic, paraStrings, groups)
-    } ?: return
-
-    if (state.paragraphStrings.isEmpty()) return
-
-    if (state.paragraphStrings.size == 1 && state.paragraphGroups.first().spacingBefore == 0f) {
-        BasicText(
-            text = state.paragraphStrings.first(),
-            modifier = modifier,
-            style = textStyle,
-            inlineContent = state.inlineContent,
+        val request = decodeLatexLink(link) ?: return super.placeholderConfig(
+            link, density, containerSize, imageWidth, imageSize, imageSizeChanged
         )
-    } else {
-        Column(modifier = modifier) {
-            state.paragraphStrings.forEachIndexed { idx, annotated ->
-                val spacingBefore = state.paragraphGroups[idx].spacingBefore
-                if (spacingBefore > 0f) {
-                    Spacer(Modifier.height(spacingBefore.dp))
-                }
-                BasicText(
-                    text = annotated,
-                    modifier = Modifier,
-                    style = textStyle,
-                    inlineContent = state.inlineContent,
-                )
-            }
+        val key = LatexRenderKey(request.latex, textSize, color)
+        val resolvedSize = if (imageSize.isUnspecified) {
+            LatexBitmapCache.get(key)?.let { bmp ->
+                Size(bmp.width.toFloat(), bmp.height.toFloat())
+            } ?: estimateLatexPlaceholderSize(request.latex, textSize, request.display)
+        } else {
+            imageSize
         }
+        val sizeDp = with(density) {
+            Size(
+                width = resolvedSize.width.toDp().value,
+                height = resolvedSize.height.toDp().value,
+            )
+        }
+        return PlaceholderConfig(size = sizeDp, verticalAlign = PlaceholderVerticalAlign.TextCenter)
+    }
+}
+
+private class FadingBitmapPainter(
+    private val image: ImageBitmap,
+    private val alpha: Float,
+) : Painter() {
+    override val intrinsicSize: Size
+        get() = Size(image.width.toFloat(), image.height.toFloat())
+
+    override fun DrawScope.onDraw() {
+        drawImage(
+            image = image,
+            dstSize = IntSize(
+                width = size.width.roundToInt().coerceAtLeast(1),
+                height = size.height.roundToInt().coerceAtLeast(1),
+            ),
+            alpha = alpha.coerceIn(0f, 1f),
+        )
     }
 }

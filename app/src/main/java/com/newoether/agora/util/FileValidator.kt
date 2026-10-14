@@ -5,6 +5,14 @@ import android.net.Uri
 import android.provider.OpenableColumns
 
 object FileValidator {
+    enum class AttachmentRoute {
+        IMAGE,
+        VIDEO,
+        PDF,
+        TEXT,
+        LOCAL_SANDBOX,
+    }
+
     enum class Error {
         UNKNOWN_TYPE,
         UNSUPPORTED_TYPE,
@@ -18,9 +26,17 @@ object FileValidator {
         "application/yaml",
         "application/pdf"
     )
-    private const val MAX_SIZE = 20L * 1024 * 1024
-
     data class Result(val valid: Boolean, val error: Error? = null, val mimeType: String? = null)
+
+    fun routeForMimeType(mimeType: String?): AttachmentRoute = when {
+        mimeType?.startsWith("image/") == true -> AttachmentRoute.IMAGE
+        mimeType?.startsWith("video/") == true -> AttachmentRoute.VIDEO
+        mimeType == "application/pdf" -> AttachmentRoute.PDF
+        mimeType != null && MIME_WHITELIST.any { allowed ->
+            mimeType.startsWith(allowed)
+        } -> AttachmentRoute.TEXT
+        else -> AttachmentRoute.LOCAL_SANDBOX
+    }
 
     fun validate(context: Context, uri: Uri): Result {
         val mimeType = try {
@@ -47,7 +63,7 @@ object FileValidator {
             }
         } catch (_: Exception) { null }
 
-        if (fileSize != null && fileSize > MAX_SIZE && mimeType != "application/pdf")
+        if (fileSize != null && fileSize > AttachmentFiles.MAX_ATTACHMENT_BYTES)
             return Result(false, Error.TOO_LARGE, mimeType)
 
         return Result(true, mimeType = mimeType)

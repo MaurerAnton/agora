@@ -1,0 +1,153 @@
+package com.newoether.agora.ui.settings
+
+import com.newoether.agora.viewmodel.EmbeddingCacheRowPhase
+import com.newoether.agora.viewmodel.EmbeddingCacheRowReducer
+import com.newoether.agora.viewmodel.EmbeddingCacheRowSnapshot
+import com.newoether.agora.viewmodel.EmbeddingCacheWorkSnapshot
+import com.newoether.agora.viewmodel.embeddingCacheWorkSnapshotOrNull
+import java.io.File
+import org.junit.Assert.assertEquals
+import org.junit.Assert.assertFalse
+import org.junit.Assert.assertNull
+import org.junit.Assert.assertTrue
+import org.junit.Test
+
+class EmbeddingCacheActionStateTest {
+    @Test
+    fun fourStatesProjectOnlyRealWorkAndKnownCounts() {
+        assertEquals(4, EmbeddingCacheRowPhase.entries.size)
+        assertNull(EmbeddingCacheRowSnapshot().phase)
+        val loading = EmbeddingCacheRowReducer.refreshRequested(null)
+        assertEquals(EmbeddingCacheRowPhase.LOADING, loading.phase)
+        val cached = EmbeddingCacheRowReducer.refreshed(loading, 4, 10)
+        assertEquals(EmbeddingCacheRowPhase.CACHE, cached.phase)
+        val running = EmbeddingCacheRowReducer.workChanged(cached, true)
+        assertEquals(EmbeddingCacheRowPhase.CACHING, running.phase)
+        assertNull(running.progress)
+        assertEquals(EmbeddingCacheRowPhase.CACHE,
+            EmbeddingCacheRowReducer.workChanged(running, false).phase)
+        assertEquals(EmbeddingCacheRowPhase.RECACHE,
+            EmbeddingCacheRowReducer.refreshed(cached, 10, 10).phase)
+        assertEquals(EmbeddingCacheRowPhase.RECACHE,
+            EmbeddingCacheRowReducer.refreshed(null, 0, 0).phase)
+    }
+
+    @Test
+    fun initialFailureHasNoFabricatedRowAndLaterFailureRetainsCounts() {
+        val failed = EmbeddingCacheRowReducer.refreshFailed(null)
+        assertNull(failed.phase)
+        assertTrue(failed.countFailed)
+        assertFalse(failed.countLoading)
+        assertNull(failed.cached)
+        assertEquals(EmbeddingCacheRowPhase.LOADING,
+            EmbeddingCacheRowReducer.refreshRequested(failed).phase)
+        val stable = EmbeddingCacheRowReducer.refreshed(null, 4, 10)
+        val retained = EmbeddingCacheRowReducer.refreshFailed(stable)
+        assertEquals(EmbeddingCacheRowPhase.CACHE, retained.phase)
+        assertEquals(4, retained.cached)
+        assertEquals(10, retained.indexableTotal)
+    }
+
+    @Test
+    fun workAndCountCompletionCannotOverrideEachOthersFacts() {
+        val loading = EmbeddingCacheRowReducer.refreshRequested(null)
+        val running = EmbeddingCacheRowReducer.workChanged(loading, true, progress(7, 20))
+        val known = EmbeddingCacheRowReducer.refreshed(running, 15, 20)
+        assertEquals(EmbeddingCacheRowPhase.CACHING, known.phase)
+        assertEquals(15, known.cached)
+        val stopped = EmbeddingCacheRowReducer.workChanged(known, false)
+        assertEquals(EmbeddingCacheRowPhase.CACHE, stopped.phase)
+        assertNull(stopped.progress)
+        assertEquals(EmbeddingCacheRowPhase.LOADING,
+            EmbeddingCacheRowReducer.workChanged(running, false).phase)
+        val failedCount = EmbeddingCacheRowReducer.refreshFailed(running)
+        assertEquals(EmbeddingCacheRowPhase.CACHING, failedCount.phase)
+        assertNull(EmbeddingCacheRowReducer.workChanged(failedCount, false).phase)
+    }
+
+    @Test
+    fun incoherentCountsAreRejectedInsteadOfClampedToComplete() {
+        org.junit.Assert.assertThrows(IllegalArgumentException::class.java) {
+            EmbeddingCacheRowReducer.refreshed(null, 11, 10)
+        }
+        org.junit.Assert.assertThrows(IllegalArgumentException::class.java) {
+            EmbeddingCacheRowReducer.refreshed(null, -1, 10)
+        }
+        assertNull(workSnapshot(remaining = 5, permille = 400))
+        assertNull(workSnapshot(remaining = 6, permille = 989))
+    }
+
+    @Test
+    fun cacheActionSlotReservesAllLabelsBeforeLoadingAndKeepsChildrenCentered() {
+        val start = File(requireNotNull(System.getProperty("user.dir"))).absoluteFile
+        val root = generateSequence(start) { it.parentFile }
+            .first { File(it, "app/src/main").isDirectory }
+        val source = File(
+            root,
+            "app/src/main/java/com/newoether/agora/ui/settings/SettingsSearchPage.kt",
+        ).readText().replace("\r\n", "\n")
+
+        assertTrue(source.contains("Modifier.size(cacheActionSize)"))
+        assertTrue(source.contains("actionLabelSizes.maxOf { it.width }"))
+        assertTrue(source.contains("actionLabelSizes.maxOf { it.height }"))
+        assertTrue(source.contains("ButtonDefaults.TextButtonContentPadding"))
+        assertTrue(source.contains("coerceAtLeast(76.dp)"))
+        assertTrue(source.contains("coerceAtLeast(48.dp)"))
+        assertFalse(source.contains("Modifier.width(76.dp)"))
+        val sizing = source.substringAfter("val actionTextMeasurer")
+            .substringBefore("LaunchedEffect(embeddingModelIds)")
+        assertFalse(sizing.contains("visualPhase"))
+        val action = source.substringAfter("modifier = Modifier.size(cacheActionSize)")
+            .substringBefore("IconButton(onClick = { showMenuForModel")
+        assertEquals(2, Regex("Modifier\\.fillMaxSize\\(\\)").findAll(action).count())
+        assertTrue(action.contains("animationSpec = tween(250)"))
+        val child = action.substringAfter(") { phase ->")
+        assertTrue(child.indexOf("contentAlignment = androidx.compose.ui.Alignment.Center") <
+            child.indexOf("when (phase)"))
+        listOf(
+            "R.string.recache_action",
+            "R.string.cache_action",
+        ).forEach { label ->
+            assertTrue("Sizing must include $label", sizing.contains("stringResource($label)"))
+            val startIndex = action.indexOf("stringResource($label)")
+            assertTrue("Missing $label action label", startIndex >= 0)
+            val labelBlock = action.substring(
+                startIndex,
+                (startIndex + 350).coerceAtMost(action.length),
+            )
+            assertTrue("$label must stay on one line", labelBlock.contains("maxLines = 1"))
+            assertTrue("$label must not wrap", labelBlock.contains("softWrap = false"))
+        }
+    }
+    @Test
+    fun ratingContentSharesFixedCenteredBoundsAndUsesNeutralFailureSurface() {
+        val start = File(requireNotNull(System.getProperty("user.dir"))).absoluteFile
+        val root = generateSequence(start) { it.parentFile }
+            .first { File(it, "app/src/main").isDirectory }
+        val source = File(
+            root,
+            "app/src/main/java/com/newoether/agora/ui/settings/RatingForm.kt",
+        ).readText().replace("\r\n", "\n")
+        assertTrue(source.contains("Modifier.fillMaxWidth().height(52.dp)"))
+        val action = source.substringAfter("targetState = submitting to submitted,")
+        assertEquals(2, Regex("Modifier\\.fillMaxSize\\(\\)").findAll(action).count())
+        assertTrue(action.contains("animationSpec = tween(250)"))
+        assertTrue(action.indexOf("contentAlignment = Alignment.Center") <
+            action.indexOf("when {"))
+        assertTrue(action.contains("loading -> CircularProgressIndicator("))
+        assertTrue(action.contains("done -> Text("))
+        assertTrue(action.contains("else -> Text("))
+        val failure = source.substringAfter("if (submitError) {").substringBefore("val isReady")
+        assertTrue(failure.contains("color = MaterialTheme.colorScheme.surfaceContainerHigh"))
+        assertTrue(failure.contains("color = MaterialTheme.colorScheme.onSurfaceVariant,"))
+        assertFalse(failure.contains("colorScheme.errorContainer"))
+        assertFalse(failure.contains("colorScheme.onErrorContainer"))
+    }
+
+    private fun workSnapshot(remaining: Int, permille: Int) =
+        embeddingCacheWorkSnapshotOrNull(3, "EXACT", 4, 10, remaining, permille)
+
+    private fun progress(processed: Int, total: Int) = EmbeddingCacheWorkSnapshot(
+        7, "EXACT", processed, total, total - processed, processed * 1000 / total,
+    )
+}

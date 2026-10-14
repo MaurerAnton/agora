@@ -5,25 +5,30 @@
 
   **BYOK LLM client with multi-provider access, agentic workflows, and remote device control.**
 
-  [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
+  [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
   [![Platform: Android](https://img.shields.io/badge/Platform-Android-green.svg)](https://developer.android.com)
   [![Kotlin](https://img.shields.io/badge/Kotlin-Native-blue.svg)](https://kotlinlang.org/)
-  <br/>**English** | [中文](README_CN.md)
+
+  [Website](https://agora.newoether.com) · [User Manual](https://newo-ether.github.io/Agora/)
+
+  <img src="assets/feature_graphic.png" alt="Agora — A BYOK AI app that takes back your data sovereignty." width="100%" />
 </div>
+
+## Introducing Agora
+
+[![Watch Introducing Agora on YouTube](https://i.ytimg.com/vi/P0p5PzROC0I/maxresdefault.jpg)](https://youtu.be/P0p5PzROC0I)
+
+[Watch on YouTube](https://youtu.be/P0p5PzROC0I)
 
 ## Download
 
 [![F-Droid](https://img.shields.io/badge/F--Droid-Install-blue?logo=fdroid)](https://f-droid.org/packages/com.newoether.agora/)
 &nbsp;&nbsp;
+[![Google Play](https://img.shields.io/badge/Google_Play-Install-blue?logo=google-play)](https://play.google.com/store/apps/details?id=com.newoether.agora)
+&nbsp;&nbsp;
 [![GitHub Releases](https://img.shields.io/badge/GitHub-Releases-blue?logo=github)](https://github.com/newo-ether/Agora/releases)
 
-- **F-Droid (Recommended)** — Install via [F-Droid](https://f-droid.org/), search for **Agora**.
-- **GitHub Releases** — Download the latest `.apk` from the [Releases page](https://github.com/newo-ether/Agora/releases).
-- **Build from Source** — Clone and build with Android Studio (see [Getting Started](#getting-started)).
-
----
-
-**Agora** — a BYOK Android client for AI power users. Connect to 8+ built-in providers (plus unlimited custom endpoints) with your own keys, branch conversations non-linearly, run models locally via llama.cpp, and control remote machines through encrypted shell. Everything stored on-device, nothing logged elsewhere. Open source, MIT licensed.
+Agora is an open-source Android client for using your own model accounts and endpoints. It stores conversations locally, sends model requests directly to the selected provider, supports non-linear message branches and Context Compact, and can extend agent runs with MCP, automation, search, memory, local models, and remote shell tools.
 
 ## Screenshots
 
@@ -35,143 +40,49 @@
 </tr>
 </table>
 
-## Why Agora?
-
-- **No Middlemen:** Direct API connections. No telemetry, no tracking, no corporate servers logging your conversations. Everything lives locally in a Room database.
-- **Non-Linear Thought:** A tree-structured message database lets you edit any past message, regenerate responses, and explore alternative branches without losing context.
-- **Agentic by Default:** Multi-round tool calling with web search, code execution, remote file operations, memory management, and semantic conversation search.
-- **Remote Control:** Manage servers, edit files, and search code on remote machines via the [Conch](https://github.com/newo-ether/conch) protocol — end-to-end encrypted with ECDH + AES-256-GCM.
-
 ## Features
 
-### Multi-Provider Access
-- **8 built-in providers:** OpenAI, Anthropic, Google Gemini, DeepSeek, Qwen (DashScope), OpenRouter, Ollama, Local (GGUF via llama.cpp)
-- **Unlimited custom providers** with arbitrary base URLs and API keys
-- **BYOK:** Bring your own API keys — no subscriptions, no middlemen
-- **Multiple API keys per provider** with named aliases for easy rotation
-- Per-provider base URL override for proxies and self-hosted endpoints
+- **Nine built-in provider types:** OpenAI, Anthropic, Google Gemini, DeepSeek, Qwen/DashScope, OpenRouter, Groq, Ollama, and Local llama.cpp; custom endpoints support OpenAI-compatible, Google, or Anthropic protocols.
+- **Tree-structured conversations:** edit or regenerate earlier messages without discarding alternative branches.
+- **Token-budget context:** 4K–1M estimated-token budgets and non-destructive Compact capsules that retain a verbatim recent suffix.
+- **Agentic tools:** web search, memory, past-conversation RAG, image generation, MCP servers, Tasks/Loops, remote shell/files, durable Conch jobs, and an F-Droid Alpine sandbox.
+- **Local intelligence:** GGUF chat models and local embeddings through llama.cpp.
+- **Portable data:** versioned `.agora` ZIP archives, ChatGPT/Claude imports, and scheduled backups.
+- **Customizable UI:** Material 3 themes, fonts, haptics, thinking/tool presentation, and 12 explicit interface languages plus system default.
 
-### Agentic Tools
-- **Web Search** — Brave, Serper, Tavily, and SearXNG integration
-- **Code Execution** — Gemini code execution for running and testing code inline
-- **Remote Shell & File I/O** — Execute commands, read/write/edit/glob/grep files on remote servers via [Conch](https://github.com/newo-ether/conch)
-- **Memory** — Persistent active memory and saved memory files across conversations
-- **Conversation Search** — RAG-powered semantic search over chat history
-
-### Thinking & Reasoning
-- Deep reasoning: OpenAI o1/o3, Anthropic extended thinking, Gemini thinking, DeepSeek-R1, Qwen QwQ
-- Configurable thinking level (low/medium/high)
-- Streaming think-tag renderer with collapsible UI and duration tracking
-
-### On-Device Intelligence
-- **Local LLM inference** via llama.cpp — run GGUF models entirely offline
-- **Local embeddings** for on-device semantic search (RAG)
-- **Ollama** provider for self-hosted models on your local network
-
-### Remote Device Control (Conch Protocol)
-- ECDH key exchange + AES-256-GCM encryption + HMAC-SHA256 signing
-- Token bucket rate limiting and nonce-based anti-replay protection
-- **Multi-device support** — configure and switch between multiple remote servers
-- **MCP integration** — Conch as a Claude Desktop MCP server
-
-### Knowledge Management
-- **RAG semantic search** across all past conversations using cosine similarity
-- Configurable similarity threshold and keyword/model search methods
-- Selectable embedding model (remote or local), independent of chat model
-- **Context window management** with real-time token counting and sliding window
-- Visual context rollout indicator dims messages outside the active window
-
-### Data Portability
-- **.agora Export/Import:** Conversations, memories, prompts, settings, and API keys in one portable file
-- **Merge, Replace, and Skip** import strategies
-- **Third-Party Import:** Claude and ChatGPT export formats (.zip / .json)
-- API key safety warnings for both export and import workflows
-
-### Customization
-- **System prompt templates** with three-section editor (system prompt + user prepend + user append)
-- Variable substitution: `{sent_time}`, `{sent_date}`, and extensible variable system
-- Per-conversation model and system prompt switching
-- Per-message model selection from the chat bottom bar
-- Per-conversation generation overrides (temperature, max tokens, penalties)
-- **Auto title generation** with configurable model
-
-### UI & UX
-- Modern Material 3 design in Jetpack Compose with dynamic color (Material You)
-- Light / Dark / System theme modes with configurable color schemes
-- **Non-linear branching:** Edit any past message and branch into alternative conversation paths
-- Real-time streaming with message anchoring and animated auto-scrolling
-- Immersive gesture-driven image and media viewer
-- Markdown rendering with syntax highlighting, LaTeX math, and code blocks
-- Image, video, PDF, and file attachment support with thumbnails
-- English and Chinese language support
+Conch application-layer encryption is enabled when an API key is configured. A blank-key Conch endpoint sends plain JSON and should use HTTPS. External providers and tools receive only the data needed for the feature you invoke; see the privacy documentation for the full boundary.
 
 ## Documentation
 
-📖 **[Browse the User Manual](https://newo-ether.github.io/Agora/)** — 15 pages covering installation, providers, tools, search, memory, shell, and more.
+- 📖 **[User Manual](https://newo-ether.github.io/Agora/)** — 28 maintained manual pages covering setup, providers, Context Compact, MCP, automation, tools, privacy, and data management.
+- 🏗️ **[Architecture Guide](ARCHITECTURE.md)** — current runtime, persistence, providers, tools, and data flows.
+- 🧰 **[Development documentation](development/documentation-maintenance.md)** — internal contracts, baselines, and documentation-maintenance policy.
 
-🏗️ **[Architecture Guide](ARCHITECTURE.md)** — complete codebase walkthrough: data layer, API providers, JNI, UI, and data flows.
+Public manuals live under `docs/<locale>/`. Internal engineering documents live under `development/`.
 
 ## Getting Started
 
-### Prerequisites
-- [Android Studio](https://developer.android.com/studio) (Ladybug or newer recommended)
-- Android SDK 34+
-- A valid API key from a supported provider
+1. Install Agora and open **Settings** from the conversation drawer.
+2. Add credentials under **Providers**.
+3. Sync and enable models under **Models**.
+4. Select a model from the chat bottom bar and send a message.
 
-### Quick Setup
+See the [Getting Started manual](https://newo-ether.github.io/Agora/getting-started/).
 
-<table>
-<tr>
-<td width="20%"><b>① Launch</b><br/>Open Agora on your device.</td>
-<td width="20%"><b>② Settings</b><br/>Open <b>Settings</b> from the nav bar.</td>
-<td width="20%"><b>③ API Key</b><br/>Select a <b>Provider</b> and add your <b>API Key</b>.</td>
-<td width="20%"><b>④ Models</b><br/><b>Models</b> → "Sync from All Providers."</td>
-<td width="20%"><b>⑤ Customize</b><br/>System prompts, context, search, memory.</td>
-</tr>
-</table>
+### Build from source
 
-### Running Local Models
+The current project targets Android SDK 36 and uses JDK 21 in its repository workflow. Install Android Studio plus the required SDK/NDK components, then use the root project scripts and instructions.
 
-<table>
-<tr>
-<td width="25%"><b>① Place</b><br/>Put a GGUF model file on your device.</td>
-<td width="25%"><b>② Import</b><br/>Settings → Provider → Local → "Import GGUF Model".</td>
-<td width="25%"><b>③ Configure</b><br/>Set context size, temperature, and other parameters.</td>
-<td width="25%"><b>④ Select</b><br/>Choose your local model from the chat picker.</td>
-</tr>
-</table>
+## Tech stack
 
-### Setting Up Remote Shell (Conch)
-
-<table>
-<tr>
-<td width="33%"><b>① Deploy</b><br/>Deploy the <a href="https://github.com/newo-ether/conch">Conch server</a> on your target machine.</td>
-<td width="33%"><b>② Add Device</b><br/>Settings → Shell Devices → add URL and API key.</td>
-<td width="33%"><b>③ Use</b><br/>The model auto-discovers shell devices for commands, files, and search.</td>
-</tr>
-</table>
-
-## Tech Stack
-
-- **Language:** [Kotlin](https://kotlinlang.org/)
-- **UI Framework:** [Jetpack Compose](https://developer.android.com/jetpack/compose) (Material 3, dynamic color)
-- **Architecture:** MVVM with Kotlin Coroutines & Flow
-- **Local Storage:** [Room Database](https://developer.android.com/training/data-storage/room) with tree-structured message schema & DataStore Preferences
-- **Networking:** OkHttp with SSE streaming
-- **Serialization:** `kotlinx.serialization`
-- **Native:** llama.cpp via Android NDK (CMake) for on-device LLM inference and embeddings
-- **Image Loading:** Coil
-- **Markdown:** Multiplatform Markdown Renderer M3
-- **Math:** JLaTeXMath-Android
-
-## Contributing
-
-Contributions are welcome! Feel free to fork the repository, submit pull requests, or open an issue.
+Kotlin, Jetpack Compose Material 3, Coroutines/Flow, Room, DataStore, OkHttp/SSE, `kotlinx.serialization`, Android NDK/CMake, llama.cpp, Coil, and Markdown/LaTeX rendering.
 
 ## Privacy
 
-Agora does not collect, store, or transmit any personal data. All conversations, API keys, and settings are stored locally on your device. Messages are sent directly from your device to the AI provider you configure — no intermediary servers, no telemetry, no tracking. See the full [Privacy Policy](PRIVACY.md).
+Agora does not relay chat completions or run general analytics. Conversations remain in app-managed local storage, while configured providers and tools are contacted directly when used. Optional update checks and explicitly submitted ratings have documented network destinations. After a crash, one report is kept locally and is sent only if the user confirms on the next launch; it contains diagnostics but no conversation text or credentials. Secret settings normally use an Android Keystore AES-GCM envelope, but legacy values and a deliberate encryption-failure fallback can remain plaintext in DataStore; exported secrets are also unencrypted inside a selected `.agora` archive.
 
-## License
+Read [Privacy & Security](https://newo-ether.github.io/Agora/privacy/) and the repository [Privacy Policy](PRIVACY.md).
 
-This project is open-source under the [MIT License](LICENSE).
+## Contributing and license
+
+Contributions are welcome through issues and pull requests. Agora is released under the [MIT License](LICENSE).

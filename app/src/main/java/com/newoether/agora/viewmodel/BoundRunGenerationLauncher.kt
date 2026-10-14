@@ -165,6 +165,7 @@ internal class BoundRunGenerationLauncher(
                     )
                 }
             }
+            }
             val result = runGeneration()
             result.followUpParentMessageId?.let { parentMessageId ->
                 onAutomaticCompactContinuation(

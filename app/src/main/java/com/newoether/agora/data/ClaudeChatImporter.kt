@@ -2,15 +2,18 @@ package com.newoether.agora.data
 
 import com.newoether.agora.model.AttachmentItem
 import com.newoether.agora.model.AttachmentMeta
+import com.newoether.agora.model.CitationRecord
+import kotlinx.serialization.ExperimentalSerializationApi
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
-import kotlinx.serialization.decodeFromString
 import kotlinx.serialization.encodeToString
 import kotlinx.serialization.json.Json
-import java.io.ByteArrayInputStream
-import java.text.SimpleDateFormat
+import kotlinx.serialization.json.JsonElement
+import kotlinx.serialization.json.decodeFromStream
+import java.io.BufferedInputStream
+import java.io.InputStream
+import java.time.Instant
 import java.util.zip.ZipInputStream
-import java.util.Locale
 
 class ClaudeChatImporter {
 
@@ -41,13 +44,7 @@ class ClaudeChatImporter {
         val type: String = "",
         val text: String = "",
         val thinking: String = "",
-        val citations: List<ClaudeCitation> = emptyList()
-    )
-
-    @Serializable
-    data class ClaudeCitation(
-        val uuid: String = "",
-        val title: String? = null
+        val citations: List<JsonElement> = emptyList()
     )
 
     @Serializable
@@ -118,58 +115,58 @@ class ClaudeChatImporter {
         val errors: List<String> = emptyList()
     )
 
-    fun extractJsonFromBytes(bytes: ByteArray): Result<String> {
-        return try {
-            // Check for ZIP magic bytes
-            if (bytes.size >= 2 && bytes[0] == 0x50.toByte() && bytes[1] == 0x4B.toByte()) {
-                val zipInput = ZipInputStream(ByteArrayInputStream(bytes))
+    private val jsonParser = Json { ignoreUnknownKeys = true; isLenient = true; coerceInputValues = true }
+
+    /**
+     * Streams and parses a Claude export without buffering the whole file.
+     * [openStream] is a factory so a ZIP archive can be probed and then have
+     * its entries decoded from fresh reads.
+     *
+     * Handles a raw JSON document (either the wrapped `{"conversations": [...]}`
+     * form or a bare `[...]` array) as well as a Claude data-export ZIP, picking
+     * the entry whose name mentions "conversation" and otherwise falling back to
+     * the first entry that yields conversations.
+     */
+    @OptIn(ExperimentalSerializationApi::class)
+    fun extractAndParse(openStream: () -> InputStream): Result<ClaudeConversations> = runCatching {
+        val zipped = BufferedInputStream(openStream()).use { isZip(it) }
+        if (zipped) {
+            ZipInputStream(BufferedInputStream(openStream())).use { zipInput ->
+                var fallback: ClaudeConversations? = null
                 var entry = zipInput.nextEntry
-                // Prefer conversations.json, then any JSON that's not user/account data
-                var fallbackJson: String? = null
                 while (entry != null) {
                     if (!entry.isDirectory && entry.name.endsWith(".json")) {
-                        val json = zipInput.readBytes().decodeToString()
-                        if (entry.name.contains("conversation", ignoreCase = true)) {
-                            zipInput.close()
-                            return Result.success(json)
-                        }
-                        if (fallbackJson == null && json.contains("\"chat_messages\"")) {
-                            fallbackJson = json
+                        val convs = decodeConversations { NonClosingInputStream(zipInput) }.getOrNull()
+                        if (convs != null && convs.conversations.isNotEmpty()) {
+                            if (entry.name.contains("conversation", ignoreCase = true)) {
+                                return@runCatching convs
+                            }
+                            if (fallback == null) fallback = convs
                         }
                     }
                     zipInput.closeEntry()
                     entry = zipInput.nextEntry
                 }
-                zipInput.close()
-                if (fallbackJson != null) {
-                    Result.success(fallbackJson)
-                } else {
-                    Result.failure(Exception("No conversation data found in ZIP archive"))
-                }
-            } else {
-                Result.success(bytes.decodeToString())
+                fallback ?: throw Exception("No conversation data found in ZIP archive")
             }
-        } catch (e: Exception) {
-            Result.failure(e)
+        } else {
+            decodeConversations { BufferedInputStream(openStream()) }.getOrThrow()
         }
     }
 
-    private val jsonParser = Json { ignoreUnknownKeys = true; isLenient = true; coerceInputValues = true }
-
-    fun parseJson(json: String): Result<ClaudeConversations> {
-        return try {
-            // Try wrapped format: {"conversations": [...]}
-            try {
-                val result = jsonParser.decodeFromString<ClaudeConversations>(json)
-                if (result.conversations.isNotEmpty()) {
-                    return Result.success(result)
-                }
-            } catch (_: Exception) { }
-            // Try direct array format: [{...}, ...]
-            val list = jsonParser.decodeFromString<List<ClaudeConversation>>(json)
-            Result.success(ClaudeConversations(list))
-        } catch (e: Exception) {
-            Result.failure(e)
+    /**
+     * Decodes a single conversations document from [openContent], selecting the
+     * wrapped-object vs bare-array shape by peeking the first character so the
+     * stream is parsed in a single pass.
+     */
+    @OptIn(ExperimentalSerializationApi::class)
+    private fun decodeConversations(openContent: () -> InputStream): Result<ClaudeConversations> = runCatching {
+        BufferedInputStream(openContent()).use { input ->
+            when (peekFirstNonWhitespace(input)) {
+                '{' -> jsonParser.decodeFromStream<ClaudeConversations>(input)
+                '[' -> ClaudeConversations(jsonParser.decodeFromStream<List<ClaudeConversation>>(input))
+                else -> throw Exception("Unrecognized JSON format")
+            }
         }
     }
 
@@ -223,11 +220,21 @@ class ClaudeChatImporter {
 
             for (msg in conv.chatMessages) {
                 // Always prefer content blocks over raw text to properly exclude thinking
+                val answerBlocks = msg.content.filter { it.type != "thinking" }
                 val mergedText = if (msg.content.isNotEmpty()) {
-                    msg.content.filter { it.type != "thinking" }.map { it.text }.joinToString("")
+                    answerBlocks.joinToString("") { it.text }
                 } else {
                     msg.text
                 }
+                val importedCitations = mutableListOf<CitationRecord>()
+                var answerOffset = 0
+                answerBlocks.forEach { block ->
+                    block.citations.mapNotNullTo(importedCitations) { citation ->
+                        projectClaudeCitation(citation, answerOffset, block.text)
+                    }
+                    answerOffset += block.text.length
+                }
+                val citationJson = encodeImportedCitations(importedCitations, mergedText)
 
                 // Claude export does not embed image binary data; images are metadata-only in the files array
 
@@ -254,7 +261,7 @@ class ClaudeChatImporter {
                         timestamp = iso8601ToMillis(msg.createdAt),
                         thoughtTimeMs = null,
                         modelName = null,
-                        toolCallJson = null,
+                        toolCallJson = citationJson,
                         attachmentMeta = attachmentMeta
                     )
                 )
@@ -288,15 +295,9 @@ class ClaudeChatImporter {
         }
     }
 
-    private fun iso8601ToMillis(iso8601: String): Long {
-        return try {
-            val dateFormat = SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss.SSSSSS'Z'", Locale.US)
-            dateFormat.timeZone = java.util.TimeZone.getTimeZone("UTC")
-            dateFormat.parse(iso8601)?.time ?: System.currentTimeMillis()
-        } catch (e: Exception) {
-            System.currentTimeMillis()
-        }
-    }
+    private fun iso8601ToMillis(iso8601: String): Long =
+        runCatching { Instant.parse(iso8601).toEpochMilli() }
+            .getOrElse { System.currentTimeMillis() }
 
     @Serializable
     data class ClaudeConversations(

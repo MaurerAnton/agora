@@ -13,6 +13,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import com.newoether.agora.R
 import com.newoether.agora.data.ConversationSettings
+import com.newoether.agora.model.ContextBudget
 import java.util.Locale
 
 @Composable
@@ -20,17 +21,16 @@ fun AdvancedSettingsDialog(
     overrides: ConversationSettings,
     globalDefaults: ConversationSettings,
     onSave: (ConversationSettings) -> Unit,
-    onResetToDefaults: () -> Unit,
     onDismiss: () -> Unit
 ) {
-    var contextWindow by remember { mutableStateOf(overrides.contextWindow) }
+    var contextWindow by remember { mutableStateOf(overrides.contextWindow?.let(ContextBudget::normalize)) }
     var temperature by remember { mutableStateOf(overrides.temperature) }
     var maxTokens by remember { mutableStateOf(overrides.maxTokens) }
     var topP by remember { mutableStateOf(overrides.topP) }
     var frequencyPenalty by remember { mutableStateOf(overrides.frequencyPenalty) }
     var presencePenalty by remember { mutableStateOf(overrides.presencePenalty) }
 
-    fun currentSettings() = ConversationSettings(
+    fun currentSettings() = overrides.copy(
         contextWindow = contextWindow,
         temperature = temperature,
         maxTokens = maxTokens,
@@ -53,11 +53,11 @@ fun AdvancedSettingsDialog(
                 // Context Window
                 AdvancedParamRow(
                     label = stringResource(R.string.context_window),
-                    value = contextWindow?.toFloat(),
-                    defaultVal = gDefaults.contextWindow?.toFloat(),
-                    valueRange = 5f..100f,
-                    format = { it.toInt().toString() },
-                    onChange = { contextWindow = it.toInt() },
+                    value = contextWindow?.let(ContextBudget::normalize),
+                    defaultVal = gDefaults.contextWindow?.let(ContextBudget::normalize),
+                    presets = ContextBudget.PRESETS,
+                    format = ContextBudget::compactLabel,
+                    onChange = { contextWindow = it },
                     onReset = { contextWindow = null }
                 )
                 // Temperature
@@ -71,12 +71,11 @@ fun AdvancedSettingsDialog(
                     onReset = { temperature = null }
                 )
                 // Max Tokens
-                val maxTokensPresets = intArrayOf(256, 512, 1024, 2048, 4096, 8192, 16384, 32768)
                 AdvancedParamRow(
                     label = stringResource(R.string.gen_max_tokens),
                     value = maxTokens,
                     defaultVal = gDefaults.maxTokens,
-                    presets = maxTokensPresets,
+                    presets = advancedMaxTokensPresets,
                     format = { it.toString() },
                     onChange = { maxTokens = it },
                     onReset = { maxTokens = null }
@@ -116,7 +115,6 @@ fun AdvancedSettingsDialog(
         confirmButton = {
             Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
                 TextButton(onClick = {
-                    onResetToDefaults()
                     contextWindow = null; temperature = null; maxTokens = null
                     topP = null; frequencyPenalty = null; presencePenalty = null
                 }) { Text(stringResource(R.string.gen_reset)) }
@@ -124,7 +122,7 @@ fun AdvancedSettingsDialog(
                     TextButton(onClick = onDismiss) {
                         Text(stringResource(R.string.provider_cancel))
                     }
-                    TextButton(onClick = { onSave(currentSettings()) }) {
+                    TextButton(enabled = validGenerationParameters(currentSettings()), onClick = { onSave(currentSettings()) }) {
                         Text(stringResource(R.string.provider_save))
                     }
                 }
@@ -190,7 +188,7 @@ private fun AdvancedParamRow(
                 Text(
                     text = stringResource(R.string.gen_not_specified),
                     style = MaterialTheme.typography.labelSmall,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.6f)
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
                 )
             }
         }
@@ -256,13 +254,17 @@ private fun AdvancedParamRow(
                 Text(
                     text = stringResource(R.string.gen_not_specified),
                     style = MaterialTheme.typography.labelSmall,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.6f)
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
                 )
             }
         }
         Slider(
             value = index.toFloat(),
-            onValueChange = { onChange(presets[it.toInt().coerceIn(0, presets.lastIndex)]) },
+            // Rounding, not truncation: a tick that lands on 2.999999 must still select preset 3,
+            // otherwise dragging skips presets.
+            onValueChange = {
+                onChange(presets[kotlin.math.round(it).toInt().coerceIn(0, presets.lastIndex)])
+            },
             valueRange = 0f..(presets.size - 1).toFloat(),
             steps = presets.size - 2,
             modifier = Modifier.fillMaxWidth()

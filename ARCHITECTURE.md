@@ -1,793 +1,509 @@
-# How Agora Works — A Complete Guide
+# Agora Architecture
 
-## 1. Architecture at a Glance
+This document describes the current repository architecture. It intentionally avoids
+line counts and exhaustive file inventories because those became stale faster than the
+contracts they were meant to explain.
 
-```
-┌─────────────────────────────────────────────────────────┐
-│  UI Layer (Compose + Material 3)                         │
-│  ChatApp → MessageList → MessageItem                    │
-│          → ChatBottomBar                                │
-│          → FullScreenMediaViewer                        │
-│          → SettingsScreen (multi-tab, ~15 sub-pages)     │
-├─────────────────────────────────────────────────────────┤
-│  ViewModel Layer                                         │
-│  ChatViewModel (state, orchestration, ~2557 lines)       │
-│  GenerationManager (LLM calls, tool loops, ~1864 lines)  │
-├─────────────────────────────────────────────────────────┤
-│  Service Layer                                           │
-│  AgoraForegroundService (keeps generation alive)         │
-│  AppForegroundTracker (app lifecycle awareness)          │
-├─────────────────────────────────────────────────────────┤
-│  API Layer (8 built-in + custom providers)               │
-│  LlmProvider interface → Flow<StreamEvent>               │
-│  BaseOpenAiProvider (template for 5 providers)           │
-│  CustomOpenAiProvider (user-defined endpoints)           │
-│  LocalProvider + LlamaChatEngine (on-device GGUF)        │
-│  Anthropic, Gemini, Ollama (direct LlmProvider impls)    │
-├─────────────────────────────────────────────────────────┤
-│  Data Layer                                              │
-│  Room DB (conversations + messages + embeddings) v12     │
-│  DataStore (settings, API keys, model list, theming)     │
-│  Filesystem (memory .md files, GGUF models)              │
-│  Export/Import (.agora, Claude, ChatGPT formats)         │
-├─────────────────────────────────────────────────────────┤
-│  Shell Layer (Conch Protocol)                            │
-│  ShellCrypto (ECDH + AES-256-GCM + HMAC-SHA256)         │
-│  ShellClient (remote command + file I/O)                 │
-├─────────────────────────────────────────────────────────┤
-│  Native Layer (JNI via CMake)                            │
-│  llama_chat_jni.cpp (chat generation)                    │
-│  llama_jni.cpp (embeddings)                              │
-│  llama.cpp (Git submodule under thirdparty/)             │
-└─────────────────────────────────────────────────────────┘
+Normative development behavior is indexed by `.harness/PROJECTS.md`. Before changing Agora, read
+`development/README.md` and every applicable module contract; for message generation, Run
+boundaries, Provider context, Compact, and Regenerate, `development/message-generation.md` is the
+authoritative contract when older descriptive prose conflicts.
+
+## 1. System shape
+
+Agora is a single-module Android application built with Kotlin, Jetpack Compose,
+coroutines, Room, DataStore, WorkManager, OkHttp, and a small native layer.
+
+```text
+Compose UI
+   │
+   ▼
+ChatViewModel ── MessageGenerationController ── ConversationStateRegistry
+   │                         │
+   │                         ▼
+   │                 GenerationManager
+   │                    │         │
+   │                    │         └── ToolProvider implementations
+   │                    ▼
+   │               LlmProvider implementations
+   │
+   ├── ConversationRepository ── Room (v22)
+   ├── SettingsRepository ───── DataStore
+   └── MemoryManager / attachment files / export and backup files
 ```
 
-**MVVM with a single ViewModel.** `ChatViewModel` owns all app state. It's created via `ChatViewModelFactory` which injects `ChatDao`, `SettingsManager`, and `MemoryManager`. The UI observes `StateFlow`s.
+AppContainer owns process-scoped dependencies. Foreground-open automation bridges into the
+controller and joins the exact generation Job. Headless automation enters the same direct-only
+conversation mailbox and accepted-input graph transaction, while `TaskExecutionEngine` remains a
+bounded adapter for headless request building, Provider-effect execution, and the external
+body of mailbox-approved Compact effects.
 
----
+The project uses manual dependency injection through `di/AppContainer.kt`. Shared
+providers, repositories, automation coordinators, and the local inference engine are
+created once per process. A foreground `ChatViewModel` and headless automation reuse
+those instances instead of building competing stacks.
 
-## 2. Data Layer
+## 2. Source layout
 
-### 2a. Room Database (`data/local/ChatDatabase.kt`)
-
-Three tables at version 12, with 10 incremental migrations (v2→v3 through v11→v12):
-
-#### `conversations` table (`ChatEntity`)
-
-| Column | Type | Purpose |
-|---|---|---|
-| `id` | String (PK) | UUID |
-| `title` | String | Display name |
-| `lastUpdated` | Long | Sort order |
-| `selectedBranchesJson` | String? | JSON map of `parentId → chosenChildId` for branch selection |
-| `systemPromptId` | String? | Which system prompt is active for this conversation |
-| `modelId` | String? | Which model is active |
-
-#### `messages` table (`MessageEntity`)
-
-| Column | Type | Purpose |
-|---|---|---|
-| `id` | String (PK) | UUID (with prefixes `tool_`/`result_` for synthetic messages) |
-| `conversationId` | String (FK) | Parent conversation (CASCADE on delete) |
-| `parentId` | String? | Parent message — forms the **tree** structure |
-| `text` | String | Message body |
-| `images` | List\<String\> | Local file paths to processed images |
-| `thoughts` | String? | Aggregated thinking/reasoning text |
-| `thoughtTitle` | String? | Title extracted from thinking (e.g. `**Analysis**`) |
-| `tokenCount` | Int | Total tokens used (from API usage metadata) |
-| `status` | Enum | SENDING → THINKING → TOOL_CALLING → SUCCESS / STOPPED / ERROR |
-| `participant` | Enum | USER or MODEL |
-| `timestamp` | Long | Creation time |
-| `thoughtTimeMs` | Long? | How long the model spent thinking |
-| `modelName` | String? | Which model generated this |
-| `toolCallJson` | String? | JSON of `MessageSegment` list (thought + tool segments) |
-| `attachmentMeta` | String? | JSON of `AttachmentMeta` (file name, MIME type, size for non-image attachments) |
-
-#### `embeddings` table (`EmbeddingEntity`)
-
-| Column | Type | Purpose |
-|---|---|---|
-| `id` | Long (PK, auto) | Auto-increment |
-| `messageId` | String | FK to messages |
-| `modelId` | String | Which embedding model produced this |
-| `embedding` | ByteArray | Big-endian float32 vector |
-| `chunkText` | String | First 500 chars of source text (preview) |
-| `dimension` | Int | Embedding vector dimension |
-
-Unique constraint on `(messageId, modelId)` — one embedding per message per model.
-
-**Migrations at a glance:**
-| Version | Change |
+| Path | Responsibility |
 |---|---|
-| 2→3 | `selectedBranchesJson` on conversations |
-| 3→4 | `thoughtTimeMs` on messages |
-| 4→5 | `modelName` on messages |
-| 5→6 | `systemPromptId` on conversations |
-| 6→7 | `modelId` on conversations |
-| 7→8 | `thoughtTitle` on messages |
-| 8→9 | `toolCallJson` on messages |
-| 9→10 | `embeddings` table created |
-| 10→11 | `modelId` on embeddings, unique index on `(messageId, modelId)` |
-| 11→12 | `attachmentMeta` on messages |
-
-Messages form a **tree**, not a linear list. Each message has a `parentId` pointer. When you edit or regenerate, a new sibling is created under the same parent. The "selected path" is determined by `_selectedChildren` which maps `parentId → chosenChildId`.
-
-`MessageConverters` handles type conversion for `Participant`, `MessageStatus`, `List<String>` (JSON-encoded).
-
-### 2b. DataStore Settings (`data/SettingsManager.kt`, ~508 lines)
-
-Persists to `settings` DataStore preferences file. Stores:
-
-- `selectedModel` — default model (e.g. `"gemini-1.5-flash"`)
-- `availableModels` — JSON map `{ "Google": ["Google:gemini-2.5-flash", ...], "OpenAI": ["OpenAI:gpt-4", ...] }`
-- `enabledModels` — which models the user has toggled on
-- `modelAliases` — custom display names for models
-- `apiKeys` — list of `ApiKeyEntry` (id, name, key, provider)
-- `activeApiKeyIds` — which key is selected per provider `{ "Google": "key-uuid", ... }`
-- `customProviders` — JSON list of user-defined `CustomProviderEntry` (name, baseUrl)
-- `systemPrompts` — list of `SystemPromptEntry` with three-section editor support (system + userPrepend + userPostpend)
-- `activeSystemPromptId` — global default system prompt
-- `maxContextWindow` — how many messages to send (default 20)
-- `visualizeContextRollout` — dim messages outside context window
-- `codeExecutionEnabled` / `googleSearchEnabled` / `thinkingEnabled` — bool toggles
-- `thinkingLevel` — "low" / "medium" / "high"
-- `providerBaseUrls` — custom base URLs per provider (for proxies, Ollama, etc.)
-- `titleGenerationEnabled` / `titleGenerationModel` — auto-title settings
-- `accessPastConversations` / `accessSavedMemories` / `accessActiveMemory` — memory tool access toggles
-- `ragSearchEnabled` / `modelSearchMethod` / `manualSearchMethod` / `ragThreshold` — RAG config
-- `embeddingModels` / `activeEmbeddingModelId` — embedding model list and active selection
-- `autoCacheEnabled` — automatically cache embeddings for new messages
-- `searchContextWindow` / `searchMatchLimit` — search result limits
-- `localChatModels` / `activeLocalChatModelId` — local GGUF chat model list and active
-- `appLanguage` — UI language override
-- `webSearchEnabled` / `webSearchProvider` / `webSearchApiKeysJson` / `webSearchBaseUrl` / `webSearchNumResults` — web search config
-- `shellEnabled` — enable Shell/Conch tool access for models
-- `shellDevicesJson` — list of `ShellDeviceEntry` (name, serverUrl, apiKey, timeout, conchPublicKey)
-- `themeMode` / `colorScheme` / `dynamicColor` / `schemeStyle` — appearance/theming settings
-- `autoUpdateCheck` / `lastUpdateCheckTime` — update checker
-- **Conversation overrides** — per-conversation overrides: `contextWindow`, `temperature`, `maxTokens`, `topP`, `frequencyPenalty`, `presencePenalty`, code/Google/thinking/web/shell toggles
-
-All reads use `Flow`; all writes use `dataStore.edit {}`. The ViewModel calls `.stateIn(viewModelScope)` on each flow to create hot `StateFlow`s.
-
-### 2c. Memory Manager (`data/MemoryManager.kt`)
-
-A file-based "memory" store that the model can manipulate via tool calls:
-
-- **Active memory** (`active_memory.md`) — prepended to every API call's system prompt
-- **Saved files** (`memory_db/*.md`) — individual markdown files the model can create, read, edit, delete
-
-Thread-safe via `@Synchronized`. Path traversal protected by canonical path checks.
-
-### 2d. Data Export & Import
-
-**DataExporter** (`data/DataExporter.kt`) — exports as `.agora` ZIP with categories:
-- Conversations (JSON), Memories (markdown files), System Prompts (JSON), Settings (JSON), API Keys (JSON)
-- Selective export: user can choose which categories to include
-- API key safety warning included
-
-**DataImporter** (`data/DataImporter.kt`) — imports `.agora` files with three strategies:
-- **Merge** — add new items, skip duplicates
-- **Replace** — overwrite existing data
-- **Skip** — only import items that don't exist
-
-**Third-party importers:**
-- `ClaudeChatImporter` — imports Claude exports (.zip with conversations.json)
-- `GptChatImporter` — imports ChatGPT exports (.zip with conversations.json)
-
----
-
-## 3. The ViewModel Layer
-
-### 3a. ChatViewModel (`viewmodel/ChatViewModel.kt`, ~2557 lines)
-
-This is the central orchestrator. Its responsibilities:
-
-**Conversation management:**
-- `createNewChat()` — clears state, switches to "new chat" mode
-- `selectConversation(id)` — loads a conversation, restoring branch selections from `selectedBranchesJson`
-- `deleteConversation(id)` — cascades: deletes embeddings → messages → conversation
-- `renameConversation(id, title)`, `generateTitle(conversationId)`
-
-**Message sending (3 entry points):**
-- `sendMessage(text, images, attachmentMeta)` — new message in conversation
-- `regenerate(messageId)` — replace a model response with a new sibling
-- `editMessage(messageId, newText)` — edit a user message, creating a branch
-
-All three follow the same pattern:
-1. Compute IDs, create placeholder model message in `_allMessages`
-2. Set `_streamingMessage` = placeholder (UI shows streaming bubble)
-3. Launch `GenerationManager.generate()` in `generationScope` (IO dispatcher)
-4. Pass callbacks: `onStreamUpdate`, `onLoadingChange`, `onGeneratingIdChange`, `onStreamClear`
-
-**Branch switching:**
-- `switchBranch(parentId, direction)` — cycle through sibling messages at the same tree level
-- Updates `_selectedChildren` which the `messages` StateFlow reads
-
-**The `messages` StateFlow** is the heart of the app. It `combine`s three flows:
-1. `_allMessages` — all messages in the current conversation (from Room DB Flow)
-2. `_streamingMessage` — the currently-streaming message (null when idle)
-3. `_selectedChildren` — branch selection map
-
-It walks the tree from the root (parentId=null), following `_selectedChildren` to pick which child to follow at each level. The streaming message **overlays** its corresponding DB message. Synthetic `tool_`/`result_` messages are hidden from the display path. Result: a linear list of `ChatMessage` for the UI.
-
-**RAG/Embeddings management:**
-- `indexMessageForRag()` — indexes a single message (called by `onMessagePersisted` callback)
-- `cacheMessagesForModel()` — bulk-cache all messages for an embedding model
-- `semanticSearch()` — delegates to `GenerationManager.semanticSearch()`
-- `refreshCacheCounts()` — calculates per-model cached/total counts, clamping orphaned counts
-- Orphaned embeddings cleanup on init via `deleteOrphanedEmbeddings()`
-
-**Local chat model management:**
-- `addLocalChatModel()`, `deleteLocalChatModel()`, `updateLocalChatModel()`
-- `isLocalModelIdTaken()` — uniqueness check for modelId slug
-- Auto-syncs local models into `availableModels` and `modelAliases` via a `collect` in init
-
-**Model syncing** (`fetchAvailableModels`): iterates all 8 built-in + custom providers, calls `provider.fetchModels()`, saves results to DataStore. Skips "Local" (managed separately).
-
-**Shell device management:**
-- CRUD operations for Conch shell devices
-- Exposes shell device list to GenerationManager for tool discovery
-
-### 3b. GenerationManager (`viewmodel/GenerationManager.kt`, ~1864 lines)
-
-This is the engine that actually talks to LLMs. Configuration is via two immutable data classes: `GenerationConfig` (provider, model, API key, system prompt, toggles, conversation overrides) and `GenerationContext` (memory access, shell config, RAG settings, web search config, embedding params).
-
-**`generate()` function** — the main pipeline:
-
-```
-1. Build message path from DB (walking parentId chain)
-2. If regenerating: trim path to exclude the message being replaced
-3. Build memory tools, shell tools, web search tool, RAG tool from GenerationContext
-4. Start AgoraForegroundService (keeps process alive during generation)
-5. Call provider.generateResponse(currentPath, ProviderConfig) → Flow<StreamEvent>
-6. Collect events:
-   - TextChunk → accumulate into totalText
-   - ThoughtChunk → accumulate into currentThoughtBuf + totalThoughts
-   - ToolCallRequest / ToolCallsRequest → execute tool locally, add to segments
-   - UsageUpdate → track token count
-   - Error → set error status
-   - Retrying → track retry attempts
-7. After each event: call onStreamUpdate() with live ChatMessage (throttled to ~500ms)
-8. If tool calls were made: enter multi-tool loop (unlimited rounds, bounded by coroutine liveness)
-   - Persist tool_ and result_ messages to DB
-   - Call provider.generateResponse() again with updated path
-9. In finally: persist final message to DB, call onStreamClear(), stop foreground service
-```
-
-**Memory tools** (`buildMemoryTools()`): defines 6 tools the model can call:
-- `list_memory_files`, `read_memory_file`, `create_memory_file`, `edit_memory_file`, `delete_memory_file`, `update_active_memory`
-
-**Shell tools** (`buildShellTools()`): defines 5 tools for remote device control via Conch protocol:
-- `shell_execute` — execute commands on remote servers
-- `file_read`, `file_write`, `file_edit` — remote file I/O
-- `file_glob`, `file_grep` — remote file search
-
-**Web search tool** (`buildWebSearchTool()`): Brave Search API (requires key), Serper, Tavily, or SearXNG (configurable URL, no key).
-
-**RAG tool** (`buildRagTool()`): `search_conversations` uses semantic (cosine similarity) or keyword search depending on `modelSearchMethod`.
-
-**Image processing** (`processImages()`): Decodes URIs from the photo picker, resizes to max ~1024px, re-compresses to JPEG at 80% quality, saves to internal storage. Handles video frames via `MediaMetadataRetriever`. Handles PDF pages via `PdfPageRenderer`.
-
-**Semantic search** (`semanticSearch()`): Computes query embedding, iterates all stored embeddings for the active model, computes cosine similarity, filters by `ragThreshold`, returns top N results with scores.
-
----
-
-## 4. The API Provider Layer
-
-### 4a. Interface & Types (`api/LlmProvider.kt`)
-
-```kotlin
-interface LlmProvider {
-    val name: String
-    val defaultBaseUrl: String
-    fun generateResponse(messages: List<ChatMessage>, config: ProviderConfig): Flow<StreamEvent>
-    suspend fun fetchModels(apiKey: String, baseUrl: String?): List<String>
-}
-```
-
-**`StreamEvent`** sealed class — the universal output format:
-- `TextChunk(text)` — a piece of the model's response
-- `ThoughtChunk(thought, title?, signature?)` — a piece of reasoning/thinking
-- `ToolCallRequest(id, name, arguments, signature?)` — single tool call
-- `ToolCallsRequest(calls)` — multiple tool calls in one response
-- `UsageUpdate(tokenCount, thoughtsTokenCount)` — token usage metadata
-- `Error(message)` — error
-- `Retrying(attempt, maxAttempts)` — emitted when retrying after transient errors (401, 429, 5xx)
-
-**Key design**: All providers produce the same `Flow<StreamEvent>`, so `GenerationManager` only deals with one event type.
-
-### 4b. BaseOpenAiProvider (Template Method Pattern)
-
-Five providers (OpenAI, DeepSeek, Qwen, OpenRouter, CustomOpenAi) share this base class. It handles:
-- Building the `OpenAiChatRequest` with common fields (`model`, `messages`, `stream`, `tools`)
-- Opening HTTP connection, writing JSON body
-- Reading SSE lines (`data: {...}`), parsing JSON, dispatching to `parseDeltaContent()`
-- Accumulating tool calls in `pendingToolCalls` map (deduplicates by index)
-- Emitting `StreamEvent.ToolCallRequest` / `ToolCallsRequest` on `finish_reason=tool_calls`
-- Emitting `UsageUpdate` when usage data arrives
-- Automatic retry on transient errors (401, 429, 5xx) with `Retrying` events
-- Flushing `thinkParser` after the SSE loop ends (fix for buffered `<think>` content)
-
-Subclasses override:
-- `parseDeltaContent()` — how to extract text/thought from a delta
-- `customizeRequest()` — add provider-specific fields (reasoning, plugins)
-- `getExtraHeaders()` — provider-specific HTTP headers
-- `transformSystemPrompt()` — modify system prompt before sending
-
-### 4c. Individual Providers
-
-| Provider | Base | Key Differences |
-|---|---|---|
-| **OpenAI** | BaseOpenAiProvider | `reasoningEffort = "medium"` for o1/o3; parses `reasoningContent`; respects `thinkingEnabled` |
-| **DeepSeek** | BaseOpenAiProvider | Parses `reasoningContent`; respects `thinkingEnabled` |
-| **Qwen** | BaseOpenAiProvider | DashScope base URL; parses `reasoningContent`; respects `thinkingEnabled` |
-| **OpenRouter** | BaseOpenAiProvider | Timestamp in system prompt; `reasoning` effort field; `reasoningDetails` array; web `plugins`; referer/title headers |
-| **CustomOpenAi** | BaseOpenAiProvider | User-defined name + base URL; parses `reasoningContent`; respects `thinkingEnabled` |
-| **Anthropic** | Direct `LlmProvider` | Custom SSE protocol (event:/data: lines); `content_block_start/delta/stop` events; thinking via `budget_tokens`; tool_use/tool_result blocks; image support via base64 |
-| **Gemini** | Direct `LlmProvider` | Google's `streamGenerateContent` SSE; inline base64 images; `thought` flag; code execution + Google Search as Google-specific tools; different thinking config for Gemini 2.5 vs 3 |
-| **Ollama** | Direct `LlmProvider` | Local server; `/api/chat` endpoint; structured `thinking` field or `<think>` tag fallback; `/api/tags` for model list |
-| **Local** | Direct `LlmProvider` | On-device GGUF via llama.cpp JNI; chat template or ChatML fallback; StreamingThinkTagParser for `<think>`; Mutex-guarded engine lifecycle; tool calls unsupported (serialized as text) |
-
-### 4d. Message Conversion (`api/util/MessageConverter.kt`)
-
-`convertToOpenAiMessages()` transforms the internal `ChatMessage` tree into OpenAI-format API messages:
-- `tool_` messages → `assistant` role with `tool_calls` array + `reasoning_content` from thought segments
-- `result_` messages → `tool` role with `tool_call_id` matching the tool
-- Normal messages → text + base64-encoded images
-- Tool call IDs are SHA-256 hashes of `toolName:arguments` — deterministic for multi-turn consistency
-
-Anthropic, Gemini, Ollama, and Local each have their own conversion logic inline.
-
-### 4e. HTTP Client (`api/HttpClient.kt`)
-
-Wraps OkHttp for all providers:
-- `streamPost(url, body, headers)` → returns `StreamHandle` with `readLine()` and `close()`
-- `post(url, body, headers)` → returns response body string or null
-- `fetchModels(url, headers)` → GET wrapper for model list endpoints
-- 30s connect/read/write timeouts
-
-### 4f. Streaming Think Tag Parser (`api/util/StreamingThinkTagParser.kt`)
-
-A stateful buffer-based parser for `<think>...</think>` tags in streaming content. Used by Ollama (as fallback when no structured thinking field), DeepSeek (via BaseOpenAiProvider flush), LocalProvider.
-
-Features one-exit guard: only honors the first `<think>` block to avoid swallowing literal `<think>` in normal text.
-
-### 4g. Thinking Parser (`api/util/ThinkingParser.kt`)
-
-Additional thinking content parser for providers that emit structured thinking blocks (Anthropic content_block events, Gemini thought signals).
-
-### 4h. Tool Messages (`api/util/ToolMessages.kt`)
-
-Helper functions for constructing tool call and tool result messages with proper ID prefixes (`tool_`, `result_`).
-
-### 4i. Embedding Client (`api/EmbeddingClient.kt`)
-
-OpenAI-compatible embeddings API client:
-- `computeEmbedding(text, apiKey, model, baseUrl)` — single embedding
-- `computeEmbeddings(texts, apiKey, model, baseUrl)` — batch embedding
-- Manual JSON escaping (no library dependency for embedding requests)
-
----
-
-## 5. The Service Layer
-
-### 5a. AgoraForegroundService (`service/AgoraForegroundService.kt`)
-
-A foreground service that keeps the app process alive during long-running LLM generation. Started by `GenerationManager` before generation begins and stopped when generation completes. Shows a persistent notification during generation.
-
-### 5b. AppForegroundTracker (`service/AppForegroundTracker.kt`)
-
-Monitors app lifecycle (foreground/background) to manage resources and service lifecycle appropriately.
-
----
-
-## 6. The Shell Layer (Conch Protocol)
-
-### 6a. ShellCrypto (`util/ShellCrypto.kt`)
-
-Implements the Conch encryption protocol:
-- **ECDH key exchange** using X25519 curve
-- **AES-256-GCM** symmetric encryption with random nonces
-- **HMAC-SHA256** request signing
-- HKDF key derivation with info string `"conch-agora-v1"`
-- Token bucket rate limiting with nonce-based anti-replay protection
-
-### 6b. ShellClient (`util/ShellClient.kt`)
-
-HTTP client for communicating with Conch servers:
-- `fetchPublicKey()` — retrieves server's X25519 public key
-- `executeCommand(command)` — runs shell commands remotely
-- `readFile(path)`, `writeFile(path, content)`, `editFile(path, oldStr, newStr)` — remote file I/O
-- `glob(pattern)`, `grep(pattern)` — remote file search
-- Automatic key exchange on first connection, public key caching for subsequent calls
-- `lastError` property for error reporting to the model
-
-### 6c. Shell Device Management
-
-Multi-device support configured via Settings:
-- Each device has: name, server URL, API key, timeout, description, cached Conch public key
-- Models auto-discover available shell devices when `shellEnabled` is true
-- Device switching from chat interface
-
----
-
-## 7. The Native Layer (JNI)
-
-### 7a. Build System (`app/src/main/cpp/CMakeLists.txt`)
-
-- llama.cpp built as static library from `thirdparty/llama.cpp` (git submodule)
-- JNI wrapper built as shared library `agora_llama`
-- C++17, arm64-v8a only, links `llama` + `log`
-- GGML_OPENMP forced OFF for Android compatibility
-
-### 7b. Chat JNI (`llama_chat_jni.cpp`, ~370 lines)
-
-Wraps llama.cpp chat generation following official `simple-chat.cpp` best practices:
-
-| JNI Function | Purpose |
+| `app/src/main/java/.../ui` | Compose screens, message rendering, settings, tasks, media |
+| `app/src/main/java/.../viewmodel` | Conversation state, message generation, branching, import/export |
+| `app/src/main/java/.../api` | Provider protocol adapters and streaming event model |
+| `app/src/main/java/.../tool` | Memory, RAG, web, shell, image, and automation tools |
+| `app/src/main/java/.../data` | Room, DataStore, backup, import/export, attachment ownership |
+| `app/src/main/java/.../mcp` | MCP transports, protocol client, server registry, and tool discovery |
+| `app/src/main/java/.../automation` | Tasks, loops, scheduling, execution serialization |
+| `app/src/main/java/.../service` | Foreground generation and WorkManager entry points |
+| `app/src/main/java/.../sandbox` | Shared sandbox interfaces |
+| `app/src/fdroid` | PRoot-backed sandbox implementation |
+| `app/src/play` | Play flavor implementation without bundled PRoot binaries |
+| `app/src/main/cpp` | llama.cpp chat/embedding JNI and PRoot bridge |
+| `thirdparty` | Vendored/submodule native dependencies |
+| `build-logic` | Android bytecode compatibility transform and repository source-size policy |
+| `server` | Optional Agora-related server components; not part of the APK runtime |
+| `docs` | User-facing MkDocs documentation |
+
+There are two store flavors, `fdroid` and `play`. The application currently targets
+Android API 36, supports API 24 and newer, and builds arm64 native artifacts.
+
+## 3. State ownership
+
+### 3.1 Conversation state
+
+`ChatViewModel` is the UI-facing coordinator, but generation state is no longer a
+single global mutable slot:
+
+- `ConversationStateRegistry` owns one `ConversationGenerationState` per conversation.
+- `MessageGenerationController` accepts sends, edits, regenerations, stops, and queue
+  transitions.
+- `ConversationGenerationMirror` projects only the selected conversation's live state
+  into UI flows.
+- `ConversationExecutionCoordinator` serializes the main foreground/background generation lease
+  per conversation while allowing different conversations to proceed independently.
+- UI/persistence tokens and Run/pass guards reject some stale callbacks.
+
+The pure reducer is the single authority for in-process Run state. The controller, generation
+manager, Stop finalizer, task engine, and Room transactions execute identified effect bodies but
+cannot release or retarget a Run without returning the exact result command. A few graph-building
+and guidance-storage adapters remain outside the pure core; their bounded ownership is recorded in
+`development/baselines/conversation-runtime-refactor-baseline.md`.
+
+Room remains the durable source of truth. The live message is an overlay for the
+currently selected branch; it does not become a second durable message graph.
+
+### 3.2 Message tree and branches
+
+Messages form a tree through `parentId`. A conversation stores selected child choices
+so the UI can derive one visible path. Tool request/result rows are synthetic graph
+nodes and are hidden as standalone chat bubbles.
+
+Branch operations must preserve these invariants:
+
+1. A selected path includes the complete synthetic tool/result closure for each turn,
+   including parallel result siblings.
+2. Forks copy file-backed attachments into fork-owned storage.
+3. Deletion removes a file only after Room confirms that no message or draft still
+   references it.
+4. Orphan cleanup covers normal message storage and `fork-attachments`.
+
+`ConversationBranchPath`, `ConversationForkShareService`, and
+`MessageAttachmentCloneSession` implement these rules.
+
+### 3.3 Orchestration source ownership
+
+The runtime decomposition keeps one directional control path while separating effect bodies:
+
+| Surface | Ownership |
 |---|---|
-| `nativeChatLoadModel` | Loads GGUF, creates context with `n_batch = n_ctx`, sets abort callback |
-| `nativeChatGetTemplate` | Returns model's Jinja chat template or null |
-| `nativeChatApplyTemplate` | Calls `llama_chat_apply_template()` with model's template, retries on buffer overflow |
-| `nativeChatGenerate` | Tokenization, prefill via `llama_batch_get_one`, sampler chain (min_p→top_p→temp→dist), generation loop with cancel check, context space check |
-| `nativeChatReset` | Clears KV cache via `llama_memory_clear()` |
-| `nativeChatFreeModel` | Frees model and context |
-| `nativeChatCancel` | Sets volatile cancel flag checked by abort callback and generation loop |
+| `ConversationCommandMailbox` | Bounded, sequential command admission for one conversation. |
+| `ConversationRuntimeReducer` | Pure transition and effect authority; owns no Android, Room, Provider, Tool, or UI dependency. |
+| `ConversationGenerationState` | Applies accepted transitions and owns the per-conversation runtime resources and read-only projections. |
+| `GenerationManager` | Routes mailbox-authorized Provider, tool, checkpoint, finalization, and notification effects; returns identified result commands. |
+| `MessageGenerationController` | Adapts external Send, Stop, queue, edit, regenerate, Compact, and lifecycle requests to the mailbox/effect contract. |
+| `ChatViewModel` | Stable Compose facade over feature controllers and immutable UI projections; it does not decide Run transitions. |
 
-Sampler chain: `min_p(0.05) → top_p(configurable) → temp(configurable) → dist(seed)`
+Extracted controllers and executors receive explicit inputs and own only their named side effect or
+UI projection. They do not hold a writable `RunState`, release a conversation slot, or call the
+reducer directly. `ConversationStateRegistry` owns the process lifetime and deterministic disposal
+of the per-conversation runtime state.
 
-### 7c. Embedding JNI (`llama_jni.cpp`, ~175 lines)
+## 4. Generation pipeline
 
-Wraps llama.cpp embedding inference:
+`GenerationRequestBuilder` prepares provider configuration, context, tools, memory,
+attachments, and optional transcription. `ProviderMessageProjector` is the lossless Room-to-
+provider projection for durable text, attachments, and synthetic tool rows; both generation and
+Compact consume it. `ConversationContextProjector` uses that same projection plus fixed system/tool
+costs for the UI token estimate and roll-out boundary, so the indicator does not maintain a second
+message-count model. A Provider owns retry and semantic termination for one stream.
+`ProviderPassRunner` collects exactly one such stream and closes it as an identity-bearing
+`CompletedText`, `CompletedToolCalls`, `Truncated`, `Failed`, or `Cancelled` outcome. Before network
+execution, the mailbox must emit the exact `StartProviderPass` effect; the closed outcome returns as
+`ProviderPassCompleted`, and only the reducer's exact `ProviderPassAccepted` effect may be consumed.
+Live events may update the streaming overlay, but only an accepted completed-tool outcome can send
+`ToolBatchRequested` into the same mailbox. The reducer emits the identified
+`ExecuteToolBatch`, `CommitToolRound`, and (only after durable success) `ContinueProviderPass`
+effects. The runner adds fail-closed tool metadata validation; it does not replace or weaken
+Provider-specific termination validation and retry. `GenerationManager` executes those effect
+bodies. Normal Run completion enters `Finalizing`; a mailbox-emitted `FinalizeRun` is executed with
+bounded retry and its exact Room result returns as `FinalizationCompleted`, while
+`GenerationFinalizer` owns durable Stop finalization and its retry path.
 
-| JNI Function | Purpose |
-|---|---|
-| `nativeLoadModel` | Loads GGUF with `embeddings=true`, `pooling_type=MEAN`, `n_ctx=512`, `n_batch=512` |
-| `nativeFreeModel` | Frees model and context |
-| `nativeComputeEmbedding` | Tokenizes, creates batch manually (`llama_batch_init`), calls `llama_encode`/`llama_decode`, returns pooled embedding |
-| `nativeGetEmbeddingDim` | Returns `llama_model_n_embd_out()` |
+The migrated conversation-runtime slice is authoritative for ordinary foreground/headless Send,
+memory-guidance placement, the in-process generation slot, Provider-pass acceptance, normal/Stop
+finalization barriers, tool-round gates, and slot release. Pure `ConversationCommand`, `RunState`,
+`RunEffect`, and `ConversationRuntimeReducer` types decide
+`Idle`/`Recovering`/`Preparing`/`Active`/`Finalizing`/`Stopping`, coroutine settlement, durable
+settlement, and continuation. Compact does not own a parallel runtime state: it enters the same
+ordinary fresh-Run continuation, Provider, streaming, Stop, settlement, recovery, and queue path.
+`ConversationGenerationState` retains the legacy per-conversation monitor, tokens, Job, streams,
+and UI flows as an adapter, but its former `SlotPhase` and Stop-barrier Booleans no longer exist.
+Every Stop-finalization result echoes conversation, Run, pass, owner, and effect identity; stale
+and duplicate results are rejected before either slot or overlay mutation.
 
-Uses `llama_batch_init` with manual pos/seq_id/logits filling (differs from chat JNI which uses `llama_batch_get_one`).
+Normal finalization and Job completion are independent barriers, just like Stop finalization. A
+bound durable Run never becomes Idle from `CoroutineSettled` alone. Either barrier may arrive first;
+only the command observing both emits `ReleaseSlot`. If the terminal Room transaction exhausts its
+bounded retries, `Finalizing` remains occupied. A later explicit Stop may then take over that failed
+finalization and use the STOPPED transaction to restore a consistent durable terminal state.
 
-### 7d. Kotlin JNI Wrappers
+Each process-scoped conversation state now also owns a bounded 64-entry sequential command
+mailbox.
+Foreground and headless ordinary Send enter as `SendRequested`: `Idle` becomes `Preparing` and
+emit one identified
+`PersistAcceptedInput`; the Room transaction returns the exact `InputPersisted` command before the
+Run becomes `Active`, while a failed transaction returns `InputPersistenceFailed` and retains
+ownership until its coroutine settles. Cancellation before the controller receives the direct
+claim emits an exact `SendLaunchAbandoned` command, so an unstarted Send cannot strand the slot.
+Another Send while the current Send is preparing or active is accepted by the reducer as
+memory-only guidance. At the next legal tool/final/Stop boundary, the origin Run is terminal before
+one explicit FIFO guidance lease enters the same normal
+`SendRequested` → `PersistAcceptedInput` → `InputPersisted` contract with a fresh Run id. One Room
+transaction creates that Run, every guidance item as a distinct USER row, one MODEL placeholder,
+and the matching selections. The lease transfers attachment ownership to Room only after that
+transaction commits; a pre-commit failure returns the exact batch to the front, while runtime
+disposal deletes only files that never became durable. The removed same-Run append/pass-claim
+transactions no longer exist.
 
-**`LlamaEngine`** (embedding, singleton): Provides both single-embedding (`computeEmbedding`) and batch (`computeEmbeddings`) methods. Batch loads the model once, computes all embeddings, frees once — eliminating the per-message load/free overhead during bulk caching.
+User Stop enters the same mailbox as `StopRequested`. The accepted transition first revokes the
+old UI/persistence tokens, marks the overlay STOPPED, and retains `Stopping` ownership; only then
+are that conversation's stream handles and generation Job cancelled. Only the installed Job's
+completion hook may report `CoroutineSettled`; reaching a coroutine `finally` is not sufficient.
+Job completion re-enters as `CoroutineSettled`, and the identified `GenerationFinalizer` Room
+result re-enters as `PersistenceSettled`. Either order is valid, but only the command that observes
+both barriers emits `ReleaseSlot`. These handoffs run on the conversation-owned scope and are
+non-cancellable once
+accepted, so caller/lifecycle cancellation cannot drop a terminal result. Conversation deletion is
+separate runtime disposal and does not fabricate a durable user-Stop effect.
 
-**`LlamaChatEngine`** (chat, per-instance): Persistent model instance. Streams tokens via `callbackFlow` with `NativeChatCallback`. Uses `awaitClose` for proper cancellation cleanup. Supports cancel, reset context, apply template. Errors are properly propagated as exceptions through the flow.
+If Stop wins while an accepted-input or replacement Room transaction is still committing, the
+late exact Run identity is adopted by the existing `Stopping` state. That transition emits one
+identified `FinalizeStop`; the coroutine and persistence barriers still both have to settle. The
+normal commit race therefore cannot bypass the mailbox or attach work to the stopped Run.
 
----
+Manual, automatic, and Recompact generation are ordinary fresh-Run continuations. Compact freezes
+only its declared model/generation parameters, disables tools and haptics, supplies the Compact
+system prompt and message presentation, and then delegates durable graph admission, context/API
+path construction, Provider execution, streaming/checkpoints, Stop, settlement, recovery, and
+queue release to the ordinary generation owners. Recompact uses the same pipeline from the
+target's existing parent and atomically moves only that Compact row to a fresh Run; suffix message
+rows remain unchanged.
 
-## 8. The UI Layer
+After a durable tool result, continuation ownership is `Compact -> FIFO queue -> loop`. The queue
+pending/claimed check and no-input loop admission are linearized so guidance cannot be duplicated
+or lost at Compact settlement. Each admitted operation gets a fresh Run ID; Provider passes and
+tool rounds inside that admitted generation retain the same Run. Direct-only automation receives
+busy and creates no input.
 
-### 8a. MainActivity (`MainActivity.kt`, ~486 lines)
+Startup recovery now uses the same pure runtime contract: Room reads ordered `ACTIVE`/`STOPPING`
+snapshots, reduces each through `Recover`, executes the exact `RecoverDurableRun` transaction, and
+echoes `RecoveryCompleted`. It never reconstructs a coroutine. The transaction stops in-flight
+model/tool UI state and terminalizes that exact live Run as `STOPPED/PROCESS_RECOVERED`; any failed
+effect/result assertion rolls the whole recovery transaction back and keeps generation gated for
+retry. The superseded broad live-Run id/update queries were removed.
 
-Entry point. Handles:
-- Splash screen setup
-- Notification channel creation + permission request
-- Database version check (shows error dialog if stored version > current version)
-- Creates `MemoryManager`, `SettingsManager`, and `ChatDatabase`
-- Sets up the Compose content tree: `AgoraTheme` → `MainNavigation`
+Headless request building/Provider execution remains a bounded Task effect adapter after mailbox admission.
+Guidance storage/lease execution remains a bounded controller adapter, but it has no
+alternative Run-placement or durable append authority: every drain is a fresh mailbox-approved
+normal Send. State-backed foreground and headless tool execution/commit authorization uses the
+mailbox. A bounded 256-entry runtime
+trace records only sequence, conversation-id digest, Run/pass/effect identity, state/command/effect
+types, and timestamp.
 
-### 8b. ChatApp composable (`ui/chat/ChatApp.kt`)
+```text
+accepted send
+   │
+   ├── optional TRANSCRIBING
+   ▼
+SENDING
+   │
+   ├── text delta ───────────────► answer segment
+   ├── thought delta ────────────► thought segment / THINKING
+   ├── tool-call delta ──────────► one live tool segment / TOOL_CALLING
+   │                                  │
+   │                                  └── completed request queued
+   └── provider stream boundary
+                                      │
+                                      ▼
+                         mailbox-authorized tool batch
+                                       │
+                                       ├── streamed progress/output
+                                       └── authoritative final result
+                                       │
+                         atomic Room protocol-round commit
+                                       │
+                         mailbox-authorized provider continuation
 
-The main screen with:
-- **ModalNavigationDrawer** — chat history sidebar with new chat button, conversation list (long-press for rename/delete/generate title), settings button
-- **Scaffold** — top app bar (title, menu icon, system prompt selector, new chat button)
-- **AnimatedContent** — switches between "New Chat" welcome screen and `MessageList`
-- **MessageList** — LazyColumn of chat bubbles
-- **ChatBottomBar** — text input, image picker, model selector, tool toggles, send/stop button
-- **FullScreenMediaViewer** — pinch-to-zoom, pan, double-tap, fling, rubber-band physics for images and videos
-- **WelcomeScreen** — onboarding/welcome for new users
-- **Settings overlay** — slides in from right with scrim
-
-### 8c. MessageList (`ui/chat/MessageList.kt`, ~200 lines)
-
-A `LazyColumn` rendering each visible message as a `MessageItem`. Computes context window boundaries for the "context rollout" visualization (messages outside the context window are dimmed). Manages extra bottom padding for scroll anchoring during streaming.
-
-### 8d. MessageItem (`ui/chat/MessageItem.kt`, ~1890 lines)
-
-Three visual modes:
-- **USER**: Right-aligned bubble with text, images/attachments, copy/edit/info actions, branch switcher
-- **MODEL**: Left-aligned with thought blocks (expandable), tool call blocks (expandable), markdown rendering with inline LaTeX, status indicators (SENDING spinner, THINKING pulsing dots, TOOL_CALLING indicator, STOPPED badge, ERROR banner), context rollout dimming
-- **ERROR**: Center error banner
-
-Supports inline editing of user messages (which triggers `editMessage()`), branch switching arrows, and streaming content with debounced re-rendering.
-
-### 8e. ChatBottomBar (`ui/chat/ChatBottomBar.kt`, ~300 lines)
-
-Input area with:
-- Expandable text field with custom scrollbar
-- Image/file picker using `PickMultipleVisualMedia` (Android Photo Picker)
-- Attachment thumbnails with preview
-- Model selector dropdown
-- Tools menu: Code Execution, Web Search, Thinking, Shell toggles
-- Advanced settings dialog (per-conversation generation overrides)
-- Send FAB (pulsing when loading) / Stop button
-
-### 8f. Media & Attachment Viewers
-
-- **FullScreenMediaViewer** — immersive media viewer with gesture controls (pinch-zoom, pan, double-tap, fling)
-- **ZoomableImageItem** — inline zoomable image component
-- **AttachmentThumbnail** — thumbnail preview for non-image file attachments
-- **VideoPlayer** — embedded video playback
-- **VideoSliceDialog** — video frame selection dialog
-- **PdfPageSelectDialog** — PDF page selection for multi-page documents
-- **TextFileViewer** — plain text file viewer
-- **PdfPageRenderer** (`util/PdfPageRenderer.kt`) — renders PDF pages to bitmaps
-
-### 8g. Settings Screen (`ui/settings/SettingsScreen.kt`, ~315 lines)
-
-Main settings with tabs and sub-page navigation. Sub-pages:
-
-| Page | Lines | Purpose |
-|---|---|---|
-| `SettingsProviderPage` | 927 | API key CRUD, base URL per provider, custom providers, Local GGUF model management |
-| `SettingsModelsPage` | ~200 | Default model selector, sync button, expandable per-provider model lists |
-| `SettingsPromptsPage` | ~150 | System prompt CRUD |
-| `SystemPromptEditorPage` | new | Full-page three-section system prompt editor (system + userPrepend + userPostpend) |
-| `SettingsContextPage` | ~100 | Context window slider, rollout visualization toggle |
-| `SettingsGenerationPage` | new | Per-conversation generation defaults (temperature, maxTokens, topP, penalties) |
-| `SettingsMemoryPage` | ~200 | Active memory + saved memory files CRUD |
-| `SettingsSearchPage` | 536 | RAG toggle, search method (keyword/RAG), embedding model management, RAG threshold |
-| `SettingsWebSearchPage` | 194 | Web search toggle, provider selection (Brave/Serper/Tavily/SearXNG), API key/URL |
-| `SettingsShellPage` | new | Conch shell device CRUD (name, URL, API key, timeout, description) |
-| `SettingsTitleGenPage` | ~100 | Auto-title toggle + model selection |
-| `SettingsLanguagePage` | ~100 | Language selection with immediate snackbar feedback |
-| `SettingsAppearancePage` | new | Theme mode (light/dark/system), color scheme, dynamic color toggle |
-| `SettingsDataControlPage` | new | Export/Import .agora, import from Claude/ChatGPT |
-| `SettingsClaudeImportPage` | new | Claude export import wizard |
-| `SettingsAboutPage` | new | App version, licenses, update checker |
-| `DocumentationFab` | new | Floating action button linking to documentation |
-
-### 8h. UI Components
-
-- **LatexRenderer** — LaTeX math rendering via JLaTeXMath-Android
-- **TypewriterText** — streaming text animation component
-- **AnimatedBlobBackground** — decorative animated gradient blobs
-- **RatingForm** — in-app rating/feedback form
-- **NoOpBringIntoView** — workaround for Compose bring-into-view issues
-
-### 8i. Theme (`ui/theme/`)
-
-- **Color.kt** — color definitions supporting dynamic color (Material You)
-- **Theme.kt** — Agora theme with configurable mode (light/dark/system) and color scheme
-- **Type.kt** — typography scale
-
----
-
-## 9. Key Data Flows
-
-### Sending a message (end-to-end):
-
-```
-1. User types text + attaches images/files, taps Send
-2. ChatBottomBar calls viewModel.sendMessage(text, images, attachmentMeta)
-3. ChatViewModel:
-   a. If new chat: creates ChatEntity in Room
-   b. Creates user MessageEntity in Room (status=SUCCESS)
-   c. Creates placeholder model MessageEntity (status=SENDING)
-   d. Sets _streamingMessage = placeholder
-   e. Sets _isLoading = true
-   f. Launches generationScope { generationManager.generate(...) }
-4. GenerationManager:
-   a. Builds message path from DB (walking parentId chain)
-   b. Builds memory tools, shell tools, web search tool, RAG tool
-   c. Starts foreground service
-   d. Calls provider.generateResponse(path, config)
-   e. Collects TextChunk, ThoughtChunk, etc.
-   f. After each event (throttled ~500ms): onStreamUpdate(updatedMsg) → ViewModel updates _streamingMessage → UI recomposes
-   g. If tool calls: executes locally, persists tool_/result_ to DB, loops
-   h. In finally: persists final message to DB, onStreamClear() → _streamingMessage = null
-5. onMessagePersisted callback triggers indexMessageForRag() if RAG is enabled
-6. UI: MessageList observes messages StateFlow, shows streaming bubble with real-time text
+terminal: SUCCESS | STOPPED | ERROR
 ```
 
-### Branching (message tree):
+The visible message status values are:
 
-```
-Root (null)
-├── User Msg A (id=1, parentId=null)
-│   ├── Model Response X (id=2, parentId=1)     ← selectedChildren[1] = 2
-│   └── Model Response Y (id=3, parentId=1)     ← regenerate created this sibling
-├── User Msg B (id=4, parentId=2)               ← follows selected path
-│   └── Model Response Z (id=5, parentId=4)
-```
+`TRANSCRIBING`, `SENDING`, `THINKING`, `TOOL_CALLING`, `SUCCESS`, `STOPPED`, and
+`ERROR`.
 
-`_selectedChildren` = `{ "1": "2", "4": "5" }` walks → [1, 2, 4, 5]
-Switch branch at parentId=1 → `{ "1": "3", "4": "5" }` walks → [1, 3]
+### 4.1 Streaming contract
 
-### Tool call flow:
+All provider adapters normalize their wire protocol into `StreamEvent`:
 
-```
-1. Model's response includes a tool_call (e.g. "read_memory_file")
-2. Provider emits ToolCallRequest(id, "read_memory_file", {"name":"notes.md"})
-3. GenerationManager:
-   a. executeTool("read_memory_file", args) → calls memoryManager.readFile("notes.md")
-   b. Creates MessageSegment(type="tool", toolName=..., toolResult=...)
-   c. Adds to segments list (visible in UI as tool call block)
-4. After stream ends: tool_ message persisted to DB, result_ message persisted
-5. Multi-tool loop: re-calls provider.generateResponse() with updated path including tool results
-6. Model sees tool result and continues its response
-```
+- `TextChunk`
+- `ThoughtChunk`
+- `ToolCallUpdate`
+- `ToolCallRequest` / `ToolCallsRequest`
+- `UsageUpdate`
+- `Retrying`
+- `Error`
 
-### Embedding lifecycle:
+`ToolCallUpdate` contains the accumulated name and arguments known at that point and a
+stable `streamKey`. The first delta immediately creates the existing
+`Calling tool…` segment. Later deltas update that same segment. There is no separate
+pre-tool status.
 
-```
-CACHE: cacheMessagesForModel() →
-  1. If re-cache: uncache model, delete all embeddings for model
-  2. Iterate all indexable messages (user/model, non-blank)
-  3. Batch process: local models load once and process all messages in one shot;
-     remote models batch 64 texts per API call via EmbeddingClient.computeEmbeddings
-  4. Upsert embeddings, mark model as cached in DataStore
+OpenAI-compatible text responses are also inspected incrementally when tools were
+offered. Tagged `<tool_call>` payloads and supported bare JSON tool calls are diverted
+into the same streaming tool-call path instead of flashing as answer text or being
+lost at end-of-stream.
 
-INDEX (auto): onMessagePersisted →
-  indexMessageForRag() → if RAG enabled AND autoCacheEnabled → compute + upsert single embedding
+A completed tool request is executed only after the current provider stream reaches its validated
+boundary and the conversation reducer accepts its full effect identity. The complete result batch
+must then be accepted before Room can commit the assistant request plus every result, and the next
+Provider request requires the matching successful commit result. This keeps parsing, execution,
+durability, and continuation as separate owners and prevents a terminal chunk, `[DONE]`, EOF,
+duplicate result, or parallel tool call from racing the collector.
 
-INDEX (manual): onMessagePersisted →
-  indexMessageForRag() → if manual search method → compute + upsert single embedding
+### 4.2 Tool execution contract
 
-SEARCH: semanticSearch() →
-  1. Compute query embedding
-  2. Load all embeddings for active model
-  3. Compute cosine similarity, filter by ragThreshold, sort, limit
-  4. Fetch corresponding MessageEntity by IDs
+`ToolProvider.executeEvents()` emits:
 
-DELETE: deleteConversation() →
-  deleteEmbeddingsByConversation → deleteMessagesByConversation → deleteConversation
+- `TargetResolved` for the concrete execution target;
+- `Progress` or `OutputDelta` for bounded user-visible streaming output;
+- exactly one `Completed` value as the model-facing result.
 
-ORPHAN: deleteOrphanedEmbeddings() →
-  DELETE embeddings WHERE messageId NOT IN (SELECT id FROM messages)
-  Called on app startup + after conversation deletions
+One-shot tools inherit an adapter that emits only `Completed`. Tool segment lifecycle
+uses the existing states:
+
+```text
+CALLING → RUNNING → SUCCEEDED | EMPTY | FAILED | STOPPED | BACKGROUND_RUNNING
 ```
 
----
+The UI is updated at most every 50 ms for ordinary stream and tool content, with first and terminal
+changes emitted immediately. Durable checkpoints are best-effort and cannot cancel a healthy
+provider stream.
 
-## 10. Key Design Decisions
+### 4.3 Stop and terminal ownership
 
-- **No HTTP library wrapper** — uses OkHttp directly with raw `HttpURLConnection`-style patterns. OkHttp provides connection pooling across all providers.
-- **No repository layer** — ViewModel talks directly to DAO and SettingsManager. `GenerationManager` is a step toward separation but isn't a full repository.
-- **Single ViewModel** — `ChatViewModel` holds most state (~2557 lines). No per-screen ViewModels.
-- **Message tree, not list** — the `parentId` + `_selectedChildren` approach enables branching conversations without data duplication.
-- **Tool calls are local** — the model can manipulate memory files, search past conversations (RAG), search the web (Brave/Serper/Tavily/SearXNG), and control remote machines via Conch shell.
-- **SSE streaming everywhere** — all providers stream via Server-Sent Events.
-- **Model IDs are prefixed** — format is `ProviderName:model-id` (e.g. `OpenAI:gpt-4`). The prefix determines which provider class and API key to use.
-- **Custom providers** — users can define arbitrary OpenAI-compatible endpoints with custom name and Base URL.
-- **llama.cpp as git submodule** — under `thirdparty/llama.cpp`, linked via CMake `add_subdirectory`.
-- **Separate JNI files for embedding vs chat** — `llama_jni.cpp` for embeddings, `llama_chat_jni.cpp` for chat generation.
-- **Mutex-guarded engine lifecycle in LocalProvider** — only one model loaded at a time, swapped when user selects different model.
-- **On-device inference runs on IO dispatcher** — not blocking the main thread, with cancel support via volatile flag + abort callback.
-- **Foreground service for generation** — keeps the process alive during long LLM calls so Android doesn't kill it.
-- **Conch end-to-end encryption** — ECDH key exchange + AES-256-GCM + HMAC-SHA256 signing, token bucket rate limiting, nonce-based anti-replay.
-- **Selective data export** — users choose which categories to export, with API key safety warnings.
-- **Three-section system prompts** — system prompt + user prepend + user postpend with variable substitution.
+Stopping cancels the active Run and preserves queued guidance. The in-process slot enters
+`STOPPING` and remains occupied until both the generation coroutine has unwound and the durable
+Stop transaction has succeeded. Either barrier may complete first; only the second releases the
+slot. Guidance then enters a fresh Run rather than attaching to the terminal Run. Pending UI
+animation work cannot replay after `STOPPED`.
 
----
+## 5. Rendering and interaction
 
-## 11. File Index
+Compose receives immutable `ChatMessage` snapshots. Streaming markdown uses a
+latest-wins two-buffer renderer:
 
-### API Layer (19 files)
-| File | Lines | Purpose |
-|---|---|---|
-| `api/LlmProvider.kt` | ~230 | Interface + StreamEvent + request/response types |
-| `api/BaseOpenAiProvider.kt` | 227 | Template for OpenAI-compatible providers |
-| `api/OpenAiProvider.kt` | 31 | OpenAI (reasoning_effort, reasoning_content) |
-| `api/DeepSeekProvider.kt` | 25 | DeepSeek (reasoningContent, respects thinkingEnabled) |
-| `api/QwenProvider.kt` | 25 | Qwen/DashScope (reasoningContent) |
-| `api/OpenRouterProvider.kt` | 62 | OpenRouter (plugins, reasoning, web search) |
-| `api/CustomOpenAiProvider.kt` | 26 | User-defined OpenAI-compatible endpoints |
-| `api/AnthropicProvider.kt` | 443 | Anthropic Claude (SSE events, thinking budget, images) |
-| `api/GeminiProvider.kt` | 526 | Google Gemini (code exec, web search, thinking) |
-| `api/OllamaProvider.kt` | 299 | Ollama local server |
-| `api/LocalProvider.kt` | 249 | On-device GGUF via llama.cpp |
-| `api/LlamaChatEngine.kt` | 143 | JNI wrapper for chat models |
-| `api/LlamaEngine.kt` | 47 | JNI wrapper for embedding models |
-| `api/EmbeddingClient.kt` | 83 | OpenAI-compatible embeddings API |
-| `api/HttpClient.kt` | 60 | OkHttp wrapper |
-| `api/util/MessageConverter.kt` | 136 | ChatMessage → OpenAI format converter |
-| `api/util/StreamingThinkTagParser.kt` | 76 | Streaming `<think>` tag parser |
-| `api/util/ThinkingParser.kt` | new | Structured thinking block parser |
-| `api/util/ToolMessages.kt` | new | Tool message construction helpers |
+- the current snapshot stays fully visible;
+- one incoming snapshot is prepared offscreen;
+- updates arriving during the 90 ms fade replace a single pending snapshot;
+- promotion and alpha reset happen atomically;
+- alpha animates in the graphics layer, so markdown subtrees are not recomposed every
+  animation frame;
+- a terminal update settles immediately, avoiding a delayed flash after Stop.
 
-### ViewModel Layer (3 files)
-| File | Lines | Purpose |
-|---|---|---|
-| `viewmodel/ChatViewModel.kt` | 2557 | Central ViewModel (all state + orchestration) |
-| `viewmodel/GenerationManager.kt` | 1864 | Generation engine (streaming, tools, RAG, shell) |
-| `viewmodel/ChatViewModelFactory.kt` | ~20 | Manual DI factory |
+The streaming message is rendered once. There is no second tail renderer competing
+with the Room-backed list.
 
-### Data Layer (10 files)
-| File | Lines | Purpose |
-|---|---|---|
-| `data/local/ChatDatabase.kt` | 277 | Room DB v12, 10 migrations, ChatDao |
-| `data/SettingsManager.kt` | 508 | DataStore preferences (all settings) |
-| `data/MemoryManager.kt` | 92 | File-based persistent memory |
-| `data/EmbeddingModelConfig.kt` | 18 | Embedding model config data class |
-| `data/LocalChatModelConfig.kt` | 17 | Local chat model config data class |
-| `data/EmbeddingIndexer.kt` | 33 | FloatArray↔ByteArray + cosine similarity |
-| `data/PromptTemplateItem.kt` | new | System prompt template items (text, dynamic variables) |
-| `data/DataExporter.kt` | new | .agora export with selective categories |
-| `data/DataImporter.kt` | new | .agora import with merge/replace/skip strategies |
-| `data/ClaudeChatImporter.kt` | new | Claude export (.zip) import |
-| `data/GptChatImporter.kt` | new | ChatGPT export (.zip) import |
+Haptics follow interaction meaning:
 
-### Model Layer (2 files)
-| File | Lines | Purpose |
-|---|---|---|
-| `model/ChatMessage.kt` | 62 | Core data classes (ChatMessage, ChatConversation, ToolCallData, MessageSegment, AttachmentMeta) |
-| `model/AttachmentMeta.kt` | new | Attachment metadata (fileName, mimeType, size, pageCount for PDFs) |
+- direct taps and long presses use discrete feedback where appropriate;
+- conversation selection and target-load completion remain separate events;
+- generation retains a quiet, low-duty continuous feedback pattern;
+- ordinary stream ticks, tool state transitions, and terminal cleanup do not stack
+  duplicate pulses on top of it.
 
-### Service Layer (2 files)
-| File | Lines | Purpose |
-|---|---|---|
-| `service/AgoraForegroundService.kt` | new | Foreground service for generation lifecycle |
-| `service/AppForegroundTracker.kt` | new | App foreground/background monitoring |
+## 6. Providers and tools
 
-### Shell Layer (2 files)
-| File | Lines | Purpose |
-|---|---|---|
-| `util/ShellCrypto.kt` | new | ECDH + AES-256-GCM + HMAC-SHA256 encryption |
-| `util/ShellClient.kt` | new | Conch protocol HTTP client |
+`LlmProvider` implementations cover OpenAI-compatible endpoints, Anthropic, Gemini,
+Ollama, and on-device llama.cpp. Provider-specific parsing stays inside each adapter;
+generation code consumes only normalized events. `ProviderPassRunner` is the common one-request
+closure boundary: its result carries conversation, owner, Run, durable pass, and effect identity,
+and malformed or duplicate completed tool metadata cannot authorize execution.
 
-### Native Layer (3 files)
-| File | Lines | Purpose |
-|---|---|---|
-| `cpp/llama_chat_jni.cpp` | 370 | Chat generation JNI |
-| `cpp/llama_jni.cpp` | 175 | Embedding JNI |
-| `cpp/CMakeLists.txt` | 19 | CMake build config |
+Tool providers are capability-oriented:
 
-### UI Layer (27 files)
-| File | Lines | Purpose |
-|---|---|---|
-| `MainActivity.kt` | 486 | Entry point, Compose tree, splash |
-| `ui/chat/ChatApp.kt` | ~350 | Main screen composable |
-| `ui/chat/MessageItem.kt` | 1890 | Chat bubble composable |
-| `ui/chat/MessageList.kt` | ~200 | LazyColumn message list |
-| `ui/chat/ChatBottomBar.kt` | ~300 | Input bar + model selector |
-| `ui/chat/AdvancedSettingsDialog.kt` | new | Per-conversation generation overrides dialog |
-| `ui/chat/VideoPlayer.kt` | ~50 | Embedded video player |
-| `ui/chat/VideoSliceDialog.kt` | new | Video frame selection dialog |
-| `ui/chat/AttachmentThumbnail.kt` | new | Non-image attachment thumbnail |
-| `ui/chat/FullScreenMediaViewer.kt` | new | Gesture-driven full-screen media viewer |
-| `ui/chat/ZoomableImageItem.kt` | new | Inline zoomable image component |
-| `ui/chat/PdfPageSelectDialog.kt` | new | PDF page selection dialog |
-| `ui/chat/TextFileViewer.kt` | new | Text file viewer |
-| `ui/settings/SettingsScreen.kt` | 315 | Main settings screen with tabs |
-| `ui/settings/SettingsProviderPage.kt` | 927 | Provider config + local models |
-| `ui/settings/SettingsModelsPage.kt` | ~200 | Model selection |
-| `ui/settings/SettingsPromptsPage.kt` | ~150 | System prompt CRUD |
-| `ui/settings/SystemPromptEditorPage.kt` | new | Full-page three-section prompt editor |
-| `ui/settings/SettingsMemoryPage.kt` | ~200 | Memory management |
-| `ui/settings/SettingsSearchPage.kt` | 536 | Search + embedding settings |
-| `ui/settings/SettingsWebSearchPage.kt` | 194 | Web search settings |
-| `ui/settings/SettingsShellPage.kt` | new | Conch shell device management |
-| `ui/settings/SettingsGenerationPage.kt` | new | Per-conversation generation defaults |
-| `ui/settings/SettingsTitleGenPage.kt` | ~100 | Title generation settings |
-| `ui/settings/SettingsContextPage.kt` | ~100 | Context window settings |
-| `ui/settings/SettingsLanguagePage.kt` | ~100 | Language selection |
-| `ui/settings/SettingsAppearancePage.kt` | new | Theme mode, color scheme, dynamic color |
-| `ui/settings/SettingsDataControlPage.kt` | new | Export/Import data management |
-| `ui/settings/SettingsClaudeImportPage.kt` | new | Claude import wizard |
-| `ui/settings/SettingsAboutPage.kt` | new | App version, licenses, updates |
-| `ui/settings/DocumentationFab.kt` | new | Documentation FAB |
-| `ui/settings/RatingForm.kt` | new | In-app rating form |
-| `ui/onboarding/WelcomeScreen.kt` | new | Welcome/onboarding screen |
-| `ui/components/LatexRenderer.kt` | ~100 | LaTeX math rendering |
-| `ui/components/TypewriterText.kt` | ~50 | Streaming text animation |
-| `ui/components/AnimatedBlobBackground.kt` | new | Animated gradient blob decoration |
-| `ui/theme/Color.kt` | ~20 | Color definitions (dynamic color support) |
-| `ui/theme/Theme.kt` | ~50 | Agora theme (light/dark/system, configurable) |
-| `ui/theme/Type.kt` | ~20 | Typography |
+- memory file operations;
+- conversation search/RAG;
+- web search and fetch;
+- remote shell and file operations, including durable Conch jobs;
+- discovered MCP server tools;
+- image generation;
+- persistent Task and conversation Loop automation controls.
 
-### Utilities (8 files)
-| File | Lines | Purpose |
-|---|---|---|
-| `util/Constants.kt` | 7 | Message prefix constants |
-| `util/SearchResultFormatter.kt` | ~30 | Web result formatting |
-| `util/SnackbarEvent.kt` | ~10 | Snackbar event type |
-| `util/ShellCrypto.kt` | new | Conch encryption (ECDH + AES-256-GCM) |
-| `util/ShellClient.kt` | new | Conch HTTP client |
-| `util/FileValidator.kt` | new | File import validation |
-| `util/UpdateChecker.kt` | new | GitHub releases update checker |
-| `util/DebugLog.kt` | new | Debug logging utility |
-| `util/PdfPageRenderer.kt` | new | PDF page to bitmap renderer |
-| `util/NoOpBringIntoView.kt` | new | Compose bring-into-view workaround |
+Provider signatures are opaque protocol state. A segment records the originating
+provider, and signatures must never be replayed into another provider protocol.
+
+## 7. Persistence
+
+Room database version 22 contains six entities:
+
+- `conversations`;
+- `runs`;
+- `messages`;
+- `embeddings`;
+- `tasks`;
+- `loops`.
+
+Room stores Run ancestry/status/pass state, the conversation graph, selected message and Run
+branches, durable streaming checkpoints, automation state, and embedding metadata. The unique
+`(conversationId, activeSlot)` index prevents two durable live Runs for one conversation.
+`appendToolRoundToRun` is one protocol-atomic transaction: it accepts only the current ACTIVE slot
+and expected pass, validates a one-to-one ordered request/result batch, and treats only an exact
+complete replay of the same message ids as idempotent. Partial or conflicting replay fails closed.
+Migrations are explicit and schema snapshots are committed under `app/schemas`; v16→v17
+introduced Runs, and the current chain continues through v22.
+
+The local persistence declarations are split by responsibility without creating competing DAOs:
+
+- `ChatEntities.kt` contains Room entities, converters, query projections, and pure tool-round
+  validation;
+- `ChatDao.kt` is the sole `@Dao`, extends the two stateless declaration surfaces below, and owns
+  common graph/Run/embedding/export declarations plus cross-domain transactions;
+- `ChatContextCompactDao.kt` owns only atomic same-row fresh-Run Recompact substitution, target-only
+  Compact deletion, necessary graph rewiring, and their narrow declarations;
+- `ChatAutomationDao.kt` owns the inherited Task and Loop row declarations;
+- `ChatDatabase.kt` is only the v22 Room composition root and migration chain.
+
+DataStore holds user settings, provider/model configuration, API-key references, appearance,
+generation defaults, tool toggles, backup settings, and per-conversation overrides. `SecretCrypto`
+normally wraps secrets with an Android Keystore AES-256-GCM key, but legacy plaintext is accepted
+and encryption failure deliberately falls back to plaintext to avoid data loss; security/privacy
+documentation must not describe the envelope as an unconditional invariant.
+
+The filesystem holds processed attachments, fork-owned attachment copies, memory
+Markdown files, local models, sandbox files, imports, exports, and backups. File
+deletion is intentionally reference-aware because older imports or forks can contain
+aliased paths.
+
+Automatic title generation uses compare-and-set against the title observed when work
+started. A manual rename or a newer generator always wins.
+
+## 8. Automation
+
+WorkManager and alarms are scheduling entry points. Both Task and Loop acquire resources in the
+same order: `AutomationExecutionGate` first, then the automation-priority
+`ConversationExecutionCoordinator` lease. A foreground-open Loop delegates to the controller
+through a direct-only call and joins its exact Job. Headless Tasks/Loops submit the same
+`SendRequested` -> `PersistAcceptedInput` -> `InputPersisted` contract and share the ordinary
+USER/MODEL/Run graph writer. Busy is a typed no-input/no-Run outcome; no bridge queues or falls back
+to a second writer. Automatic Compact uses the same ordinary fresh-Run continuation and generation
+tail in foreground and headless execution. `TaskExecutionEngine` still adapts headless request
+construction and Provider-effect execution; Provider outcome acceptance and normal finalization use
+the shared mailbox contract.
+
+One-shot schedules preserve explicit past dates so validation can reject them. The
+scheduler must not silently reinterpret an expired date as next year.
+
+## 9. Native, sandbox, and remote shell
+
+The native layer exposes:
+
+- on-device chat generation;
+- local embeddings;
+- the F-Droid PRoot bridge.
+
+The F-Droid sandbox runs commands with concurrent output collection and an actual
+wall-clock timeout. The shared glob matcher is implemented without API-26-only
+`java.nio.file` APIs so the API 24 minimum remains real.
+
+Remote shell supports Conch HTTP jobs and direct SSH with host-key trust. Conch requests use signed ephemeral-key/AES-GCM application-layer protection when an API key is configured; blank-key servers receive plain JSON and rely on HTTPS for transport confidentiality. Commands start as durable jobs: foreground execution is a bounded wait
+on the same process, and a timeout returns its job id instead of killing or replaying it. Separate
+list/get/wait/stop/ack operations manage surviving jobs. Terminal jobs are acknowledged only after the
+exact tool result is committed to Room; server retention remains the cleanup fallback when an
+acknowledgement cannot be delivered. Android-compatible Base64 APIs are used on every supported
+SDK.
+
+## 10. Data portability and recovery
+
+`.agora` export/import supports selective categories. Third-party importers support
+ChatGPT and Claude exports. Auto backup uses WorkManager and configurable retention.
+
+Recovery rules:
+
+- non-terminal messages are checkpointed during generation;
+- startup recovery deterministically maps ordered Room snapshots to identified reducer effects and
+  repairs interrupted Runs atomically without inventing successful output or resuming a coroutine;
+- attachment cleanup occurs only after database ownership changes commit;
+- fork cloning rolls back newly created files if graph insertion fails.
+
+## 11. Build and regression gates
+
+Use the repository scripts from the project root:
+
+```powershell
+.\build.ps1
+```
+
+`build.ps1` is the required release gate because it configures the Android SDK and
+runs the repository's expected unit-test/build workflow. Deployment is a separate, explicitly
+authorized operation and is not part of the architecture or validation gate.
+
+Every handwritten Kotlin source in main, test, flavor, and build-logic source sets is limited to
+999 physical lines by `verifyKotlinFileSize`. The task is wired into Gradle `check`, Android
+`preBuild`, `build.ps1`, and CI. Generated/build output, caches, and the vendored `thirdparty` tree
+are excluded; the temporary migration baseline is empty. The exact counting and baseline rules are
+documented in `development/kotlin-source-size-policy.md`.
+
+High-risk changes require focused tests in addition to the full gate:
+
+- provider termination and incremental tool-call parsing;
+- generation ownership, queueing, stopping, and checkpointing;
+- reducer legality, both Stop-barrier orders, and stale/duplicate effect rejection;
+- latest-wins UI buffer behavior;
+- branch path closure and attachment cloning/deletion;
+- task schedule boundary behavior;
+- API-24-compatible glob and process timeout behavior.
+
+## 12. Architectural invariants
+
+The following are review blockers:
+
+1. Never create a second visible status for tool-call assembly; stream into the existing
+   `Calling tool…` segment.
+2. Never execute an incomplete tool call or discard a completed one merely because the
+   provider used `stop`, `[DONE]`, or EOF.
+3. Never allow two writers to finalize the same conversation/run identity.
+4. Never render both a live tail and its Room counterpart.
+5. Never restart an in-flight UI transition for every token; newest content wins.
+6. Never block stream collection on attachment preprocessing or synchronous process
+   output reads when avoidable.
+7. Never delete attachment paths without querying remaining Room references.
+8. Never overwrite a manual title with delayed automatic title generation.
+9. Never use an Android API above `minSdk` without a guard or compatible implementation.
+10. Never put a raw private origin address into client code or committed configuration.
+11. Never treat Provider-pass completion as Run completion when a tool continuation remains;
+    queued guidance closes the origin only at its legal boundary and continues through a fresh Run.
+12. Never release a stopped Run before both coroutine and durable finalization barriers settle.
+13. Never attach queued guidance to a terminal Run or persist it before a legal boundary.
+14. Never accept an asynchronous result for an unexpected Run/pass/effect identity.
+15. Never delete original messages during Context Compact or split a complete tool round.

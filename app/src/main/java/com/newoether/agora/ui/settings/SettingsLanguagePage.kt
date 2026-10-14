@@ -1,6 +1,7 @@
 package com.newoether.agora.ui.settings
 
 import androidx.compose.foundation.clickable
+import androidx.activity.compose.LocalActivity
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
@@ -22,8 +23,8 @@ private data class LanguageOption(val code: String, val label: String)
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun SettingsLanguagePage(viewModel: ChatViewModel, onBack: () -> Unit) {
-    val appLanguage by viewModel.appLanguage.collectAsState()
-    val activity = androidx.compose.ui.platform.LocalContext.current as? android.app.Activity
+    val appLanguage by viewModel.settings.appLanguage.collectAsState()
+    val activity = LocalActivity.current
 
     val restartMessage = stringResource(R.string.language_restart_message)
     val restartAction = stringResource(R.string.language_restart_action)
@@ -31,37 +32,26 @@ fun SettingsLanguagePage(viewModel: ChatViewModel, onBack: () -> Unit) {
     val languages = listOf(
         LanguageOption("system", stringResource(R.string.language_system_default)),
         LanguageOption("en", "English"),
-        LanguageOption("zh", "简体中文")
+        LanguageOption("zh", "简体中文"),
+        LanguageOption("zh-Hant", "繁體中文"),
+        LanguageOption("es", "Español"),
+        LanguageOption("fr", "Français"),
+        LanguageOption("de", "Deutsch"),
+        LanguageOption("ru", "Русский"),
+        LanguageOption("pt-BR", "Português (Brasil)"),
+        LanguageOption("ja", "日本語"),
+        LanguageOption("ko", "한국어"),
+        LanguageOption("ar", "العربية"),
+        LanguageOption("vi", "Tiếng Việt")
     )
 
-    Scaffold(
-        containerColor = MaterialTheme.colorScheme.background,
-        contentWindowInsets = WindowInsets(0.dp),
-        topBar = {
-            TopAppBar(
-                title = { Text(stringResource(R.string.language_title), fontWeight = FontWeight.Bold) },
-                navigationIcon = {
-                    IconButton(onClick = onBack) {
-                        Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = stringResource(R.string.back))
-                    }
-                },
-                colors = TopAppBarDefaults.topAppBarColors(
-                    containerColor = MaterialTheme.colorScheme.background,
-                    titleContentColor = MaterialTheme.colorScheme.onBackground,
-                )
-            )
-        }
-    ) { padding ->
-        Column(
-            modifier = Modifier
-                .padding(padding)
-                .navigationBarsPadding()
-                .verticalScroll(rememberScrollState())
-                .padding(horizontal = 16.dp, vertical = 16.dp)
-        ) {
+    CollapsingSettingsScaffold(
+        title = stringResource(R.string.language_title),
+        onBack = onBack
+    ) {
             val changeLanguage: (String) -> Unit = { code ->
                 if (code != appLanguage) {
-                    viewModel.setAppLanguage(code)
+                    viewModel.settings.setAppLanguage(code)
                     viewModel.emitSnackbar(message = restartMessage, actionLabel = restartAction) {
                         activity?.let {
                             it.finish()
@@ -72,9 +62,10 @@ fun SettingsLanguagePage(viewModel: ChatViewModel, onBack: () -> Unit) {
                 }
             }
 
-            SettingsGroup(
-                title = stringResource(R.string.language_title),
-                items = languages.map { lang ->
+            SettingsGroupColumn {
+                SettingsGroup(
+                    title = stringResource(R.string.language_title),
+                    items = languages.map { lang ->
                     {
                         Row(
                             modifier = Modifier
@@ -97,6 +88,6 @@ fun SettingsLanguagePage(viewModel: ChatViewModel, onBack: () -> Unit) {
                     }
                 }
             )
-        }
+            }
     }
 }

@@ -1,26 +1,31 @@
 package com.newoether.agora.ui.components
 
+import androidx.compose.animation.core.InfiniteTransition
+import androidx.compose.animation.core.LinearEasing
+import androidx.compose.animation.core.animateFloat
+import androidx.compose.animation.core.infiniteRepeatable
+import androidx.compose.animation.core.rememberInfiniteTransition
+import androidx.compose.animation.core.tween
 import androidx.compose.foundation.Canvas
-import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.offset
+import androidx.compose.foundation.layout.size
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.ui.util.lerp
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.LaunchedEffect
-import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
-import androidx.compose.runtime.setValue
+import androidx.compose.runtime.State
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.draw.blur
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.graphics.luminance
+import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.platform.LocalDensity
+import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
-import kotlinx.coroutines.delay
 import kotlin.math.PI
 import kotlin.math.cos
 import kotlin.math.sin
@@ -43,9 +48,19 @@ fun AnimatedBlobBackground(
     centerAlpha: Float = 0.10f,
     quarterAlpha: Float = 0.05f,
     edgeAlpha: Float = 0.0f,
-    dark: Boolean = true
+    dark: Boolean = true,
+    // When false, neither the RenderEffect blur nor the ~16ms animation loop run. This is the
+    // root-cause fix for the system photo picker being composited as transparent on some HWC
+    // paths (e.g. Moto g84 / Android 15): an unconditional, every-frame RenderEffect layer on the
+    // bottom-most background got promoted to an overlay and clobbered the picker's z-order. Gating
+    // it on the existing "Blur Effects" setting both gives the user a real escape hatch (the
+    // setting previously had no effect on this layer) and restores correct composition when off.
+    blurEnabled: Boolean = true,
+    // Motion is useful on the welcome surface, where the blobs are prominent. Chat/streaming uses
+    // a nearly transparent background; keeping it static prevents an invisible full-screen
+    // animation from competing with text layout and scrolling for every frame.
+    motionEnabled: Boolean = true,
 ) {
-    val density = LocalDensity.current
     val cs = MaterialTheme.colorScheme
     val blobColor = if (dark) Color(
         red = lerp(cs.primaryContainer.red, cs.primary.red, 0.3f) * 0.5f,
@@ -75,45 +90,50 @@ fun AnimatedBlobBackground(
         }
     }
 
-    var timeSec by remember { mutableStateOf(0.0) }
+    BoxWithConstraints(modifier = modifier.fillMaxSize()) {
+        val density = LocalDensity.current
+        val containerWidthPx = with(density) { maxWidth.toPx() }
+        val containerHeightPx = with(density) { maxHeight.toPx() }
 
-    LaunchedEffect(Unit) {
-        val startNanos = System.nanoTime()
-        while (true) {
-            timeSec = (System.nanoTime() - startNanos) / 1_000_000_000.0
-            delay(16L)
-        }
-    }
-
-    Box(modifier = modifier.fillMaxSize()) {
-        Canvas(
-            modifier = Modifier
-                .fillMaxSize()
-                .blur(radius = blurRadius.dp)
-        ) {
-            val w = size.width
-            val h = size.height
-            val t = timeSec
-
-            blobs.forEachIndexed { i, blob ->
-                val phase = i.toDouble() * 1.3
-                val xFrac = blob.centerXFrac + blob.xAmp * sin(t / blob.xPeriodSec * 2.0 * PI + phase).toFloat()
-                val yFrac = blob.centerYFrac + blob.yAmp * cos(t / blob.yPeriodSec * 2.0 * PI + phase).toFloat()
-                val cx = w * xFrac
-                val cy = h * yFrac
-                val r = blob.radiusDp * density.density
-
-                val color = blobColors[i]
-                drawCircle(
-                    brush = Brush.radialGradient(
-                        0.0f to color.copy(alpha = centerAlpha),
-                        0.25f to color.copy(alpha = quarterAlpha),
-                        1.0f to color.copy(alpha = edgeAlpha),
-                        center = Offset(cx, cy),
-                        radius = r
-                    ),
-                    radius = r,
-                    center = Offset(cx, cy)
+        if (motionEnabled && blurEnabled) {
+            val motion = rememberInfiniteTransition(label = "blobMotion")
+            blobs.forEachIndexed { index, blob ->
+                val xPhase = motion.blobPhase(blob.xPeriodSec, "blobX$index")
+                val yPhase = motion.blobPhase(blob.yPeriodSec, "blobY$index")
+                BlobLayer(
+                    blob = blob,
+                    index = index,
+                    color = blobColors[index],
+                    centerAlpha = centerAlpha,
+                    quarterAlpha = quarterAlpha,
+                    edgeAlpha = edgeAlpha,
+                    blurRadius = blurRadius,
+                    blurEnabled = true,
+                    containerWidth = maxWidth,
+                    containerHeight = maxHeight,
+                    containerWidthPx = containerWidthPx,
+                    containerHeightPx = containerHeightPx,
+                    xPhase = xPhase,
+                    yPhase = yPhase,
+                )
+            }
+        } else {
+            blobs.forEachIndexed { index, blob ->
+                BlobLayer(
+                    blob = blob,
+                    index = index,
+                    color = blobColors[index],
+                    centerAlpha = centerAlpha,
+                    quarterAlpha = quarterAlpha,
+                    edgeAlpha = edgeAlpha,
+                    blurRadius = blurRadius,
+                    blurEnabled = blurEnabled,
+                    containerWidth = maxWidth,
+                    containerHeight = maxHeight,
+                    containerWidthPx = containerWidthPx,
+                    containerHeightPx = containerHeightPx,
+                    xPhase = null,
+                    yPhase = null,
                 )
             }
         }
@@ -139,5 +159,87 @@ fun AnimatedBlobBackground(
                 )
             )
         }
+    }
+}
+
+@Composable
+private fun InfiniteTransition.blobPhase(
+    periodSeconds: Float,
+    label: String,
+): State<Float> = animateFloat(
+    initialValue = 0f,
+    targetValue = (2.0 * PI).toFloat(),
+    animationSpec = infiniteRepeatable(
+        animation = tween(
+            durationMillis = (periodSeconds * 1_000f).toInt().coerceAtLeast(1),
+            easing = LinearEasing,
+        ),
+    ),
+    label = label,
+)
+
+@Composable
+private fun BlobLayer(
+    blob: BlobSpec,
+    index: Int,
+    color: Color,
+    centerAlpha: Float,
+    quarterAlpha: Float,
+    edgeAlpha: Float,
+    blurRadius: Float,
+    blurEnabled: Boolean,
+    containerWidth: Dp,
+    containerHeight: Dp,
+    containerWidthPx: Float,
+    containerHeightPx: Float,
+    xPhase: State<Float>?,
+    yPhase: State<Float>?,
+) {
+    val density = LocalDensity.current
+    val radius = blob.radiusDp.dp
+    val blurPadding = if (blurEnabled) blurRadius.dp else 0.dp
+    val halfExtent = radius + blurPadding
+    val baseX = containerWidth * blob.centerXFrac - halfExtent
+    val baseY = containerHeight * blob.centerYFrac - halfExtent
+    val phaseOffset = index.toDouble() * 1.3
+
+    Canvas(
+        modifier = Modifier
+            .offset(x = baseX, y = baseY)
+            .size(halfExtent * 2f)
+            // The blurred circle below is a static cached layer. Animation updates only these
+            // translation properties, avoiding Canvas recomposition, re-recording, remeasure and
+            // a full-screen RenderEffect on every vsync.
+            .graphicsLayer {
+                val horizontalPhase = xPhase?.value
+                val verticalPhase = yPhase?.value
+                translationX = if (horizontalPhase == null) {
+                    0f
+                } else {
+                    containerWidthPx * blob.xAmp *
+                        sin(horizontalPhase.toDouble() + phaseOffset).toFloat()
+                }
+                translationY = if (verticalPhase == null) {
+                    0f
+                } else {
+                    containerHeightPx * blob.yAmp *
+                        cos(verticalPhase.toDouble() + phaseOffset).toFloat()
+                }
+            }
+            .then(if (blurEnabled) Modifier.blur(radius = blurRadius.dp) else Modifier)
+    ) {
+        val radiusPx = with(density) { radius.toPx() }
+        val center = Offset(size.width / 2f, size.height / 2f)
+        drawCircle(
+            brush = Brush.radialGradient(
+                0.0f to color.copy(alpha = centerAlpha),
+                0.25f to color.copy(alpha = quarterAlpha),
+                1.0f to color.copy(alpha = edgeAlpha),
+                center = center,
+                radius = radiusPx,
+            ),
+            radius = radiusPx,
+            center = center,
+        )
     }
 }

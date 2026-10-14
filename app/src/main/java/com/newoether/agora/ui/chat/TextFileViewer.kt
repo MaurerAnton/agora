@@ -10,7 +10,6 @@ import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.foundation.text.selection.SelectionContainer
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Close
@@ -23,16 +22,27 @@ import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.res.stringResource
-import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.newoether.agora.R
-import com.newoether.agora.ui.theme.MonoFamily
+import com.newoether.agora.ui.chat.message.LiteralHtmlMarkdownBlock
+import com.newoether.agora.ui.chat.message.SearchHighlightedMarkdownHeading
+import com.newoether.agora.ui.chat.message.SearchHighlightedMarkdownTable
+import com.newoether.agora.ui.chat.message.SearchHighlightedMarkdownText
+import com.newoether.agora.ui.chat.message.chatLinkTextStyles
+import com.newoether.agora.ui.chat.message.literalHtmlMarkdownAnnotator
+import com.newoether.agora.ui.chat.message.scaledMarkdownTextStyle
+import com.newoether.agora.util.NoAutoScrollSelectionContainer
+import com.mikepenz.markdown.compose.MarkdownElement
+import com.mikepenz.markdown.compose.components.MarkdownComponents
+import com.mikepenz.markdown.compose.components.markdownComponents
 import com.mikepenz.markdown.m3.Markdown
 import com.mikepenz.markdown.m3.markdownTypography
 import com.mikepenz.markdown.model.markdownPadding
+import org.intellij.markdown.MarkdownElementTypes
+import org.intellij.markdown.MarkdownTokenTypes
 
 private fun isMarkdownFile(fileName: String): Boolean =
     fileName.endsWith(".md", true) || fileName.endsWith(".markdown", true)
@@ -57,34 +67,130 @@ fun TextFileViewer(
             .navigationBarsPadding()
     ) {
         val t = MaterialTheme.typography
+        val linkColor = MaterialTheme.colorScheme.primary
+        val linkTextStyles = remember(linkColor) { chatLinkTextStyles(linkColor) }
+        val viewerBodyStyle = scaledMarkdownTextStyle(t.bodyLarge)
         val viewerTypography = markdownTypography(
-            text = t.bodyLarge,
-            h1 = t.headlineMedium,
-            h2 = t.headlineSmall,
-            h3 = t.titleLarge,
-            h4 = t.titleMedium,
-            h5 = t.titleSmall,
-            h6 = t.titleSmall,
-            code = t.bodyMedium.copy(fontFamily = MonoFamily, fontSize = 13.sp),
-            inlineCode = t.bodyMedium.copy(fontFamily = MonoFamily, fontSize = 13.sp),
+            text = viewerBodyStyle,
+            paragraph = viewerBodyStyle,
+            ordered = viewerBodyStyle,
+            bullet = viewerBodyStyle,
+            list = viewerBodyStyle,
+            h1 = scaledMarkdownTextStyle(t.headlineMedium.copy(fontWeight = FontWeight.Bold)),
+            h2 = scaledMarkdownTextStyle(t.headlineSmall.copy(fontWeight = FontWeight.Bold)),
+            h3 = scaledMarkdownTextStyle(t.titleLarge.copy(fontWeight = FontWeight.Bold)),
+            h4 = scaledMarkdownTextStyle(t.titleMedium.copy(fontWeight = FontWeight.Bold)),
+            h5 = scaledMarkdownTextStyle(t.titleSmall.copy(fontWeight = FontWeight.Bold)),
+            h6 = scaledMarkdownTextStyle(t.titleSmall.copy(fontWeight = FontWeight.Bold)),
+            code = scaledMarkdownTextStyle(t.bodyMedium.copy(fontSize = 13.sp)),
+            inlineCode = scaledMarkdownTextStyle(t.bodyMedium.copy(fontSize = 13.sp)),
+            textLink = linkTextStyles,
+            table = viewerBodyStyle,
         )
         val viewerPadding = markdownPadding(block = 7.dp)
+        val literalHtmlComponents = remember {
+            lateinit var components: MarkdownComponents
+            components = markdownComponents(
+                text = { SearchHighlightedMarkdownText(it) },
+                paragraph = {
+                    SearchHighlightedMarkdownText(it, style = it.typography.paragraph)
+                },
+                heading1 = {
+                    SearchHighlightedMarkdownHeading(
+                        it,
+                        it.typography.h1,
+                        MarkdownTokenTypes.ATX_CONTENT,
+                    )
+                },
+                heading2 = {
+                    SearchHighlightedMarkdownHeading(
+                        it,
+                        it.typography.h2,
+                        MarkdownTokenTypes.ATX_CONTENT,
+                    )
+                },
+                heading3 = {
+                    SearchHighlightedMarkdownHeading(
+                        it,
+                        it.typography.h3,
+                        MarkdownTokenTypes.ATX_CONTENT,
+                    )
+                },
+                heading4 = {
+                    SearchHighlightedMarkdownHeading(
+                        it,
+                        it.typography.h4,
+                        MarkdownTokenTypes.ATX_CONTENT,
+                    )
+                },
+                heading5 = {
+                    SearchHighlightedMarkdownHeading(
+                        it,
+                        it.typography.h5,
+                        MarkdownTokenTypes.ATX_CONTENT,
+                    )
+                },
+                heading6 = {
+                    SearchHighlightedMarkdownHeading(
+                        it,
+                        it.typography.h6,
+                        MarkdownTokenTypes.ATX_CONTENT,
+                    )
+                },
+                setextHeading1 = {
+                    SearchHighlightedMarkdownHeading(
+                        it,
+                        it.typography.h1,
+                        MarkdownTokenTypes.SETEXT_CONTENT,
+                    )
+                },
+                setextHeading2 = {
+                    SearchHighlightedMarkdownHeading(
+                        it,
+                        it.typography.h2,
+                        MarkdownTokenTypes.SETEXT_CONTENT,
+                    )
+                },
+                table = { SearchHighlightedMarkdownTable(it) },
+                custom = { type, model ->
+                    if (type == MarkdownElementTypes.HTML_BLOCK) {
+                        LiteralHtmlMarkdownBlock(model)
+                    } else {
+                        model.node.children.forEach { child ->
+                            MarkdownElement(
+                                node = child,
+                                components = components,
+                                content = model.content,
+                            )
+                        }
+                    }
+                }
+            )
+            components
+        }
 
         // Content
         if (isMarkdown) {
-            SelectionContainer {
+            NoAutoScrollSelectionContainer {
                 Column(
                     modifier = Modifier.fillMaxSize()
                         .pointerInput(Unit) {}
                         .verticalScroll(rememberScrollState())
                         .padding(start = 16.dp, end = 16.dp, top = 96.dp, bottom = 56.dp)
                 ) {
-                    Markdown(content = content, modifier = Modifier.fillMaxWidth(), typography = viewerTypography, padding = viewerPadding)
+                    Markdown(
+                        content = content,
+                        modifier = Modifier.fillMaxWidth(),
+                        typography = viewerTypography,
+                        padding = viewerPadding,
+                        annotator = literalHtmlMarkdownAnnotator,
+                        components = literalHtmlComponents,
+                    )
                                     }
             }
         } else {
             val scrollState = rememberScrollState()
-            SelectionContainer {
+            NoAutoScrollSelectionContainer {
                 Column(
                     modifier = Modifier
                         .fillMaxSize()
@@ -96,9 +202,10 @@ fun TextFileViewer(
                     Text(
                         content,
                         color = MaterialTheme.colorScheme.onSurface,
-                        fontFamily = FontFamily.Monospace,
-                        fontSize = 13.sp,
-                        lineHeight = 20.sp
+                        style = t.bodyMedium.copy(
+                            fontSize = 13.sp,
+                            lineHeight = 20.sp,
+                        ),
                     )
                                     }
             }

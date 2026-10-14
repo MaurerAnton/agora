@@ -1,5 +1,7 @@
 package com.newoether.agora.util
 
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.withContext
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.json.Json
 import okhttp3.OkHttpClient
@@ -31,8 +33,8 @@ object UpdateChecker {
      * Check GitHub for a newer release. Returns [UpdateInfo] if an update is available,
      * or null if the current version is up-to-date or the check fails.
      */
-    fun check(currentVersion: String): UpdateInfo? {
-        return try {
+    suspend fun check(currentVersion: String): UpdateInfo? = withContext(Dispatchers.IO) {
+        try {
             val request = Request.Builder()
                 .url("https://api.github.com/repos/newo-ether/Agora/releases/latest")
                 .header("Accept", "application/vnd.github+json")
@@ -41,7 +43,7 @@ object UpdateChecker {
             val response = client.newCall(request).execute()
             if (!response.isSuccessful) {
                 response.close()
-                return null
+                return@withContext null
             }
 
             val body = response.body.string()

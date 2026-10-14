@@ -3,6 +3,8 @@ plugins {
     alias(libs.plugins.kotlin.compose)
     alias(libs.plugins.kotlin.serialization)
     alias(libs.plugins.ksp)
+    // Build-time bytecode fix for the Android 15 removeFirst()/removeLast() crash (see build-logic).
+    id("buildlogic.removefirstlast-fix")
 }
 
 import java.util.Properties
@@ -15,6 +17,10 @@ if (keystorePropertiesFile.exists()) {
 
 android {
     namespace = "com.newoether.agora"
+    testOptions.unitTests.isIncludeAndroidResources = true
+    // Robolectric installs Conscrypt as the first security provider for the whole test JVM;
+    // on JDK 17+ its TLS server needs reflective access to java.net (InetAddress.holder).
+    testOptions.unitTests.all { it.jvmArgs("--add-opens=java.base/java.net=ALL-UNNAMED") }
     compileSdk {
         version = release(36)
     }
@@ -22,27 +28,23 @@ android {
     ndkVersion = "26.3.11579264"
 
     defaultConfig {
-        applicationId = "com.newoether.agora.tor"
-        minSdk = 24
+        applicationId = "com.newoether.agora"
+        minSdk = 26
         targetSdk = 36
-        versionCode = 14
-        versionName = "1.3.6"
+        versionCode = 31
+        versionName = "2.1.0"
+
+
+        ndk {
+            abiFilters += listOf("arm64-v8a")
+        }
 
         externalNativeBuild {
             cmake {
                 cppFlags += "-std=c++17"
                 arguments += listOf("-DANDROID_STL=c++_shared")
-                targets += listOf("agora_llama")
+                targets += listOf("agora_llama", "agora_proot")
             }
-        }
-    }
-
-    splits {
-        abi {
-            isEnable = true
-            reset()
-            include("arm64-v8a", "armeabi-v7a")
-            isUniversalApk = false
         }
     }
 
@@ -63,15 +65,35 @@ android {
     val releaseSigning = if (hasKeystore) signingConfigs.getByName("release") else signingConfigs.getByName("debug")
 
     buildTypes {
+        debug {
+            applicationIdSuffix = ".screenshots"
+            versionNameSuffix = "-screenshots"
+            ndk {
+                abiFilters.clear()
+                abiFilters += "x86_64"
+            }
+        }
         release {
             signingConfig = releaseSigning
-            isMinifyEnabled = false
+            // R8 shrinks and optimizes release code; keep rules live in proguard-rules.pro.
+            isMinifyEnabled = true
             proguardFiles(
                 getDefaultProguardFile("proguard-android-optimize.txt"),
                 "proguard-rules.pro"
             )
         }
     }
+
+    flavorDimensions += "store"
+    productFlavors {
+        create("play") {
+            dimension = "store"
+        }
+        create("fdroid") {
+            dimension = "store"
+        }
+    }
+
     compileOptions {
         sourceCompatibility = JavaVersion.VERSION_11
         targetCompatibility = JavaVersion.VERSION_11
@@ -83,6 +105,25 @@ android {
     buildFeatures {
         compose = true
     }
+    // The app switches locales at runtime without Play Feature Delivery. Keep every
+    // packaged translation available instead of letting App Bundles split languages.
+    bundle {
+        language {
+            enableSplit = false
+        }
+    }
+
+    // Extract .so files to disk for ProcessBuilder exec (Kai approach)
+    @Suppress("UnstableApiUsage")
+    packaging {
+        jniLibs {
+            useLegacyPackaging = true
+        }
+        resources {
+            // bcprov, bcutil and bcpkix each ship the same BouncyCastle (MIT) license text.
+            pickFirsts += "META-INF/LICENSE.md"
+        }
+    }
 
     externalNativeBuild {
         cmake {
@@ -91,24 +132,38 @@ android {
     }
 }
 
-tasks.register<Copy>("copyReleaseApk") {
-    from("build/outputs/apk/release")
+// Proot binaries (libproot_exec.so, libproot_loader.so, libtalloc.so) are
+// built via GNUmakefile (see .build-proot/) and placed directly in jniLibs.
+// No CMake target is needed — the binaries are manually managed prebuilts.
+// talloc is built with SONAME=libtalloc.so (no version) so AGP packaging works.
+
+tasks.register<Copy>("copyPlayApk") {
+    from("build/outputs/apk/play/release")
     into("release")
     include("*.apk")
 }
 
-tasks.register<Copy>("copyReleaseBundle") {
-    from("build/outputs/bundle/release")
+tasks.register<Copy>("copyFdroidApk") {
+    from("build/outputs/apk/fdroid/release")
+    into("release")
+    include("*.apk")
+}
+
+tasks.register<Copy>("copyPlayBundle") {
+    from("build/outputs/bundle/playRelease")
     into("release")
     include("*.aab")
 }
 
 afterEvaluate {
-    tasks.named("assembleRelease") {
-        finalizedBy("copyReleaseApk")
+    tasks.named("assemblePlayRelease") {
+        finalizedBy("copyPlayApk")
     }
-    tasks.named("bundleRelease") {
-        finalizedBy("copyReleaseBundle")
+    tasks.named("assembleFdroidRelease") {
+        finalizedBy("copyFdroidApk")
+    }
+    tasks.named("bundlePlayRelease") {
+        finalizedBy("copyPlayBundle")
     }
 }
 
@@ -132,14 +187,37 @@ dependencies {
     ksp(libs.androidx.room.compiler)
     implementation(libs.androidx.datastore.preferences)
     implementation(libs.compose.markdown)
+    implementation(libs.jetbrains.markdown)
     implementation(libs.coil.compose)
     implementation(libs.jlatexmath.android)
     implementation(libs.media3.exoplayer)
     implementation(libs.media3.ui)
+    implementation(libs.androidx.camera.camera2)
+    implementation(libs.androidx.camera.lifecycle)
+    implementation(libs.androidx.camera.view)
     implementation(libs.okhttp)
     implementation(libs.material.color.utilities)
     implementation(libs.lottie.compose)
+    implementation(libs.work.runtime.ktx)
+    implementation(libs.jsch)
+    implementation(libs.commons.compress)
+    // WebUI server (stage 2): embedded HTTP with the pure-Kotlin CIO engine.
+    implementation(libs.ktor.server.core)
+    implementation(libs.ktor.server.cio)
+    implementation(libs.ktor.server.websockets)
+    // Builds the WebUI's self-signed TLS certificate.
+    implementation(libs.bouncycastle.pkix)
+    testImplementation(libs.ktor.server.test.host)
     debugImplementation(libs.androidx.compose.ui.tooling)
+
+    // Unit tests
+    testImplementation("junit:junit:4.13.2")
+    testImplementation("io.mockk:mockk:1.13.12")
+    testImplementation("org.jetbrains.kotlinx:kotlinx-coroutines-test:1.9.0")
+    testImplementation("androidx.arch.core:core-testing:2.2.0")
+    testImplementation("org.robolectric:robolectric:4.16")
+    testImplementation("androidx.compose.ui:ui-test-junit4")
+    debugImplementation("androidx.compose.ui:ui-test-manifest")
 }
 
 tasks.whenTaskAdded {

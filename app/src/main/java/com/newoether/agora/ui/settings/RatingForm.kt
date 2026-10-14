@@ -1,5 +1,10 @@
 package com.newoether.agora.ui.settings
 
+import android.content.Intent
+import android.net.Uri
+import java.util.Base64
+import androidx.compose.animation.Crossfade
+import androidx.compose.animation.animateColorAsState
 import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.animation.core.tween
 import androidx.compose.foundation.interaction.MutableInteractionSource
@@ -7,9 +12,11 @@ import androidx.compose.foundation.interaction.collectIsPressedAsState
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.filled.OpenInNew
 import androidx.compose.material.icons.filled.Star
 import androidx.compose.material.icons.filled.StarBorder
 import androidx.compose.material3.*
+import com.newoether.agora.ui.motion.MotionAwareCircularProgressIndicator as CircularProgressIndicator
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -20,20 +27,43 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import com.newoether.agora.R
-import com.newoether.agora.api.HttpClient
+import com.newoether.agora.ui.components.clearFocusOnTap
+import com.newoether.agora.ui.theme.ChatType
+import android.os.Build
+import com.newoether.agora.data.claimSubmissionMessage
+import com.newoether.agora.ui.components.SubmissionMessageDialog
+import com.newoether.agora.util.SubmissionMessage
+import com.newoether.agora.util.submitFeedback
+import java.io.IOException
+import kotlinx.coroutines.CancellationException
+import org.json.JSONObject
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
-import okhttp3.MediaType.Companion.toMediaType
-import okhttp3.Request
-import okhttp3.RequestBody.Companion.toRequestBody
+
+// Keep upstream identity independent of the application ID used to build a derivative.
+// This is lightweight attribution encoding, not an authenticity or tamper-prevention check.
+internal fun ratingUsesDifferentPackage(packageName: String): Boolean =
+    packageName != decodeRatingOriginText("Y29tLm5ld29ldGhlci5hZ29yYQ==")
+
+internal fun decodeRatingOriginText(encoded: String): String =
+    String(Base64.getDecoder().decode(encoded), Charsets.UTF_8)
 
 @Composable
 fun RatingForm(
-    onSubmitted: () -> Unit = {}
+    onSubmitted: ((SubmissionMessage?) -> Unit)? = null
 ) {
     val context = LocalContext.current
-    var rating by remember { mutableStateOf(0) }
+    var responseMessage by remember { mutableStateOf<SubmissionMessage?>(null) }
+    responseMessage?.let { message ->
+        SubmissionMessageDialog(message) { responseMessage = null }
+    }
+    val packageName = context.packageName
+    val modifiedPackage = remember(packageName) { ratingUsesDifferentPackage(packageName) }
+    val projectUrl = remember {
+        decodeRatingOriginText("aHR0cHM6Ly9naXRodWIuY29tL25ld28tZXRoZXIvQWdvcmE=")
+    }
+    var rating by remember { mutableIntStateOf(0) }
     var name by remember { mutableStateOf("") }
     var email by remember { mutableStateOf("") }
     var comment by remember { mutableStateOf("") }
@@ -42,26 +72,12 @@ fun RatingForm(
     var submitError by remember { mutableStateOf(false) }
     val scope = rememberCoroutineScope()
 
-    fun jsonEscape(s: String): String = buildString {
-        append('"')
-        s.forEach { c ->
-            when (c) {
-                '"' -> append("\\\"")
-                '\\' -> append("\\\\")
-                '\n' -> append("\\n")
-                '\r' -> append("\\r")
-                '\t' -> append("\\t")
-                else -> append(c)
-            }
-        }
-        append('"')
-    }
-
-    Column {
+    Column(
+        Modifier.clearFocusOnTap()
+    ) {
         Text(
             text = stringResource(R.string.rating_title),
-            style = MaterialTheme.typography.headlineSmall,
-            fontWeight = FontWeight.Bold,
+            style = ChatType.ratingTitle,
             modifier = Modifier.padding(bottom = 4.dp)
         )
         Spacer(modifier = Modifier.height(6.dp))
@@ -71,6 +87,48 @@ fun RatingForm(
             color = MaterialTheme.colorScheme.onSurfaceVariant,
             modifier = Modifier.padding(bottom = 20.dp)
         )
+
+        if (modifiedPackage) {
+            Surface(
+                shape = RoundedCornerShape(16.dp),
+                color = MaterialTheme.colorScheme.surfaceContainerHigh,
+                modifier = Modifier.fillMaxWidth().padding(bottom = 12.dp)
+            ) {
+                Column(Modifier.padding(12.dp)) {
+                    Text(
+                        text = decodeRatingOriginText(stringResource(R.string.rating_origin_modified_title_b64)),
+                        style = MaterialTheme.typography.titleSmall,
+                        fontWeight = FontWeight.Bold,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+                    Spacer(Modifier.height(6.dp))
+                    Text(
+                        text = decodeRatingOriginText(stringResource(R.string.rating_origin_modified_body_b64)),
+                        style = MaterialTheme.typography.bodyMedium,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+                }
+            }
+        }
+        Text(
+            text = decodeRatingOriginText(stringResource(R.string.rating_origin_credit_b64)),
+            style = MaterialTheme.typography.bodySmall,
+            color = MaterialTheme.colorScheme.onSurfaceVariant
+        )
+        TextButton(
+            onClick = { context.startActivity(Intent(Intent.ACTION_VIEW, Uri.parse(projectUrl))) },
+            modifier = Modifier.fillMaxWidth().padding(bottom = 12.dp)
+        ) {
+            Icon(Icons.AutoMirrored.Filled.OpenInNew, contentDescription = null, modifier = Modifier.size(18.dp))
+            Spacer(Modifier.width(8.dp))
+            Text(
+                text = decodeRatingOriginText(stringResource(
+                    if (modifiedPackage) R.string.rating_origin_view_project_b64
+                    else R.string.rating_origin_project_b64
+                )),
+                style = MaterialTheme.typography.labelLarge
+            )
+        }
 
         // Stars
         Row(
@@ -159,70 +217,113 @@ fun RatingForm(
         if (submitError) {
             Surface(
                 shape = RoundedCornerShape(16.dp),
-                color = MaterialTheme.colorScheme.errorContainer,
+                color = MaterialTheme.colorScheme.surfaceContainerHigh,
                 modifier = Modifier.fillMaxWidth().padding(bottom = 12.dp)
             ) {
                 Text(
                     text = stringResource(R.string.rating_failed),
                     style = MaterialTheme.typography.bodyMedium,
-                    color = MaterialTheme.colorScheme.onErrorContainer,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
                     textAlign = TextAlign.Center,
                     modifier = Modifier.padding(12.dp)
                 )
             }
         }
 
-        // Submit button
+        // Submit button — never actually disabled (the if in onClick guards submission), but it
+        // shows the standard M3 disabled colors when not ready, animated smoothly between states.
+        val isReady = rating > 0 && !submitting && !submitted
+        val btnContainerColor by animateColorAsState(
+            if (isReady) MaterialTheme.colorScheme.primary
+            else MaterialTheme.colorScheme.onSurface.copy(alpha = 0.12f),
+            tween(300), label = "ratingBtnContainer"
+        )
+        val btnContentColor by animateColorAsState(
+            if (isReady) MaterialTheme.colorScheme.onPrimary
+            else MaterialTheme.colorScheme.onSurface.copy(alpha = 0.38f),
+            tween(300), label = "ratingBtnContent"
+        )
         Button(
             onClick = {
-                scope.launch {
-                    submitting = true
-                    submitError = false
-                    try {
-                        val json = buildString {
-                            append("{\"rating\":$rating,\"app\":\"${context.packageName}\"")
-                            if (name.isNotBlank()) append(",\"name\":${jsonEscape(name)}")
-                            if (email.isNotBlank()) append(",\"email\":${jsonEscape(email)}")
-                            if (comment.isNotBlank()) append(",\"comment\":${jsonEscape(comment)}")
-                            append("}")
+                if (isReady) {
+                    scope.launch {
+                        submitting = true
+                        submitError = false
+                        try {
+                            val submittedRating = rating
+                            val submittedName = name
+                            val submittedEmail = email
+                            val submittedComment = comment
+                            val result = withContext(Dispatchers.IO) {
+                                val packageInfo = context.packageManager.getPackageInfo(packageName, 0)
+                                val json = JSONObject().apply {
+                                    put("rating", submittedRating)
+                                    put("app", packageName)
+                                    put("appVersion", packageInfo.versionName)
+                                    @Suppress("DEPRECATION")
+                                    val versionCode = if (Build.VERSION.SDK_INT >= 28) packageInfo.longVersionCode
+                                    else packageInfo.versionCode.toLong()
+                                    put("versionCode", versionCode)
+                                    if (submittedName.isNotBlank()) put("name", submittedName)
+                                    if (submittedEmail.isNotBlank()) put("email", submittedEmail)
+                                    if (submittedComment.isNotBlank()) put("comment", submittedComment)
+                                }
+                                submitFeedback("https://newoether.com/api/rating", json.toString())
+                            }
+                            if (!result.accepted) error("Rating endpoint rejected the request")
+                            submitted = true
+                            val message = try {
+                                result.message?.takeIf { claimSubmissionMessage(context, it.id) }
+                            } catch (_: IOException) {
+                                null
+                            }
+                            if (onSubmitted != null) onSubmitted(message)
+                            else responseMessage = message
+                        } catch (cancelled: CancellationException) {
+                            throw cancelled
+                        } catch (_: Exception) {
+                            submitError = true
+                        } finally {
+                            submitting = false
                         }
-                        val body = json.toRequestBody("application/json".toMediaType())
-                        val request = Request.Builder()
-                            .url("https://newoether.space/api/rating")
-                            .post(body)
-                            .build()
-                        withContext(Dispatchers.IO) { HttpClient.client.newCall(request).execute() }
-                        submitted = true
-                        onSubmitted()
-                    } catch (_: Exception) {
-                        submitError = true
-                    } finally {
-                        submitting = false
                     }
                 }
             },
-            enabled = rating > 0 && !submitting && !submitted,
             shape = RoundedCornerShape(50),
+            colors = ButtonDefaults.buttonColors(
+                containerColor = btnContainerColor,
+                contentColor = btnContentColor
+            ),
             modifier = Modifier.fillMaxWidth().height(52.dp)
         ) {
-            if (submitting) {
-                CircularProgressIndicator(
-                    modifier = Modifier.size(22.dp),
-                    strokeWidth = 2.5.dp,
-                    color = MaterialTheme.colorScheme.primary
-                )
-            } else if (submitted) {
-                Text(
-                    text = stringResource(R.string.rating_success),
-                    style = MaterialTheme.typography.labelLarge,
-                    fontWeight = FontWeight.Medium
-                )
-            } else {
-                Text(
-                    text = stringResource(R.string.rating_submit),
-                    style = MaterialTheme.typography.labelLarge,
-                    fontWeight = FontWeight.Medium
-                )
+            Crossfade(
+                targetState = submitting to submitted,
+                modifier = Modifier.fillMaxSize(),
+                animationSpec = tween(250),
+                label = "ratingBtn",
+            ) { (loading, done) ->
+                Box(
+                    modifier = Modifier.fillMaxSize(),
+                    contentAlignment = Alignment.Center,
+                ) {
+                    when {
+                        loading -> CircularProgressIndicator(
+                            modifier = Modifier.size(22.dp),
+                            strokeWidth = 2.5.dp,
+                            color = btnContentColor
+                        )
+                        done -> Text(
+                            text = stringResource(R.string.rating_success),
+                            style = MaterialTheme.typography.labelLarge,
+                            fontWeight = FontWeight.Medium
+                        )
+                        else -> Text(
+                            text = stringResource(R.string.rating_submit),
+                            style = MaterialTheme.typography.labelLarge,
+                            fontWeight = FontWeight.Medium
+                        )
+                    }
+                }
             }
         }
     }

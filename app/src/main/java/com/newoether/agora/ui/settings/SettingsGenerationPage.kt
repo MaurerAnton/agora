@@ -13,6 +13,7 @@ import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.Memory
+import androidx.compose.material.icons.filled.Speed
 import androidx.compose.ui.res.painterResource
 import androidx.compose.material.icons.filled.Tune
 import androidx.compose.material.icons.filled.Visibility
@@ -25,279 +26,196 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import com.newoether.agora.R
+import com.newoether.agora.ui.common.OpenAiServiceTierControlPanel
+import com.newoether.agora.ui.common.PersistedSliderFeedbackGate
+import com.newoether.agora.ui.common.ThinkingControlPanel
+import com.newoether.agora.ui.common.openAiServiceTierShortLabel
+import com.newoether.agora.ui.common.thinkingControlShortLabel
 import com.newoether.agora.viewmodel.ChatViewModel
+import kotlin.math.roundToInt
 import java.util.Locale
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun SettingsGenerationPage(viewModel: ChatViewModel, onBack: () -> Unit) {
-    val maxContextWindow by viewModel.maxContextWindow.collectAsState()
-    val visualizeContextRollout by viewModel.visualizeContextRollout.collectAsState()
-    val defaultTemperature by viewModel.defaultTemperature.collectAsState()
-    val defaultMaxTokens by viewModel.defaultMaxTokens.collectAsState()
-    val defaultTopP by viewModel.defaultTopP.collectAsState()
-    val defaultFrequencyPenalty by viewModel.defaultFrequencyPenalty.collectAsState()
-    val defaultPresencePenalty by viewModel.defaultPresencePenalty.collectAsState()
-    val thinkingEnabled by viewModel.thinkingEnabled.collectAsState()
-    val thinkingLevel by viewModel.thinkingLevel.collectAsState()
+    val defaultTemperature by viewModel.settings.defaultTemperature.collectAsState()
+    val defaultMaxTokens by viewModel.settings.defaultMaxTokens.collectAsState()
+    val defaultTopP by viewModel.settings.defaultTopP.collectAsState()
+    val defaultFrequencyPenalty by viewModel.settings.defaultFrequencyPenalty.collectAsState()
+    val defaultPresencePenalty by viewModel.settings.defaultPresencePenalty.collectAsState()
+    val thinkingEnabled by viewModel.settings.thinkingEnabled.collectAsState()
+    val thinkingLevel by viewModel.settings.thinkingLevel.collectAsState()
+    val thinkingBudgetEnabled by viewModel.settings.thinkingBudgetEnabled.collectAsState()
+    val thinkingBudgetTokens by viewModel.settings.thinkingBudgetTokens.collectAsState()
+    val openAiServiceTierEnabled by
+        viewModel.settings.openAiServiceTierEnabled.collectAsState()
+    val openAiServiceTier by viewModel.settings.openAiServiceTier.collectAsState()
+    val showDocFab by viewModel.settings.showDocumentationFab.collectAsState()
 
-    Scaffold(
-        containerColor = MaterialTheme.colorScheme.background,
-        contentWindowInsets = WindowInsets(0.dp),
-        topBar = {
-            TopAppBar(
-                title = { Text(stringResource(R.string.generation_title), fontWeight = FontWeight.Bold) },
-                navigationIcon = {
-                    IconButton(onClick = onBack) {
-                        Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = stringResource(R.string.back))
-                    }
-                },
-                colors = TopAppBarDefaults.topAppBarColors(
-                    containerColor = MaterialTheme.colorScheme.background,
-                    titleContentColor = MaterialTheme.colorScheme.onBackground,
-                )
-            )
-        }
-    ) { padding ->
-        Column(
-            modifier = Modifier
-                .padding(padding)
-                .navigationBarsPadding()
-                .verticalScroll(rememberScrollState())
-                .padding(start = 16.dp, end = 16.dp, top = 16.dp)
-        ) {
-            // ── Section 1: Default Context Window ──
-            SettingsGroup(
-                title = stringResource(R.string.context_window_default),
-                items = listOf(
-                    {
-                        Column(
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .padding(horizontal = 16.dp, vertical = 16.dp)
-                        ) {
-                            Row(
-                                modifier = Modifier.fillMaxWidth(),
-                                verticalAlignment = Alignment.Top
-                            ) {
-                                Icon(
-                                    Icons.Default.Memory,
-                                    contentDescription = null,
-                                    tint = MaterialTheme.colorScheme.primary,
-                                    modifier = Modifier.padding(top = 2.dp)
-                                )
-                                Spacer(modifier = Modifier.width(16.dp))
-                                Column(modifier = Modifier.weight(1f)) {
-                                    Text(
-                                        text = stringResource(R.string.context_window),
-                                        style = MaterialTheme.typography.bodyLarge,
-                                        color = MaterialTheme.colorScheme.onSurface
-                                    )
-                                    Text(
-                                        text = stringResource(R.string.context_retain, maxContextWindow),
-                                        style = MaterialTheme.typography.bodyMedium,
-                                        color = MaterialTheme.colorScheme.onSurfaceVariant,
-                                        modifier = Modifier.padding(top = 4.dp)
-                                    )
-                                    Slider(
-                                        value = maxContextWindow.toFloat(),
-                                        onValueChange = { viewModel.setMaxContextWindow(it.toInt()) },
-                                        valueRange = 5f..100f,
-                                        modifier = Modifier.fillMaxWidth().padding(top = 8.dp)
-                                    )
-                                    Spacer(modifier = Modifier.height(12.dp))
-                                }
-                            }
+    CollapsingSettingsScaffold(
+        title = stringResource(R.string.generation_title),
+        onBack = onBack,
+        floatingActionButton = { if (showDocFab) DocumentationFab("generation.md") }
+    ) {
+            SettingsGroupColumn {
+                // Default Thinking
+                SettingsGroup(
+                    title = stringResource(R.string.default_thinking),
+                    items = listOf(
+                        {
+                            SettingsItem(
+                                headlineContent = { Text(stringResource(R.string.gen_thinking_enabled)) },
+                                supportingContent = {
+                                    Text(thinkingControlShortLabel(thinkingEnabled, thinkingLevel, thinkingBudgetEnabled, thinkingBudgetTokens))
+                                },
+                                leadingContent = {
+                                    Icon(painterResource(id = R.drawable.neurology_24), contentDescription = null, tint = MaterialTheme.colorScheme.primary)
+                                },
+                                trailingContent = {
+                                    Switch(checked = thinkingEnabled, onCheckedChange = { viewModel.settings.setThinkingEnabled(it) })
+                                },
+                                modifier = Modifier.clickable { viewModel.settings.setThinkingEnabled(!thinkingEnabled) }
+                            )
+                        },
+                        {
+                            ThinkingControlPanel(
+                                enabled = thinkingEnabled,
+                                level = thinkingLevel,
+                                budgetEnabled = thinkingBudgetEnabled,
+                                budgetTokens = thinkingBudgetTokens,
+                                onEnabledChange = { viewModel.settings.setThinkingEnabled(it) },
+                                onLevelChange = { viewModel.settings.setThinkingLevel(it) },
+                                onBudgetEnabledChange = { viewModel.settings.setThinkingBudgetEnabled(it) },
+                                onBudgetTokensChange = { viewModel.settings.setThinkingBudgetTokens(it) },
+                                modifier = Modifier.padding(horizontal = 16.dp, vertical = 16.dp),
+                                showHeader = false,
+                                animateSections = true
+                            )
                         }
-                    },
-                    {
-                        SettingsItem(
-                            headlineContent = { Text(stringResource(R.string.context_visualize)) },
-                            supportingContent = { Text(stringResource(R.string.context_visualize_desc)) },
-                            leadingContent = {
-                                Icon(Icons.Default.Visibility, contentDescription = null, tint = MaterialTheme.colorScheme.primary)
-                            },
-                            trailingContent = {
-                                Switch(checked = visualizeContextRollout, onCheckedChange = { viewModel.setVisualizeContextRollout(it) })
-                            },
-                            modifier = Modifier.clickable { viewModel.setVisualizeContextRollout(!visualizeContextRollout) }
-                        )
-                    }
+                    )
                 )
-            )
 
-            Spacer(modifier = Modifier.height(16.dp))
+                // ── Section 3: Default OpenAI service tier ──
+                SettingsGroup(
+                    title = stringResource(R.string.default_service_tier),
+                    items = listOf(
+                        {
+                            SettingsItem(
+                                headlineContent = {
+                                    Text(stringResource(R.string.openai_service_tier_title))
+                                },
+                                supportingContent = {
+                                    Text(
+                                        openAiServiceTierShortLabel(
+                                            openAiServiceTierEnabled,
+                                            openAiServiceTier,
+                                        )
+                                    )
+                                },
+                                leadingContent = {
+                                    Icon(
+                                        Icons.Default.Speed,
+                                        contentDescription = null,
+                                        tint = MaterialTheme.colorScheme.primary,
+                                    )
+                                },
+                                trailingContent = {
+                                    Switch(
+                                        checked = openAiServiceTierEnabled,
+                                        onCheckedChange =
+                                            viewModel.settings::setOpenAiServiceTierEnabled,
+                                    )
+                                },
+                                modifier = Modifier.clickable {
+                                    viewModel.settings.setOpenAiServiceTierEnabled(
+                                        !openAiServiceTierEnabled,
+                                    )
+                                },
+                            )
+                        },
+                        {
+                            OpenAiServiceTierControlPanel(
+                                enabled = openAiServiceTierEnabled,
+                                tier = openAiServiceTier,
+                                onEnabledChange =
+                                    viewModel.settings::setOpenAiServiceTierEnabled,
+                                onTierChange = viewModel.settings::setOpenAiServiceTier,
+                                modifier = Modifier.padding(
+                                    horizontal = 16.dp,
+                                    vertical = 16.dp,
+                                ),
+                                showHeader = false,
+                            )
+                        },
+                    ),
+                )
 
-            // ── Section 2: Default Thinking ──
-            val thinkingLevels = listOf("low", "medium", "high")
-            val thinkingLevelLabels = listOf(
-                stringResource(R.string.gen_thinking_level_low),
-                stringResource(R.string.gen_thinking_level_medium),
-                stringResource(R.string.gen_thinking_level_high)
-            )
-            SettingsGroup(
-                title = stringResource(R.string.default_thinking),
-                items = listOf(
-                    {
-                        val icon = @Composable { Icon(painterResource(id = R.drawable.neurology_24), contentDescription = null, tint = MaterialTheme.colorScheme.primary) }
-                        SettingsItem(
-                            headlineContent = { Text(stringResource(R.string.gen_thinking_enabled)) },
-                            supportingContent = { Text(stringResource(R.string.gen_thinking_enabled_desc)) },
-                            leadingContent = icon,
-                            trailingContent = {
-                                Switch(checked = thinkingEnabled, onCheckedChange = { viewModel.setThinkingEnabled(it) })
-                            },
-                            modifier = Modifier.clickable { viewModel.setThinkingEnabled(!thinkingEnabled) }
-                        )
-                    },
-                    {
-                        val icon = @Composable { Icon(painterResource(id = R.drawable.neurology_24), contentDescription = null, tint = if (thinkingEnabled) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.4f)) }
-                        Column(
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .padding(horizontal = 16.dp, vertical = 16.dp)
-                        ) {
-                            Row(
-                                modifier = Modifier.fillMaxWidth(),
-                                verticalAlignment = Alignment.Top
-                            ) {
-                                icon()
-                                Spacer(modifier = Modifier.width(16.dp))
-                                Column(modifier = Modifier.weight(1f)) {
-                                    Text(
-                                        text = stringResource(R.string.gen_thinking_level),
-                                        style = MaterialTheme.typography.bodyLarge,
-                                        color = if (thinkingEnabled) MaterialTheme.colorScheme.onSurface else MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.4f)
-                                    )
-                                    Text(
-                                        text = stringResource(R.string.gen_thinking_level_desc),
-                                        style = MaterialTheme.typography.bodyMedium,
-                                        color = if (thinkingEnabled) MaterialTheme.colorScheme.onSurfaceVariant else MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.4f),
-                                        modifier = Modifier.padding(top = 4.dp)
-                                    )
-                                    Row(
-                                        modifier = Modifier.fillMaxWidth().padding(top = 16.dp),
-                                        horizontalArrangement = Arrangement.spacedBy(8.dp)
-                                    ) {
-                                        thinkingLevels.forEachIndexed { index, level ->
-                                            val selected = thinkingLevel == level && thinkingEnabled
-                                            val primary = MaterialTheme.colorScheme.primary
-                                            val surface = MaterialTheme.colorScheme.surfaceContainerHigh
-                                            val disabledBg = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f)
-                                            val startColor by animateColorAsState(
-                                                when {
-                                                    selected -> primary
-                                                    thinkingEnabled -> surface
-                                                    else -> disabledBg
-                                                },
-                                                tween(300)
-                                            )
-                                            val endColor by animateColorAsState(
-                                                when {
-                                                    selected -> primary
-                                                    thinkingEnabled -> surface
-                                                    else -> disabledBg
-                                                },
-                                                tween(300)
-                                            )
-                                            val textColor = when {
-                                                selected -> MaterialTheme.colorScheme.onPrimary
-                                                thinkingEnabled -> MaterialTheme.colorScheme.onSurface
-                                                else -> MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.4f)
-                                            }
-                                            Box(
-                                                modifier = Modifier
-                                                    .weight(1f)
-                                                    .clip(RoundedCornerShape(50))
-                                                    .background(Brush.horizontalGradient(listOf(startColor, endColor)))
-                                                    .clickable(enabled = thinkingEnabled) { viewModel.setThinkingLevel(level) }
-                                                    .padding(horizontal = 16.dp, vertical = 10.dp),
-                                                contentAlignment = Alignment.Center
-                                            ) {
-                                                Text(
-                                                    thinkingLevelLabels[index],
-                                                    textAlign = TextAlign.Center,
-                                                    modifier = Modifier.fillMaxWidth(),
-                                                    style = MaterialTheme.typography.labelLarge,
-                                                    fontWeight = if (selected) FontWeight.Bold else FontWeight.Normal,
-                                                    color = textColor
-                                                )
-                                            }
-                                        }
-                                    }
-                                }
-                            }
+                // ── Section 4: Generation Parameters ──
+                SettingsGroup(
+                    title = stringResource(R.string.generation_params),
+                    items = listOf(
+                        {
+                            GenParamSlider(
+                                label = stringResource(R.string.gen_temperature),
+                                desc = stringResource(R.string.gen_temperature_desc),
+                                value = defaultTemperature,
+                                valueRange = 0f..2f,
+                                format = { v -> String.format(Locale.US, "%.2f", v) },
+                                onValueChange = { viewModel.settings.setDefaultTemperature(it) },
+                                onReset = { viewModel.settings.setDefaultTemperature(null) }
+                            )
+                        },
+                        {
+                            val maxTokensPresets =
+                                intArrayOf(256, 512, 1024, 2048, 4096, 8192, 16384, 32768, 65536, 131072)
+                            GenParamSlider(
+                                label = stringResource(R.string.gen_max_tokens),
+                                desc = stringResource(R.string.gen_max_tokens_desc),
+                                value = defaultMaxTokens,
+                                presets = maxTokensPresets,
+                                format = { it.toString() },
+                                onValueChange = { viewModel.settings.setDefaultMaxTokens(it) },
+                                onReset = { viewModel.settings.setDefaultMaxTokens(null) }
+                            )
+                        },
+                        {
+                            GenParamSlider(
+                                label = stringResource(R.string.gen_top_p),
+                                desc = stringResource(R.string.gen_top_p_desc),
+                                value = defaultTopP,
+                                valueRange = 0f..1f,
+                                format = { v -> String.format(Locale.US, "%.2f", v) },
+                                onValueChange = { viewModel.settings.setDefaultTopP(it) },
+                                onReset = { viewModel.settings.setDefaultTopP(null) }
+                            )
+                        },
+                        {
+                            GenParamSlider(
+                                label = stringResource(R.string.gen_frequency_penalty),
+                                desc = stringResource(R.string.gen_frequency_penalty_desc),
+                                value = defaultFrequencyPenalty,
+                                valueRange = -2f..2f,
+                                format = { v -> String.format(Locale.US, "%.2f", v) },
+                                onValueChange = { viewModel.settings.setDefaultFrequencyPenalty(it) },
+                                onReset = { viewModel.settings.setDefaultFrequencyPenalty(null) }
+                            )
+                        },
+                        {
+                            GenParamSlider(
+                                label = stringResource(R.string.gen_presence_penalty),
+                                desc = stringResource(R.string.gen_presence_penalty_desc),
+                                value = defaultPresencePenalty,
+                                valueRange = -2f..2f,
+                                format = { v -> String.format(Locale.US, "%.2f", v) },
+                                onValueChange = { viewModel.settings.setDefaultPresencePenalty(it) },
+                                onReset = { viewModel.settings.setDefaultPresencePenalty(null) }
+                            )
                         }
-                    }
+                    )
                 )
-            )
+            }
 
-            Spacer(modifier = Modifier.height(16.dp))
-
-            // ── Section 3: Generation Parameters ──
-            SettingsGroup(
-                title = stringResource(R.string.generation_params),
-                items = listOf(
-                    {
-                        GenParamSlider(
-                            label = stringResource(R.string.gen_temperature),
-                            desc = stringResource(R.string.gen_temperature_desc),
-                            value = defaultTemperature,
-                            valueRange = 0f..2f,
-                            format = { v -> String.format(Locale.US, "%.2f", v) },
-                            onValueChange = { viewModel.setDefaultTemperature(it) },
-                            onReset = { viewModel.setDefaultTemperature(null) }
-                        )
-                    },
-                    {
-                        val maxTokensPresets = intArrayOf(256, 512, 1024, 2048, 4096, 8192, 16384, 32768)
-                        GenParamSlider(
-                            label = stringResource(R.string.gen_max_tokens),
-                            desc = stringResource(R.string.gen_max_tokens_desc),
-                            value = defaultMaxTokens,
-                            presets = maxTokensPresets,
-                            format = { it.toString() },
-                            onValueChange = { viewModel.setDefaultMaxTokens(it) },
-                            onReset = { viewModel.setDefaultMaxTokens(null) }
-                        )
-                    },
-                    {
-                        GenParamSlider(
-                            label = stringResource(R.string.gen_top_p),
-                            desc = stringResource(R.string.gen_top_p_desc),
-                            value = defaultTopP,
-                            valueRange = 0f..1f,
-                            format = { v -> String.format(Locale.US, "%.2f", v) },
-                            onValueChange = { viewModel.setDefaultTopP(it) },
-                            onReset = { viewModel.setDefaultTopP(null) }
-                        )
-                    },
-                    {
-                        GenParamSlider(
-                            label = stringResource(R.string.gen_frequency_penalty),
-                            desc = stringResource(R.string.gen_frequency_penalty_desc),
-                            value = defaultFrequencyPenalty,
-                            valueRange = -2f..2f,
-                            format = { v -> String.format(Locale.US, "%.2f", v) },
-                            onValueChange = { viewModel.setDefaultFrequencyPenalty(it) },
-                            onReset = { viewModel.setDefaultFrequencyPenalty(null) }
-                        )
-                    },
-                    {
-                        GenParamSlider(
-                            label = stringResource(R.string.gen_presence_penalty),
-                            desc = stringResource(R.string.gen_presence_penalty_desc),
-                            value = defaultPresencePenalty,
-                            valueRange = -2f..2f,
-                            format = { v -> String.format(Locale.US, "%.2f", v) },
-                            onValueChange = { viewModel.setDefaultPresencePenalty(it) },
-                            onReset = { viewModel.setDefaultPresencePenalty(null) }
-                        )
-                    }
-                )
-            )
-
-        }
+            if (showDocFab) { Spacer(modifier = Modifier.height(80.dp)) }
     }
 }
 
@@ -317,8 +235,23 @@ private fun GenParamSlider(
     onValueChange: (Float) -> Unit,
     onReset: () -> Unit
 ) {
-    val isDefault = value == null
-    val sliderPos = value ?: (valueRange.start + valueRange.endInclusive) / 2f
+    val defaultSliderPos = (valueRange.start + valueRange.endInclusive) / 2f
+    val sliderGate = remember(valueRange.start, valueRange.endInclusive) {
+        PersistedSliderFeedbackGate(
+            initialPersisted = value,
+            toDisplay = { persisted -> persisted ?: defaultSliderPos },
+        )
+    }
+    // Reset is reflected synchronously; only the DataStore write is async. justReset
+    // flips the label to "not specified" immediately and is cleared once the async
+    // [value] catches up (becomes null on reset, or a new value if the user re-sets).
+    var justReset by remember { mutableStateOf(false) }
+    LaunchedEffect(value) {
+        if (sliderGate.reconcile(value)) justReset = false
+    }
+    val sliderPos = sliderGate.displayed
+    val draftChangedFromDefault = kotlin.math.abs(sliderPos - defaultSliderPos) > 0.0001f
+    val hasExplicitOrDraftValue = (value != null && !justReset) || draftChangedFromDefault
     Column(
         modifier = Modifier
             .fillMaxWidth()
@@ -339,11 +272,11 @@ private fun GenParamSlider(
                 Row(verticalAlignment = Alignment.CenterVertically) {
                     Text(
                         text = label,
-                        style = MaterialTheme.typography.bodyLarge,
+                        style = MaterialTheme.typography.bodyLarge.copy(fontWeight = FontWeight.Medium),
                         color = MaterialTheme.colorScheme.onSurface,
                         modifier = Modifier.weight(1f)
                     )
-                    if (isDefault) {
+                    if (!hasExplicitOrDraftValue) {
                         Text(
                             text = stringResource(R.string.gen_not_specified),
                             style = MaterialTheme.typography.labelSmall,
@@ -362,7 +295,15 @@ private fun GenParamSlider(
                             text = stringResource(R.string.gen_reset),
                             style = MaterialTheme.typography.labelSmall,
                             color = MaterialTheme.colorScheme.primary.copy(alpha = 0.7f),
-                            modifier = Modifier.clickable(onClick = onReset)
+                            modifier = Modifier.clickable {
+                                if (value == null) {
+                                    sliderGate.settleWithoutWrite(null, defaultSliderPos)
+                                } else {
+                                    sliderGate.expectPersisted(null, defaultSliderPos)
+                                }
+                                justReset = true
+                                onReset()
+                            }
                         )
                     }
                 }
@@ -374,7 +315,21 @@ private fun GenParamSlider(
                 )
                 Slider(
                     value = sliderPos,
-                    onValueChange = onValueChange,
+                    onValueChange = sliderGate::updateFromGesture,
+                    onValueChangeFinished = {
+                        val committed = sliderPos.coerceIn(valueRange.start, valueRange.endInclusive)
+                        val shouldCommit = value != null || kotlin.math.abs(committed - defaultSliderPos) > 0.0001f
+                        if (shouldCommit) {
+                            if (value == null || kotlin.math.abs(value - committed) > 0.0001f) {
+                                sliderGate.expectPersisted(committed, committed)
+                                onValueChange(committed)
+                            } else {
+                                sliderGate.settleWithoutWrite(value, committed)
+                            }
+                        } else {
+                            sliderGate.settleWithoutWrite(value, committed)
+                        }
+                    },
                     valueRange = valueRange,
                     steps = steps,
                     modifier = Modifier.fillMaxWidth().padding(top = 8.dp)
@@ -396,9 +351,23 @@ private fun GenParamSlider(
     onReset: () -> Unit
 ) {
     fun toIndex(v: Int) = presets.indices.minByOrNull { kotlin.math.abs(presets[it] - v) } ?: 3
-    val isDefault = value == null
-    val index = if (value != null) toIndex(value) else 3 // default to 4096
-    val sliderPos = index.toFloat()
+    val defaultIndex = 3.coerceIn(0, presets.lastIndex)
+    val sliderGate = remember(presets) {
+        PersistedSliderFeedbackGate(
+            initialPersisted = value,
+            toDisplay = { persisted ->
+                (persisted?.let(::toIndex) ?: defaultIndex).toFloat()
+            },
+        )
+    }
+    // Reset is reflected synchronously; only the DataStore write is async (see float variant).
+    var justReset by remember { mutableStateOf(false) }
+    LaunchedEffect(value) {
+        if (sliderGate.reconcile(value)) justReset = false
+    }
+    val sliderPos = sliderGate.displayed
+    val draftIndex = sliderPos.roundToInt().coerceIn(0, presets.lastIndex)
+    val hasExplicitOrDraftValue = (value != null && !justReset) || draftIndex != defaultIndex
     Column(
         modifier = Modifier
             .fillMaxWidth()
@@ -419,11 +388,11 @@ private fun GenParamSlider(
                 Row(verticalAlignment = Alignment.CenterVertically) {
                     Text(
                         text = label,
-                        style = MaterialTheme.typography.bodyLarge,
+                        style = MaterialTheme.typography.bodyLarge.copy(fontWeight = FontWeight.Medium),
                         color = MaterialTheme.colorScheme.onSurface,
                         modifier = Modifier.weight(1f)
                     )
-                    if (isDefault) {
+                    if (!hasExplicitOrDraftValue) {
                         Text(
                             text = stringResource(R.string.gen_not_specified),
                             style = MaterialTheme.typography.labelSmall,
@@ -432,7 +401,7 @@ private fun GenParamSlider(
                         )
                     } else {
                         Text(
-                            text = format(value!!),
+                            text = format(presets[draftIndex]),
                             style = MaterialTheme.typography.labelLarge,
                             color = MaterialTheme.colorScheme.primary,
                             fontWeight = FontWeight.Bold,
@@ -442,7 +411,15 @@ private fun GenParamSlider(
                             text = stringResource(R.string.gen_reset),
                             style = MaterialTheme.typography.labelSmall,
                             color = MaterialTheme.colorScheme.primary.copy(alpha = 0.7f),
-                            modifier = Modifier.clickable(onClick = onReset)
+                            modifier = Modifier.clickable {
+                                if (value == null) {
+                                    sliderGate.settleWithoutWrite(null, defaultIndex.toFloat())
+                                } else {
+                                    sliderGate.expectPersisted(null, defaultIndex.toFloat())
+                                }
+                                justReset = true
+                                onReset()
+                            }
                         )
                     }
                 }
@@ -454,7 +431,25 @@ private fun GenParamSlider(
                 )
                 Slider(
                     value = sliderPos,
-                    onValueChange = { onValueChange(presets[it.toInt().coerceIn(0, presets.lastIndex)]) },
+                    onValueChange = sliderGate::updateFromGesture,
+                    onValueChangeFinished = {
+                        val committedIndex = sliderPos.roundToInt().coerceIn(0, presets.lastIndex)
+                        val committedValue = presets[committedIndex]
+                        val shouldCommit = value != null || committedIndex != defaultIndex
+                        if (shouldCommit) {
+                            if (value != committedValue) {
+                                sliderGate.expectPersisted(
+                                    committedValue,
+                                    committedIndex.toFloat(),
+                                )
+                                onValueChange(committedValue)
+                            } else {
+                                sliderGate.settleWithoutWrite(value, committedIndex.toFloat())
+                            }
+                        } else {
+                            sliderGate.settleWithoutWrite(value, committedIndex.toFloat())
+                        }
+                    },
                     valueRange = 0f..(presets.size - 1).toFloat(),
                     steps = presets.size - 2,
                     modifier = Modifier.fillMaxWidth().padding(top = 8.dp)

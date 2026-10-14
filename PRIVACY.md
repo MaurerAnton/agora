@@ -1,88 +1,45 @@
 # Privacy Policy
 
-**Last updated: May 29, 2026**
+**Last updated: August 10, 2026**
 
-Agora is an AI chat client that communicates directly with API providers you configure. This policy explains how your data is handled.
+Agora is a BYOK Android client. It does not operate a relay for chat completions: model requests go from your device to the provider or endpoint you configure.
 
-## Data Collection
+## Local data
 
-**Agora does not collect, store, or transmit any personal data to its developer.**
+Conversations, message trees, tasks, loops, memories, prompts, attachments, tool media, settings, and imported models are stored in app-managed databases/files on the device. Secret settings normally use an AES-256-GCM envelope backed by the Android Keystore. Legacy values are accepted as plaintext, and encryption failure deliberately falls back to plaintext rather than losing the value, so device storage protection remains important.
 
-- All conversation data is stored **locally on your device** and is never sent to Agora's servers (we have none).
-- API keys and model credentials are stored **locally on your device** and are only used to authenticate requests to the AI providers you configure.
-- Messages you send are transmitted directly from your device to the AI provider's API (e.g., Google Gemini, OpenAI, Ollama). Agora does not intermediate or log these requests.
+Clearing app data or uninstalling removes app-managed data unless Android backup or a user-created export preserves it.
 
-## Third-Party Services
+## Network destinations
 
-When you use Agora, your messages and attached files are sent to the AI provider(s) you select. Each provider has its own privacy policy:
+Data leaves the device only through features you use:
 
-- [Google Gemini API](https://ai.google.dev/gemini-api/terms)
-- [OpenAI API](https://openai.com/policies/privacy-policy)
-- [Anthropic API](https://www.anthropic.com/legal/privacy)
-- Providers running via Ollama or custom endpoints are under your own control.
+- messages and attachments go to the selected AI provider;
+- title, transcription, image-generation, and embedding requests go to their selected providers;
+- search queries go to the selected web-search service;
+- MCP calls go to enabled MCP servers;
+- Conch and SSH operations go to configured remote devices;
+- release metadata can be checked when the app starts, at most once per day;
+- the optional rating form sends only the rating, name, email, and comment you explicitly submit to `https://newoether.com/api/rating`;
+- after a crash, one pending report is stored locally and the next launch asks whether to send it to `https://newoether.com/crash`. It contains the stack trace, app/Android version, device manufacturer/model, timestamp, and bounded diagnostic event tags, but no conversation text, credentials, or device identifiers.
 
-Please review the privacy policy of the provider you use.
+Crash reports are never submitted automatically. Agora does not include a general analytics path. Third-party endpoints have their own privacy and retention policies.
+
+## Backups and exports
+
+A `.agora` export is a ZIP archive. If you explicitly include API keys or other secrets, those values are unencrypted inside the archive. Protect and delete exported copies as appropriate.
+
+## Transport and proxy
+
+The configured proxy applies to Agora's shared HTTP-client traffic, not direct SSH, local inference, or processes inside the Alpine sandbox. Conch application-layer encryption requires an API key; a blank-key endpoint uses plain JSON and relies on HTTPS for transport confidentiality.
 
 ## Permissions
 
-- **Internet**: Required to communicate with AI provider APIs.
-- **Notifications**: Used for foreground service to keep ongoing generations alive.
-- **Storage / File Access**: Only when you explicitly attach images, videos, or files to a message.
+- **Internet**: provider, search, MCP, update, rating, and remote HTTP connections.
+- **Notifications / foreground service**: ongoing generation, automation, and user-visible completion behavior.
+- **Files and media**: only when you select/import attachments, models, backups, fonts, or shared sandbox storage.
+- **Exact alarms**: optional automation scheduling where supported and explicitly enabled.
 
-## Data Retention
+## Children, changes, and contact
 
-All chat history is stored locally in an on-device database. You can delete conversations at any time within the app. Clearing the app's data or uninstalling will remove all local data.
-
-## Children's Privacy
-
-Agora is not directed to children under the age of 13.
-
-## Changes
-
-This policy may be updated from time to time. Changes will be posted on this page.
-
-## Contact
-
-If you have questions about this policy, open an issue at [github.com/newo-ether/Agora](https://github.com/newo-ether/Agora).
-
----
-
-# 隐私政策
-
-**最后更新：2026年5月29日**
-
-Agora 是一款 AI 聊天客户端，直接与你配置的 API 提供商通信。本政策说明你的数据如何处理。
-
-## 数据收集
-
-**Agora 不会收集、存储或传输任何个人数据给开发者。**
-
-- 所有对话数据**仅存储在你的设备本地**，不会发送到 Agora 的服务器（我们没有服务器）。
-- API 密钥和模型凭证**仅存储在你的设备本地**，仅用于向你选择的 AI 提供商认证请求。
-- 你发送的消息从你的设备直接传输到 AI 提供商的 API。Agora 不会中转或记录这些请求。
-
-## 第三方服务
-
-使用 Agora 时，你的消息和附件会发送到你选择的 AI 提供商。每个提供商有自己的隐私政策，请自行查阅。
-
-## 权限
-
-- **网络**：与 AI 提供商 API 通信。
-- **通知**：用于前台服务保持生成任务运行。
-- **存储/文件访问**：仅在你主动选择图片、视频或文件附件时使用。
-
-## 数据保留
-
-所有聊天记录存储在设备本地数据库中。你可以随时在应用内删除对话。清除应用数据或卸载将删除所有本地数据。
-
-## 儿童隐私
-
-Agora 不面向 13 岁以下儿童。
-
-## 变更
-
-本政策可能不时更新，更新内容将发布在此页面。
-
-## 联系
-
-如有问题，请在 [github.com/newo-ether/Agora](https://github.com/newo-ether/Agora) 提交 issue。
+Agora is not directed to children under 13. This policy may be updated with the repository/application. Questions can be opened at [github.com/newo-ether/Agora](https://github.com/newo-ether/Agora).

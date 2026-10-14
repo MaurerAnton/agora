@@ -2,33 +2,144 @@ package com.newoether.agora.data
 
 import android.content.Context
 import android.net.Uri
-import androidx.core.content.FileProvider
+import com.newoether.agora.automation.LoopPolicy
 import com.newoether.agora.data.local.ChatDao
+import com.newoether.agora.data.local.ChatDatabase
 import com.newoether.agora.data.local.ChatEntity
 import com.newoether.agora.data.local.MessageEntity
 import com.newoether.agora.model.AttachmentMeta
 import com.newoether.agora.model.MessageStatus
-import com.newoether.agora.util.DebugLog
 import com.newoether.agora.model.Participant
+import com.newoether.agora.data.local.LoopEntity
+import com.newoether.agora.data.local.deleteSemanticModel
+import com.newoether.agora.data.local.invalidateSemanticModel
+import com.newoether.agora.data.local.semanticModelSnapshot
+import com.newoether.agora.data.local.TaskEntity
+import com.newoether.agora.data.repository.ConversationSettingsTransferCoordinator
+import com.newoether.agora.util.DebugLog
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.NonCancellable
 import kotlinx.coroutines.flow.first
+import kotlinx.coroutines.sync.withLock
 import kotlinx.coroutines.withContext
+import kotlinx.serialization.ExperimentalSerializationApi
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.json.Json
 import kotlinx.serialization.json.jsonObject
-import java.util.UUID
 import java.io.File
-import java.util.zip.ZipFile
+import java.io.IOException
+import java.util.UUID
+
+/**
+ * Imported automations are content, not permission to spend tokens in the background. Preserve a
+ * valid cron for the user to review, but always restore the task disabled with no armed epoch.
+ */
+internal fun sanitizeImportedTask(task: TaskEntity): TaskEntity {
+    val cron = task.cronExpr.trim()
+    return task.copy(
+        name = task.name.trim(),
+        prompt = task.prompt.trim(),
+        cronExpr = cron,
+        nextRunAt = 0L,
+        enabled = false,
+    )
+}
+
+/**
+ * Converts legacy unbounded loops to the bounded default. Invalid cadence/cycle state is kept
+ * visible for diagnostics where useful, but is always made inactive so it cannot be scheduled.
+ */
+internal fun sanitizeImportedLoop(loop: LoopEntity): LoopEntity {
+    val importedMaxCycles = loop.maxCycles
+    val maxCycles = importedMaxCycles
+        ?.takeIf { it in LoopPolicy.MIN_MAX_CYCLES..LoopPolicy.MAX_MAX_CYCLES }
+        ?: LoopPolicy.DEFAULT_MAX_CYCLES
+    return loop.copy(
+        prompt = LoopPolicy.normalizePrompt(loop.prompt),
+        cycleCount = loop.cycleCount.coerceAtLeast(0),
+        maxCycles = maxCycles,
+        // Importing a backup never authorizes an automatic model call. Keep the state for review,
+        // but require an explicit restart on this device.
+        active = false,
+        nextFireAt = 0L,
+    )
+}
+
+/** Prevents a missing Task row from making an imported execution permanently unreachable. */
+internal fun sanitizeImportedConversation(
+    conversation: ChatEntity,
+    availableTaskIds: Set<String>,
+): ChatEntity {
+    val withoutDeviceReadState = conversation.copy(hasUnreadGeneration = false)
+    return if (
+        withoutDeviceReadState.taskId != null &&
+        withoutDeviceReadState.taskId !in availableTaskIds
+    ) {
+        withoutDeviceReadState.copy(taskId = null, origin = "user", graduated = true)
+    } else {
+        withoutDeviceReadState
+    }
+}
+
+internal fun embeddingModelSemanticsChanged(
+    before: EmbeddingModelConfig,
+    after: EmbeddingModelConfig,
+): Boolean = before.type != after.type || when (after.type) {
+    EmbeddingModelType.REMOTE ->
+        before.remoteModelName != after.remoteModelName ||
+            before.remoteBaseUrl != after.remoteBaseUrl
+    EmbeddingModelType.LOCAL -> before.localFilePath != after.localFilePath
+}
 
 class DataImporter(
     private val context: Context,
+    private val database: ChatDatabase,
     private val chatDao: ChatDao,
     private val settingsManager: SettingsManager,
-    private val memoryManager: MemoryManager
+    private val memoryManager: MemoryManager,
+    private val skillManager: SkillManager,
+    private val conversationSettingsTransfers: ConversationSettingsTransferCoordinator,
 ) {
     private val importJson = Json { ignoreUnknownKeys = true; coerceInputValues = true }
     enum class ImportStrategy { MERGE, REPLACE, SKIP }
+
+    companion object {
+        private const val MAX_CUSTOM_FONT_BYTES = 64L * 1024L * 1024L
+    }
+
+    private val importJson = Json { ignoreUnknownKeys = true }
+    private val conversationMediaRestorer = NativeConversationMediaRestorer(context, importJson)
+    private val conversationGraphImporter = NativeConversationGraphImporter(
+        database = database,
+        chatDao = chatDao,
+        importJson = importJson,
+        mediaRestorer = conversationMediaRestorer,
+    )
+
+    private suspend fun reconcileImportedEmbeddingModels(
+        previousModels: List<EmbeddingModelConfig>,
+    ) {
+        val previousById = previousModels.associateBy(EmbeddingModelConfig::id)
+        val importedModelIds = settingsManager.embeddingModels.first().map(EmbeddingModelConfig::id)
+        val affectedModelIds = buildSet {
+            addAll(previousById.keys)
+            addAll(importedModelIds)
+        }
+        val updatedAt = System.currentTimeMillis()
+        affectedModelIds.forEach { modelId ->
+            EmbeddingCacheLocks.forModel(modelId).withLock {
+                val current = settingsManager.embeddingModels.first()
+                    .firstOrNull { it.id == modelId }
+                val previous = previousById[modelId]
+                when {
+                    current == null -> database.deleteSemanticModel(modelId)
+                    previous == null || embeddingModelSemanticsChanged(previous, current) ->
+                        database.invalidateSemanticModel(modelId, updatedAt)
+                }
+            }
+        }
+    }
 
     @Serializable
     data class ImportManifest(
@@ -42,14 +153,25 @@ class DataImporter(
     data class ImportPreview(
         val manifest: ImportManifest,
         val conversationCount: Int = 0,
+        val taskCount: Int = 0,
         val memoryCount: Int = 0,
         val systemPromptCount: Int = 0,
         val settingsPresent: Boolean = false,
         val apiKeysPresent: Boolean = false
-    )
+    ) {
+        val hasConversationGraph: Boolean
+            get() = conversationCount > 0 || taskCount > 0
+        val hasImportableData: Boolean
+            get() = hasConversationGraph || memoryCount > 0 || systemPromptCount > 0 ||
+                settingsPresent || apiKeysPresent
+        val isSupportedVersion: Boolean
+            get() = NativeBackupFormat.isSupported(manifest.version)
+    }
 
     data class ImportResult(
         val conversationsImported: Int = 0,
+        val tasksImported: Int = 0,
+        val loopsImported: Int = 0,
         val memoriesImported: Int = 0,
         val systemPromptsImported: Int = 0,
         val settingsImported: Boolean = false,
@@ -57,510 +179,576 @@ class DataImporter(
         val errors: List<String> = emptyList()
     )
 
-    private fun detectImageExtension(bytes: ByteArray): String {
-        if (bytes.size < 4) return "jpg"
-        return when {
-            bytes[0] == 0xFF.toByte() && bytes[1] == 0xD8.toByte() -> "jpg"
-            bytes[0] == 0x89.toByte() && bytes[1] == 0x50.toByte() -> "png"
-            bytes[0] == 0x47.toByte() && bytes[1] == 0x49.toByte() -> "gif"
-            bytes[0] == 0x52.toByte() && bytes[1] == 0x49.toByte() -> "webp"
-            else -> "jpg"
-        }
+    private data class PromptImportResult(
+        val importedCount: Int = 0,
+        val idMap: Map<String, String> = emptyMap(),
+        val availableIds: Set<String> = emptySet(),
+    ) {
+        fun resolve(id: String?): String? =
+            id?.let { original -> idMap[original] ?: original.takeIf(availableIds::contains) }
     }
 
-    private fun detectVideoExtension(bytes: ByteArray): String {
-        if (bytes.size < 4) return "mp4"
-        return when {
-            bytes[0] == 0x1A.toByte() && bytes[1] == 0x45.toByte() && bytes[2] == 0xDF.toByte() && bytes[3] == 0xA3.toByte() -> "webm"
-            else -> "mp4"
-        }
-    }
-
-    private fun readAllEntries(uri: Uri): Map<String, ByteArray> {
-        val entries = mutableMapOf<String, ByteArray>()
-        // Copy SAF content to temp file so we can use ZipFile (more reliable than ZipInputStream)
-        val tmpFile = File(context.cacheDir, "agora_import_tmp.zip")
-        try {
-            val input = context.contentResolver.openInputStream(uri)
-                ?: throw IllegalStateException("Cannot open file — permission denied or file unavailable")
-            input.use { stream ->
-                tmpFile.outputStream().use { out -> stream.copyTo(out) }
-            }
-            ZipFile(tmpFile).use { zip ->
-                val manifestEntry = zip.getEntry("manifest.json")
-                if (manifestEntry != null) {
-                    entries["manifest.json"] = zip.getInputStream(manifestEntry).readBytes()
-                }
-                // Read other entries lazily - just get names for now
-                val enum = zip.entries()
-                while (enum.hasMoreElements()) {
-                    val e = enum.nextElement()
-                    if (!e.isDirectory && e.name != "manifest.json") {
-                        entries[e.name] = zip.getInputStream(e).readBytes()
-                    }
-                }
-            }
-        } catch (e: Exception) {
-            DebugLog.e("DataImporter", "readAllEntries failed: ${e.message}", e)
-            throw e
-        } finally {
-            tmpFile.delete()
-        }
-        return entries
-    }
-
-    suspend fun readManifest(uri: Uri): ImportManifest? {
-        return withContext(Dispatchers.IO) {
-            val entries = readAllEntries(uri)
-            if (entries.isEmpty()) return@withContext null
-            val manifestJson = entries["manifest.json"]?.decodeToString() ?: return@withContext null
-            try {
-                importJson.decodeFromString<ImportManifest>(manifestJson)
-            } catch (_: Exception) {
-                null
-            }
-        }
-    }
-
+    /**
+     * Reads what the import dialog shows without decompressing conversation content. A v5 archive
+     * answers from its conversation index and task list; an older archive has only one
+     * conversations.json, which is streamed once to count it. A missing or unreadable manifest
+     * yields version 0.
+     */
     suspend fun preview(uri: Uri): ImportPreview {
         return withContext(Dispatchers.IO) {
-            val entries = readAllEntries(uri)
-            val manifestJson = entries["manifest.json"]?.decodeToString() ?: return@withContext ImportPreview(
-                ImportManifest(version = 0)
+            NativeBackupArchive.open(context, uri)?.use { preview(it) }
+                ?: ImportPreview(ImportManifest(version = 0))
+        }
+    }
+    internal fun preview(archive: NativeBackupArchive): ImportPreview {
+        val empty = ImportPreview(ImportManifest(version = 0))
+        val manifestJson = archive[NativeBackupFormat.MANIFEST_ENTRY]
+            ?.decodeToString() ?: return empty
+        val manifest = try {
+            importJson.decodeFromString<ImportManifest>(manifestJson)
+        } catch (_: Exception) {
+            return empty
+        }
+
+        var conversationCount = 0
+        var taskCount = 0
+        var systemPromptCount = 0
+        val memoryCount = archive.names().count { it.startsWith("memories/") }
+        val settingsPresent = archive.has(NativeBackupFormat.SETTINGS_ENTRY)
+        val apiKeysPresent = archive.has(NativeBackupFormat.SECRETS_ENTRY)
+
+        try {
+            if (manifest.version >= 5) {
+                conversationCount = archive[NativeBackupFormat.CONVERSATION_INDEX_ENTRY]
+                    ?.decodeToString()
+                    ?.let { importJson.decodeFromString<NativeConversationIndex>(it) }
+                    ?.conversations?.size ?: 0
+                taskCount = archive.stream(NativeBackupFormat.TASKS_ENTRY)?.use {
+                    conversationGraphImporter.countConversationGraph(it).tasks
+                } ?: 0
+            } else if (archive.has(NativeBackupFormat.CONVERSATIONS_ENTRY)) {
+                val counts = archive.stream(NativeBackupFormat.CONVERSATIONS_ENTRY)!!.use {
+                    conversationGraphImporter.countConversationGraph(it)
+                }
+                conversationCount = counts.conversations
+                taskCount = counts.tasks
+            }
+        } catch (e: Exception) { DebugLog.e("DataImporter", "Failed to count conversation graph", e) }
+
+        archive[NativeBackupFormat.SYSTEM_PROMPTS_ENTRY]?.let { json ->
+            try {
+                val data = importJson.decodeFromString<List<SystemPromptEntry>>(json.decodeToString())
+                systemPromptCount = data.size
+            } catch (e: Exception) { DebugLog.e("DataImporter", "Failed to parse system_prompts.json", e) }
+        }
+
+        return ImportPreview(
+            manifest = manifest,
+            conversationCount = conversationCount,
+            taskCount = taskCount,
+            memoryCount = memoryCount,
+            systemPromptCount = systemPromptCount,
+            settingsPresent = settingsPresent,
+            apiKeysPresent = apiKeysPresent
+        )
+    }
+
+    /** The prompt list to save and the id resolution it implies; nothing is written here. */
+    private class PromptPlan(val prompts: List<SystemPromptEntry>, val result: PromptImportResult)
+    private suspend fun planSystemPrompts(
+        archive: NativeBackupArchive,
+        strategy: ImportStrategy,
+    ): PromptPlan {
+        val bytes = archive[NativeBackupFormat.SYSTEM_PROMPTS_ENTRY]
+            ?: error("${NativeBackupFormat.SYSTEM_PROMPTS_ENTRY} is missing")
+        val imported = importJson.decodeFromString<List<SystemPromptEntry>>(bytes.decodeToString())
+        if (strategy == ImportStrategy.REPLACE) {
+            return PromptPlan(
+                prompts = imported,
+                result = PromptImportResult(
+                    importedCount = imported.size,
+                    idMap = imported.associate { it.id to it.id },
+                    availableIds = imported.mapTo(mutableSetOf()) { it.id },
+                ),
             )
-            val manifest = try {
-                importJson.decodeFromString<ImportManifest>(manifestJson)
-            } catch (_: Exception) {
-                return@withContext ImportPreview(ImportManifest(version = 0))
+        }
+
+        val merged = settingsManager.systemPrompts.first().toMutableList()
+        val usedTitles = merged.mapTo(mutableSetOf()) { it.title }
+        val idMap = mutableMapOf<String, String>()
+        for (prompt in imported) {
+            val sameId = merged.firstOrNull { it.id == prompt.id }
+            if (sameId == prompt) {
+                idMap[prompt.id] = sameId.id
+                continue
             }
 
-            var conversationCount = 0
-            var systemPromptCount = 0
-            val memoryCount = entries.keys.count { it.startsWith("memories/") }
-            val settingsPresent = entries.containsKey("settings.json")
-            val apiKeysPresent = entries.containsKey("api_keys.json")
-
-            entries["conversations.json"]?.let { json ->
-                try {
-                    val data = importJson.decodeFromString<ExportConversations>(json.decodeToString())
-                    conversationCount = data.conversations.size
-                } catch (_: Exception) {}
+            val targetId = if (sameId == null) prompt.id else UUID.randomUUID().toString()
+            var targetTitle = prompt.title
+            if (targetTitle in usedTitles) {
+                val base = "${prompt.title} (imported)"
+                targetTitle = base
+                var suffix = 2
+                while (targetTitle in usedTitles) {
+                    targetTitle = "$base $suffix"
+                    suffix++
+                }
             }
-
-            entries["system_prompts.json"]?.let { json ->
-                try {
-                    val data = importJson.decodeFromString<List<SystemPromptEntry>>(json.decodeToString())
-                    systemPromptCount = data.size
-                } catch (_: Exception) {}
+            val restored = prompt.copy(id = targetId, title = targetTitle)
+            merged += restored
+            usedTitles += targetTitle
+            idMap[prompt.id] = targetId
+        }
+        return PromptPlan(
+            prompts = merged,
+            result = PromptImportResult(
+                importedCount = imported.size,
+                idMap = idMap,
+                availableIds = merged.mapTo(mutableSetOf()) { it.id },
+            ),
+        )
+    }
+    /** Conversation inputs copied and verified ahead of the first write. */
+    private class StagedConversationGraph(
+        val graphSource: NativeConversationGraphSource,
+        val media: NativeConversationMediaRestorer.RestoredMedia,
+        val headers: NativeConversationGraphImporter.ConversationGraphHeaders,
+    ) : java.io.Closeable {
+        fun discardMedia() {
+            media.createdFiles.forEach { runCatching { it.delete() } }
+        }
+        fun discard() {
+            discardMedia()
+            close()
+        }
+        override fun close() = graphSource.close()
+    }
+    /**
+     * Copies conversation media with CRC checks, builds the graph source (v5 items are verified as
+     * they are spooled) and reads the headers, which streams the whole graph and so verifies a
+     * legacy conversations.json. Anything copied is deleted again if a step fails.
+     */
+    private suspend fun stageConversationGraph(
+        archive: NativeBackupArchive,
+        version: Int,
+        strategy: ImportStrategy,
+        prompts: PromptImportResult,
+    ): StagedConversationGraph {
+        conversationSettingsTransfers.completePendingImport()
+        var media: NativeConversationMediaRestorer.RestoredMedia? = null
+        var graphSource: NativeConversationGraphSource? = null
+        try {
+            val restored = conversationMediaRestorer.restoreConversationMedia(archive)
+            media = restored
+            val source = NativeConversationGraphSource.open(archive, version, context.cacheDir)
+            graphSource = source
+            val headers = source.open().use { stream ->
+                // The parser closes what it reads, so it gets a view that leaves the stream open;
+                // reading the rest afterwards verifies a legacy conversations.json.
+                val parsed = conversationGraphImporter.readConversationGraphHeaders(
+                    stream = object : java.io.FilterInputStream(stream) {
+                        override fun close() = Unit
+                    },
+                    strategy = strategy,
+                    restoredMedia = restored,
+                    resolveSystemPromptId = prompts::resolve,
+                )
+                stream.readToEnd()
+                parsed
             }
-
-            ImportPreview(
-                manifest = manifest,
-                conversationCount = conversationCount,
-                memoryCount = memoryCount,
-                systemPromptCount = systemPromptCount,
-                settingsPresent = settingsPresent,
-                apiKeysPresent = apiKeysPresent
-            )
+            return StagedConversationGraph(source, restored, headers)
+        } catch (error: Throwable) {
+            runCatching { graphSource?.close() }
+            media?.createdFiles?.forEach { runCatching { it.delete() } }
+            throw error
         }
     }
 
+    private fun restoreCustomFont(
+        archive: NativeBackupArchive,
+        archiveVersion: Int,
+    ): RestoredCustomFont? {
+        val entry = if (archiveVersion >= 4) {
+            NativeBackupFormat.CUSTOM_FONT_ENTRY.takeIf(archive::has)
+        } else {
+            archive.names().firstOrNull { path ->
+                path.startsWith("custom_font/") && !path.removePrefix("custom_font/").contains('/')
+            }
+        } ?: return null
+        val declaredSize = archive.size(entry)
+        if (declaredSize > MAX_CUSTOM_FONT_BYTES) {
+            throw IOException("Custom font exceeds the ${MAX_CUSTOM_FONT_BYTES / (1024 * 1024)} MB limit")
+        }
+
+        val temporary = File(context.filesDir, ".custom_font_import_${UUID.randomUUID()}.tmp")
+        val target = File(context.filesDir, "custom_font_import_${UUID.randomUUID()}")
+        try {
+            archive.copyTo(
+                name = entry,
+                target = temporary,
+                maxBytes = MAX_CUSTOM_FONT_BYTES,
+            ) ?: return null
+            val displayName = com.newoether.agora.util.readFontName(temporary)
+            if (!temporary.renameTo(target)) {
+                temporary.inputStream().use { input ->
+                    NativeBackupArchive.copyStreamToFile(
+                        input = input,
+                        target = target,
+                        declaredSize = temporary.length(),
+                        maxBytes = MAX_CUSTOM_FONT_BYTES,
+                        sourceName = "custom font",
+                    )
+                }
+                temporary.delete()
+            }
+            return RestoredCustomFont(target.absolutePath, displayName)
+        } catch (error: Exception) {
+            temporary.delete()
+            target.delete()
+            throw error
+        }
+    }
+
+    @OptIn(ExperimentalSerializationApi::class)
     suspend fun import(
         uri: Uri,
         decisions: Map<DataExporter.ExportCategory, DataImporter.ImportStrategy>,
         onProgress: (Float) -> Unit = {}
     ): ImportResult {
         return withContext(Dispatchers.IO) {
-            val entries = readAllEntries(uri)
-            val errors = mutableListOf<String>()
-            var conversationsImported = 0
-            var memoriesImported = 0
-            var systemPromptsImported = 0
-            var settingsImported = false
-            var apiKeysImported = false
+            val archive = NativeBackupArchive.open(context, uri)
+                ?: return@withContext ImportResult(errors = listOf("Could not open backup archive"))
+            archive.use { opened ->
+                val manifest = opened[NativeBackupFormat.MANIFEST_ENTRY]
+                    ?.decodeToString()
+                    ?.let { raw ->
+                        runCatching { importJson.decodeFromString<ImportManifest>(raw) }.getOrNull()
+                    }
+                    ?: return@withContext ImportResult(
+                        errors = listOf("${NativeBackupFormat.MANIFEST_ENTRY} is missing or invalid"),
+                    )
+                if (!NativeBackupFormat.isSupported(manifest.version)) {
+                    return@withContext ImportResult(
+                        errors = listOf(
+                            "Unsupported backup version ${manifest.version}; this app supports " +
+                                "${NativeBackupFormat.MIN_SUPPORTED_VERSION}–" +
+                                "${NativeBackupFormat.CURRENT_VERSION}",
+                        ),
+                    )
+                }
 
-            val activeCategories = decisions.filter { it.value != ImportStrategy.SKIP }.keys
-            val totalSteps = activeCategories.size
-            var completed = 0
-            fun step() { completed++; onProgress(completed.toFloat() / totalSteps.coerceAtLeast(1)) }
+                val errors = mutableListOf<String>()
+                var conversationsImported = 0
+                var tasksImported = 0
+                var loopsImported = 0
+                var memoriesImported = 0
+                var systemPromptsImported = 0
+                var settingsImported = false
+                var apiKeysImported = false
 
-            // Conversations
-            val convDecision = decisions[DataExporter.ExportCategory.CONVERSATIONS]
-            if (convDecision != null && convDecision != ImportStrategy.SKIP) {
-                val videoCleanupList = mutableListOf<java.io.File>()
-                try {
-                    entries["conversations.json"]?.decodeToString()?.let { json ->
-                        val data = importJson.decodeFromString<ExportConversations>(json)
-                        val convEntities = data.conversations.map { c ->
-                            ChatEntity(c.id, c.title, c.lastUpdated, c.selectedBranchesJson, c.systemPromptId, c.modelId)
+                val activeCategories = decisions.filter { it.value != ImportStrategy.SKIP }.keys
+                val totalSteps = activeCategories.size
+                var completed = 0
+                fun step() {
+                    completed++
+                    onProgress(completed.toFloat() / totalSteps.coerceAtLeast(1))
+                }
+
+                val keysDecision = decisions[DataExporter.ExportCategory.API_KEYS]
+                val promptsDecision = decisions[DataExporter.ExportCategory.SYSTEM_PROMPTS]
+                val convDecision = decisions[DataExporter.ExportCategory.CONVERSATIONS]
+                val memDecision = decisions[DataExporter.ExportCategory.MEMORIES]
+                val settingsDecision = decisions[DataExporter.ExportCategory.SETTINGS]
+                val allowLegacySecrets =
+                    manifest.version < NativeBackupFormat.SEPARATE_SECRETS_SINCE_VERSION &&
+                        keysDecision != null &&
+                        keysDecision != ImportStrategy.SKIP
+
+                opened.preflightImportResources(
+                    conversationsSelected = convDecision != null &&
+                        convDecision != ImportStrategy.SKIP,
+                    settingsSelected = settingsDecision != null &&
+                        settingsDecision != ImportStrategy.SKIP,
+                    archiveVersion = manifest.version,
+                    destinationRoot = context.filesDir,
+                    customFontLimitBytes = MAX_CUSTOM_FONT_BYTES,
+                )
+
+                val promptsSelected = promptsDecision != null && promptsDecision != ImportStrategy.SKIP
+                // Prompts are planned before conversations/settings so every archived prompt
+                // reference resolves after MERGE ID collision handling. They are saved only once the
+                // conversation graph has been staged.
+                val promptPlan = if (promptsSelected) {
+                    try {
+                        planSystemPrompts(opened, promptsDecision)
+                    } catch (cancelled: kotlinx.coroutines.CancellationException) {
+                        throw cancelled
+                    } catch (error: Exception) {
+                        errors += "System prompts: ${error.localizedMessage ?: "Unknown error"}"
+                        null
+                    }
+                } else {
+                    null
+                }
+                val promptImport = promptPlan?.result ?: PromptImportResult(
+                    availableIds = settingsManager.systemPrompts.first()
+                        .mapTo(mutableSetOf()) { it.id },
+                )
+                // Every conversation input is staged before the first write, so a damaged archive
+                // fails the whole import and leaves existing data untouched.
+                val staged = if (convDecision != null && convDecision != ImportStrategy.SKIP) {
+                    try {
+                        stageConversationGraph(opened, manifest.version, convDecision, promptImport)
+                    } catch (cancelled: kotlinx.coroutines.CancellationException) {
+                        throw cancelled
+                    } catch (error: Exception) {
+                        return@withContext ImportResult(
+                            errors = errors + "Conversations: ${error.localizedMessage ?: "Unknown error"}",
+                        )
+                    }
+                } else {
+                    null
+                }
+                if (promptPlan != null) {
+                    try {
+                        settingsManager.saveSystemPrompts(promptPlan.prompts)
+                        systemPromptsImported = promptPlan.result.importedCount
+                    } catch (cancelled: kotlinx.coroutines.CancellationException) {
+                        staged?.discard()
+                        throw cancelled
+                    } catch (error: Exception) {
+                        // Staged conversations may reference the remapped prompt ids, so they cannot
+                        // be written without the prompts.
+                        staged?.discard()
+                        return@withContext ImportResult(
+                            errors = errors + "System prompts: ${error.localizedMessage ?: "Unknown error"}",
+                        )
+                    }
+                }
+                if (promptsSelected) step()
+                if (staged != null) {
+                    var graphCommitted = false
+                    try {
+                        val semanticSnapshot = semanticModelSnapshot(
+                            activeModelId = settingsManager.activeEmbeddingModelId.first(),
+                            configuredModelIds = settingsManager.embeddingModels.first().map { it.id },
+                        )
+                        val settingsTransferId = conversationGraphImporter.importConversationGraph(
+                            graphSource = staged.graphSource,
+                            strategy = checkNotNull(convDecision),
+                            headers = staged.headers,
+                            restoredMedia = staged.media,
+                            archiveVersion = manifest.version,
+                            semanticSnapshot = semanticSnapshot,
+                        )
+                        graphCommitted = true
+                        conversationsImported = staged.headers.conversations.size
+                        tasksImported = staged.headers.tasks.size
+                        loopsImported = staged.headers.loops.size
+                        try {
+                            conversationSettingsTransfers.completeImport(settingsTransferId)
+                        } catch (cancelled: kotlinx.coroutines.CancellationException) {
+                            throw cancelled
+                        } catch (error: Exception) {
+                            errors += "Conversation settings: " +
+                                (error.localizedMessage ?: "Deferred until next startup")
                         }
-                        val msgEntities = data.messages.map { m ->
-                            MessageEntity(m.id, m.conversationId, m.parentId, m.text, m.images,
-                                m.thoughts, m.thoughtTitle, m.tokenCount,
-                                try { MessageStatus.valueOf(m.status) } catch (_: Exception) { MessageStatus.SUCCESS },
-                                try { Participant.valueOf(m.participant) } catch (_: Exception) { Participant.MODEL },
-                                m.timestamp, m.thoughtTimeMs, m.modelName, m.toolCallJson, m.attachmentMeta)
-                        }
-                        // Restore image files from ZIP to app storage
-                        val imagesDir = java.io.File(context.filesDir, "images")
-                        imagesDir.mkdirs()
-                        val imageEntries = entries.filter { it.key.startsWith("images/") }
-                        val restoredImages = mutableMapOf<String, MutableList<String>>() // messageId -> file paths
-                        for ((path, bytes) in imageEntries) {
-                            // path format: images/<messageId>/<index>
-                            val parts = path.removePrefix("images/").split("/")
-                            if (parts.size == 2) {
-                                val msgId = parts[0]
-                                val ext = detectImageExtension(bytes)
-                                val imgFile = java.io.File(imagesDir, "${msgId}_${parts[1]}.$ext")
-                                imgFile.writeBytes(bytes)
-                                val contentUri = FileProvider.getUriForFile(
-                                    context,
-                                    "${context.packageName}.fileprovider",
-                                    imgFile
-                                )
-                                restoredImages.getOrPut(msgId) { mutableListOf() }.add(contentUri.toString())
+                    } catch (cancelled: kotlinx.coroutines.CancellationException) {
+                        if (!graphCommitted) staged.discardMedia()
+                        throw cancelled
+                    } catch (error: Exception) {
+                        if (!graphCommitted) staged.discardMedia()
+                        errors += "Conversations: ${error.localizedMessage ?: "Unknown error"}"
+                    } finally {
+                        staged.close()
+                    }
+                    step()
+                }
+                if (memDecision != null && memDecision != ImportStrategy.SKIP) {
+                    try {
+                        // Every entry is read before REPLACE deletes anything, so an unreadable
+                        // archive leaves the existing memories and skills in place.
+                        val memEntries = opened.names()
+                            .filter { it.startsWith("memories/") }
+                            .mapNotNull { path -> opened.bytes(path)?.let { path to it.decodeToString() } }
+                        if (memDecision == ImportStrategy.REPLACE) {
+                            memoryManager.listFiles().forEach { memoryManager.deleteFile(it.name) }
+                            skillManager.listFiles().forEach { skillManager.deleteFile(it.name) }
+                            if (memoryManager.getActiveMemory().isNotEmpty()) {
+                                memoryManager.updateActiveMemory("", "replace")
                             }
                         }
-
-                        // Restore video files from ZIP to app storage
-                        val videoEntries = entries.filter { it.key.startsWith("videos/") }
-                        val restoredVideos = mutableMapOf<String, String>() // messageId -> local file path
-                        for ((path, bytes) in videoEntries) {
-                            // path format: videos/<messageId>/<index>
-                            val parts = path.removePrefix("videos/").split("/")
-                            if (parts.size == 2 && bytes.isNotEmpty()) {
-                                val msgId = parts[0]
-                                val ext = detectVideoExtension(bytes)
-                                val vidFile = java.io.File(context.filesDir, "vid_import_${java.util.UUID.randomUUID()}.$ext")
-                                vidFile.writeBytes(bytes)
-                                videoCleanupList.add(vidFile)
-                                restoredVideos[msgId] = "file://${vidFile.absolutePath}"
-                            }
-                        }
-
-                        // Update message entities with restored image paths
-                        val finalMsgEntities = msgEntities.map { msg ->
-                            val imgs = restoredImages[msg.id]
-                            var updated = if (imgs != null) msg.copy(images = imgs) else msg
-                            // Update attachmentMeta originalUri for videos
-                            val videoPath = restoredVideos[msg.id]
-                            if (videoPath != null && updated.attachmentMeta != null) {
-                                try {
-                                    val meta = importJson.decodeFromString<AttachmentMeta>(updated.attachmentMeta!!)
-                                    val adjustedItems = meta.items.map { item ->
-                                        if (item.type == "video") item.copy(originalUri = videoPath) else item
+                        val existingNames = memoryManager.listFiles().map { it.name }.toSet()
+                        val existingSkillNames = skillManager.listFiles().map { it.name }.toSet()
+                        for ((path, text) in memEntries) {
+                            when {
+                                path == "memories/active_memory.md" && text.isNotBlank() -> {
+                                    if (
+                                        memDecision == ImportStrategy.REPLACE ||
+                                        memoryManager.getActiveMemory().isEmpty()
+                                    ) {
+                                        memoryManager.updateActiveMemory(text, "replace")
                                     }
-                                    updated = updated.copy(attachmentMeta = importJson.encodeToString(AttachmentMeta(items = adjustedItems)))
-                                } catch (_: Exception) {}
-                            }
-                            updated
-                        }
-
-                        if (convDecision == ImportStrategy.REPLACE) {
-                            chatDao.deleteAllConversations()
-                            convEntities.forEach { chatDao.upsertConversation(it) }
-                            finalMsgEntities.forEach { chatDao.upsertMessage(it) }
-                            conversationsImported = data.conversations.size
-                        } else {
-                            // MERGE: upsert conversations, insert new messages,
-                            // and update existing messages that have restored images
-                            convEntities.forEach { chatDao.upsertConversation(it) }
-                            val existingIds = chatDao.findExistingMessageIds(finalMsgEntities.map { it.id })
-                            val existingSet = existingIds.toSet()
-                            finalMsgEntities.filter { it.id !in existingSet }.forEach { chatDao.upsertMessage(it) }
-                            finalMsgEntities.filter { it.id in existingSet && it.images.isNotEmpty() }.forEach { chatDao.upsertMessage(it) }
-                            conversationsImported = data.conversations.size
-                        }
-                    }
-                } catch (e: Exception) {
-                    // Clean up restored video files on error
-                    for (f in videoCleanupList) { try { f.delete() } catch (_: Exception) {} }
-                    errors.add("Conversations: ${e.localizedMessage ?: "Unknown error"}")
-                }
-                step()
-            }
-
-            // Memories
-            val memDecision = decisions[DataExporter.ExportCategory.MEMORIES]
-            if (memDecision != null && memDecision != ImportStrategy.SKIP) {
-                try {
-                    val memEntries = entries.filter { it.key.startsWith("memories/") }
-                    if (memDecision == ImportStrategy.REPLACE) {
-                        for (file in memoryManager.listFiles()) {
-                            memoryManager.deleteFile(file.name)
-                        }
-                        val activeMem = memoryManager.getActiveMemory()
-                        if (activeMem.isNotEmpty()) {
-                            memoryManager.updateActiveMemory("", "replace")
-                        }
-                    }
-                    val existingNames = memoryManager.listFiles().map { it.name }.toSet()
-                    for ((path, content) in memEntries) {
-                        val text = content.decodeToString()
-                        if (path == "memories/active_memory.md" && text.isNotBlank()) {
-                            if (memDecision == ImportStrategy.REPLACE || memoryManager.getActiveMemory().isEmpty()) {
-                                memoryManager.updateActiveMemory(text, "replace")
-                            }
-                            memoriesImported++
-                        } else if (path == "memories/memory_db/memory_meta.json") {
-                            if (memDecision == ImportStrategy.REPLACE || memoryManager.getMetaJson() == "{}") {
-                                memoryManager.saveMetaJson(text)
-                            }
-                        } else if (path.startsWith("memories/memory_db/")) {
-                            val name = path.removePrefix("memories/memory_db/")
-                            if (memDecision == ImportStrategy.REPLACE || name !in existingNames) {
-                                try {
-                                    memoryManager.createFile(name, text)
-                                } catch (_: Exception) {
-                                    memoryManager.editFile(name, text)
+                                    memoriesImported++
+                                }
+                                path == "memories/memory_db/memory_meta.json" -> {
+                                    if (
+                                        memDecision == ImportStrategy.REPLACE ||
+                                        memoryManager.getMetaJson() == "{}"
+                                    ) {
+                                        memoryManager.saveMetaJson(text)
+                                    }
+                                }
+                                path == "memories/skill_db/skill_meta.json" -> {
+                                    if (
+                                        memDecision == ImportStrategy.REPLACE ||
+                                        skillManager.getMetaJson() == "{}"
+                                    ) {
+                                        skillManager.saveMetaJson(text)
+                                    }
+                                }
+                                path.startsWith("memories/skill_db/") -> {
+                                    val name = path.removePrefix("memories/skill_db/")
+                                    if (
+                                        memDecision == ImportStrategy.REPLACE ||
+                                        name !in existingSkillNames
+                                    ) {
+                                        try {
+                                            skillManager.createFile(name, text)
+                                        } catch (_: Exception) {
+                                            skillManager.editFile(name, content = text)
+                                        }
+                                    }
+                                    memoriesImported++
+                                }
+                                path.startsWith("memories/memory_db/") -> {
+                                    val name = path.removePrefix("memories/memory_db/")
+                                    if (
+                                        memDecision == ImportStrategy.REPLACE ||
+                                        name !in existingNames
+                                    ) {
+                                        try {
+                                            memoryManager.createFile(name, text)
+                                        } catch (_: Exception) {
+                                            memoryManager.editFile(name, text)
+                                        }
+                                    }
+                                    memoriesImported++
                                 }
                             }
-                            memoriesImported++
                         }
+                    } catch (error: Exception) {
+                        errors += "Memories: ${error.localizedMessage ?: "Unknown error"}"
                     }
-                } catch (e: Exception) {
-                    errors.add("Memories: ${e.localizedMessage ?: "Unknown error"}")
+                    step()
                 }
-                step()
-            }
 
-            // System Prompts
-            val promptsDecision = decisions[DataExporter.ExportCategory.SYSTEM_PROMPTS]
-            if (promptsDecision != null && promptsDecision != ImportStrategy.SKIP) {
-                try {
-                    entries["system_prompts.json"]?.decodeToString()?.let { json ->
-                        val prompts = importJson.decodeFromString<List<SystemPromptEntry>>(json)
-                        if (promptsDecision == ImportStrategy.REPLACE) {
-                            settingsManager.saveSystemPrompts(prompts)
-                        } else {
-                            // MERGE: append with new IDs
-                            val existing = settingsManager.systemPrompts.first().toMutableList()
-                            val existingTitles = existing.map { it.title }.toSet()
-                            for (p in prompts) {
-                                val newId = UUID.randomUUID().toString()
-                                val title = if (p.title in existingTitles) "${p.title} (imported)" else p.title
-                                existing.add(p.copy(id = newId, title = title))
+                if (settingsDecision != null && settingsDecision != ImportStrategy.SKIP) {
+                    var restoredFont: RestoredCustomFont? = null
+                    var fontApplied = false
+                    val previousEmbeddingModels = settingsManager.embeddingModels.first()
+                    try {
+                        val settingsObject = opened[NativeBackupFormat.SETTINGS_ENTRY]
+                            ?.decodeToString()
+                            ?.let { Json.parseToJsonElement(it).jsonObject }
+                            ?: error("${NativeBackupFormat.SETTINGS_ENTRY} is missing")
+                        restoredFont = try {
+                            restoreCustomFont(opened, manifest.version)
+                        } catch (error: Exception) {
+                            errors += "Settings: custom font skipped: " +
+                                (error.localizedMessage ?: "invalid font file")
+                            null
+                        }
+                        val warnings = PortableSettingsArchive.restoreFromJsonObject(
+                            obj = settingsObject,
+                            sm = settingsManager,
+                            replace = settingsDecision == ImportStrategy.REPLACE,
+                            allowLegacySecrets = allowLegacySecrets,
+                            restoredCustomFont = restoredFont,
+                            resolveSystemPromptId = promptImport::resolve,
+                        )
+                        warnings.forEach { errors += "Settings: $it" }
+                        fontApplied = restoredFont != null && manifest.version >= 4
+
+                        if (manifest.version < 4) {
+                            if (restoredFont != null) {
+                                settingsManager.saveCustomFontPath(restoredFont.path)
+                                settingsManager.saveCustomFontName(restoredFont.displayName)
+                                fontApplied = true
                             }
-                            settingsManager.saveSystemPrompts(existing)
+                            opened[NativeBackupFormat.LEGACY_EXTRA_SETTINGS_ENTRY]
+                                ?.decodeToString()
+                                ?.let { Json.parseToJsonElement(it).jsonObject }
+                                ?.let { legacy ->
+                                    ExportExtraSettings.restoreLegacyFromJsonObject(
+                                        obj = legacy,
+                                        sm = settingsManager,
+                                        replace = settingsDecision == ImportStrategy.REPLACE,
+                                        allowSecrets = allowLegacySecrets,
+                                        allowedConversationIds =
+                                            chatDao.getAllConversationIds().toSet(),
+                                    )
+                                }
+                            if (
+                                settingsManager.fontPreference.first() == "custom" &&
+                                settingsManager.customFontPath.first()
+                                    .takeIf(String::isNotBlank)
+                                    ?.let(::File)
+                                    ?.isFile != true
+                            ) {
+                                settingsManager.saveFontPreference("app_default")
+                                settingsManager.saveCustomFontPath("")
+                                settingsManager.saveCustomFontName("")
+                            }
                         }
-                        systemPromptsImported = prompts.size
-                    }
-                } catch (e: Exception) {
-                    errors.add("System prompts: ${e.localizedMessage ?: "Unknown error"}")
-                }
-                step()
-            }
-
-            // Settings
-            val settingsDecision = decisions[DataExporter.ExportCategory.SETTINGS]
-            if (settingsDecision != null && settingsDecision != ImportStrategy.SKIP) {
-                try {
-                    entries["settings.json"]?.decodeToString()?.let { json ->
-                        val s = importJson.decodeFromString<ExportSettings>(json)
-                        settingsManager.saveSelectedModel(s.selectedModel)
-                        for ((provider, models) in s.availableModels) {
-                            settingsManager.saveAvailableModels(provider, models)
-                        }
-                        settingsManager.saveEnabledModels(s.enabledModels)
-                        settingsManager.saveModelAliases(s.modelAliases)
-                        settingsManager.saveMaxContextWindow(s.maxContextWindow)
-                        settingsManager.saveVisualizeContextRollout(s.visualizeContextRollout)
-                        settingsManager.saveCodeExecutionEnabled(s.codeExecutionEnabled)
-                        settingsManager.saveGoogleSearchEnabled(s.googleSearchEnabled)
-                        settingsManager.saveThinkingEnabled(s.thinkingEnabled)
-                        settingsManager.saveThinkingLevel(s.thinkingLevel)
-                        settingsManager.saveAutoCacheEnabled(s.autoCacheEnabled)
-                        for ((provider, url) in s.providerBaseUrls) {
-                            settingsManager.saveProviderBaseUrl(provider, url)
-                        }
-                        settingsManager.saveTitleGenerationEnabled(s.titleGenerationEnabled)
-                        s.titleGenerationModel?.let { settingsManager.saveTitleGenerationModel(it) }
-                        settingsManager.saveAccessPastConversations(s.accessPastConversations)
-                        settingsManager.saveAccessSavedMemories(s.accessSavedMemories)
-                        settingsManager.saveAccessActiveMemory(s.accessActiveMemory)
-                        settingsManager.saveRagSearchEnabled(s.ragSearchEnabled)
-                        settingsManager.saveModelSearchMethod(s.modelSearchMethod)
-                        settingsManager.saveManualSearchMethod(s.manualSearchMethod)
-                        // Skip embedding models — GGUF files don't exist on this device
-                        settingsManager.saveCustomProviders(s.customProviders)
-                        settingsManager.saveAppLanguage(s.appLanguage)
-                        settingsManager.saveWebSearchEnabled(s.webSearchEnabled)
-                        settingsManager.saveWebSearchProvider(s.webSearchProvider)
-                        settingsManager.saveWebSearchBaseUrl(s.webSearchBaseUrl)
-                        settingsManager.saveRagThreshold(s.ragThreshold)
-                        settingsManager.saveShellEnabled(s.shellEnabled)
-                        settingsManager.saveShellDevices(s.shellDevices)
-                        // Skip local chat models — GGUF files don't exist on this device
-                        s.activeSystemPromptId?.let { settingsManager.setActiveSystemPromptId(it) }
                         settingsImported = true
-
-                        // Restore extra settings if present
-                        entries["extra_settings.json"]?.decodeToString()?.let { json ->
-                            try {
-                                val obj = importJson.parseToJsonElement(json).jsonObject
-                                ExportExtraSettings.restoreFromJsonObject(obj, settingsManager)
-                            } catch (_: Exception) { /* older exports may not have extra_settings.json */ }
+                    } catch (error: Exception) {
+                        if (!fontApplied) restoredFont?.path?.let(::File)?.delete()
+                        errors += "Settings: ${error.localizedMessage ?: "Unknown error"}"
+                    } finally {
+                        withContext(NonCancellable) {
+                            runCatching {
+                                reconcileImportedEmbeddingModels(previousEmbeddingModels)
+                            }.exceptionOrNull()?.let { error ->
+                                errors += "Settings index: " +
+                                    (error.localizedMessage ?: "Could not refresh embeddings")
+                            }
                         }
                     }
-                } catch (e: Exception) {
-                    errors.add("Settings: ${e.localizedMessage ?: "Unknown error"}")
+                    step()
                 }
-                step()
-            }
 
-            // API Keys
-            val keysDecision = decisions[DataExporter.ExportCategory.API_KEYS]
-            if (keysDecision != null && keysDecision != ImportStrategy.SKIP) {
-                try {
-                    entries["api_keys.json"]?.decodeToString()?.let { json ->
-                        val data: ExportApiKeys = importJson.decodeFromString(json)
-                        if (keysDecision == ImportStrategy.REPLACE) {
-                            settingsManager.saveApiKeys(data.apiKeys)
-                            data.webSearchApiKeys.forEach { (provider, key) ->
-                                settingsManager.saveWebSearchApiKey(provider, key)
-                            }
-                            data.shellApiKeys.forEach { (name, key) ->
-                                val devices = settingsManager.shellDevices.first().toMutableList()
-                                val idx = devices.indexOfFirst { it.name == name }
-                                if (idx >= 0) {
-                                    devices[idx] = devices[idx].copy(apiKey = key)
-                                } else {
-                                    devices.add(ShellDeviceConfig(name = name, apiKey = key))
-                                }
-                                settingsManager.saveShellDevices(devices)
-                            }
-                        } else {
-                            // MERGE: add non-duplicate keys
-                            val existing = settingsManager.apiKeys.first().toMutableList()
-                            val existingProviders = existing.map { it.provider to it.key }.toSet()
-                            for (key in data.apiKeys) {
-                                if ((key.provider to key.key) !in existingProviders) {
-                                    existing.add(key)
-                                }
-                            }
-                            settingsManager.saveApiKeys(existing)
-                            data.webSearchApiKeys.forEach { (provider, key) ->
-                                val current = settingsManager.webSearchApiKeys.first()
-                                if (provider !in current) {
-                                    settingsManager.saveWebSearchApiKey(provider, key)
-                                }
-                            }
-                            val currentDevices = settingsManager.shellDevices.first().toMutableList()
-                            var changed = false
-                            data.shellApiKeys.forEach { (name, key) ->
-                                val idx = currentDevices.indexOfFirst { it.name == name }
-                                if (idx >= 0 && currentDevices[idx].apiKey.isBlank()) {
-                                    currentDevices[idx] = currentDevices[idx].copy(apiKey = key)
-                                    changed = true
-                                } else if (idx < 0) {
-                                    currentDevices.add(ShellDeviceConfig(name = name, apiKey = key))
-                                    changed = true
-                                }
-                            }
-                            if (changed) settingsManager.saveShellDevices(currentDevices)
-                        }
-                        // Apply active key IDs
-                        for ((provider, id) in data.activeApiKeyIds) {
-                            settingsManager.setActiveApiKeyId(provider, id)
-                        }
+                if (keysDecision != null && keysDecision != ImportStrategy.SKIP) {
+                    try {
+                        val data = opened[NativeBackupFormat.SECRETS_ENTRY]
+                            ?.decodeToString()
+                            ?.let { importJson.decodeFromString<NativeBackupSecrets>(it) }
+                            ?: error("${NativeBackupFormat.SECRETS_ENTRY} is missing")
+                        NativeBackupSecretsPolicy.restore(
+                            data = data,
+                            sm = settingsManager,
+                            replace = keysDecision == ImportStrategy.REPLACE,
+                        ).forEach { errors += "API keys: $it" }
                         apiKeysImported = true
+                    } catch (error: Exception) {
+                        errors += "API keys: ${error.localizedMessage ?: "Unknown error"}"
                     }
-                } catch (e: Exception) {
-                    errors.add("API keys: ${e.localizedMessage ?: "Unknown error"}")
+                    step()
                 }
-                step()
-            }
 
-            onProgress(1f)
-            ImportResult(
-                conversationsImported = conversationsImported,
-                memoriesImported = memoriesImported,
-                systemPromptsImported = systemPromptsImported,
-                settingsImported = settingsImported,
-                apiKeysImported = apiKeysImported,
-                errors = errors
-            )
+                onProgress(1f)
+                ImportResult(
+                    conversationsImported = conversationsImported,
+                    tasksImported = tasksImported,
+                    loopsImported = loopsImported,
+                    memoriesImported = memoriesImported,
+                    systemPromptsImported = systemPromptsImported,
+                    settingsImported = settingsImported,
+                    apiKeysImported = apiKeysImported,
+                    errors = errors,
+                )
+            }
         }
     }
 
-    // Internal data classes for parsing export files
-    @Serializable
-    private data class ExportConversations(
-        val conversations: List<ExportChatEntity>,
-        val messages: List<ExportMessageEntity>
-    )
-
-    @Serializable
-    private data class ExportChatEntity(
-        val id: String,
-        val title: String,
-        val lastUpdated: Long,
-        val selectedBranchesJson: String? = null,
-        val systemPromptId: String? = null,
-        val modelId: String? = null
-    )
-
-    @Serializable
-    private data class ExportMessageEntity(
-        val id: String,
-        val conversationId: String,
-        val parentId: String? = null,
-        val text: String,
-        val images: List<String> = emptyList(),
-        val thoughts: String? = null,
-        val thoughtTitle: String? = null,
-        val tokenCount: Int = 0,
-        val status: String = "SUCCESS",
-        val participant: String = "MODEL",
-        val timestamp: Long,
-        val thoughtTimeMs: Long? = null,
-        val modelName: String? = null,
-        val toolCallJson: String? = null,
-        val attachmentMeta: String? = null
-    )
-
-    @Serializable
-    private data class ExportSettings(
-        val selectedModel: String = "",
-        val availableModels: Map<String, List<String>> = emptyMap(),
-        val enabledModels: Set<String> = emptySet(),
-        val modelAliases: Map<String, String> = emptyMap(),
-        val maxContextWindow: Int = 20,
-        val visualizeContextRollout: Boolean = false,
-        val codeExecutionEnabled: Boolean = false,
-        val googleSearchEnabled: Boolean = false,
-        val thinkingEnabled: Boolean = true,
-        val thinkingLevel: String = "medium",
-        val autoCacheEnabled: Boolean = true,
-        val providerBaseUrls: Map<String, String> = emptyMap(),
-        val titleGenerationEnabled: Boolean = true,
-        val titleGenerationModel: String? = null,
-        val accessPastConversations: Boolean = true,
-        val accessSavedMemories: Boolean = true,
-        val accessActiveMemory: Boolean = true,
-        val ragSearchEnabled: Boolean = false,
-        val modelSearchMethod: String = "keyword",
-        val manualSearchMethod: String = "keyword",
-        val embeddingModels: List<EmbeddingModelConfig> = emptyList(),
-        val activeEmbeddingModelId: String = "",
-        val appLanguage: String = "system",
-        val webSearchEnabled: Boolean = false,
-        val webSearchProvider: String = "brave",
-        val webSearchBaseUrl: String = "",
-        val ragThreshold: Float = 0.5f,
-        val shellEnabled: Boolean = false,
-        val shellDevices: List<ShellDeviceConfig> = emptyList(),
-        val customProviders: List<CustomProviderConfig> = emptyList(),
-        val localChatModels: List<LocalChatModelConfig> = emptyList(),
-        @SerialName("active_system_prompt_id") val activeSystemPromptId: String? = null
-    )
-
-    @Serializable
-    private data class ExportApiKeys(
-        val apiKeys: List<ApiKeyEntry> = emptyList(),
-        val activeApiKeyIds: Map<String, String> = emptyMap(),
-        val webSearchApiKeys: Map<String, String> = emptyMap(),
-        val shellApiKeys: Map<String, String> = emptyMap()
-    )
 }

@@ -1,0 +1,2 @@
+# The migration is complete. No oversized Kotlin source exceptions remain.
+# Keep this file empty of entries; the build rejects restoring any historical allowance.

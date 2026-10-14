@@ -1,11 +1,11 @@
 package com.newoether.agora.util
 
+import android.util.Base64
 import java.security.KeyFactory
 import java.security.KeyPairGenerator
 import java.security.MessageDigest
 import java.security.SecureRandom
 import java.security.spec.X509EncodedKeySpec
-import java.util.Base64
 import javax.crypto.Cipher
 import javax.crypto.KeyAgreement
 import javax.crypto.Mac
@@ -15,11 +15,10 @@ import javax.crypto.spec.SecretKeySpec
 object ShellCrypto {
     private const val GCM_NONCE_SIZE = 12
     private const val GCM_TAG_SIZE = 128
-    private const val HKDF_INFO = "conch-agora-v1"
+    private const val HKDF_INFO = "conch-agora-v2"
 
     private val secureRandom = SecureRandom()
-    private val b64url = Base64.getUrlEncoder().withoutPadding()
-    private val b64urlDecoder = Base64.getUrlDecoder()
+    private const val B64_URL_FLAGS = Base64.URL_SAFE or Base64.NO_WRAP or Base64.NO_PADDING
 
     // --- Key Generation (X25519) ---
 
@@ -32,7 +31,7 @@ object ShellCrypto {
         // X25519 SPKI encoding deterministically ends with the 32-byte raw key
         val encoded = publicKey.encoded
         val rawKey = encoded.copyOfRange(encoded.size - 32, encoded.size)
-        return b64url.encodeToString(rawKey)
+        return Base64.encodeToString(rawKey, B64_URL_FLAGS)
     }
 
     private val X25519_SPKI_PREFIX: ByteArray by lazy {
@@ -42,7 +41,7 @@ object ShellCrypto {
     }
 
     fun decodePublicKey(base64urlKey: String): java.security.PublicKey {
-        val rawKey = b64urlDecoder.decode(base64urlKey)
+        val rawKey = Base64.decode(base64urlKey, Base64.URL_SAFE or Base64.NO_WRAP)
         if (rawKey.size != 32) {
             throw IllegalArgumentException("invalid X25519 public key length: ${rawKey.size}")
         }
@@ -61,7 +60,11 @@ object ShellCrypto {
         keyAgreement.init(ourPrivateKey)
         keyAgreement.doPhase(theirPublicKey, true)
         val sharedSecret = keyAgreement.generateSecret()
-        return hkdfExpand(sharedSecret, HKDF_INFO.toByteArray(Charsets.UTF_8), 32)
+        // RFC 5869: raw Diffie-Hellman output needs Extract before Expand.
+        val extract = Mac.getInstance("HmacSHA256")
+        extract.init(SecretKeySpec(ByteArray(32), "HmacSHA256"))
+        val pseudorandomKey = extract.doFinal(sharedSecret)
+        return hkdfExpand(pseudorandomKey, HKDF_INFO.toByteArray(Charsets.UTF_8), 32)
     }
 
     private fun hkdfExpand(prk: ByteArray, info: ByteArray, length: Int): ByteArray {
@@ -96,11 +99,11 @@ object ShellCrypto {
         val combined = ByteArray(nonce.size + ciphertext.size)
         System.arraycopy(nonce, 0, combined, 0, nonce.size)
         System.arraycopy(ciphertext, 0, combined, nonce.size, ciphertext.size)
-        return b64url.encodeToString(combined)
+        return Base64.encodeToString(combined, B64_URL_FLAGS)
     }
 
     fun decrypt(key: ByteArray, encoded: String): ByteArray {
-        val raw = b64urlDecoder.decode(encoded)
+        val raw = Base64.decode(encoded, Base64.URL_SAFE or Base64.NO_WRAP)
         if (raw.size < GCM_NONCE_SIZE + 1) {
             throw IllegalArgumentException("ciphertext too short: ${raw.size} bytes")
         }
@@ -126,9 +129,23 @@ object ShellCrypto {
         return digest.digest(data).joinToString("") { "%02x".format(it) }
     }
 
+    internal fun responseSignature(sessionKey: ByteArray, status: Int, body: String): String {
+        val key = hkdfExpand(sessionKey, "conch-response-auth-v1".toByteArray(Charsets.UTF_8), 32)
+        val payload = "conch-response-v1|$status|${sha256Hex(body.toByteArray(Charsets.UTF_8))}"
+        val mac = Mac.getInstance("HmacSHA256")
+        mac.init(SecretKeySpec(key, "HmacSHA256"))
+        return mac.doFinal(payload.toByteArray(Charsets.UTF_8)).joinToString("") { "%02x".format(it) }
+    }
+
+    internal fun verifyResponseSignature(sessionKey: ByteArray, status: Int, body: String, signature: String): Boolean =
+        sessionKey.size == 32 && signature.length == 64 && MessageDigest.isEqual(
+            responseSignature(sessionKey, status, body).toByteArray(Charsets.US_ASCII),
+            signature.toByteArray(Charsets.US_ASCII),
+        )
+
     fun generateNonce(): String {
         val bytes = ByteArray(12)
         secureRandom.nextBytes(bytes)
-        return b64url.encodeToString(bytes)
+        return Base64.encodeToString(bytes, B64_URL_FLAGS)
     }
 }

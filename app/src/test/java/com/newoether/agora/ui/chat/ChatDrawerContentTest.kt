@@ -1,0 +1,220 @@
+package com.newoether.agora.ui.chat
+
+import androidx.compose.ui.unit.dp
+import com.newoether.agora.model.ChatConversation
+import java.io.File
+import org.junit.Assert.assertEquals
+import org.junit.Assert.assertFalse
+import org.junit.Assert.assertTrue
+import org.junit.Test
+
+class ChatDrawerContentTest {
+    @Test
+    fun tasksAndRemoteUse46DpAndKeepJoinedGeometry() {
+        val root = generateSequence(File(requireNotNull(System.getProperty("user.dir"))).absoluteFile) {
+            it.parentFile
+        }.first { File(it, "app/src/main/java").isDirectory }
+        val source = File(root,
+            "app/src/main/java/com/newoether/agora/ui/chat/ChatDrawerContent.kt").readText()
+        val group = source.substringAfter("Column(modifier = Modifier.fillMaxSize()) {")
+            .substringBefore("val newChatDisabled")
+        assertEquals(2, Regex("""\.height\(46\.dp\)""").findAll(group).count())
+        assertFalse(group.contains("height(52.dp)"))
+        assertTrue(group.contains("Spacer(modifier = Modifier.height(2.dp))"))
+        assertTrue(group.contains("topStart = 24.dp, topEnd = 24.dp"))
+        assertTrue(group.contains("bottomStart = 5.dp, bottomEnd = 5.dp"))
+        assertTrue(group.contains("topStart = 5.dp, topEnd = 5.dp"))
+        assertTrue(group.contains("bottomStart = 24.dp, bottomEnd = 24.dp"))
+        assertEquals(2, Regex("""focusManager\.clearFocus\(\)""").findAll(group).count())
+        assertEquals(2, Regex("""scope\.launch \{ onRequestClose\(\) \}""").findAll(group).count())
+        assertTrue(group.indexOf("onOpenTasks()") < group.indexOf("onOpenRemote()"))
+    }
+    @Test
+    fun conversationSelectionColorsCrossfadeWithoutChangingRowGeometry() {
+        val root = generateSequence(File(requireNotNull(System.getProperty("user.dir"))).absoluteFile) {
+            it.parentFile
+        }.first { File(it, "app/src/main/java").isDirectory }
+        val source = File(root,
+            "app/src/main/java/com/newoether/agora/ui/chat/ChatDrawerContent.kt").readText()
+
+        listOf(
+            "drawerConversationSelectionContainer",
+            "drawerConversationSelectionContent",
+            "drawerConversationSelectionIndicator",
+        ).forEach { label ->
+            assertTrue(source.contains("label = \"$label\""))
+        }
+        assertTrue(source.contains("animationSpec = tween(durationMillis = 250)"))
+        assertTrue(source.contains("color = selectionContainerColor"))
+        assertTrue(source.contains("color = selectionContentColor"))
+        assertTrue(source.contains("color = selectionIndicatorColor"))
+        assertTrue(source.contains(".height(44.dp)"))
+    }
+
+    @Test
+    fun generationIndicatorHasPriorityOverUnread() {
+        assertEquals(
+            DrawerConversationIndicator.GENERATING,
+            resolveDrawerConversationIndicator(
+                isGenerating = true,
+                isSelected = false,
+                hasUnreadGeneration = true,
+            ),
+        )
+    }
+
+    @Test
+    fun unreadIndicatorIsHiddenForOpenConversation() {
+        assertEquals(
+            DrawerConversationIndicator.NONE,
+            resolveDrawerConversationIndicator(
+                isGenerating = false,
+                isSelected = true,
+                hasUnreadGeneration = true,
+            ),
+        )
+    }
+
+    @Test
+    fun backgroundConversationShowsUnreadIndicator() {
+        assertEquals(
+            DrawerConversationIndicator.UNREAD,
+            resolveDrawerConversationIndicator(
+                isGenerating = false,
+                isSelected = false,
+                hasUnreadGeneration = true,
+            ),
+        )
+    }
+
+    @Test
+    fun pinnedSectionPrecedesOrdinaryConversationsWithoutDuplicates() {
+        val keys = drawerConversationKeys(
+            listOf(
+                ChatConversation(id = "a", title = "A"),
+                ChatConversation(id = "b", title = "B", isPinned = true),
+                ChatConversation(id = "c", title = "C"),
+                ChatConversation(id = "d", title = "D", isPinned = true),
+            ),
+        )
+        assertEquals(
+            listOf(
+                "section:pinned",
+                "conversation:b",
+                "conversation:d",
+                "section:conversations",
+                "conversation:a",
+                "conversation:c",
+            ),
+            keys,
+        )
+    }
+
+    @Test
+    fun emptyPinnedSectionAndLoneHeadingsAreHidden() {
+        assertEquals(
+            listOf("conversation:a", "conversation:b"),
+            drawerConversationKeys(
+                listOf(ChatConversation(id = "a", title = "A"), ChatConversation(id = "b", title = "B")),
+            ),
+        )
+        assertEquals(
+            listOf("section:pinned", "conversation:a"),
+            drawerConversationKeys(listOf(ChatConversation(id = "a", title = "A", isPinned = true))),
+        )
+        assertEquals(emptyList<String>(), drawerConversationKeys(emptyList()))
+    }
+
+    @Test
+    fun drawerMenuTogglesPinWithLocalizedLabels() {
+        val root = generateSequence(File(requireNotNull(System.getProperty("user.dir"))).absoluteFile) {
+            it.parentFile
+        }.first { File(it, "app/src/main/java").isDirectory }
+        val source = File(root,
+            "app/src/main/java/com/newoether/agora/ui/chat/ChatDrawerContent.kt").readText()
+        assertTrue(source.contains("R.string.unpin_conversation"))
+        assertTrue(source.contains("R.string.pin_conversation"))
+        assertTrue(source.contains("R.string.pinned_conversations"))
+        assertTrue(source.contains("conversation.id, !conversation.isPinned,"))
+        assertTrue(source.contains("Icons.Default.PushPin"))
+    }
+
+    @Test
+    fun edgeFadeToleranceIsTwoDp() {
+        assertEquals(2.dp, DrawerEdgeFadeTolerance)
+    }
+
+    @Test
+    fun topEdgeAllowsOffsetsThroughTolerance() {
+        assertTrue(isDrawerListAtTop(0, 0, 2))
+        assertTrue(isDrawerListAtTop(0, 2, 2))
+        assertFalse(isDrawerListAtTop(0, 3, 2))
+        assertFalse(isDrawerListAtTop(1, 0, 2))
+    }
+
+    @Test
+    fun bottomEdgeTreatsEmptyListAsReached() {
+        assertTrue(
+            isDrawerListAtBottom(
+                totalItemsCount = 0,
+                lastVisibleItemIndex = null,
+                lastVisibleItemEndOffsetPx = null,
+                viewportEndOffsetPx = 100,
+                tolerancePx = 2,
+            ),
+        )
+    }
+
+    @Test
+    fun bottomEdgeAllowsFinalItemThroughTolerance() {
+        assertTrue(
+            isDrawerListAtBottom(
+                totalItemsCount = 5,
+                lastVisibleItemIndex = 4,
+                lastVisibleItemEndOffsetPx = 100,
+                viewportEndOffsetPx = 100,
+                tolerancePx = 2,
+            ),
+        )
+        assertTrue(
+            isDrawerListAtBottom(
+                totalItemsCount = 5,
+                lastVisibleItemIndex = 4,
+                lastVisibleItemEndOffsetPx = 102,
+                viewportEndOffsetPx = 100,
+                tolerancePx = 2,
+            ),
+        )
+    }
+
+    @Test
+    fun bottomEdgeRejectsContentBeyondToleranceOrBeforeFinalItem() {
+        assertFalse(
+            isDrawerListAtBottom(
+                totalItemsCount = 5,
+                lastVisibleItemIndex = 4,
+                lastVisibleItemEndOffsetPx = 103,
+                viewportEndOffsetPx = 100,
+                tolerancePx = 2,
+            ),
+        )
+        assertFalse(
+            isDrawerListAtBottom(
+                totalItemsCount = 5,
+                lastVisibleItemIndex = 3,
+                lastVisibleItemEndOffsetPx = 100,
+                viewportEndOffsetPx = 100,
+                tolerancePx = 2,
+            ),
+        )
+        assertFalse(
+            isDrawerListAtBottom(
+                totalItemsCount = 5,
+                lastVisibleItemIndex = 4,
+                lastVisibleItemEndOffsetPx = null,
+                viewportEndOffsetPx = 100,
+                tolerancePx = 2,
+            ),
+        )
+    }
+}

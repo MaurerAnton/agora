@@ -3,8 +3,18 @@ package com.newoether.agora.util
 import android.content.Context
 import android.net.Uri
 import android.provider.OpenableColumns
+import com.newoether.agora.model.AttachmentStorage
+import com.newoether.agora.model.SelectedAttachment
 
 object FileValidator {
+    enum class AttachmentRoute {
+        IMAGE,
+        VIDEO,
+        PDF,
+        TEXT,
+        LOCAL_SANDBOX,
+    }
+
     enum class Error {
         UNKNOWN_TYPE,
         UNSUPPORTED_TYPE,
@@ -18,9 +28,42 @@ object FileValidator {
         "application/yaml",
         "application/pdf"
     )
-    private const val MAX_SIZE = 20L * 1024 * 1024
-
     data class Result(val valid: Boolean, val error: Error? = null, val mimeType: String? = null)
+
+    fun routeForMimeType(mimeType: String?): AttachmentRoute = when {
+        mimeType?.startsWith("image/") == true -> AttachmentRoute.IMAGE
+        mimeType?.startsWith("video/") == true -> AttachmentRoute.VIDEO
+        mimeType == "application/pdf" -> AttachmentRoute.PDF
+        mimeType != null && MIME_WHITELIST.any { allowed ->
+            mimeType.startsWith(allowed)
+        } -> AttachmentRoute.TEXT
+        else -> AttachmentRoute.LOCAL_SANDBOX
+    }
+    internal fun inspectAttachment(
+        source: String,
+        fileName: String?,
+        mimeType: String?,
+        fileSize: Long?,
+        forcedType: String?,
+        allowLocalSandbox: Boolean,
+    ): SelectedAttachment? {
+        val route = routeForMimeType(mimeType)
+        val sandbox = forcedType == null && route == AttachmentRoute.LOCAL_SANDBOX
+        if (sandbox && !allowLocalSandbox) return null
+        return SelectedAttachment(
+            uri = source,
+            type = forcedType ?: when (route) {
+                AttachmentRoute.IMAGE -> "image"
+                AttachmentRoute.VIDEO -> "video"
+                AttachmentRoute.PDF -> "pdf"
+                AttachmentRoute.TEXT, AttachmentRoute.LOCAL_SANDBOX -> "file"
+            },
+            fileName = fileName,
+            mimeType = mimeType,
+            fileSize = fileSize,
+            storage = if (sandbox) AttachmentStorage.LOCAL_SANDBOX_PENDING else AttachmentStorage.APP_PRIVATE,
+        )
+    }
 
     fun validate(context: Context, uri: Uri): Result {
         val mimeType = try {
@@ -47,7 +90,7 @@ object FileValidator {
             }
         } catch (_: Exception) { null }
 
-        if (fileSize != null && fileSize > MAX_SIZE && mimeType != "application/pdf")
+        if (fileSize != null && fileSize > AttachmentFiles.MAX_ATTACHMENT_BYTES)
             return Result(false, Error.TOO_LARGE, mimeType)
 
         return Result(true, mimeType = mimeType)

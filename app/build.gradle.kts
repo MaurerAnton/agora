@@ -36,16 +36,9 @@ android {
 
 
         ndk {
+            // No abi splits: one fat APK carries both 64-bit and 32-bit native
+            // libs (simpler than splits while trying out armeabi-v7a).
             abiFilters += listOf("arm64-v8a", "armeabi-v7a")
-        }
-
-        splits {
-            abi {
-                isEnable = true
-                reset()
-                include("arm64-v8a", "armeabi-v7a")
-                isUniversalApk = false
-            }
         }
 
         externalNativeBuild {

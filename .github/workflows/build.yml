@@ -107,13 +107,12 @@ jobs:
 
       - name: Verify PRoot runtime packaging
         run: |
+          apk_path=$(find app/build/outputs/apk/fdroid/release -name '*.apk' -print -quit)
+          test -n "$apk_path"
+          apk_entries=$(mktemp)
+          trap 'rm -f "$apk_entries"' EXIT
+          unzip -Z1 "$apk_path" > "$apk_entries"
           for abi in arm64-v8a armeabi-v7a; do
-            apk_path=$(find app/build/outputs/apk/fdroid/release -name "*$abi*.apk" -print -quit)
-            test -n "$apk_path" || { echo "Missing APK for $abi" >&2; exit 1; }
-            echo "checking $apk_path"
-            apk_entries=$(mktemp)
-            trap 'rm -f "$apk_entries"' EXIT
-            unzip -Z1 "$apk_path" > "$apk_entries"
             for library in libproot_exec.so libproot_loader.so libtalloc.so libagora_llama.so libagora_proot.so; do
               entry="lib/$abi/$library"
               grep -Fxq "$entry" "$apk_entries" || {

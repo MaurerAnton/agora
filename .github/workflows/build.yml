@@ -92,7 +92,7 @@ jobs:
       - uses: gradle/actions/setup-gradle@v4
 
       - name: Apply ARMv7 sgemm fix to llama.cpp
-        run: git apply --directory=thirdparty/llama.cpp .github/sgemm-armv7.patch
+        run: git apply .github/sgemm-armv7.patch
 
       - name: Build PRoot runtime
         run: |

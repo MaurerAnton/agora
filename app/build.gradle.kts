@@ -111,6 +111,7 @@ android {
     }
     buildFeatures {
         compose = true
+        resValues = true
     }
     // The app switches locales at runtime without Play Feature Delivery. Keep every
     // packaged translation available instead of letting App Bundles split languages.

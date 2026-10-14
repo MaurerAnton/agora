@@ -92,6 +92,13 @@ android {
         create("fdroid") {
             dimension = "store"
         }
+        // Side-by-side install next to stock (different applicationId).
+        create("dev") {
+            dimension = "store"
+            applicationIdSuffix = ".dev"
+            versionNameSuffix = "-dev"
+            resValue("string", "app_name", "Agora Dev")
+        }
     }
 
     compileOptions {
@@ -104,6 +111,7 @@ android {
     }
     buildFeatures {
         compose = true
+        resValues = true
     }
     // The app switches locales at runtime without Play Feature Delivery. Keep every
     // packaged translation available instead of letting App Bundles split languages.

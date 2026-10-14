@@ -7,6 +7,19 @@ class CustomOpenAiProvider(
     override val defaultBaseUrl: String
 ) : BaseOpenAiProvider() {
 
+    override fun customizeRequest(request: OpenAiChatRequest, config: ProviderConfig): OpenAiChatRequest {
+        if (!isCheapestInferenceEndpoint()) return request
+        // CheapestInference serves reasoning off by default; reasoning_effort opts in
+        // (low/medium/high) and "none" disables it. UI levels already match that scale.
+        // https://cheapestinference.com/docs/api/reasoning/
+        return request.copy(
+            reasoningEffort = if (config.thinkingEnabled) config.thinkingLevel else "none",
+        )
+    }
+
+    private fun isCheapestInferenceEndpoint(): Boolean =
+        defaultBaseUrl.contains("cheapestinference.com", ignoreCase = true)
+
     override suspend fun parseDeltaContent(
         delta: OpenAiDelta,
         config: ProviderConfig,

@@ -105,7 +105,7 @@ fun SettingsGenerationPage(viewModel: ChatViewModel, onBack: () -> Unit) {
                                 headlineContent = { Text(stringResource(R.string.auto_regen_cjk_title)) },
                                 supportingContent = { Text(stringResource(R.string.auto_regen_cjk_desc)) },
                                 leadingContent = {
-                                    Icon(Icons.Default.Translate, contentDescription = null, tint = MaterialTheme.colorScheme.primary)
+                                    Icon(Icons.Default.Language, contentDescription = null, tint = MaterialTheme.colorScheme.primary)
                                 },
                                 trailingContent = {
                                     Switch(checked = autoRegenOnCjk, onCheckedChange = { viewModel.settings.setAutoRegenOnCjk(it) })

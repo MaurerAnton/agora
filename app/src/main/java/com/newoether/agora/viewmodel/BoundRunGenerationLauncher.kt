@@ -109,10 +109,10 @@ internal class BoundRunGenerationLauncher(
                 ),
             )
             var cjkRetries = 0
-            val result: GenerationExecutionResult
-            while (true) {
-                try {
-                    result = generationManager.generate(
+            suspend fun runGeneration(): GenerationExecutionResult {
+                while (true) {
+                    try {
+                        return generationManager.generate(
                         conversationId = request.conversationId,
                         modelMessageId = request.modelMessageId,
                         startTime = request.startTime,
@@ -165,6 +165,7 @@ internal class BoundRunGenerationLauncher(
                     )
                 }
             }
+            val result = runGeneration()
             result.followUpParentMessageId?.let { parentMessageId ->
                 onAutomaticCompactContinuation(
                     AutomaticCompactContinuationRequest(

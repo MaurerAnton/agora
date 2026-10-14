@@ -5,6 +5,7 @@ import com.newoether.agora.data.local.MessageEntity
 import com.newoether.agora.data.repository.ConversationRepository
 import com.newoether.agora.diagnostics.DeveloperDiagnostics
 import com.newoether.agora.model.ChatMessage
+import com.newoether.agora.model.CJK_RETRY_GUARD_PROMPT
 import com.newoether.agora.model.MessageStatus
 import com.newoether.agora.util.DebugLog
 import kotlinx.coroutines.CancellationException
@@ -41,6 +42,9 @@ internal data class AutomaticCompactContinuationRequest(
     val parentMessageId: String,
     val config: AutomaticCompactConfig,
 )
+
+/** Auto-retries after a mid-stream CJK abort, on top of the timed-out first attempt. */
+private const val MAX_CJK_AUTO_RETRIES = 2
 
 internal class BoundRunGenerationLauncher(
     private val conversations: ConversationRepository,
@@ -83,52 +87,84 @@ internal class BoundRunGenerationLauncher(
         try {
             requestTrace.mark("request_config_ready")
             val generationManager = generationManagerProvider()
+            // CJK auto-retry only applies to plain chat; titles, transcription, compactions
+            // and tasks keep the configured value untouched by forcing the flag off.
+            var attemptSnapshot = if (request.requestKind == "chat") {
+                request.snapshot
+            } else {
+                request.snapshot.copy(
+                    config = request.snapshot.config.copy(autoRegenOnCjk = false),
+                )
+            }
             val fixedTokenCost = generationManager.resolvedFixedContextTokenCost(
-                request.snapshot.config,
-                request.snapshot.context,
+                attemptSnapshot.config,
+                attemptSnapshot.context,
             )
             val automaticCompactConfig = request.snapshot.automaticCompact.copy(
                 fixedTokenCost = fixedTokenCost,
-                mainModelId = request.snapshot.config.modelId,
+                mainModelId = attemptSnapshot.config.modelId,
                 includeAssistantReasoning = generationManager.includesAssistantReasoning(
-                    request.snapshot.config,
-                    request.snapshot.context,
+                    attemptSnapshot.config,
+                    attemptSnapshot.context,
                 ),
             )
-            val result = generationManager.generate(
-                conversationId = request.conversationId,
-                modelMessageId = request.modelMessageId,
-                startTime = request.startTime,
-                modelName = request.snapshot.selectedModelId,
-                runId = request.runId,
-                pass = request.pass,
-                ownerToken = request.uiToken,
-                config = request.snapshot.config,
-                ctx = request.snapshot.context,
-                providerInstances = request.snapshot.providerInstances,
-                generationJob = currentCoroutineContext()[Job],
-                callbacks = state.callbacksFor(request.uiToken, request.persistId).copy(
-                    isConversationVisible = isConversationVisible?.let { visible ->
-                        { visible(request.conversationId) }
-                    },
-                    transformFinalText = request.transformFinalText,
-                    onToolRoundPersisted = {
-                        if (
-                            automaticCompactNeeded(
-                                request.conversationId,
-                                request.snapshot.config.maxContextWindow,
-                                automaticCompactConfig,
-                            )
-                        ) {
-                            ToolRoundBoundaryDecision.CompleteForFollowUp
-                        } else {
-                            ToolRoundBoundaryDecision.Continue
-                        }
-                    },
-                ),
-                streamScope = state.streamScope,
-                requestTrace = requestTrace,
-            )
+            var cjkRetries = 0
+            val result: GenerationExecutionResult
+            while (true) {
+                try {
+                    result = generationManager.generate(
+                        conversationId = request.conversationId,
+                        modelMessageId = request.modelMessageId,
+                        startTime = request.startTime,
+                        modelName = request.snapshot.selectedModelId,
+                        runId = request.runId,
+                        pass = request.pass,
+                        ownerToken = request.uiToken,
+                        config = attemptSnapshot.config,
+                        ctx = attemptSnapshot.context,
+                        providerInstances = attemptSnapshot.providerInstances,
+                        generationJob = currentCoroutineContext()[Job],
+                        callbacks = state.callbacksFor(request.uiToken, request.persistId).copy(
+                            isConversationVisible = isConversationVisible?.let { visible ->
+                                { visible(request.conversationId) }
+                            },
+                            transformFinalText = request.transformFinalText,
+                            onToolRoundPersisted = {
+                                if (
+                                    automaticCompactNeeded(
+                                        request.conversationId,
+                                        attemptSnapshot.config.maxContextWindow,
+                                        automaticCompactConfig,
+                                    )
+                                ) {
+                                    ToolRoundBoundaryDecision.CompleteForFollowUp
+                                } else {
+                                    ToolRoundBoundaryDecision.Continue
+                                }
+                            },
+                        ),
+                        streamScope = state.streamScope,
+                        requestTrace = requestTrace,
+                    )
+                } catch (aborted: CjkAutoRetryAbort) {
+                    if (!attemptSnapshot.config.autoRegenOnCjk || cjkRetries >= MAX_CJK_AUTO_RETRIES) throw aborted
+                    cjkRetries++
+                    DebugLog.d(
+                        "AgoraVM",
+                        "CJK detected mid-stream, auto-retry $cjkRetries/$MAX_CJK_AUTO_RETRIES " +
+                            "conversation=${request.conversationId}",
+                    )
+                    val base = attemptSnapshot.config
+                    attemptSnapshot = attemptSnapshot.copy(
+                        config = base.copy(
+                            initialUserPrompt = listOfNotNull(
+                                base.initialUserPrompt,
+                                CJK_RETRY_GUARD_PROMPT,
+                            ).joinToString("\n\n"),
+                        ),
+                    )
+                }
+            }
             result.followUpParentMessageId?.let { parentMessageId ->
                 onAutomaticCompactContinuation(
                     AutomaticCompactContinuationRequest(

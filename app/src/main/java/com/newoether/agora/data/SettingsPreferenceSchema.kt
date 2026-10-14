@@ -32,6 +32,7 @@ internal val CONTEXT_COMPACT_THRESHOLD_PERCENT = intPreferencesKey("context_comp
 internal val CODE_EXECUTION_ENABLED = booleanPreferencesKey("code_execution_enabled")
 internal val GOOGLE_SEARCH_ENABLED = booleanPreferencesKey("google_search_enabled")
 internal val THINKING_ENABLED = booleanPreferencesKey("thinking_enabled")
+internal val AUTO_REGEN_ON_CJK = booleanPreferencesKey("auto_regen_on_cjk")
 internal val THINKING_LEVEL = stringPreferencesKey("thinking_level")
 internal val THINKING_BUDGET_ENABLED = booleanPreferencesKey("thinking_budget_enabled")
 

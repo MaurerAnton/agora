@@ -13,6 +13,7 @@ import com.newoether.agora.data.replaceCustomProviderIdsForDisplay
 
 import com.newoether.agora.data.local.MessageEntity
 import com.newoether.agora.model.ChatMessage
+import com.newoether.agora.model.containsCjk
 import com.newoether.agora.model.MessageSegment
 import com.newoether.agora.model.MessageStatus
 import com.newoether.agora.model.Participant
@@ -453,6 +454,12 @@ class GenerationManager(
                             },
                             onFirstEvent = onFirstEvent,
                             onEvent = { event ->
+                                if (event is StreamEvent.TextChunk &&
+                                    config.autoRegenOnCjk &&
+                                    event.text.containsCjk()
+                                ) {
+                                    throw CjkAutoRetryAbort()
+                                }
                                 output.handleStreamEvent(
                                     event = event,
                                     providerAnswerStart = providerAnswerStart,

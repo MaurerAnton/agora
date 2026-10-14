@@ -818,4 +818,8 @@
     <string name="tor_socks_port">端口</string>
     <string name="tor_socks_port_desc">Tor SOCKS5 代理端口 (默认: 9050)</string>
     <string name="tor_info">需要运行中的 Tor 守护进程及 SOCKS5 代理。可通过 F-Droid 安装 Orbot 或在设备上运行 tor。</string>
+
+    <!-- Auto-regenerate on Chinese -->
+    <string name="auto_regen_cjk_title">Auto-regenerate on Chinese</string>
+    <string name="auto_regen_cjk_desc">Stop and retry the answer if Chinese characters appear while it streams</string>
 </resources>

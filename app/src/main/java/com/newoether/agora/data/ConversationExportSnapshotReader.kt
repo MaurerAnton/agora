@@ -15,30 +15,37 @@ import kotlinx.coroutines.ensureActive
 import java.util.concurrent.Executors
 import java.util.concurrent.atomic.AtomicInteger
 
+/** One record of the export snapshot, emitted in archive-relevant order. */
+internal sealed interface SnapshotRecord {
+    data class Conversation(val entity: ChatEntity) : SnapshotRecord
+    data class Run(val entity: RunEntity) : SnapshotRecord
+    data class Message(val entity: MessageEntity) : SnapshotRecord
+    data class Loop(val entity: LoopEntity) : SnapshotRecord
+    data class Task(val entity: TaskEntity) : SnapshotRecord
+}
+
 /**
  * Streams one point-in-time conversation graph from an independent Room connection pool.
- *
- * The dedicated database instance is intentional. A long export must not occupy the process
- * database's transaction executor or a reader connection needed by foreground list, open, search,
- * or generation work. The DEFERRED transaction is read-only, so WAL writers can keep committing
- * checkpoints while every exported table and page observes the same committed snapshot.
+ * Each conversation emits its header, runs, paged messages, and loops in order, followed by all
+ * tasks. Message pages are delivered without accumulating a per-conversation list, so snapshot
+ * memory stays bounded by one page instead of the largest conversation.
  */
 internal class ConversationExportSnapshotReader(
     private val context: Context,
 ) {
     companion object {
-        /** Bounds entity/string expansion while exporting databases with large chat histories. */
         private const val MESSAGE_PAGE_SIZE = 64
         private const val SNAPSHOT_THREAD_COUNT = 2
         private val snapshotThreadSequence = AtomicInteger()
     }
 
+    /**
+     * [includeBody] decides per conversation whether its runs, messages and loops are read; when it
+     * returns false only the conversation header is emitted.
+     */
     suspend fun readSnapshot(
-        onConversation: suspend (ChatEntity) -> Unit,
-        onRun: suspend (RunEntity) -> Unit,
-        onMessage: suspend (MessageEntity) -> Unit,
-        onTask: suspend (TaskEntity) -> Unit,
-        onLoop: suspend (LoopEntity) -> Unit,
+        includeBody: suspend (ChatEntity) -> Boolean = { true },
+        onRecord: suspend (SnapshotRecord) -> Unit,
     ) {
         val snapshotExecutor = Executors.newFixedThreadPool(SNAPSHOT_THREAD_COUNT) { runnable ->
             Thread(
@@ -60,33 +67,36 @@ internal class ConversationExportSnapshotReader(
                 connection.withTransaction(Transactor.SQLiteTransactionType.DEFERRED) {
                     for (conversation in snapshotDao.getAllConversationsList()) {
                         currentCoroutineContext().ensureActive()
-                        onConversation(conversation)
+                        onRecord(SnapshotRecord.Conversation(conversation))
+                        if (!includeBody(conversation)) continue
                         for (run in snapshotDao.getRunsForConversationSnapshot(conversation.id)) {
                             currentCoroutineContext().ensureActive()
-                            onRun(run)
+                            onRecord(SnapshotRecord.Run(run))
                         }
-                    }
-
-                    var afterMessageId: String? = null
-                    while (true) {
-                        currentCoroutineContext().ensureActive()
-                        val page = snapshotDao.getMessagesPage(afterMessageId, MESSAGE_PAGE_SIZE)
-                        if (page.isEmpty()) break
-                        for (message in page) {
+                        var afterMessageId: String? = null
+                        while (true) {
                             currentCoroutineContext().ensureActive()
-                            onMessage(message)
+                            val page = snapshotDao.getConversationMessagesPage(
+                                conversation.id,
+                                afterMessageId,
+                                MESSAGE_PAGE_SIZE,
+                            )
+                            if (page.isEmpty()) break
+                            for (message in page) {
+                                currentCoroutineContext().ensureActive()
+                                onRecord(SnapshotRecord.Message(message))
+                            }
+                            afterMessageId = page.last().id
+                            if (page.size < MESSAGE_PAGE_SIZE) break
                         }
-                        afterMessageId = page.last().id
-                        if (page.size < MESSAGE_PAGE_SIZE) break
+                        for (loop in snapshotDao.getLoopsForConversationSnapshot(conversation.id)) {
+                            currentCoroutineContext().ensureActive()
+                            onRecord(SnapshotRecord.Loop(loop))
+                        }
                     }
-
                     for (task in snapshotDao.getAllTasksList()) {
                         currentCoroutineContext().ensureActive()
-                        onTask(task)
-                    }
-                    for (loop in snapshotDao.getAllLoopsList()) {
-                        currentCoroutineContext().ensureActive()
-                        onLoop(loop)
+                        onRecord(SnapshotRecord.Task(task))
                     }
                 }
             }

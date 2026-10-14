@@ -46,7 +46,7 @@ internal fun SettingsRepository.validChatModels(
     ).collect { emit(it) }
 }.stateIn(scope, SharingStarted.Eagerly, null)
 
-private fun resolveValidModel(
+internal fun resolveValidModel(
     referencedModel: String?,
     defaultModel: String,
     validModels: Set<String>,

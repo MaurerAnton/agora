@@ -16,7 +16,7 @@ import org.junit.Test
 class ConversationGenerationMailboxTest {
     @Test
     fun toolBatchAndCommitResultsAreSerializedByConversationMailbox() = runBlocking {
-        val state = ConversationGenerationState("conversation")
+        val state = ConversationGenerationState("conversation", reclaimQueuedAttachments = {})
         val token = state.acquireForSend()!!
         state.bindRun(token, "run", pass = 2)
         val providerIdentity = RunEffectIdentity(
@@ -45,7 +45,7 @@ class ConversationGenerationMailboxTest {
 
     @Test
     fun providerPassCallbacksRejectStaleAndDuplicateResults() = runBlocking {
-        val state = ConversationGenerationState("conversation")
+        val state = ConversationGenerationState("conversation", reclaimQueuedAttachments = {})
         val token = state.acquireForSend()!!
         state.bindRun(token, "run", pass = 2)
         val identity = RunEffectIdentity(
@@ -73,7 +73,7 @@ class ConversationGenerationMailboxTest {
 
     @Test
     fun normalFinalizationWaitsForBothBarriersBeforeReleasing() = runBlocking {
-        val state = ConversationGenerationState("conversation")
+        val state = ConversationGenerationState("conversation", reclaimQueuedAttachments = {})
         val token = state.acquireForSend()!!
         state.bindRun(token, "run")
         val unwind = CompletableDeferred<Unit>()
@@ -108,7 +108,7 @@ class ConversationGenerationMailboxTest {
 
     @Test
     fun failedNormalFinalizationKeepsSlotUntilStopRecoverySettles() = runBlocking {
-        val state = ConversationGenerationState("conversation")
+        val state = ConversationGenerationState("conversation", reclaimQueuedAttachments = {})
         val token = state.acquireForSend()!!
         state.bindRun(token, "run")
         val unwind = CompletableDeferred<Unit>()

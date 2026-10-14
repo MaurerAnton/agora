@@ -12,7 +12,7 @@
     <string name="task_run_now">Exécuter maintenant</string>
     <string name="task_delete">Supprimer la tâche</string>
     <string name="task_delete_confirm">Supprimer « %1$s » et tout son historique d’exécution ?</string>
-    <string name="import_conversation_graph_counts">Conversations (%1$d) · Tâches (%2$d) · Boucles (%3$d)</string>
+    <string name="import_conversation_graph_counts">Conversations (%1$d) · Tâches (%2$d)</string>
     <string name="task_enabled">Exécuter selon le planning</string>
     <string name="task_enabled_desc">Si cette option est désactivée, la tâche ne s’exécute que lorsque vous appuyez sur « Exécuter maintenant ».</string>
     <string name="task_enabled_needs_schedule">Choisissez d’abord un planning.</string>
@@ -58,6 +58,7 @@
     <string name="task_status_unknown">En attente</string>
     <string name="task_running_notification">Exécution de la tâche planifiée…</string>
     <string name="loop_running_notification">Exécution de la boucle de conversation…</string>
+    <string name="auto_backup_running_notification">Création de la sauvegarde en cours…</string>
     <string name="loop_running">Boucle en cours…</string>
     <string name="loop_next_in">Prochaine exécution dans %1$s</string>
     <string name="loop_cycle">Cycle %1$d/%2$d</string>

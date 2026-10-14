@@ -21,8 +21,6 @@ import androidx.compose.material.icons.filled.Edit
 import androidx.compose.material.icons.filled.MoreVert
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.ButtonDefaults
-import androidx.compose.material3.DropdownMenu
-import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
@@ -59,6 +57,9 @@ import com.newoether.agora.viewmodel.ChatViewModel
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
+import com.newoether.agora.ui.components.AgoraDropdownMenu
+import com.newoether.agora.ui.components.AgoraDropdownMenuItem
+import com.newoether.agora.ui.components.sheetOptionClickable
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -285,15 +286,14 @@ fun SettingsSkillsPage(
                                                     tint = MaterialTheme.colorScheme.onSurfaceVariant,
                                                 )
                                             }
-                                            DropdownMenu(
+                                            AgoraDropdownMenu(
                                                 containerColor =
                                                     MaterialTheme.colorScheme.surfaceContainer,
                                                 tonalElevation = 16.dp,
                                                 expanded = showFileMenu,
                                                 onDismissRequest = { showFileMenu = false },
-                                                shape = RoundedCornerShape(12.dp),
                                             ) {
-                                                DropdownMenuItem(
+                                                AgoraDropdownMenuItem(
                                                     text = {
                                                         Text(
                                                             stringResource(
@@ -338,7 +338,7 @@ fun SettingsSkillsPage(
                                                         }
                                                     },
                                                 )
-                                                DropdownMenuItem(
+                                                AgoraDropdownMenuItem(
                                                     text = {
                                                         Text(
                                                             stringResource(
@@ -396,7 +396,6 @@ fun SettingsSkillsPage(
                 showAddSkillSheet = false
             },
             sheetState = addSkillSheetState,
-            shape = RoundedCornerShape(topStart = 16.dp, topEnd = 16.dp),
             containerColor = MaterialTheme.colorScheme.surfaceContainer,
         ) {
             DialogWindowEdgeToEdge()
@@ -427,9 +426,11 @@ fun SettingsSkillsPage(
                         tint = MaterialTheme.colorScheme.primary,
                     )
                 },
+                startPadding = SETTINGS_ITEM_SHEET_PADDING,
+                endPadding = SETTINGS_ITEM_SHEET_PADDING,
                 modifier = Modifier
                     .fillMaxWidth()
-                    .clickable(enabled = !addSkillActionInFlight) {
+                    .sheetOptionClickable(enabled = !addSkillActionInFlight) {
                         runAddSkillAction {
                             markdownPicker.launch(
                                 arrayOf("text/markdown", "text/plain", "application/octet-stream"),
@@ -457,9 +458,11 @@ fun SettingsSkillsPage(
                         tint = MaterialTheme.colorScheme.primary,
                     )
                 },
+                startPadding = SETTINGS_ITEM_SHEET_PADDING,
+                endPadding = SETTINGS_ITEM_SHEET_PADDING,
                 modifier = Modifier
                     .fillMaxWidth()
-                    .clickable(enabled = !addSkillActionInFlight) {
+                    .sheetOptionClickable(enabled = !addSkillActionInFlight) {
                         runAddSkillAction {
                             showNewFileDialog = true
                         }

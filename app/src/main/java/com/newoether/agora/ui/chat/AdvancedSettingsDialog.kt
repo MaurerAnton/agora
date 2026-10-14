@@ -21,10 +21,9 @@ fun AdvancedSettingsDialog(
     overrides: ConversationSettings,
     globalDefaults: ConversationSettings,
     onSave: (ConversationSettings) -> Unit,
-    onResetToDefaults: () -> Unit,
     onDismiss: () -> Unit
 ) {
-    var contextWindow by remember { mutableStateOf(overrides.contextWindow) }
+    var contextWindow by remember { mutableStateOf(overrides.contextWindow?.let(ContextBudget::normalize)) }
     var temperature by remember { mutableStateOf(overrides.temperature) }
     var maxTokens by remember { mutableStateOf(overrides.maxTokens) }
     var topP by remember { mutableStateOf(overrides.topP) }
@@ -72,12 +71,11 @@ fun AdvancedSettingsDialog(
                     onReset = { temperature = null }
                 )
                 // Max Tokens
-                val maxTokensPresets = intArrayOf(256, 512, 1024, 2048, 4096, 8192, 16384, 32768)
                 AdvancedParamRow(
                     label = stringResource(R.string.gen_max_tokens),
                     value = maxTokens,
                     defaultVal = gDefaults.maxTokens,
-                    presets = maxTokensPresets,
+                    presets = advancedMaxTokensPresets,
                     format = { it.toString() },
                     onChange = { maxTokens = it },
                     onReset = { maxTokens = null }
@@ -117,7 +115,6 @@ fun AdvancedSettingsDialog(
         confirmButton = {
             Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
                 TextButton(onClick = {
-                    onResetToDefaults()
                     contextWindow = null; temperature = null; maxTokens = null
                     topP = null; frequencyPenalty = null; presencePenalty = null
                 }) { Text(stringResource(R.string.gen_reset)) }
@@ -125,7 +122,7 @@ fun AdvancedSettingsDialog(
                     TextButton(onClick = onDismiss) {
                         Text(stringResource(R.string.provider_cancel))
                     }
-                    TextButton(onClick = { onSave(currentSettings()) }) {
+                    TextButton(enabled = validGenerationParameters(currentSettings()), onClick = { onSave(currentSettings()) }) {
                         Text(stringResource(R.string.provider_save))
                     }
                 }
@@ -263,7 +260,11 @@ private fun AdvancedParamRow(
         }
         Slider(
             value = index.toFloat(),
-            onValueChange = { onChange(presets[it.toInt().coerceIn(0, presets.lastIndex)]) },
+            // Rounding, not truncation: a tick that lands on 2.999999 must still select preset 3,
+            // otherwise dragging skips presets.
+            onValueChange = {
+                onChange(presets[kotlin.math.round(it).toInt().coerceIn(0, presets.lastIndex)])
+            },
             valueRange = 0f..(presets.size - 1).toFloat(),
             steps = presets.size - 2,
             modifier = Modifier.fillMaxWidth()

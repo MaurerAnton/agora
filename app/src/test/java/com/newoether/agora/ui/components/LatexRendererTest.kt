@@ -1,6 +1,5 @@
 package com.newoether.agora.ui.components
 
-import com.newoether.agora.ui.chat.message.isScrollableDisplayLatexImage
 import com.newoether.agora.ui.chat.message.markdownImageLink
 import com.newoether.agora.model.MarkdownImage
 import com.newoether.agora.model.ToolImageAttachment
@@ -145,8 +144,8 @@ class LatexRendererTest {
 
     @Test
     fun testDisplayLatexMarkdownCarriesDisplayMode() {
-        val display = latexToMarkdown("199", display = true)
-        val inline = latexToMarkdown("x", display = false)
+        val display = latexToMarkdown("199", display = true, source = "199")
+        val inline = latexToMarkdown("x", display = false, source = "x")
 
         assertTrue(display.startsWith("\n\n![latex](latex://display/"))
         assertTrue(display.endsWith(")\n\n"))
@@ -196,10 +195,10 @@ class LatexRendererTest {
 
     @Test
     fun displayLatexLinksAreTheOnlyScrollableFormulaLinks() {
-        val displayLink = latexToMarkdown("x + y", display = true)
+        val displayLink = latexToMarkdown("x + y", display = true, source = "x + y")
             .substringAfter("](")
             .substringBefore(')')
-        val inlineLink = latexToMarkdown("x", display = false)
+        val inlineLink = latexToMarkdown("x", display = false, source = "x")
             .substringAfter("](")
             .substringBefore(')')
 
@@ -208,17 +207,6 @@ class LatexRendererTest {
         assertFalse(isDisplayLatexLink("https://example.com/formula.png"))
         assertFalse(isDisplayLatexLink("latex://display/%"))
         assertFalse(isDisplayLatexLink(null))
-    }
-
-    @Test
-    fun parsedMarkdownImageNodesPreserveDisplayLatexMode() {
-        val displayMarkdown = latexToMarkdown("x + y", display = true)
-        val inlineMarkdown = latexToMarkdown("x", display = false)
-        val ordinaryMarkdown = "![image](https://example.com/formula.png)"
-
-        assertTrue(isScrollableDisplayLatexImage(displayMarkdown, imageNode(displayMarkdown)))
-        assertFalse(isScrollableDisplayLatexImage(inlineMarkdown, imageNode(inlineMarkdown)))
-        assertFalse(isScrollableDisplayLatexImage(ordinaryMarkdown, imageNode(ordinaryMarkdown)))
     }
 
     @Test
@@ -246,11 +234,17 @@ class LatexRendererTest {
             Regex("""image\s*=\s*\{\s*model\s*->\s*ScrollableDisplayLatexImage\(model\)\s*}""")
                 .containsMatchIn(source),
         )
-        assertTrue(component.contains("isScrollableDisplayLatexImage(model.content, model.node)"))
-        assertTrue(component.contains(".fillMaxWidth()"))
-        assertTrue(component.contains(".horizontalScroll(horizontalScrollState)"))
-        assertEquals(2, Regex("MarkdownImage\\(model.content, model.node\\)").findAll(component).count())
-        assertTrue(component.contains("TrackStreamingHorizontalScroll(horizontalScrollState)"))
+        val block = File(
+            locateMainSourceRoot(),
+            "com/newoether/agora/ui/chat/message/DisplayLatexBlock.kt",
+        ).readText()
+        // Every formula on its own line goes through the one selectable, scrollable block.
+        assertTrue(component.contains("DisplayLatexBlock(link, latexSource, model.typography.paragraph)"))
+        assertTrue(source.contains("displayLatexParagraphLink(model.content, model.node)"))
+        assertEquals(1, Regex("MarkdownImage\\(model.content, model.node\\)").findAll(component).count())
+        // A formula that fits leaves horizontal swipes unclaimed so they reach the drawer.
+        assertTrue(block.contains(".fillMaxWidth().horizontalScroll(scrollState, enabled = scrollState.maxValue > 0)"))
+        assertTrue(block.contains("TrackStreamingHorizontalScroll(scrollState)"))
         assertTrue(tracker.contains("horizontalScrollState.isScrollInProgress"))
         assertTrue(source.contains("inlineImage = { model -> ChatMarkdownInlineImage(model) }"))
         val inline = images.substringAfter("internal fun ChatMarkdownInlineImage(")

@@ -8,14 +8,10 @@ import com.newoether.agora.data.AutoBackupManager
 import com.newoether.agora.data.MemoryManager
 import com.newoether.agora.data.SkillManager
 import com.newoether.agora.data.SettingsManager
-import com.newoether.agora.api.local.LocalProvider
-import com.newoether.agora.automation.TaskExecutionEngine
 import com.newoether.agora.automation.TaskManager
 import com.newoether.agora.automation.LoopManager
 import com.newoether.agora.automation.ConversationExecutionCoordinator
 import com.newoether.agora.automation.AutomationExecutionGate
-import com.newoether.agora.tool.AutomationToolProvider
-import com.newoether.agora.tool.McpToolProvider
 import com.newoether.agora.mcp.McpRegistry
 import com.newoether.agora.data.local.ChatDao
 import com.newoether.agora.data.local.ChatDatabase
@@ -38,18 +34,16 @@ class ChatViewModelFactory(
     private val settingsRepository: SettingsRepository,
     private val conversationSettingsTransfers: ConversationSettingsTransferCoordinator,
     private val startProcessServices: () -> Unit,
-    private val localProvider: LocalProvider,
     private val providerRegistry: ProviderRegistry,
     private val taskManager: TaskManager,
     private val loopManager: LoopManager,
-    private val automationToolProvider: AutomationToolProvider,
     private val conversationExecutionCoordinator: ConversationExecutionCoordinator,
     private val automationExecutionGate: AutomationExecutionGate,
     private val conversationStateRegistry: ConversationStateRegistry,
     private val shellConfirmationController: ShellConfirmationController,
+    private val askUserController: AskUserController,
     private val mcpRegistry: McpRegistry,
-    private val mcpToolProvider: McpToolProvider,
-    private val taskExecutionEngine: TaskExecutionEngine,
+    private val chatRuntime: ChatRuntime,
 ) : ViewModelProvider.Factory {
     override fun <T : ViewModel> create(modelClass: Class<T>): T {
         if (modelClass.isAssignableFrom(ChatViewModel::class.java)) {
@@ -57,10 +51,11 @@ class ChatViewModelFactory(
             return ChatViewModel(
                 application, database, chatDao, settingsManager, memoryManager, skillManager, context, sandboxFactory,
                 autoBackupManager, conversationRepository, settingsRepository,
-                conversationSettingsTransfers, startProcessServices, localProvider, providerRegistry,
-                taskManager, loopManager, automationToolProvider, conversationExecutionCoordinator,
+                conversationSettingsTransfers, startProcessServices, providerRegistry,
+                taskManager, loopManager, conversationExecutionCoordinator,
                 automationExecutionGate, conversationStateRegistry, shellConfirmationController,
-                mcpRegistry, mcpToolProvider, taskExecutionEngine,
+                askUserController,
+                mcpRegistry, chatRuntime,
             ) as T
         }
         throw IllegalArgumentException("Unknown ViewModel class")

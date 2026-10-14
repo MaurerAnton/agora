@@ -18,8 +18,6 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.AutoAwesome
 import androidx.compose.material.icons.filled.Cloud
 import androidx.compose.material.icons.filled.Tune
-import androidx.compose.material.icons.filled.Visibility
-import androidx.compose.material.icons.filled.VisibilityOff
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
@@ -40,8 +38,6 @@ import androidx.compose.ui.geometry.CornerRadius
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.text.font.FontWeight
-import androidx.compose.ui.text.input.PasswordVisualTransformation
-import androidx.compose.ui.text.input.VisualTransformation
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.res.stringResource
@@ -53,6 +49,8 @@ import com.newoether.agora.ui.components.CustomEndpointProtocolSelector
 import com.newoether.agora.ui.components.clearFocusOnTap
 import com.newoether.agora.ui.components.providerIcon
 import com.newoether.agora.util.Constants
+import com.newoether.agora.ui.components.SecretVisibilityToggle
+import com.newoether.agora.ui.components.secretVisualTransformation
 
 @Composable
 internal fun ProviderPage(providers: List<String>, selected: String?, onSelect: (String) -> Unit, modifier: Modifier, configuredProviders: Set<String> = emptySet()) {
@@ -172,12 +170,8 @@ internal fun ApiKeyPage(
                 OutlinedTextField(
                     value = apiKeyText, onValueChange = onApiKeyChange, modifier = Modifier.fillMaxWidth(),
                     placeholder = { Text(stringResource(R.string.onboarding_api_key_hint)) },
-                    visualTransformation = if (apiKeyVisible) VisualTransformation.None else PasswordVisualTransformation(),
-                    trailingIcon = {
-                        IconButton(onClick = onToggleVisibility) {
-                            Icon(if (apiKeyVisible) Icons.Filled.VisibilityOff else Icons.Filled.Visibility, stringResource(if (apiKeyVisible) R.string.onboarding_hide_key else R.string.onboarding_show_key), tint = MaterialTheme.colorScheme.onSurfaceVariant)
-                        }
-                    },
+                    visualTransformation = secretVisualTransformation(apiKeyVisible),
+                    trailingIcon = { SecretVisibilityToggle(apiKeyVisible, onToggleVisibility) },
                     singleLine = true, shape = RoundedCornerShape(50)
                 )
             }
@@ -197,12 +191,8 @@ internal fun ApiKeyPage(
                 OutlinedTextField(
                     value = apiKeyText, onValueChange = onApiKeyChange, modifier = Modifier.fillMaxWidth(),
                     placeholder = { Text(stringResource(R.string.onboarding_api_key_hint)) },
-                    visualTransformation = if (apiKeyVisible) VisualTransformation.None else PasswordVisualTransformation(),
-                    trailingIcon = {
-                        IconButton(onClick = onToggleVisibility) {
-                            Icon(if (apiKeyVisible) Icons.Filled.VisibilityOff else Icons.Filled.Visibility, stringResource(if (apiKeyVisible) R.string.onboarding_hide_key else R.string.onboarding_show_key), tint = MaterialTheme.colorScheme.onSurfaceVariant)
-                        }
-                    },
+                    visualTransformation = secretVisualTransformation(apiKeyVisible),
+                    trailingIcon = { SecretVisibilityToggle(apiKeyVisible, onToggleVisibility) },
                     singleLine = true, shape = RoundedCornerShape(50)
                 )
             }

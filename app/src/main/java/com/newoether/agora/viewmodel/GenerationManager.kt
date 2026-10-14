@@ -22,6 +22,7 @@ import com.newoether.agora.R
 import com.newoether.agora.service.AgoraForegroundService
 import com.newoether.agora.service.AppForegroundTracker
 import com.newoether.agora.api.util.ContextTokenEstimator
+import com.newoether.agora.api.util.tokens.FixedContextComposition
 import com.newoether.agora.tool.ToolProvider
 import com.newoether.agora.util.Constants
 import kotlinx.coroutines.CancellationException
@@ -55,7 +56,7 @@ class GenerationManager(
 
     /** User-confirmation gate for remote shell mutations. Set by the ViewModel.
      *  Returns true to proceed, false to deny. */
-    var onConfirmShellCommand: (suspend (server: String, summary: String) -> Boolean)? = null
+    var onConfirmShellCommand: (suspend (server: String, summary: String, conversationId: String?) -> Boolean)? = null
 
     private val toolExecutor = GenerationToolExecutor.createDefault(
         app = app,
@@ -64,8 +65,8 @@ class GenerationManager(
         skillManager = skillManager,
         sandboxFactory = sandboxFactory,
         additionalProviders = additionalToolProviders,
-        confirmShellCommand = { server, summary ->
-            onConfirmShellCommand?.invoke(server, summary) ?: true
+        confirmShellCommand = { server, summary, conversationId ->
+            onConfirmShellCommand?.invoke(server, summary, conversationId) ?: true
         },
     )
     private val providerPassEffects = ProviderPassEffectExecutor()
@@ -107,7 +108,7 @@ class GenerationManager(
     internal fun fixedContextTokenCost(
         config: GenerationConfig,
         context: GenerationContext,
-    ): Int = ContextTokenEstimator.estimateFixed(
+    ): Int = ContextTokenEstimator.forModel(config.modelId).estimateFixed(
         systemPrompt = config.effectiveSystemPrompt,
         tools = if (config.lowContextModeEnabled) emptyList()
         else toolExecutor.definitions(context),
@@ -116,6 +117,33 @@ class GenerationManager(
         googleSearchEnabled = config.googleSearchEnabled,
         openAiWebSearchEnabled = config.openAiWebSearchEnabled,
     )
+    /** The same cost as [fixedContextTokenCost], split for the context indicator. */
+    internal fun fixedContextComposition(
+        config: GenerationConfig,
+        context: GenerationContext,
+    ): FixedContextComposition =
+        ContextTokenEstimator.forModel(config.modelId).estimateFixedComposition(
+            systemPrompt = config.effectiveSystemPrompt,
+            tools = if (config.lowContextModeEnabled) emptyList()
+            else toolExecutor.definitions(context),
+            initialUserPrompt = config.initialUserPrompt,
+            codeExecutionEnabled = config.codeExecutionEnabled,
+            googleSearchEnabled = config.googleSearchEnabled,
+            openAiWebSearchEnabled = config.openAiWebSearchEnabled,
+        )
+
+    internal fun includesAssistantReasoning(
+        config: GenerationConfig,
+        context: GenerationContext,
+    ): Boolean =
+        !config.responsesApiEnabled &&
+            config.thinkingEnabled &&
+            (
+                config.providerName == Constants.PROVIDER_DEEPSEEK ||
+                    com.newoether.agora.api.openai.isDeepSeekModel(config.modelId)
+                ) &&
+            !config.lowContextModeEnabled &&
+            toolExecutor.definitions(context).isNotEmpty()
 
     internal suspend fun resolvedFixedContextTokenCost(
         config: GenerationConfig,
@@ -135,10 +163,11 @@ class GenerationManager(
             openAiWebSearchEnabled = config.openAiWebSearchEnabled,
             tools = definitions,
             includeImages = !context.imageTranscriptionEnabled,
+            includeAssistantReasoning = includesAssistantReasoning(config, context),
             requestResolver = resolver,
         )
         val resolvedRequest = providerConfig.resolveRequest(emptyList())
-        return ContextTokenEstimator.estimateFixed(
+        return ContextTokenEstimator.forModel(config.modelId).estimateFixed(
             systemPrompt = resolvedRequest.systemPrompt,
             tools = definitions,
             initialUserPrompt = config.initialUserPrompt,
@@ -241,7 +270,7 @@ class GenerationManager(
                 managedExternally = ctx.foregroundServiceManagedExternally,
                 acquire = {
                     withContext(Dispatchers.Main) {
-                        AgoraForegroundService.acquire(app, modelMessageId)
+                        AgoraForegroundService.acquire(app, modelMessageId, conversationId)
                     }
                 },
             )

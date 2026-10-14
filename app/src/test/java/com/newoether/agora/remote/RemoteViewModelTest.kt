@@ -11,6 +11,7 @@ import com.newoether.agora.diagnostics.DeveloperDiagnostics
 import kotlinx.coroutines.CompletableDeferred
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.NonCancellable
+import kotlinx.coroutines.awaitCancellation
 import kotlinx.coroutines.test.runCurrent
 import kotlinx.coroutines.test.runTest
 import kotlinx.coroutines.withContext
@@ -40,9 +41,28 @@ internal class RemoteViewModelTest : RemoteViewModelFixture() {
         vm.setVisible(false)
     }
 
+    @Test fun switchingSessionsDoesNotExposePreviousLastKnownModel() = runTest(dispatcher) {
+        every { client.events(any()) } answers {
+            val id = firstArg<String>()
+            flow {
+                if (id == "session") emit(bodyPage(
+                    emptyList(), null, emptyList(), RemoteRuntime("idle", model = "old-model")))
+                awaitCancellation()
+            }
+        }
+        val vm = RemoteViewModel(connections, projectionDispatcher = dispatcher) { _, _ -> client }; runCurrent()
+        saveAndSelect(vm)
+        vm.setVisible(true); runCurrent()
+        vm.selectSession(session); runCurrent()
+        assertEquals("old-model", vm.state.value.selectedModel)
+        vm.selectSession(session.copy(id = "other")); runCurrent()
+        assertNull(vm.state.value.runtime)
+        assertNull(vm.state.value.selectedModel)
+        vm.setVisible(false)
+    }
     @Test fun sendAcceptanceIsBoundToOriginAndDoesNotClearEditedDraft() = runTest(dispatcher) {
         val gate = CompletableDeferred<String>()
-        coEvery { client.send(any(), any(), any()) } coAnswers { gate.await() }
+        coEvery { client.send(any(), any(), any(), any()) } coAnswers { gate.await() }
         val vm = RemoteViewModel(connections, projectionDispatcher = dispatcher) { _, _ -> client }; runCurrent()
         saveAndSelect(vm)
         vm.selectSession(session); vm.setVisible(true); runCurrent()
@@ -65,7 +85,7 @@ internal class RemoteViewModelTest : RemoteViewModelFixture() {
     }
 
     @Test fun uncertainSendKeepsDraftAndCannotAutomaticallyRetry() = runTest(dispatcher) {
-        coEvery { client.send(any(), any(), any()) } throws IOException("Lost response")
+        coEvery { client.send(any(), any(), any(), any()) } throws IOException("Lost response")
         val vm = RemoteViewModel(connections, projectionDispatcher = dispatcher) { _, _ -> client }; runCurrent()
         saveAndSelect(vm)
         vm.selectSession(session); vm.setVisible(true); runCurrent()
@@ -75,7 +95,7 @@ internal class RemoteViewModelTest : RemoteViewModelFixture() {
         assertEquals(RemoteDelivery.UNKNOWN, vm.state.value.attempts[owner]?.delivery)
         assertEquals("hello", vm.state.value.drafts[owner])
         assertNull(vm.animatedScrollRequest.value)
-        coVerify(exactly = 1) { client.send(any(), any(), any()) }
+        coVerify(exactly = 1) { client.send(any(), any(), any(), any()) }
         vm.acknowledgeUnknown(owner)
         assertNull(vm.state.value.attempts[owner])
         vm.setVisible(false)
@@ -83,7 +103,7 @@ internal class RemoteViewModelTest : RemoteViewModelFixture() {
 
     @Test fun unavailableRuntimeAllowsExplicitSendAndShowsNativeRejectionWithoutReplay() = runTest(dispatcher) {
         val detail = "Original desktop owner is unavailable; refresh before continuing"
-        coEvery { client.send(any(), any(), any()) } throws FiloHttpException(409, detail = detail)
+        coEvery { client.send(any(), any(), any(), any()) } throws FiloHttpException(409, detail = detail)
         for (status in listOf("notLoaded", "systemError")) {
             coEvery { client.conversation(any(), any()) } returns bodyPage(emptyList(), null, emptyList())
                 .copy(runtime = RemoteRuntime(status, model = "model"))
@@ -109,7 +129,7 @@ internal class RemoteViewModelTest : RemoteViewModelFixture() {
 
     @Test fun acceptedSendRequestsOneOwnedScrollAndNavigationClearsIt() = runTest(dispatcher) {
         val gate = CompletableDeferred<String>()
-        coEvery { client.send(any(), any(), any()) } coAnswers { gate.await() }
+        coEvery { client.send(any(), any(), any(), any()) } coAnswers { gate.await() }
         coEvery { client.conversation(any(), any()) } returns bodyPage(
             listOf(
                 RemoteMessage("tail", "turn", null, "assistant", "Previous answer", 1),
@@ -143,7 +163,7 @@ internal class RemoteViewModelTest : RemoteViewModelFixture() {
         assertNull(vm.animatedScrollRequest.value)
         vm.refresh(); runCurrent()
         assertNull(vm.animatedScrollRequest.value)
-        coEvery { client.send(any(), any(), any()) } returns "second-turn"
+        coEvery { client.send(any(), any(), any(), any()) } returns "second-turn"
         vm.editDraft(owner, "next"); vm.send(); runCurrent()
         assertNull(vm.animatedScrollRequest.value)
         val nextId = vm.state.value.attempts[owner]!!.clientId
@@ -157,7 +177,7 @@ internal class RemoteViewModelTest : RemoteViewModelFixture() {
     }
 
     @Test fun malformedAcceptedResponseIsUnknownRatherThanRejected() = runTest(dispatcher) {
-        coEvery { client.send(any(), any(), any()) } throws SerializationException("Invalid response")
+        coEvery { client.send(any(), any(), any(), any()) } throws SerializationException("Invalid response")
         val vm = RemoteViewModel(connections, projectionDispatcher = dispatcher) { _, _ -> client }; runCurrent()
         saveAndSelect(vm)
         vm.selectSession(session); vm.setVisible(true); runCurrent()
@@ -172,7 +192,7 @@ internal class RemoteViewModelTest : RemoteViewModelFixture() {
         val events = MutableSharedFlow<RemoteConversationPage>()
         every { client.events(any()) } returns events
         val response = CompletableDeferred<String>()
-        coEvery { client.send(any(), any(), any()) } coAnswers { response.await() }
+        coEvery { client.send(any(), any(), any(), any()) } coAnswers { response.await() }
         val vm = RemoteViewModel(connections, projectionDispatcher = dispatcher) { _, _ -> client }; runCurrent()
         saveAndSelect(vm); vm.selectSession(session); vm.setVisible(true); runCurrent()
         val running = RemoteRuntime("active", "turn", "model", 1234, 256000)
@@ -191,7 +211,7 @@ internal class RemoteViewModelTest : RemoteViewModelFixture() {
         vm.setVisible(false)
         assertNull(vm.state.value.runtime)
         vm.editDraft(owner, "offline"); vm.send(); runCurrent()
-        coVerify(exactly = 1) { client.send(any(), any(), any()) }
+        coVerify(exactly = 1) { client.send(any(), any(), any(), any()) }
     }
 
     @Test fun nativeGenerationChangesAreVisibleBeforeAnyMessageOrLocalSubmission() = runTest(dispatcher) {
@@ -208,7 +228,7 @@ internal class RemoteViewModelTest : RemoteViewModelFixture() {
         events.emit(bodyPage(emptyList(), null, emptyList(), RemoteRuntime("idle")))
         runCurrent()
         assertFalse(vm.state.value.runtime!!.isRunning)
-        coVerify(exactly = 0) { client.send(any(), any(), any()) }
+        coVerify(exactly = 0) { client.send(any(), any(), any(), any()) }
         coVerify(exactly = 0) { client.stop(any(), any()) }
         vm.setVisible(false)
     }
@@ -231,7 +251,7 @@ internal class RemoteViewModelTest : RemoteViewModelFixture() {
         vm.editDraft(vm.state.value.owner!!, "cannot send while stopping")
         vm.send(); vm.stop(); vm.setModel("model"); runCurrent()
         coVerify(exactly = 1) { client.stop("session", "turn") }
-        coVerify(exactly = 0) { client.send(any(), any(), any()) }
+        coVerify(exactly = 0) { client.send(any(), any(), any(), any()) }
         coVerify(exactly = 0) { client.setModel(any(), any()) }
         events.emit(bodyPage(emptyList(), null, emptyList(), RemoteRuntime("idle")))
         runCurrent()
@@ -290,7 +310,7 @@ internal class RemoteViewModelTest : RemoteViewModelFixture() {
         assertNull(vm.state.value.runtime)
         vm.stop(); vm.send(); runCurrent()
         coVerify(exactly = 1) { client.stop("session", "turn") }
-        coVerify(exactly = 0) { client.send(any(), any(), any()) }
+        coVerify(exactly = 0) { client.send(any(), any(), any(), any()) }
         vm.setVisible(false)
     }
 
@@ -353,21 +373,23 @@ internal class RemoteViewModelTest : RemoteViewModelFixture() {
         coVerify(exactly = 1) { client.connect() }
         coVerify(exactly = 1) { client.models() }
         coVerify(exactly = 1) { client.sessions(any()) }
-        coVerify(exactly = 0) { client.create() }
+        coVerify(exactly = 0) { client.create(any(), any(), any(), any()) }
         coVerify(exactly = 0) { client.conversation(any(), any()) }
         verify(exactly = 0) { client.events(any()) }
         vm.selectDevice(null); vm.setVisible(false)
-        coVerify(exactly = 0) { client.create() }
+        coVerify(exactly = 0) { client.create(any(), any(), any(), any()) }
     }
 
     @Test fun firstSendCreatesOnceAndPromotesWithoutReplacingComposerOrEditedDraft() = runTest(dispatcher) {
         val created = CompletableDeferred<RemoteSession>()
         val events = MutableSharedFlow<RemoteConversationPage>()
-        coEvery { client.create() } coAnswers { created.await() }
+        coEvery { client.create(any(), any(), any(), any()) } coAnswers {
+            assertEquals("hello", firstArg<String>())
+            created.await()
+        }
         coEvery { client.models() } returns listOf(
             RemoteModel("model", "Model", true), RemoteModel("chosen", "Chosen"))
-        coEvery { client.setModel(any(), any()) } returns Unit
-        coEvery { client.send(any(), any(), any()) } returns "turn"
+        coEvery { client.send(any(), any(), any(), any()) } returns "turn"
         every { client.events(any()) } returns events
         val vm = RemoteViewModel(connections, projectionDispatcher = dispatcher) { _, _ -> client }; runCurrent()
         saveAndSelect(vm); vm.setVisible(true); runCurrent()
@@ -376,11 +398,9 @@ internal class RemoteViewModelTest : RemoteViewModelFixture() {
         vm.completeComposerFocus(owner)
         vm.setModel("chosen"); runCurrent()
         assertEquals("chosen", vm.state.value.selectedModel)
-        coVerify(exactly = 0) { client.setModel(any(), any()) }
         vm.editDraft(owner, "hello"); vm.send(); vm.send(); runCurrent()
         assertEquals(RemoteDelivery.SUBMITTING, vm.state.value.attempts[owner]?.delivery)
-        coVerify(exactly = 1) { client.create() }
-        coVerify(exactly = 0) { client.send(any(), any(), any()) }
+        coVerify(exactly = 1) { client.create(any(), any(), any(), any()) }
         vm.editDraft(owner, "edited while creating")
         created.complete(RemoteSession("native", "New", "/host/default", 1)); runCurrent()
         val attempt = vm.state.value.attempts[owner]!!
@@ -390,11 +410,11 @@ internal class RemoteViewModelTest : RemoteViewModelFixture() {
         assertNull(vm.state.value.composerFocusOwner)
         assertEquals("edited while creating", vm.state.value.drafts[owner])
         assertEquals(RemoteDelivery.ACCEPTED, attempt.delivery)
-        coVerifyOrder {
-            client.create()
-            client.setModel("native", "chosen")
-            client.send("native", "hello", attempt.clientId)
+        coVerify(exactly = 1) {
+            client.create("hello", attempt.clientId, emptyList(), RemoteSettings(model = "chosen"))
         }
+        coVerify(exactly = 0) { client.setModel(any(), any()) }
+        coVerify(exactly = 0) { client.send(any(), any(), any(), any()) }
         events.emit(bodyPage(
             listOf(RemoteMessage("user", "turn", attempt.clientId, "user", "hello", 1)),
             null, emptyList(), RemoteRuntime("active", "turn", "chosen")))
@@ -413,7 +433,7 @@ internal class RemoteViewModelTest : RemoteViewModelFixture() {
 
     @Test fun lateFirstSendCreationDoesNotNavigateOrSendAfterBack() = runTest(dispatcher) {
         val created = CompletableDeferred<RemoteSession>()
-        coEvery { client.create() } coAnswers { created.await() }
+        coEvery { client.create(any(), any(), any(), any()) } coAnswers { created.await() }
         val vm = RemoteViewModel(connections, projectionDispatcher = dispatcher) { _, _ -> client }; runCurrent()
         saveAndSelect(vm); vm.setVisible(true); runCurrent()
         vm.newSession()
@@ -422,15 +442,16 @@ internal class RemoteViewModelTest : RemoteViewModelFixture() {
         vm.selectDevice(null)
         created.complete(RemoteSession("new", "New", "/host/default", 1)); runCurrent()
         assertNull(vm.state.value.session)
-        assertEquals(RemoteDelivery.REJECTED, vm.state.value.attempts[owner]?.delivery)
+        assertEquals(RemoteDelivery.ACCEPTED, vm.state.value.attempts[owner]?.delivery)
+        assertTrue(vm.state.value.sessionOwners.any { (key, value) -> key.endsWith("/new") && value == owner })
         assertEquals("hello", vm.state.value.drafts[owner])
-        coVerify(exactly = 1) { client.create() }
-        coVerify(exactly = 0) { client.send(any(), any(), any()) }
+        coVerify(exactly = 1) { client.create(any(), any(), any(), any()) }
+        coVerify(exactly = 0) { client.send(any(), any(), any(), any()) }
         vm.setVisible(false)
     }
 
     @Test fun unknownCreationKeepsDraftAndNeverAutomaticallyRetries() = runTest(dispatcher) {
-        coEvery { client.create() } throws IOException("Lost creation receipt")
+        coEvery { client.create(any(), any(), any(), any()) } throws IOException("Lost creation receipt")
         val vm = RemoteViewModel(connections, projectionDispatcher = dispatcher) { _, _ -> client }; runCurrent()
         saveAndSelect(vm); vm.setVisible(true); runCurrent()
         vm.newSession()
@@ -440,8 +461,8 @@ internal class RemoteViewModelTest : RemoteViewModelFixture() {
         assertTrue(vm.state.value.isDraft)
         assertEquals("hello", vm.state.value.drafts[owner])
         vm.send(); vm.refresh(); vm.setVisible(false); vm.setVisible(true); runCurrent()
-        coVerify(exactly = 1) { client.create() }
-        coVerify(exactly = 0) { client.send(any(), any(), any()) }
+        coVerify(exactly = 1) { client.create(any(), any(), any(), any()) }
+        coVerify(exactly = 0) { client.send(any(), any(), any(), any()) }
         vm.setVisible(false)
     }
 
@@ -462,7 +483,7 @@ internal class RemoteViewModelTest : RemoteViewModelFixture() {
         assertFalse(vm.state.value.modelsLoading)
         assertEquals("model", vm.state.value.selectedModel)
         coVerify(exactly = 1) { client.models() }
-        coVerify(exactly = 0) { client.create() }
+        coVerify(exactly = 0) { client.create(any(), any(), any(), any()) }
         verify(exactly = 0) { client.events(any()) }
         vm.setVisible(false)
     }
@@ -470,8 +491,8 @@ internal class RemoteViewModelTest : RemoteViewModelFixture() {
     @Test fun failedModelCatalogEndsLoadingWithoutBlockingDraftSend() = runTest(dispatcher) {
         val catalog = CompletableDeferred<List<RemoteModel>>()
         coEvery { client.models() } coAnswers { catalog.await() }
-        coEvery { client.create() } returns RemoteSession("native", "New", "/host/default", 1)
-        coEvery { client.send(any(), any(), any()) } returns "turn"
+        coEvery { client.create(any(), any(), any(), any()) } returns RemoteSession("native", "New", "/host/default", 1)
+        coEvery { client.send(any(), any(), any(), any()) } returns "turn"
         val vm = RemoteViewModel(connections, projectionDispatcher = dispatcher) { _, _ -> client }; runCurrent()
         saveAndSelect(vm); vm.setVisible(true); runCurrent()
         vm.newSession()
@@ -480,8 +501,8 @@ internal class RemoteViewModelTest : RemoteViewModelFixture() {
         assertNull(vm.state.value.selectedModel)
         val owner = vm.state.value.owner!!
         vm.editDraft(owner, "hello"); vm.send(); runCurrent()
-        coVerify(exactly = 1) { client.create() }
-        coVerify(exactly = 1) { client.send("native", "hello", any()) }
+        coVerify(exactly = 1) { client.create("hello", any(), emptyList(), null) }
+        coVerify(exactly = 0) { client.send(any(), any(), any(), any()) }
         assertEquals(owner, vm.state.value.owner)
         vm.setVisible(false)
     }
@@ -523,7 +544,7 @@ internal class RemoteViewModelTest : RemoteViewModelFixture() {
         assertEquals("notLoaded", vm.state.value.runtime?.status)
         assertEquals("model", vm.state.value.models.single().id)
         verify(exactly = 1) { client.events("history") }
-        coVerify(exactly = 0) { client.send(any(), any(), any()) }
+        coVerify(exactly = 0) { client.send(any(), any(), any(), any()) }
         vm.editDraft(vm.state.value.owner!!, "Explicit input")
         vm.send(); runCurrent()
         coVerify(exactly = 1) { client.send("history", "Explicit input", any()) }
@@ -574,7 +595,7 @@ internal class RemoteViewModelTest : RemoteViewModelFixture() {
         coVerify(exactly = 1) { client.conversation("historical", null) }
         coVerify(exactly = 1) { client.conversation("historical", "older") }
         verify(exactly = 1) { client.events("historical") }
-        coVerify(exactly = 0) { client.send(any(), any(), any()) }
+        coVerify(exactly = 0) { client.send(any(), any(), any(), any()) }
         coVerify(exactly = 0) { client.stop(any(), any()) }
         coVerify(exactly = 0) { client.setModel(any(), any()) }
         vm.setVisible(false)

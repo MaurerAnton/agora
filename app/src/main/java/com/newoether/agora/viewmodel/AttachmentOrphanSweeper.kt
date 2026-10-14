@@ -4,6 +4,7 @@ import androidx.room.withTransaction
 import com.newoether.agora.data.local.ChatDatabase
 import com.newoether.agora.model.AttachmentMeta
 import com.newoether.agora.model.SelectedAttachment
+import com.newoether.agora.util.AttachmentFiles
 import kotlinx.coroutines.yield
 import kotlinx.serialization.json.Json
 import java.io.File
@@ -29,7 +30,7 @@ internal class AttachmentOrphanSweeper(
         }
     }
 
-    suspend fun deleteExact(path: String) {
+    suspend fun deleteExact(path: String): Boolean {
         val normalized = normalizePath(path)
         val root = filesDirectory.canonicalFile
         val file = File(normalized).canonicalFile
@@ -40,17 +41,18 @@ internal class AttachmentOrphanSweeper(
         // decide ownership; equal basenames in different directories are not equal references.
         val pathToken = Regex("[A-Za-z0-9._-]+").findAll(file.name)
             .maxByOrNull { it.value.length }?.value.orEmpty()
-        database.withTransaction {
-            if (normalized in collectReferences(pathToken)) return@withTransaction
+        val completed = database.withTransaction {
+            if (normalized in collectReferences(pathToken)) return@withTransaction true
             // Keep reference verification and unlink in one transaction with Send's ownership
             // transfer. Separate message/draft snapshots can miss both sides of that transfer.
-            check(!file.exists() || file.delete()) { "Unable to delete attachment file $normalized" }
+            AttachmentFiles.deleteIfUnowned(file)
         }
         val sandboxRoot = File(root, "sandbox-home").canonicalFile
         val parent = file.parentFile?.canonicalFile
         if (parent != null && parent != sandboxRoot && parent.path.startsWith(sandboxRoot.path)) {
             runCatching { parent.takeIf { it.listFiles().isNullOrEmpty() }?.delete() }
         }
+        return completed
     }
 
     private suspend fun collectReferences(pathToken: String? = null): Set<String> = HashSet<String>().also { referenced ->

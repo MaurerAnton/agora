@@ -57,44 +57,57 @@ class RemoteSettingsTest {
             RemoteSettings("model", "high", "priority", true).merge(RemoteSettings(effort = "ultra", updateServiceTier = true)))
     }
 
-    @Test fun draftSettingsStayLocalUntilOneCreateThenSettingsThenSend() = runTest(dispatcher) {
-        coEvery { client.create() } returns session
-        coEvery { client.send(any(), any(), any()) } returns "turn"
+    @Test fun draftSettingsStayLocalUntilOneCreateCarriesThemWithTheFirstMessage() = runTest(dispatcher) {
+        coEvery { client.create(any(), any(), any(), any()) } returns session
+        coEvery { client.send(any(), any(), any(), any()) } returns "turn"
         val vm = open(draft = true)
         vm.setThinkingLevel("ultra"); vm.setServiceTierEnabled(true); vm.refresh(); runCurrent()
         assertEquals("ultra", vm.state.value.selectedEffort)
         assertEquals("priority", vm.state.value.selectedServiceTier)
         coVerify(exactly = 0) { client.updateSettings(any(), any()) }
-        coVerify(exactly = 0) { client.create() }
+        coVerify(exactly = 0) { client.create(any(), any(), any(), any()) }
         val owner = vm.state.value.owner!!
         vm.editDraft(owner, "hello"); vm.send(); vm.send(); runCurrent()
-        coVerifyOrder {
-            client.create()
-            client.updateSettings("session", RemoteSettings("model", "ultra", "priority", true))
-            client.send("session", "hello", any())
+        coVerify(exactly = 1) {
+            client.create("hello", any(), emptyList(), RemoteSettings("model", "ultra", "priority", true))
         }
-        coVerify(exactly = 1) { client.create() }
+        coVerify(exactly = 0) { client.updateSettings(any(), any()) }
+        coVerify(exactly = 0) { client.send(any(), any(), any(), any()) }
         assertEquals(owner, vm.state.value.owner)
+        assertFalse(vm.state.value.isDraft)
         vm.setVisible(false)
     }
 
-    @Test fun knownCreationWithFailedSettingsKeepsDraftAndRetriesSameNativeIdBeforeSend() = runTest(dispatcher) {
-        coEvery { client.create() } returns session
-        coEvery { client.updateSettings(any(), any()) } throws IOException("unconfirmed settings")
-        coEvery { client.send(any(), any(), any()) } returns "turn"
+    @Test fun draftWithoutExplicitChoicesStillCarriesTheNativeDefaultsInOneCreate() = runTest(dispatcher) {
+        coEvery { client.create(any(), any(), any(), any()) } returns session
+        coEvery { client.send(any(), any(), any(), any()) } returns "turn"
         val vm = open(draft = true)
         val owner = vm.state.value.owner!!
         vm.editDraft(owner, "hello"); vm.send(); runCurrent()
+        coVerify(exactly = 1) {
+            client.create("hello", any(), emptyList(), RemoteSettings("model", "high", null, true))
+        }
+        coVerify(exactly = 0) { client.updateSettings(any(), any()) }
+        coVerify(exactly = 0) { client.send(any(), any(), any(), any()) }
+        vm.setVisible(false)
+    }
+
+    @Test fun refusedCreationKeepsTheDraftRetryableAndNothingIsEverSentWithoutAFirstMessage() = runTest(dispatcher) {
+        coEvery { client.create(any(), any(), any(), any()) } throws FiloHttpException(400, detail = "drafted settings rejected")
+        coEvery { client.send(any(), any(), any(), any()) } returns "turn"
+        val vm = open(draft = true)
+        val owner = vm.state.value.owner!!
+        vm.setThinkingLevel("ultra"); runCurrent()
+        vm.editDraft(owner, "hello"); vm.send(); runCurrent()
         assertTrue(vm.state.value.isDraft)
-        assertEquals(session, vm.state.value.draftNativeSession)
         assertEquals(RemoteDelivery.REJECTED, vm.state.value.attempts[owner]?.delivery)
-        coVerify(exactly = 0) { client.send(any(), any(), any()) }
-        vm.setThinkingLevel("ultra")
-        coEvery { client.updateSettings(any(), any()) } returns Unit
+        coVerify(exactly = 0) { client.send(any(), any(), any(), any()) }
+        coEvery { client.create(any(), any(), any(), any()) } returns session
         vm.send(); runCurrent()
-        coVerify(exactly = 1) { client.create() }
-        coVerify(exactly = 1) { client.updateSettings("session", RemoteSettings("model", "ultra", null, true)) }
-        coVerify(exactly = 1) { client.send("session", "hello", any()) }
+        coVerify(exactly = 2) { client.create(any(), any(), any(), any()) }
+        coVerify(exactly = 0) { client.send(any(), any(), any(), any()) }
+        assertFalse(vm.state.value.isDraft)
+        assertEquals(RemoteDelivery.ACCEPTED, vm.state.value.attempts[owner]?.delivery)
         vm.setVisible(false)
     }
 
@@ -111,7 +124,7 @@ class RemoteSettingsTest {
         vm.setServiceTierEnabled(false); runCurrent()
         assertNull(vm.state.value.selectedServiceTier)
         coVerify(exactly = 1) { client.updateSettings("session", RemoteSettings(updateServiceTier = true)) }
-        coVerify(exactly = 0) { client.send(any(), any(), any()) }
+        coVerify(exactly = 0) { client.send(any(), any(), any(), any()) }
         vm.setVisible(false)
     }
 
@@ -155,7 +168,7 @@ class RemoteSettingsTest {
             client.updateSettings("session", RemoteSettings(serviceTier = "ultrafast", updateServiceTier = true))
         }
         assertTrue(vm.state.value.runtime!!.isRunning)
-        coVerify(exactly = 0) { client.send(any(), any(), any()) }
+        coVerify(exactly = 0) { client.send(any(), any(), any(), any()) }
         vm.setVisible(false)
     }
 

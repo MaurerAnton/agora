@@ -36,6 +36,7 @@ fun SettingsContextPage(viewModel: ChatViewModel, onBack: () -> Unit) {
         viewModel.settings.contextCompactThresholdPercent.collectAsState()
     val compactModel by viewModel.settings.contextCompactModel.collectAsState()
     val compactPrompt by viewModel.settings.contextCompactPrompt.collectAsState()
+    val preserveSystemPrompt by viewModel.settings.contextCompactPreserveSystemPrompt.collectAsState()
     val retainCount by viewModel.settings.contextCompactRetainCount.collectAsState()
     val enabledModels by viewModel.settings.enabledModels.collectAsState()
     val aliases by viewModel.settings.modelAliases.collectAsState()
@@ -226,6 +227,33 @@ fun SettingsContextPage(viewModel: ChatViewModel, onBack: () -> Unit) {
                                 } else {
                                     sliderGate.settleWithoutWrite(retainCount, committed.toFloat())
                                 }
+                            },
+                        )
+                    }
+                    add {
+                        SettingsItem(
+                            headlineContent = {
+                                Text(stringResource(R.string.context_compact_preserve_system))
+                            },
+                            supportingContent = {
+                                Text(stringResource(R.string.context_compact_preserve_system_desc))
+                            },
+                            leadingContent = {
+                                Icon(
+                                    Icons.Default.Compress,
+                                    null,
+                                    tint = MaterialTheme.colorScheme.primary,
+                                )
+                            },
+                            trailingContent = {
+                                Switch(
+                                    checked = preserveSystemPrompt,
+                                    onCheckedChange = viewModel.settings::setContextCompactPreserveSystemPrompt,
+                                )
+                            },
+                            modifier = Modifier.clickable {
+                                viewModel.settings
+                                    .setContextCompactPreserveSystemPrompt(!preserveSystemPrompt)
                             },
                         )
                     }

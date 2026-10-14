@@ -1,6 +1,8 @@
 # Import and Export Contract
 
-Status: authoritative product, persistence, and compatibility contract, 2026-08-28.
+Status: authoritative product, persistence, and compatibility contract, updated 2026-09-20 for the
+version 5 conversation-granular archive and incremental automatic backups, with export assembly
+streaming the spool one conversation at a time after the v5 materialization OOM regression.
 
 This document owns native `.agora` archives, portable settings, import strategies, secret transport,
 and automatic-backup compatibility. Public manuals describe the user workflow; this contract defines
@@ -24,16 +26,21 @@ the exact development boundary. Current explicit user requirements override olde
 Adding a DataStore key does not make it portable. A setting enters an archive only after this
 contract, export, restore, Replace reset, and focused compatibility tests are updated together.
 
+Conversation `isPinned` is portable conversation metadata, not a Settings field. Native conversation
+export and import preserve it; archives without the field default to false. Pin/Unpin advances the
+conversation's `dataChangedAt` watermark atomically, so incremental backups cannot reuse a stale pin
+value. Pinning does not change `lastUpdated`, the message graph, drafts or device-local unread state.
+
 ## 2. Archive envelope and categories
 
 The native format is a ZIP containing `manifest.json`. The manifest records
 `agora_export_version`, app version, export time, selected category keys, and whether a secret payload
-is present. Current code writes version 4 and accepts versions 1 through 4. An unsupported version is
+is present. Current code writes version 5 and accepts versions 1 through 5. An unsupported version is
 rejected before category restoration.
 
 | Category | Stable payload boundary |
 | --- | --- |
-| `conversations` | `conversations.json` plus archive-safe image, video, and draft media entries. Conversation-scoped settings travel with their conversation, not in `settings.json`. |
+| `conversations` | Version 5: `conv/index.json`, one `conv/items/<hex-conversation-id>.json` per conversation, and `conv/tasks.json`, plus archive-safe image, video, and draft media entries. Versions 1-4: a single `conversations.json`. Conversation-scoped settings travel with their conversation, not in `settings.json`. |
 | `memories` | Active Memory, Memory database Markdown/metadata, and Skill database Markdown/metadata below `memories/`. |
 | `system_prompts` | `system_prompts.json`. The active prompt reference remains a portable Settings field and is resolved against imported/current prompt identity. |
 | `settings` | `settings.json` containing only the allowlist below, plus `custom_font/font` when the selected custom font is readable. |
@@ -43,9 +50,11 @@ The archive never treats a manifest category as proof that its payload is valid.
 or incompatible entries produce category errors without reinterpreting another entry as a fallback.
 Archive validation completes before any category mutation or resource extraction. Entry names must be
 relative forward-slash paths with no empty, `.` or `..` segment, drive prefix, backslash ambiguity,
-or duplicate/colliding file-directory identity. `conversations.json` is an unbounded streamed database
-payload: preview and import never materialize the complete entry in memory, but opening the archive
-still streams it fully and verifies its declared size and CRC before any mutation. All remaining
+or duplicate/colliding file-directory identity. Conversation graph payloads are unbounded streamed
+database payloads: preview and import never materialize the complete graph in memory, but opening the
+archive still streams every conversation payload fully and verifies its declared size and CRC before
+any mutation. For version 5 this applies to `conv/index.json`, each `conv/items/` entry, and
+`conv/tasks.json` individually. All remaining
 non-resource entries, which current import paths may materialize wholly in memory, are limited to
 256 MiB expanded aggregate metadata and receive the same streamed size and CRC verification.
 
@@ -63,15 +72,55 @@ than becoming resources.
 A conversation export reads conversation settings before entering the database, then opens an
 independent `ChatDatabase` instance and captures Conversations, Runs, paged Messages, Tasks, Loops,
 and every raw media reference into a temporary typed JSONL spool inside one DEFERRED read
-transaction. The independent instance uses dedicated background-priority executors and never
+transaction. While capture runs, the spool writer records a byte-range slice for every conversation
+plus one slice per task block, so archive assembly later revisits stored records through random
+access instead of re-scanning the spool or re-materializing the graph. The independent instance uses dedicated background-priority executors and never
 occupies the process Room transaction executor, connection pool, or executors. Under WAL, foreground
 generation may continue committing atomic checkpoints: a checkpoint committed before the export
 snapshot is established is included, later checkpoints are excluded, and no partial transaction is
 visible. The read transaction performs no destination, ZIP, or media I/O. Only after it returns may
-export open the destination, read media, rewrite archive paths, and emit `conversations.json`. The
+export open the destination, read media, rewrite archive paths, and emit the `conversations` category
+payload (`conversations.json` for versions 1-4; `conv/index.json`, per-conversation
+`conv/items/<hex-id>.json`, and `conv/tasks.json` for version 5). The
 snapshot database and its executors are released on success, failure, and coroutine cancellation.
 The spool is deleted on success, failure, and coroutine cancellation. Import terminalizes an
 archived active Run as recovered STOPPED while retaining its last committed message checkpoint.
+
+## 2a. Version 5 conversation-granular archives and incremental backups
+
+Version 5 splits the `conversations` category per conversation. `conv/index.json` lists every
+exported conversation with its `dataChangedAt` watermark, its `conv/items/<hex-id>.json` entry path,
+and the media entries it references. Each item entry holds that conversation's own
+`conversations`, `runs`, `messages`, and `loops` arrays. Tasks are conversation-independent and live
+once in `conv/tasks.json`.
+
+Export assembles the archive by streaming the spool rather than materializing it. The spool index
+holds only slice offsets and per-conversation `dataChangedAt` watermarks; the archive writer revisits
+one conversation at a time, reading its slices through random access, copying media, and emitting
+that conversation's item entry before moving on. Run and loop rows pass through verbatim; message
+rows are decoded, archive-path rewritten, and re-encoded lazily as their entry is written. Export
+memory therefore stays bounded by a single spool record, the media-reference dedup map, and slice
+metadata, never by the size of the database or of any single conversation. Baseline raw copies use
+the same per-conversation flow: an unchanged conversation's item entry and media entries are copied
+byte-for-byte from the baseline archive without touching the spool.
+
+Automatic backups reuse the most recent valid `Agora_backup_*.agora` file as an optional baseline. A
+conversation whose `dataChangedAt` watermark is unchanged is raw-copied byte-for-byte from the
+baseline item entry, and its media entries are raw-copied without rescanning; changed or new
+conversations are re-exported. A baseline that is missing, corrupt, unreadable, older than version
+5, or structurally invalid is rejected before writing and the export falls back to a complete
+version 5 archive. Writing goes to a `.tmp` file and is published by an atomic rename; failure or
+cancellation deletes the temporary file and never disturbs existing backups.
+
+Import normalizes both shapes to one graph view before any mutation: version 1-4 streams
+`conversations.json` directly, while version 5 merges index, items, and tasks into one temporary
+spool file in the application cache. The spool is deleted when the source closes, including failure
+and cancellation paths. Merging fails closed: duplicate conversation ids, index entry paths that do
+not match `conv/items/<hex-id>.json` for that id, missing item entries, a missing tasks entry, or a
+malformed index are category errors that leave no spool behind. From the merged spool onward,
+preview counts, headers, run planning, message import, media restoration, and strategy semantics
+are the same code paths for versions 1 through 5, so restoring an incremental version 5 archive is
+equivalent to restoring a full archive containing the same graph.
 
 ## 3. Portable `settings.json` allowlist
 
@@ -232,13 +281,19 @@ Focused tests for any archive or setting change must prove:
 8. conversation media, Memory/Skill files, System Prompts, and custom fonts keep their owner-specific
    conflict, cleanup, and rollback behavior;
 9. archive validation rejects unsafe or duplicate paths before mutation, leaves streamed
-   `conversations.json` without a fixed byte cap while verifying its size and CRC, caps aggregate
+   conversation graph payloads (including the per-item version 5 entries) without a fixed byte cap
+   while verifying their size and CRC, caps aggregate
    in-memory non-resource metadata at 256 MiB, requires direct seekable-source access without a
    whole-cache duplicate, and enforces destination capacity before and during resource copy without
    a standalone resource entry-count limit;
 10. unreadable attachment resources preserve order, type, and filename as disabled placeholders, and
    successful manual and automatic backups report the complete unavailable-resource count;
-11. the default and every maintained public manual remain consistent with this contract.
+11. version 5 merging fails closed on duplicate ids, entry-path mismatches, missing item or tasks
+    entries, and malformed indexes, deleting the temporary spool; unchanged-watermark conversations
+    and their media are raw-copied from a valid baseline, and any invalid or older baseline falls
+    back to a complete version 5 archive; a merged incremental archive produces the same preview
+    counts and graph headers as the equivalent legacy payload;
+12. the default and every maintained public manual remain consistent with this contract.
 
 The project full build remains required after implementation changes. Build success alone does not
 prove SAF access, large-archive streaming, device storage, or user-visible conflict handling.

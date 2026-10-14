@@ -5,6 +5,7 @@ import com.newoether.agora.model.CitationRecord
 import com.newoether.agora.model.ContextBudget
 import com.newoether.agora.model.TokenUsage
 import com.newoether.agora.api.util.prepareMessages
+import com.newoether.agora.api.util.tokens.ContextCostModels
 import kotlinx.coroutines.flow.Flow
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
@@ -93,7 +94,14 @@ fun interface ProviderRequestResolver {
 suspend fun ProviderConfig.resolveRequest(messages: List<ChatMessage>): ProviderRequestInput =
     requestResolver?.resolve(messages, this)
         ?: ProviderRequestInput(
-            messages = prepareMessages(messages, maxContextWindow),
+            messages = prepareMessages(
+                messages,
+                maxContextWindow,
+                includeAssistantReasoning = includeAssistantReasoning,
+                // Trimming must price context the same way the indicator does, so the fallback
+                // resolver counts with this model's own cost model too.
+                costs = ContextCostModels.forModel(modelId),
+            ),
             systemPrompt = systemPrompt,
         )
 
@@ -119,6 +127,8 @@ data class ProviderConfig(
     val userPrepend: String? = null,
     val userPostpend: String? = null,
     val includeImages: Boolean = true,
+    /** Counts and retains ordinary assistant thought segments that this request serializes. */
+    val includeAssistantReasoning: Boolean = false,
     val temperature: Float? = null,
     val maxTokens: Int? = null,
     val topP: Float? = null,
@@ -126,6 +136,8 @@ data class ProviderConfig(
     val presencePenalty: Float? = null,
     /** Stable cache partition key. Set only for the official OpenAI provider. */
     val promptCacheKey: String? = null,
+    /** Stable per-conversation session id. Sent as the `x-opencode-session` header. */
+    val sessionId: String? = null,
     /** Resolves ordinary-generation prompt variables and rollout immediately before dispatch. */
     val requestResolver: ProviderRequestResolver? = null,
 )
@@ -143,18 +155,30 @@ data class ToolFunction(
     val parameters: ToolParameters
 )
 
-@Serializable
+@Serializable(with = ToolParametersSerializer::class)
 data class ToolParameters(
     val type: String = "object",
     val properties: Map<String, ToolProperty>,
-    val required: List<String> = emptyList()
+    val required: List<String> = emptyList(),
+    /**
+     * The parameter schema exactly as an external tool source (an MCP server) declared it. When set,
+     * every provider sends this schema instead of one rebuilt from [properties], so nested fields,
+     * maps, enums and other JSON Schema keywords survive; [properties] and [required] then only
+     * summarize its top level for token estimates and validation.
+     */
+    val schema: JsonObject? = null,
 )
 
 @Serializable
 data class ToolProperty(
     val type: String,
     val description: String,
-    val items: ToolProperty? = null
+    /** For an array: the schema of one element. */
+    val items: ToolProperty? = null,
+    /** For an object: the schema of each field it carries. */
+    val properties: Map<String, ToolProperty>? = null,
+    /** For an object: which of its own fields are mandatory. */
+    val required: List<String>? = null,
 )
 
 @Serializable
@@ -165,9 +189,12 @@ data class OpenAiChatRequest(
     @SerialName("stream_options") val streamOptions: OpenAiStreamOptions? = null,
     val tools: List<ToolDefinition>? = null,
     @SerialName("reasoning_effort") val reasoningEffort: String? = null,
+    @SerialName("thinking") val thinking: OpenAiThinking? = null,
     @SerialName("enable_thinking") val enableThinking: Boolean? = null,
     @SerialName("thinking_budget") val thinkingBudget: Int? = null,
     val reasoning: OpenAiReasoning? = null,
+    /** Groq: `false` returns no reasoning for a model that cannot turn reasoning off. */
+    @SerialName("include_reasoning") val includeReasoning: Boolean? = null,
     val plugins: List<OpenAiPlugin>? = null,
     @SerialName("service_tier") val serviceTier: String? = null,
     val temperature: Float? = null,
@@ -181,6 +208,12 @@ data class OpenAiChatRequest(
 @Serializable
 data class OpenAiPlugin(
     val id: String
+)
+
+/** DeepSeek thinking toggle: `{"thinking": {"type": "enabled" | "disabled"}}`. */
+@Serializable
+data class OpenAiThinking(
+    val type: String,
 )
 
 @Serializable
@@ -339,6 +372,8 @@ data class OpenAiMessage(
     /** Provider-scoped raw Responses output items restored only by the Responses transport. */
     @Transient val responseOutputItems: List<JsonObject>? = null,
     @Transient val responseOutputItemProvider: String? = null,
+    /** Model that produced [responseOutputItems]; another model cannot read them back. */
+    @Transient val responseOutputItemModel: String? = null,
 )
 
 @Serializable

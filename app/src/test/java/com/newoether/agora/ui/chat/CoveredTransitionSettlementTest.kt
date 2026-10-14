@@ -41,12 +41,11 @@ class CoveredTransitionSettlementTest {
     }
 
     @Test
-    fun bottomCoverWaitsForEveryMessageInTheLastTurnToHydrate() {
-        val waiting = bottomSample(lastTurnHydrated = false)
+    fun physicalBottomReadinessDoesNotDependOnPayloadHydration() {
+        val ready = bottomSample()
 
-        assertFalse(waiting.ready)
-        assertFalse(waiting.needsScroll)
-        assertTrue(waiting.copy(lastTurnHydrated = true).ready)
+        assertTrue(ready.ready)
+        assertFalse(ready.needsScroll)
     }
 
     @Test
@@ -56,7 +55,6 @@ class CoveredTransitionSettlementTest {
             sentinelIndex = 3,
             sentinelKey = AbsoluteBottomSentinelKey,
             canScrollForward = false,
-            lastTurnHydrated = true,
         )
 
         assertTrue(tallTailAtPhysicalEnd.ready)
@@ -124,7 +122,7 @@ class CoveredTransitionSettlementTest {
         assertTrue(bottomBranch >= 0)
         assertFalse(settle.substring(0, bottomBranch).contains("currentMessages.isEmpty()"))
         assertTrue(settle.contains("CoveredAbsoluteBottomSample("))
-        assertTrue(settle.contains("hydrationRegistry.containsAll(lastTurnMessageIds)"))
+        assertFalse(settle.contains("hydrationRegistry.containsAll"))
     }
 
     private fun bottomSample(
@@ -133,14 +131,12 @@ class CoveredTransitionSettlementTest {
         canScrollForward: Boolean = false,
         sentinelIndex: Int? = totalItemsCount - 1,
         sentinelKey: Any? = AbsoluteBottomSentinelKey,
-        lastTurnHydrated: Boolean = true,
     ) = CoveredAbsoluteBottomSample(
         viewportHeightPx = viewportHeightPx,
         totalItemsCount = totalItemsCount,
         canScrollForward = canScrollForward,
         sentinelIndex = sentinelIndex,
         sentinelKey = sentinelKey,
-        lastTurnHydrated = lastTurnHydrated,
     )
 
     private fun locateMainSourceRoot(): File {

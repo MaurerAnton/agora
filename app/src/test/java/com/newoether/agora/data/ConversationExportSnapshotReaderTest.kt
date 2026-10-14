@@ -61,16 +61,17 @@ class ConversationExportSnapshotReaderTest {
         val exportedRuns = mutableListOf<RunEntity>()
         val exportedMessages = mutableListOf<MessageEntity>()
         val export = async(Dispatchers.IO) {
-            ConversationExportSnapshotReader(context).readSnapshot(
-                onConversation = {
-                    snapshotEstablished.complete(Unit)
-                    continueSnapshot.await()
-                },
-                onRun = { exportedRuns += it },
-                onMessage = { exportedMessages += it },
-                onTask = {},
-                onLoop = {},
-            )
+            ConversationExportSnapshotReader(context).readSnapshot { record ->
+                when (record) {
+                    is SnapshotRecord.Run -> {
+                        snapshotEstablished.complete(Unit)
+                        continueSnapshot.await()
+                        exportedRuns += record.entity
+                    }
+                    is SnapshotRecord.Message -> exportedMessages += record.entity
+                    else -> Unit
+                }
+            }
         }
 
         snapshotEstablished.await()
@@ -97,6 +98,23 @@ class ConversationExportSnapshotReaderTest {
         )
     }
 
+    @Test
+    fun skippedConversationEmitsOnlyItsHeader() = runBlocking {
+        withContext(Dispatchers.IO) {
+            processDatabase.withTransaction {
+                processDatabase.chatDao().upsertConversation(conversation())
+                processDatabase.chatDao().upsertRun(activeRun(lastCheckpointAt = 100L))
+                processDatabase.chatDao().upsertMessage(checkpointMessage(text = "body"))
+            }
+        }
+        val records = mutableListOf<SnapshotRecord>()
+        withContext(Dispatchers.IO) {
+            ConversationExportSnapshotReader(context).readSnapshot(
+                includeBody = { it.id != CONVERSATION_ID },
+            ) { records += it }
+        }
+        assertEquals(listOf(CONVERSATION_ID), records.map { (it as SnapshotRecord.Conversation).entity.id })
+    }
     private fun conversation() = ChatEntity(
         id = CONVERSATION_ID,
         title = "Conversation",

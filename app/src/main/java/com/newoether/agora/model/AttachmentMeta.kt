@@ -59,6 +59,9 @@ data class AttachmentItem(
     @SerialName("mime_type") val mimeType: String? = null,
     @SerialName("image_index") val imageIndex: Int? = null,
     @SerialName("page_count") val pageCount: Int? = null,
+    /** Pixel size of the artifact actually sent, measured at import. Providers price by pixels. */
+    @SerialName("pixel_width") val pixelWidth: Int? = null,
+    @SerialName("pixel_height") val pixelHeight: Int? = null,
     val warning: String? = null,
     @SerialName("text_content") val textContent: String? = null,
     @SerialName("transcription") val transcription: String? = null,
@@ -85,6 +88,9 @@ data class SelectedAttachment(
     val fileName: String? = null,
     val mimeType: String? = null,
     val fileSize: Long? = null,
+    /** Pixel size of the artifact that will be sent, measured once the import produced it. */
+    val pixelWidth: Int? = null,
+    val pixelHeight: Int? = null,
     val processedFrames: List<String>? = null,
     val selectedPages: Set<Int>? = null,
     val preRenderedPaths: List<String>? = null,

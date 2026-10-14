@@ -100,6 +100,7 @@ internal fun MessageSegmentDetailHost(
     streamingMessage: ChatMessage?,
     observeMessage: (String) -> Flow<ChatMessage?>,
     parseInlineDollarMath: Boolean,
+    autoWrapCodeBlocks: Boolean = true,
     onMediaClick: (List<String>, Int) -> Unit,
     modifier: Modifier = Modifier,
     content: @Composable ((String, List<Int>, Boolean) -> Unit) -> Unit,
@@ -139,6 +140,7 @@ internal fun MessageSegmentDetailHost(
     val markdownRenderContext = rememberChatMarkdownAssets(
         textColor = MaterialTheme.colorScheme.onSurface,
         parseInlineDollarMath = parseInlineDollarMath,
+        autoWrapCodeBlocks = autoWrapCodeBlocks,
     ).thoughtRenderContext
 
     SegmentDetailSheet(

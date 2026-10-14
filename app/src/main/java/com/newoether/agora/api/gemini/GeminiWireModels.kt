@@ -50,7 +50,9 @@ internal data class ApiTool(
 internal data class GeminiFunctionDeclaration(
     val name: String,
     val description: String,
-    val parameters: JsonObject? = null
+    val parameters: JsonObject? = null,
+    /** JSON Schema parameters; mutually exclusive with [parameters]. */
+    @SerialName("parameters_json_schema") val parametersJsonSchema: JsonObject? = null,
 )
 
 @Serializable

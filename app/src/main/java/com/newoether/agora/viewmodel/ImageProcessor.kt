@@ -4,6 +4,7 @@ import android.app.Application
 import android.media.MediaMetadataRetriever
 import android.net.Uri
 import com.newoether.agora.util.AttachmentSourceReader
+import com.newoether.agora.util.AttachmentFiles
 import java.io.File
 import java.net.URI
 import java.util.UUID
@@ -17,6 +18,9 @@ data class VideoSliceConfig(
     val intervalMicros: Long,
     val frameCount: Int,
 )
+
+/** Pixel size of an image artifact, the input every provider's image token rule is defined on. */
+data class ImagePixelSize(val width: Int, val height: Int)
 
 internal fun imageSampleSizeForBounds(
     width: Int,
@@ -36,7 +40,7 @@ internal fun imageSampleSizeForBounds(
 class ImageProcessor(
     private val app: Application,
 ) {
-    suspend fun normalizeImage(source: String): String? = withContext(Dispatchers.IO) {
+    suspend fun normalizeImage(source: String, outputOwner: Any? = null): String? = withContext(Dispatchers.IO) {
         var output: File? = null
         try {
             coroutineContext.ensureActive()
@@ -65,6 +69,7 @@ class ImageProcessor(
             try {
                 coroutineContext.ensureActive()
                 val target = File(app.filesDir, "img_${UUID.randomUUID()}.jpg")
+                outputOwner?.let { AttachmentFiles.retainLivePath(it, target.absolutePath) }
                 output = target
                 val encoded = target.outputStream().use { stream ->
                     bitmap.compress(android.graphics.Bitmap.CompressFormat.JPEG, 80, stream)
@@ -84,9 +89,31 @@ class ImageProcessor(
         }
     }
 
+    /**
+     * Bounds-only decode of an already produced artifact. Best effort: an unreadable or unsupported
+     * file reports no size, and the token estimate falls back to its byte rule.
+     */
+    suspend fun measurePixels(source: String): ImagePixelSize? = withContext(Dispatchers.IO) {
+        try {
+            val bounds = android.graphics.BitmapFactory.Options().apply {
+                inJustDecodeBounds = true
+            }
+            openStream(source)?.use { stream ->
+                android.graphics.BitmapFactory.decodeStream(stream, null, bounds)
+            }
+            if (bounds.outWidth <= 0 || bounds.outHeight <= 0) null
+            else ImagePixelSize(bounds.outWidth, bounds.outHeight)
+        } catch (cancelled: CancellationException) {
+            throw cancelled
+        } catch (_: Exception) {
+            null
+        }
+    }
+
     suspend fun extractVideoFrames(
         source: String,
         config: VideoSliceConfig,
+        outputOwner: Any? = null,
     ): List<String> = withContext(Dispatchers.IO) {
         val paths = mutableListOf<String>()
         val retriever = MediaMetadataRetriever()
@@ -103,6 +130,7 @@ class ImageProcessor(
                 if (bitmap != null) {
                     val boundedBitmap = bitmap.scaleToMaxEdge(MAX_IMAGE_EDGE.toInt())
                     val output = File(app.filesDir, "vid_${UUID.randomUUID()}_$index.jpg")
+                    outputOwner?.let { AttachmentFiles.retainLivePath(it, output.absolutePath) }
                     try {
                         val encoded = output.outputStream().use { stream ->
                             boundedBitmap.compress(

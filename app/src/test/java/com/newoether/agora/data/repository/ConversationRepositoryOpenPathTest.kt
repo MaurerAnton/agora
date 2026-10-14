@@ -32,7 +32,7 @@ class ConversationRepositoryOpenPathTest {
         )
         val events = mutableListOf<String>()
         coEvery { dao.getConversation(conversation.id) } answers { conversation }
-        coEvery { dao.updateDraft(conversation.id, any(), any()) } answers {
+        coEvery { dao.updateDraft(conversation.id, any(), any(), any()) } answers {
             conversation = conversation.copy(draftAttachments = thirdArg())
             events += "persist"
         }
@@ -52,7 +52,7 @@ class ConversationRepositoryOpenPathTest {
         repository.updateDraft(conversation.id, "typing", readyJson)
         assertEquals(listOf("persist"), events)
         events.clear()
-        coEvery { dao.updateDraft(conversation.id, any(), any()) } throws IllegalStateException("write failed")
+        coEvery { dao.updateDraft(conversation.id, any(), any(), any()) } throws IllegalStateException("write failed")
         assertTrue(runCatching { repository.updateDraft(conversation.id, "", null) }.isFailure)
         assertTrue(events.isEmpty())
         coVerify(exactly = 1) { debt.enqueue(MaintenanceDebtEntity.KIND_ATTACHMENT_ORPHANS, stagedPath, any()) }
@@ -60,7 +60,7 @@ class ConversationRepositoryOpenPathTest {
     }
 
     @Test
-    fun branchSelectionWritesPreserveConversationRecency() = runTest {
+    fun branchSelectionWritesPreserveRecencyAndAdvanceBackupWatermark() = runTest {
         val dao = mockk<ChatDao>(relaxed = true)
         val conversation = ChatEntity(
             id = "conversation",
@@ -70,9 +70,9 @@ class ConversationRepositoryOpenPathTest {
             selectedRunBranchesJson = "{}",
         )
         coEvery { dao.getConversation(conversation.id) } returns conversation
-        coEvery { dao.updateMessageBranchSelections(any(), any()) } returns 1
-        coEvery { dao.updateRunBranchSelections(any(), any()) } returns 1
-        coEvery { dao.updateBranchSelections(any(), any(), any()) } returns 1
+        coEvery { dao.updateMessageBranchSelections(any(), any(), any()) } returns 1
+        coEvery { dao.updateRunBranchSelections(any(), any(), any()) } returns 1
+        coEvery { dao.updateBranchSelections(any(), any(), any(), any()) } returns 1
         val repository = ConversationRepository(dao, database = null)
 
         repository.saveBranchSelections(conversation.id, mapOf(null to "message"))
@@ -85,16 +85,25 @@ class ConversationRepositoryOpenPathTest {
         )
 
         coVerify(exactly = 1) {
-            dao.updateMessageBranchSelections(conversation.id, "{\"null\":\"message\"}")
+            dao.updateMessageBranchSelections(
+                conversation.id,
+                "{\"null\":\"message\"}",
+                match { it > 0L },
+            )
         }
         coVerify(exactly = 1) {
-            dao.updateRunBranchSelections(conversation.id, "{\"null\":\"run\"}")
+            dao.updateRunBranchSelections(
+                conversation.id,
+                "{\"null\":\"run\"}",
+                match { it > 0L },
+            )
         }
         coVerify(exactly = 1) {
             dao.updateBranchSelections(
                 conversation.id,
                 "{\"null\":\"message\"}",
                 "{\"null\":\"run\"}",
+                match { it > 0L },
             )
         }
         coVerify(exactly = 0) { dao.updateSelectionsForRunDeletion(any(), any(), any(), any()) }

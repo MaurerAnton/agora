@@ -146,4 +146,5 @@ internal class SwitchingCoordinator {
         if (!successful) failed?.invoke()
         return true
     }
+
 }

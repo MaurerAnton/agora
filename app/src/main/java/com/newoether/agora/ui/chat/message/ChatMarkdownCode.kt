@@ -1,12 +1,24 @@
 package com.newoether.agora.ui.chat.message
 
 import androidx.compose.foundation.ScrollState
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.horizontalScroll
+import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.ContentCopy
+import androidx.compose.material3.HorizontalDivider
+import androidx.compose.material3.Icon
 import androidx.compose.material3.LocalContentColor
+import androidx.compose.material3.Text
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.CompositionLocalProvider
@@ -17,14 +29,25 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.runtime.snapshotFlow
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.LayoutCoordinates
 import androidx.compose.ui.layout.onGloballyPositioned
+import androidx.compose.ui.platform.LocalClipboardManager
+import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.semantics.Role
+import androidx.compose.ui.semantics.role
+import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.AnnotatedString
 import androidx.compose.ui.text.TextLayoutResult
 import androidx.compose.ui.text.TextStyle
+import androidx.compose.ui.text.font.FontFamily
+import androidx.compose.ui.text.style.LineBreak
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
+import com.newoether.agora.R
 import com.newoether.agora.ui.chat.caseInsensitiveMatchRanges
 import com.newoether.agora.ui.chat.visibleMarkdownMatchRanges
 import com.mikepenz.markdown.compose.LocalMarkdownColors
@@ -44,6 +67,7 @@ import kotlinx.coroutines.flow.distinctUntilChanged
 @Composable
 internal fun ChatMarkdownCodeBlock(
     code: String,
+    autoWrap: Boolean,
     modifier: Modifier = Modifier,
 ) {
     val assets = rememberChatMarkdownAssets(MaterialTheme.colorScheme.onSurface)
@@ -57,19 +81,23 @@ internal fun ChatMarkdownCodeBlock(
             modifier = modifier
                 .fillMaxWidth()
                 .padding(vertical = 8.dp),
-            showHeader = true,
+            showHeader = false,
             language = null,
             code = code,
         ) {
-            MarkdownBasicText(
-                text = AnnotatedString(code),
-                style = assets.renderContext.typography.code.copy(
+            Column {
+                ChatCodeBlockHeader(language = null, code = code)
+                val codeStyle = assets.renderContext.typography.code.copy(
                     color = MaterialTheme.colorScheme.onSurface,
-                ),
-                modifier = Modifier
-                    .horizontalScroll(rememberScrollState())
-                    .padding(assets.renderContext.padding.codeBlock),
-            )
+                )
+                MarkdownBasicText(
+                    text = AnnotatedString(code),
+                    style = if (autoWrap) codeStyle.copy(lineBreak = LineBreak.Simple) else codeStyle,
+                    modifier = Modifier
+                        .then(if (autoWrap) Modifier else Modifier.horizontalScroll(rememberScrollState()))
+                        .padding(assets.renderContext.padding.codeBlock),
+                )
+            }
         }
     }
 }
@@ -101,6 +129,7 @@ internal fun SearchHighlightedMarkdownCode(
     spec: SearchHighlightSpec?,
     highlightColor: Color,
     activeHighlightColor: Color,
+    autoWrap: Boolean = true,
 ) {
     val streamingFadeSpec = LocalStreamingGlyphFadeSpec.current
     val nodeFade = remember(streamingFadeSpec, model.content, model.node) {
@@ -146,6 +175,7 @@ internal fun SearchHighlightedMarkdownCode(
             highlightColor = highlightColor,
             activeHighlightColor = activeHighlightColor,
             nodeFade = nodeFade,
+            autoWrap = autoWrap,
         )
     }
     if (fenced) {
@@ -165,6 +195,7 @@ private fun SearchHighlightedMarkdownCodeText(
     highlightColor: Color,
     activeHighlightColor: Color,
     nodeFade: StreamingGlyphNodeFade?,
+    autoWrap: Boolean,
 ) {
     val displayMatches = if (spec == null) {
         emptyList()
@@ -231,20 +262,76 @@ private fun SearchHighlightedMarkdownCodeText(
         modifier = Modifier
             .fillMaxWidth()
             .padding(vertical = 8.dp),
-        showHeader = true,
+        showHeader = false,
         language = language,
         code = code,
     ) {
-        MarkdownBasicText(
-            text = renderedText,
-            style = style,
-            modifier = Modifier
-                .horizontalScroll(horizontalScrollState)
-                .padding(LocalMarkdownPadding.current.codeBlock)
-                .onGloballyPositioned { coordinates = it },
-            onTextLayout = { layoutResult = it },
-        )
+        Column {
+            ChatCodeBlockHeader(language = language, code = code)
+            MarkdownBasicText(
+                text = renderedText,
+                style = if (autoWrap) style.copy(lineBreak = LineBreak.Simple) else style,
+                modifier = Modifier
+                    .then(if (autoWrap) Modifier else Modifier.horizontalScroll(horizontalScrollState))
+                    .padding(LocalMarkdownPadding.current.codeBlock)
+                    .onGloballyPositioned { coordinates = it },
+                onTextLayout = { layoutResult = it },
+            )
+        }
     }
+}
+
+/**
+ * Code-block header mirroring the library's internal MarkdownCodeTopBar layout: monospace language
+ * tag on the left, a 24.dp round copy target on the right, and the same 0.3-alpha 0.5.dp divider
+ * below. The copy affordance is the standard Material icon instead of the library glyph, so it
+ * matches the copy actions used elsewhere in the app. Rendered inside [MarkdownCodeBackground]'s
+ * content slot while its built-in header stays disabled.
+ */
+@Composable
+private fun ChatCodeBlockHeader(language: String?, code: String) {
+    val clipboardManager = LocalClipboardManager.current
+    val textColor = LocalMarkdownColors.current.text
+    val copyLabel = stringResource(R.string.copy)
+    Row(
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(horizontal = 8.dp, vertical = 4.dp),
+        horizontalArrangement = Arrangement.SpaceBetween,
+        verticalAlignment = Alignment.CenterVertically,
+    ) {
+        if (!language.isNullOrBlank()) {
+            Text(
+                text = language.uppercase(),
+                style = TextStyle(
+                    fontSize = 10.sp,
+                    fontFamily = FontFamily.Monospace,
+                    color = textColor.copy(alpha = 0.6f),
+                ),
+            )
+        }
+        Box(
+            modifier = Modifier
+                .size(24.dp)
+                .clip(CircleShape)
+                .semantics { role = Role.Button }
+                .clickable(onClickLabel = copyLabel) {
+                    clipboardManager.setText(AnnotatedString(code))
+                },
+            contentAlignment = Alignment.Center,
+        ) {
+            Icon(
+                imageVector = Icons.Default.ContentCopy,
+                contentDescription = copyLabel,
+                modifier = Modifier.size(14.dp),
+                tint = textColor.copy(alpha = 0.6f),
+            )
+        }
+    }
+    HorizontalDivider(
+        color = LocalMarkdownColors.current.dividerColor.copy(alpha = 0.3f),
+        thickness = 0.5.dp,
+    )
 }
 
 private fun markdownCodeSourceRange(

@@ -60,7 +60,7 @@ private fun StartAnchoredHorizontalOverflowHost(
     content = content,
 )
 
-private enum class CompactSegmentIcon {
+internal enum class CompactSegmentIcon {
     LOADING,
     THINKING,
     TOOL,
@@ -71,6 +71,37 @@ internal fun compactSegmentShowsLoading(
     generationActive: Boolean,
     isCurrentCard: Boolean,
 ): Boolean = generationActive && isCurrentCard
+
+/** Only the current card of an active generation shows live titles. */
+internal fun compactSegmentUsesLiveStatus(
+    generationActive: Boolean,
+    isCurrentCard: Boolean,
+    useLiveStatus: Boolean,
+): Boolean = generationActive && isCurrentCard && useLiveStatus
+
+/** The collapsed header icon; [collapsedTitle] is the title the header shows. */
+internal fun compactSegmentIcon(
+    segs: List<MessageSegment>,
+    message: ChatMessage,
+    generationActive: Boolean,
+    isCurrentCard: Boolean,
+    cardUsesLiveStatus: Boolean,
+    collapsedTitle: String,
+): CompactSegmentIcon {
+    val isThinking = cardUsesLiveStatus &&
+        message.status == MessageStatus.THINKING &&
+        segs.any { it.type == "thought" }
+    val isTranscribing = cardUsesLiveStatus && message.status == MessageStatus.TRANSCRIBING
+    val toolCount = segs.count { it.type == "tool" }
+    val thoughtMs = thoughtDurationMs(segs, fallbackMs = message.thoughtTimeMs)
+    val hasThought = thoughtMs != null && thoughtMs > 0
+    return when {
+        compactSegmentShowsLoading(generationActive, isCurrentCard) -> CompactSegmentIcon.LOADING
+        !isThinking && !hasThought && toolCount > 0 -> CompactSegmentIcon.TOOL
+        isTranscribing || collapsedTitle == "Image Transcription" -> CompactSegmentIcon.IMAGE
+        else -> CompactSegmentIcon.THINKING
+    }
+}
 
 @Composable
 internal fun CompactSegmentBlock(
@@ -101,7 +132,6 @@ internal fun CompactSegmentBlock(
 ) {
     if (segs.isEmpty()) return
     val allowSpatialTransitions = LocalAgoraMotionPolicy.current.allowSpatialTransitions
-    val containsToolSummary = segs.any { it.type == "tool" }
     val animateCardAppearance = rememberSegmentAppearance(
         registry = segmentAppearanceRegistry,
         animationKey = cardAppearanceKey,
@@ -172,26 +202,20 @@ internal fun CompactSegmentBlock(
             expandedStates[expansionKey] = targetExpanded
         }
     }
-    val cardUsesLiveStatus = generationActive && isCurrentCard && useLiveStatus
-    val isThinking = cardUsesLiveStatus &&
-        message.status == MessageStatus.THINKING &&
-        segs.any { it.type == "thought" }
-    val isTranscribing = cardUsesLiveStatus && message.status == MessageStatus.TRANSCRIBING
-    val toolCount = segs.count { it.type == "tool" }
-    val thoughtMs = thoughtDurationMs(segs, fallbackMs = message.thoughtTimeMs)
-    val hasThought = thoughtMs != null && thoughtMs > 0
-    val showLoading = compactSegmentShowsLoading(generationActive, isCurrentCard)
+    val cardUsesLiveStatus = compactSegmentUsesLiveStatus(generationActive, isCurrentCard, useLiveStatus)
     val collapsedTitle = compactSegmentDisplayTitle(
         segs = segs,
         message = message,
         useLiveStatus = cardUsesLiveStatus,
     )
-    val collapsedIcon = when {
-        showLoading -> CompactSegmentIcon.LOADING
-        !isThinking && !hasThought && toolCount > 0 -> CompactSegmentIcon.TOOL
-        isTranscribing || collapsedTitle == "Image Transcription" -> CompactSegmentIcon.IMAGE
-        else -> CompactSegmentIcon.THINKING
-    }
+    val collapsedIcon = compactSegmentIcon(
+        segs = segs,
+        message = message,
+        generationActive = generationActive,
+        isCurrentCard = isCurrentCard,
+        cardUsesLiveStatus = cardUsesLiveStatus,
+        collapsedTitle = collapsedTitle,
+    )
     val expansionTransition = updateTransition(
         targetState = isExpanded,
         label = "compactSegmentExpansion",
@@ -408,17 +432,15 @@ internal fun CompactSegmentBlock(
             Box(modifier = Modifier.fillMaxWidth()) {
             expansionTransition.AnimatedVisibility(
                 visible = { it },
+                // Every group, with or without tool rows, fades its whole segment list while it
+                // expands and shrinks (owner decision 2026-10-13: tool calls fade too).
                 enter = when {
                     collapseImageBoundaryOnAppearance -> EnterTransition.None
-                    containsToolSummary && allowSpatialTransitions -> expandVertically(tween(400))
-                    containsToolSummary -> EnterTransition.None
                     allowSpatialTransitions -> fadeIn(tween(400)) + expandVertically(tween(400))
                     else -> fadeIn(tween(400))
                 },
                 exit = when {
                     collapseImageBoundaryOnAppearance -> ExitTransition.None
-                    containsToolSummary && allowSpatialTransitions -> shrinkVertically(tween(400))
-                    containsToolSummary -> ExitTransition.None
                     allowSpatialTransitions -> fadeOut(tween(400)) + shrinkVertically(tween(400))
                     else -> fadeOut(tween(400))
                 },

@@ -11,6 +11,7 @@ internal fun ChatEntity.toConversation() = ChatConversation(
     id = id, title = title, systemPromptId = systemPromptId, modelId = modelId,
     taskId = taskId, origin = origin, graduated = graduated,
     hasUnreadGeneration = hasUnreadGeneration,
+    isPinned = isPinned,
     selectedBranchesJson = selectedBranchesJson,
 )
 

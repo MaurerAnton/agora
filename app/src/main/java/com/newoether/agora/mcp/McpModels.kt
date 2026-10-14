@@ -93,10 +93,33 @@ private fun JsonObject.toToolParameters(): ToolParameters {
         ?.mapNotNull { (it as? JsonPrimitive)?.contentOrNull }
         .orEmpty()
         .filter(properties::containsKey)
+    val type = (this["type"] as? JsonPrimitive)?.contentOrNull ?: "object"
     return ToolParameters(
-        type = (this["type"] as? JsonPrimitive)?.contentOrNull ?: "object",
+        type = type,
         properties = properties,
         required = required,
+        schema = toWireSchema(type),
+    )
+}
+/**
+ * The MCP input schema as providers receive it: the server's own schema, untouched below the top
+ * level. Only the top level is made a well-formed parameter object, which every provider demands:
+ * an explicit type, a properties map, and required naming only declared properties. The `$schema`
+ * dialect marker is dropped because it is metadata some OpenAI-compatible endpoints reject.
+ */
+private fun JsonObject.toWireSchema(type: String): JsonObject {
+    val properties = this["properties"] as? JsonObject ?: JsonObject(emptyMap())
+    val required = (this["required"] as? JsonArray)?.filter { entry ->
+        (entry as? JsonPrimitive)?.contentOrNull?.let(properties::containsKey) == true
+    }
+    return JsonObject(
+        buildMap {
+            putAll(this@toWireSchema)
+            remove("\$schema")
+            put("type", JsonPrimitive(type))
+            put("properties", properties)
+            if (required != null) put("required", JsonArray(required))
+        },
     )
 }
 

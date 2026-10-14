@@ -31,6 +31,7 @@ object PdfPageRenderer {
         context: Context,
         source: String,
         pages: Set<Int>? = null,
+        outputOwner: Any? = null,
     ): List<String> {
         val descriptor = openDescriptor(context, source) ?: return emptyList()
         val renderer = runCatching { PdfRenderer(descriptor) }
@@ -53,6 +54,7 @@ object PdfPageRenderer {
                     page.render(bitmap, null, null, PdfRenderer.Page.RENDER_MODE_FOR_DISPLAY)
 
                     val file = File(context.filesDir, "pdf_${UUID.randomUUID()}_$index.jpg")
+                    outputOwner?.let { AttachmentFiles.retainLivePath(it, file.absolutePath) }
                     try {
                         val encoded = file.outputStream().use { output ->
                             bitmap.compress(Bitmap.CompressFormat.JPEG, 80, output)
@@ -97,6 +99,7 @@ object PdfPageRenderer {
         source: String,
         maxPages: Int = 200,
         onProgress: (suspend (current: Int, total: Int) -> Unit)? = null,
+        outputOwner: Any? = null,
     ): List<String> {
         val descriptor = openDescriptor(context, source) ?: return emptyList()
         val renderer = runCatching { PdfRenderer(descriptor) }
@@ -117,6 +120,7 @@ object PdfPageRenderer {
                     page.render(bitmap, null, null, PdfRenderer.Page.RENDER_MODE_FOR_DISPLAY)
 
                     val file = File(context.filesDir, "pdf_preview_${UUID.randomUUID()}_$index.jpg")
+                    outputOwner?.let { AttachmentFiles.retainLivePath(it, file.absolutePath) }
                     try {
                         val encoded = file.outputStream().use { output ->
                             bitmap.compress(Bitmap.CompressFormat.JPEG, 80, output)

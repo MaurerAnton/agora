@@ -1,20 +1,20 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
-    <string name="tool_progress_reading">Reading...</string>
-    <string name="tool_progress_saving">Saving...</string>
-    <string name="tool_progress_updating">Updating...</string>
-    <string name="tool_progress_removing">Removing...</string>
-    <string name="tool_progress_searching">Searching...</string>
-    <string name="tool_progress_fetching">Fetching...</string>
-    <string name="tool_progress_executing">Executing...</string>
-    <string name="tool_progress_stopping">Stopping...</string>
-    <string name="tool_progress_writing">Writing...</string>
-    <string name="tool_progress_editing">Editing...</string>
-    <string name="tool_progress_finding">Finding...</string>
-    <string name="tool_progress_generating">Generating...</string>
-    <string name="tool_progress_creating">Creating...</string>
-    <string name="tool_progress_deleting">Deleting...</string>
-    <string name="tool_progress_starting">Starting...</string>
+    <string name="tool_progress_reading">Reading…</string>
+    <string name="tool_progress_saving">Saving…</string>
+    <string name="tool_progress_updating">Updating…</string>
+    <string name="tool_progress_removing">Removing…</string>
+    <string name="tool_progress_searching">Searching…</string>
+    <string name="tool_progress_fetching">Fetching…</string>
+    <string name="tool_progress_executing">Executing…</string>
+    <string name="tool_progress_stopping">Stopping…</string>
+    <string name="tool_progress_writing">Writing…</string>
+    <string name="tool_progress_editing">Editing…</string>
+    <string name="tool_progress_finding">Finding…</string>
+    <string name="tool_progress_generating">Generating…</string>
+    <string name="tool_progress_creating">Creating…</string>
+    <string name="tool_progress_deleting">Deleting…</string>
+    <string name="tool_progress_starting">Starting…</string>
     <string name="tool_reading_conversation_subject">Reading conversation %1$s…</string>
     <string name="tool_generating_image_subject">Generating image: %1$s…</string>
     <string name="tool_creating_task_subject">Creating task: %1$s…</string>

@@ -41,6 +41,8 @@ import com.newoether.agora.ui.components.clearFocusOnTap
 import com.newoether.agora.ui.motion.LocalAgoraMotionPolicy
 import com.newoether.agora.util.gradientBlur
 import kotlinx.coroutines.flow.filterNotNull
+import com.newoether.agora.ui.components.AgoraDropdownMenuItem
+import com.newoether.agora.ui.components.AgoraExposedDropdownMenu
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -66,6 +68,7 @@ internal fun RemoteConversation(
     val amoled by settings.amoledEnabled.collectAsState(initial = false)
     val inlineMath by settings.parseInlineDollarMath.collectAsState(initial = false)
     val stickToBottom by settings.stickToBottom.collectAsState(initial = true)
+    val autoWrapCodeBlocks by settings.autoWrapCodeBlocks.collectAsState(initial = true)
     val toolCallDisplayMode by settings.toolCallDisplayMode.collectAsState()
     val thinkingSegmentDisplayMode by settings.thinkingSegmentDisplayMode.collectAsState()
     val autoExpandActiveGroup by settings.autoExpandActiveGroup.collectAsState()
@@ -167,6 +170,7 @@ internal fun RemoteConversation(
     val animatedScrollRequest by vm.animatedScrollRequest.collectAsState()
     var barHeightPx by remember { mutableFloatStateOf(0f) }
     val barHeight = with(density) { barHeightPx.toDp() }
+    val topBarHeight = WindowInsets.statusBars.asPaddingValues().calculateTopPadding() + 64.dp
     SnackbarOffsetEffect(drawerProgress = 0f, isExpanded = expanded, bottomBarHeight = barHeight,
         settingsButtonTopDp = 0f, bottomInset = maxOf(
             WindowInsets.ime.asPaddingValues().calculateBottomPadding(),
@@ -174,6 +178,19 @@ internal fun RemoteConversation(
         onOffsetChanged = { if (active) onSnackbarOffsetChanged(it) })
     var initiallyPositioned by remember(owner) { mutableStateOf(state.isDraft) }
     val switching = !initiallyPositioned
+    val showBottomButton by rememberAbsoluteBottomButtonVisible(
+        conversationId = owner,
+        loadedMessagesConversationId = owner.takeIf { initiallyPositioned },
+        isNewChatMode = newChatEntry && messages.isEmpty(),
+        isSwitching = switching,
+        shareSelectionActive = false,
+        isNearAbsoluteBottom = scroll.isNearAbsoluteBottom,
+        absoluteBottomScrollPhase = scroll.absoluteBottomScrollPhase,
+        listState = scroll.listState,
+        streamingTailController = scroll.streamingTailController,
+        regenerationScrollActive = animatedScrollRequest?.conversationId == owner,
+        imeBottomAnchorActive = scroll.imeBottomAnchorState.active,
+    )
     scroll.BindLayoutObservation(owner, owner, ime, density)
     scroll.BindImeEffects(owner, messageState, density, barHeight, 0.dp, ime)
     scroll.BindRequestEffects(owner, false, generationVisible, false, switching, interaction.searchActive, false, null, animatedScrollRequest,
@@ -224,6 +241,9 @@ internal fun RemoteConversation(
         if (!amoled) AnimatedBlobBackground(centerAlpha = if (dark) 0.02f else 0f,
             quarterAlpha = if (dark) 0.01f else 0f, blurRadius = 40f, dark = dark,
             blurEnabled = blur, motionEnabled = false)
+        // Insets are declared explicitly via contentWindowInsets above; the empty
+        // content padding is intentional, so the Material3 usage lint does not apply.
+        @Suppress("UnusedMaterial3ScaffoldPaddingParameter")
         Scaffold(containerColor = Color.Transparent, contentWindowInsets = WindowInsets(0, 0, 0, 0), topBar = {
             ChatTopBar(
                 isNewChatMode = false, conversations = emptyList(),
@@ -246,7 +266,7 @@ internal fun RemoteConversation(
                 onNavigateBack = onBack, onOpenDrawer = onBack, onSystemPromptClick = {}, onNewChat = vm::newSession,
                 newChatEnabled = active && !state.controlling,
                 moreMenuContent = { dismiss ->
-                    DropdownMenuItem(
+                    AgoraDropdownMenuItem(
                         text = { Text(stringResource(R.string.conversation_search)) },
                         leadingIcon = { Icon(Icons.Default.Search, null) },
                         enabled = active && !switching,
@@ -260,6 +280,7 @@ internal fun RemoteConversation(
                 MessageList(messages = StableMessageList(renderMessages.value), allMessages = StableMessageList(messages),
                     authoritativeMessages = StableMessageList(messages), conversationId = owner,
                     state = scroll.listState, overscrollEffect = historyOverscroll, onMediaClick = onMediaClick, messageActionsEnabled = false, readOnlyActions = true, parseInlineDollarMath = inlineMath,
+                    autoWrapCodeBlocks = autoWrapCodeBlocks,
                     isLoading = generationVisible, isSwitching = switching, streamingMessage = streaming,
                     searchQuery = if (interaction.searchActive) interaction.searchQuery else "",
                     activeSearchMatch = searchMatch,
@@ -301,41 +322,18 @@ internal fun RemoteConversation(
                     contentPadding = PaddingValues(start = 8.dp, end = 8.dp, top = 140.dp + leadingSpace.dp, bottom = barHeight + 8.dp))
                 }
                 ChatBottomScrollButton(
-                    shouldShowAbsoluteBottomButton(
-                        isNewChatMode = newChatEntry && messages.isEmpty(),
-                        isSwitching = switching,
-                        conversationContentReady = initiallyPositioned,
-                        shareSelectionActive = false,
-                        hasItems = scroll.listState.layoutInfo.totalItemsCount > 1,
-                        canScrollForward = scroll.listState.canScrollForward,
-                        isNearBottom = scroll.isNearAbsoluteBottom,
-                        isStreamingAutoFollowing = scroll.streamingTailController.isAutoFollowing,
-                        scrollPhase = scroll.absoluteBottomScrollPhase,
-                        competingProgrammaticScrollActive = scroll.imeBottomAnchorState.active,
-                    ),
+                    showBottomButton,
                     barHeight,
                 ) {
                     scroll.requestAbsoluteBottomScroll()
                 }
 
-                AnimatedVisibility(
-                    visible = switching && !newChatEntry && !state.error,
-                    enter = fadeIn(animationSpec = tween(200)),
-                    exit = fadeOut(animationSpec = tween(200))
-                ) {
-                    Box(
-                        modifier = Modifier
-                            .fillMaxSize()
-                            .background(MaterialTheme.colorScheme.background),
-                        contentAlignment = Alignment.Center
-                    ) {
-                        MotionAwareCircularProgressIndicator(
-                            modifier = Modifier.size(48.dp),
-                            strokeWidth = 5.dp,
-                            color = MaterialTheme.colorScheme.primary
-                        )
-                    }
-                }
+                ChatSwitchingOverlay(
+                    isSwitching = switching && !state.error,
+                    isTransitioningToNewChat = newChatEntry,
+                    topBarHeight = topBarHeight,
+                    bottomBarHeight = barHeight,
+                )
             }
         }
         ChatComposerSurface(expanded, { barHeightPx = it }, Modifier.align(Alignment.BottomCenter), spacer.outerHeightPx) {
@@ -363,7 +361,10 @@ internal fun RemoteConversation(
                             onClick = {
                                 val now = System.currentTimeMillis()
                                 if (activeMenu == "model") activeMenu = null
-                                else if (now - lastModelDismissTime > 200) activeMenu = "model"
+                                else if (now - lastModelDismissTime > 200) {
+                                    activeMenu = "model"
+                                    vm.refreshModels()
+                                }
                             },
                             onDismissRequest = {
                                 if (activeMenu == "model") {
@@ -389,6 +390,7 @@ internal fun RemoteConversation(
                         )
                         ComposerContextIndicator(
                             estimatedTokens = state.runtime?.contextTokens, tokenBudget = state.runtime?.contextWindow,
+                            showBreakdown = false,
                             expanded = activeMenu == "context",
                             onClick = {
                                 val now = System.currentTimeMillis()
@@ -421,7 +423,7 @@ internal fun RemoteConversation(
                                 Icon(Icons.Default.MoreVert, stringResource(R.string.tools), modifier = Modifier.size(16.dp), tint = MaterialTheme.colorScheme.onSurfaceVariant)
                             }
 
-                            ExposedDropdownMenu(
+                            AgoraExposedDropdownMenu(
                                 containerColor = MaterialTheme.colorScheme.surfaceContainer,
                                 expanded = activeMenu == "tools",
                                 onDismissRequest = {
@@ -430,10 +432,9 @@ internal fun RemoteConversation(
                                         lastToolsDismissTime = System.currentTimeMillis()
                                     }
                                 },
-                                matchTextFieldWidth = false,
-                                shape = CHAT_DROPDOWN_MENU_SHAPE,
+                                matchAnchorWidth = false,
                             ) {
-                                DropdownMenuItem(
+                                AgoraDropdownMenuItem(
                                     text = {
                                         Row(verticalAlignment = Alignment.CenterVertically) {
                                             Icon(androidx.compose.ui.res.painterResource(id = com.newoether.agora.R.drawable.neurology_24), null, modifier = Modifier.size(CHAT_DROPDOWN_MENU_ICON_SIZE_DP.dp))
@@ -455,7 +456,7 @@ internal fun RemoteConversation(
                                     onClick = { activeMenu = null; showThinkingSheet = true },
                                     enabled = effortChoices.isNotEmpty() && state.selectedEffort != null,
                                 )
-                                DropdownMenuItem(
+                                AgoraDropdownMenuItem(
                                     text = {
                                         Row(verticalAlignment = Alignment.CenterVertically) {
                                             Icon(
@@ -511,7 +512,7 @@ internal fun RemoteConversation(
                     budgetEnabled = false, budgetTokens = 4096,
                     onEnabledChange = {}, onLevelChange = vm::setThinkingLevel,
                     onBudgetEnabledChange = {}, onBudgetTokensChange = {},
-                    providerName = "OpenAI", animateSections = true,
+                    animateSections = true,
                     availableEfforts = effortChoices, controlsEnabled = settingsEnabled,
                     showHeader = false, showEnabledToggle = false, showBudgetControls = false,
                     settingsRevision = state.settingsRevision,

@@ -13,6 +13,8 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import com.newoether.agora.R
 import com.newoether.agora.ui.components.providerIcon
+import com.newoether.agora.ui.components.AgoraDropdownMenuItem
+import com.newoether.agora.ui.components.AgoraExposedDropdownMenu
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -58,16 +60,15 @@ internal fun CustomModelProviderPicker(
                 )
                 .fillMaxWidth(),
         )
-        ExposedDropdownMenu(
+        AgoraExposedDropdownMenu(
             expanded = customModelProviderMenuExpanded,
             onDismissRequest = {
                 onExpandedChange(false)
             },
-            matchTextFieldWidth = false,
-            shape = RoundedCornerShape(16.dp),
+            matchAnchorWidth = false,
         ) {
             providerChoices.forEach { providerName ->
-                DropdownMenuItem(
+                AgoraDropdownMenuItem(
                     text = { Text(providerName) },
                     onClick = {
                         onProviderChange(providerName)

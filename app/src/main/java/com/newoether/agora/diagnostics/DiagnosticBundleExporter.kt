@@ -7,6 +7,10 @@ import kotlinx.serialization.json.buildJsonObject
 import kotlinx.serialization.json.put
 import kotlinx.serialization.json.putJsonArray
 import kotlinx.serialization.json.putJsonObject
+import java.time.Instant
+import java.time.ZoneId
+import java.time.format.DateTimeFormatter
+import java.util.Locale
 
 /** Produces local-only diagnostic exports from the credential-sanitized capture snapshot. */
 object DiagnosticBundleExporter {
@@ -14,6 +18,19 @@ object DiagnosticBundleExporter {
         classDiscriminator = "payloadType"
         encodeDefaults = true
         prettyPrint = true
+    }
+
+    fun fileName(
+        format: DiagnosticExportFormat,
+        generatedAtMillis: Long,
+        zoneId: ZoneId = ZoneId.systemDefault(),
+    ): String {
+        val timestamp = DateTimeFormatter.ofPattern("yyyy-MM-dd_HH-mm-ss-SSS", Locale.ROOT)
+            .withZone(zoneId)
+            .format(Instant.ofEpochMilli(generatedAtMillis))
+        val formatName = format.name.lowercase(Locale.ROOT).replace('_', '-')
+        val extension = if (format == DiagnosticExportFormat.SUMMARY_TEXT) "txt" else "json"
+        return "agora-diagnostics-$formatName-$timestamp.$extension"
     }
 
     fun export(

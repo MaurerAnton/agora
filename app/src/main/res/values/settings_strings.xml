@@ -72,6 +72,7 @@
     <string name="conversation_search_hint">Search…</string>
     <string name="conversation_fork_failed">Could not fork conversation: %1$s</string>
     <string name="conversation_share_failed">Could not share conversation: %1$s</string>
+    <string name="conversation_deleted_elsewhere">This conversation was deleted on another device.</string>
     <string name="img_saved">Saved to gallery</string>
     <string name="img_save_failed">Save failed</string>
     <string name="img_info_dimensions">Dimensions</string>
@@ -441,6 +442,8 @@
     <string name="blur_effects_desc">Blur the top of the chat list under the toolbar. Turn off to save performance.</string>
     <string name="parse_inline_dollar_math">Parse $…$ as Inline Math</string>
     <string name="parse_inline_dollar_math_desc">When disabled, single-dollar expressions such as $ x $ remain ordinary text. Other math delimiters are unchanged.</string>
+    <string name="auto_wrap_code_blocks">Auto Wrap Code Blocks</string>
+    <string name="auto_wrap_code_blocks_desc">Wrap long lines inside code blocks instead of scrolling them horizontally.</string>
     <string name="reduce_motion">Reduce Motion</string>
     <string name="reduce_motion_desc">Reduce continuous and large spatial motion while keeping fades, direct gestures, and useful state feedback.</string>
     <string name="interaction_feedback">Interaction Feedback</string>
@@ -497,4 +500,12 @@
     <string name="openai_service_tier_priority">Priority</string>
     <string name="openai_service_tier_fast">Fast</string>
     <string name="openai_service_tier_ultrafast">Ultra Fast</string>
+    <string name="settings_interaction">Interaction</string>
+    <string name="settings_interaction_desc">Questions the assistant asks you</string>
+    <string name="ask_user_enable">Let the assistant ask me</string>
+    <string name="ask_user_enable_desc">Gives the model a tool to ask you a question and wait for your choice</string>
+    <string name="unsaved_changes_title">Unsaved changes</string>
+    <string name="unsaved_changes_message">You have unsaved changes. Discard them?</string>
+    <string name="unsaved_changes_discard">Discard</string>
+    <string name="unsaved_changes_keep_editing">Keep editing</string>
 </resources>

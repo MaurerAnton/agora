@@ -1,11 +1,13 @@
 package com.newoether.agora.ui.components
 
+import androidx.compose.ui.unit.dp
 import org.junit.Assert.assertEquals
 import org.junit.Test
 
 class SmoothBottomSheetTest {
     @Test
     fun `sheet geometry and spring match the established segment detail behavior`() {
+        assertEquals(640.dp, BottomSheetMaxWidth)
         assertEquals(0f, SMOOTH_SHEET_HIDDEN_FRACTION, 0f)
         assertEquals(0.45f, SMOOTH_SHEET_PARTIAL_FRACTION, 0f)
         assertEquals(0.94f, SMOOTH_SHEET_EXPANDED_FRACTION, 0f)

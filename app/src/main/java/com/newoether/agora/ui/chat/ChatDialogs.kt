@@ -24,6 +24,7 @@ import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -34,8 +35,10 @@ import androidx.compose.ui.window.DialogProperties
 import com.newoether.agora.R
 import com.newoether.agora.ui.motion.MotionAwareCircularProgressIndicator as CircularProgressIndicator
 import com.newoether.agora.data.ConversationSettings
+import com.newoether.agora.ui.components.SystemPromptPickerDialog
 import com.newoether.agora.ui.components.clearFocusOnTap
 import com.newoether.agora.viewmodel.ChatViewModel
+import kotlinx.coroutines.launch
 
 /** Rename-conversation dialog. Owns its own editable text, seeded from [initialName]. */
 @Composable
@@ -151,14 +154,23 @@ internal fun ChatForkConfirmationHost(
     onDismiss: () -> Unit,
 ) {
     val activeRequest = request ?: return
+    // Like delete, the confirmation blocks until the result: it closes after the fork opens or
+    // after its failure snackbar is shown.
+    var pending by remember(activeRequest) { mutableStateOf(false) }
+    val scope = rememberCoroutineScope()
+    val onResult: (Boolean) -> Unit = { scope.launch { onDismiss() } }
     ChatForkConfirmDialog(
         fromMessage = activeRequest.messageId != null,
+        pending = pending,
         onConfirm = {
-            onDismiss()
-            if (activeRequest.messageId == null) {
-                viewModel.forkConversationFrom()
-            } else {
-                viewModel.forkConversationFrom(activeRequest.messageId)
+            if (!pending) {
+                pending = true
+                val accepted = if (activeRequest.messageId == null) {
+                    viewModel.forkConversationFrom(onResult = onResult)
+                } else {
+                    viewModel.forkConversationFrom(activeRequest.messageId, onResult)
+                }
+                if (!accepted) onDismiss()
             }
         },
         onDismiss = onDismiss,
@@ -170,10 +182,15 @@ internal fun ChatForkConfirmDialog(
     fromMessage: Boolean,
     onConfirm: () -> Unit,
     onDismiss: () -> Unit,
+    pending: Boolean = false,
 ) {
     AlertDialog(
         containerColor = MaterialTheme.colorScheme.surfaceContainer,
-        onDismissRequest = onDismiss,
+        onDismissRequest = { if (!pending) onDismiss() },
+        properties = DialogProperties(
+            dismissOnBackPress = !pending,
+            dismissOnClickOutside = !pending,
+        ),
         title = {
             Text(
                 text = stringResource(
@@ -200,114 +217,54 @@ internal fun ChatForkConfirmDialog(
         confirmButton = {
             TextButton(
                 onClick = onConfirm,
+                enabled = !pending,
                 colors = ButtonDefaults.textButtonColors(contentColor = MaterialTheme.colorScheme.primary)
             ) {
-                Text(stringResource(R.string.conversation_fork_action))
+                if (pending) {
+                    CircularProgressIndicator(
+                        modifier = Modifier.size(20.dp),
+                        strokeWidth = 3.dp,
+                    )
+                } else {
+                    Text(stringResource(R.string.conversation_fork_action))
+                }
             }
         },
         dismissButton = {
-            TextButton(onClick = onDismiss) {
+            TextButton(onClick = onDismiss, enabled = !pending) {
                 Text(stringResource(R.string.cancel))
             }
         },
     )
 }
 
-/** Per-conversation system-prompt selector dialog. */
+/** Per-conversation system-prompt selector: the shared picker bound to this conversation. */
 @Composable
 internal fun ChatSystemPromptDialog(
     viewModel: ChatViewModel,
-    createdPromptId: String?,
-    onCreatedPromptConsumed: () -> Unit,
-    onCreate: () -> Unit,
     onDismiss: () -> Unit
 ) {
     val conversations by viewModel.conversations.collectAsState()
     val currentConversationId by viewModel.currentConversationId.collectAsState()
     val isNewChatMode by viewModel.isNewChatMode.collectAsState()
-    val systemPrompts by viewModel.settings.systemPrompts.collectAsState()
-    val activeSystemPromptId by viewModel.settings.activeSystemPromptId.collectAsState()
-
     val currentConversation = conversations.orEmpty().find { it.id == currentConversationId }
     val pendingPrompt by viewModel.pendingSystemPromptId.collectAsState()
-    var selectedPromptId by remember(
-        isNewChatMode,
-        currentConversationId,
-        pendingPrompt,
-        currentConversation?.systemPromptId,
-    ) {
-        mutableStateOf(if (isNewChatMode) pendingPrompt else currentConversation?.systemPromptId)
-    }
 
-    LaunchedEffect(createdPromptId) {
-        createdPromptId?.let { id ->
-            selectedPromptId = id
-            onCreatedPromptConsumed()
-        }
-    }
-
-    AlertDialog(
-        containerColor = MaterialTheme.colorScheme.surfaceContainer,
-        onDismissRequest = onDismiss,
-        title = { Text(stringResource(R.string.system_prompt), fontWeight = FontWeight.Bold) },
-        text = {
-            LazyColumn {
-                item {
-                    Row(
-                        verticalAlignment = Alignment.CenterVertically,
-                        modifier = Modifier.fillMaxWidth().clickable { selectedPromptId = null }.padding(8.dp)
-                    ) {
-                        RadioButton(
-                            selected = selectedPromptId == null,
-                            onClick = { selectedPromptId = null }
-                        )
-                        Spacer(modifier = Modifier.width(8.dp))
-                        val globalDefaultTitle = systemPrompts.find { it.id == activeSystemPromptId }?.title ?: stringResource(R.string.no_system_prompt)
-                        Text(stringResource(R.string.global_default_format, globalDefaultTitle))
-                    }
-                }
-                items(systemPrompts, key = { it.id }) { prompt ->
-                    Row(
-                        verticalAlignment = Alignment.CenterVertically,
-                        modifier = Modifier.fillMaxWidth().clickable { selectedPromptId = prompt.id }.padding(8.dp)
-                    ) {
-                        RadioButton(
-                            selected = selectedPromptId == prompt.id,
-                            onClick = { selectedPromptId = prompt.id }
-                        )
-                        Spacer(modifier = Modifier.width(8.dp))
-                        Text(prompt.title)
-                    }
+    SystemPromptPickerDialog(
+        settings = viewModel.settings,
+        initialSelectedId = if (isNewChatMode) pendingPrompt else currentConversation?.systemPromptId,
+        selectionKey = listOf(isNewChatMode, currentConversationId, pendingPrompt, currentConversation?.systemPromptId),
+        onSave = { selectedPromptId ->
+            if (isNewChatMode) {
+                viewModel.setPendingSystemPrompt(selectedPromptId)
+            } else {
+                currentConversationId?.let { id ->
+                    viewModel.setConversationSystemPrompt(id, selectedPromptId)
                 }
             }
+            onDismiss()
         },
-        confirmButton = {
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                verticalAlignment = Alignment.CenterVertically,
-            ) {
-                TextButton(onClick = onCreate) {
-                    Text(stringResource(R.string.memory_create))
-                }
-                Spacer(modifier = Modifier.weight(1f))
-                TextButton(onClick = onDismiss) {
-                    Text(stringResource(R.string.cancel))
-                }
-                Spacer(modifier = Modifier.width(8.dp))
-                TextButton(onClick = {
-                    if (isNewChatMode) {
-                        viewModel.setPendingSystemPrompt(selectedPromptId)
-                    } else {
-                        currentConversationId?.let { id ->
-                            viewModel.setConversationSystemPrompt(id, selectedPromptId)
-                        }
-                    }
-                    onDismiss()
-                }) {
-                    Text(stringResource(R.string.save))
-                }
-            }
-        },
+        onDismiss = onDismiss,
     )
 }
 
@@ -349,11 +306,10 @@ internal fun ChatAdvancedSettingsDialog(
         overrides = overrides,
         globalDefaults = defaults,
         onSave = { settings ->
-            viewModel.setConversationSettings(currentId, settings)
-            onDismiss()
-        },
-        onResetToDefaults = {
-            viewModel.setConversationSettings(currentId, null)
+            if (validGenerationParameters(settings)) {
+                viewModel.updateConversationSettings(currentId) { it.withGenerationParameters(settings) }
+                onDismiss()
+            }
         },
         onDismiss = onDismiss
     )

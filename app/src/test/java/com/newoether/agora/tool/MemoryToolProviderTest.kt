@@ -6,6 +6,7 @@ import io.mockk.every
 import io.mockk.mockk
 import io.mockk.verify
 import kotlinx.coroutines.test.runTest
+import kotlinx.coroutines.flow.toList
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
 import org.junit.Assert.assertTrue
@@ -30,9 +31,9 @@ class MemoryToolProviderTest {
     )
 
     @Test
-    fun definitionsExposeSixMemoryToolsAndExplicitEditOperation() {
+    fun definitionsExposeSevenMemoryToolsAndExplicitEditOperation() {
         val definitions = provider.definitions(enabled)
-        assertEquals(6, definitions.size)
+        assertEquals(7, definitions.size)
         assertEquals(
             setOf(
                 "list_memory_files",
@@ -40,6 +41,7 @@ class MemoryToolProviderTest {
                 "create_memory_file",
                 "edit_memory_file",
                 "delete_memory_file",
+                "read_active_memory",
                 "update_active_memory",
             ),
             definitions.map { it.function.name }.toSet(),
@@ -65,7 +67,7 @@ class MemoryToolProviderTest {
     fun definitionsRespectMemoryAccessSettings() {
         val activeOnly = enabled.copy(accessSavedMemories = false)
         assertEquals(
-            listOf("update_active_memory"),
+            listOf("read_active_memory", "update_active_memory"),
             provider.definitions(activeOnly).map { it.function.name },
         )
         assertTrue(
@@ -271,8 +273,27 @@ class MemoryToolProviderTest {
     }
 
     @Test
+    fun successfulErrorPrefixedReadAndValidationFailureHaveExplicitMetadata() = runTest {
+        every { memoryManager.readFile("notes.md") } returns "Error: documented example"
+        val success = provider.executeEvents("read_memory_file", """{"name":"notes.md"}""", enabled)
+            .toList().single() as ToolExecutionEvent.Completed
+        assertFalse(success.result.isError)
+        assertEquals("Error: documented example", success.result.text)
+        val failure = provider.executeEvents("read_memory_file", "{}", enabled)
+            .toList().single() as ToolExecutionEvent.Completed
+        assertTrue(failure.result.isError)
+        assertTrue(failure.result.text.contains("No file name"))
+    }
+
+    @Test
+    fun readActiveMemoryReturnsStoredText() = runTest {
+        every { memoryManager.getActiveMemory() } returns "# index\n- a.md"
+        assertEquals("# index\n- a.md", provider.execute("read_active_memory", "{}", enabled))
+    }
+    @Test
     fun handlesOnlyMemoryTools() {
         assertTrue(provider.handles("list_memory_files"))
+        assertTrue(provider.handles("read_active_memory"))
         assertTrue(provider.handles("update_active_memory"))
         assertFalse(provider.handles("web_search"))
         assertFalse(provider.handles("unknown_tool"))

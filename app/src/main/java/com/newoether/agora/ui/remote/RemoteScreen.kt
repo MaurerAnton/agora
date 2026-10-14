@@ -11,7 +11,6 @@ import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.lazy.rememberLazyListState
-import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.*
 import androidx.compose.material3.*
@@ -54,6 +53,8 @@ import com.newoether.agora.ui.motion.MotionAwareCircularProgressIndicator
 import com.newoether.agora.ui.motion.MotionAwareLinearProgressIndicator
 import com.newoether.agora.ui.common.LocalAgoraHaptics
 import com.newoether.agora.ui.common.rememberAgoraHaptics
+import com.newoether.agora.ui.components.AgoraDropdownMenu
+import com.newoether.agora.ui.components.AgoraDropdownMenuItem
 
 @Composable
 internal fun RemoteOverlay(
@@ -203,18 +204,18 @@ private fun RemoteScreen(vm: RemoteViewModel, settings: SettingsRepository, acti
                                                     IconButton(onClick = { showMenu = true }, enabled = actionsEnabled) {
                                                         Icon(Icons.Default.MoreVert, stringResource(R.string.more))
                                                     }
-                                                    DropdownMenu(
+                                                    AgoraDropdownMenu(
                                                         containerColor = MaterialTheme.colorScheme.surfaceContainer,
-                                                        tonalElevation = 16.dp, shape = RoundedCornerShape(12.dp),
+                                                        tonalElevation = 16.dp,
                                                         expanded = showMenu, onDismissRequest = { showMenu = false },
                                                     ) {
-                                                        DropdownMenuItem(
+                                                        AgoraDropdownMenuItem(
                                                             text = { Text(stringResource(R.string.rename)) },
                                                             leadingIcon = { Icon(Icons.Default.Edit, null) },
                                                             enabled = actionsEnabled,
                                                             onClick = { showMenu = false; action = "rename" },
                                                         )
-                                                        DropdownMenuItem(
+                                                        AgoraDropdownMenuItem(
                                                             text = { Text(stringResource(R.string.remote_archive), color = MaterialTheme.colorScheme.error) },
                                                             leadingIcon = { Icon(Icons.Default.Delete, null, tint = MaterialTheme.colorScheme.error) },
                                                             enabled = actionsEnabled,
@@ -331,13 +332,12 @@ private fun RemoteDevices(state: RemoteState, vm: RemoteViewModel, onBack: () ->
                             IconButton(onClick = { menuOpen = true }, enabled = enabled) {
                                 Icon(Icons.Default.MoreVert, stringResource(R.string.options))
                             }
-                            DropdownMenu(expanded = menuOpen, onDismissRequest = { menuOpen = false },
-                                shape = RoundedCornerShape(12.dp), containerColor = MaterialTheme.colorScheme.surfaceContainer,
+                            AgoraDropdownMenu(expanded = menuOpen, onDismissRequest = { menuOpen = false }, containerColor = MaterialTheme.colorScheme.surfaceContainer,
                                 tonalElevation = 16.dp) {
-                                DropdownMenuItem(text = { Text(stringResource(R.string.edit)) }, enabled = enabled,
+                                AgoraDropdownMenuItem(text = { Text(stringResource(R.string.edit)) }, enabled = enabled,
                                     leadingIcon = { Icon(Icons.Default.Edit, null) },
                                     onClick = { menuOpen = false; onForward(); vm.editDevice(device.id) })
-                                DropdownMenuItem(text = { Text(stringResource(R.string.delete), color = MaterialTheme.colorScheme.error) },
+                                AgoraDropdownMenuItem(text = { Text(stringResource(R.string.delete), color = MaterialTheme.colorScheme.error) },
                                     enabled = enabled, leadingIcon = { Icon(Icons.Default.Delete, null, tint = MaterialTheme.colorScheme.error) },
                                     onClick = { menuOpen = false; deleteId = device.id })
                             }

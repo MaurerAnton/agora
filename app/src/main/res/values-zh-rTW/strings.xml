@@ -62,6 +62,9 @@
 
     <!-- Drawer -->
     <string name="conversations">對話</string>
+    <string name="pinned_conversations">已置頂</string>
+    <string name="pin_conversation">置頂</string>
+    <string name="unpin_conversation">取消置頂</string>
     <string name="conversation_unread_generation">未讀的新回覆</string>
     <string name="new_chat">新對話</string>
     <string name="thinking_ellipsis">思考中…</string>
@@ -398,6 +401,9 @@
     <string name="about_contribute">參與貢獻</string>
     <string name="about_privacy_policy">隱私政策</string>
     <string name="about_source_code">原始碼</string>
+    <string name="about_license">授權條款</string>
+    <string name="about_license_desc">GNU GPL-3.0</string>
+    <string name="about_license_history">v2.1.0 及更早版本以 MIT 授權條款發布。</string>
     <string name="about_version">版本</string>
     <string name="about_rating">評價應用程式</string>
     <string name="about_rating_desc">這個專案由一個人獨立開發。真誠地感謝您的回饋。</string>
@@ -495,7 +501,6 @@
     <string name="deselect_all">取消全選</string>
 
     <!-- Caching & Sync -->
-    <string name="embedding_model_caching">嵌入模型 \"%1$s\" 正在快取…</string>
     <string name="messages_not_cached">%1$d / %2$d 則訊息尚未快取。</string>
     <string name="cache_now">立即快取</string>
     <string name="no_messages_to_cache">沒有需要快取的訊息。</string>
@@ -555,8 +560,8 @@
     <string name="onboarding_no_models">暫無可用模型。</string>
     <string name="onboarding_invalid_gguf_title">無效的 GGUF 檔案</string>
     <string name="onboarding_invalid_gguf_desc">所選檔案不是有效的 GGUF 模型。</string>
-    <string name="onboarding_hide_key">隱藏金鑰</string>
-    <string name="onboarding_show_key">顯示金鑰</string>
+    <string name="secret_hide">隱藏內容</string>
+    <string name="secret_show">顯示內容</string>
     <!-- ── Auto Backup ── -->
     <string name="auto_backup_title">自動備份</string>
     <string name="auto_backup_subtitle">按計畫自動匯出資料</string>
@@ -602,6 +607,19 @@
     <string name="shell_confirm_deny">拒絕</string>
     <string name="shell_confirm_setting">確認遠端 Shell 操作</string>
     <string name="shell_confirm_setting_desc">在助手於遠端 SSH/Conch 伺服器上執行命令或寫入檔案前詢問</string>
+    <string name="shell_confirm_notification_channel">命令審批</string>
+    <string name="shell_confirm_notification_desc">Agora 於背景執行時，請求你允許或拒絕遠端命令</string>
+    <string name="ask_user_title">助手正在提問</string>
+    <string name="ask_user_send">傳送</string>
+    <string name="ask_user_next">下一題</string>
+    <string name="interaction_ask_user">詢問</string>
+    <string name="interaction_approval">審批</string>
+    <string name="interaction_minimize">最小化</string>
+    <string name="interaction_expand">展開</string>
+    <string name="ask_user_custom_answer">用自己的話回答</string>
+    <string name="ask_user_skip">略過</string>
+    <string name="ask_user_notification_channel">Agora 的提問</string>
+    <string name="ask_user_notification_desc">在聊天畫面未開啟時請你回答助手的問題</string>
 
     <!-- Crash reporting -->
     <string name="crash_title">Agora 意外退出</string>
@@ -621,6 +639,7 @@
     <string name="conversation_search_hint">搜尋…</string>
     <string name="conversation_share">分享</string>
     <string name="conversation_share_failed">無法分享對話：%1$s</string>
+    <string name="conversation_deleted_elsewhere">此對話已在另一台裝置上刪除。</string>
     <string name="queue_clear_all">全部清除</string>
     <string name="more">更多</string>
     <string name="delete_message_title">刪除訊息？</string>
@@ -636,6 +655,8 @@
     <string name="context_compact_model">壓縮模型</string>
     <string name="context_compact_prompt">壓縮提示詞</string>
     <string name="context_compact_prompt_desc">總結指示</string>
+    <string name="context_compact_preserve_system">保留系統提示詞</string>
+    <string name="context_compact_preserve_system_desc">壓縮時使用對話的系統提示詞，壓縮提示詞改為摘要請求的開頭指令</string>
     <string name="context_compact_select_model">選擇壓縮模型</string>
     <string name="context_compact_threshold">自動壓縮閾值</string>
     <string name="context_compact_threshold_desc">估算內容達到所選視窗的此百分比時進行壓縮</string>
@@ -651,7 +672,13 @@
     <string name="thinking_segment_display_card">卡片</string>
     <string name="thinking_segment_display_bottom_sheet">底部面板</string>
     <string name="thinking_segments_title">思考片段</string>
-    <string name="context_usage_messages">約 %1$s / %2$s tokens</string>
+    <string name="context_usage_messages">約 %1$s / %2$s tokens</string>
+    <string name="context_part_system">系統提示</string>
+    <string name="context_part_tools">工具</string>
+    <string name="context_part_messages">訊息</string>
+    <string name="context_part_free">空閒</string>
+    <string name="context_part_reserved">預留</string>
+    <string name="context_part_used">已用</string>
     <string name="context_compact_streaming">正在壓縮內容…</string>
     <string name="context_compact_error">壓縮出錯</string>
     <string name="context_compact_stopped">壓縮已停止</string>
@@ -721,6 +748,7 @@
     <string name="generation_error_network">網路錯誤：%1$s</string>
     <string name="generation_error_network_http">網路錯誤（%1$d）：%2$s</string>
     <string name="generation_error_sse_parse">無法讀取伺服器回應。</string>
+    <string name="generation_error_malformed_tool_call">模型傳回的工具呼叫無法使用：%1$s</string>
     <string name="generation_error_incomplete_stream">%1$s 提前結束回應。未收到完成訊號，因此回覆不完整。</string>
     <string name="generation_error_incomplete_tool_stream">%1$s 在工具呼叫仍在寫入時提前結束回應。未收到完成訊號，因此回覆不完整。</string>
     <string name="generation_error_incomplete_stream_reason">%1$s 在停止原因為 %2$s 後提前結束回應，且未收到完成訊號。</string>
@@ -778,4 +806,14 @@
     <string name="thought_for_a_while">思考了一會兒</string>
     <string name="thought_for_a_while_called_tools">思考了一會兒，呼叫 %1$d 個工具</string>
     <string name="remote_device">裝置</string>
+    <!-- Upstream attribution copy, UTF-8 Base64 for lightweight bulk-rename resistance. -->
+    <string name="rating_origin_credit_b64">QWdvcmEgwrcg55SxIG5ld28tZXRoZXIg6ZaL55m8</string>
+    <string name="rating_origin_project_b64">5Y6f5bCI5qGI77yaZ2l0aHViLmNvbS9uZXdvLWV0aGVyL0Fnb3Jh</string>
+    <string name="rating_origin_modified_title_b64">55uu5YmN54K65L+u5pS554mI5pys</string>
+    <string name="rating_origin_modified_body_b64">5q2k5oeJ55So56iL5byP55qE5aWX5Lu25ZCN56ix6IiH5Y6f5bCI5qGI5LiN5ZCM77yM6KGo56S65a6D57aT6YGO6YeN5paw5bCB6KOd5oiW5L+u5pS544CC5Y6f5bCI5qGI54K6IEFnb3Jh77yM55SxIG5ld28tZXRoZXIg6ZaL55m844CC55uu5YmN54mI5pys55qE5pS55YuV55Sx5YW255m85biD6ICF6LKg6LKs77yM5LiN5Luj6KGo5Y6f5L2c6ICF44CC</string>
+    <string name="rating_origin_view_project_b64">5p+l55yL5Y6f5bCI5qGI</string>
+    <string name="message_source_task">任務</string>
+    <string name="message_source_loop">循環</string>
+    <string name="message_source_ask_user">詢問</string>
+    <string name="message_source_unanswered">未回答</string>
 </resources>

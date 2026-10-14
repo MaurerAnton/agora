@@ -12,7 +12,7 @@
     <string name="task_run_now">Ejecutar ahora</string>
     <string name="task_delete">Eliminar tarea</string>
     <string name="task_delete_confirm">¿Eliminar «%1$s» y todo su historial de ejecuciones?</string>
-    <string name="import_conversation_graph_counts">Conversaciones (%1$d) · Tareas (%2$d) · Bucles (%3$d)</string>
+    <string name="import_conversation_graph_counts">Conversaciones (%1$d) · Tareas (%2$d)</string>
     <string name="task_enabled">Ejecutar según programación</string>
     <string name="task_enabled_desc">Si está desactivado, la tarea solo se ejecuta al tocar «Ejecutar ahora».</string>
     <string name="task_enabled_needs_schedule">Elige primero una programación.</string>
@@ -58,6 +58,7 @@
     <string name="task_status_unknown">Pendiente</string>
     <string name="task_running_notification">Ejecutando tarea programada…</string>
     <string name="loop_running_notification">Ejecutando bucle de conversación…</string>
+    <string name="auto_backup_running_notification">Creando copia de seguridad…</string>
     <string name="loop_running">Bucle en ejecución…</string>
     <string name="loop_next_in">Siguiente en %1$s</string>
     <string name="loop_cycle">Ciclo %1$d/%2$d</string>

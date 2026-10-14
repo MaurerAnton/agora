@@ -1,4 +1,4 @@
-<resources>
+<?xml version="1.0" encoding="utf-8"?><resources>
     <!-- Settings - Main -->
     <string name="settings_title">설정</string>
     <string name="settings_provider">제공자</string>
@@ -428,8 +428,10 @@
     <string name="visual_effects">시각 효과</string>
     <string name="blur_effects">블러 효과</string>
     <string name="blur_effects_desc">도구 모음 아래 채팅 목록 상단을 흐리게 처리합니다. 성능을 절약하려면 끄세요.</string>
-    <string name="parse_inline_dollar_math">Parse $…$ as inline math</string>
-    <string name="parse_inline_dollar_math_desc">When disabled, single-dollar expressions such as $ x $ remain ordinary text. Other math delimiters are unchanged.</string>
+    <string name="parse_inline_dollar_math">$…$를 인라인 수식으로 해석</string>
+    <string name="parse_inline_dollar_math_desc">끄면 $ x $처럼 달러 기호 한 개인 식은 일반 텍스트로 남습니다. 다른 수식 구분 기호는 그대로입니다.</string>
+    <string name="auto_wrap_code_blocks">코드 블록 자동 줄바꿈</string>
+    <string name="auto_wrap_code_blocks_desc">코드 블록의 긴 줄은 가로 스크롤 대신 자동 줄바꿈으로 표시됩니다.</string>
     <string name="reduce_motion">모션 줄이기</string>
     <string name="reduce_motion_desc">지속적인 움직임과 큰 공간 이동을 줄이면서 페이드, 직접 제스처, 유용한 상태 피드백은 유지합니다.</string>
 
@@ -481,4 +483,12 @@
     <string name="openai_service_tier_priority">우선</string>
     <string name="openai_service_tier_fast">빠름</string>
     <string name="openai_service_tier_ultrafast">초고속</string>
+    <string name="settings_interaction">상호작용</string>
+    <string name="settings_interaction_desc">어시스턴트가 보내는 질문</string>
+    <string name="ask_user_enable">어시스턴트 질문 허용</string>
+    <string name="ask_user_enable_desc">모델이 질문을 보내고 선택을 기다릴 수 있게 합니다</string>
+    <string name="unsaved_changes_title">저장되지 않은 변경사항</string>
+    <string name="unsaved_changes_message">저장되지 않은 변경사항이 있습니다. 삭제하시겠습니까?</string>
+    <string name="unsaved_changes_discard">삭제</string>
+    <string name="unsaved_changes_keep_editing">계속 편집</string>
 </resources>

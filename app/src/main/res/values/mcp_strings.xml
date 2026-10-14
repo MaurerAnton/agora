@@ -26,8 +26,6 @@
     <string name="mcp_header_value_error">Enter a value without control characters</string>
     <string name="mcp_add_header">Add Header</string>
     <string name="mcp_delete_header">Delete Header</string>
-    <string name="mcp_show_header_value">Show Header Value</string>
-    <string name="mcp_hide_header_value">Hide Header Value</string>
     <string name="mcp_timeout">Timeout (seconds)</string>
     <string name="mcp_timeout_desc">5–300 seconds</string>
     <string name="mcp_status">Status</string>

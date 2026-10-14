@@ -12,7 +12,8 @@ package com.newoether.agora.api.util
  *  - ignores null/empty fragments, so a blank delta can never destroy accumulated content;
  *  - recognizes a growing snapshot (the fragment starts with everything accumulated so far) and
  *    keeps the longer value instead of concatenating;
- *  - ignores a stale or repeated snapshot (the accumulated value already starts with it).
+ *  - ignores a stale or repeated snapshot, and only when the resend is long enough that a normal
+ *    increment could not plausibly look like one (see [append]).
  *
  * Snapshot detection is deliberately scoped to tool arguments, which are structured JSON where the
  * relay bug is documented. It is NOT applied to answer text, where a legitimately repeated short
@@ -42,7 +43,17 @@ class ToolArgumentAccumulator(initial: String = "") {
                 builder.append(fragment)
                 return
             }
-            if (current.startsWith(fragment)) return
+            // A short fragment that repeats the head of what was accumulated is a normal
+            // increment, not an old snapshot: tool arguments nearly always open with `{"`, so a
+            // `[` + `{"` chunk pair used to be swallowed here and the model's call arrived
+            // truncated and unparsable. Only a substantial resend that covers most of the
+            // accumulated value is read as a stale snapshot, because discarding an increment
+            // cannot be undone later in the stream.
+            if (
+                fragment.length >= MIN_STALE_SNAPSHOT_LENGTH &&
+                fragment.length * 2 >= current.length &&
+                current.startsWith(fragment)
+            ) return
         }
         builder.append(fragment)
     }
@@ -56,5 +67,6 @@ class ToolArgumentAccumulator(initial: String = "") {
 
     private companion object {
         const val MIN_SNAPSHOT_OVERLAP = 2
+        const val MIN_STALE_SNAPSHOT_LENGTH = 16
     }
 }

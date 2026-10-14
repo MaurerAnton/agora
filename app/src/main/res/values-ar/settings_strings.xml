@@ -1,4 +1,4 @@
-<resources>
+<?xml version="1.0" encoding="utf-8"?><resources>
     <!-- Settings - Main -->
     <string name="settings_title">الإعدادات</string>
     <string name="settings_provider">المزوّدون</string>
@@ -428,8 +428,10 @@
     <string name="visual_effects">المؤثرات البصرية</string>
     <string name="blur_effects">تأثيرات التمويه</string>
     <string name="blur_effects_desc">تمويه أعلى قائمة الدردشة أسفل شريط الأدوات. عطّله لتوفير الأداء.</string>
-    <string name="parse_inline_dollar_math">Parse $…$ as inline math</string>
-    <string name="parse_inline_dollar_math_desc">When disabled, single-dollar expressions such as $ x $ remain ordinary text. Other math delimiters are unchanged.</string>
+    <string name="parse_inline_dollar_math">تحليل $…$ كمعادلات مضمّنة</string>
+    <string name="parse_inline_dollar_math_desc">عند التعطيل، تبقى التعبيرات المحاطة بعلامة دولار واحدة مثل $ x $ كنص عادي. محددات الرياضيات الأخرى لا تتأثر.</string>
+    <string name="auto_wrap_code_blocks">لف الأسطر تلقائياً في كتل التعليمات البرمجية</string>
+    <string name="auto_wrap_code_blocks_desc">لف الأسطر الطويلة داخل كتل التعليمات البرمجية بدلاً من تمريرها أفقياً.</string>
     <string name="reduce_motion">تقليل الحركة</string>
     <string name="reduce_motion_desc">يقلّل الحركة المستمرة والانتقالات المكانية الكبيرة مع الإبقاء على التلاشي والإيماءات المباشرة وملاحظات الحالة المفيدة.</string>
 
@@ -481,4 +483,12 @@
     <string name="openai_service_tier_priority">الأولوية</string>
     <string name="openai_service_tier_fast">سريع</string>
     <string name="openai_service_tier_ultrafast">فائق السرعة</string>
+    <string name="settings_interaction">التفاعل</string>
+    <string name="settings_interaction_desc">الأسئلة التي يطرحها المساعد عليك</string>
+    <string name="ask_user_enable">السماح للمساعد بالسؤال</string>
+    <string name="ask_user_enable_desc">يمنح النموذج أداة لطرح سؤال عليك وانتظار اختيارك</string>
+    <string name="unsaved_changes_title">تغييرات غير محفوظة</string>
+    <string name="unsaved_changes_message">لديك تغييرات غير محفوظة. هل تريد تجاهلها؟</string>
+    <string name="unsaved_changes_discard">تجاهل</string>
+    <string name="unsaved_changes_keep_editing">متابعة التعديل</string>
 </resources>

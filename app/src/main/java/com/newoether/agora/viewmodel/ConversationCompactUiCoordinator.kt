@@ -22,6 +22,7 @@ internal class ConversationCompactUiCoordinator(
     private val currentModel: () -> String,
     private val configuredPrompt: () -> String,
     private val configuredRetainCount: () -> Int,
+    private val configuredPreserveSystemPrompt: () -> Boolean = { false },
     private val compactManual: suspend (CompactRequest) -> CompactResult,
     private val failureMessage: (CompactResult.Failed) -> String,
     private val onFailure: suspend (String) -> Unit,
@@ -49,7 +50,12 @@ internal class ConversationCompactUiCoordinator(
         prompt: String,
         retainLogicalMessages: Int,
     ): CompactResult = compactManual(
-        CompactRequest(model, prompt, retainLogicalMessages),
+        CompactRequest(
+            model,
+            prompt,
+            retainLogicalMessages,
+            preserveSystemPrompt = configuredPreserveSystemPrompt(),
+        ),
     )
 
     fun startManual(
@@ -57,7 +63,14 @@ internal class ConversationCompactUiCoordinator(
         prompt: String,
         retainLogicalMessages: Int,
     ) {
-        start(CompactRequest(model, prompt, retainLogicalMessages))
+        start(
+            CompactRequest(
+                model,
+                prompt,
+                retainLogicalMessages,
+                preserveSystemPrompt = configuredPreserveSystemPrompt(),
+            ),
+        )
     }
 
     fun startRecompact(messageId: String) {
@@ -67,6 +80,7 @@ internal class ConversationCompactUiCoordinator(
                 prompt = configuredPrompt(),
                 retainLogicalMessages = configuredRetainCount(),
                 replaceMessageId = messageId,
+                preserveSystemPrompt = configuredPreserveSystemPrompt(),
             ),
         )
     }

@@ -23,6 +23,7 @@ import androidx.compose.ui.unit.dp
 import com.newoether.agora.R
 import com.newoether.agora.ui.common.openAiServiceTierShortLabel
 import com.newoether.agora.ui.common.thinkingControlShortLabel
+import com.newoether.agora.ui.components.AgoraDropdownMenuItem
 
 /** Ordinary chat's existing rows; visibility and sheet state remain owned by ChatBottomBar. */
 @Composable
@@ -38,6 +39,7 @@ internal fun ComposerToolsMenuContent(
     thinkingBudgetEnabled: Boolean,
     thinkingBudgetTokens: Int,
     onThinkingToggle: (Boolean) -> Unit,
+    thinkingCanDisable: Boolean,
     selectedProvider: String,
     isModelValid: Boolean,
     codeExecutionEnabled: Boolean,
@@ -67,7 +69,7 @@ internal fun ComposerToolsMenuContent(
     var showThinkingSheet by showThinkingSheetState
     var showOpenAiServiceTierSheet by showOpenAiServiceTierSheetState
     if (showLowContextMode) {
-        DropdownMenuItem(
+        AgoraDropdownMenuItem(
             text = {
                 Row(verticalAlignment = Alignment.CenterVertically) {
                     Icon(
@@ -89,7 +91,7 @@ internal fun ComposerToolsMenuContent(
             onClick = { onLowContextModeToggle(!lowContextModeEnabled) },
         )
     }
-    DropdownMenuItem(
+    AgoraDropdownMenuItem(
         text = {
             Row(verticalAlignment = Alignment.CenterVertically) {
                 Icon(androidx.compose.ui.res.painterResource(id = com.newoether.agora.R.drawable.neurology_24), null, modifier = Modifier.size(CHAT_DROPDOWN_MENU_ICON_SIZE_DP.dp))
@@ -113,6 +115,7 @@ internal fun ComposerToolsMenuContent(
             Switch(
                 checked = thinkingEnabled,
                 onCheckedChange = { onThinkingToggle(it) },
+                enabled = thinkingCanDisable || !thinkingEnabled,
                 modifier = Modifier.scale(0.7f)
             )
         },
@@ -123,7 +126,7 @@ internal fun ComposerToolsMenuContent(
     )
     val isGemini = selectedProvider.equals("google", ignoreCase = true) && isModelValid
     if (isGemini) {
-        DropdownMenuItem(
+        AgoraDropdownMenuItem(
             text = {
                 Row(verticalAlignment = Alignment.CenterVertically) {
                     Icon(Icons.Default.Terminal, null, modifier = Modifier.size(CHAT_DROPDOWN_MENU_ICON_SIZE_DP.dp))
@@ -144,7 +147,7 @@ internal fun ComposerToolsMenuContent(
             enabled = capabilityControlsEnabled,
             onClick = { onCodeExecutionToggle(!codeExecutionEnabled) }
         )
-        DropdownMenuItem(
+        AgoraDropdownMenuItem(
             text = {
                 Row(verticalAlignment = Alignment.CenterVertically) {
                     Image(
@@ -172,7 +175,7 @@ internal fun ComposerToolsMenuContent(
         )
     }
     if (openAiServiceTierAvailable && isModelValid) {
-        DropdownMenuItem(
+        AgoraDropdownMenuItem(
             text = {
                 Row(verticalAlignment = Alignment.CenterVertically) {
                     Icon(
@@ -218,7 +221,7 @@ internal fun ComposerToolsMenuContent(
         )
     }
     if (showWebSearch) {
-        DropdownMenuItem(
+        AgoraDropdownMenuItem(
             text = {
                 Row(verticalAlignment = Alignment.CenterVertically) {
                     Icon(Icons.Default.Language, null, modifier = Modifier.size(CHAT_DROPDOWN_MENU_ICON_SIZE_DP.dp))
@@ -239,7 +242,7 @@ internal fun ComposerToolsMenuContent(
         )
     }
     if (showShell) {
-        DropdownMenuItem(
+        AgoraDropdownMenuItem(
             text = {
                 Row(verticalAlignment = Alignment.CenterVertically) {
                     Icon(Icons.Default.Terminal, null, modifier = Modifier.size(CHAT_DROPDOWN_MENU_ICON_SIZE_DP.dp))
@@ -259,7 +262,7 @@ internal fun ComposerToolsMenuContent(
             onClick = { onShellToggle(!shellEnabled) }
         )
     }
-    DropdownMenuItem(
+    AgoraDropdownMenuItem(
         text = {
             Row(verticalAlignment = Alignment.CenterVertically) {
                 Icon(Icons.Default.Compress, null, modifier = Modifier.size(CHAT_DROPDOWN_MENU_ICON_SIZE_DP.dp))
@@ -270,7 +273,7 @@ internal fun ComposerToolsMenuContent(
         enabled = canCompact && !isCompacting,
         onClick = { activeMenu = null; onCompactClick() },
     )
-    DropdownMenuItem(
+    AgoraDropdownMenuItem(
         text = {
             Row(verticalAlignment = Alignment.CenterVertically) {
                 Icon(Icons.Default.Tune, null, modifier = Modifier.size(CHAT_DROPDOWN_MENU_ICON_SIZE_DP.dp))

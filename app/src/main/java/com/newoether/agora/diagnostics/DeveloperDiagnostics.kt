@@ -105,7 +105,10 @@ object DeveloperDiagnostics {
             method = DiagnosticRedactor.safeIdentifier(method).take(16),
             url = DiagnosticRedactor.captureUrl(url),
             headers = DiagnosticRedactor.captureHeaders(headers),
-            body = DiagnosticRedactor.captureJson(body),
+            body = DiagnosticRedactor.captureJson(
+                body,
+                DiagnosticRedactor.credentialValues(headers),
+            ),
         )
         buffer.record { sequence, timestampMillis ->
             DiagnosticEvent(sequence, timestampMillis, context, payload)

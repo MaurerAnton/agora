@@ -36,6 +36,7 @@ using agora::chat::report_error;
 using agora::chat::report_done;
 using agora::chat::utf8_complete_prefix_len;
 using agora::jni::read_java_path;
+using agora::jni::read_java_string;
 
 static bool abort_callback(void * data) {
     ChatHandle * handle = (ChatHandle *)data;
@@ -707,6 +708,30 @@ Java_com_newoether_agora_api_LlamaChatEngine_nativeChatGenerateWithImages(
     return report_done(
         env, callback, callbacks, stop_reason, input_tokens, generated
     );
+}
+
+// Exact token count of plain text under the loaded model's own vocabulary. Special tokens are
+// neither added nor parsed: the caller measures content, while role and template markers are
+// accounted for separately. Returns a negative value when the count is unavailable.
+JNIEXPORT jint JNICALL
+Java_com_newoether_agora_api_LlamaChatEngine_nativeChatCountTokens(
+    JNIEnv * env, jclass /*clazz*/, jlong handle_ptr, jstring text) {
+    if (!handle_ptr) return -1;
+    ChatHandle * handle = reinterpret_cast<ChatHandle *>(handle_ptr);
+    if (!handle->vocab) return -1;
+    std::string input;
+    if (!read_java_string(env, text, input)) return -1;
+    if (input.empty()) return 0;
+    // llama_tokenize returns the negated required length when the output buffer is too small, so a
+    // zero-capacity call is the documented way to ask for the count alone.
+    const int32_t needed = llama_tokenize(
+        handle->vocab, input.c_str(), static_cast<int32_t>(input.size()),
+        nullptr, 0, false, false
+    );
+    if (needed >= 0) return needed;
+    // A count that cannot be negated is reported as unavailable rather than overflowed.
+    if (needed == INT32_MIN) return -1;
+    return -needed;
 }
 
 JNIEXPORT void JNICALL

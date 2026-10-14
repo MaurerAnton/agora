@@ -64,7 +64,10 @@ class BoundRunGenerationLauncherTest {
             fixture.compactController.automaticNeeded(
                 conversationId = "conversation",
                 contextLimit = 4096,
-                config = fixture.snapshot.automaticCompact,
+                // The threshold measures the main request, so it carries the main model id.
+                config = fixture.snapshot.automaticCompact.copy(
+                    mainModelId = fixture.config.modelId,
+                ),
             )
         }
         fixture.state.dispose()
@@ -213,7 +216,7 @@ class BoundRunGenerationLauncherTest {
         val terminalSettlement = mockk<GenerationTerminalSettlementController>()
         val continuationRequests = mutableListOf<AutomaticCompactContinuationRequest>()
         val continuationStates = mutableListOf<ConversationGenerationState>()
-        val state = ConversationGenerationState("conversation")
+        val state = ConversationGenerationState("conversation", reclaimQueuedAttachments = {})
         val uiToken = requireNotNull(state.acquireForSend())
         val snapshot = testGenerationAdmissionSnapshot(
             conversationId = "conversation",
@@ -237,6 +240,7 @@ class BoundRunGenerationLauncherTest {
         init {
             state.bindRun(uiToken, "run", pass = 3)
             coEvery { manager.resolvedFixedContextTokenCost(any(), any()) } returns 0
+            every { manager.includesAssistantReasoning(any(), any()) } returns false
             coEvery {
                 compactController.automaticNeeded(any(), any(), any())
             } returns false

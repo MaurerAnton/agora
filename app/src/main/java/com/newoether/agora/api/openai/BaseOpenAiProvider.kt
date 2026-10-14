@@ -16,6 +16,7 @@ import com.newoether.agora.api.util.carriesModelOutput
 import com.newoether.agora.api.util.ProviderRetryPolicy
 import com.newoether.agora.api.util.safeWireToolCallId
 import com.newoether.agora.api.util.safeWireToolName
+import com.newoether.agora.api.util.malformedToolCallRequest
 import com.newoether.agora.model.ChatMessage
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.delay
@@ -55,6 +56,13 @@ abstract class BaseOpenAiProvider : LlmProvider {
     protected open fun transformSystemPrompt(prompt: String?): String? = prompt
 
     /**
+     * Replay each assistant turn's stored chain of thought as `reasoning_content`. DeepSeek
+     * thinking mode answers a tools request with 400 unless every earlier turn carries it; other
+     * providers ignore the field, so the default is off.
+     */
+    protected open fun forwardsAssistantReasoningContent(config: ProviderConfig): Boolean = false
+
+    /**
      * Parse one OpenAI-compatible delta into native thought and raw answer events.
      * Provider-neutral inline marker recovery is owned by ProviderStreamNormalizer.
      */
@@ -65,8 +73,8 @@ abstract class BaseOpenAiProvider : LlmProvider {
     ) {
         // reasoning_content is the vLLM/DeepSeek-compatible field; `reasoning` is the bare-string
         // form many relays emit instead. Take whichever the endpoint actually populated.
-        val reasoning = delta.reasoningContent?.takeIf(String::isNotBlank)
-            ?: delta.reasoning?.takeIf(String::isNotBlank)
+        val reasoning = delta.reasoningContent?.takeIf(String::isNotEmpty)
+            ?: delta.reasoning?.takeIf(String::isNotEmpty)
         reasoning?.let {
             emit(StreamEvent.ThoughtChunk(it))
         }
@@ -115,7 +123,10 @@ abstract class BaseOpenAiProvider : LlmProvider {
                 val requestBodyJson = if (config.responsesApiEnabled) {
                     val request = OpenAiResponsesRequest(
                         model = config.modelId,
-                        input = apiMessages.toResponsesInput(providerName = name),
+                        input = apiMessages.toResponsesInput(
+                            providerName = name,
+                            targetModel = config.modelId,
+                        ),
                         tools = buildList {
                             addAll(config.tools.orEmpty().toResponsesTools())
                             if (config.openAiWebSearchEnabled) {
@@ -143,6 +154,7 @@ abstract class BaseOpenAiProvider : LlmProvider {
                         messages = apiMessages,
                         stream = true,
                         streamOptions = OpenAiStreamOptions(includeUsage = true),
+                        serviceTier = config.openAiServiceTier,
                         tools = config.tools,
                         temperature = config.temperature,
                         maxTokens = config.maxTokens,
@@ -188,6 +200,7 @@ abstract class BaseOpenAiProvider : LlmProvider {
                         systemPrompt = transformSystemPrompt(resolvedRequest.systemPrompt),
                         includeImages = config.includeImages,
                         base64Files = base64Files,
+                        forwardAssistantReasoning = forwardsAssistantReasoningContent(config),
                     )
                     val (requestBodyJson, streamingRequest) = buildRequestBody(
                         apiMessages,
@@ -430,47 +443,35 @@ abstract class BaseOpenAiProvider : LlmProvider {
             if (pendingToolCalls.isEmpty()) return
             val pending = pendingToolCalls.values.toList()
             pendingToolCalls.clear()
-            val incomplete = pending.firstOrNull { candidate ->
+            val seenIds = mutableSetOf<String>()
+            val calls = pending.map { candidate ->
                 val callId = candidate.id.ifBlank { candidate.streamKey }
-                !callId.matches(safeWireToolCallId) ||
-                    !candidate.name.matches(safeWireToolName) || runCatching {
-                    json.parseToJsonElement(candidate.args.toString().ifBlank { "{}" }) is
-                        kotlinx.serialization.json.JsonObject
-                }.getOrDefault(false).not()
-            }
-            val callIds = pending.map { candidate ->
-                candidate.id.ifBlank { candidate.streamKey }
-            }
-            if (incomplete != null || callIds.distinct().size != callIds.size) {
-                emitTracked(
-                    StreamEvent.Error(
-                        GenerationError.SseParse(
-                            rawLine = "tool_calls",
-                            cause = when {
-                                callIds.distinct().size != callIds.size ->
-                                    "Provider returned duplicate tool call ids"
-                                incomplete == null -> "Provider returned incomplete tool metadata"
-                                !incomplete.name.matches(safeWireToolName) ->
-                                    "Provider ended before the tool name was complete"
-                                !incomplete.id.ifBlank { incomplete.streamKey }
-                                    .matches(safeWireToolCallId) ->
-                                    "Provider returned an invalid tool call id"
-                                else ->
-                                    "Provider ended before the tool arguments formed a complete JSON object"
-                            },
-                        )
-                    )
-                )
-                return
-            }
-            val calls = pending.map {
-                    StreamEvent.ToolCallRequest(
-                        id = it.id.ifBlank { it.streamKey },
-                        name = it.name,
-                        arguments = it.args.toString().ifBlank { "{}" },
-                        streamKey = it.streamKey,
-                    )
+                val arguments = candidate.args.toString().ifBlank { "{}" }
+                val argumentsAreObject = runCatching {
+                    json.parseToJsonElement(arguments) is kotlinx.serialization.json.JsonObject
+                }.getOrDefault(false)
+                // A damaged call becomes a stand-in the executor answers with this cause, so the
+                // model can correct itself instead of the whole run failing.
+                val cause = when {
+                    !callId.matches(safeWireToolCallId) -> "Provider returned an invalid tool call id"
+                    !seenIds.add(callId) -> "Provider returned duplicate tool call ids"
+                    !candidate.name.matches(safeWireToolName) ->
+                        "Provider ended before the tool name was complete"
+                    !argumentsAreObject ->
+                        "Provider ended before the tool arguments formed a complete JSON object"
+                    else -> null
                 }
+                if (cause == null) {
+                    StreamEvent.ToolCallRequest(
+                        id = callId,
+                        name = candidate.name,
+                        arguments = arguments,
+                        streamKey = candidate.streamKey,
+                    )
+                } else {
+                    malformedToolCallRequest(cause, candidate.name, arguments, candidate.streamKey)
+                }
+            }
             if (calls.size == 1) emitTracked(calls.first())
             else emitTracked(StreamEvent.ToolCallsRequest(calls))
         }

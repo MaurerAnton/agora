@@ -20,6 +20,7 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.ArrowDropDown
 import androidx.compose.material.icons.filled.Check
 import androidx.compose.material.icons.filled.Delete
+import androidx.compose.material.icons.filled.Psychology
 import androidx.compose.material.icons.filled.History
 import androidx.compose.material.icons.filled.MoreVert
 import androidx.compose.material3.AlertDialog
@@ -27,8 +28,6 @@ import androidx.compose.material3.Checkbox
 import androidx.compose.material3.DatePicker
 import androidx.compose.material3.DatePickerDefaults
 import androidx.compose.material3.DatePickerDialog
-import androidx.compose.material3.DropdownMenu
-import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
@@ -58,6 +57,8 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import com.newoether.agora.R
 import com.newoether.agora.data.CustomProviderConfig
+import com.newoether.agora.data.SystemPromptEntry
+import com.newoether.agora.ui.components.globalDefaultTitle
 import com.newoether.agora.data.modelAliasDisplayName
 import com.newoether.agora.data.providerDisplayName
 import com.newoether.agora.data.replaceCustomProviderIdsForDisplay
@@ -70,6 +71,9 @@ import com.newoether.agora.ui.settings.SettingsItem
 import java.text.DateFormatSymbols
 import java.util.Calendar
 import java.util.TimeZone
+import com.newoether.agora.ui.components.AgoraDropdownMenu
+import com.newoether.agora.ui.components.AgoraDropdownMenuItem
+import com.newoether.agora.ui.components.optionClickable
 
 internal fun daysInYearlyMonth(month: Int): Int = when (month) {
     2 -> 29 // A yearly cron may intentionally target leap day.
@@ -115,15 +119,14 @@ internal fun TaskMonthDayPickerDialog(
                         )
                         Icon(Icons.Default.ArrowDropDown, contentDescription = null)
                     }
-                    DropdownMenu(
+                    AgoraDropdownMenu(
                         expanded = showMonthMenu,
                         onDismissRequest = { showMonthMenu = false },
                         containerColor = MaterialTheme.colorScheme.surfaceContainer,
-                        shape = RoundedCornerShape(16.dp),
                     ) {
                         monthNames.forEachIndexed { index, monthName ->
                             val month = index + 1
-                            DropdownMenuItem(
+                            AgoraDropdownMenuItem(
                                 text = { Text(monthName) },
                                 leadingIcon = {
                                     if (month == selectedMonth) {
@@ -401,7 +404,7 @@ internal fun WeekdayDialog(
                 items(7) { dow ->
                     val checked = dow in working
                     SettingsItem(
-                        modifier = Modifier.clickable {
+                        modifier = Modifier.optionClickable {
                             working = if (checked) working - dow else working + dow
                         },
                         headlineContent = {
@@ -539,14 +542,13 @@ internal fun ExecutionRow(
                             contentDescription = stringResource(R.string.options),
                         )
                     }
-                    DropdownMenu(
+                    AgoraDropdownMenu(
                         expanded = menuOpen,
                         onDismissRequest = { menuOpen = false },
-                        shape = RoundedCornerShape(12.dp),
                         containerColor = MaterialTheme.colorScheme.surfaceContainer,
                         tonalElevation = 16.dp,
                     ) {
-                        DropdownMenuItem(
+                        AgoraDropdownMenuItem(
                             text = {
                                 Text(
                                     stringResource(R.string.delete),
@@ -617,7 +619,8 @@ internal fun ModelPickerDialog(
 @Composable
 private fun ChoiceRow(label: String, sub: String?, selected: Boolean, onClick: () -> Unit) {
     SettingsItem(
-        modifier = Modifier.clickable(onClick = onClick),
+        // Dialog options press inside the shared rounded option highlight, never a bare rectangle.
+        modifier = Modifier.optionClickable(onClick = onClick),
         headlineContent = {
             Text(label, fontWeight = if (selected) FontWeight.Bold else FontWeight.Normal)
         },
@@ -631,5 +634,31 @@ private fun ChoiceRow(label: String, sub: String?, selected: Boolean, onClick: (
             }
         },
         leadingContent = { RadioButton(selected = selected, onClick = onClick) },
+    )
+}
+
+/** Details-group row naming the saved system prompt a task runs with, worded like Chat's picker. */
+@Composable
+internal fun TaskSystemPromptRow(
+    selectedId: String?,
+    prompts: List<SystemPromptEntry>,
+    activeSystemPromptId: String?,
+    onClick: () -> Unit,
+) {
+    val selected = prompts.firstOrNull { it.id == selectedId }
+    SettingsItem(
+        modifier = Modifier.clickable(onClick = onClick),
+        headlineContent = { Text(stringResource(R.string.system_prompt)) },
+        supportingContent = {
+            Text(
+                selected?.title ?: stringResource(
+                    R.string.global_default_format,
+                    globalDefaultTitle(prompts, activeSystemPromptId),
+                )
+            )
+        },
+        leadingContent = {
+            Icon(Icons.Default.Psychology, null, tint = MaterialTheme.colorScheme.primary)
+        },
     )
 }

@@ -40,7 +40,7 @@ class ConversationComposerConcurrencyTest {
         val ownerActive = ConcurrentHashMap<String, AtomicInteger>()
         val maxOwner = ConcurrentHashMap<String, AtomicInteger>()
         val processor = mockk<AttachmentImportProcessor>()
-        coEvery { processor.process(any(), any()) } coAnswers {
+        coEvery { processor.process(any(), any(), any()) } coAnswers {
             val attachment = firstArg<SelectedAttachment>()
             val ownerId = attachment.localId.substringBefore('-')
             val global = globalActive.incrementAndGet()
@@ -92,7 +92,7 @@ class ConversationComposerConcurrencyTest {
         val gates = ids.associateWith { CompletableDeferred<Unit>() }
         val starts = ids.associateWith { CompletableDeferred<Unit>() }
         val processor = mockk<AttachmentImportProcessor>()
-        coEvery { processor.process(any(), any()) } coAnswers {
+        coEvery { processor.process(any(), any(), any()) } coAnswers {
             val attachment = firstArg<SelectedAttachment>()
             starts.getValue(attachment.localId).complete(Unit)
             gates.getValue(attachment.localId).await()
@@ -146,7 +146,7 @@ class ConversationComposerConcurrencyTest {
         val blockerStarted = CompletableDeferred<Unit>()
         val processedPdfPages = mutableListOf<Set<Int>?>()
         val processor = mockk<AttachmentImportProcessor>()
-        coEvery { processor.process(any(), any()) } coAnswers {
+        coEvery { processor.process(any(), any(), any()) } coAnswers {
             val attachment = firstArg<SelectedAttachment>()
             if (attachment.localId == "blocker") {
                 blockerStarted.complete(Unit)
@@ -178,7 +178,7 @@ class ConversationComposerConcurrencyTest {
         assertEquals(listOf(setOf(2)), synchronized(processedPdfPages) { processedPdfPages.toList() })
         assertEquals(setOf(2), fixture.persistence.attachment(OWNER_A, "pdf").selectedPages)
         coVerify(exactly = 1) {
-            processor.process(match { it.localId == "pdf" }, any())
+            processor.process(match { it.localId == "pdf" }, any(), any())
         }
         fixture.controller.release(OWNER_A)
     }
@@ -189,7 +189,7 @@ class ConversationComposerConcurrencyTest {
         val release = CompletableDeferred<Unit>()
         val cancelled = CompletableDeferred<Unit>()
         val processor = mockk<AttachmentImportProcessor>()
-        coEvery { processor.process(match { it.localId == "active" }, any()) } coAnswers {
+        coEvery { processor.process(match { it.localId == "active" }, any(), any()) } coAnswers {
             started.complete(Unit)
             try {
                 release.await()
@@ -230,7 +230,7 @@ class ConversationComposerConcurrencyTest {
         val processCalls = AtomicInteger()
         val allProcessingStarted = CompletableDeferred<Unit>()
         val processor = mockk<AttachmentImportProcessor>()
-        coEvery { processor.process(any(), any()) } coAnswers {
+        coEvery { processor.process(any(), any(), any()) } coAnswers {
             val callCount = processCalls.incrementAndGet()
             firstStarted.complete(Unit)
             if (callCount == 2) allProcessingStarted.complete(Unit)

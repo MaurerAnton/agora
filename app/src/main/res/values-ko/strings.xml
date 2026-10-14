@@ -1,4 +1,4 @@
-<resources>
+<?xml version="1.0" encoding="utf-8"?><resources>
     <string name="app_name">Agora</string>
     <string name="agora_responded">Agora가 응답했습니다</string>
 
@@ -79,44 +79,44 @@
     <string name="tool_done">완료</string>
     <string name="tool_context">도구</string>
     <!-- New tool display names (P0) -->
-    <string name="tool_list_conversations">List Conversations</string>
-    <string name="tool_read_conversation">Read Conversation</string>
-    <string name="tool_file_read">Read File</string>
-    <string name="tool_file_write">Write File</string>
-    <string name="tool_file_edit">Edit File</string>
-    <string name="tool_file_glob">Find Files</string>
-    <string name="tool_file_grep">Search Files</string>
+    <string name="tool_list_conversations">대화 목록 표시</string>
+    <string name="tool_read_conversation">대화 읽기</string>
+    <string name="tool_file_read">파일 읽기</string>
+    <string name="tool_file_write">파일 쓰기</string>
+    <string name="tool_file_edit">파일 편집</string>
+    <string name="tool_file_glob">파일 찾기</string>
+    <string name="tool_file_grep">파일 내용 검색</string>
     <!-- Tool in-progress states (doing) -->
-    <string name="tool_listing_conversations">Listing conversations…</string>
-    <string name="tool_reading_conversation">Reading conversation…</string>
-    <string name="tool_reading_file">Reading %1$s…</string>
-    <string name="tool_writing_file">Writing %1$s…</string>
-    <string name="tool_editing_file">Editing %1$s…</string>
-    <string name="tool_finding_files">Finding %1$s…</string>
-    <string name="tool_searching_file">Searching %1$s…</string>
-    <string name="tool_executing_shell">Executing: %1$s…</string>
-    <string name="tool_reading_memory">Reading %1$s…</string>
-    <string name="tool_saving_memory">Saving %1$s…</string>
-    <string name="tool_updating_memory">Updating %1$s…</string>
-    <string name="tool_removing_memory">Removing %1$s…</string>
-    <string name="tool_looking_up_memories">Looking up memories…</string>
-    <string name="tool_updating_active">Updating active memory…</string>
-    <string name="tool_listing_shells">Listing shells…</string>
-    <string name="tool_searching_for">Searching for \'%1$s\'…</string>
+    <string name="tool_listing_conversations">대화 나열 중…</string>
+    <string name="tool_reading_conversation">대화 읽는 중…</string>
+    <string name="tool_reading_file">%1$s 읽는 중…</string>
+    <string name="tool_writing_file">%1$s 쓰는 중…</string>
+    <string name="tool_editing_file">%1$s 편집 중…</string>
+    <string name="tool_finding_files">%1$s 찾는 중…</string>
+    <string name="tool_searching_file">%1$s 검색 중…</string>
+    <string name="tool_executing_shell">실행 중: %1$s…</string>
+    <string name="tool_reading_memory">%1$s 읽는 중…</string>
+    <string name="tool_saving_memory">%1$s 저장 중…</string>
+    <string name="tool_updating_memory">%1$s 업데이트 중…</string>
+    <string name="tool_removing_memory">%1$s 삭제 중…</string>
+    <string name="tool_looking_up_memories">메모 검색 중…</string>
+    <string name="tool_updating_active">활성 메모리 업데이트 중…</string>
+    <string name="tool_listing_shells">터미널 목록 중…</string>
+    <string name="tool_searching_for">“%1$s” 검색 중…</string>
     <!-- Tool done states (P0 + P1) -->
-    <string name="tool_listed_conversations">Listed %1$d conversations</string>
-    <string name="tool_listed_no_conversations">No conversations found</string>
-    <string name="tool_read_conversation_done">Read conversation: %1$s</string>
-    <string name="tool_read_file_done">Read %1$s</string>
-    <string name="tool_wrote_file">Wrote %1$s</string>
-    <string name="tool_edited_file">Edited %1$s</string>
-    <string name="tool_found_files">Found %1$d files</string>
-    <string name="tool_found_no_files">No files matched</string>
-    <string name="tool_searched_file">Found %1$d matches</string>
-    <string name="tool_executed_shell">Executed: %1$s (%2$d bytes)</string>
-    <string name="tool_executed_no_output">Executed: %1$s (no output)</string>
-    <string name="tool_read_file_failed">Read file failed</string>
-    <string name="crash_log_label">Crash Log</string>
+    <string name="tool_listed_conversations">대화 %1$d개 나열됨</string>
+    <string name="tool_listed_no_conversations">대화가 없습니다</string>
+    <string name="tool_read_conversation_done">대화 읽음: %1$s</string>
+    <string name="tool_read_file_done">%1$s 읽음</string>
+    <string name="tool_wrote_file">%1$s 쓰기 완료</string>
+    <string name="tool_edited_file">%1$s 편집됨</string>
+    <string name="tool_found_files">파일 %1$d개 찾음</string>
+    <string name="tool_found_no_files">일치하는 파일 없음</string>
+    <string name="tool_searched_file">일치 %1$d개 발견</string>
+    <string name="tool_executed_shell">실행됨: %1$s(%2$d바이트)</string>
+    <string name="tool_executed_no_output">실행됨: %1$s(출력 없음)</string>
+    <string name="tool_read_file_failed">파일 읽기 실패</string>
+    <string name="crash_log_label">충돌 로그</string>
     <string name="message_info">메시지 정보</string>
     <string name="time_with_label">시간: %1$s</string>
     <string name="model_with_label">모델: %1$s</string>
@@ -172,6 +172,9 @@
 
     <!-- Drawer -->
     <string name="conversations">대화</string>
+    <string name="pinned_conversations">고정됨</string>
+    <string name="pin_conversation">고정</string>
+    <string name="unpin_conversation">고정 해제</string>
     <string name="conversation_unread_generation">읽지 않은 생성 응답</string>
     <string name="new_chat">새 채팅</string>
 
@@ -336,6 +339,9 @@
     <string name="about_contribute">기여하기</string>
     <string name="about_privacy_policy">개인정보 처리방침</string>
     <string name="about_source_code">소스 코드</string>
+    <string name="about_license">라이선스</string>
+    <string name="about_license_desc">GNU GPL-3.0</string>
+    <string name="about_license_history">v2.1.0까지의 버전은 MIT 라이선스로 배포되었습니다.</string>
     <string name="about_version">버전</string>
     <string name="about_rating">앱 평가하기</string>
     <string name="about_rating_desc">이 프로젝트는 한 사람이 개발했습니다. 여러분의 피드백에 진심으로 감사드립니다.</string>
@@ -456,7 +462,6 @@
     <string name="pdf_selected">선택됨</string>
 
     <!-- Caching & Sync -->
-    <string name="embedding_model_caching">임베딩 모델 \"%1$s\"을(를) 캐시하는 중…</string>
     <string name="messages_not_cached">%2$d개 중 %1$d개의 메시지가 캐시되지 않았습니다.</string>
     <string name="cache_now">지금 캐시</string>
     <string name="no_messages_to_cache">캐시할 메시지가 없습니다.</string>
@@ -513,8 +518,8 @@
     <string name="onboarding_no_models">로드된 모델이 없습니다.</string>
     <string name="onboarding_invalid_gguf_title">잘못된 GGUF 파일</string>
     <string name="onboarding_invalid_gguf_desc">선택한 파일은 유효한 GGUF 모델이 아닌 것 같습니다.</string>
-    <string name="onboarding_hide_key">키 숨기기</string>
-    <string name="onboarding_show_key">키 표시</string>
+    <string name="secret_hide">값 숨기기</string>
+    <string name="secret_show">값 표시</string>
     <!-- ── Auto Backup ── -->
     <string name="auto_backup_title">자동 백업</string>
     <string name="auto_backup_subtitle">일정에 따라 데이터 자동 내보내기</string>
@@ -560,6 +565,19 @@
     <string name="shell_confirm_deny">거부</string>
     <string name="shell_confirm_setting">원격 셸 작업 확인</string>
     <string name="shell_confirm_setting_desc">어시스턴트가 원격 SSH/Conch 서버에서 명령을 실행하거나 파일을 쓰기 전에 확인</string>
+    <string name="shell_confirm_notification_channel">명령 승인</string>
+    <string name="shell_confirm_notification_desc">Agora가 백그라운드에 있을 때 원격 명령을 허용하거나 거부하도록 묻습니다</string>
+    <string name="ask_user_title">어시스턴트의 질문</string>
+    <string name="ask_user_send">보내기</string>
+    <string name="ask_user_next">다음</string>
+    <string name="interaction_ask_user">질문</string>
+    <string name="interaction_approval">승인</string>
+    <string name="interaction_minimize">최소화</string>
+    <string name="interaction_expand">펼치기</string>
+    <string name="ask_user_custom_answer">직접 답변 입력</string>
+    <string name="ask_user_skip">건너뛰기</string>
+    <string name="ask_user_notification_channel">Agora의 질문</string>
+    <string name="ask_user_notification_desc">채팅 화면이 열려 있지 않을 때 어시스턴트의 질문에 답하도록 요청합니다</string>
 
     <!-- Crash reporting -->
     <string name="crash_title">Agora가 예기치 않게 종료되었습니다</string>
@@ -579,6 +597,7 @@
     <string name="conversation_search_hint">검색…</string>
     <string name="conversation_share">공유</string>
     <string name="conversation_share_failed">대화를 공유할 수 없습니다: %1$s</string>
+    <string name="conversation_deleted_elsewhere">이 대화는 다른 기기에서 삭제되었습니다.</string>
     <string name="custom_provider_protocol_label">API 형식</string>
     <string name="file_path_unknown">알 수 없는 파일</string>
     <string name="import_file_too_large">파일이 너무 큽니다(%1$d MB). 더 작은 내보내기 파일을 선택하세요.</string>
@@ -633,6 +652,8 @@
     <string name="context_compact_model">압축 모델</string>
     <string name="context_compact_prompt">압축 프롬프트</string>
     <string name="context_compact_prompt_desc">요약 지침</string>
+    <string name="context_compact_preserve_system">시스템 프롬프트 유지</string>
+    <string name="context_compact_preserve_system_desc">압축 시 대화의 시스템 프롬프트를 쓰고, 압축 프롬프트는 요약 요청 맨 앞의 지시가 됩니다</string>
     <string name="context_compact_select_model">압축 모델 선택</string>
     <string name="context_compact_threshold">자동 압축 임계값</string>
     <string name="context_compact_threshold_desc">예상 컨텍스트가 선택한 창의 이 비율에 도달하면 압축합니다</string>
@@ -648,7 +669,13 @@
     <string name="thinking_segment_display_card">카드</string>
     <string name="thinking_segment_display_bottom_sheet">하단 시트</string>
     <string name="thinking_segments_title">사고 세그먼트</string>
-    <string name="context_usage_messages">약 %1$s / %2$s tokens</string>
+    <string name="context_usage_messages">약 %1$s / %2$s tokens</string>
+    <string name="context_part_system">시스템 프롬프트</string>
+    <string name="context_part_tools">도구</string>
+    <string name="context_part_messages">메시지</string>
+    <string name="context_part_free">여유</string>
+    <string name="context_part_reserved">예약됨</string>
+    <string name="context_part_used">사용됨</string>
     <string name="context_compact_streaming">컨텍스트 압축 중…</string>
     <string name="context_compact_error">압축 오류</string>
     <string name="context_compact_stopped">압축 중지됨</string>
@@ -718,6 +745,7 @@
     <string name="generation_error_network">네트워크 오류: %1$s</string>
     <string name="generation_error_network_http">네트워크 오류(%1$d): %2$s</string>
     <string name="generation_error_sse_parse">서버 응답을 읽을 수 없습니다.</string>
+    <string name="generation_error_malformed_tool_call">모델이 반환한 도구 호출을 사용할 수 없습니다: %1$s</string>
     <string name="generation_error_incomplete_stream">%1$s에서 응답을 일찍 종료했습니다. 완료 신호가 없어 답변이 완전하지 않습니다.</string>
     <string name="generation_error_incomplete_tool_stream">%1$s에서 도구 호출을 작성하는 중 응답을 종료했습니다. 완료 신호가 없어 답변이 완전하지 않습니다.</string>
     <string name="generation_error_incomplete_stream_reason">%1$s에서 완료 신호 없이 중지 이유 %2$s 이후 응답을 종료했습니다.</string>
@@ -775,4 +803,14 @@
     <string name="thought_for_a_while">잠시 생각했습니다</string>
     <string name="thought_for_a_while_called_tools">잠시 생각하고 도구 %1$d개를 호출했습니다</string>
     <string name="remote_device">기기</string>
+    <!-- Upstream attribution copy, UTF-8 Base64 for lightweight bulk-rename resistance. -->
+    <string name="rating_origin_credit_b64">QWdvcmEgwrcg6rCc67Cc7J6QOiBuZXdvLWV0aGVy</string>
+    <string name="rating_origin_project_b64">7JuQ67O4IO2UhOuhnOygne2KuDogZ2l0aHViLmNvbS9uZXdvLWV0aGVyL0Fnb3Jh</string>
+    <string name="rating_origin_modified_title_b64">7IiY7KCV65CcIOuyhOyghA==</string>
+    <string name="rating_origin_modified_body_b64">7J20IOyVseydgCDsm5Drs7gg7ZSE66Gc7KCd7Yq47JmAIOuLpOuluCDtjKjtgqTsp4Ag7J2066aE7J2EIOyCrOyaqe2VmOupsCDri6Tsi5wg7Yyo7YKk7KeV65CY7JeI6rGw64KYIOyImOygleuQmOyXiOyKteuLiOuLpC4g7JuQ67O4IO2UhOuhnOygne2KuOuKlCBuZXdvLWV0aGVy6rCAIOqwnOuwnO2VnCBBZ29yYeyeheuLiOuLpC4g7J20IOuyhOyghOydmCDrs4Dqsr0g7IKs7ZWt7J2AIOuwsO2PrOyekOydmCDssYXsnoTsnbTrqbAg7JuQ7J6R7J6Q66W8IOuMgO2RnO2VmOyngCDslYrsirXri4jri6Qu</string>
+    <string name="rating_origin_view_project_b64">7JuQ67O4IO2UhOuhnOygne2KuCDrs7TquLA=</string>
+    <string name="message_source_task">작업</string>
+    <string name="message_source_loop">루프</string>
+    <string name="message_source_ask_user">질문</string>
+    <string name="message_source_unanswered">답변 없음</string>
 </resources>

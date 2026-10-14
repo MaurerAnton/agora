@@ -89,7 +89,6 @@ fun SettingsGenerationPage(viewModel: ChatViewModel, onBack: () -> Unit) {
                                 onBudgetTokensChange = { viewModel.settings.setThinkingBudgetTokens(it) },
                                 modifier = Modifier.padding(horizontal = 16.dp, vertical = 16.dp),
                                 showHeader = false,
-                                providerName = null,
                                 animateSections = true
                             )
                         }
@@ -167,7 +166,8 @@ fun SettingsGenerationPage(viewModel: ChatViewModel, onBack: () -> Unit) {
                             )
                         },
                         {
-                            val maxTokensPresets = intArrayOf(256, 512, 1024, 2048, 4096, 8192, 16384, 32768)
+                            val maxTokensPresets =
+                                intArrayOf(256, 512, 1024, 2048, 4096, 8192, 16384, 32768, 65536, 131072)
                             GenParamSlider(
                                 label = stringResource(R.string.gen_max_tokens),
                                 desc = stringResource(R.string.gen_max_tokens_desc),

@@ -3,6 +3,7 @@ package com.newoether.agora.util
 import androidx.compose.foundation.text.selection.DisableSelection
 import androidx.compose.foundation.text.selection.SelectionContainer
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.movableContentOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberUpdatedState
@@ -11,7 +12,9 @@ import androidx.compose.ui.geometry.Rect
 import androidx.compose.ui.layout.LayoutCoordinates
 import androidx.compose.ui.node.ModifierNodeElement
 import androidx.compose.ui.platform.InspectorInfo
+import androidx.compose.ui.platform.LocalClipboard
 import androidx.compose.ui.relocation.BringIntoViewModifierNode
+import com.newoether.agora.ui.components.FormulaSourceClipboard
 
 private class NoOpBringIntoViewNode : Modifier.Node(), BringIntoViewModifierNode {
     override suspend fun bringIntoView(
@@ -50,11 +53,17 @@ fun NoAutoScrollSelectionContainer(
 ) {
     val latestContent = rememberUpdatedState(content)
     val movableContent = remember { movableContentOf { latestContent.value() } }
-    SelectionContainer(modifier = modifier.noOpBringIntoView()) {
-        if (enabled) {
-            movableContent()
-        } else {
-            DisableSelection(content = movableContent)
+    // Copying from a selection must give the original message text, including line breaks
+    // inside formula sources (see FormulaAlternateText.kt).
+    val baseClipboard = LocalClipboard.current
+    val clipboard = remember(baseClipboard) { FormulaSourceClipboard(baseClipboard) }
+    CompositionLocalProvider(LocalClipboard provides clipboard) {
+        SelectionContainer(modifier = modifier.noOpBringIntoView()) {
+            if (enabled) {
+                movableContent()
+            } else {
+                DisableSelection(content = movableContent)
+            }
         }
     }
 }

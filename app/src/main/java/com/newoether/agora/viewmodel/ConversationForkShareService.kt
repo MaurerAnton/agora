@@ -415,10 +415,16 @@ private fun attachmentSummary(message: MessageEntity): String? {
 internal fun remapForkMessageId(
     sourceMessageId: String,
     generatedId: String = UUID.randomUUID().toString(),
-): String = when {
-    sourceMessageId.startsWith(Constants.TOOL_MSG_PREFIX) ->
-        "${Constants.TOOL_MSG_PREFIX}$generatedId"
-    sourceMessageId.startsWith(Constants.RESULT_MSG_PREFIX) ->
-        "${Constants.RESULT_MSG_PREFIX}$generatedId"
-    else -> generatedId
+): String {
+    // Row kinds are encoded in the id prefix (tool calls, tool results, the compact summary that
+    // marks the context boundary). A fork must keep the kind, or e.g. the forked conversation
+    // loses its compact boundary and every context load reads the whole history.
+    val prefix = FORK_PRESERVED_MESSAGE_ID_PREFIXES.firstOrNull(sourceMessageId::startsWith).orEmpty()
+    return "$prefix$generatedId"
 }
+
+private val FORK_PRESERVED_MESSAGE_ID_PREFIXES = listOf(
+    Constants.TOOL_MSG_PREFIX,
+    Constants.RESULT_MSG_PREFIX,
+    Constants.COMPACT_MSG_PREFIX,
+)

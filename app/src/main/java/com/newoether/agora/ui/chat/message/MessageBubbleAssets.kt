@@ -9,6 +9,7 @@ import androidx.compose.foundation.layout.widthIn
 import androidx.compose.material3.LocalContentColor
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.Stable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -20,6 +21,7 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.toArgb
 import androidx.compose.ui.layout.LayoutCoordinates
 import androidx.compose.ui.layout.onGloballyPositioned
+import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.semantics.CollectionItemInfo
 import androidx.compose.ui.semantics.collectionItemInfo
 import androidx.compose.ui.semantics.heading
@@ -34,11 +36,13 @@ import androidx.compose.ui.text.style.LineHeightStyle
 import androidx.compose.ui.text.style.TextDecoration
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import com.newoether.agora.ui.components.LatexImageTransformer
-import com.newoether.agora.ui.components.isDisplayLatexLink
+import com.newoether.agora.ui.components.latexSourceForLink
 import com.newoether.agora.ui.chat.caseInsensitiveMatchRanges
 import com.newoether.agora.ui.chat.visibleMarkdownMatchRanges
 import com.newoether.agora.ui.theme.ChatType
+import com.mikepenz.markdown.compose.LocalMarkdownColors
 import com.mikepenz.markdown.compose.LocalMarkdownDimens
 import com.mikepenz.markdown.compose.LocalMarkdownPadding
 import com.mikepenz.markdown.m3.markdownColor
@@ -137,17 +141,6 @@ internal fun ASTNode.needsListParagraphSpacer(): Boolean {
         .any { it.type == MarkdownElementTypes.PARAGRAPH }
 }
 
-internal fun isScrollableDisplayLatexImage(content: String, node: ASTNode): Boolean {
-    val linkNode = node.findDescendantOfType(MarkdownElementTypes.LINK_DESTINATION) ?: return false
-    val link = content.substring(linkNode.startOffset, linkNode.endOffset)
-    return isDisplayLatexLink(link)
-}
-
-private fun ASTNode.findDescendantOfType(type: org.intellij.markdown.IElementType): ASTNode? {
-    if (this.type == type) return this
-    return children.firstNotNullOfOrNull { child -> child.findDescendantOfType(type) }
-}
-
 @Composable
 internal fun rememberChatMarkdownAssets(
     textColor: Color,
@@ -155,6 +148,7 @@ internal fun rememberChatMarkdownAssets(
     inlineImages: Map<String, com.newoether.agora.model.MarkdownImage> = emptyMap(),
     onMediaClick: (List<String>, Int) -> Unit = { _, _ -> },
     preparedMarkdown: Map<String, com.mikepenz.markdown.model.State.Success> = emptyMap(),
+    autoWrapCodeBlocks: Boolean = true,
 ): ChatMarkdownAssets {
     val linkColor = MaterialTheme.colorScheme.primary
     val linkTextStyles = remember(linkColor) { chatLinkTextStyles(linkColor) }
@@ -222,6 +216,7 @@ internal fun rememberChatMarkdownAssets(
     val customMarkdownComponents = remember(
         searchHighlightColor,
         activeSearchHighlightColor,
+        autoWrapCodeBlocks,
     ) {
         lateinit var components: MarkdownComponents
         components = markdownComponents(
@@ -238,6 +233,21 @@ internal fun rememberChatMarkdownAssets(
             },
             inlineImage = { model -> ChatMarkdownInlineImage(model) },
             paragraph = { model ->
+                val displayLatexLink = displayLatexParagraphLink(model.content, model.node)
+                val displayLatexSource = displayLatexLink?.let(::latexSourceForLink)
+                if (displayLatexLink != null && displayLatexSource != null) {
+                    DisplayLatexBlock(
+                        link = displayLatexLink,
+                        source = displayLatexSource,
+                        style = model.typography.paragraph,
+                        modifier = if (model.node.needsListParagraphSpacer()) {
+                            Modifier.padding(top = LocalMarkdownPadding.current.block)
+                        } else {
+                            Modifier
+                        },
+                    )
+                    return@markdownComponents
+                }
                 SearchHighlightedMarkdownText(
                     model = model,
                     style = model.typography.paragraph,
@@ -249,6 +259,7 @@ internal fun rememberChatMarkdownAssets(
                     spec = LocalSearchHighlightSpec.current,
                     highlightColor = searchHighlightColor,
                     activeHighlightColor = activeSearchHighlightColor,
+                    promoteWideLatex = true,
                 )
             },
             heading1 = { model ->
@@ -338,6 +349,7 @@ internal fun rememberChatMarkdownAssets(
                     spec = LocalSearchHighlightSpec.current,
                     highlightColor = searchHighlightColor,
                     activeHighlightColor = activeSearchHighlightColor,
+                    autoWrap = autoWrapCodeBlocks,
                 )
             },
             codeBlock = { model ->
@@ -347,6 +359,7 @@ internal fun rememberChatMarkdownAssets(
                     spec = LocalSearchHighlightSpec.current,
                     highlightColor = searchHighlightColor,
                     activeHighlightColor = activeSearchHighlightColor,
+                    autoWrap = autoWrapCodeBlocks,
                 )
             },
             table = { model ->
@@ -389,9 +402,10 @@ internal fun rememberChatMarkdownAssets(
     // identical instead of sending thought/code tails through an unfaded fallback renderer.
     val thoughtMarkdownComponents = customMarkdownComponents
 
-    val latexImageTransformer = remember(textColor, inlineImages, onMediaClick) {
+    val latexTextSize = with(LocalDensity.current) { 20.sp.toPx() }
+    val latexImageTransformer = remember(textColor, inlineImages, onMediaClick, latexTextSize) {
         LatexImageTransformer(
-            textSize = 56f,
+            textSize = latexTextSize,
             color = textColor.toArgb(),
             inlineImages = inlineImages,
             onMediaClick = onMediaClick,
@@ -413,7 +427,7 @@ internal fun rememberChatMarkdownAssets(
             typography = customTypography,
             padding = customMarkdownPadding,
             components = customMarkdownComponents,
-            annotator = literalHtmlMarkdownAnnotator,
+            annotator = chatMarkdownAnnotator,
             imageTransformer = latexImageTransformer,
             flavour = markdownFlavour,
             plainTextStyle = markdownBodyStyle,
@@ -436,7 +450,7 @@ internal fun rememberChatMarkdownAssets(
             typography = thoughtTypography,
             padding = thoughtMarkdownPadding,
             components = thoughtMarkdownComponents,
-            annotator = literalHtmlMarkdownAnnotator,
+            annotator = chatMarkdownAnnotator,
             imageTransformer = latexImageTransformer,
             flavour = markdownFlavour,
             plainTextStyle = thoughtMarkdownBodyStyle,
@@ -473,8 +487,24 @@ internal fun rememberChatMarkdownAssets(
  * This renders raw code directly rather than synthesizing a Markdown fence, so commands that
  * contain backticks can never terminate or corrupt the surrounding block.
  */
+/**
+ * MarkdownTable draws the GFM delimiter row as a MarkdownDivider using dividerColor. A 0dp
+ * thickness would still render as a hairline, so the divider is made transparent instead.
+ * Table cells only hold inline content, so no other divider lives inside this scope.
+ */
 @Composable
-private fun OverflowFriendlyMarkdownTable(model: MarkdownComponentModel) {
+private fun WithoutTableHeaderDivider(content: @Composable () -> Unit) {
+    val base = LocalMarkdownColors.current
+    val colors = remember(base) {
+        object : MarkdownColors by base {
+            override val dividerColor: Color = Color.Transparent
+        }
+    }
+    CompositionLocalProvider(LocalMarkdownColors provides colors, content = content)
+}
+
+@Composable
+private fun OverflowFriendlyMarkdownTable(model: MarkdownComponentModel) = WithoutTableHeaderDivider {
     MarkdownTable(
         content = model.content,
         node = model.node,
@@ -508,7 +538,7 @@ internal fun SearchHighlightedMarkdownTable(
     spec: SearchHighlightSpec? = null,
     highlightColor: Color = SearchHighlightBackground,
     activeHighlightColor: Color = ActiveSearchHighlightBackground,
-) {
+) = WithoutTableHeaderDivider {
     MarkdownTable(
         content = model.content,
         node = model.node,
@@ -605,6 +635,7 @@ internal fun SearchHighlightedMarkdownText(
     spec: SearchHighlightSpec? = null,
     highlightColor: Color = SearchHighlightBackground,
     activeHighlightColor: Color = ActiveSearchHighlightBackground,
+    promoteWideLatex: Boolean = false,
 ) {
     val settings = annotatorSettings()
     val citationTokens = LocalCitationInlineTokens.current
@@ -635,12 +666,13 @@ internal fun SearchHighlightedMarkdownText(
             color = fadeColor,
             fade = nodeFade,
         )
-        AnimatedMarkdownText(
+        LatexAwareMarkdownText(
             content = renderedText,
             node = model.node,
             modifier = modifier,
             style = style,
             sourceContent = model.content,
+            promoteWideLatex = promoteWideLatex,
         )
         return
     }
@@ -688,7 +720,7 @@ internal fun SearchHighlightedMarkdownText(
         layoutResult = layoutResult,
         coordinates = coordinates,
     )
-    AnimatedMarkdownText(
+    LatexAwareMarkdownText(
         content = renderedText,
         node = model.node,
         modifier = modifier
@@ -696,6 +728,7 @@ internal fun SearchHighlightedMarkdownText(
         style = style,
         onTextLayout = { layoutResult = it },
         sourceContent = model.content,
+        promoteWideLatex = promoteWideLatex,
     )
 }
 

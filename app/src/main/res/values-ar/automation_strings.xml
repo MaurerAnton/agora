@@ -12,7 +12,7 @@
     <string name="task_run_now">تشغيل الآن</string>
     <string name="task_delete">حذف المهمة</string>
     <string name="task_delete_confirm">حذف «%1$s» وكل سجل تنفيذها؟</string>
-    <string name="import_conversation_graph_counts">المحادثات (%1$d) · المهام (%2$d) · الحلقات (%3$d)</string>
+    <string name="import_conversation_graph_counts">المحادثات (%1$d) · المهام (%2$d)</string>
     <string name="task_enabled">التشغيل وفق جدول</string>
     <string name="task_enabled_desc">عند إيقافه، لا تُشغَّل المهمة إلا عند النقر على «تشغيل الآن».</string>
     <string name="task_enabled_needs_schedule">اختر جدولًا أولًا.</string>
@@ -58,6 +58,7 @@
     <string name="task_status_unknown">قيد الانتظار</string>
     <string name="task_running_notification">جارٍ تشغيل المهمة المجدولة…</string>
     <string name="loop_running_notification">جارٍ تشغيل حلقة المحادثة…</string>
+    <string name="auto_backup_running_notification">جارٍ النسخ الاحتياطي لبياناتك…</string>
     <string name="loop_running">الحلقة قيد التشغيل…</string>
     <string name="loop_next_in">التالي خلال %1$s</string>
     <string name="loop_cycle">الدورة %1$d/%2$d</string>

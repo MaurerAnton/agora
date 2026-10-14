@@ -145,7 +145,6 @@ internal fun ImportPreviewDialog(
                                 R.string.import_conversation_graph_counts,
                                 preview.conversationCount,
                                 preview.taskCount,
-                                preview.loopCount,
                             ),
                             convStrategy, { convStrategy = it })
                     }

@@ -172,7 +172,7 @@ class NativeBackupArchiveTest {
     }
 
     @Test
-    fun rejectsCorruptStreamedConversationCrcAndDeletesTemporaryArchive() {
+    fun rejectsCorruptStreamedConversationCrcWhenItIsRead() {
         val file = rawZip(
             "bad-conversation-crc.zip",
             listOf(
@@ -184,7 +184,21 @@ class NativeBackupArchiveTest {
             ),
         )
 
-        assertThrows(IOException::class.java) { NativeBackupArchive.open(file) }
+        // Opening only reads the directory, so a preview stays cheap; the damage shows up once the
+        // payload is read to its end.
+        NativeBackupArchive.open(file).use { archive ->
+            assertThrows(IOException::class.java) {
+                archive.stream(NativeBackupFormat.CONVERSATIONS_ENTRY)!!.use { it.readBytes() }
+            }
+            assertThrows(IOException::class.java) {
+                archive.stream(NativeBackupFormat.CONVERSATIONS_ENTRY)!!.use {
+                    it.read()
+                    it.readToEnd()
+                }
+            }
+            // Closing after a partial read only closes, so an aborted import does not read the rest.
+            archive.stream(NativeBackupFormat.CONVERSATIONS_ENTRY)!!.use { it.read() }
+        }
         assertFalse(file.exists())
     }
 
@@ -199,6 +213,38 @@ class NativeBackupArchiveTest {
         assertFalse(file.exists())
     }
 
+    @Test
+    fun v5PreflightCountsSpooledConversationData() {
+        val file = rawZip(
+            "spool-space.zip",
+            listOf(
+                RawEntry(NativeBackupFormat.conversationEntry("one"), ByteArray(10)),
+                RawEntry(NativeBackupFormat.TASKS_ENTRY, ByteArray(4)),
+                RawEntry("media/images/item", ByteArray(6)),
+            ),
+        )
+        NativeBackupArchive.open(file).use { archive ->
+            assertEquals(
+                20L,
+                archive.preflightImportResources(
+                    conversationsSelected = true,
+                    settingsSelected = false,
+                    archiveVersion = NativeBackupFormat.CURRENT_VERSION,
+                    destinationRoot = temporaryFolder.root,
+                    availableBytes = { 20L },
+                ),
+            )
+            assertThrows(IOException::class.java) {
+                archive.preflightImportResources(
+                    conversationsSelected = true,
+                    settingsSelected = false,
+                    archiveVersion = NativeBackupFormat.CURRENT_VERSION,
+                    destinationRoot = temporaryFolder.root,
+                    availableBytes = { 19L },
+                )
+            }
+        }
+    }
     @Test
     fun selectedResourcePreflightRejectsInsufficientSpace() {
         val file = rawZip(
@@ -288,13 +334,25 @@ class NativeBackupArchiveTest {
         ).replace("\r\n", "\n")
         val importBody = importer.substringAfter("suspend fun import(")
         val preflight = importBody.indexOf("opened.preflightImportResources(")
-        val promptMutation = importBody.indexOf("importSystemPrompts(opened, promptsDecision)")
-        val pendingReplay = importBody.indexOf("conversationSettingsTransfers.completePendingImport()")
-        val mediaRestore = importBody.indexOf("conversationMediaRestorer.restoreConversationMedia(opened)")
+        val staging = importBody.indexOf("stageConversationGraph(opened,")
+        val promptMutation = importBody.indexOf("settingsManager.saveSystemPrompts(promptPlan.prompts)")
+        val graphMutation = importBody.indexOf("conversationGraphImporter.importConversationGraph(")
         assertTrue(preflight >= 0)
-        assertTrue(promptMutation > preflight)
-        assertTrue(pendingReplay > preflight)
-        assertTrue(mediaRestore > preflight)
+        // The whole conversation graph is staged and verified before the first write.
+        assertTrue(staging > preflight)
+        assertTrue(promptMutation > staging)
+        assertTrue(graphMutation > promptMutation)
+        val stage = importer.substringAfter("private suspend fun stageConversationGraph(")
+            .substringBefore("suspend fun import(")
+        assertTrue(stage.contains("conversationSettingsTransfers.completePendingImport()"))
+        assertTrue(stage.contains("conversationMediaRestorer.restoreConversationMedia(archive)"))
+        assertTrue(stage.contains("readConversationGraphHeaders("))
+        val preflightBody = sourceFile(
+            "app/src/main/java/com/newoether/agora/data/NativeBackupArchive.kt",
+        ).replace("\r\n", "\n").substringAfter("fun preflightImportResources(")
+            .substringBefore("fun copyTo(")
+        // Resource contents are verified once, by the checked copy, not re-read in preflight.
+        assertFalse(preflightBody.contains("getInputStream"))
 
         val fontRestore = importer.substringAfter("private fun restoreCustomFont(")
             .substringBefore("suspend fun import(")

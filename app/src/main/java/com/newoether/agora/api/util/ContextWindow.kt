@@ -1,5 +1,8 @@
 package com.newoether.agora.api.util
 
+import com.newoether.agora.api.util.tokens.ContextCostModel
+import com.newoether.agora.api.util.tokens.CostModelContextEstimator
+import com.newoether.agora.api.util.tokens.FixedContextComposition
 import com.newoether.agora.model.ChatMessage
 import com.newoether.agora.model.Participant
 import com.newoether.agora.model.isSuccessfulContextCompact
@@ -82,28 +85,45 @@ data class ContextWindowUsage(
     val tokenBudget: Int,
     val logicalMessageCount: Int,
     val hasCompactBoundary: Boolean,
+    val systemPromptTokens: Int = 0,
+    val toolTokens: Int = 0,
 ) {
     val progress: Float
         get() = if (tokenBudget <= 0) 0f else
             (estimatedTokenCount.toFloat() / tokenBudget).coerceIn(0f, 1f)
+
+    /**
+     * What the transcript itself costs: the estimate minus the fixed prompt and tool definitions.
+     * Derived instead of stored so the three parts always add up to [estimatedTokenCount].
+     */
+    val messageTokens: Int
+        get() = (estimatedTokenCount - systemPromptTokens - toolTokens).coerceAtLeast(0)
 }
 
 fun contextWindowUsage(
     messages: List<ChatMessage>,
     tokenBudget: Int,
     fixedTokenCost: Int = 0,
+    includeAssistantReasoning: Boolean = false,
+    fixedComposition: FixedContextComposition? = null,
+    costs: ContextCostModel = ContextCostModel.Default,
 ): ContextWindowUsage {
     val safeBudget = tokenBudget.coerceAtLeast(1)
     val canonical = canonicalContextMessages(messages)
     return ContextWindowUsage(
         estimatedTokenCount = (
-            ContextTokenEstimator.estimate(canonical).toLong() +
+            CostModelContextEstimator(costs).estimate(
+                canonical,
+                includeAssistantReasoning = includeAssistantReasoning,
+            ).toLong() +
                 fixedTokenCost.coerceAtLeast(0).toLong()
             ).coerceAtMost(Int.MAX_VALUE.toLong()).toInt(),
         tokenBudget = safeBudget,
         logicalMessageCount = splitLogicalContext(canonical, retainLogicalMessages = 0)
             .logicalMessageCount,
         hasCompactBoundary = messages.any(ChatMessage::isSuccessfulContextCompact),
+        systemPromptTokens = fixedComposition?.systemPromptTokens ?: 0,
+        toolTokens = fixedComposition?.toolTokens ?: 0,
     )
 }
 
@@ -112,11 +132,18 @@ fun contextWindowRetainedMessageIds(
     messages: List<ChatMessage>,
     tokenBudget: Int,
     fixedTokenCost: Int = 0,
+    includeAssistantReasoning: Boolean = false,
+    costs: ContextCostModel = ContextCostModel.Default,
 ): Set<String> {
     if (messages.isEmpty()) return emptySet()
     val compacted = applyNearestContextCompact(messages)
     val messageBudget = (tokenBudget - fixedTokenCost.coerceAtLeast(0)).coerceAtLeast(1)
-    val retained = limitContext(canonicalContextMessages(messages), messageBudget)
+    val retained = limitContext(
+        canonicalContextMessages(messages),
+        messageBudget,
+        includeAssistantReasoning = includeAssistantReasoning,
+        costs = costs,
+    )
     val firstRetainedId = retained.firstOrNull()?.id ?: return emptySet()
     val sourceAnchorId = firstRetainedId.removePrefix("context_summary_")
     val originalSourceIndex = messages.indexOfFirst { it.id == sourceAnchorId }

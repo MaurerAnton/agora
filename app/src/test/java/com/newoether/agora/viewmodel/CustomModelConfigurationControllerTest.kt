@@ -1,4 +1,5 @@
 package com.newoether.agora.viewmodel
+import com.newoether.agora.data.local.ChatDao
 
 import com.newoether.agora.data.repository.ConversationRepository
 import com.newoether.agora.data.repository.SettingsRepository
@@ -23,8 +24,8 @@ class CustomModelConfigurationControllerTest {
     fun `model replacement migrates settings then conversations before updating active projection`() =
         runTest {
             val settings = settings(setOf("Old:model"))
-            val conversations = mockk<ConversationRepository>()
-            coEvery { conversations.replaceConfiguredModelReferences(any(), any()) } returns Unit
+            val dao = mockk<ChatDao>(relaxed = true)
+            val conversations = ConversationRepository(dao, null)
             val callbacks = mutableListOf<Pair<String, String?>>()
             val controller = controller(
                 conversations = conversations,
@@ -43,7 +44,7 @@ class CustomModelConfigurationControllerTest {
 
             coVerifyOrder {
                 settings.replaceCustomModel("Old:model", "New:model-v2", "Alias", false)
-                conversations.replaceConfiguredModelReferences("Old:model", "New:model-v2")
+                dao.replaceConfiguredModelReferences("Old:model", "New:model-v2")
             }
             assertEquals(listOf("Old:model" to "New:model-v2"), callbacks)
         }
@@ -52,7 +53,8 @@ class CustomModelConfigurationControllerTest {
     fun `missing duplicate and blank replacements are rejected before durable mutation`() =
         runTest {
             val settings = settings(setOf("Old:model", "New:duplicate"))
-            val conversations = mockk<ConversationRepository>()
+            val dao = mockk<ChatDao>(relaxed = true)
+            val conversations = ConversationRepository(dao, null)
             val callbacks = mutableListOf<Pair<String, String?>>()
             val controller = controller(
                 conversations = conversations,
@@ -67,7 +69,7 @@ class CustomModelConfigurationControllerTest {
 
             coVerify(exactly = 0) { settings.replaceCustomModel(any(), any(), any()) }
             coVerify(exactly = 0) {
-                conversations.replaceConfiguredModelReferences(any(), any())
+                dao.replaceConfiguredModelReferences(any(), any())
             }
             assertEquals(emptyList<Pair<String, String?>>(), callbacks)
         }
@@ -78,8 +80,8 @@ class CustomModelConfigurationControllerTest {
         val providerId = "custom-provider-00000000-0000-4000-8000-000000000001"
         val settings = settings(setOf(oldModel))
         every { settings.stableProviderReference("Relay X") } returns providerId
-        val conversations = mockk<ConversationRepository>()
-        coEvery { conversations.replaceConfiguredModelReferences(any(), any()) } returns Unit
+        val dao = mockk<ChatDao>(relaxed = true)
+        val conversations = ConversationRepository(dao, null)
         val controller = controller(
             conversations = conversations,
             settings = settings,
@@ -98,9 +100,9 @@ class CustomModelConfigurationControllerTest {
     fun `provider rename keeps stable model identity and model delete preserves durable ordering`() = runTest {
         val providers = mockk<ProviderRegistry>()
         val settings = settings(setOf("Custom:model"))
-        val conversations = mockk<ConversationRepository>()
+        val dao = mockk<ChatDao>(relaxed = true)
+        val conversations = ConversationRepository(dao, null)
         every { providers.renameCustom("Old", " New ") } returns true
-        coEvery { conversations.replaceConfiguredModelReferences(any(), any()) } returns Unit
         val callbacks = mutableListOf<Pair<String, String?>>()
         val controller = controller(
             providers = providers,
@@ -114,11 +116,11 @@ class CustomModelConfigurationControllerTest {
         runCurrent()
 
         coVerify(exactly = 0) {
-            conversations.renameConfiguredProviderModelReferences(any(), any())
+            dao.renameConfiguredProviderModelReferences(any(), any())
         }
         coVerifyOrder {
             settings.replaceCustomModel("Custom:model", null, "")
-            conversations.replaceConfiguredModelReferences("Custom:model", null)
+            dao.replaceConfiguredModelReferences("Custom:model", null)
         }
         assertEquals(listOf("Custom:model" to null), callbacks)
     }

@@ -95,6 +95,9 @@ internal object LocalModelRuntime {
         onTaskArrived = ::cancelIdleDeadline,
         onQueueIdle = ::startIdleDeadline,
     )
+    // Volatile because token counting reads the resident model from arbitrary threads, outside the
+    // task queue that loads and unloads it.
+    @Volatile
     private var resident: Resident? = null
     private var idleScope: CoroutineScope? = null
     private var idleBindingJob: Job? = null
@@ -174,6 +177,16 @@ internal object LocalModelRuntime {
     fun cancelActiveChat() {
         activeChatEngine?.cancel()
     }
+
+    /**
+     * Exact token count from the resident chat model, or null when no chat model is loaded.
+     *
+     * Used by the context estimate, which must stay synchronous, so this neither loads a model nor
+     * waits for the task queue. A model that is being freed reports null through the engine's own
+     * lock, and the caller falls back to its offline counter.
+     */
+    fun exactTokenCountOrNull(text: String): Int? =
+        (resident as? Resident.Chat)?.engine?.countTokensOrNull(text)
 
     fun bindIdleRetention(
         retentionMinutes: StateFlow<Int>,

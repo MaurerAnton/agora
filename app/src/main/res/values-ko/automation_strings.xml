@@ -12,7 +12,7 @@
     <string name="task_run_now">지금 실행</string>
     <string name="task_delete">작업 삭제</string>
     <string name="task_delete_confirm">“%1$s” 및 모든 실행 기록을 삭제할까요?</string>
-    <string name="import_conversation_graph_counts">대화(%1$d) · 작업(%2$d) · 루프(%3$d)</string>
+    <string name="import_conversation_graph_counts">대화(%1$d) · 작업(%2$d)</string>
     <string name="task_enabled">일정에 따라 실행</string>
     <string name="task_enabled_desc">끄면 ‘지금 실행’을 누를 때만 작업이 실행됩니다.</string>
     <string name="task_enabled_needs_schedule">먼저 일정을 선택하세요.</string>
@@ -58,6 +58,7 @@
     <string name="task_status_unknown">대기 중</string>
     <string name="task_running_notification">예약된 작업 실행 중…</string>
     <string name="loop_running_notification">대화 루프 실행 중…</string>
+    <string name="auto_backup_running_notification">백업을 생성하는 중…</string>
     <string name="loop_running">루프 실행 중…</string>
     <string name="loop_next_in">%1$s 후 다음 실행</string>
     <string name="loop_cycle">주기 %1$d/%2$d</string>

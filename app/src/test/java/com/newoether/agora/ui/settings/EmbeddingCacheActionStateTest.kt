@@ -5,6 +5,7 @@ import com.newoether.agora.viewmodel.EmbeddingCacheRowReducer
 import com.newoether.agora.viewmodel.EmbeddingCacheRowSnapshot
 import com.newoether.agora.viewmodel.EmbeddingCacheWorkSnapshot
 import com.newoether.agora.viewmodel.embeddingCacheWorkSnapshotOrNull
+import com.newoether.agora.viewmodel.rowPhase
 import java.io.File
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
@@ -49,6 +50,20 @@ class EmbeddingCacheActionStateTest {
     }
 
     @Test
+    fun anUnresolvedRowStillReadsAsLoadingAndOnlyAFailureHasNoPhase() {
+        assertEquals(
+            EmbeddingCacheRowPhase.LOADING,
+            (null as EmbeddingCacheRowSnapshot?).rowPhase(),
+        )
+        assertEquals(EmbeddingCacheRowPhase.LOADING, EmbeddingCacheRowSnapshot().rowPhase())
+        assertNull(EmbeddingCacheRowReducer.refreshFailed(null).rowPhase())
+        assertEquals(
+            EmbeddingCacheRowPhase.CACHE,
+            EmbeddingCacheRowReducer.refreshed(null, 4, 10).rowPhase(),
+        )
+    }
+
+    @Test
     fun workAndCountCompletionCannotOverrideEachOthersFacts() {
         val loading = EmbeddingCacheRowReducer.refreshRequested(null)
         val running = EmbeddingCacheRowReducer.workChanged(loading, true, progress(7, 20))
@@ -63,6 +78,54 @@ class EmbeddingCacheActionStateTest {
         val failedCount = EmbeddingCacheRowReducer.refreshFailed(running)
         assertEquals(EmbeddingCacheRowPhase.CACHING, failedCount.phase)
         assertNull(EmbeddingCacheRowReducer.workChanged(failedCount, false).phase)
+    }
+
+    @Test
+    fun cachingNumbersAndIndicatorShareOneDenominator() {
+        val known = EmbeddingCacheRowReducer.refreshed(null, 15, 20)
+        val exact = EmbeddingCacheRowReducer.workChanged(known, true, progress(3, 12))
+        assertEquals(EmbeddingCacheRowPhase.CACHING, exact.phase)
+        // The aggregate snapshot is not re-queried while the run works, so its own processed count
+        // advances the displayed pair instead of a second batch denominator.
+        assertEquals(18, exact.cachingCached)
+        assertEquals(0.9f, requireNotNull(exact.cachingFraction), 0.0001f)
+
+        val reconcile = EmbeddingCacheRowReducer.workChanged(
+            known,
+            true,
+            progress(3, 12, kind = "RECONCILE"),
+        )
+        assertEquals(15, reconcile.cachingCached)
+        assertEquals(0.75f, requireNotNull(reconcile.cachingFraction), 0.0001f)
+
+        val nearlyDone = EmbeddingCacheRowReducer.workChanged(
+            EmbeddingCacheRowReducer.refreshed(null, 19, 20),
+            true,
+            progress(5, 5),
+        )
+        assertEquals(20, nearlyDone.cachingCached)
+        assertEquals(1f, requireNotNull(nearlyDone.cachingFraction), 0.0001f)
+
+        val unknownCounts = EmbeddingCacheRowReducer.workChanged(null, true, progress(3, 12))
+        assertEquals(EmbeddingCacheRowPhase.CACHING, unknownCounts.phase)
+        assertNull(unknownCounts.cachingCached)
+        assertNull(unknownCounts.cachingFraction)
+    }
+
+    @Test
+    fun cachingRowDrawsTheStatusPairAndNeverTheWorkerBatchFraction() {
+        val start = File(requireNotNull(System.getProperty("user.dir"))).absoluteFile
+        val root = generateSequence(start) { it.parentFile }
+            .first { File(it, "app/src/main").isDirectory }
+        val source = File(
+            root,
+            "app/src/main/java/com/newoether/agora/ui/settings/SettingsSearchPage.kt",
+        ).readText().replace("\r\n", "\n")
+
+        assertTrue(source.contains("cacheRow?.cachingCached?.let { shown ->"))
+        assertTrue(source.contains("\"\$shown/\$total (\$percent%)\""))
+        assertTrue(source.contains("val fraction =\n                                                                    cacheRow?.cachingFraction"))
+        assertFalse(source.contains("progress = { progress.fraction }"))
     }
 
     @Test
@@ -147,7 +210,8 @@ class EmbeddingCacheActionStateTest {
     private fun workSnapshot(remaining: Int, permille: Int) =
         embeddingCacheWorkSnapshotOrNull(3, "EXACT", 4, 10, remaining, permille)
 
-    private fun progress(processed: Int, total: Int) = EmbeddingCacheWorkSnapshot(
-        7, "EXACT", processed, total, total - processed, processed * 1000 / total,
-    )
+    private fun progress(processed: Int, total: Int, kind: String = "EXACT") =
+        EmbeddingCacheWorkSnapshot(
+            7, kind, processed, total, total - processed, processed * 1000 / total,
+        )
 }

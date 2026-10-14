@@ -1,6 +1,7 @@
 package com.newoether.agora
 
 import android.app.Application
+import com.newoether.agora.api.util.tokens.bpe.O200kBase
 import com.newoether.agora.data.local.ChatDatabase
 import com.newoether.agora.di.AppContainer
 import com.newoether.agora.diagnostics.DeveloperDiagnostics
@@ -59,6 +60,10 @@ class AgoraApplication : Application() {
     override fun onCreate() {
         super.onCreate()
         CrashReporter.install(this)
+        // The context indicator counts remote models' text with a real vocabulary once it is in
+        // memory. Loading it in its own job keeps the first estimate off the heuristic without
+        // delaying the database gate behind it.
+        startupScope.launch { O200kBase.ensureLoaded(this@AgoraApplication) }
         startupScope.launch {
             try {
                 DeveloperDiagnostics.initialize(noBackupFilesDir, startupScope)

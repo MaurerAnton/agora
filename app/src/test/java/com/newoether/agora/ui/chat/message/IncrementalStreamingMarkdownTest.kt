@@ -6,6 +6,7 @@ import androidx.compose.ui.text.AnnotatedString
 import androidx.compose.ui.text.SpanStyle
 import androidx.compose.ui.text.font.FontWeight
 import com.newoether.agora.model.StreamingTextDelta
+import org.intellij.markdown.ast.ASTNode
 import org.intellij.markdown.flavours.gfm.GFMFlavourDescriptor
 import org.intellij.markdown.parser.MarkdownParser
 import org.junit.Assert.assertArrayEquals
@@ -21,6 +22,42 @@ import java.util.concurrent.TimeUnit
 
 class IncrementalStreamingMarkdownTest {
     private val flavour = GFMFlavourDescriptor()
+
+    @Test
+    fun tableAfterABlankLineParsesAsATable() {
+        val root = MarkdownParser(flavour).buildMarkdownTreeFromString(
+            "**Title**\n\n| commit | note |\n|---|---|\n| a19e5e64 | ok |\n",
+        )
+        assertTrue(root.containsTable())
+    }
+    @Test
+    fun tableBelowATextLineIsPreparedAsItsOwnBlock() {
+        val source = "**Title**\n| commit | note |\n|---|---|\n| a19e5e64 | ok |\n"
+        val prepared = source.openTableBlocks()
+        assertEquals("**Title**\n\n| commit | note |\n|---|---|\n| a19e5e64 | ok |\n", prepared)
+        assertTrue(MarkdownParser(flavour).buildMarkdownTreeFromString(prepared).containsTable())
+    }
+    @Test
+    fun renderedAnswerTurnsATableBelowTextIntoATable() {
+        val source = "**Title**\n| commit | note |\n|---|---|\n| a19e5e64 | ok |\n"
+        val prepared = source.toRenderableMarkdownText()
+        val document = IncrementalMarkdownDocument(flavour)
+        val snapshot = document.update(prepared, source, isStreaming = false)
+        assertTrue(
+            (snapshot.stableBlocks.map { it.root } + snapshot.liveBlock?.root)
+                .filterNotNull()
+                .any { it.containsTable() },
+        )
+    }
+    @Test
+    fun proseContainingAPipeIsNotSplitAndTablesInsideFencesStayVerbatim() {
+        val prose = "left | right\nand more text\n"
+        assertEquals(prose, prose.openTableBlocks())
+        val fenced = "```\n**Title**\n| a |\n|---|\n```\n"
+        assertEquals(fenced, fenced.openTableBlocks())
+    }
+    private fun ASTNode.containsTable(): Boolean =
+        type.toString().contains("TABLE") || children.any { it.containsTable() }
 
     @Test
     fun appendOnlyUpdate_scansOnlyDeltaAndReusesStableBlock() {

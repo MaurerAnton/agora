@@ -11,6 +11,8 @@ import com.newoether.agora.data.PromptItemType
 import com.newoether.agora.data.PromptTemplateItem
 import com.newoether.agora.data.SkillManager
 import com.newoether.agora.data.SystemPromptEntry
+import com.newoether.agora.data.local.ChatEntity
+import com.newoether.agora.data.local.NewChatPersistEntity
 import com.newoether.agora.data.repository.ConversationRepository
 import com.newoether.agora.data.repository.SettingsRepository
 import com.newoether.agora.util.Constants
@@ -22,9 +24,12 @@ import io.mockk.verify
 import kotlinx.coroutines.CompletableDeferred
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.async
+import kotlinx.coroutines.cancelAndJoin
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.test.runCurrent
 import kotlinx.coroutines.test.runTest
+import kotlinx.serialization.encodeToString
+import kotlinx.serialization.json.Json
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
 import org.junit.Assert.assertNull
@@ -33,6 +38,127 @@ import org.junit.Test
 
 @OptIn(ExperimentalCoroutinesApi::class)
 class GenerationRequestBuilderProviderDisplayTest {
+    @Test
+    fun foregroundExistingAdmissionWaitsForSettingsThenUsesCapturedConversation() = runTest {
+        val fixture = RequestBuilderFixture(Constants.PROVIDER_OPENAI, false)
+        val gate = CompletableDeferred<Unit>()
+        coEvery { fixture.settings.awaitInitialLoad() } coAnswers { gate.await() }
+        coEvery { fixture.conversations.getConversation("conversation") } returns
+            ChatEntity("conversation", "Existing")
+        val target = ForegroundSendTarget(
+            "conversation", "conversation", "run", false, null, fixture.modelId,
+        )
+        val pending = async {
+            fixture.builder.prepareForegroundSend(target, ConversationComposerSnapshot(), fixture.appContext, fixture.snackbars::add)
+        }
+        runCurrent()
+        assertFalse(pending.isCompleted)
+        coVerify(exactly = 0) { fixture.providerRegistry.awaitInitialSync() }
+        coVerify(exactly = 0) { fixture.conversations.getConversation(any()) }
+        gate.complete(Unit)
+        val admission = requireNotNull(pending.await())
+        assertEquals(target, admission.target)
+        assertEquals("run", admission.generationSnapshot.runId)
+        assertEquals("conversation", admission.generationSnapshot.conversationId)
+        assertNull(admission.newConversation)
+        assertNull(admission.newChatPersistSnapshot)
+        coVerify(exactly = 1) { fixture.conversations.getConversation("conversation") }
+    }
+
+    @Test
+    fun foregroundNewAdmissionWaitsForCapturedWorkspaceAndKeepsFrozenDraft() = runTest {
+        val fixture = RequestBuilderFixture(Constants.PROVIDER_OPENAI, false)
+        val gate = CompletableDeferred<NewChatPersistEntity?>()
+        val capturedSettings = ConversationSettings(codeExecutionEnabled = false)
+        val persisted = NewChatPersistEntity(
+            modelId = "older:model",
+            draftText = "older draft",
+            conversationSettingsJson = Json.encodeToString(capturedSettings),
+        )
+        val target = ForegroundSendTarget(
+            NEW_CHAT_WORKSPACE_ID, "new-conversation", "new-run", true, 7L, fixture.modelId,
+            NewChatWorkspaceSnapshot.pending(null, gate),
+        )
+        val pending = async {
+            fixture.builder.prepareForegroundSend(
+                target, ConversationComposerSnapshot(text = "frozen draft"), fixture.appContext, fixture.snackbars::add,
+            )
+        }
+        runCurrent()
+        assertFalse(pending.isCompleted)
+        coVerify(exactly = 0) { fixture.settings.awaitActiveKey(any()) }
+        gate.complete(persisted)
+        val admission = requireNotNull(pending.await())
+        assertEquals(target, admission.target)
+        assertEquals(fixture.modelId, admission.newConversation?.modelId)
+        assertEquals("frozen draft", admission.newConversation?.title)
+        assertEquals(capturedSettings, admission.newConversationSettings)
+        assertEquals("frozen draft", admission.newChatPersistSnapshot?.draftText)
+        assertEquals("older:model", admission.newChatPersistSnapshot?.modelId)
+        assertFalse(admission.generationSnapshot.config.codeExecutionEnabled)
+        coVerify(exactly = 0) { fixture.conversations.getConversation(any()) }
+    }
+
+    @Test
+    fun foregroundAdmissionCancellationDuringProviderWaitDoesNotReadConversation() = runTest {
+        val fixture = RequestBuilderFixture(Constants.PROVIDER_OPENAI, false)
+        val gate = CompletableDeferred<Unit>()
+        coEvery { fixture.providerRegistry.awaitInitialSync() } coAnswers { gate.await() }
+        val target = ForegroundSendTarget(
+            "conversation", "conversation", "run", false, null, fixture.modelId,
+        )
+        val pending = async {
+            fixture.builder.prepareForegroundSend(target, ConversationComposerSnapshot(), fixture.appContext, fixture.snackbars::add)
+        }
+        runCurrent()
+        assertFalse(pending.isCompleted)
+        pending.cancelAndJoin()
+        gate.complete(Unit)
+        runCurrent()
+        assertTrue(pending.isCancelled)
+        coVerify(exactly = 0) { fixture.conversations.getConversation(any()) }
+        coVerify(exactly = 0) { fixture.settings.awaitActiveKey(any()) }
+    }
+
+    @Test
+    fun foregroundBlankModelUsesOriginalValidationContextAndRejectsBeforeProvider() = runTest {
+        val fixture = RequestBuilderFixture(Constants.PROVIDER_OPENAI, false)
+        val validationContext = mockk<Context>()
+        every { validationContext.getString(R.string.no_model_selected) } returns "Select a model"
+        val target = ForegroundSendTarget("conversation", "conversation", "run", false, null, "")
+        assertNull(fixture.builder.prepareForegroundSend(target, ConversationComposerSnapshot(), validationContext, fixture.snackbars::add))
+        assertEquals(listOf("Select a model"), fixture.snackbars)
+        coVerify(exactly = 0) { fixture.providerRegistry.awaitInitialSync() }
+    }
+
+    @Test
+    fun serviceTierSnapshotUsesEachActualModelAndKeepsSavedSelection() = runTest {
+        val fixture = RequestBuilderFixture(Constants.PROVIDER_OPENAI, false)
+        val saved = MutableStateFlow("ultrafast")
+        every { fixture.settings.openAiServiceTierEnabled } returns MutableStateFlow(true)
+        every { fixture.settings.openAiServiceTier } returns saved
+        every { fixture.settings.openAiResponsesApiEnabled } returns MutableStateFlow(true)
+        every { fixture.settings.contextCompactModel } returns
+            MutableStateFlow("${Constants.PROVIDER_OPENAI}:gpt-5.6-sol")
+
+        val snapshot = fixture.builder.captureAdmissionSnapshot(
+            "conversation", "run", "${Constants.PROVIDER_OPENAI}:gpt-4o",
+        )
+        assertEquals("gpt-4o", snapshot.config.modelId)
+        assertEquals("gpt-5.6-sol", snapshot.automaticCompact.generationConfig.modelId)
+        assertEquals("ultrafast", saved.value)
+        saved.value = "default"
+        assertEquals("fast", snapshot.config.openAiServiceTier)
+        assertEquals("ultrafast", snapshot.automaticCompact.generationConfig.openAiServiceTier)
+        assertEquals("default", saved.value)
+
+        val disabled = fixture.builder.captureContextProjectionSnapshot(
+            "conversation", "${Constants.PROVIDER_OPENAI}:gpt-4o",
+            conversationSettingsOverride = ConversationSettings(openAiServiceTierEnabled = false),
+        )
+        assertNull(disabled.config.openAiServiceTier)
+    }
+
     @Test
     fun selectedCompactAndTranscriptionProvidersHaveIndependentFrozenCacheFields() = runTest {
         val fixture = RequestBuilderFixture(Constants.PROVIDER_OPENAI, false)
@@ -74,6 +200,38 @@ class GenerationRequestBuilderProviderDisplayTest {
         assertEquals("5m", snapshot.context.transcriptionAnthropicCacheTtl)
     }
     @Test
+    fun `preserve mode resolves the ordinary system prompt for the compact request`() = runTest {
+        val fixture = RequestBuilderFixture(
+            providerName = Constants.PROVIDER_OPENAI,
+            lowContextModeEnabled = false,
+            compactPreserveSystemPrompt = true,
+        )
+
+        val snapshot = fixture.builder.captureAdmissionSnapshot("conversation", "run", fixture.modelId)
+
+        assertTrue(snapshot.automaticCompact.request.preserveSystemPrompt)
+        assertEquals(
+            RequestBuilderFixture.COMPACT_PROMPT,
+            snapshot.automaticCompact.request.prompt,
+        )
+        assertEquals(
+            RequestBuilderFixture.RESOLVED_SYSTEM_PROMPT,
+            snapshot.automaticCompact.generationConfig.effectiveSystemPrompt,
+        )
+    }
+    @Test
+    fun `legacy mode keeps the compact prompt as the compact system prompt`() = runTest {
+        val fixture = RequestBuilderFixture(Constants.PROVIDER_OPENAI, false)
+
+        val snapshot = fixture.builder.captureAdmissionSnapshot("conversation", "run", fixture.modelId)
+
+        assertFalse(snapshot.automaticCompact.request.preserveSystemPrompt)
+        assertEquals(
+            RequestBuilderFixture.COMPACT_PROMPT,
+            snapshot.automaticCompact.generationConfig.effectiveSystemPrompt,
+        )
+    }
+    @Test
     fun `conversation tool overrides are reflected immediately in effective settings`() {
         val settings = mockk<SettingsRepository>()
         every { settings.conversationSettings } returns MutableStateFlow(
@@ -102,6 +260,7 @@ class GenerationRequestBuilderProviderDisplayTest {
         every { settings.openAiServiceTier } returns MutableStateFlow("auto")
         every { settings.webSearchEnabled } returns MutableStateFlow(true)
         every { settings.shellEnabled } returns MutableStateFlow(true)
+        every { settings.askUserEnabled } returns MutableStateFlow(true)
         every { settings.localLowContextModeEnabled } returns MutableStateFlow(true)
         val builder = GenerationRequestBuilder(
             settings = settings,
@@ -111,8 +270,6 @@ class GenerationRequestBuilderProviderDisplayTest {
             providerRegistry = mockk<ProviderRegistry>(),
             ragManager = mockk<RagManager>(),
             appContext = mockk<Context>(),
-            pendingConversationSettings = MutableStateFlow<ConversationSettings?>(null),
-            onSnackbar = {},
         )
 
         val effective = builder.buildEffectiveConversationSettings("conversation")
@@ -121,6 +278,11 @@ class GenerationRequestBuilderProviderDisplayTest {
         assertEquals(false, effective.shellEnabled)
         assertEquals(false, effective.openAiWebSearchEnabled)
         assertEquals(false, effective.lowContextModeEnabled)
+        // A conversation without saved settings uses the app defaults, never a client's New Chat page.
+        val unsaved = builder.buildEffectiveConversationSettings("unsaved-conversation")
+        assertEquals(true, unsaved.webSearchEnabled)
+        assertEquals(true, unsaved.shellEnabled)
+        assertEquals(true, unsaved.lowContextModeEnabled)
     }
 
     @Test
@@ -196,6 +358,44 @@ class GenerationRequestBuilderProviderDisplayTest {
     }
 
     @Test
+    fun `disabled active memory access keeps the memory in the prompt and drops only the tool`() = runTest {
+        val fixture = RequestBuilderFixture(
+            providerName = Constants.PROVIDER_OPENAI,
+            lowContextModeEnabled = false,
+            accessActiveMemory = false,
+        )
+
+        val snapshot = fixture.builder.captureContextProjectionSnapshot(
+            conversationId = "conversation",
+            modelId = fixture.modelId,
+        )
+
+        assertEquals(RequestBuilderFixture.RESOLVED_SYSTEM_PROMPT, snapshot.config.effectiveSystemPrompt)
+        assertFalse(snapshot.context.accessActiveMemory)
+        verify { fixture.memoryManager.getActiveMemory() }
+    }
+    @Test
+    fun `active memory is frozen for every provider pass of one run`() = runTest {
+        val fixture = RequestBuilderFixture(
+            providerName = Constants.PROVIDER_OPENAI,
+            lowContextModeEnabled = false,
+        )
+        val snapshot = fixture.builder.captureAdmissionSnapshot(
+            conversationId = "conversation",
+            runId = "run",
+            modelId = fixture.modelId,
+        )
+        val resolver = requireNotNull(snapshot.config.requestResolver)
+        // A tool call edits active memory mid-run; later passes must keep the captured text.
+        every { fixture.memoryManager.getActiveMemory() } returns "edited mid-run"
+        val config = com.newoether.agora.api.ProviderConfig(apiKey = "key", modelId = "model")
+        val first = resolver.resolve(emptyList(), config)
+        val second = resolver.resolve(emptyList(), config)
+        assertEquals(RequestBuilderFixture.RESOLVED_SYSTEM_PROMPT, first.systemPrompt)
+        assertEquals(first.systemPrompt, second.systemPrompt)
+    }
+
+    @Test
     fun `remote and ollama ignore a true low context conversation override`() = runTest {
         listOf(Constants.PROVIDER_OPENAI, Constants.PROVIDER_OLLAMA).forEach { providerName ->
             val fixture = RequestBuilderFixture(
@@ -249,11 +449,9 @@ class GenerationRequestBuilderProviderDisplayTest {
             providerRegistry = providerRegistry,
             ragManager = mockk<RagManager>(),
             appContext = mockk<Context>(),
-            pendingConversationSettings = MutableStateFlow<ConversationSettings?>(null),
-            onSnackbar = {},
         )
 
-        val result = async { builder.awaitProviderKey(modelId) }
+        val result = async { builder.awaitProviderKey(modelId) {} }
         runCurrent()
 
         assertEquals(listOf("await"), events)
@@ -297,11 +495,9 @@ class GenerationRequestBuilderProviderDisplayTest {
             providerRegistry = providerRegistry,
             ragManager = mockk<RagManager>(),
             appContext = appContext,
-            pendingConversationSettings = MutableStateFlow<ConversationSettings?>(null),
-            onSnackbar = snackbars::add,
         )
 
-        assertNull(builder.resolveProviderKey(modelId))
+        assertNull(builder.resolveProviderKey(modelId, snackbars::add))
         assertEquals(1, snackbars.size)
         assertTrue(snackbars.single().contains(providerAlias))
         assertFalse(snackbars.single().contains(providerId))
@@ -311,6 +507,8 @@ class GenerationRequestBuilderProviderDisplayTest {
 private class RequestBuilderFixture(
     providerName: String,
     lowContextModeEnabled: Boolean,
+    compactPreserveSystemPrompt: Boolean = false,
+    accessActiveMemory: Boolean = true,
 ) {
     companion object {
         const val COMPACT_PROMPT = "compact prompt"
@@ -320,6 +518,8 @@ private class RequestBuilderFixture(
     }
 
     val modelId = "$providerName:model"
+    val appContext = mockk<Context>()
+    val snackbars = mutableListOf<String>()
     val settings = mockk<SettingsRepository>()
     val conversations = mockk<ConversationRepository>()
     val memoryManager = mockk<MemoryManager>()
@@ -383,12 +583,15 @@ private class RequestBuilderFixture(
         every { settings.openAiServiceTier } returns MutableStateFlow("auto")
         every { settings.webSearchEnabled } returns MutableStateFlow(true)
         every { settings.shellEnabled } returns MutableStateFlow(true)
+        every { settings.askUserEnabled } returns MutableStateFlow(true)
         every { settings.localLowContextModeEnabled } returns MutableStateFlow(false)
         every { settings.contextCompactModel } returns MutableStateFlow(null)
         every { settings.contextCompactPrompt } returns MutableStateFlow(COMPACT_PROMPT)
         every { settings.contextCompactEnabled } returns MutableStateFlow(true)
         every { settings.contextCompactThresholdPercent } returns MutableStateFlow(80)
         every { settings.contextCompactRetainCount } returns MutableStateFlow(8)
+        every { settings.contextCompactPreserveSystemPrompt } returns
+            MutableStateFlow(compactPreserveSystemPrompt)
         every { settings.openAiResponsesApiEnabled } returns MutableStateFlow(false)
         every { settings.anthropicCacheEnabled } returns MutableStateFlow(true)
         every { settings.anthropicCacheTtl } returns MutableStateFlow("1h")
@@ -399,7 +602,7 @@ private class RequestBuilderFixture(
         every { settings.accessSkills } returns MutableStateFlow(true)
         every { settings.accessSkillsModify } returns MutableStateFlow(true)
         every { settings.accessSavedMemories } returns MutableStateFlow(true)
-        every { settings.accessActiveMemory } returns MutableStateFlow(true)
+        every { settings.accessActiveMemory } returns MutableStateFlow(accessActiveMemory)
         every { settings.accessPastConversations } returns MutableStateFlow(true)
         every { settings.modelSearchMethod } returns MutableStateFlow("keyword")
         every { settings.ragThreshold } returns MutableStateFlow(0.5f)
@@ -422,6 +625,8 @@ private class RequestBuilderFixture(
         every { settings.activeSystemPromptId } returns MutableStateFlow(PROMPT_ID)
         every { settings.systemPrompts } returns MutableStateFlow(listOf(prompt))
         coEvery { settings.awaitActiveKey(any()) } returns "key"
+        coEvery { settings.awaitInitialLoad() } returns Unit
+        every { appContext.getString(R.string.new_chat) } returns "New chat"
         every { settings.resolveActiveKey(any()) } returns "key"
 
         coEvery { providerRegistry.awaitInitialSync() } returns Unit
@@ -444,9 +649,7 @@ private class RequestBuilderFixture(
             skillManager = skillManager,
             providerRegistry = providerRegistry,
             ragManager = ragManager,
-            appContext = mockk(),
-            pendingConversationSettings = MutableStateFlow(null),
-            onSnackbar = {},
+            appContext = appContext,
         )
     }
 }

@@ -5,11 +5,15 @@
     <uses-permission android:name="android.permission.INTERNET" />
     <uses-permission android:name="android.permission.FOREGROUND_SERVICE" />
     <uses-permission android:name="android.permission.FOREGROUND_SERVICE_DATA_SYNC" />
+    <uses-permission android:name="android.permission.FOREGROUND_SERVICE_SPECIAL_USE" />
     <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
     <uses-permission android:name="android.permission.VIBRATE" />
     <uses-permission android:name="android.permission.WAKE_LOCK" />
     <uses-permission android:name="android.permission.RECEIVE_BOOT_COMPLETED" />
     <uses-permission android:name="android.permission.CAMERA" />
+    <!-- Optional: capture goes through the platform IMAGE_CAPTURE intent, so the
+         camera feature must not exclude hardware-less devices (e.g. Chromebooks). -->
+    <uses-feature android:name="android.hardware.camera" android:required="false" />
     <!-- Optional user-granted access; exact automation remains off by default. -->
     <uses-permission android:name="android.permission.SCHEDULE_EXACT_ALARM" />
     <!-- Saving images to the gallery on pre-Q only; Q+ uses scoped MediaStore (no permission). -->
@@ -36,6 +40,7 @@
         android:theme="@style/Theme.Agora.Starting">
         <activity
             android:name=".MainActivity"
+            android:configChanges="orientation|screenSize|screenLayout|smallestScreenSize"
             android:exported="true"
             android:theme="@style/Theme.Agora"
             android:windowSoftInputMode="adjustResize">
@@ -72,6 +77,16 @@
             android:foregroundServiceType="dataSync"
             android:exported="false" />
 
+        <!-- WebUI remote-control server; runs until the user turns it off, so not dataSync. -->
+        <service
+            android:name=".webui.WebUiService"
+            android:foregroundServiceType="specialUse"
+            android:exported="false">
+            <property
+                android:name="android.app.PROPERTY_SPECIAL_USE_FGS_SUBTYPE"
+                android:value="Local web server that lets the user control this app from their own browser on the same network" />
+        </service>
+
         <!-- WorkManager owns the foreground lifecycle for scheduled automation runs. -->
         <service
             android:name="androidx.work.impl.foreground.SystemForegroundService"
@@ -81,6 +96,16 @@
         <!-- Fires a scheduled task; internal only. -->
         <receiver
             android:name=".automation.AutomationAlarmReceiver"
+            android:exported="false" />
+
+        <!-- Applies a shell-confirmation decision made on a notification; internal only. -->
+        <receiver
+            android:name=".service.ShellConfirmationReceiver"
+            android:exported="false" />
+
+        <!-- Applies an ask_user answer given on a notification; internal only. -->
+        <receiver
+            android:name=".service.AskUserReceiver"
             android:exported="false" />
 
         <!-- Re-arms task alarms after reboot / app update. -->

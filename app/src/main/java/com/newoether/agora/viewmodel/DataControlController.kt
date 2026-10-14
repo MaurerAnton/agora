@@ -54,13 +54,6 @@ class DataControlController internal constructor(
         } catch (error: Exception) {
             DebugLog.e("ChatViewModel", "AutoBackupWorker.schedule failed", error)
         }
-        scope.launch(ioDispatcher) {
-            try {
-                backupManager.checkAndBackup()
-            } catch (error: Exception) {
-                DebugLog.e("ChatViewModel", "Auto backup check failed", error)
-            }
-        }
     }
 
     internal fun destroy() {

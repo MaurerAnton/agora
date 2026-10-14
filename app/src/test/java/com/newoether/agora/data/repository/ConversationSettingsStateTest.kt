@@ -7,6 +7,19 @@ import org.junit.Test
 
 class ConversationSettingsStateTest {
     @Test
+    fun `legacy tier overrides normalize on import and optimistic write`() {
+        val state = ConversationSettingsState()
+        val imported = state.applyImport(
+            mapOf("old" to ConversationSettings(openAiServiceTier = "scale")),
+            replace = true,
+        )
+        assertEquals("default", imported.getValue("old").openAiServiceTier)
+        val write = state.update("old") { it.copy(openAiServiceTier = "priority") }
+        assertEquals("fast", write.settings?.openAiServiceTier)
+        assertEquals("fast", state.state.value.getValue("old").openAiServiceTier)
+    }
+
+    @Test
     fun `merge supersedes imported identities but preserves unrelated pending writes`() {
         val state = ConversationSettingsState()
         val importedWrite = state.update("imported") { it.copy(temperature = 0.1f) }

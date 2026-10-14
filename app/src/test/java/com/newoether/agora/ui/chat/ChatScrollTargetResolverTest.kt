@@ -155,6 +155,7 @@ class ChatScrollTargetResolverTest {
                     imeBottomPx = 0,
                     viewModel = viewModel,
                     haptics = NoOpAgoraHaptics,
+                    chatPresented = true,
                 )
             }
             runCurrent()

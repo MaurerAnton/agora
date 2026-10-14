@@ -26,8 +26,6 @@
     <string name="mcp_header_value_error">Gib einen Wert ohne Steuerzeichen ein</string>
     <string name="mcp_add_header">Header hinzufügen</string>
     <string name="mcp_delete_header">Header löschen</string>
-    <string name="mcp_show_header_value">Headerwert anzeigen</string>
-    <string name="mcp_hide_header_value">Headerwert ausblenden</string>
     <string name="mcp_timeout">Zeitüberschreitung (Sekunden)</string>
     <string name="mcp_timeout_desc">5–300 Sekunden</string>
     <string name="mcp_status">Status</string>

@@ -12,6 +12,7 @@ internal class ConversationHydrationRegistry(
 
     fun containsAll(messageIds: Collection<String>): Boolean =
         messageIds.all(hydratedMessageIds::containsKey)
+
 }
 
 internal data class CoveredAbsoluteBottomSample(
@@ -20,7 +21,6 @@ internal data class CoveredAbsoluteBottomSample(
     val canScrollForward: Boolean,
     val sentinelIndex: Int?,
     val sentinelKey: Any?,
-    val lastTurnHydrated: Boolean,
 ) {
     val targetIndex: Int
         get() = totalItemsCount - 1
@@ -42,8 +42,7 @@ internal data class CoveredAbsoluteBottomSample(
             viewportHeightPx > 0 &&
                 targetIndex >= 0 &&
                 !canScrollForward &&
-                sentinelMatchesTarget &&
-                lastTurnHydrated
+                sentinelMatchesTarget
 }
 
 internal class CoveredLayoutStabilityTracker(

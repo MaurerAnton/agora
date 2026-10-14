@@ -1,5 +1,9 @@
 package com.newoether.agora.diagnostics
 
+import java.time.Instant
+import java.time.ZoneId
+import kotlinx.serialization.json.jsonObject
+import kotlinx.serialization.json.jsonPrimitive
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
 import org.junit.Assert.assertTrue
@@ -7,10 +11,46 @@ import org.junit.Test
 
 class DiagnosticBundleExporterTest {
     @Test
-    fun `exports expose only redacted json and content-free summary with completeness metadata`() {
+    fun `export names use local date time with milliseconds for both formats`() {
+        val generatedAtMillis = Instant.parse("2026-10-08T11:50:00.123Z").toEpochMilli()
+        val zoneId = ZoneId.of("Asia/Shanghai")
+
+        assertEquals(
+            "agora-diagnostics-redacted-json-2026-10-08_19-50-00-123.json",
+            DiagnosticBundleExporter.fileName(DiagnosticExportFormat.REDACTED_JSON, generatedAtMillis, zoneId),
+        )
+        assertEquals(
+            "agora-diagnostics-summary-text-2026-10-08_19-50-00-123.txt",
+            DiagnosticBundleExporter.fileName(DiagnosticExportFormat.SUMMARY_TEXT, generatedAtMillis, zoneId),
+        )
+        assertEquals(
+            "agora-diagnostics-redacted-json-2026-10-08_04-50-00-123.json",
+            DiagnosticBundleExporter.fileName(
+                DiagnosticExportFormat.REDACTED_JSON,
+                generatedAtMillis,
+                ZoneId.of("America/Los_Angeles"),
+            ),
+        )
+        val jsonExport = DiagnosticBundleExporter.export(
+            DiagnosticSnapshot(), DiagnosticExportFormat.REDACTED_JSON, generatedAtMillis,
+        )
+        assertEquals(
+            generatedAtMillis.toString(),
+            kotlinx.serialization.json.Json.parseToJsonElement(jsonExport)
+                .jsonObject.getValue("generatedAtMillis").jsonPrimitive.content,
+        )
+        val textExport = DiagnosticBundleExporter.export(
+            DiagnosticSnapshot(), DiagnosticExportFormat.SUMMARY_TEXT, generatedAtMillis,
+        )
+        assertTrue(textExport.contains("generatedAtMillis=$generatedAtMillis"))
+    }
+
+    @Test
+    fun `redacted json keeps message content and masks only credentials while summary stays content free`() {
         val providerId = "custom-provider-00000000-0000-4000-8000-000000000001"
         val requestBody = DiagnosticRedactor.captureJson(
             """{"messages":[{"role":"user","content":"private prompt"}],"api_key":"request-secret","max_tokens":10}""",
+            credentialValues = setOf("request-secret"),
         )
         val events = listOf(
             DiagnosticEvent(
@@ -88,14 +128,14 @@ class DiagnosticBundleExporterTest {
             ),
             DiagnosticExportFormat.entries,
         )
-        assertFalse(redacted.contains("private prompt"))
-        assertFalse(redacted.contains("private response"))
-        assertFalse(redacted.contains("private tool result"))
-        assertFalse(redacted.contains("private parsed tool result"))
+        assertTrue(redacted.contains("private prompt"))
+        assertTrue(redacted.contains("private response"))
+        assertTrue(redacted.contains("private tool result"))
+        assertTrue(redacted.contains("private parsed tool result"))
         assertFalse(redacted.contains("request-secret"))
         assertFalse(redacted.contains("query-secret"))
         assertFalse(redacted.contains("header-secret"))
-        assertTrue(redacted.contains("[REDACTED_CONTENT]"))
+        assertFalse(redacted.contains("[REDACTED_CONTENT]"))
         assertTrue(redacted.contains("[REDACTED_SECRET]"))
         assertTrue(redacted.contains("max_tokens"))
         assertTrue(redacted.contains("fixture_tool"))

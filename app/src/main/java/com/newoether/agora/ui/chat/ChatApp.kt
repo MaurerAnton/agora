@@ -42,6 +42,7 @@ import com.newoether.agora.util.gradientBlur
 import com.newoether.agora.ui.chat.bottombar.CHAT_BOTTOM_BAR_OUTER_SHAPE
 import com.newoether.agora.ui.chat.bottombar.ChatBottomBar
 import com.newoether.agora.ui.chat.bottombar.LoopStatusBackdrop
+import com.newoether.agora.ui.chat.interaction.ChatUserInteractionBar
 import com.newoether.agora.ui.components.AnimatedBlobBackground
 import com.newoether.agora.ui.components.clearFocusOnTap
 import com.newoether.agora.ui.common.LocalAgoraHaptics
@@ -63,13 +64,13 @@ fun ChatApp(
     initialComposerFocusReady: Boolean = true,
     onNavigateBack: (() -> Unit)? = null,
     drawerEnabled: Boolean = true,
+    openDrawerOnStart: Boolean = false, initialScrollToTop: Boolean = false,
     onOpenSettings: () -> Unit,
     onOpenTasks: (String?) -> Unit = {},
     onOpenRemote: () -> Unit = {},
     onMediaClick: (List<String>, Int) -> Unit,
     onFileContentClick: ((String, String) -> Unit)? = null,
-    onPdfPagesClick: ((List<String>, Int) -> Unit)? = null,
-    onPdfPreviewSelect: ((List<String>, Int) -> Unit)? = null,
+    onPdfPagesClick: ((List<String>, Int) -> Unit)? = null, onPdfPreviewSelect: ((List<String>, Int) -> Unit)? = null,
     pdfViewerSelection: Set<Int> = emptySet(),
     onTogglePdfSelection: ((Int) -> Unit)? = null,
     onInitPdfSelection: ((Set<Int>) -> Unit)? = null,
@@ -84,6 +85,9 @@ fun ChatApp(
     val motionPolicy = LocalAgoraMotionPolicy.current
     ConversationShareEffect(viewModel, context)
     val drawerState = rememberChatDrawerState()
+    LaunchedEffect(openDrawerOnStart, drawerEnabled) {
+        if (openDrawerOnStart && drawerEnabled) drawerState.openImmediately()
+    }
     val conversations by viewModel.conversations.collectAsState()
     // Defer value reads to the narrow composition regions that actually render messages. The
     // State objects themselves are stable, so stream snapshots no longer recompose all ChatApp.
@@ -94,8 +98,8 @@ fun ChatApp(
     val compactModel by viewModel.settings.contextCompactModel.collectAsState()
     val compactPrompt by viewModel.settings.contextCompactPrompt.collectAsState()
     val compactRetainCount by viewModel.settings.contextCompactRetainCount.collectAsState()
-    val compactThresholdPercent by
-        viewModel.settings.contextCompactThresholdPercent.collectAsState()
+    val compactThresholdPercent by viewModel.settings.contextCompactThresholdPercent.collectAsState()
+    val compactEnabled by viewModel.settings.contextCompactEnabled.collectAsState()
     val manualCompactDialogVisible = rememberSaveable { mutableStateOf(false) }
     val dialogState = rememberChatAppDialogState(manualCompactDialogVisible)
     val queuedSends by viewModel.queuedSends.collectAsState()
@@ -107,8 +111,7 @@ fun ChatApp(
     val currentLoop by viewModel.currentLoop.collectAsState()
     val runningLoopIds by viewModel.runningLoopConversationIds.collectAsState()
     val generationSnapshot by viewModel.generationSnapshot.collectAsState()
-    val selectedConversationGenerationSnapshot by
-        viewModel.selectedConversationGenerationSnapshot.collectAsState()
+    val selectedConversationGenerationSnapshot by viewModel.selectedConversationGenerationSnapshot.collectAsState()
     val selectedModel by viewModel.currentActiveModel.collectAsState()
     val enabledModels by viewModel.settings.enabledModels.collectAsState()
     val developerOptionsEnabled by viewModel.settings.developerOptionsEnabled.collectAsState()
@@ -143,6 +146,7 @@ fun ChatApp(
     val autoExpandActiveGroup by viewModel.settings.autoExpandActiveGroup.collectAsState()
 
     val parseInlineDollarMath by viewModel.settings.parseInlineDollarMath.collectAsState()
+    val autoWrapCodeBlocks by viewModel.settings.autoWrapCodeBlocks.collectAsState()
     val conversationControls = effectiveConversationControls(
         viewModel = viewModel,
         isNewChatMode = isNewChatMode,
@@ -201,6 +205,9 @@ fun ChatApp(
     }
     var bottomBarHeightPx by rememberSaveable { mutableFloatStateOf(0f) }
     val bottomBarHeight = with(density) { bottomBarHeightPx.toDp() }
+    // Measured by the interaction bar so the scroll-to-bottom button clears it as well.
+    var interactionBarHeightPx by remember { mutableFloatStateOf(0f) }
+    val interactionBarHeight = with(density) { interactionBarHeightPx.toDp() }
     var drawerProgress by remember { mutableFloatStateOf(0f) }
     // Bottom offset to clear the Settings button in the drawer.
     var settingsButtonTopDp by remember { mutableFloatStateOf(80f) }
@@ -230,6 +237,7 @@ fun ChatApp(
         density = density,
     )
     val listState = scrollCoordinator.listState
+    ScreenshotInitialScrollEffect(initialScrollToTop, currentConversationId, loadedMessagesConversationId, listState)
     val absoluteBottomScrollPhase = scrollCoordinator.absoluteBottomScrollPhase
     val isNearAbsoluteBottom = scrollCoordinator.isNearAbsoluteBottom
     val isWithinAbsoluteBottomAttachThreshold =
@@ -287,6 +295,7 @@ fun ChatApp(
         imeBottomPx = imeBottomPx,
         viewModel = viewModel,
         haptics = haptics,
+        chatPresented = topLevelPresentation == TopLevelPresentation.CHAT,
     )
 
     val composerOwnerId = if (isNewChatMode) com.newoether.agora.viewmodel.NEW_CHAT_WORKSPACE_ID else currentConversationId ?: com.newoether.agora.viewmodel.NEW_CHAT_WORKSPACE_ID
@@ -395,6 +404,7 @@ fun ChatApp(
                 )
             }
 
+            @Suppress("UnusedMaterial3ScaffoldPaddingParameter")
             Scaffold(
                 containerColor = Color.Transparent,
                 contentWindowInsets = WindowInsets(0, 0, 0, 0),
@@ -458,8 +468,7 @@ fun ChatApp(
                         },
                     )
                 }
-            ) { padding ->
-                Box(modifier = Modifier.fillMaxSize()) {
+            ) { padding -> Box(modifier = Modifier.fillMaxSize()) {
                     val topBarH = androidx.compose.foundation.layout.WindowInsets.statusBars.asPaddingValues().calculateTopPadding() + 64.dp
                     val pivotY =
                         ((windowHeightDp + topBarH.value / 2f - bottomBarHeight.value) / 2f)
@@ -495,7 +504,9 @@ fun ChatApp(
                                 authoritativeMessages = StableMessageList(displayMessagesState.value),
                                 allMessages = StableMessageList(allMessagesState.value),
                                 conversationId = currentConversationId,
-                                modifier = Modifier.fillMaxSize().gradientBlur(
+                                modifier = Modifier.align(Alignment.Center)
+                                    .fillMaxHeight().widthIn(max = 840.dp).fillMaxWidth()
+                                    .gradientBlur(
                                     blurAtTopDp = if (blurEffectsEnabled) 8f else 0f,
                                     blurAtBottomDp = 0f,
                                     fadeHeightDp = 40f,
@@ -530,6 +541,7 @@ fun ChatApp(
                                 thinkingSegmentDisplayMode = thinkingSegmentDisplayMode,
                                 autoExpandActiveGroup = autoExpandActiveGroup,
                                 parseInlineDollarMath = parseInlineDollarMath,
+                                autoWrapCodeBlocks = autoWrapCodeBlocks,
                                 contextRetainedMessageIds = contextProjection.retainedMessageIds.orEmpty(),
                                 modelAliases = StableModelAliases(modelAliases, modelProviderNames),
                                 customProviders = customProviders,
@@ -620,41 +632,20 @@ fun ChatApp(
                     val regenerationScrollActive =
                         regenerationTransition?.conversationId == currentConversationId &&
                             regenerationTransition?.scrollFinished == false
-                    val showButton by remember(
-                        currentConversationId,
-                        loadedMessagesConversationId,
-                        isNewChatMode,
-                        isSwitching,
-                        shareSelectionActive,
-                        isNearAbsoluteBottom,
-                        absoluteBottomScrollPhase,
-                        listState,
-                        streamingTailController,
-                        regenerationScrollActive,
-                        imeBottomAnchorState.active,
-                    ) {
-                        derivedStateOf {
-                            val totalItemsCount = listState.layoutInfo.totalItemsCount
-                            shouldShowAbsoluteBottomButton(
-                                isNewChatMode = isNewChatMode,
-                                isSwitching = isSwitching,
-                                conversationContentReady =
-                                    currentConversationId != null &&
-                                        loadedMessagesConversationId == currentConversationId,
-                                shareSelectionActive = shareSelectionActive,
-                                hasItems = totalItemsCount > 1,
-                                canScrollForward = listState.canScrollForward,
-                                isNearBottom = isNearAbsoluteBottom,
-                                isStreamingAutoFollowing =
-                                    streamingTailController.isAutoFollowing,
-                                scrollPhase = absoluteBottomScrollPhase,
-                                competingProgrammaticScrollActive =
-                                    regenerationScrollActive ||
-                                        imeBottomAnchorState.active,
-                            )
-                        }
-                    }
-                    ChatBottomScrollButton(showButton, bottomBarHeight) {
+                    val showButton by rememberAbsoluteBottomButtonVisible(
+                        conversationId = currentConversationId,
+                        loadedMessagesConversationId = loadedMessagesConversationId,
+                        isNewChatMode = isNewChatMode,
+                        isSwitching = isSwitching,
+                        shareSelectionActive = shareSelectionActive,
+                        isNearAbsoluteBottom = isNearAbsoluteBottom,
+                        absoluteBottomScrollPhase = absoluteBottomScrollPhase,
+                        listState = listState,
+                        streamingTailController = streamingTailController,
+                        regenerationScrollActive = regenerationScrollActive,
+                        imeBottomAnchorActive = imeBottomAnchorState.active,
+                    )
+                    ChatBottomScrollButton(showButton, bottomBarHeight + interactionBarHeight) {
                         scrollCoordinator.requestAbsoluteBottomScroll()
                     }
 
@@ -665,12 +656,23 @@ fun ChatApp(
                         onShareMessages = { viewModel.shareMessages(it) },
                     )
 
-                    ChatSwitchingOverlay(isSwitching, isTransitioningToNewChat)
+                    ChatSwitchingOverlay(isSwitching, isTransitioningToNewChat, topBarH, bottomBarHeight)
                 }
             }
 
+            // Pending questions and shell confirmations sit above the composer instead of in a
+            // dialog, so the conversation stays readable while they wait for an answer.
+            ChatUserInteractionBar(
+                viewModel = viewModel,
+                conversationId = currentConversationId,
+                autoWrapCodeBlocks = autoWrapCodeBlocks,
+                bottomBarHeight = bottomBarHeight,
+                onHeightChanged = { interactionBarHeightPx = it },
+            )
+
             com.newoether.agora.ui.chat.bottombar.ChatComposerSurface(
                 modifier = Modifier.align(Alignment.BottomCenter),
+                contentMaxWidth = 840.dp,
                 isExpanded = isExpanded,
                 outerSpacerHeightPx = outerSpacerHeightPx,
                 onBarHeightChanged = { bottomBarHeightPx = it },
@@ -701,10 +703,8 @@ fun ChatApp(
                         customProviders = customProviders,
                         codeExecutionEnabled = conversationControls.codeExecutionEnabled,
                         googleSearchEnabled = conversationControls.googleSearchEnabled,
-                        thinkingEnabled = conversationControls.thinkingEnabled,
-                        thinkingLevel = conversationControls.thinkingLevel,
-                        thinkingBudgetEnabled = conversationControls.thinkingBudgetEnabled,
-                        thinkingBudgetTokens = conversationControls.thinkingBudgetTokens,
+                        thinkingEnabled = conversationControls.thinkingEnabled, thinkingLevel = conversationControls.thinkingLevel,
+                        thinkingBudgetEnabled = conversationControls.thinkingBudgetEnabled, thinkingBudgetTokens = conversationControls.thinkingBudgetTokens,
                         openAiWebSearchAvailable = conversationControls.openAiWebSearchAvailable,
                         openAiWebSearchEnabled = conversationControls.openAiWebSearchEnabled,
                         onOpenAiWebSearchToggle = { enabled -> updateOpenAiNativeSearch(viewModel, conversationControls.settingsOwnerId, haptics, enabled) },
@@ -761,13 +761,16 @@ fun ChatApp(
                         contextEstimatedTokens = contextUsage.estimatedTokenCount,
                         contextTokenBudget = contextUsage.tokenBudget,
                         contextCompactThresholdPercent = compactThresholdPercent,
+                        contextCompactEnabled = compactEnabled,
+                        contextSystemPromptTokens = contextUsage.systemPromptTokens,
+                        contextToolTokens = contextUsage.toolTokens,
                         canCompact = currentConversationId != null && !isLoading && !isSwitching && !isStopping,
                         onCompactClick = {
                             dialogState.showManualCompact()
                         },
                         onAdvancedClick = dialogState::showAdvanced,
                         queuedSends = queuedSends,
-                        onRemoveQueuedSend = viewModel::removeQueuedSend,
+                        onRemoveQueuedSend = viewModel::removeQueuedSend, onSendQueuedNow = viewModel::sendQueuedNow,
                         isStopping = isStopping,
                     )
             }

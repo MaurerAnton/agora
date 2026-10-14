@@ -18,7 +18,6 @@ import androidx.compose.foundation.text.input.TextFieldState
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
@@ -27,6 +26,10 @@ import com.newoether.agora.ui.common.PersistedSliderFeedbackGate
 import com.newoether.agora.util.noOpBringIntoView
 import com.newoether.agora.viewmodel.ChatViewModel
 import kotlinx.coroutines.delay
+import com.newoether.agora.ui.components.optionClickable
+import com.newoether.agora.ui.components.SecretVisibilityToggle
+import com.newoether.agora.ui.components.rememberSecretVisible
+import com.newoether.agora.ui.components.secretVisualTransformation
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -113,6 +116,7 @@ fun SettingsWebSearchPage(viewModel: ChatViewModel, onBack: () -> Unit) {
                                                 ),
                                                 style = MaterialTheme.typography.bodyLarge.copy(fontWeight = FontWeight.Medium), color = MaterialTheme.colorScheme.onSurface
                                             )
+                                            var keyVisible by rememberSecretVisible()
                                             Box(modifier = Modifier.noOpBringIntoView().padding(top = 8.dp)) {
                                                 OutlinedTextField(
                                                     value = apiKeyText,
@@ -129,7 +133,8 @@ fun SettingsWebSearchPage(viewModel: ChatViewModel, onBack: () -> Unit) {
                                                             )
                                                         )
                                                     },
-                                                    visualTransformation = PasswordVisualTransformation(),
+                                                    visualTransformation = secretVisualTransformation(keyVisible),
+                                                    trailingIcon = { SecretVisibilityToggle(keyVisible) { keyVisible = !keyVisible } },
                                                     shape = RoundedCornerShape(16.dp),
                                                     modifier = Modifier.fillMaxWidth(),
                                                     textStyle = MaterialTheme.typography.bodyMedium.copy(color = MaterialTheme.colorScheme.onSurfaceVariant)
@@ -300,7 +305,7 @@ fun SettingsWebSearchPage(viewModel: ChatViewModel, onBack: () -> Unit) {
                                     }
                                 )
                             },
-                            modifier = Modifier.clickable {
+                            modifier = Modifier.optionClickable {
                                 viewModel.settings.setWebSearchProvider(key)
                                 showProviderDialog = false
                             }

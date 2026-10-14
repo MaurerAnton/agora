@@ -1,4 +1,4 @@
-<resources>
+<?xml version="1.0" encoding="utf-8"?><resources>
     <string name="app_name">Agora</string>
     <string name="agora_responded">Agora respondeu</string>
 
@@ -50,7 +50,7 @@
     <string name="tool_shell_listing">Listando shells disponíveis</string>
     <string name="tool_shell_list_done">Listagem de shells concluída</string>
     <string name="tool_shell_list_count">%1$d shells listados</string>
-    <string name="tool_execute_shell">Shell</string>
+    <string name="tool_execute_shell">Terminal</string>
     <string name="tool_shell_executing">Executado: %1$s</string>
     <string name="tool_shell_done">Comando shell concluído</string>
     <string name="tool_shell_failed">Falha no comando shell</string>
@@ -79,44 +79,44 @@
     <string name="tool_done">Concluído</string>
     <string name="tool_context">Ferramenta</string>
     <!-- New tool display names (P0) -->
-    <string name="tool_list_conversations">List Conversations</string>
-    <string name="tool_read_conversation">Read Conversation</string>
-    <string name="tool_file_read">Read File</string>
-    <string name="tool_file_write">Write File</string>
-    <string name="tool_file_edit">Edit File</string>
-    <string name="tool_file_glob">Find Files</string>
-    <string name="tool_file_grep">Search Files</string>
+    <string name="tool_list_conversations">Listar conversas</string>
+    <string name="tool_read_conversation">Ler conversa</string>
+    <string name="tool_file_read">Ler arquivo</string>
+    <string name="tool_file_write">Escrever arquivo</string>
+    <string name="tool_file_edit">Editar arquivo</string>
+    <string name="tool_file_glob">Localizar arquivos</string>
+    <string name="tool_file_grep">Buscar nos arquivos</string>
     <!-- Tool in-progress states (doing) -->
-    <string name="tool_listing_conversations">Listing conversations…</string>
-    <string name="tool_reading_conversation">Reading conversation…</string>
-    <string name="tool_reading_file">Reading %1$s…</string>
-    <string name="tool_writing_file">Writing %1$s…</string>
-    <string name="tool_editing_file">Editing %1$s…</string>
-    <string name="tool_finding_files">Finding %1$s…</string>
-    <string name="tool_searching_file">Searching %1$s…</string>
-    <string name="tool_executing_shell">Executing: %1$s…</string>
-    <string name="tool_reading_memory">Reading %1$s…</string>
-    <string name="tool_saving_memory">Saving %1$s…</string>
-    <string name="tool_updating_memory">Updating %1$s…</string>
-    <string name="tool_removing_memory">Removing %1$s…</string>
-    <string name="tool_looking_up_memories">Looking up memories…</string>
-    <string name="tool_updating_active">Updating active memory…</string>
-    <string name="tool_listing_shells">Listing shells…</string>
-    <string name="tool_searching_for">Searching for \'%1$s\'…</string>
+    <string name="tool_listing_conversations">Listando conversas…</string>
+    <string name="tool_reading_conversation">Lendo conversa…</string>
+    <string name="tool_reading_file">Lendo %1$s…</string>
+    <string name="tool_writing_file">Escrevendo %1$s…</string>
+    <string name="tool_editing_file">Editando %1$s…</string>
+    <string name="tool_finding_files">Localizando %1$s…</string>
+    <string name="tool_searching_file">Buscando em %1$s…</string>
+    <string name="tool_executing_shell">Executando: %1$s…</string>
+    <string name="tool_reading_memory">Lendo %1$s…</string>
+    <string name="tool_saving_memory">Salvando %1$s…</string>
+    <string name="tool_updating_memory">Atualizando %1$s…</string>
+    <string name="tool_removing_memory">Removendo %1$s…</string>
+    <string name="tool_looking_up_memories">Procurando nas memórias…</string>
+    <string name="tool_updating_active">Atualizando memória ativa…</string>
+    <string name="tool_listing_shells">Listando terminais…</string>
+    <string name="tool_searching_for">Buscando “%1$s”…</string>
     <!-- Tool done states (P0 + P1) -->
-    <string name="tool_listed_conversations">Listed %1$d conversations</string>
-    <string name="tool_listed_no_conversations">No conversations found</string>
-    <string name="tool_read_conversation_done">Read conversation: %1$s</string>
-    <string name="tool_read_file_done">Read %1$s</string>
-    <string name="tool_wrote_file">Wrote %1$s</string>
-    <string name="tool_edited_file">Edited %1$s</string>
-    <string name="tool_found_files">Found %1$d files</string>
-    <string name="tool_found_no_files">No files matched</string>
-    <string name="tool_searched_file">Found %1$d matches</string>
-    <string name="tool_executed_shell">Executed: %1$s (%2$d bytes)</string>
-    <string name="tool_executed_no_output">Executed: %1$s (no output)</string>
-    <string name="tool_read_file_failed">Read file failed</string>
-    <string name="crash_log_label">Crash Log</string>
+    <string name="tool_listed_conversations">%1$d conversas listadas</string>
+    <string name="tool_listed_no_conversations">Nenhuma conversa encontrada</string>
+    <string name="tool_read_conversation_done">Conversa lida: %1$s</string>
+    <string name="tool_read_file_done">%1$s lido</string>
+    <string name="tool_wrote_file">%1$s escrito</string>
+    <string name="tool_edited_file">%1$s editado</string>
+    <string name="tool_found_files">%1$d arquivos encontrados</string>
+    <string name="tool_found_no_files">Nenhum arquivo correspondente</string>
+    <string name="tool_searched_file">%1$d correspondências encontradas</string>
+    <string name="tool_executed_shell">Executado: %1$s (%2$d bytes)</string>
+    <string name="tool_executed_no_output">Executado: %1$s (sem saída)</string>
+    <string name="tool_read_file_failed">Falha ao ler o arquivo</string>
+    <string name="crash_log_label">Registro de falhas</string>
     <string name="message_info">Informações da mensagem</string>
     <string name="time_with_label">Hora: %1$s</string>
     <string name="model_with_label">Modelo: %1$s</string>
@@ -172,6 +172,9 @@
 
     <!-- Drawer -->
     <string name="conversations">Conversas</string>
+    <string name="pinned_conversations">Fixadas</string>
+    <string name="pin_conversation">Fixar</string>
+    <string name="unpin_conversation">Desafixar</string>
     <string name="conversation_unread_generation">Resposta gerada não lida</string>
     <string name="new_chat">Nova conversa</string>
 
@@ -184,7 +187,7 @@
     <string name="manual_search_method_desc">Como a barra de pesquisa no menu encontra resultados</string>
     <string name="search_method_keyword">Palavra-chave</string>
     <string name="search_method_rag">Semântica (RAG)</string>
-    <string name="embedding_title">Embedding</string>
+    <string name="embedding_title">Embeddings</string>
     <string name="embedding_model_label">Modelo</string>
     <string name="embedding_base_url_label">URL base</string>
     <string name="embedding_provider_label">Provedor</string>
@@ -311,7 +314,7 @@
     <string name="local_chat_delete_title">Excluir modelo local?</string>
     <string name="local_chat_delete_text">Tem certeza de que deseja excluir \'%1$s\'? Isso também excluirá o arquivo do modelo.</string>
     <string name="model_id_label">ID do modelo</string>
-    <string name="model_alias_label">Alias</string>
+    <string name="model_alias_label">Apelido</string>
 
     <!-- Settings - Group Labels -->
     <string name="settings_group_memory_data">Memória e dados</string>
@@ -336,6 +339,9 @@
     <string name="about_contribute">Contribuir</string>
     <string name="about_privacy_policy">Política de privacidade</string>
     <string name="about_source_code">Código-fonte</string>
+    <string name="about_license">Licença</string>
+    <string name="about_license_desc">GNU GPL-3.0</string>
+    <string name="about_license_history">As versões até a v2.1.0 foram publicadas sob a licença MIT.</string>
     <string name="about_version">Versão</string>
     <string name="about_rating">Avaliar o app</string>
     <string name="about_rating_desc">Este projeto foi desenvolvido por uma única pessoa. Agradeço muito o seu feedback.</string>
@@ -456,7 +462,6 @@
     <string name="pdf_selected">Selecionado</string>
 
     <!-- Caching & Sync -->
-    <string name="embedding_model_caching">O modelo de embedding \"%1$s\" está sendo armazenado em cache…</string>
     <string name="messages_not_cached">%1$d de %2$d mensagens sem cache.</string>
     <string name="cache_now">Armazenar em cache agora</string>
     <string name="no_messages_to_cache">Nenhuma mensagem para armazenar em cache.</string>
@@ -513,8 +518,8 @@
     <string name="onboarding_no_models">Nenhum modelo carregado.</string>
     <string name="onboarding_invalid_gguf_title">Arquivo GGUF inválido</string>
     <string name="onboarding_invalid_gguf_desc">O arquivo selecionado não parece ser um modelo GGUF válido.</string>
-    <string name="onboarding_hide_key">Ocultar chave</string>
-    <string name="onboarding_show_key">Mostrar chave</string>
+    <string name="secret_hide">Ocultar valor</string>
+    <string name="secret_show">Mostrar valor</string>
     <!-- ── Auto Backup ── -->
     <string name="auto_backup_title">Backup automático</string>
     <string name="auto_backup_subtitle">Exportar dados automaticamente segundo um cronograma</string>
@@ -560,6 +565,19 @@
     <string name="shell_confirm_deny">Negar</string>
     <string name="shell_confirm_setting">Confirmar ações de shell remoto</string>
     <string name="shell_confirm_setting_desc">Perguntar antes de o assistente executar comandos ou gravar arquivos em servidores SSH/Conch remotos</string>
+    <string name="shell_confirm_notification_channel">Aprovação de comandos</string>
+    <string name="shell_confirm_notification_desc">Pede para permitir ou negar um comando remoto enquanto o Agora está em segundo plano</string>
+    <string name="ask_user_title">O assistente está perguntando</string>
+    <string name="ask_user_send">Enviar</string>
+    <string name="ask_user_next">Próxima</string>
+    <string name="interaction_ask_user">Pergunta</string>
+    <string name="interaction_approval">Aprovação</string>
+    <string name="interaction_minimize">Minimizar</string>
+    <string name="interaction_expand">Expandir</string>
+    <string name="ask_user_custom_answer">Responda com suas palavras</string>
+    <string name="ask_user_skip">Ignorar</string>
+    <string name="ask_user_notification_channel">Pergunta do Agora</string>
+    <string name="ask_user_notification_desc">Pede que você responda a uma pergunta do assistente quando o chat não está aberto</string>
 
     <!-- Crash reporting -->
     <string name="crash_title">O Agora fechou inesperadamente</string>
@@ -579,6 +597,7 @@
     <string name="conversation_search_hint">Pesquisar…</string>
     <string name="conversation_share">Compartilhar</string>
     <string name="conversation_share_failed">Não foi possível compartilhar a conversa: %1$s</string>
+    <string name="conversation_deleted_elsewhere">Esta conversa foi excluída em outro dispositivo.</string>
     <string name="custom_provider_protocol_label">Formato da API</string>
     <string name="file_path_unknown">Arquivo desconhecido</string>
     <string name="import_file_too_large">Arquivo muito grande (%1$d MB). Escolha um arquivo de exportação menor.</string>
@@ -633,6 +652,8 @@
     <string name="context_compact_model">Modelo de compactação</string>
     <string name="context_compact_prompt">Prompt de compactação</string>
     <string name="context_compact_prompt_desc">Instruções do resumo</string>
+    <string name="context_compact_preserve_system">Manter o prompt do sistema</string>
+    <string name="context_compact_preserve_system_desc">A compactação usa o prompt de sistema da conversa; o prompt compacto abre a solicitação de resumo</string>
     <string name="context_compact_select_model">Selecionar modelo de compactação</string>
     <string name="context_compact_threshold">Limite de compactação automática</string>
     <string name="context_compact_threshold_desc">Compacte quando o contexto estimado atingir esta porcentagem da janela selecionada</string>
@@ -648,7 +669,13 @@
     <string name="thinking_segment_display_card">Cartão</string>
     <string name="thinking_segment_display_bottom_sheet">Painel inferior</string>
     <string name="thinking_segments_title">Segmentos de raciocínio</string>
-    <string name="context_usage_messages">~%1$s / %2$s tokens</string>
+    <string name="context_usage_messages">~%1$s / %2$s tokens</string>
+    <string name="context_part_system">Prompt do sistema</string>
+    <string name="context_part_tools">Ferramentas</string>
+    <string name="context_part_messages">Mensagens</string>
+    <string name="context_part_free">Livre</string>
+    <string name="context_part_reserved">Reservado</string>
+    <string name="context_part_used">Usado</string>
     <string name="context_compact_streaming">Compactando contexto…</string>
     <string name="context_compact_error">Erro de compactação</string>
     <string name="context_compact_stopped">Compactação interrompida</string>
@@ -718,6 +745,7 @@
     <string name="generation_error_network">Erro de rede: %1$s</string>
     <string name="generation_error_network_http">Erro de rede (%1$d): %2$s</string>
     <string name="generation_error_sse_parse">Não foi possível ler a resposta do servidor.</string>
+    <string name="generation_error_malformed_tool_call">O modelo retornou uma chamada de ferramenta que não pode ser usada: %1$s</string>
     <string name="generation_error_incomplete_stream">%1$s encerrou a resposta antes da hora. Nenhum sinal de conclusão chegou, então a resposta está incompleta.</string>
     <string name="generation_error_incomplete_tool_stream">%1$s encerrou a resposta durante uma chamada de ferramenta. Sem sinal de conclusão, a resposta está incompleta.</string>
     <string name="generation_error_incomplete_stream_reason">%1$s encerrou a resposta após o motivo de parada %2$s, sem sinal de conclusão.</string>
@@ -775,4 +803,14 @@
     <string name="thought_for_a_while">Pensou por um tempo</string>
     <string name="thought_for_a_while_called_tools">Pensou por um tempo, chamou %1$d ferramentas</string>
     <string name="remote_device">Dispositivo</string>
+    <!-- Upstream attribution copy, UTF-8 Base64 for lightweight bulk-rename resistance. -->
+    <string name="rating_origin_credit_b64">QWdvcmEgwrcgRGVzZW52b2x2aWRvIHBvciBuZXdvLWV0aGVy</string>
+    <string name="rating_origin_project_b64">UHJvamV0byBvcmlnaW5hbDogZ2l0aHViLmNvbS9uZXdvLWV0aGVyL0Fnb3Jh</string>
+    <string name="rating_origin_modified_title_b64">VmVyc8OjbyBtb2RpZmljYWRh</string>
+    <string name="rating_origin_modified_body_b64">RXN0ZSBhcGxpY2F0aXZvIHVzYSB1bSBub21lIGRlIHBhY290ZSBkaWZlcmVudGUgZG8gcHJvamV0byBvcmlnaW5hbCBlIGZvaSByZWVtcGFjb3RhZG8gb3UgbW9kaWZpY2Fkby4gTyBwcm9qZXRvIG9yaWdpbmFsIMOpIG8gQWdvcmEsIGRlc2Vudm9sdmlkbyBwb3IgbmV3by1ldGhlci4gQXMgYWx0ZXJhw6fDtWVzIGRlc3RhIHZlcnPDo28gc8OjbyBkZSByZXNwb25zYWJpbGlkYWRlIGRlIHNldSBkaXN0cmlidWlkb3IgZSBuw6NvIHJlcHJlc2VudGFtIG8gYXV0b3Igb3JpZ2luYWwu</string>
+    <string name="rating_origin_view_project_b64">VmVyIHByb2pldG8gb3JpZ2luYWw=</string>
+    <string name="message_source_task">Tarefa</string>
+    <string name="message_source_loop">Loop</string>
+    <string name="message_source_ask_user">Pergunta</string>
+    <string name="message_source_unanswered">Sem resposta</string>
 </resources>

@@ -420,6 +420,8 @@
     <string name="blur_effects_desc">對聊天列表頂部工具列下方套用模糊。關閉可節省效能。</string>
     <string name="parse_inline_dollar_math">解析 $…$ 行內公式</string>
     <string name="parse_inline_dollar_math_desc">關閉後，$ x $ 這類單美元符號運算式會以一般文字顯示，其他數學公式分隔符不受影響。</string>
+    <string name="auto_wrap_code_blocks">程式碼區塊自動換行</string>
+    <string name="auto_wrap_code_blocks_desc">開啟後，程式碼區塊中的長行自動換行顯示；關閉後恢復橫向捲動。</string>
     <string name="reduce_motion">減少動態效果</string>
     <string name="reduce_motion_desc">減少持續運動和大範圍空間位移，同時保留淡入淡出、直接手勢和必要的狀態回饋。</string>
     <string name="message_display">訊息顯示</string>
@@ -486,4 +488,12 @@
     <string name="openai_service_tier_priority">優先</string>
     <string name="openai_service_tier_fast">快速</string>
     <string name="openai_service_tier_ultrafast">超高速</string>
+    <string name="settings_interaction">互動</string>
+    <string name="settings_interaction_desc">助手向你提問的方式</string>
+    <string name="ask_user_enable">允許助手提問</string>
+    <string name="ask_user_enable_desc">讓模型可以用工具向你提問，並等你做出選擇</string>
+    <string name="unsaved_changes_title">未儲存的變更</string>
+    <string name="unsaved_changes_message">有未儲存的變更，確定要捨棄嗎？</string>
+    <string name="unsaved_changes_discard">捨棄</string>
+    <string name="unsaved_changes_keep_editing">繼續編輯</string>
 </resources>

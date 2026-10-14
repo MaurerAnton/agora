@@ -81,7 +81,7 @@ class RemoteConnectionRecoveryTest {
         assertEquals(2, reads)
         assertEquals("idle", vm.state.value.runtime?.status)
         assertTrue(notices.isEmpty())
-        coVerify(exactly = 0) { client.create(); client.send(any(), any(), any()) }
+        coVerify(exactly = 0) { client.create(any(), any(), any(), any()); client.send(any(), any(), any(), any()) }
         vm.setVisible(false)
     }
 
@@ -212,12 +212,14 @@ class RemoteConnectionRecoveryTest {
         assertEquals(RemoteDeviceStatus.CONNECTED, vm.state.value.devices.single().status)
         assertFalse(vm.state.value.loading)
         assertNull(vm.state.value.runtime)
+        assertEquals("model", vm.state.value.selectedModel)
+        assertFalse(vm.state.value.canEditSettings)
         assertTrue(notices.isEmpty())
         advanceTimeBy(3000); runCurrent()
         assertEquals(listOf("answer"), vm.state.value.nodes.map { it.id })
         assertEquals(RemoteFailure.SERVICE, notices.single().failure)
         coVerify(exactly = 1) { client.connect() }
-        coVerify(exactly = 0) { client.create(); client.send(any(), any(), any()) }
+        coVerify(exactly = 0) { client.create(any(), any(), any(), any()); client.send(any(), any(), any(), any()) }
         vm.setVisible(false)
     }
 }

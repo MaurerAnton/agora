@@ -16,12 +16,14 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.KeyboardType
-import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.text.input.VisualTransformation
 import androidx.compose.ui.unit.dp
 import com.newoether.agora.R
 import com.newoether.agora.util.noOpBringIntoView
 import com.newoether.agora.viewmodel.ChatViewModel
+import com.newoether.agora.ui.components.SecretVisibilityToggle
+import com.newoether.agora.ui.components.rememberSecretVisible
+import com.newoether.agora.ui.components.secretVisualTransformation
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -157,6 +159,7 @@ private fun ProxyLabeledField(
     singleLine: Boolean = true
 ) {
     var draft by remember { mutableStateOf(value) }
+    var secretVisible by rememberSecretVisible()
     LaunchedEffect(value) { if (value != draft) draft = value }
     Column(modifier = modifier) {
         Text(
@@ -179,7 +182,12 @@ private fun ProxyLabeledField(
                 placeholder = placeholder?.let { ph -> { Text(ph, style = MaterialTheme.typography.bodyMedium) } },
                 singleLine = singleLine,
                 keyboardOptions = KeyboardOptions(keyboardType = keyboard),
-                visualTransformation = if (password) PasswordVisualTransformation() else VisualTransformation.None,
+                visualTransformation = if (password) secretVisualTransformation(secretVisible) else VisualTransformation.None,
+                trailingIcon = if (password) {
+                    { SecretVisibilityToggle(secretVisible) { secretVisible = !secretVisible } }
+                } else {
+                    null
+                },
                 shape = RoundedCornerShape(16.dp),
                 textStyle = MaterialTheme.typography.bodyMedium.copy(color = MaterialTheme.colorScheme.onSurfaceVariant),
                 modifier = Modifier.fillMaxWidth()

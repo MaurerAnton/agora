@@ -29,15 +29,21 @@ set(GGML_OPENMP OFF CACHE BOOL "" FORCE)
 add_subdirectory(${LLAMA_CPP_DIR} ${CMAKE_CURRENT_BINARY_DIR}/llama)
 add_subdirectory(${LLAMA_CPP_DIR}/tools/mtmd ${CMAKE_CURRENT_BINARY_DIR}/mtmd)
 
-set(AGORA_ANDROID_CPU_BACKENDS
-    ggml-cpu-android_armv8.0_1
-    ggml-cpu-android_armv8.2_1
-    ggml-cpu-android_armv8.2_2
-    ggml-cpu-android_armv8.6_1
-    ggml-cpu-android_armv9.0_1
-    ggml-cpu-android_armv9.2_1
-    ggml-cpu-android_armv9.2_2
-)
+if(ANDROID_ABI STREQUAL "arm64-v8a")
+    set(AGORA_ANDROID_CPU_BACKENDS
+        ggml-cpu-android_armv8.0_1
+        ggml-cpu-android_armv8.2_1
+        ggml-cpu-android_armv8.2_2
+        ggml-cpu-android_armv8.6_1
+        ggml-cpu-android_armv9.0_1
+        ggml-cpu-android_armv9.2_1
+        ggml-cpu-android_armv9.2_2
+    )
+elseif(ANDROID_ABI STREQUAL "x86_64")
+    set(AGORA_ANDROID_CPU_BACKENDS ggml-cpu-x64)
+else()
+    message(FATAL_ERROR "Unsupported Android ABI: ${ANDROID_ABI}")
+endif()
 foreach(backend IN LISTS AGORA_ANDROID_CPU_BACKENDS)
     if(NOT TARGET ${backend})
         message(FATAL_ERROR "Required Android CPU backend target is missing: ${backend}")

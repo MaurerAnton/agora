@@ -4,8 +4,9 @@ import android.content.Context
 import com.newoether.agora.R
 import com.newoether.agora.api.ProviderRequestInput
 import com.newoether.agora.api.ProviderRequestResolver
-import com.newoether.agora.api.util.ContextTokenEstimator
 import com.newoether.agora.api.util.prepareMessages
+import com.newoether.agora.api.util.tokens.ContextCostModels
+import com.newoether.agora.api.util.tokens.CostModelContextEstimator
 import com.newoether.agora.data.ConversationSettings
 import com.newoether.agora.data.MemoryManager
 import com.newoether.agora.data.SkillManager
@@ -15,10 +16,13 @@ import com.newoether.agora.data.providerDisplayName
 import com.newoether.agora.data.isResponsesApiEnabledForProvider
 import com.newoether.agora.data.isAnthropicCacheEnabledForProvider
 import com.newoether.agora.data.anthropicCacheTtlForProvider
+import com.newoether.agora.data.isPromptCacheKeyEnabledForProvider
 import com.newoether.agora.data.local.ChatEntity
+import com.newoether.agora.data.local.NewChatPersistEntity
 import com.newoether.agora.data.repository.ConversationRepository
 import com.newoether.agora.data.repository.SettingsRepository
 import com.newoether.agora.model.ModelId
+import com.newoether.agora.model.ModelThinkingCapabilities
 import com.newoether.agora.model.ContextBudget
 import com.newoether.agora.model.OpenAiServiceTiers
 import com.newoether.agora.model.apiModelName
@@ -26,8 +30,9 @@ import com.newoether.agora.util.Constants
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.async
 import kotlinx.coroutines.coroutineScope
-import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.withContext
+import kotlinx.serialization.encodeToString
+import kotlinx.serialization.json.Json
 
 internal fun buildPromptRuntimeValues(
     now: java.util.Date,
@@ -66,16 +71,12 @@ class GenerationRequestBuilder(
     private val providerRegistry: ProviderRegistry,
     private val ragManager: RagManager,
     private val appContext: Context,
-    // This remains a StateFlow because buildEffectiveConversationSettings reads its current value.
-    private val pendingConversationSettings: StateFlow<ConversationSettings?>,
-    // resolveProviderKey uses this callback to emit snackbar messages.
-    private val onSnackbar: (String) -> Unit,
 ) {
     data class ProviderKey(val providerName: String, val apiKey: String)
 
     /** Resolves the active provider+key for [modelId] and verifies configuration.
-     *  Emits a snackbar and returns null when the provider is not configured. */
-    internal fun resolveProviderKey(modelId: String): ProviderKey? {
+     *  Reports the problem through [report] and returns null when the provider is not configured. */
+    internal fun resolveProviderKey(modelId: String, report: (String) -> Unit): ProviderKey? {
         val providerName = providerRegistry.providerForModel(modelId)
         val activeKey = settings.resolveActiveKey(providerName) ?: ""
         if (!providerRegistry.isConfigured(providerName, activeKey)) {
@@ -83,7 +84,7 @@ class GenerationRequestBuilder(
                 providerName,
                 settings.customProviders.value,
             )
-            onSnackbar(
+            report(
                 appContext.getString(
                     R.string.no_api_key_for_provider,
                     displayProviderName,
@@ -94,9 +95,89 @@ class GenerationRequestBuilder(
         return ProviderKey(providerName, activeKey)
     }
 
-    internal suspend fun awaitProviderKey(modelId: String): ProviderKey? {
+    internal suspend fun prepareForegroundSend(
+        target: ForegroundSendTarget,
+        composer: ConversationComposerSnapshot,
+        validationContext: Context,
+        report: (String) -> Unit,
+    ): ForegroundSendAdmission? {
+        val startedNs = System.nanoTime()
+        fun markStage(name: String) {
+            com.newoether.agora.util.DebugLog.sendStage(
+                runId = target.runId,
+                component = "prepare",
+                stage = name,
+                elapsedMs = (System.nanoTime() - startedNs) / 1_000_000L,
+            )
+        }
+        markStage("await-settings")
+        settings.awaitInitialLoad()
+        if (target.modelId.isBlank()) {
+            report(validationContext.getString(R.string.no_model_selected))
+            return null
+        }
+        markStage("await-provider")
+        val selectedProvider = awaitProviderKey(target.modelId, report) ?: return null
+        markStage("validate-provider")
+        if (selectedProvider.providerName == Constants.PROVIDER_LOCAL) {
+            val localModelId = target.modelId.substringAfter("${Constants.PROVIDER_LOCAL}:")
+            val localConfig = settings.localChatModels.value.find { it.modelId == localModelId }
+            if (localConfig == null || !java.io.File(localConfig.localFilePath).exists()) {
+                report(validationContext.getString(R.string.local_model_not_found))
+                return null
+            }
+        }
+        markStage("await-workspace")
+        val workspace = target.newChatWorkspace?.awaitCaptured()
+        markStage(if (target.wasNewChat) "new-conversation-snapshot" else "read-conversation")
+        val conversationSnapshot = if (target.wasNewChat) {
+            ChatEntity(
+                id = target.conversationId,
+                title = initialConversationTitle(
+                    prompt = composer.text,
+                    fallback = appContext.getString(R.string.new_chat),
+                ),
+                modelId = target.modelId,
+                systemPromptId = workspace?.systemPromptId,
+            )
+        } else {
+            convRepo.getConversation(target.conversationId) ?: return null
+        }
+        val settingsOverride = if (target.wasNewChat) {
+            workspace?.conversationSettings
+        } else {
+            settings.conversationSettings.value[target.ownerId]
+        }
+        markStage("capture-generation-snapshot")
+        val generationSnapshot = captureAdmissionSnapshot(
+            conversationId = target.conversationId,
+            runId = target.runId,
+            modelId = target.modelId,
+            conversationOverride = conversationSnapshot,
+            conversationSettingsOverride = settingsOverride,
+        )
+        markStage("serialize-admission")
+        return ForegroundSendAdmission(
+            target = target,
+            generationSnapshot = generationSnapshot,
+            newConversation = conversationSnapshot.takeIf { target.wasNewChat },
+            newConversationSettings = workspace?.conversationSettings,
+            newChatPersistSnapshot = if (target.wasNewChat && workspace?.sessionLocal != true) {
+                (workspace?.persisted ?: NewChatPersistEntity()).copy(
+                    draftText = composer.text,
+                    draftAttachments = composer.attachments
+                        .takeIf(List<*>::isNotEmpty)
+                        ?.let(Json::encodeToString),
+                )
+            } else {
+                null
+            },
+        )
+    }
+
+    internal suspend fun awaitProviderKey(modelId: String, report: (String) -> Unit): ProviderKey? {
         providerRegistry.awaitInitialSync()
-        return resolveProviderKey(modelId)
+        return resolveProviderKey(modelId, report)
     }
 
     private fun resolveTranscriptionProviderName(model: String?): String =
@@ -139,7 +220,6 @@ class GenerationRequestBuilder(
 
     fun buildEffectiveConversationSettings(conversationId: String): ConversationSettings {
         val overrides = settings.conversationSettings.value[conversationId]
-            ?: pendingConversationSettings.value  // new chat: may not be saved to map yet
             ?: ConversationSettings()
         return resolveEffectiveConversationSettings(overrides)
     }
@@ -231,11 +311,21 @@ class GenerationRequestBuilder(
         } else {
             settings.resolveActiveKey(compactProviderName).orEmpty()
         }
+        val compactPreserveSystemPrompt = settings.contextCompactPreserveSystemPrompt.value
+        val compactSystemPrompt = if (compactPreserveSystemPrompt) {
+            resolveStandardSystemPromptForCompact(
+                conversationId = conversationId,
+                conversationOverride = conversationOverride,
+                modelId = compactModel,
+            )
+        } else {
+            settings.contextCompactPrompt.value
+        }
         val (compactGenerationConfig, compactGenerationContext) = buildGenerationPair(
             providerName = compactProviderName,
             modelId = compactModel,
             activeKey = compactKey,
-            resolvedSystemPrompt = settings.contextCompactPrompt.value,
+            resolvedSystemPrompt = compactSystemPrompt,
             resolvedUserPrepend = null,
             resolvedUserPostpend = null,
             effectiveSettings = effectiveSettings,
@@ -250,6 +340,7 @@ class GenerationRequestBuilder(
                 model = compactModel,
                 prompt = settings.contextCompactPrompt.value,
                 retainLogicalMessages = settings.contextCompactRetainCount.value,
+                preserveSystemPrompt = compactPreserveSystemPrompt,
             ),
             providerName = compactProviderName,
             apiKey = compactKey,
@@ -326,10 +417,14 @@ class GenerationRequestBuilder(
         conversationId: String,
         modelId: String,
         systemPromptIdOverride: String? = null,
+        // New Chat preview: the settings of the client's New Chat page, which has no saved entry.
+        conversationSettingsOverride: ConversationSettings? = null,
     ): GenerationContextProjectionSnapshot {
         val selectedModelId = providerRegistry.canonicalModelId(modelId)
         val providerName = providerRegistry.providerForModel(selectedModelId)
-        val effectiveSettings = buildEffectiveConversationSettings(conversationId)
+        val effectiveSettings = conversationSettingsOverride
+            ?.let(::resolveEffectiveConversationSettings)
+            ?: buildEffectiveConversationSettings(conversationId)
         val (baseConfig, context) = buildGenerationPair(
             providerName = providerName,
             modelId = selectedModelId,
@@ -410,11 +505,13 @@ class GenerationRequestBuilder(
             builtInOpenAiEnabled = settings.openAiResponsesApiEnabled.value,
             customProviders = settings.customProviders.value,
         )
+        val apiModelId = ModelId.parse(providerRegistry.canonicalModelId(modelId)).modelName
         val config = GenerationConfig(
             anthropicCacheEnabled = isAnthropicCacheEnabledForProvider(providerName, cacheEnabled, cacheProviders),
             anthropicCacheTtl = anthropicCacheTtlForProvider(providerName, cacheTtl, cacheProviders),
+            promptCacheKeyEnabled = isPromptCacheKeyEnabledForProvider(providerName, cacheProviders),
             providerName = providerName,
-            modelId = ModelId.parse(providerRegistry.canonicalModelId(modelId)).modelName,
+            modelId = apiModelId,
             apiKey = activeKey,
             effectiveSystemPrompt = resolvedSystemPrompt,
             maxContextWindow = ContextBudget.normalize(
@@ -432,6 +529,8 @@ class GenerationRequestBuilder(
                 enabled = effectiveSettings.openAiServiceTierEnabled == true,
                 value = effectiveSettings.openAiServiceTier,
                 responsesApiEnabled = responsesApiEnabled,
+                modelId = apiModelId,
+                officialProvider = providerName == Constants.PROVIDER_OPENAI,
             ),
             responsesApiEnabled = responsesApiEnabled,
             openAiWebSearchEnabled =
@@ -467,6 +566,7 @@ class GenerationRequestBuilder(
             webSearchNumResults = settings.webSearchNumResults.value,
             webSearchBaseUrl = settings.webSearchBaseUrl.value,
             imageGenEnabled = settings.imageGenEnabled.value && imageGenModel?.contains(":") == true,
+            askUserEnabled = settings.askUserEnabled.value,
             imageGenApiKey = resolveImageGenApiKey(imageGenModel),
             imageGenBaseUrl = resolveImageGenBaseUrl(imageGenModel),
             imageGenModel = resolveImageGenModelId(imageGenModel),
@@ -508,6 +608,25 @@ class GenerationRequestBuilder(
         systemPrompts = settings.systemPrompts.value.toList(),
     )
 
+    /**
+     * Preserved-Compact path: resolve the conversation's ordinary system prompt so the
+     * compaction request carries exactly what a normal generation would send for the compact
+     * model. Prompt variables are evaluated at admission; compaction is single-pass, so no
+     * per-provider-pass re-resolution is required.
+     */
+    private suspend fun resolveStandardSystemPromptForCompact(
+        conversationId: String,
+        conversationOverride: ChatEntity?,
+        modelId: String,
+    ): String? {
+        val promptTemplate = capturePromptTemplate(
+            currentId = conversationId,
+            conversationOverride = conversationOverride,
+            promptSettings = capturePromptSettings(),
+        )
+        return resolvePromptTemplate(promptTemplate, modelId).systemPrompt
+    }
+
     data class ResolvedPrompt(
         val systemPrompt: String?,
         val userPrepend: String?,
@@ -527,12 +646,17 @@ class GenerationRequestBuilder(
             ?: conversation?.systemPromptId
             ?: promptSettings.activeSystemPromptId
         val entry = promptSettings.systemPrompts.find { it.id == targetPromptId }
+        // The active-memory access switch only governs the tools. The prompt always carries the
+        // stored active memory so turning the tools off cannot erase context. It is frozen here,
+        // once per Run, rather than re-read on every Provider pass.
+        val activeMemory = withContext(Dispatchers.IO) { memoryManager.getActiveMemory() }
         GenerationPromptTemplate(
             systemItems = entry?.resolvedSystemItems?.toList().orEmpty(),
             userItems = entry?.resolvedUserItems?.toList()
                 ?: PredefinedVariables.normalizeMessageTemplate(emptyList()),
             assistantItems = entry?.resolvedAssistantItems?.toList()
                 ?: PredefinedVariables.normalizeMessageTemplate(emptyList()),
+            activeMemory = activeMemory,
         )
     }
 
@@ -541,7 +665,9 @@ class GenerationRequestBuilder(
         activeModel: String,
     ): ProviderRequestResolver = ProviderRequestResolver { messages, providerConfig ->
         val resolved = resolvePromptTemplate(promptTemplate, activeModel)
-        val fixedTokenCost = ContextTokenEstimator.estimateFixed(
+        // One cost model per request: the fixed cost, the trimming and the indicator must agree.
+        val costs = ContextCostModels.forModel(providerConfig.modelId)
+        val fixedTokenCost = CostModelContextEstimator(costs).estimateFixed(
             systemPrompt = resolved.systemPrompt,
             tools = providerConfig.tools.orEmpty(),
             initialUserPrompt = null,
@@ -560,7 +686,7 @@ class GenerationRequestBuilder(
             assistantPostpend = resolved.assistantPostpend,
         )
         ProviderRequestInput(
-            messages = prepareMessages(projectedMessages, providerTokenBudget),
+            messages = prepareMessages(projectedMessages, providerTokenBudget, costs = costs),
             systemPrompt = resolved.systemPrompt,
         )
     }
@@ -570,11 +696,7 @@ class GenerationRequestBuilder(
         activeModel: String,
     ): ResolvedPrompt = withContext(Dispatchers.Default) {
         coroutineScope {
-            val includeActiveMemory = settings.accessActiveMemory.value
             val includeSkillCatalog = settings.accessSkills.value
-            val activeMemoryDeferred = async(Dispatchers.IO) {
-                if (includeActiveMemory) memoryManager.getActiveMemory() else ""
-            }
             val skillCatalogDeferred = async {
                 if (includeSkillCatalog) skillManager.catalog() else ""
             }
@@ -584,9 +706,7 @@ class GenerationRequestBuilder(
             val runtimeValues = buildPromptRuntimeValues(
                 now = java.util.Date(),
                 modelId = modelId,
-                activeMemory = activeMemoryDeferred.await()
-                    .takeIf { includeActiveMemory }
-                    .orEmpty(),
+                activeMemory = promptTemplate.activeMemory,
                 skillCatalog = skillCatalogDeferred.await()
                     .takeIf { includeSkillCatalog }
                     .orEmpty(),

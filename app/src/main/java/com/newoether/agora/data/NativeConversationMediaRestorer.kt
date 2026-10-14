@@ -71,11 +71,8 @@ internal class NativeConversationMediaRestorer(
                     else -> "draft_import_"
                 }
                 val target = File(targetDir, "$prefix${UUID.randomUUID()}.$extension")
-                val copied = archive.copyTo(path, target) ?: return null
-                if (copied <= 0L) {
-                    target.delete()
-                    return null
-                }
+                // An empty attachment is exported as a normal entry, so it is restored as one.
+                archive.copyTo(path, target) ?: return null
                 createdFiles += target
                 val uri = if (kind == "image") {
                     FileProvider.getUriForFile(

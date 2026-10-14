@@ -98,6 +98,7 @@ internal fun MessageList(
     thinkingSegmentDisplayMode: String = ThinkingSegmentDisplayModes.DEFAULT,
     autoExpandActiveGroup: Boolean = true,
     parseInlineDollarMath: Boolean = false,
+    autoWrapCodeBlocks: Boolean = true,
     contextRetainedMessageIds: Set<String> = emptySet(),
     modelAliases: StableModelAliases = StableModelAliases(),
     customProviders: List<com.newoether.agora.data.CustomProviderConfig> = emptyList(),
@@ -583,6 +584,7 @@ internal fun MessageList(
             autoExpandActiveGroup = autoExpandActiveGroup,
 
             parseInlineDollarMath = parseInlineDollarMath,
+            autoWrapCodeBlocks = autoWrapCodeBlocks,
             groupedSegmentAutoExpansionController =
                 groupedSegmentAutoExpansionController,
             onStartEdit = {
@@ -724,6 +726,7 @@ internal fun MessageList(
         streamingMessage = streamingMessage,
         observeMessage = observeMessage,
         parseInlineDollarMath = parseInlineDollarMath,
+        autoWrapCodeBlocks = autoWrapCodeBlocks,
         onMediaClick = onMediaClick,
         modifier = modifier,
     ) { requestSegmentDetail ->

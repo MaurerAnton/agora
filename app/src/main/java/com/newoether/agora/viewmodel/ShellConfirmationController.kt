@@ -1,22 +1,17 @@
 package com.newoether.agora.viewmodel
 
 import com.newoether.agora.data.repository.SettingsRepository
-import com.newoether.agora.service.AppForegroundTracker
 import com.newoether.agora.util.Constants
 import kotlinx.coroutines.CompletableDeferred
 import kotlinx.coroutines.TimeoutCancellationException
-import kotlinx.coroutines.async
-import kotlinx.coroutines.coroutineScope
-import kotlinx.coroutines.flow.filter
-import kotlinx.coroutines.flow.first
-import kotlinx.coroutines.withTimeout
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
-import kotlinx.coroutines.selects.select
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
+import kotlinx.coroutines.withTimeout
 import java.util.Collections
+import java.util.concurrent.atomic.AtomicLong
 
 /**
  * Coordinates user confirmation of shell commands issued by remote MCP / shell servers.
@@ -26,14 +21,27 @@ import java.util.Collections
  * (which answers). Extracted from [ChatViewModel] as a single responsibility so the
  * trust policy lives in one place and is independently testable.
  */
-class ShellConfirmationController(
-    private val settings: SettingsRepository,
-    private val appForeground: StateFlow<Boolean> = AppForegroundTracker.foreground,
+class ShellConfirmationController internal constructor(
+    private val confirmEnabled: StateFlow<Boolean>,
+    private val persistEnabled: (Boolean) -> Unit,
 ) {
+    /**
+     * [id] identifies this exact prompt. Answers carry it so a late reply for a prompt that has
+     * already been answered or timed out can never resolve the prompt now on screen.
+     */
     data class PendingShellCommand(
+        val id: Long,
         val server: String,
         val summary: String,
-        val deferred: CompletableDeferred<Boolean>
+        val deferred: CompletableDeferred<Boolean>,
+        /** Conversation whose tool call is waiting; a notification tap opens it. */
+        val conversationId: String? = null,
+    )
+    val notificationSessionId: String = java.util.UUID.randomUUID().toString()
+
+    constructor(settings: SettingsRepository) : this(
+        confirmEnabled = settings.shellConfirmEnabled,
+        persistEnabled = { enabled -> settings.setShellConfirmEnabled(enabled) },
     )
 
     private val _pendingShellCommand = MutableStateFlow<PendingShellCommand?>(null)
@@ -42,61 +50,54 @@ class ShellConfirmationController(
     // Servers the user chose to trust for the rest of this app session.
     private val sessionAllowedServers = Collections.synchronizedSet(mutableSetOf<String>())
 
+    private val nextPromptId = AtomicLong(1)
+
     // One prompt on screen at a time. Without this, parallel conversations overwrite each
     // other's pending prompt: the loser's dialog never renders and its confirm() silently
     // times out refused.
     private val promptMutex = Mutex()
 
     /** Suspends until the user resolves the prompt; returns whether the command may run. */
-    suspend fun confirm(server: String, summary: String): Boolean {
-        if (!settings.shellConfirmEnabled.value) return true
+    suspend fun confirm(server: String, summary: String, conversationId: String? = null): Boolean {
+        if (!confirmEnabled.value) return true
         if (sessionAllowedServers.contains(server)) return true
-        // A Worker has no UI surface while the app is backgrounded. Refuse immediately instead
-        // of occupying the tool loop for the full confirmation timeout.
-        if (!appForeground.value) return false
         return promptMutex.withLock {
             // Re-check after the wait — the user may have trusted this server while an
             // earlier conversation's prompt was up.
             if (sessionAllowedServers.contains(server)) return@withLock true
-            if (!appForeground.value) return@withLock false
             val deferred = CompletableDeferred<Boolean>()
-            _pendingShellCommand.value = PendingShellCommand(server, summary, deferred)
+            val promptId = nextPromptId.getAndIncrement()
+            _pendingShellCommand.value = PendingShellCommand(promptId, server, summary, deferred, conversationId)
             try {
-                // Activity recreation keeps this process-scoped prompt alive. Moving the whole app
-                // to the background is different: there is no visible decision surface, so cancel
-                // the wait immediately. The timeout remains a final safety bound for a foreground
-                // Activity that never answers.
-                withTimeout(Constants.SHELL_CONFIRM_TIMEOUT_MS) {
-                    coroutineScope {
-                        val backgrounded = async {
-                            appForeground.filter { foreground -> !foreground }.first()
-                            false
-                        }
-                        try {
-                            select {
-                                deferred.onAwait { allowed -> allowed }
-                                backgrounded.onAwait { allowed -> allowed }
-                            }
-                        } finally {
-                            backgrounded.cancel()
-                        }
-                    }
-                }
+                // Backgrounding the app does not answer the request. There is no visible dialog
+                // there, so the app layer re-surfaces the wait as a notification with the same
+                // Allow/Deny actions; the command runs only on an explicit answer. The timeout is
+                // the final bound so an unanswered request cannot hold the tool loop forever, and
+                // Activity recreation keeps this process-scoped prompt alive as before.
+                withTimeout(Constants.SHELL_CONFIRM_TIMEOUT_MS) { deferred.await() }
             } catch (e: TimeoutCancellationException) {
                 false
             } finally {
-                if (_pendingShellCommand.value?.deferred === deferred) _pendingShellCommand.value = null
+                val pending = _pendingShellCommand.value
+                if (pending?.deferred === deferred) {
+                    _pendingShellCommand.compareAndSet(pending, null)
+                }
             }
         }
     }
 
-    /** Called by the UI to resolve a pending confirmation. */
-    fun resolve(allow: Boolean, alwaysAllowServer: Boolean = false) {
+    /**
+     * Called by the UI or by a notification action to answer a pending confirmation. A [promptId]
+     * that is no longer pending is ignored, so a prompt can never be answered twice and a stale
+     * answer can never decide a newer request.
+     */
+    fun resolve(promptId: Long, allow: Boolean, alwaysAllowServer: Boolean = false) {
         val pending = _pendingShellCommand.value ?: return
+        if (pending.id != promptId) return
+        if (!_pendingShellCommand.compareAndSet(pending, null)) return
         if (allow && alwaysAllowServer) sessionAllowedServers.add(pending.server)
         pending.deferred.complete(allow)
-        _pendingShellCommand.value = null
     }
 
-    fun setEnabled(enabled: Boolean) = settings.setShellConfirmEnabled(enabled)
+    fun setEnabled(enabled: Boolean) = persistEnabled(enabled)
 }

@@ -13,3 +13,11 @@ The rating form sends only the fields you deliberately submit—rating, name, em
 After an unexpected crash, Agora stores one pending report locally and, on the next launch, asks whether you want to send it. Nothing is uploaded without that explicit action. The report contains the stack trace, app/Android version, device manufacturer/model, timestamp, and bounded diagnostic event tags; it does not include conversation text, credentials, or device identifiers.
 
 For data handling and network destinations, see [Privacy & Security](privacy.md).
+
+## License
+
+Agora v2.2.0 and later are released under the [GNU General Public License v3.0](https://github.com/newo-ether/Agora/blob/master/LICENSE).
+
+Versions up to v2.1.0 remain available under their [original MIT License](https://github.com/newo-ether/Agora/blob/9fc92fc3518c880158111ae1e9534ed8ffd09c6d/LICENSE). This is a version-based license history, not a choice of MIT or GPL for the current project.
+
+The complete corresponding source is the public repository at [github.com/newo-ether/Agora](https://github.com/newo-ether/Agora), which the **About** screen also links to. Redistributors must keep the copyright and license notices, state that they changed the files, and make the corresponding source available under the same license.

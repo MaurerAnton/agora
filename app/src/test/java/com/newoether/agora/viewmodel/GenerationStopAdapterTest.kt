@@ -18,7 +18,6 @@ import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.SupervisorJob
-import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.runBlocking
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertTrue
@@ -29,10 +28,10 @@ class GenerationStopAdapterTest {
     fun noOpenConversationOrRuntimeIsANoOp() {
         val fixture = Fixture(currentConversationId = null)
 
-        fixture.adapter.stopVisibleConversation()
-        fixture.currentConversationId.value = "missing"
+        fixture.stop()
+        fixture.client.open = "missing"
         every { fixture.registry.get("missing") } returns null
-        fixture.adapter.stopVisibleConversation()
+        fixture.stop()
 
         verify(exactly = 0) { fixture.state.requestStop(any()) }
     }
@@ -52,7 +51,7 @@ class GenerationStopAdapterTest {
             capturedMessages = capturedMessages,
         )
 
-        fixture.adapter.stopVisibleConversation()
+        fixture.stop()
 
         assertEquals(listOf("sending"), capturedMessages.captured.map { it.id })
         assertEquals(MessageStatus.STOPPED, capturedMessages.captured.single().status)
@@ -81,7 +80,7 @@ class GenerationStopAdapterTest {
             success = true,
         )
 
-        fixture.adapter.stopVisibleConversation()
+        fixture.stop()
 
         assertEquals(MessageStatus.SENDING, fixture.renderStore.streamingMessage?.status)
         verify(exactly = 0) { fixture.state.clearStoppedOverlay() }
@@ -97,28 +96,59 @@ class GenerationStopAdapterTest {
             success = false,
         )
 
-        fixture.adapter.stopVisibleConversation()
+        fixture.stop()
 
         assertEquals(listOf("failed"), fixture.failures)
         verify(exactly = 0) { fixture.state.clearStoppedOverlay() }
     }
 
+    @Test
+    fun stoppedRowsReachEveryClientShowingTheConversationAndFailureOnlyTheOrigin() {
+        val fixture = Fixture()
+        val otherViewer = FakeChatClient(open = "conversation")
+        val elsewhere = FakeChatClient(open = "another")
+        fixture.clients.attach(otherViewer)
+        fixture.clients.attach(elsewhere)
+        listOf(fixture.renderStore, otherViewer.renderStore, elsewhere.renderStore).forEach {
+            it.replaceGraph(allMessages = listOf(USER, SENDING_MODEL), selectedChildren = emptyMap())
+        }
+        fixture.stubStop(stoppedMessage = null)
+        fixture.stubFinalization(
+            outcome = ConversationGenerationState.StopFinalizationOutcome.FAILED,
+            success = false,
+        )
+
+        fixture.stop()
+
+        assertEquals(
+            MessageStatus.STOPPED,
+            otherViewer.renderStore.allMessages.single { it.id == "sending" }.status,
+        )
+        assertEquals(
+            MessageStatus.SENDING,
+            elsewhere.renderStore.allMessages.single { it.id == "sending" }.status,
+        )
+        assertEquals(listOf("failed"), fixture.failures)
+        assertTrue(otherViewer.snackbars.isEmpty())
+    }
+
     private class Fixture(currentConversationId: String? = "conversation") {
-        val currentConversationId = MutableStateFlow(currentConversationId)
+        val client = FakeChatClient(open = currentConversationId)
+        val clients = ChatClients().also { it.attach(client) }
         val registry = mockk<ConversationStateRegistry>()
         val state = mockk<ConversationGenerationState>()
-        val renderStore = ConversationRenderStore()
+        val renderStore: ConversationRenderStore get() = client.renderStore
         val finalizer = mockk<GenerationFinalizer>()
-        val failures = mutableListOf<String>()
+        val failures: List<String> get() = client.snackbars
         private val scope = CoroutineScope(SupervisorJob() + Dispatchers.Unconfined)
         val adapter = GenerationStopAdapter(
-            currentConversationId = this.currentConversationId,
             registry = registry,
-            renderStore = renderStore,
+            clients = clients,
             finalizer = finalizer,
             failureText = { "failed" },
-            onFailure = failures::add,
         )
+
+        fun stop() = adapter.stop(client.open, client)
 
         init {
             every { registry.get("conversation") } returns state

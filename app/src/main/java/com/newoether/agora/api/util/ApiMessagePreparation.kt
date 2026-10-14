@@ -1,5 +1,6 @@
 package com.newoether.agora.api.util
 
+import com.newoether.agora.api.util.tokens.ContextCostModel
 import com.newoether.agora.model.ChatMessage
 import com.newoether.agora.model.Participant
 import com.newoether.agora.model.isContextCompact
@@ -88,7 +89,12 @@ private fun canonicalContextMessages(
 }
 
 /** Full fail-closed message preparation pipeline shared by every provider. */
-fun prepareMessages(messages: List<ChatMessage>, contextTokenBudget: Int): List<ChatMessage> {
+fun prepareMessages(
+    messages: List<ChatMessage>,
+    contextTokenBudget: Int,
+    includeAssistantReasoning: Boolean = false,
+    costs: ContextCostModel = ContextCostModel.Default,
+): List<ChatMessage> {
     val previous = messages.getOrNull(messages.lastIndex - 1)
     val prompt = messages.lastOrNull()?.takeIf {
         it.id == "$API_INITIAL_USER_ID_PREFIX${previous?.id.orEmpty()}" &&
@@ -106,6 +112,8 @@ fun prepareMessages(messages: List<ChatMessage>, contextTokenBudget: Int): List<
                     appendContinuationForApi = appendContinuationForApi,
                 ),
                 contextTokenBudget,
+                includeAssistantReasoning = includeAssistantReasoning,
+                costs = costs,
             )
         )
     ) + listOfNotNull(prompt)

@@ -141,6 +141,7 @@ class LlamaChatEngine(
         frequencyPenalty: Float, presencePenalty: Float, maxTokens: Int,
         callback: NativeChatCallback,
     ): Int
+    private external fun nativeChatCountTokens(handle: Long, text: String): Int
     private external fun nativeChatFreeModel(handle: Long)
     private external fun nativeChatCancel(handle: Long)
 
@@ -165,6 +166,26 @@ class LlamaChatEngine(
             return true
         } finally {
             lock.writeLock().unlock()
+        }
+    }
+
+    /**
+     * Exact token count of [text] under this model's vocabulary, or null when no model is loaded.
+     *
+     * Counting only reads the vocabulary, so it shares the read lock with generation and cannot run
+     * while the model is being freed. Content is counted without special tokens; role and template
+     * markers are framing and are accounted for separately.
+     */
+    fun countTokensOrNull(text: String): Int? {
+        if (text.isEmpty()) return 0
+        lock.readLock().lock()
+        try {
+            if (nativeHandle == 0L) return null
+            return nativeChatCountTokens(nativeHandle, text).takeIf { it >= 0 }
+        } catch (_: UnsatisfiedLinkError) {
+            return null
+        } finally {
+            lock.readLock().unlock()
         }
     }
 

@@ -122,6 +122,16 @@ class DataControlImportStrategySourceContractTest {
             ),
         )
         assertTrue(manager.contains("val importPreviewLoading: StateFlow<Boolean>"))
+        val exportData = manager.substringAfter("fun exportData(uri: Uri")
+            .substringBefore("fun previewImport(uri: Uri)")
+        val cancellationCatch = exportData.indexOf("catch (cancelled: kotlinx.coroutines.CancellationException)")
+        val failureCatch = exportData.indexOf("catch (e: Exception)")
+        assertTrue(cancellationCatch >= 0)
+        assertTrue(failureCatch > cancellationCatch)
+        val cancellationBody = exportData.substring(cancellationCatch, failureCatch)
+        assertTrue(cancellationBody.contains("_exportProgress.value = null"))
+        assertTrue(cancellationBody.contains("throw cancelled"))
+        assertFalse(cancellationBody.contains("export_failed"))
         val previewImport = manager.substringAfter("fun previewImport(uri: Uri)")
             .substringBefore("fun clearImportState()")
         assertTrue(

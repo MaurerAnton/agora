@@ -1,4 +1,4 @@
-<resources>
+<?xml version="1.0" encoding="utf-8"?><resources>
     <!-- Settings - Main -->
     <string name="settings_title">Настройки</string>
     <string name="settings_provider">Провайдеры</string>
@@ -428,8 +428,10 @@
     <string name="visual_effects">Визуальные эффекты</string>
     <string name="blur_effects">Эффекты размытия</string>
     <string name="blur_effects_desc">Размывать верхнюю часть списка чата под панелью инструментов. Отключите, чтобы сэкономить производительность.</string>
-    <string name="parse_inline_dollar_math">Parse $…$ as inline math</string>
-    <string name="parse_inline_dollar_math_desc">When disabled, single-dollar expressions such as $ x $ remain ordinary text. Other math delimiters are unchanged.</string>
+    <string name="parse_inline_dollar_math">Анализировать $…$ как встроенные формулы</string>
+    <string name="parse_inline_dollar_math_desc">Если отключено, выражения с одиночным знаком доллара, например $ x $, остаются обычным текстом. Другие математические разделители не меняются.</string>
+    <string name="auto_wrap_code_blocks">Автоперенос строк в блоках кода</string>
+    <string name="auto_wrap_code_blocks_desc">Длинные строки в блоках кода переносятся вместо горизонтальной прокрутки.</string>
     <string name="reduce_motion">Уменьшить движение</string>
     <string name="reduce_motion_desc">Уменьшает непрерывное движение и крупные пространственные перемещения, сохраняя переходы прозрачности, прямые жесты и полезную обратную связь о состоянии.</string>
 
@@ -481,4 +483,12 @@
     <string name="openai_service_tier_priority">Приоритет</string>
     <string name="openai_service_tier_fast">Быстрый</string>
     <string name="openai_service_tier_ultrafast">Ультрабыстрый</string>
+    <string name="settings_interaction">Взаимодействие</string>
+    <string name="settings_interaction_desc">Вопросы, которые задаёт ассистент</string>
+    <string name="ask_user_enable">Разрешить ассистенту спрашивать</string>
+    <string name="ask_user_enable_desc">Даёт модели инструмент, чтобы задать вопрос и дождаться вашего выбора</string>
+    <string name="unsaved_changes_title">Несохранённые изменения</string>
+    <string name="unsaved_changes_message">Есть несохранённые изменения. Отменить их?</string>
+    <string name="unsaved_changes_discard">Отменить</string>
+    <string name="unsaved_changes_keep_editing">Продолжить редактирование</string>
 </resources>

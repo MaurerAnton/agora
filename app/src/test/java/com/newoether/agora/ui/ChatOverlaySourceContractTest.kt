@@ -7,6 +7,22 @@ import org.junit.Assert.assertTrue
 import org.junit.Test
 
 internal class ChatOverlaySourceContractTest : UiSourceContractFixture() {
+    @Test fun remoteReusesCanonicalScrollAndLoadingOwnersWithoutInventedContextCategories() {
+        val remote = sourceFile("app/src/main/java/com/newoether/agora/ui/remote/RemoteConversation.kt")
+        val cover = sourceFile("app/src/main/java/com/newoether/agora/ui/chat/ChatBodyPresentation.kt")
+            .substringAfter("internal fun ChatSwitchingOverlay(")
+        assertTrue(remote.contains("rememberAbsoluteBottomButtonVisible("))
+        assertFalse(remote.contains("shouldShowAbsoluteBottomButton("))
+        assertTrue(remote.contains("regenerationScrollActive = animatedScrollRequest?.conversationId == owner"))
+        assertTrue(remote.contains("ChatSwitchingOverlay("))
+        assertTrue(remote.contains("WindowInsets.statusBars.asPaddingValues().calculateTopPadding() + 64.dp"))
+        assertTrue(remote.contains("bottomBarHeight = barHeight"))
+        assertTrue(remote.contains("showBreakdown = false"))
+        assertFalse(remote.contains("Modifier.size(48.dp)"))
+        assertTrue(cover.contains("while (true) awaitPointerEvent()"))
+        assertFalse(cover.contains("consume()"))
+        assertTrue(cover.indexOf(".pointerInput(Unit)") < cover.indexOf(".padding(top = topBarHeight"))
+    }
     @Test
     fun `chat bottom dropdowns keep twenty four dp icons and adaptive provider color`() {
         val attachment = sourceFile(
@@ -35,9 +51,9 @@ internal class ChatOverlaySourceContractTest : UiSourceContractFixture() {
         assertTrue(components.contains("tint = LocalContentColor.current"))
         assertFalse(components.contains("tint = Color.White"))
         assertTrue(attachment.contains("Icons.Default.Add"))
-        assertTrue(attachment.contains("modifier = Modifier.size(16.dp)"))
+        assertTrue(attachment.contains("modifier = Modifier.size(18.dp)"))
         assertTrue(bottomBar.contains("Icons.Default.MoreVert"))
-        assertTrue(bottomBar.contains("modifier = Modifier.size(16.dp)"))
+        assertTrue(bottomBar.contains("modifier = Modifier.size(18.dp)"))
         assertTrue(userMessage.contains("leadingIcon = { Icon(Icons.Default.ContentCopy, null) }"))
     }
 
@@ -58,33 +74,6 @@ internal class ChatOverlaySourceContractTest : UiSourceContractFixture() {
         )
         assertEquals(0f, oversizedOverlay.first, 0.0001f)
         assertEquals(0.04f, oversizedOverlay.second, 0.0001f)
-    }
-
-    @Test
-    fun `chat dropdown menus share the same sixteen dp rounded shape`() {
-        val bottomBar = sourceFile(
-            "app/src/main/java/com/newoether/agora/ui/chat/bottombar/ChatBottomBar.kt",
-        ) + sourceFile(
-            "app/src/main/java/com/newoether/agora/ui/chat/bottombar/ChatBottomBarComponents.kt",
-        )
-        val compactDialog = sourceFile(
-            "app/src/main/java/com/newoether/agora/ui/chat/ChatManualCompactDialog.kt",
-        )
-
-        assertTrue(bottomBar.contains(
-            "internal val CHAT_DROPDOWN_MENU_SHAPE = RoundedCornerShape(16.dp)",
-        ))
-        assertEquals(
-            3,
-            Regex("shape = CHAT_DROPDOWN_MENU_SHAPE").findAll(bottomBar).count(),
-        )
-        assertTrue(compactDialog.contains(
-            "import com.newoether.agora.ui.chat.bottombar.CHAT_DROPDOWN_MENU_SHAPE",
-        ))
-        assertEquals(
-            1,
-            Regex("shape = CHAT_DROPDOWN_MENU_SHAPE").findAll(compactDialog).count(),
-        )
     }
 
     @Test
@@ -243,7 +232,9 @@ internal class ChatOverlaySourceContractTest : UiSourceContractFixture() {
 
         assertFalse(activityStartup.contains("requestPermissions("))
         assertTrue(onboardingBranch.substringAfter("false -> {").contains("MainNavigation("))
-        assertTrue(mainNavigation.contains("mutableStateOf(!shouldRequestNotificationPermission)"))
+        assertTrue(mainNavigation.contains(
+            "mutableStateOf(screenshotDestination == null && !shouldRequestNotificationPermission)"
+        ))
         assertTrue(permissionLauncher.contains("initialComposerFocusReady = true"))
         assertTrue(permissionEffect.contains("AgoraForegroundService.createChannels(appContext)"))
         assertTrue(permissionEffect.contains("notificationPermissionLauncher.launch("))

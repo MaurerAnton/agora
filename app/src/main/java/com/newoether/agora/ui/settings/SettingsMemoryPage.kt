@@ -32,6 +32,8 @@ import com.newoether.agora.viewmodel.ChatViewModel
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
+import com.newoether.agora.ui.components.AgoraDropdownMenu
+import com.newoether.agora.ui.components.AgoraDropdownMenuItem
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -183,14 +185,13 @@ fun SettingsMemoryPage(viewModel: ChatViewModel, onBack: () -> Unit) {
                                                     tint = MaterialTheme.colorScheme.onSurfaceVariant,
                                                 )
                                             }
-                                            DropdownMenu(
+                                            AgoraDropdownMenu(
                                                 containerColor = MaterialTheme.colorScheme.surfaceContainer,
                                                 tonalElevation = 16.dp,
                                                 expanded = showFileMenu,
-                                                onDismissRequest = { showFileMenu = false },
-                                                shape = RoundedCornerShape(12.dp)
+                                                onDismissRequest = { showFileMenu = false }
                                             ) {
-                                                DropdownMenuItem(
+                                                AgoraDropdownMenuItem(
                                                     text = { Text(stringResource(R.string.provider_edit)) },
                                                     leadingIcon = { Icon(Icons.Default.Edit, null) },
                                                     onClick = {
@@ -220,7 +221,7 @@ fun SettingsMemoryPage(viewModel: ChatViewModel, onBack: () -> Unit) {
                                                     },
                                                     enabled = !memoryOperationInFlight,
                                                 )
-                                                DropdownMenuItem(
+                                                AgoraDropdownMenuItem(
                                                     text = { Text(stringResource(R.string.provider_delete), color = MaterialTheme.colorScheme.error) },
                                                     leadingIcon = { Icon(Icons.Default.Delete, null, tint = MaterialTheme.colorScheme.error) },
                                                     onClick = {

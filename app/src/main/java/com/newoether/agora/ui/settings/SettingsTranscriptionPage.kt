@@ -4,7 +4,6 @@ import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
-import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.AutoAwesome
@@ -28,6 +27,9 @@ import com.newoether.agora.ui.common.PersistedSliderFeedbackGate
 import com.newoether.agora.ui.components.providerIcon
 import com.newoether.agora.util.Constants
 import com.newoether.agora.viewmodel.ChatViewModel
+import com.newoether.agora.ui.components.AgoraDropdownMenu
+import com.newoether.agora.ui.components.AgoraDropdownMenuItem
+import com.newoether.agora.ui.components.optionClickable
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -177,14 +179,13 @@ fun SettingsTranscriptionPage(viewModel: ChatViewModel, onBack: () -> Unit) {
                                             IconButton(onClick = { showMenuForModel = model }, modifier = Modifier.size(24.dp)) {
                                                 Icon(Icons.Default.MoreVert, contentDescription = stringResource(R.string.options), modifier = Modifier.size(18.dp))
                                             }
-                                            DropdownMenu(
+                                            AgoraDropdownMenu(
                                                 containerColor = MaterialTheme.colorScheme.surfaceContainer,
                                                 tonalElevation = 16.dp,
                                                 expanded = showMenuForModel == model,
-                                                onDismissRequest = { showMenuForModel = null },
-                                                shape = RoundedCornerShape(12.dp)
+                                                onDismissRequest = { showMenuForModel = null }
                                             ) {
-                                                DropdownMenuItem(
+                                                AgoraDropdownMenuItem(
                                                     text = { Text(stringResource(R.string.delete), color = MaterialTheme.colorScheme.error) },
                                                     leadingIcon = { Icon(Icons.Default.Delete, null, tint = MaterialTheme.colorScheme.error) },
                                                     onClick = {
@@ -319,7 +320,7 @@ fun SettingsTranscriptionPage(viewModel: ChatViewModel, onBack: () -> Unit) {
                                     showModelDialog = false
                                 })
                             },
-                            modifier = Modifier.clickable {
+                            modifier = Modifier.optionClickable {
                                 viewModel.settings.setImageTranscriptionModel(model)
                                 showModelDialog = false
                             }
@@ -356,7 +357,7 @@ fun SettingsTranscriptionPage(viewModel: ChatViewModel, onBack: () -> Unit) {
                                     selected = if (checked) selected - model else selected + model
                                 })
                             },
-                            modifier = Modifier.clickable {
+                            modifier = Modifier.optionClickable {
                                 selected = if (checked) selected - model else selected + model
                             }
                         )

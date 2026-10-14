@@ -24,6 +24,27 @@ import org.junit.rules.TemporaryFolder
 class AttachmentFoundationTest {
     @get:Rule
     val temporaryFolder = TemporaryFolder()
+    @Test
+    fun exactLiveOwnersPreserveSharedCanonicalPathUntilBothRelease() {
+        val file = temporaryFolder.newFile("shared.jpg")
+        val first = Any()
+        val second = Any()
+        try {
+            AttachmentFiles.retainLivePath(first, file.absolutePath)
+            AttachmentFiles.setLivePaths(second, listOf("file://${file.parent}/./${file.name}"))
+            assertFalse(AttachmentFiles.deleteIfUnowned(file))
+            AttachmentFiles.releaseLivePaths(first)
+            AttachmentFiles.deleteBacking(SelectedAttachment(uri = "content://source", type = "image", localPath = file.path))
+            assertTrue(file.exists())
+            assertFalse(AttachmentFiles.deleteIfUnowned(file))
+            AttachmentFiles.releaseLivePaths(second)
+            assertTrue(AttachmentFiles.deleteIfUnowned(file))
+            assertFalse(file.exists())
+        } finally {
+            AttachmentFiles.releaseLivePaths(first)
+            AttachmentFiles.releaseLivePaths(second)
+        }
+    }
 
     @Test
     fun legacyMetadataDefaultsToAppPrivateStorage() {

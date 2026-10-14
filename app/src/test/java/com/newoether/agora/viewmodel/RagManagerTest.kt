@@ -105,14 +105,20 @@ class RagManagerTest {
     }
 
     @Test
-    fun onlyRunningWorkProjectsProgressAcrossEveryWorkInfoState() = runBlocking {
+    fun everyUnfinishedWorkStateReadsAsCachingAndOnlyRunningProjectsProgress() = runBlocking {
         manager.loadCacheCounts()
         awaitRow { it.cached == 4 }
-        for (state in WorkInfo.State.entries.filter { it != WorkInfo.State.RUNNING }) {
+        // Waiting for WorkManager to start the worker is part of caching: a row that claims "not
+        // cached" while its work is enqueued makes pressing Cache look like it did nothing.
+        for (state in WorkInfo.State.entries.filter { !it.isFinished }) {
+            work.value = listOf(info(state))
+            val active = awaitRow { it.workActive }
+            assertEquals(EmbeddingCacheRowPhase.CACHING, active.phase)
+            assertNull(active.progress)
+        }
+        for (state in WorkInfo.State.entries.filter { it.isFinished }) {
             work.value = listOf(info(WorkInfo.State.RUNNING))
-            val running = awaitRow { it.workActive }
-            assertEquals(EmbeddingCacheRowPhase.CACHING, running.phase)
-            assertNull(running.progress)
+            awaitRow { it.workActive }
             work.value = listOf(info(state))
             assertEquals(EmbeddingCacheRowPhase.CACHE, awaitRow { !it.workActive }.phase)
         }
@@ -321,7 +327,7 @@ class RagManagerTest {
             deleted.complete(Unit)
         }
         val beforeScheduling = ownerJob.children.toSet()
-        manager.cacheMessagesForModel(model.id, silent = true)
+        manager.cacheMessagesForModel(model.id)
         withTimeout(5_000) { scheduled.await() }
         withTimeout(5_000) { EmbeddingCacheLocks.forModel(model.id).withLock {} }
         val scheduling = ownerJob.children.filter { it !in beforeScheduling }.toList()
@@ -367,10 +373,10 @@ class RagManagerTest {
         coEvery { repository.getOrAdmitSemanticLedgerState(model.id) } returns SemanticIndexLedgerEntity.STATE_PENDING
         val invalidated = CompletableDeferred<Unit>()
         coEvery { repository.invalidateSemanticModel(model.id, any()) } coAnswers { invalidated.complete(Unit) }
-        manager.cacheMessagesForModel(model.id, silent = true)
+        manager.cacheMessagesForModel(model.id)
         withTimeout(5_000) { enqueued.receive() }
         work.value = listOf(info(WorkInfo.State.RUNNING))
-        manager.cacheMessagesForModel(model.id, recache = true, silent = true)
+        manager.cacheMessagesForModel(model.id, recache = true)
         withTimeout(5_000) { invalidated.await() }
         withTimeout(5_000) { EmbeddingCacheLocks.forModel(model.id).withLock {} }
         firstResult.set(Operation.SUCCESS)
@@ -383,7 +389,7 @@ class RagManagerTest {
     fun runningChainWithFollowerDoesNotEnqueueAnotherWorker() = runBlocking {
         coEvery { repository.getOrAdmitSemanticLedgerState(model.id) } returns SemanticIndexLedgerEntity.STATE_PENDING
         work.value = listOf(info(WorkInfo.State.RUNNING), info(WorkInfo.State.BLOCKED))
-        manager.cacheMessagesForModel(model.id, silent = true)
+        manager.cacheMessagesForModel(model.id)
         awaitRow { it.cached == 4 }
         verify(exactly = 0) {
             workManager.enqueueUniqueWork(any(), any(), any<androidx.work.OneTimeWorkRequest>())

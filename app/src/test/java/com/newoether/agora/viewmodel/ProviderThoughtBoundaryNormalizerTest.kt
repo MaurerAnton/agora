@@ -1,5 +1,6 @@
 package com.newoether.agora.viewmodel
 
+import com.newoether.agora.api.util.MALFORMED_TOOL_CALL_NAME
 import com.newoether.agora.api.GenerationError
 import com.newoether.agora.api.StreamEvent
 import com.newoether.agora.api.ToolDefinition
@@ -317,11 +318,25 @@ class ProviderThoughtBoundaryNormalizerTest {
     }
 
     @Test
-    fun `malformed syntax and unknown tool names fail closed`() = runTest {
+    fun `malformed syntax is answered as a malformed call`() = runTest {
         val malformed = normalize(
             listOf(StreamEvent.TextChunk("<tool_call>{\"name\":\"file_read\"}")),
             TOOLS,
         )
+
+        // Nothing is executed, and the run continues with an error result the model can act on.
+        assertTrue(malformed.none { it is StreamEvent.Error })
+        assertEquals(
+            MALFORMED_TOOL_CALL_NAME,
+            malformed.filterIsInstance<StreamEvent.ToolCallRequest>().single().name,
+        )
+    }
+
+    @Test
+    fun `an unknown tool name is released for the executor to answer`() = runTest {
+        // Same contract as native calls: calling a tool that was not offered is the model's mistake
+        // on a pairable call, so the call goes through and the tool executor answers it with an
+        // error result the model can correct from.
         val unknown = normalize(
             listOf(
                 StreamEvent.TextChunk(
@@ -331,9 +346,11 @@ class ProviderThoughtBoundaryNormalizerTest {
             TOOLS,
         )
 
-        assertTrue(malformed.any { it is StreamEvent.Error })
-        assertTrue(unknown.any { it is StreamEvent.Error })
-        assertTrue((malformed + unknown).none { it is StreamEvent.ToolCallRequest })
+        assertTrue(unknown.none { it is StreamEvent.Error })
+        assertEquals(
+            "File_Read",
+            unknown.filterIsInstance<StreamEvent.ToolCallRequest>().single().name,
+        )
     }
 
     @Test

@@ -1,6 +1,7 @@
 package com.newoether.agora.data.repository
 
 import com.newoether.agora.data.local.ChatDao
+import com.newoether.agora.data.local.MessageEntity
 import com.newoether.agora.data.local.MessageStreamCheckpoint
 import com.newoether.agora.model.ChatMessage
 import com.newoether.agora.model.CitationAnchor
@@ -27,7 +28,20 @@ class ConversationRepositoryCheckpointTest {
     fun checkpointUpdatesOnlyMutableStreamingFields() = runTest {
         val dao = mockk<ChatDao>()
         val captured = slot<MessageStreamCheckpoint>()
+        coEvery { dao.getMessage("model-message") } returns MessageEntity(
+            id = "model-message",
+            conversationId = "conversation",
+            text = "",
+            participant = Participant.MODEL,
+            timestamp = 1L,
+            runId = "run",
+            runSequence = 0L,
+        )
+        coEvery { dao.updateConversationMessageCheckpoint(any(), any(), any()) } coAnswers {
+            callOriginal()
+        }
         coEvery { dao.updateMessageCheckpoint(capture(captured)) } returns 1
+        coEvery { dao.touchConversationData("conversation", any()) } returns 1
         val repository = ConversationRepository(dao, database = null)
         val answer = "partial answer"
         val citation = requireNotNull(
@@ -94,12 +108,15 @@ class ConversationRepositoryCheckpointTest {
             Json.decodeFromString<List<MessageSegment>>(captured.captured.toolCallJson!!),
         )
         coVerify(exactly = 1) { dao.updateMessageCheckpoint(any()) }
+        coVerify(exactly = 1) {
+            dao.touchConversationData("conversation", match { it > 0L })
+        }
     }
 
     @Test
     fun missingPlaceholderIsNotRecreated() = runTest {
         val dao = mockk<ChatDao>()
-        coEvery { dao.updateMessageCheckpoint(any()) } returns 0
+        coEvery { dao.getMessage("deleted-message") } returns null
         val repository = ConversationRepository(dao, database = null)
 
         val updated = repository.updateStreamingMessageCheckpoint(
@@ -112,6 +129,7 @@ class ConversationRepositoryCheckpointTest {
         )
 
         assertFalse(updated)
-        coVerify(exactly = 1) { dao.updateMessageCheckpoint(any()) }
+        coVerify(exactly = 0) { dao.updateMessageCheckpoint(any()) }
+        coVerify(exactly = 0) { dao.touchConversationData(any(), any()) }
     }
 }

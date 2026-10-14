@@ -26,6 +26,20 @@ import org.junit.Test
 @OptIn(ExperimentalCoroutinesApi::class)
 class DataControlControllerTest {
     @Test
+    fun `backup due checks propagate settings cancellation`() = runTest {
+        val settings = mockk<com.newoether.agora.data.SettingsManager>()
+        val cancelled = kotlinx.coroutines.CancellationException("settings cancelled")
+        every { settings.autoBackupEnabled } returns kotlinx.coroutines.flow.flow { throw cancelled }
+        val manager = AutoBackupManager(mockk(), settings, mockk(), mockk())
+        try {
+            assertEquals(cancelled, runCatching { manager.isBackupDue() }.exceptionOrNull())
+            assertEquals(cancelled, runCatching { manager.checkAndBackup() }.exceptionOrNull())
+        } finally {
+            manager.destroy()
+        }
+    }
+
+    @Test
     fun `refresh counts conversations files active memory and prompts on owned dispatcher`() =
         runTest {
             val conversations = mockk<ConversationRepository>()
@@ -105,6 +119,7 @@ class DataControlControllerTest {
                 settings.saveAutoBackupEnabled(false)
             }
             verify(exactly = 1) { backupManager.destroy() }
+            io.mockk.coVerify(exactly = 0) { backupManager.checkAndBackup() }
         }
 
     private fun TestScope.controller(

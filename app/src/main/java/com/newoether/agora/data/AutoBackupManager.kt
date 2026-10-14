@@ -70,6 +70,7 @@ class AutoBackupManager(
             if (backup != null) {
                 val missingResourceCount = backup.second.missingResourceCount
                 runCatching { settingsManager.saveLastBackupTimestamp(now) }
+                    .onFailure { if (it is kotlinx.coroutines.CancellationException) throw it }
                 cleanupOldBackups()
                 if (missingResourceCount > 0) {
                     sendMissingResourceNotification(missingResourceCount)
@@ -83,6 +84,17 @@ class AutoBackupManager(
         return BackupResult.NOT_DUE
     }
 
+    /**
+     * Read-only mirror of [checkAndBackup]'s fast-path due check. Lets the worker stay silent
+     * (no foreground promotion, no notification) when the hourly tick fires but nothing is due.
+     */
+    suspend fun isBackupDue(): Boolean {
+        if (!settingsManager.autoBackupEnabled.safeRead(true)) return false
+        val lastBackup = settingsManager.lastBackupTimestamp.safeRead(0L)
+        val periodHours = settingsManager.autoBackupPeriodHours.safeRead(24)
+        return System.currentTimeMillis() - lastBackup >= periodHours.toLong() * 3600_000L
+    }
+
     fun destroy() {
         scope.cancel()
     }
@@ -91,6 +103,7 @@ class AutoBackupManager(
 
     private suspend fun performBackup(): Pair<File, DataExporter.ExportResult>? =
         withContext(Dispatchers.IO) {
+        var cleanupTarget: File? = null
         try {
             val dir = resolveBackupDir() ?: return@withContext null
             if (!dir.exists() && !dir.mkdirs()) return@withContext null
@@ -99,6 +112,12 @@ class AutoBackupManager(
             val filename = "Agora_backup_${sdf.format(Date())}.agora"
             val file = File(dir, filename)
             val tmpFile = File(dir, "$filename.tmp")
+            cleanupTarget = tmpFile
+            val baselineFile = dir.listFiles { candidate ->
+                candidate.isFile &&
+                    candidate.name.startsWith("Agora_backup_") &&
+                    candidate.name.endsWith(".agora")
+            }?.maxByOrNull(File::lastModified)
 
             val categoryKeys = settingsManager.autoBackupCategories.safeRead("conversations,memories,system_prompts,settings")
                 .split(",").map { it.trim() }.filter { it.isNotBlank() }.toSet()
@@ -123,6 +142,7 @@ class AutoBackupManager(
                 uri = Uri.fromFile(tmpFile),
                 categories = categories,
                 includeApiKeys = includeApiKeys,
+                baselineFile = baselineFile,
                 onProgress = {}
             )
 
@@ -136,8 +156,12 @@ class AutoBackupManager(
                 sendFailureNotification("Failed to finalize backup file")
                 null
             }
+        } catch (e: kotlinx.coroutines.CancellationException) {
+            cleanupTarget?.let { runCatching { it.delete() } }
+            throw e
         } catch (e: Exception) {
             DebugLog.e("AutoBackup", "Backup failed", e)
+            cleanupTarget?.let { runCatching { it.delete() } }
             sendFailureNotification(e.localizedMessage ?: "Auto backup failed")
             null
         }
@@ -156,6 +180,7 @@ class AutoBackupManager(
         val fallback = defaultBackupDir()
         if (fallback.exists() || fallback.mkdirs()) {
             runCatching { settingsManager.saveAutoBackupDirectory(fallback.absolutePath) }
+                .onFailure { if (it is kotlinx.coroutines.CancellationException) throw it }
             return fallback
         }
 
@@ -254,5 +279,7 @@ class AutoBackupManager(
 
     /** Read a Flow's first value with error tolerance. */
     private suspend fun <T> Flow<T>.safeRead(default: T): T =
-        try { first() } catch (_: Exception) { default }
+        try { first() } catch (cancelled: kotlinx.coroutines.CancellationException) {
+            throw cancelled
+        } catch (_: Exception) { default }
 }

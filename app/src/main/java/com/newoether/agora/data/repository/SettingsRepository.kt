@@ -7,6 +7,7 @@ import com.newoether.agora.data.ApiKeyEntry
 import com.newoether.agora.data.BuiltInPrompts
 import com.newoether.agora.data.DEFAULT_COLOR_SCHEME
 import com.newoether.agora.data.DEFAULT_CONTEXT_COMPACT_ENABLED
+import com.newoether.agora.data.DEFAULT_CONTEXT_COMPACT_PRESERVE_SYSTEM_PROMPT
 import com.newoether.agora.data.DEFAULT_CONTEXT_COMPACT_RETAIN_COUNT
 import com.newoether.agora.data.DEFAULT_CONTEXT_COMPACT_THRESHOLD_PERCENT
 import com.newoether.agora.data.DEFAULT_DYNAMIC_COLOR
@@ -57,8 +58,9 @@ import kotlinx.coroutines.withContext
  * so observable behavior is unchanged.
  */
 class SettingsRepository(
-    private val settingsManager: SettingsManager,
-    private val scope: CoroutineScope
+    internal val settingsManager: SettingsManager,
+    internal val scope: CoroutineScope,
+    private val touchConversationData: suspend (String) -> Unit = {},
 ) {
     /** One latch per eagerly-shared DataStore flow; populated completely during construction. */
     private val initialLoadSignals = mutableListOf<CompletableDeferred<Unit>>()
@@ -128,6 +130,8 @@ class SettingsRepository(
         settingsManager.contextCompactRetainCount,
         DEFAULT_CONTEXT_COMPACT_RETAIN_COUNT,
     )
+    val contextCompactPreserveSystemPrompt: StateFlow<Boolean> =
+        hot(settingsManager.contextCompactPreserveSystemPrompt, DEFAULT_CONTEXT_COMPACT_PRESERVE_SYSTEM_PROMPT)
     val contextCompactThresholdPercent: StateFlow<Int> = hot(
         settingsManager.contextCompactThresholdPercent,
         DEFAULT_CONTEXT_COMPACT_THRESHOLD_PERCENT,
@@ -138,10 +142,8 @@ class SettingsRepository(
     val thinkingLevel: StateFlow<String> = hot(settingsManager.thinkingLevel, "medium")
     val thinkingBudgetEnabled: StateFlow<Boolean> = hot(settingsManager.thinkingBudgetEnabled, false)
     val thinkingBudgetTokens: StateFlow<Int> = hot(settingsManager.thinkingBudgetTokens, 4096)
-    val openAiServiceTierEnabled: StateFlow<Boolean> =
-        hot(settingsManager.openAiServiceTierEnabled, false)
-    val openAiServiceTier: StateFlow<String> =
-        hot(settingsManager.openAiServiceTier, OpenAiServiceTiers.AUTO)
+    val openAiServiceTierEnabled: StateFlow<Boolean> = hot(settingsManager.openAiServiceTierEnabled, false)
+    val openAiServiceTier: StateFlow<String> = hot(settingsManager.openAiServiceTier, OpenAiServiceTiers.AUTO)
     val openAiResponsesApiEnabled: StateFlow<Boolean> =
         hot(settingsManager.openAiResponsesApiEnabled, false)
     val providerBaseUrls: StateFlow<Map<String, String>> = hot(settingsManager.providerBaseUrls, emptyMap())
@@ -199,6 +201,7 @@ class SettingsRepository(
     val proxyPassword: StateFlow<String> = hot(settingsManager.proxyPassword, "")
     val proxyBypass: StateFlow<String> = hot(settingsManager.proxyBypass, com.newoether.agora.data.SettingsManager.DEFAULT_PROXY_BYPASS)
     val shellConfirmEnabled: StateFlow<Boolean> = hot(settingsManager.shellConfirmEnabled, true)
+    val askUserEnabled: StateFlow<Boolean> = hot(settingsManager.askUserEnabled, true)
     val shellDevices: StateFlow<List<ShellDeviceConfig>> = hot(settingsManager.shellDevices, emptyList())
     val mcpServers: StateFlow<List<McpServerConfig>> = hot(settingsManager.mcpServers, emptyList())
     val sandboxEnabled: StateFlow<Boolean> = hot(settingsManager.sandboxEnabled, false)
@@ -218,9 +221,9 @@ class SettingsRepository(
     val reduceMotion: StateFlow<Boolean> = hot(settingsManager.reduceMotion, false)
     val stickToBottom: StateFlow<Boolean> = hot(settingsManager.stickToBottom, true)
     val parseInlineDollarMath: StateFlow<Boolean> = hot(settingsManager.parseInlineDollarMath, false)
+    val autoWrapCodeBlocks: StateFlow<Boolean> = hot(settingsManager.autoWrapCodeBlocks, true)
     val hapticsEnabled: StateFlow<Boolean> = hot(settingsManager.hapticsEnabled, true)
-    val detailedTokenUsage: StateFlow<Boolean> =
-        hot(settingsManager.detailedTokenUsage, false)
+    val detailedTokenUsage: StateFlow<Boolean> = hot(settingsManager.detailedTokenUsage, false)
     val toolCallDisplayMode: StateFlow<String> = hot(settingsManager.toolCallDisplayMode, ToolCallDisplayModes.DEFAULT)
     val thinkingSegmentDisplayMode: StateFlow<String> = hot(
         settingsManager.thinkingSegmentDisplayMode,
@@ -371,18 +374,17 @@ class SettingsRepository(
             userItems = PredefinedVariables.normalizeMessageTemplate(userItems),
             assistantItems = PredefinedVariables.normalizeMessageTemplate(assistantItems),
         )
-        val newList = systemPrompts.value + entry
-        settingsManager.saveSystemPrompts(newList)
+        settingsManager.systemPromptStore.update { current ->
+            require(current.none { it.id == entry.id }) { "System prompt already exists" }
+            current + entry
+        }
         systemPrompts.first { prompts -> prompts.any { it.id == entry.id } }
-        if (activeSystemPromptId.value == null) settingsManager.setActiveSystemPromptId(entry.id)
         return entry.id
     }
 
     fun deleteSystemPrompt(id: String) {
         scope.launch {
-            val newList = systemPrompts.value.filter { it.id != id }
-            settingsManager.saveSystemPrompts(newList)
-            if (activeSystemPromptId.value == id) settingsManager.setActiveSystemPromptId(newList.firstOrNull()?.id)
+            settingsManager.systemPromptStore.update { current -> current.filter { it.id != id } }
         }
     }
 
@@ -394,7 +396,8 @@ class SettingsRepository(
         assistantItems: List<PromptTemplateItem>,
     ) {
         scope.launch {
-            settingsManager.saveSystemPrompts(systemPrompts.value.map { entry ->
+            settingsManager.systemPromptStore.update { current ->
+                current.map { entry ->
                 if (entry.id == id) {
                     entry.copy(
                         title = title,
@@ -408,7 +411,8 @@ class SettingsRepository(
                 } else {
                     entry
                 }
-            })
+                }
+            }
         }
     }
 
@@ -576,6 +580,7 @@ class SettingsRepository(
                     conversationId = write.conversationId,
                     settings = write.settings,
                 )
+                touchConversationData(write.conversationId)
                 conversationSettingsState.complete(write, persisted)
             } catch (cancelled: CancellationException) {
                 throw cancelled
@@ -603,6 +608,8 @@ class SettingsRepository(
     fun setContextCompactModel(model: String?) = scope.launch { settingsManager.saveContextCompactModel(model) }
     fun setContextCompactPrompt(prompt: String) = scope.launch { settingsManager.saveContextCompactPrompt(prompt) }
     fun setContextCompactRetainCount(count: Int) = scope.launch { settingsManager.saveContextCompactRetainCount(count) }
+    fun setContextCompactPreserveSystemPrompt(enabled: Boolean) =
+        scope.launch { settingsManager.saveContextCompactPreserveSystemPrompt(enabled) }
     fun setContextCompactThresholdPercent(percent: Int) = scope.launch {
         settingsManager.saveContextCompactThresholdPercent(percent)
     }
@@ -654,14 +661,12 @@ class SettingsRepository(
     fun setProxyPassword(pass: String) = scope.launch { settingsManager.saveProxyPassword(pass) }
     fun setProxyBypass(bypass: String) = scope.launch { settingsManager.saveProxyBypass(bypass) }
     fun setSandboxEnabled(enabled: Boolean) = scope.launch { settingsManager.saveSandboxEnabled(enabled) }
-    fun setSandboxSharedStorageEnabled(enabled: Boolean) =
-        scope.launch { settingsManager.saveSandboxSharedStorageEnabled(enabled) }
+    fun setSandboxSharedStorageEnabled(enabled: Boolean) = scope.launch { settingsManager.saveSandboxSharedStorageEnabled(enabled) }
     fun setThinkingEnabled(enabled: Boolean) = scope.launch { settingsManager.saveThinkingEnabled(enabled) }
     fun setThinkingLevel(level: String) = scope.launch { settingsManager.saveThinkingLevel(level) }
     fun setThinkingBudgetEnabled(enabled: Boolean) = scope.launch { settingsManager.saveThinkingBudgetEnabled(enabled) }
     fun setThinkingBudgetTokens(tokens: Int) = scope.launch { settingsManager.saveThinkingBudgetTokens(tokens) }
-    fun setOpenAiServiceTierEnabled(enabled: Boolean) =
-        scope.launch { settingsManager.saveOpenAiServiceTierEnabled(enabled) }
+    fun setOpenAiServiceTierEnabled(enabled: Boolean) = scope.launch { settingsManager.saveOpenAiServiceTierEnabled(enabled) }
     fun setOpenAiServiceTier(tier: String) =
         scope.launch { settingsManager.saveOpenAiServiceTier(tier) }
     fun setOpenAiResponsesApiEnabled(enabled: Boolean) =
@@ -677,10 +682,10 @@ class SettingsRepository(
     fun setDynamicColor(enabled: Boolean) = scope.launch { settingsManager.saveDynamicColor(enabled) }
     fun setBlurEffectsEnabled(enabled: Boolean) = scope.launch { settingsManager.saveBlurEffectsEnabled(enabled) }
     fun setReduceMotion(enabled: Boolean) = scope.launch { settingsManager.saveReduceMotion(enabled) }
-    fun setStickToBottom(enabled: Boolean) =
-        scope.launch { settingsManager.saveStickToBottom(enabled) }
+    fun setStickToBottom(enabled: Boolean) = scope.launch { settingsManager.saveStickToBottom(enabled) }
     fun setParseInlineDollarMath(enabled: Boolean) =
         scope.launch { settingsManager.saveParseInlineDollarMath(enabled) }
+    fun setAutoWrapCodeBlocks(enabled: Boolean) = scope.launch { settingsManager.saveAutoWrapCodeBlocks(enabled) }
     fun setHapticsEnabled(enabled: Boolean) = scope.launch { settingsManager.saveHapticsEnabled(enabled) }
     fun setDetailedTokenUsage(enabled: Boolean) =
         scope.launch { settingsManager.saveDetailedTokenUsage(enabled) }
@@ -699,6 +704,7 @@ class SettingsRepository(
     fun setRagThreshold(threshold: Float) = scope.launch { settingsManager.saveRagThreshold(threshold) }
 
     fun setShellConfirmEnabled(enabled: Boolean) = scope.launch { settingsManager.saveShellConfirmEnabled(enabled) }
+    fun setAskUserEnabled(enabled: Boolean) = scope.launch { settingsManager.saveAskUserEnabled(enabled) }
     fun addShellDevice(device: ShellDeviceConfig) = scope.launch { settingsManager.saveShellDevices(shellDevices.value + device) }
     fun updateShellDevice(device: ShellDeviceConfig) = scope.launch {
         settingsManager.saveShellDevices(shellDevices.value.map { if (it.id == device.id) device else it })

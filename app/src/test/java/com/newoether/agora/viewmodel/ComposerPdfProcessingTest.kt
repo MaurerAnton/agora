@@ -42,8 +42,8 @@ internal class ComposerPdfProcessingTest : ComposerControllerTestFixture() {
         fixture.controller.awaitProcessing(OWNER_A)
 
         assertEquals(listOf(pdf, video), fixture.controller.state(OWNER_A).value.attachments)
-        coVerify(exactly = 0) { processor.preparePdfPreview(any(), any()) }
-        coVerify(exactly = 0) { processor.process(any(), any()) }
+        coVerify(exactly = 0) { processor.preparePdfPreview(any(), any(), any()) }
+        coVerify(exactly = 0) { processor.process(any(), any(), any()) }
     }
 
     @Test
@@ -60,8 +60,8 @@ internal class ComposerPdfProcessingTest : ComposerControllerTestFixture() {
         )
         val releasePreview = CompletableDeferred<Unit>()
         val processor = mockk<AttachmentImportProcessor>()
-        coEvery { processor.preparePdfPreview(pdf, any()) } coAnswers {
-            secondArg<suspend (Int, Int) -> Unit>().invoke(1, 2)
+        coEvery { processor.preparePdfPreview(pdf, any(), any()) } coAnswers {
+            thirdArg<suspend (Int, Int) -> Unit>().invoke(1, 2)
             releasePreview.await()
             AttachmentImportProcessor.ProcessResult.Ready(previewReady)
         }
@@ -79,8 +79,8 @@ internal class ComposerPdfProcessingTest : ComposerControllerTestFixture() {
 
         assertEquals(previewReady, fixture.persistence.attachment(OWNER_A))
         assertTrue(fixture.controller.state(OWNER_A).value.pdfPreviewProgress.isEmpty())
-        coVerify(exactly = 1) { processor.preparePdfPreview(pdf, any()) }
-        coVerify(exactly = 0) { processor.process(any(), any()) }
+        coVerify(exactly = 1) { processor.preparePdfPreview(pdf, any(), any()) }
+        coVerify(exactly = 0) { processor.process(any(), any(), any()) }
     }
 
     @Test
@@ -95,7 +95,7 @@ internal class ComposerPdfProcessingTest : ComposerControllerTestFixture() {
         val previewStarted = CompletableDeferred<Unit>()
         val previewCancelled = CompletableDeferred<Unit>()
         val processor = mockk<AttachmentImportProcessor>()
-        coEvery { processor.preparePdfPreview(pdf, any()) } coAnswers {
+        coEvery { processor.preparePdfPreview(pdf, any(), any()) } coAnswers {
             previewStarted.complete(Unit)
             try {
                 awaitCancellation()
@@ -103,7 +103,7 @@ internal class ComposerPdfProcessingTest : ComposerControllerTestFixture() {
                 previewCancelled.complete(Unit)
             }
         }
-        coEvery { processor.process(any(), any()) } coAnswers {
+        coEvery { processor.process(any(), any(), any()) } coAnswers {
             AttachmentImportProcessor.ProcessResult.Ready(
                 firstArg<SelectedAttachment>().copy(
                     selectedPages = setOf(0),
@@ -125,9 +125,9 @@ internal class ComposerPdfProcessingTest : ComposerControllerTestFixture() {
         fixture.controller.awaitProcessing(OWNER_A)
 
         assertEquals(AttachmentImportState.READY, fixture.state(OWNER_A, pdf.localId).importState)
-        coVerify(exactly = 1) { processor.preparePdfPreview(pdf, any()) }
+        coVerify(exactly = 1) { processor.preparePdfPreview(pdf, any(), any()) }
         coVerify(exactly = 1) {
-            processor.process(match { it.selectedPages == setOf(1) }, any())
+            processor.process(match { it.selectedPages == setOf(1) }, any(), any())
         }
     }
 
@@ -147,7 +147,7 @@ internal class ComposerPdfProcessingTest : ComposerControllerTestFixture() {
             importState = AttachmentImportState.PROCESSING,
         )
         val processor = mockk<AttachmentImportProcessor>()
-        coEvery { processor.process(any(), any()) } coAnswers {
+        coEvery { processor.process(any(), any(), any()) } coAnswers {
             AttachmentImportProcessor.ProcessResult.Ready(
                 firstArg<SelectedAttachment>().copy(
                     selectedPages = setOf(0, 1),
@@ -168,7 +168,7 @@ internal class ComposerPdfProcessingTest : ComposerControllerTestFixture() {
         assertEquals(setOf(0, 1), fixture.persistence.attachment(OWNER_A).selectedPages)
         assertEquals(AttachmentImportState.READY, fixture.state(OWNER_A, pdf.localId).importState)
         coVerify(exactly = 1) {
-            processor.process(match { it.selectedPages == setOf(1, 3) }, any())
+            processor.process(match { it.selectedPages == setOf(1, 3) }, any(), any())
         }
     }
 
@@ -181,7 +181,7 @@ internal class ComposerPdfProcessingTest : ComposerControllerTestFixture() {
         val stageStarted = CompletableDeferred<Unit>()
         val releaseStage = CompletableDeferred<Unit>()
         val processor = mockk<AttachmentImportProcessor>()
-        coEvery { processor.stage(match { it.localId == source.localId }) } coAnswers {
+        coEvery { processor.stage(match { it.localId == source.localId }, any()) } coAnswers {
             stageStarted.complete(Unit)
             releaseStage.await()
             AttachmentImportProcessor.StageResult.Success(
@@ -189,7 +189,7 @@ internal class ComposerPdfProcessingTest : ComposerControllerTestFixture() {
                 createdPaths = emptyList(),
             )
         }
-        coEvery { processor.process(any(), any()) } coAnswers {
+        coEvery { processor.process(any(), any(), any()) } coAnswers {
             AttachmentImportProcessor.ProcessResult.Ready(
                 firstArg<SelectedAttachment>().copy(
                     preRenderedPaths = listOf("/rendered/page.jpg"),
@@ -208,7 +208,7 @@ internal class ComposerPdfProcessingTest : ComposerControllerTestFixture() {
 
         assertEquals(setOf(2), fixture.persistence.attachment(OWNER_A).selectedPages)
         coVerify(exactly = 1) {
-            processor.process(match { it.selectedPages == setOf(2) }, any())
+            processor.process(match { it.selectedPages == setOf(2) }, any(), any())
         }
     }
 }

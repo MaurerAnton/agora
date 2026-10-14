@@ -32,14 +32,14 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.Edit
+import androidx.compose.material.icons.filled.PushPin
+import androidx.compose.material.icons.outlined.PushPin
 import androidx.compose.material.icons.filled.Refresh
 import androidx.compose.material.icons.filled.Repeat
 import androidx.compose.material.icons.filled.Settings
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import com.newoether.agora.ui.motion.MotionAwareCircularProgressIndicator as CircularProgressIndicator
-import androidx.compose.material3.DropdownMenu
-import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.FilledTonalButton
 import androidx.compose.material3.Icon
@@ -74,12 +74,15 @@ import androidx.compose.ui.platform.LocalFocusManager
 import androidx.compose.ui.platform.LocalWindowInfo
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.contentDescription
+import androidx.compose.ui.semantics.heading
 import androidx.compose.ui.semantics.semantics
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.DpOffset
 import androidx.compose.ui.unit.dp
 import com.newoether.agora.R
+import com.newoether.agora.model.ChatConversation
 import com.newoether.agora.data.replaceCustomProviderIdsForDisplay
 import com.newoether.agora.ui.chat.search.DrawerSearchBar
 import com.newoether.agora.ui.chat.search.SearchResultItem
@@ -93,6 +96,8 @@ import com.newoether.agora.viewmodel.ChatViewModel
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
+import com.newoether.agora.ui.components.AgoraDropdownMenu
+import com.newoether.agora.ui.components.AgoraDropdownMenuItem
 
 internal enum class DrawerConversationIndicator {
     NONE,
@@ -111,6 +116,16 @@ internal fun resolveDrawerConversationIndicator(
 }
 
 internal val DrawerEdgeFadeTolerance = 2.dp
+
+internal fun drawerConversationKeys(conversations: List<ChatConversation>): List<String> {
+    val (pinned, ordinary) = conversations.partition { it.isPinned }
+    return buildList {
+        if (pinned.isNotEmpty()) add("section:pinned")
+        pinned.forEach { add("conversation:${it.id}") }
+        if (pinned.isNotEmpty() && ordinary.isNotEmpty()) add("section:conversations")
+        ordinary.forEach { add("conversation:${it.id}") }
+    }
+}
 
 internal fun isDrawerListAtTop(
     firstVisibleItemIndex: Int,
@@ -162,6 +177,10 @@ internal fun ChatDrawerContent(
 
     val conversationList by viewModel.conversations.collectAsState()
     val conversations = conversationList.orEmpty()
+    val conversationKeys = remember(conversations) { drawerConversationKeys(conversations) }
+    val conversationsByKey = remember(conversations) {
+        conversations.associateBy { "conversation:${it.id}" }
+    }
     val isConversationListLoading = conversationList == null
     val currentConversationId by viewModel.currentConversationId.collectAsState()
     val isSwitching by viewModel.isSwitching.collectAsState()
@@ -184,6 +203,7 @@ internal fun ChatDrawerContent(
         val activeListState = if (search.isActive) searchListState else conversationListState
         val edgeFadeTolerancePx = with(density) { DrawerEdgeFadeTolerance.roundToPx() }
         val latestConversations by rememberUpdatedState(conversations)
+        val latestConversationKeys by rememberUpdatedState(conversationKeys)
         val latestMotionPolicy by rememberUpdatedState(motionPolicy)
         val submittingConversationIds by viewModel.conversationComposerSubmission
             .activeOwnerIds
@@ -195,7 +215,7 @@ internal fun ChatDrawerContent(
                     val currentConversations = latestConversations
                     currentConversations.firstOrNull()?.id == conversationId &&
                         conversationListState.layoutInfo.totalItemsCount ==
-                            currentConversations.size
+                            latestConversationKeys.size
                 }.first { ready -> ready }
                 if (viewModel.currentConversationId.value != conversationId) return@collect
                 if (latestMotionPolicy.allowProgrammaticScrollMotion) {
@@ -209,21 +229,26 @@ internal fun ChatDrawerContent(
                 }
             }
         }
+        val requestPinScroll = rememberDrawerPinScroll(
+            listState = conversationListState,
+            conversations = conversations,
+            itemCount = conversationKeys.size,
+            searchActive = search.isActive,
+        )
         SideEffect {
             val firstVisibleIndex = conversationListState.firstVisibleItemIndex
             val firstVisibleConversationId = conversationListState.layoutInfo.visibleItemsInfo
                 .firstOrNull { it.index == firstVisibleIndex }
                 ?.key
                 ?.toString()
-                ?.removePrefix("conversation:")
-            val indexedConversationId = conversations.getOrNull(firstVisibleIndex)?.id
+            val indexedConversationId = conversationKeys.getOrNull(firstVisibleIndex)
             if (
                 !search.isActive &&
-                conversationListState.layoutInfo.totalItemsCount == conversations.size &&
+                conversationListState.layoutInfo.totalItemsCount == conversationKeys.size &&
                 firstVisibleConversationId != null &&
                 indexedConversationId != null &&
                 indexedConversationId != firstVisibleConversationId &&
-                conversations.any { it.id == firstVisibleConversationId }
+                firstVisibleConversationId in conversationKeys
             ) {
                 conversationListState.requestScrollToItem(
                     firstVisibleIndex,
@@ -369,9 +394,32 @@ internal fun ChatDrawerContent(
                                     ),
                             ) {
                                 items(
-                                    conversations,
-                                    key = { "conversation:${it.id}" },
-                                ) { conversation ->
+                                    conversationKeys,
+                                    key = { it },
+                                ) { key ->
+                                    if (key.startsWith("section:")) {
+                                        Text(
+                                            stringResource(if (key == "section:pinned") {
+                                                R.string.pinned_conversations
+                                            } else {
+                                                R.string.conversations
+                                            }),
+                                            style = MaterialTheme.typography.labelLarge,
+                                            fontWeight = FontWeight.SemiBold,
+                                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                            modifier = Modifier
+                                                // Extra top space separates Conversations from the Pinned group.
+                                                .padding(
+                                                    start = 16.dp,
+                                                    end = 16.dp,
+                                                    top = if (key == "section:pinned") 8.dp else 12.dp,
+                                                    bottom = 8.dp,
+                                                )
+                                                .semantics { heading() },
+                                        )
+                                        return@items
+                                    }
+                                    val conversation = conversationsByKey.getValue(key)
                                     val isSelected = conversation.id == currentConversationId
                                     val visibleConversationTitle = replaceCustomProviderIdsForDisplay(
                                         conversation.title,
@@ -394,6 +442,33 @@ internal fun ChatDrawerContent(
                                         mutableStateOf(androidx.compose.ui.geometry.Offset.Zero)
                                     }
                                     val density = LocalDensity.current
+                                    val selectionContainerColor by animateColorAsState(
+                                        targetValue = if (isSelected) {
+                                            MaterialTheme.colorScheme.secondaryContainer
+                                        } else {
+                                            Color.Transparent
+                                        },
+                                        animationSpec = tween(durationMillis = 250),
+                                        label = "drawerConversationSelectionContainer",
+                                    )
+                                    val selectionContentColor by animateColorAsState(
+                                        targetValue = if (isSelected) {
+                                            MaterialTheme.colorScheme.onSecondaryContainer
+                                        } else {
+                                            MaterialTheme.colorScheme.onSurface
+                                        },
+                                        animationSpec = tween(durationMillis = 250),
+                                        label = "drawerConversationSelectionContent",
+                                    )
+                                    val selectionIndicatorColor by animateColorAsState(
+                                        targetValue = if (isSelected) {
+                                            MaterialTheme.colorScheme.onSecondaryContainer
+                                        } else {
+                                            MaterialTheme.colorScheme.primary
+                                        },
+                                        animationSpec = tween(durationMillis = 250),
+                                        label = "drawerConversationSelectionIndicator",
+                                    )
 
                                     Box(
                                         modifier = Modifier.animateItem(
@@ -450,11 +525,7 @@ internal fun ChatDrawerContent(
                                                         showMenu = true
                                                     }
                                                 ),
-                                            color = if (isSelected) {
-                                                MaterialTheme.colorScheme.secondaryContainer
-                                            } else {
-                                                Color.Transparent
-                                            },
+                                            color = selectionContainerColor,
                                             shape = CircleShape
                                         ) {
                                             Row(
@@ -477,11 +548,7 @@ internal fun ChatDrawerContent(
                                                         maxLines = 1,
                                                         overflow = TextOverflow.Ellipsis,
                                                         style = MaterialTheme.typography.bodyLarge,
-                                                        color = if (isSelected) {
-                                                            MaterialTheme.colorScheme.onSecondaryContainer
-                                                        } else {
-                                                            MaterialTheme.colorScheme.onSurface
-                                                        },
+                                                        color = selectionContentColor,
                                                     )
                                                 }
                                                 Spacer(modifier = Modifier.width(8.dp))
@@ -499,11 +566,7 @@ internal fun ChatDrawerContent(
                                                         CircularProgressIndicator(
                                                             modifier = Modifier.size(18.dp),
                                                             strokeWidth = 2.dp,
-                                                            color = if (isSelected) {
-                                                                MaterialTheme.colorScheme.onSecondaryContainer
-                                                            } else {
-                                                                MaterialTheme.colorScheme.primary
-                                                            },
+                                                            color = selectionIndicatorColor,
                                                         )
                                                     }
                                                     androidx.compose.animation.AnimatedVisibility(
@@ -530,16 +593,39 @@ internal fun ChatDrawerContent(
                                             }
                                         }
 
-                                        DropdownMenu(
+                                        AgoraDropdownMenu(
                                             containerColor =
                                                 MaterialTheme.colorScheme.surfaceContainer,
                                             tonalElevation = 16.dp,
                                             expanded = showMenu,
                                             onDismissRequest = { showMenu = false },
-                                            offset = pressOffset,
-                                            shape = RoundedCornerShape(12.dp)
+                                            offset = pressOffset
                                         ) {
-                                            DropdownMenuItem(
+                                            AgoraDropdownMenuItem(
+                                                text = { Text(stringResource(if (conversation.isPinned) {
+                                                    R.string.unpin_conversation
+                                                } else {
+                                                    R.string.pin_conversation
+                                                })) },
+                                                leadingIcon = {
+                                                    Icon(
+                                                        if (conversation.isPinned) Icons.Outlined.PushPin
+                                                        else Icons.Default.PushPin,
+                                                        contentDescription = null,
+                                                    )
+                                                },
+                                                enabled = menuEnabled,
+                                                onClick = {
+                                                    showMenu = false
+                                                    if (!conversation.isPinned) {
+                                                        requestPinScroll(conversation.id)
+                                                    }
+                                                    viewModel.setConversationPinned(
+                                                        conversation.id, !conversation.isPinned,
+                                                    )
+                                                },
+                                            )
+                                            AgoraDropdownMenuItem(
                                                 text = {
                                                     Text(stringResource(R.string.generate_title))
                                                 },
@@ -555,7 +641,7 @@ internal fun ChatDrawerContent(
                                                     viewModel.generateTitle(conversation.id)
                                                 }
                                             )
-                                            DropdownMenuItem(
+                                            AgoraDropdownMenuItem(
                                                 text = { Text(stringResource(R.string.rename)) },
                                                 leadingIcon = {
                                                     Icon(
@@ -572,7 +658,7 @@ internal fun ChatDrawerContent(
                                                     )
                                                 }
                                             )
-                                            DropdownMenuItem(
+                                            AgoraDropdownMenuItem(
                                                 text = {
                                                     Text(
                                                         stringResource(R.string.delete),
@@ -621,8 +707,8 @@ internal fun ChatDrawerContent(
                                     contentAlignment = Alignment.Center,
                                 ) {
                                     CircularProgressIndicator(
-                                        modifier = Modifier.size(32.dp),
-                                        strokeWidth = 3.dp,
+                                        modifier = Modifier.size(36.dp),
+                                        strokeWidth = 4.dp,
                                     )
                                 }
                             }

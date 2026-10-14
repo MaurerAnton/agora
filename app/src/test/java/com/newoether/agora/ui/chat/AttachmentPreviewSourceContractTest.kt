@@ -7,6 +7,17 @@ import org.junit.Test
 
 class AttachmentPreviewSourceContractTest {
     @Test
+    fun fileCaptionIsOutsideTheRoundedThumbnailMask() {
+        val fileBranch = source("ui/chat/AttachmentThumbnail.kt")
+            .substringAfter('"' + "file" + '"' + " -> {")
+            .substringBefore('"' + "pdf" + '"' + " -> {")
+        assertFalse(fileBranch.contains(".clip(shape)"))
+        assertTrue(fileBranch.contains(".clickable {"))
+        assertTrue(fileBranch.contains("shape = shape"))
+        assertTrue(fileBranch.contains("overflow = TextOverflow.Ellipsis"))
+    }
+
+    @Test
     fun everyAttachmentOutcomeUsesTheCanonicalCrossfadePresentation() {
         val source = source("ui/chat/bottombar/AttachmentPreviewRow.kt")
         val mediaState = source("ui/chat/MediaLoadPresentation.kt")

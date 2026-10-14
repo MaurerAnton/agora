@@ -233,7 +233,7 @@ class SemanticIndexMutationSourceContractTest {
         assertOrdered(
             manualCache,
             "EmbeddingCacheLocks.forModel(modelId).withLock",
-            "settings.embeddingModels.value.find { it.id == modelId }",
+            "settings.embeddingModels.value.none { it.id == modelId }",
             "conversations.getOrAdmitSemanticLedgerState(modelId)",
             "scheduleCacheWork(modelId)",
         )

@@ -712,7 +712,7 @@ class ConversationSelectionControllerTest {
         fadeDelay: suspend () -> Unit = {},
     ) {
         val conversations = mockk<ConversationRepository>()
-        val registry = ConversationStateRegistry()
+        val registry = ConversationStateRegistry {}
         val renderStore = ConversationRenderStore()
         val defaultModel = MutableStateFlow("default-model")
         val validModels = MutableStateFlow<Set<String>?>(

@@ -1,6 +1,7 @@
 package com.newoether.agora.ui.chat
 
 import androidx.compose.ui.unit.dp
+import com.newoether.agora.model.ChatConversation
 import java.io.File
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
@@ -28,6 +29,28 @@ class ChatDrawerContentTest {
         assertEquals(2, Regex("""scope\.launch \{ onRequestClose\(\) \}""").findAll(group).count())
         assertTrue(group.indexOf("onOpenTasks()") < group.indexOf("onOpenRemote()"))
     }
+    @Test
+    fun conversationSelectionColorsCrossfadeWithoutChangingRowGeometry() {
+        val root = generateSequence(File(requireNotNull(System.getProperty("user.dir"))).absoluteFile) {
+            it.parentFile
+        }.first { File(it, "app/src/main/java").isDirectory }
+        val source = File(root,
+            "app/src/main/java/com/newoether/agora/ui/chat/ChatDrawerContent.kt").readText()
+
+        listOf(
+            "drawerConversationSelectionContainer",
+            "drawerConversationSelectionContent",
+            "drawerConversationSelectionIndicator",
+        ).forEach { label ->
+            assertTrue(source.contains("label = \"$label\""))
+        }
+        assertTrue(source.contains("animationSpec = tween(durationMillis = 250)"))
+        assertTrue(source.contains("color = selectionContainerColor"))
+        assertTrue(source.contains("color = selectionContentColor"))
+        assertTrue(source.contains("color = selectionIndicatorColor"))
+        assertTrue(source.contains(".height(44.dp)"))
+    }
+
     @Test
     fun generationIndicatorHasPriorityOverUnread() {
         assertEquals(
@@ -62,6 +85,58 @@ class ChatDrawerContentTest {
                 hasUnreadGeneration = true,
             ),
         )
+    }
+
+    @Test
+    fun pinnedSectionPrecedesOrdinaryConversationsWithoutDuplicates() {
+        val keys = drawerConversationKeys(
+            listOf(
+                ChatConversation(id = "a", title = "A"),
+                ChatConversation(id = "b", title = "B", isPinned = true),
+                ChatConversation(id = "c", title = "C"),
+                ChatConversation(id = "d", title = "D", isPinned = true),
+            ),
+        )
+        assertEquals(
+            listOf(
+                "section:pinned",
+                "conversation:b",
+                "conversation:d",
+                "section:conversations",
+                "conversation:a",
+                "conversation:c",
+            ),
+            keys,
+        )
+    }
+
+    @Test
+    fun emptyPinnedSectionAndLoneHeadingsAreHidden() {
+        assertEquals(
+            listOf("conversation:a", "conversation:b"),
+            drawerConversationKeys(
+                listOf(ChatConversation(id = "a", title = "A"), ChatConversation(id = "b", title = "B")),
+            ),
+        )
+        assertEquals(
+            listOf("section:pinned", "conversation:a"),
+            drawerConversationKeys(listOf(ChatConversation(id = "a", title = "A", isPinned = true))),
+        )
+        assertEquals(emptyList<String>(), drawerConversationKeys(emptyList()))
+    }
+
+    @Test
+    fun drawerMenuTogglesPinWithLocalizedLabels() {
+        val root = generateSequence(File(requireNotNull(System.getProperty("user.dir"))).absoluteFile) {
+            it.parentFile
+        }.first { File(it, "app/src/main/java").isDirectory }
+        val source = File(root,
+            "app/src/main/java/com/newoether/agora/ui/chat/ChatDrawerContent.kt").readText()
+        assertTrue(source.contains("R.string.unpin_conversation"))
+        assertTrue(source.contains("R.string.pin_conversation"))
+        assertTrue(source.contains("R.string.pinned_conversations"))
+        assertTrue(source.contains("conversation.id, !conversation.isPinned,"))
+        assertTrue(source.contains("Icons.Default.PushPin"))
     }
 
     @Test

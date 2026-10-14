@@ -43,6 +43,12 @@ import com.newoether.agora.viewmodel.ChatViewModel
 /** When true, [SettingsGroup] inside a [SettingsGroupColumn] suppresses its own bottom padding
  *  (spacing is handled by the column's [Arrangement.spacedBy] instead). */
 val LocalSettingsGroupSpacing = staticCompositionLocalOf { false }
+internal val LocalSettingsPaneBackButtonVisible = staticCompositionLocalOf { true }
+
+@Composable
+internal fun SettingsSecondaryPane(content: @Composable () -> Unit) {
+    CompositionLocalProvider(LocalSettingsPaneBackButtonVisible provides true, content = content)
+}
 
 /** Settings page content container: uniform 24dp spacing between groups (and any other elements),
  *  with zero trailing after the last element. */
@@ -123,6 +129,9 @@ fun SettingsIconContent(
     }
 }
 
+/** SettingsItem side padding for rows using sheetOptionClickable: 16dp less the 8dp sheet inset. */
+internal val SETTINGS_ITEM_SHEET_PADDING = 16.dp - com.newoether.agora.ui.components.SHEET_OPTION_INSET
+
 @Composable
 fun SettingsItem(
     modifier: Modifier = Modifier,
@@ -131,6 +140,7 @@ fun SettingsItem(
     leadingContent: (@Composable () -> Unit)? = null,
     trailingContent: (@Composable () -> Unit)? = null,
     leadingSpacing: Dp = 16.dp,
+    startPadding: Dp = 16.dp,
     endPadding: Dp = 16.dp,
 ) {
     val verticalPadding = if (supportingContent == null) 12.dp else 16.dp
@@ -138,7 +148,7 @@ fun SettingsItem(
         modifier = modifier
             .fillMaxWidth()
             .padding(
-                start = 16.dp,
+                start = startPadding,
                 end = endPadding,
                 top = verticalPadding,
                 bottom = verticalPadding,
@@ -220,7 +230,7 @@ fun SettingsAddItem(
     }
 }
 
-private data class SettingsCategory(
+internal data class SettingsCategory(
     val key: String,
     @StringRes val titleRes: Int,
     @StringRes val descriptionRes: Int,
@@ -228,12 +238,12 @@ private data class SettingsCategory(
     @DrawableRes val iconRes: Int? = null,
 )
 
-private data class SettingsGroupData(
+internal data class SettingsGroupData(
     val titleRes: Int? = null,
     val items: List<SettingsCategory>
 )
 
-private val baseSettingsGroups = listOf(
+internal val baseSettingsGroups = listOf(
     SettingsGroupData(titleRes = R.string.settings_group_services, items = listOf(
         SettingsCategory("provider", R.string.settings_provider, R.string.settings_provider_desc, Icons.Default.Cloud),
         SettingsCategory("models", R.string.settings_models, R.string.settings_models_desc, Icons.Default.Chat),
@@ -260,9 +270,11 @@ private val baseSettingsGroups = listOf(
             iconRes = R.drawable.ic_mcp,
         ),
         SettingsCategory("automation", R.string.settings_automation, R.string.settings_automation_desc, Icons.Default.Repeat),
+        SettingsCategory("interaction", R.string.settings_interaction, R.string.settings_interaction_desc, Icons.Default.QuestionAnswer),
     )),
     SettingsGroupData(titleRes = R.string.settings_group_network, items = listOf(
         SettingsCategory("proxy", R.string.settings_proxy, R.string.settings_proxy_desc, Icons.Default.Lan),
+        SettingsCategory("webui", R.string.settings_webui, R.string.settings_webui_desc, Icons.Default.Web),
     )),
     SettingsGroupData(titleRes = R.string.settings_group_memory_data, items = listOf(
         SettingsCategory("memory", R.string.settings_memory, R.string.settings_memory_desc, Icons.Default.Description),
@@ -275,7 +287,7 @@ private val baseSettingsGroups = listOf(
     )),
 )
 
-private val developerSettingsGroup = SettingsGroupData(
+internal val developerSettingsGroup = SettingsGroupData(
     titleRes = R.string.settings_group_developer,
     items = listOf(
         SettingsCategory(
@@ -287,7 +299,7 @@ private val developerSettingsGroup = SettingsGroupData(
     ),
 )
 
-private val aboutSettingsGroup = SettingsGroupData(
+internal val aboutSettingsGroup = SettingsGroupData(
     titleRes = R.string.settings_group_about,
     items = listOf(
         SettingsCategory("about", R.string.settings_about, R.string.settings_about_desc, Icons.Default.Info),
@@ -296,8 +308,15 @@ private val aboutSettingsGroup = SettingsGroupData(
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun SettingsScreen(viewModel: ChatViewModel, onBack: () -> Unit) {
-    var selectedCategory by rememberSaveable { mutableStateOf<String?>(null) }
+fun SettingsScreen(
+    viewModel: ChatViewModel,
+    onBack: () -> Unit,
+    initialCategory: String? = null,
+) {
+    var selectedCategory by rememberSaveable { mutableStateOf(initialCategory) }
+    LaunchedEffect(initialCategory) {
+        if (initialCategory != null) selectedCategory = initialCategory
+    }
     val developerOptionsEnabled by viewModel.settings.developerOptionsEnabled.collectAsState()
     val settingsGroups = remember(developerOptionsEnabled) {
         buildList {
@@ -307,133 +326,39 @@ fun SettingsScreen(viewModel: ChatViewModel, onBack: () -> Unit) {
         }
     }
     val listState = rememberLazyListState()
-
-    BackHandler {
-        if (selectedCategory != null) {
-            selectedCategory = null
-        } else {
-            onBack()
+    BoxWithConstraints(modifier = Modifier.fillMaxSize()) {
+        val twoPane = maxWidth >= SettingsTwoPaneMinWidth
+        BackHandler {
+            if (twoPane || selectedCategory == null) onBack() else selectedCategory = null
         }
-    }
-
-    Box(modifier = Modifier.fillMaxSize()) {
-        GuardedAnimatedContent(
-            targetState = selectedCategory,
-            forward = selectedCategory != null
-        ) { category ->
-            when (category) {
-                "provider" -> SettingsProviderPage(viewModel, onBack = { selectedCategory = null })
-                "prompts" -> SettingsPromptsPage(viewModel, onBack = { selectedCategory = null })
-                "models" -> SettingsModelsPage(viewModel, onBack = { selectedCategory = null })
-                "generation" -> SettingsGenerationPage(viewModel, onBack = { selectedCategory = null })
-                "context" -> SettingsContextPage(viewModel, onBack = { selectedCategory = null })
-                "websearch" -> SettingsWebSearchPage(viewModel, onBack = { selectedCategory = null })
-                "imagegen" -> SettingsImageGenPage(viewModel, onBack = { selectedCategory = null })
-                "shell" -> SettingsShellPage(viewModel, onBack = { selectedCategory = null })
-                "tor" -> SettingsTorPage(viewModel, onBack = { selectedCategory = null })
-                "mcp" -> SettingsMcpPage(viewModel, onBack = { selectedCategory = null })
-                "automation" -> SettingsAutomationPage(viewModel, onBack = { selectedCategory = null })
-                "proxy" -> SettingsProxyPage(viewModel, onBack = { selectedCategory = null })
-                "language" -> SettingsLanguagePage(viewModel, onBack = { selectedCategory = null })
-                "titlegen" -> SettingsTitleGenPage(viewModel, onBack = { selectedCategory = null })
-                "transcription" -> SettingsTranscriptionPage(viewModel, onBack = { selectedCategory = null })
-                "search" -> SettingsSearchPage(viewModel, onBack = { selectedCategory = null })
-                "memory" -> SettingsMemoryPage(viewModel, onBack = { selectedCategory = null })
-                "skills" -> SettingsSkillsPage(viewModel, onBack = { selectedCategory = null })
-                "datacontrol" -> SettingsDataControlPage(viewModel, onBack = { selectedCategory = null })
-                "appearance" -> SettingsAppearancePage(viewModel, onBack = { selectedCategory = null })
-                "developer" -> SettingsDeveloperPage(
-                    viewModel = viewModel,
-                    onBack = { selectedCategory = null },
-                    onDisabled = { selectedCategory = null },
-                )
-                "about" -> SettingsAboutPage(viewModel, onBack = { selectedCategory = null })
-                else -> {
-                    CollapsingSettingsLazyScaffold(
-                        title = stringResource(R.string.settings_title),
+        if (twoPane) {
+            SettingsTwoPaneScreen(
+                viewModel = viewModel,
+                settingsGroups = settingsGroups,
+                selectedCategory = selectedCategory ?: "provider",
+                onCategorySelected = { selectedCategory = it },
+                onBack = onBack,
+            )
+        } else {
+            GuardedAnimatedContent(
+                targetState = selectedCategory,
+                forward = selectedCategory != null,
+            ) { category ->
+                if (category != null) {
+                    SettingsDestination(
+                        category = category,
+                        viewModel = viewModel,
+                        onBack = { selectedCategory = null },
+                    )
+                } else {
+                    SettingsCategoryHome(
+                        settingsGroups = settingsGroups,
+                        listState = listState,
                         onBack = onBack,
-                        listState = listState
-                    ) {
-                        items(settingsGroups.size) { groupIndex ->
-                            val group = settingsGroups[groupIndex]
-                            Column(
-                                modifier = Modifier.fillMaxWidth()
-                            ) {
-                                if (group.titleRes != null) {
-                                    Text(
-                                        text = stringResource(group.titleRes),
-                                        style = MaterialTheme.typography.labelLarge,
-                                        color = MaterialTheme.colorScheme.primary,
-                                        modifier = Modifier.padding(horizontal = 16.dp, vertical = 12.dp)
-                                    )
-                                }
-                                group.items.forEachIndexed { index, cat ->
-                                    if (index > 0) {
-                                        Spacer(modifier = Modifier.height(2.dp))
-                                    }
-                                    val isFirst = index == 0
-                                    val isLast = index == group.items.lastIndex
-                                    val shape = when {
-                                        group.items.size == 1 -> RoundedCornerShape(24.dp)
-                                        isFirst -> RoundedCornerShape(topStart = 24.dp, topEnd = 24.dp, bottomStart = 5.dp, bottomEnd = 5.dp)
-                                        isLast -> RoundedCornerShape(topStart = 5.dp, topEnd = 5.dp, bottomStart = 24.dp, bottomEnd = 24.dp)
-                                        else -> RoundedCornerShape(5.dp)
-                                    }
-                                    Surface(
-                                        shape = shape,
-                                        color = MaterialTheme.colorScheme.surface,
-                                        tonalElevation = 1.dp,
-                                        modifier = Modifier
-                                            .fillMaxWidth()
-                                            .clip(shape)
-                                            .clickable { selectedCategory = cat.key }
-                                    ) {
-                                        Row(
-                                            modifier = Modifier
-                                                .fillMaxWidth()
-                                                .padding(horizontal = 16.dp, vertical = 16.dp),
-                                            verticalAlignment = Alignment.CenterVertically
-                                        ) {
-                                            if (cat.iconRes != null) {
-                                                Icon(
-                                                    painter = painterResource(cat.iconRes),
-                                                    contentDescription = null,
-                                                    tint = MaterialTheme.colorScheme.primary,
-                                                    modifier = Modifier.size(24.dp),
-                                                )
-                                            } else {
-                                                Icon(
-                                                    imageVector = checkNotNull(cat.icon),
-                                                    contentDescription = null,
-                                                    tint = MaterialTheme.colorScheme.primary,
-                                                    modifier = Modifier.size(24.dp),
-                                                )
-                                            }
-                                            Spacer(modifier = Modifier.width(16.dp))
-                                            Column(modifier = Modifier.weight(1f)) {
-                                                Text(
-                                                    text = stringResource(cat.titleRes),
-                                                    style = MaterialTheme.typography.bodyLarge.copy(fontWeight = FontWeight.Medium)
-                                                )
-                                                Spacer(modifier = Modifier.height(3.dp))
-                                                Text(
-                                                    text = stringResource(cat.descriptionRes),
-                                                    style = MaterialTheme.typography.bodyMedium,
-                                                    color = MaterialTheme.colorScheme.onSurfaceVariant
-                                                )
-                                            }
-                                        }
-                                    }
-                                }
-                            }
-                            if (groupIndex < settingsGroups.size - 1) {
-                                Spacer(modifier = Modifier.height(20.dp))
-                            }
-                        }
-                    }
+                        onCategorySelected = { selectedCategory = it },
+                    )
                 }
             }
         }
-
     }
 }

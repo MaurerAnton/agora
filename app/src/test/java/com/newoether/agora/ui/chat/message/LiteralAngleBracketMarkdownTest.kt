@@ -193,6 +193,6 @@ class LiteralAngleBracketMarkdownTest {
     private val literalHtmlAnnotatorSettings = DefaultAnnotatorSettings(
         linkTextSpanStyle = TextLinkStyles(),
         codeSpanStyle = SpanStyle(),
-        annotator = literalHtmlMarkdownAnnotator,
+        annotator = chatMarkdownAnnotator,
     )
 }

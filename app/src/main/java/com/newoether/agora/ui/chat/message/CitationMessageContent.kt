@@ -264,6 +264,9 @@ internal fun CitationInlineContentHost(
             ),
         ) {
             val appearanceKey = citationInlineAppearanceKey(marker)
+            // The fade Animatable is retained per appearance key inside the map,
+            // which is itself remembered, so no remember() wrapper applies here.
+            @Suppress("RememberInComposition")
             val sharedDrawAlpha = inlineFadeStateByPrimarySource.getOrPut(appearanceKey) {
                 Animatable(0f)
             }

@@ -26,8 +26,7 @@ class FiloEncryptedUploadInteropTest {
             fileName = "original.bin", mimeType = "application/octet-stream", fileSize = file.length(), localPath = file.path))
         assertEquals(file.length(), uploaded.size)
         assertFalse(uploaded.path.isNullOrBlank())
-        val session = client.create()
-        val turn = client.send(session.id, "Read the attached file", "11111111-1111-4111-8111-111111111111", listOf(uploaded.id))
-        assertTrue(turn.isNotBlank())
+        val created = client.create("Read the attached file", "11111111-1111-4111-8111-111111111111", listOf(uploaded.id))
+        assertTrue(created.id.isNotBlank())
     }
 }

@@ -78,7 +78,7 @@ internal class RemoteDeviceLifecycleTest : RemoteViewModelFixture() {
         vm.selectDevice(null); runCurrent()
         vm.retryNotice(notice); runCurrent()
         coVerify(exactly = 2) { client.sessions(any()) }
-        coVerify(exactly = 0) { client.send(any(), any(), any()) }
+        coVerify(exactly = 0) { client.send(any(), any(), any(), any()) }
         vm.setVisible(false)
     }
 
@@ -256,7 +256,7 @@ internal class RemoteDeviceLifecycleTest : RemoteViewModelFixture() {
         coVerify(exactly = 0) { client.connect() }
         coVerify(exactly = 0) { client.sessions(any()) }
         coVerify(exactly = 0) { client.conversation(any(), any()) }
-        coVerify(exactly = 0) { client.send(any(), any(), any()) }
+        coVerify(exactly = 0) { client.send(any(), any(), any(), any()) }
         coEvery { client.sessions(any()) } throws IOException("Offline")
         vm.setVisible(true); vm.selectDevice("http://computer/"); runCurrent()
         assertTrue(vm.state.value.error)
@@ -281,7 +281,7 @@ internal class RemoteDeviceLifecycleTest : RemoteViewModelFixture() {
         val removeGate = CompletableDeferred<Unit>()
         val sendGate = CompletableDeferred<String>()
         coEvery { connections.remove(any()) } coAnswers { removeGate.await() }
-        coEvery { client.send(any(), any(), any()) } coAnswers { sendGate.await() }
+        coEvery { client.send(any(), any(), any(), any()) } coAnswers { sendGate.await() }
         val vm = RemoteViewModel(connections, projectionDispatcher = dispatcher) { _, _ -> client }; runCurrent()
         saveAndSelect(vm)
         vm.selectSession(session); vm.setVisible(true); runCurrent()
@@ -294,7 +294,7 @@ internal class RemoteDeviceLifecycleTest : RemoteViewModelFixture() {
         assertTrue(vm.state.value.attempts.isEmpty())
         assertTrue(vm.state.value.drafts.isEmpty())
         assertNull(vm.state.value.deviceId)
-        coVerify(exactly = 1) { client.send(any(), any(), any()) }
+        coVerify(exactly = 1) { client.send(any(), any(), any(), any()) }
         vm.setVisible(false)
     }
 

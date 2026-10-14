@@ -50,6 +50,14 @@ internal class GenerationApiPathBuilder(
             } else {
                 toolDefinitions.definitions(request.context)
             }
+            val includeAssistantReasoning =
+                !config.responsesApiEnabled &&
+                    config.thinkingEnabled &&
+                    (
+                        config.providerName == Constants.PROVIDER_DEEPSEEK ||
+                            com.newoether.agora.api.openai.isDeepSeekModel(config.modelId)
+                        ) &&
+                    definitions.isNotEmpty()
             val fixedTokenCost = if (config.requestResolver == null) {
                 ContextTokenEstimator.estimateFixed(
                     systemPrompt = config.effectiveSystemPrompt,
@@ -91,6 +99,7 @@ internal class GenerationApiPathBuilder(
                     // Transcription-enabled models receive image descriptions instead of raw
                     // images. Sending image_url parts to a non-vision model is a hard provider 400.
                     includeImages = !request.context.imageTranscriptionEnabled,
+                    includeAssistantReasoning = includeAssistantReasoning,
                     systemPrompt = config.effectiveSystemPrompt,
                     maxContextWindow = providerTokenBudget,
                     codeExecutionEnabled = config.codeExecutionEnabled,
@@ -114,7 +123,10 @@ internal class GenerationApiPathBuilder(
                     frequencyPenalty = config.frequencyPenalty,
                     presencePenalty = config.presencePenalty,
                     promptCacheKey = request.conversationId.takeIf {
-                        config.providerName == Constants.PROVIDER_OPENAI
+                        config.promptCacheKeyEnabled
+                    },
+                    sessionId = request.conversationId.takeIf {
+                        config.providerName == Constants.PROVIDER_OPENCODE_GO
                     },
                     requestResolver = config.requestResolver,
                 ),

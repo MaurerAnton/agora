@@ -37,8 +37,13 @@ class ConversationSettingsTransferSourceContractTest {
         ).replace("\r\n", "\n")
         val capture = generation.substringAfter("internal fun captureForegroundSendTarget")
             .substringBefore("internal suspend fun prepareForegroundSend")
-        val prepare = generation.substringAfter("internal suspend fun prepareForegroundSend")
+        val delegation = generation.substringAfter("internal suspend fun prepareForegroundSend")
             .substringBefore("internal suspend fun sendMessage")
+        assertTrue(delegation.contains("requestBuilder.prepareForegroundSend(target, composer, application, origin::showSnackbar)"))
+        val prepare = sourceFile(
+            "app/src/main/java/com/newoether/agora/viewmodel/GenerationRequestBuilder.kt",
+        ).substringAfter("internal suspend fun prepareForegroundSend")
+            .substringBefore("internal suspend fun awaitProviderKey")
 
         assertTrue(capture.contains("captureNewChatWorkspace()"))
         assertTrue(prepare.contains("target.newChatWorkspace?.awaitCaptured()"))
@@ -77,15 +82,18 @@ class ConversationSettingsTransferSourceContractTest {
         val dataImporter = sourceFile(
             "app/src/main/java/com/newoether/agora/data/DataImporter.kt",
         ).replace("\r\n", "\n")
-        val conversations = dataImporter.substringAfter(
-            "if (convDecision != null && convDecision != ImportStrategy.SKIP) {",
-        ).substringBefore("if (memDecision != null && memDecision != ImportStrategy.SKIP) {")
-        val finishPrevious = conversations.indexOf(
+        // Staging finishes any earlier transfer and restores media before the graph is written.
+        val staging = dataImporter.substringAfter("private suspend fun stageConversationGraph(")
+            .substringBefore("suspend fun import(")
+        val finishPrevious = staging.indexOf(
             "conversationSettingsTransfers.completePendingImport()",
         )
-        val restoreMedia = conversations.indexOf(
-            "conversationMediaRestorer.restoreConversationMedia(opened)",
+        val restoreMedia = staging.indexOf(
+            "conversationMediaRestorer.restoreConversationMedia(archive)",
         )
+        val conversations = dataImporter.substringAfter("suspend fun import(")
+            .substringAfter("if (staged != null) {")
+            .substringBefore("if (memDecision != null && memDecision != ImportStrategy.SKIP) {")
         val importGraphCall = conversations.indexOf(
             "conversationGraphImporter.importConversationGraph(",
         )
@@ -95,7 +103,7 @@ class ConversationSettingsTransferSourceContractTest {
         )
         assertTrue(finishPrevious >= 0)
         assertTrue(restoreMedia > finishPrevious)
-        assertTrue(importGraphCall > restoreMedia)
+        assertTrue(importGraphCall >= 0)
         assertTrue(markCommitted > importGraphCall)
         assertTrue(completeSettings > markCommitted)
         assertTrue(conversations.contains("if (!graphCommitted)"))

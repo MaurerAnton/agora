@@ -13,6 +13,7 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
@@ -301,6 +302,7 @@ internal fun SmoothBottomSheet(
                 modifier = Modifier
                     .align(Alignment.BottomCenter)
                     .fillMaxWidth()
+                    .widthIn(max = BottomSheetMaxWidth)
                     .layout { measurable, constraints ->
                         val height = (screenHeightPx * state.visualFraction.value)
                             .roundToInt()
@@ -315,7 +317,7 @@ internal fun SmoothBottomSheet(
             ) {
                 Surface(
                     modifier = Modifier.fillMaxSize(),
-                    shape = RoundedCornerShape(topStart = 26.dp, topEnd = 26.dp),
+                    shape = BOTTOM_SHEET_SHAPE,
                     shadowElevation = 8.dp,
                     color = MaterialTheme.colorScheme.surfaceContainer,
                 ) {

@@ -1,5 +1,7 @@
 package com.newoether.agora.viewmodel
 
+import com.newoether.agora.api.util.MALFORMED_TOOL_CALL_NAME
+import com.newoether.agora.api.util.malformedToolCallResultText
 import android.app.Application
 import com.newoether.agora.api.ToolDefinition
 import com.newoether.agora.data.MemoryManager
@@ -32,6 +34,7 @@ import kotlinx.coroutines.flow.collect
 import kotlinx.coroutines.withTimeout
 import kotlinx.serialization.json.Json
 import kotlinx.serialization.json.JsonPrimitive
+import kotlinx.serialization.json.JsonObject
 import kotlinx.serialization.json.jsonObject
 
 internal data class AuthorizedToolCall(
@@ -84,7 +87,7 @@ internal class GenerationToolExecutor private constructor(
             skillManager: SkillManager,
             sandboxFactory: SandboxManagerFactory?,
             additionalProviders: List<ToolProvider>,
-            confirmShellCommand: suspend (server: String, summary: String) -> Boolean,
+            confirmShellCommand: suspend (server: String, summary: String, conversationId: String?) -> Boolean,
         ): GenerationToolExecutor {
             val imageGenProvider = ImageGenToolProvider(app)
             val shellProvider = ShellToolProvider(
@@ -165,6 +168,12 @@ internal class GenerationToolExecutor private constructor(
         call: AuthorizedToolCall,
         onEvent: suspend (ToolExecutionEvent) -> Unit,
     ): AuthorizedToolResult {
+        if (call.name == MALFORMED_TOOL_CALL_NAME) {
+            // Stand-in for a damaged call: never executed, answered with what was wrong.
+            return call.result(
+                ToolExecutionResult(text = malformedToolCallResultText(call.arguments), isError = true),
+            )
+        }
         if (call.name !in call.authorizedToolNames) {
             return call.result(
                 ToolExecutionResult(
@@ -261,24 +270,35 @@ internal fun appendBoundedToolOutput(
     else combined.takeLast(maxChars)
 }
 
-internal fun finalToolState(result: String): String {
-    if (result.isEmpty()) return ToolExecutionStates.EMPTY
+internal fun finalToolState(result: ToolExecutionResult, toolName: String): String {
+    val protocol = result.structuredContent ?: result.text.takeUnless {
+        toolName == "read_memory_file" || toolName == "read_active_memory" ||
+            toolName == "read_skill_file" || toolName.startsWith("mcp_")
+    }
     val resultObject = runCatching {
-        Json.parseToJsonElement(result).jsonObject
+        Json.parseToJsonElement(protocol.orEmpty()).jsonObject
     }.getOrNull()
-    val errorCode = (resultObject?.get("error") as? JsonPrimitive)?.content
+    val jobTool = toolName in setOf("execute_shell_command", "get_shell_job", "wait_for_job", "stop_shell_job")
+    val payload = if (jobTool) resultObject?.get("result") as? JsonObject ?: resultObject else resultObject
+    val errorCode = (payload?.get("error") as? JsonPrimitive)?.content
+        ?: (resultObject?.get("error") as? JsonPrimitive)?.content
     if (errorCode == "no_results") return ToolExecutionStates.EMPTY
-    if (result.startsWith("Error", ignoreCase = true) || errorCode != null) {
+    val failedFlag = (payload?.get("failed") as? JsonPrimitive)?.content == "true" ||
+        (resultObject?.get("failed") as? JsonPrimitive)?.content == "true"
+    if (result.isError || failedFlag || !errorCode.isNullOrBlank()) {
         return ToolExecutionStates.FAILED
     }
+    if (result.text.isEmpty() && result.structuredContent == null && result.images.isEmpty()) {
+        return ToolExecutionStates.EMPTY
+    }
+    val jobState = if (jobTool) (payload?.get("state") as? JsonPrimitive)?.content?.lowercase() else null
+    if (jobState == "stopped" || jobState == "interrupted") return ToolExecutionStates.STOPPED
     val isBackground = (resultObject?.get("background") as? JsonPrimitive)
         ?.content
         ?.toBooleanStrictOrNull() == true ||
         (
-            (resultObject?.get("state") as? JsonPrimitive)
-                ?.content
-                ?.equals("running", ignoreCase = true) == true &&
-                resultObject.get("job_id") != null
+            jobState in setOf("running", "stopping", "settling") &&
+                (payload?.get("job_id") ?: resultObject?.get("job_id")) != null
             )
     return if (isBackground) ToolExecutionStates.BACKGROUND_RUNNING
     else ToolExecutionStates.SUCCEEDED

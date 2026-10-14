@@ -42,11 +42,35 @@ import kotlinx.coroutines.NonCancellable
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import com.newoether.agora.data.CustomProviderConfig
+import com.newoether.agora.data.thinkingCapabilityForSelectedModel
+import com.newoether.agora.model.ModelId
+import com.newoether.agora.model.OpenAiServiceTiers
+import com.newoether.agora.model.ThinkingResolution
+import com.newoether.agora.util.Constants
 import com.newoether.agora.data.providerDisplayName
 import com.newoether.agora.data.modelDisplayName
+import com.newoether.agora.ui.components.AgoraDropdownMenuItem
+import com.newoether.agora.ui.components.AgoraExposedDropdownMenu
 internal val CHAT_BOTTOM_BAR_OUTER_RADIUS = 28.dp
 internal val CHAT_BOTTOM_BAR_OUTER_SHAPE = RoundedCornerShape(CHAT_BOTTOM_BAR_OUTER_RADIUS)
-internal val CHAT_DROPDOWN_MENU_SHAPE = RoundedCornerShape(16.dp)
+// Non-expanded bar geometry, measured from the bar's outer edge.
+// The controls capsule and the send button share one height and sit 10 dp from the start/end and
+// bottom edges. They are not concentric with the outer corners: the owner chose larger controls.
+internal val COMPOSER_CONTROL_HEIGHT = 48.dp
+internal val COMPOSER_CONTROLS_INSET = 10.dp
+// The expand icon sits 18 dp from the top and end edges. The expand button's circle is a fade to
+// transparent, so only its 20 dp icon is placed, not the circle.
+internal val COMPOSER_CORNER_CONTENT_INSET = 18.dp
+// The input text starts 18 dp from the start edge and 16 dp from the top, and ends 22 dp above the
+// controls.
+internal val COMPOSER_TEXT_START_INSET = 18.dp
+internal val COMPOSER_TEXT_TOP_INSET = 16.dp
+internal val COMPOSER_TEXT_CONTROLS_GAP = 22.dp
+internal val COMPOSER_EXPAND_BUTTON_SIZE = 40.dp
+internal val COMPOSER_EXPAND_ICON_SIZE = 20.dp
+// The host padding the status rows, attachment previews and expanded collapse button share.
+internal val COMPOSER_HOST_SIDE_PADDING = 4.dp
+internal val COMPOSER_HOST_TOP_PADDING = 8.dp
 internal fun contextUsageExceedsCompactThreshold(
     estimatedTokens: Int, tokenBudget: Int, thresholdPercent: Int,
 ): Boolean {
@@ -127,16 +151,45 @@ internal fun ChatBottomBar(
     contextEstimatedTokens: Int = 0,
     contextTokenBudget: Int = ContextBudget.DEFAULT_TOKENS,
     contextCompactThresholdPercent: Int = 90,
+    contextCompactEnabled: Boolean = true,
+    contextSystemPromptTokens: Int = 0,
+    contextToolTokens: Int = 0,
     canCompact: Boolean = false,
     onCompactClick: () -> Unit = {},
     queuedSends: List<QueuedSend> = emptyList(),
     onRemoveQueuedSend: (String) -> Unit = {},
+    onSendQueuedNow: () -> Unit = {},
     isStopping: Boolean = false,
 ) {
     val motionPolicy = LocalAgoraMotionPolicy.current
     val scrollState = rememberScrollState()
     BackHandler(enabled = isExpanded) { onCollapse() }
     val isModelValid = selectedModel.isNotBlank() && enabledModels.contains(selectedModel)
+    val modelId = ModelId.parse(selectedModel)
+    val thinkingCapability = remember(selectedModel, customProviders) {
+        thinkingCapabilityForSelectedModel(selectedModel, customProviders)
+    }
+    val displayedThinking = ThinkingResolution.resolve(
+        thinkingCapability,
+        thinkingEnabled,
+        thinkingLevel,
+        thinkingBudgetEnabled,
+        thinkingBudgetTokens,
+    )
+    val displayedThinkingLevel = displayedThinking.effort
+        ?: thinkingCapability.nearestEffort(thinkingLevel) ?: thinkingLevel
+    val displayedThinkingEnabled = displayedThinking.enabled
+    val displayedThinkingBudgetEnabled = displayedThinking.budgetTokens != null
+    val displayedThinkingBudgetTokens = displayedThinking.budgetTokens ?: thinkingBudgetTokens
+    val availableServiceTiers = OpenAiServiceTiers.availableTiers(
+        modelId.modelName,
+        officialProvider = modelId.providerName == Constants.PROVIDER_OPENAI,
+    )
+    val displayedServiceTier = OpenAiServiceTiers.mappedTier(
+        openAiServiceTier,
+        modelId.modelName,
+        officialProvider = modelId.providerName == Constants.PROVIDER_OPENAI,
+    )
     val submissionState = remember(submissionController, composerOwnerId) {
         submissionController.observeState(composerOwnerId)
     }
@@ -440,7 +493,7 @@ internal fun ChatBottomBar(
                     },
                 ) {
                     if (enabledModels.isEmpty()) {
-                        DropdownMenuItem(
+                        AgoraDropdownMenuItem(
                             text = { Text(stringResource(R.string.models_no_models)) },
                             onClick = {
                                 activeMenu = null
@@ -484,6 +537,9 @@ internal fun ChatBottomBar(
                     estimatedTokens = contextEstimatedTokens,
                     tokenBudget = contextTokenBudget,
                     compactThresholdPercent = contextCompactThresholdPercent,
+                    compactEnabled = contextCompactEnabled,
+                    systemPromptTokens = contextSystemPromptTokens,
+                    toolTokens = contextToolTokens,
                     expanded = activeMenu == "context",
                     onClick = {
                         val now = System.currentTimeMillis()
@@ -513,10 +569,10 @@ internal fun ChatBottomBar(
                         }, 
                         modifier = Modifier.size(32.dp).menuAnchor(type = ExposedDropdownMenuAnchorType.PrimaryNotEditable, enabled = true)
                     ) {
-                        Icon(Icons.Default.MoreVert, stringResource(R.string.tools), modifier = Modifier.size(16.dp), tint = MaterialTheme.colorScheme.onSurfaceVariant)
+                        Icon(Icons.Default.MoreVert, stringResource(R.string.tools), modifier = Modifier.size(18.dp), tint = MaterialTheme.colorScheme.onSurfaceVariant)
                     }
                     
-                    ExposedDropdownMenu(
+                    AgoraExposedDropdownMenu(
                         containerColor = MaterialTheme.colorScheme.surfaceContainer,
                         expanded = activeMenu == "tools",
                         onDismissRequest = {
@@ -525,8 +581,7 @@ internal fun ChatBottomBar(
                                 lastToolsDismissTime = System.currentTimeMillis()
                             }
                         },
-                        matchTextFieldWidth = false,
-                        shape = CHAT_DROPDOWN_MENU_SHAPE,
+                        matchAnchorWidth = false,
                     ) {
                         ComposerToolsMenuContent(
                             activeMenuState = activeMenuState,
@@ -535,11 +590,12 @@ internal fun ChatBottomBar(
                             showLowContextMode = showLowContextMode,
                             lowContextModeEnabled = lowContextModeEnabled,
                             onLowContextModeToggle = onLowContextModeToggle,
-                            thinkingEnabled = thinkingEnabled,
-                            thinkingLevel = thinkingLevel,
-                            thinkingBudgetEnabled = thinkingBudgetEnabled,
-                            thinkingBudgetTokens = thinkingBudgetTokens,
+                            thinkingEnabled = displayedThinkingEnabled,
+                            thinkingLevel = displayedThinkingLevel,
+                            thinkingBudgetEnabled = displayedThinkingBudgetEnabled,
+                            thinkingBudgetTokens = displayedThinkingBudgetTokens,
                             onThinkingToggle = onThinkingToggle,
+                            thinkingCanDisable = thinkingCapability.canDisableThinking,
                             selectedProvider = selectedProvider,
                             isModelValid = isModelValid,
                             codeExecutionEnabled = codeExecutionEnabled,
@@ -549,7 +605,7 @@ internal fun ChatBottomBar(
                             capabilityControlsEnabled = capabilityControlsEnabled,
                             openAiServiceTierAvailable = openAiServiceTierAvailable,
                             openAiServiceTierEnabled = openAiServiceTierEnabled,
-                            openAiServiceTier = openAiServiceTier,
+                            openAiServiceTier = displayedServiceTier,
                             onOpenAiServiceTierToggle = onOpenAiServiceTierToggle,
                             openAiWebSearchAvailable = openAiWebSearchAvailable,
                             openAiWebSearchEnabled = openAiWebSearchEnabled,
@@ -578,6 +634,8 @@ internal fun ChatBottomBar(
                 isSwitching = isSwitching,
                 isStopping = isStopping,
                 isModelValid = isModelValid,
+                hasQueuedSends = queuedSends.isNotEmpty(),
+                onSendQueued = onSendQueuedNow,
                 onStopGeneration = onStopGeneration,
                 onCollapse = onCollapse,
             )
@@ -586,21 +644,21 @@ internal fun ChatBottomBar(
     ChatBottomBarOverlayHost(
         showThinkingSheet = showThinkingSheet,
         onDismissThinkingSheet = { showThinkingSheet = false },
-        thinkingEnabled = thinkingEnabled,
-        thinkingLevel = thinkingLevel,
-        thinkingBudgetEnabled = thinkingBudgetEnabled,
-        thinkingBudgetTokens = thinkingBudgetTokens,
+        thinkingEnabled = displayedThinkingEnabled,
+        thinkingLevel = displayedThinkingLevel,
+        thinkingCapability = thinkingCapability,
+        thinkingBudgetEnabled = displayedThinkingBudgetEnabled,
+        thinkingBudgetTokens = displayedThinkingBudgetTokens,
         onThinkingToggle = onThinkingToggle,
         onThinkingLevelChange = onThinkingLevelChange,
         onThinkingBudgetEnabledChange = onThinkingBudgetEnabledChange,
         onThinkingBudgetTokensChange = onThinkingBudgetTokensChange,
-        selectedModel = selectedModel,
-        customProviders = customProviders,
         showOpenAiServiceTierSheet = showOpenAiServiceTierSheet,
         openAiServiceTierAvailable = openAiServiceTierAvailable,
         onDismissOpenAiServiceTierSheet = { showOpenAiServiceTierSheet = false },
         openAiServiceTierEnabled = openAiServiceTierEnabled,
-        openAiServiceTier = openAiServiceTier,
+        openAiServiceTier = displayedServiceTier,
+        availableServiceTiers = availableServiceTiers,
         onOpenAiServiceTierToggle = onOpenAiServiceTierToggle,
         onOpenAiServiceTierChange = onOpenAiServiceTierChange,
         internalCameraPath = internalCameraPath,

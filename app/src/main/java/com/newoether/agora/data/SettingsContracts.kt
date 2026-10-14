@@ -1,6 +1,7 @@
 package com.newoether.agora.data
 
 import androidx.datastore.preferences.core.Preferences
+import com.newoether.agora.model.OpenAiServiceTiers
 import com.newoether.agora.util.Constants
 import com.newoether.agora.util.DebugLog
 import com.newoether.agora.util.SecretCrypto
@@ -109,10 +110,16 @@ internal fun decodeConversationSettings(
     preferences: Preferences,
     json: Json,
 ): Map<String, ConversationSettings> = try {
-    json.decodeFromString(preferences[CONVERSATION_SETTINGS_JSON] ?: "{}")
+    json.decodeFromString<Map<String, ConversationSettings>>(
+        preferences[CONVERSATION_SETTINGS_JSON] ?: "{}",
+    ).mapValues { (_, settings) -> settings.normalizedServiceTier() }
 } catch (_: Exception) {
     emptyMap()
 }
+
+internal fun ConversationSettings.normalizedServiceTier(): ConversationSettings =
+    if (openAiServiceTier == null) this
+    else copy(openAiServiceTier = OpenAiServiceTiers.normalize(openAiServiceTier))
 
 internal fun decodeEncryptedShellDevices(preferences: Preferences, json: Json): List<ShellDeviceConfig> {
     val raw = SecretCrypto.decrypt(preferences[SHELL_DEVICES_JSON] ?: "[]")

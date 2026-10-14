@@ -64,6 +64,7 @@ internal fun GenerationError.ownedGenerationErrorStringResourceId(): Int? = when
             }
     }
     is GenerationError.SseParse -> R.string.generation_error_sse_parse
+    is GenerationError.MalformedToolCall -> R.string.generation_error_malformed_tool_call
     is GenerationError.IncompleteStream -> when {
         toolCallInFlight && stopReason != null ->
             R.string.generation_error_incomplete_tool_stream_reason
@@ -120,6 +121,10 @@ internal fun localizedGenerationError(
     }
     is GenerationError.SseParse ->
         context.getString(R.string.generation_error_sse_parse)
+    is GenerationError.MalformedToolCall -> context.getString(
+        R.string.generation_error_malformed_tool_call,
+        error.cause,
+    )
     is GenerationError.IncompleteStream -> when {
         error.toolCallInFlight && error.stopReason != null -> context.getString(
             R.string.generation_error_incomplete_tool_stream_reason,

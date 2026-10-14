@@ -62,7 +62,7 @@ internal fun RemoteUsageSheet(vm: RemoteViewModel, onDismiss: () -> Unit) {
                 Column(Modifier.fillMaxWidth(), verticalArrangement = Arrangement.spacedBy(16.dp)) {
                     if (isLoading) {
                         Box(Modifier.fillMaxWidth().height(96.dp), contentAlignment = Alignment.Center) {
-                            MotionAwareCircularProgressIndicator(Modifier.size(24.dp), strokeWidth = 2.dp)
+                            MotionAwareCircularProgressIndicator(Modifier.size(36.dp), strokeWidth = 4.dp)
                         }
                     } else if (usage?.limits.isNullOrEmpty()) {
                         Text(stringResource(R.string.remote_usage_unavailable),

@@ -20,6 +20,7 @@ internal class ConversationBranchSelections(private val chatDao: ChatDao) {
                 chatDao.updateMessageBranchSelections(
                     conversationId = conversationId,
                     selectedBranchesJson = json,
+                    at = System.currentTimeMillis(),
                 ) == 1
             ) { "Conversation $conversationId disappeared during message branch selection" }
         }
@@ -50,6 +51,7 @@ internal class ConversationBranchSelections(private val chatDao: ChatDao) {
                 chatDao.updateRunBranchSelections(
                     conversationId = conversationId,
                     selectedRunBranchesJson = stored,
+                    at = System.currentTimeMillis(),
                 ) == 1
             ) { "Conversation $conversationId disappeared during Run branch selection" }
         }
@@ -90,6 +92,7 @@ internal class ConversationBranchSelections(private val chatDao: ChatDao) {
                 conversationId = conversationId,
                 selectedBranchesJson = Json.encodeToString(messageSelections.mapKeys { it.key ?: "null" }),
                 selectedRunBranchesJson = Json.encodeToString(runSelections.mapKeys { it.key ?: "null" }),
+                at = System.currentTimeMillis(),
             ) == 1
         ) { "Conversation $conversationId disappeared during branch selection" }
     }

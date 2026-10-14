@@ -179,12 +179,9 @@ fun VideoSliceDialog(
                 Spacer(Modifier.height(12.dp))
 
                 if (useFrameCountMode) {
-                    Text(
-                        stringResource(R.string.frames_count, effectiveFrameCount),
-                        style = MaterialTheme.typography.bodyMedium,
-                        fontWeight = FontWeight.Medium,
-                        color = MaterialTheme.colorScheme.primary
-                    )
+                    val betweenLabel = (effectiveIntervalMs / 1000f).let {
+                        if (it < 1) "${(it * 1000).roundToInt()}ms" else "${it.roundToInt()}s"
+                    }
                     OutlinedTextField(
                         value = frameCountInput,
                         onValueChange = { input ->
@@ -195,17 +192,16 @@ fun VideoSliceDialog(
                             }
                         },
                         modifier = Modifier.fillMaxWidth(),
+                        shape = RoundedCornerShape(16.dp),
+                        label = {
+                            Text(stringResource(R.string.frames_count, effectiveFrameCount))
+                        },
+                        supportingText = {
+                            Text(stringResource(R.string.video_between_frames, betweenLabel))
+                        },
                         singleLine = true,
                         isError = frameCount == null,
                         keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
-                    )
-                    val betweenLabel = (effectiveIntervalMs / 1000f).let {
-                        if (it < 1) "${(it * 1000).roundToInt()}ms" else "${it.roundToInt()}s"
-                    }
-                    Text(
-                        stringResource(R.string.video_between_frames, betweenLabel),
-                        style = MaterialTheme.typography.labelSmall,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant
                     )
                 } else {
                     val maxIntervalSec = seconds.coerceIn(1L, 30L).toInt()

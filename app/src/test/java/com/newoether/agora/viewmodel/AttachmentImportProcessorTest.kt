@@ -5,6 +5,7 @@ import com.newoether.agora.model.AttachmentImportState
 import com.newoether.agora.model.AttachmentStorage
 import com.newoether.agora.model.SelectedAttachment
 import com.newoether.agora.util.Constants
+import com.newoether.agora.util.AttachmentFiles
 import io.mockk.every
 import io.mockk.mockk
 import java.io.ByteArrayInputStream
@@ -23,6 +24,27 @@ import org.junit.rules.TemporaryFolder
 class AttachmentImportProcessorTest {
     @get:Rule
     val temporaryFolder = TemporaryFolder()
+    @Test
+    fun stagedAndPartialPathsAreRetainedBeforeSourceReadAndReleasedByExactProducer() = runTest {
+        val owner = Any()
+        val target = File(temporaryFolder.root, "attachments/staged/id/source.txt")
+        val partial = File(target.parentFile, "source.txt.part")
+        val processor = processor(openSource = {
+            assertFalse(AttachmentFiles.deleteIfUnowned(target))
+            assertFalse(AttachmentFiles.deleteIfUnowned(partial))
+            ByteArrayInputStream("source".toByteArray())
+        })
+        try {
+            val result = processor.stage(attachment(type = "file", fileName = "notes.txt"), owner)
+            assertTrue(result is AttachmentImportProcessor.StageResult.Success)
+            assertTrue(target.exists())
+            assertFalse(partial.exists())
+            assertFalse(AttachmentFiles.deleteIfUnowned(target))
+        } finally {
+            AttachmentFiles.deleteUnownedPaths(AttachmentFiles.releaseLivePaths(owner))
+        }
+        assertFalse(target.exists())
+    }
 
     @Test
     fun stageCreatesProcessingSnapshotAndReportsOwnedPaths() = runTest {
@@ -409,10 +431,10 @@ class AttachmentImportProcessorTest {
         every { app.filesDir } returns temporaryFolder.root
         return AttachmentImportProcessor(
             app = app,
-            normalizeImage = normalizeImage,
-            extractVideoFrames = extractVideoFrames,
-            renderPdf = renderPdf,
-            renderAllPdfPages = renderAllPdfPages,
+            normalizeImage = { source, _ -> normalizeImage(source) },
+            extractVideoFrames = { source, config, _ -> extractVideoFrames(source, config) },
+            renderPdf = { source, pages, _ -> renderPdf(source, pages) },
+            renderAllPdfPages = { source, maxPages, progress, _ -> renderAllPdfPages(source, maxPages, progress) },
             readText = readText,
             openSource = openSource,
             readPdfPageCount = readPdfPageCount,

@@ -4,7 +4,6 @@ import com.newoether.agora.automation.TaskExecutionEngine.BridgeOutcome
 import com.newoether.agora.data.local.MessageEntity
 import com.newoether.agora.model.MessageStatus
 import com.newoether.agora.model.Participant
-import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.test.runTest
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertSame
@@ -129,7 +128,7 @@ class ForegroundAutomationBridgeControllerTest {
         val sendInputs = mutableListOf<List<String>>()
         val loadedMessageIds = mutableListOf<String>()
         val controller = ForegroundAutomationBridgeController(
-            currentConversationId = MutableStateFlow(currentConversationId),
+            isConversationOpen = { it == currentConversationId },
             send = { conversationId, text, modelId, requestKind ->
                 sendInputs += listOf(conversationId, text, modelId, requestKind)
                 sendOutcome

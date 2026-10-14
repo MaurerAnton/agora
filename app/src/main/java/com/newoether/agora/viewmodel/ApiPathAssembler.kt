@@ -35,15 +35,11 @@ internal object ApiPathAssembler {
         statusOf = MessageEntity::status,
     ).map { planned ->
         val entity = planned.row
-        entity.copy(
-            modelName = entity.modelName ?: planned.inheritedModelName,
-            toolCallJson = if (planned.stripAggregateToolSegments) {
-                stripAggregatedToolSegments(entity.toolCallJson)
-            } else {
-                entity.toolCallJson
-            },
+        InterruptedToolRounds.Row(
+            entity = entity.copy(modelName = entity.modelName ?: planned.inheritedModelName),
+            stripAggregateToolSegments = planned.stripAggregateToolSegments,
         )
-    }
+    }.let(InterruptedToolRounds::materialize)
 
     fun planTopology(
         ancestorPath: List<MessageContextTopology>,

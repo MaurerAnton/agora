@@ -8,6 +8,7 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.widthIn
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.material3.BottomSheetDefaults
 import androidx.compose.material3.ExperimentalMaterial3Api
@@ -22,11 +23,12 @@ import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.graphics.Shape
 import androidx.compose.ui.platform.LocalView
 import androidx.compose.ui.window.Dialog
 import androidx.compose.ui.window.DialogProperties
 import androidx.compose.ui.window.DialogWindowProvider
+import com.newoether.agora.ui.components.BOTTOM_SHEET_SHAPE
+import com.newoether.agora.ui.components.BottomSheetMaxWidth
 import com.newoether.agora.ui.components.DialogWindowEdgeToEdge
 
 /**
@@ -40,16 +42,15 @@ fun MotionAwareModalBottomSheet(
     onDismissRequest: () -> Unit,
     modifier: Modifier = Modifier,
     sheetState: SheetState = rememberModalBottomSheetState(),
-    shape: Shape = BottomSheetDefaults.ExpandedShape,
     containerColor: Color = BottomSheetDefaults.ContainerColor,
     content: @Composable androidx.compose.foundation.layout.ColumnScope.() -> Unit,
 ) {
     if (LocalAgoraMotionPolicy.current.allowSpatialTransitions) {
         MaterialModalBottomSheet(
             onDismissRequest = onDismissRequest,
-            modifier = modifier,
+            modifier = modifier.widthIn(max = BottomSheetMaxWidth),
             sheetState = sheetState,
-            shape = shape,
+            shape = BOTTOM_SHEET_SHAPE,
             containerColor = containerColor,
             content = content,
         )
@@ -92,6 +93,7 @@ fun MotionAwareModalBottomSheet(
                 modifier = modifier
                     .align(Alignment.BottomCenter)
                     .fillMaxWidth()
+                    .widthIn(max = BottomSheetMaxWidth)
                     // Register the stationary sheet itself as the top hit target. Children still
                     // receive their events, while taps on blank sheet space cannot fall through
                     // to the dismissing scrim behind it.
@@ -102,7 +104,7 @@ fun MotionAwareModalBottomSheet(
                             }
                         }
                     },
-                shape = shape,
+                shape = BOTTOM_SHEET_SHAPE,
                 color = containerColor,
                 contentColor = contentColorFor(containerColor),
             ) {

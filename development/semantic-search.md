@@ -12,6 +12,11 @@ page plus the requested top candidates; corpus growth must not translate into An
   remain owned by the existing RAG/provider path.
 - Searchable sources exclude Task conversations, non-USER/non-MODEL rows, blank or short source
   text, and synthetic tool/result/Compact rows.
+- Literal search, expanded search context and read_conversation also exclude synthetic Compact
+  summaries. Branch traversal may cross these rows but must not return their bodies as messages.
+- Compact summaries are also ineligible for cache admission, reconciliation, embedding generation
+  and transactional embedding commit. Existing Compact cache rows are excluded from counts/ranking
+  and reclaimed by the canonical bounded maintenance path, never by a search or startup scan.
 - Similarity is cosine similarity. Candidates must be strictly above the configured RAG threshold,
   ordered by descending score, and limited to the requested count.
 - Stable embedding row id is the deterministic tie-breaker for equal scores.
@@ -94,9 +99,16 @@ messages that currently have a stored embedding for that model. The known cached
 known eligible-message total determines Cache versus Re-cache in this UI: `cached < total` means
 Cache and `cached == total` means Re-cache while no cache worker is running. The semantic ledger
 remains the durable authority for work admission, exact pending identities, reconciliation, and
-completion; it cannot create another visible phase or override the four-state projection. The
-progress indicator may consume progress from the active cache worker, but numeric cached/total status
-must remain an exact aggregate snapshot. Messages merely inspected or fingerprint-validated during
+completion; it cannot create another visible phase or override the four-state projection.
+
+The progress indicator and the numeric status must describe the same denominator; one row may never
+show a percentage from the worker's current batch next to a cached/total pair from the aggregate
+snapshot. Outside caching the numeric status is exactly the last complete aggregate snapshot. While
+a cache worker runs, the snapshot is not re-queried, so the displayed cached count is that snapshot
+plus the processed count of an exact embedding run, clamped to the total; a reconciliation run only
+inspects and fingerprint-validates rows and must never move it. The indicator is determinate from
+that same pair and states the percentage in the status text. Without a count snapshot there is no
+pair, so the indicator stays indeterminate and no number or percentage is shown. Messages merely inspected or fingerprint-validated during
 reconciliation must never be presented as newly cached messages or substituted for the cached count.
 
 No timer, polling loop, periodic Worker, or continuously invalidating Room Flow is introduced for

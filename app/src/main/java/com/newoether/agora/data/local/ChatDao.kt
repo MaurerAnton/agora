@@ -2,14 +2,8 @@ package com.newoether.agora.data.local
 
 import androidx.room.*
 import com.newoether.agora.model.ChatConversation
-import com.newoether.agora.model.ConversationCommand
-import com.newoether.agora.model.ConversationRuntimeReducer
 import com.newoether.agora.model.MessageSegment
-import com.newoether.agora.model.RunEffect
 import com.newoether.agora.model.RunEndReason
-import com.newoether.agora.model.RunRecoveryPolicy
-import com.newoether.agora.model.RunRecoverySnapshot
-import com.newoether.agora.model.RunState
 import com.newoether.agora.model.RunStatus
 import kotlinx.coroutines.flow.Flow
 import kotlinx.serialization.encodeToString
@@ -25,8 +19,16 @@ private fun decodeSelectionMap(raw: String?): MutableMap<String?, String> =
         }.getOrDefault(mutableMapOf())
     } ?: mutableMapOf()
 
-private fun encodeSelectionMap(selections: Map<String?, String>): String =
+internal fun encodeSelectionMap(selections: Map<String?, String>): String =
     Json.encodeToString(selections.mapKeys { it.key ?: "null" })
+
+/** Only the columns needed to paint navigation; no conversation-owned payloads. */
+data class DrawerConversationRow(
+    val id: String,
+    val title: String,
+    val hasUnreadGeneration: Boolean,
+    val isPinned: Boolean,
+)
 
 @Dao
 interface ChatDao :
@@ -37,8 +39,12 @@ interface ChatDao :
     ChatMediaReferencesDao,
     NewChatPersistDao {
     // Task executions always remain in their owning Task's History.
-    @Query("SELECT id, title, systemPromptId, modelId, taskId, origin, graduated, hasUnreadGeneration, selectedBranchesJson FROM conversations WHERE taskId IS NULL ORDER BY lastUpdated DESC")
+    @Query("SELECT id, title, systemPromptId, modelId, taskId, origin, graduated, hasUnreadGeneration, isPinned, selectedBranchesJson FROM conversations WHERE taskId IS NULL ORDER BY lastUpdated DESC")
     fun getAllConversations(): Flow<List<ChatConversation>>
+    @Query("SELECT id, title, hasUnreadGeneration, isPinned FROM conversations WHERE taskId IS NULL ORDER BY isPinned DESC, lastUpdated DESC, id LIMIT :limit")
+    fun observeDrawerConversations(limit: Int): Flow<List<DrawerConversationRow>>
+    @Query("SELECT id, title, hasUnreadGeneration, isPinned FROM conversations WHERE taskId IS NULL AND id IN (:ids)")
+    suspend fun getDrawerConversations(ids: List<String>): List<DrawerConversationRow>
 
     @Query("SELECT * FROM conversations WHERE taskId = :taskId ORDER BY lastUpdated DESC")
     fun getExecutionsForTask(taskId: String): Flow<List<ChatEntity>>
@@ -91,9 +97,64 @@ interface ChatDao :
 
     @Upsert
     suspend fun upsertConversation(conversation: ChatEntity)
+    @Query("UPDATE conversations SET modelId = :modelId, dataChangedAt = MAX(dataChangedAt + 1, :at) WHERE id = :conversationId")
+    suspend fun updateConversationModel(conversationId: String, modelId: String?, at: Long): Int
+    @Query("UPDATE conversations SET systemPromptId = :promptId, dataChangedAt = MAX(dataChangedAt + 1, :at) WHERE id = :conversationId")
+    suspend fun updateConversationSystemPrompt(conversationId: String, promptId: String?, at: Long): Int
 
-    @Query("UPDATE conversations SET title = :title WHERE id = :conversationId")
-    suspend fun updateConversationTitle(conversationId: String, title: String): Int
+    /**
+     * Marks exported conversation data as changed. The value always moves forward, so an
+     * incremental backup never mistakes a same-millisecond write for an unchanged conversation.
+     */
+    @Query(
+        "UPDATE conversations SET dataChangedAt = MAX(dataChangedAt + 1, :at) WHERE id = :conversationId"
+    )
+    suspend fun touchConversationData(conversationId: String, at: Long): Int
+    // Loop rows are exported inside their conversation item, so every loop write that can change
+    // an exported field also marks the conversation changed.
+    @Transaction
+    suspend fun upsertLoop(loop: LoopEntity) {
+        upsertLoopRow(loop)
+        touchConversationData(loop.conversationId, System.currentTimeMillis())
+    }
+    @Transaction
+    suspend fun deactivateLoopIfUnchanged(
+        conversationId: String,
+        expectedRevision: Long,
+        expectedCycleCount: Int,
+        expectedIntervalMs: Long,
+        expectedNextFireAt: Long,
+        normalizedMaxCycles: Int,
+    ): Int {
+        val changed = deactivateLoopRowIfUnchanged(
+            conversationId = conversationId,
+            expectedRevision = expectedRevision,
+            expectedCycleCount = expectedCycleCount,
+            expectedIntervalMs = expectedIntervalMs,
+            expectedNextFireAt = expectedNextFireAt,
+            normalizedMaxCycles = normalizedMaxCycles,
+        )
+        if (changed > 0) touchConversationData(conversationId, System.currentTimeMillis())
+        return changed
+    }
+    @Transaction
+    suspend fun deleteLoop(conversationId: String) {
+        if (deleteLoopRow(conversationId) > 0) {
+            touchConversationData(conversationId, System.currentTimeMillis())
+        }
+    }
+
+    @Query("UPDATE conversations SET title = :title, dataChangedAt = :at WHERE id = :conversationId")
+    suspend fun updateConversationTitle(conversationId: String, title: String, at: Long): Int
+
+    @Query(
+        """
+        UPDATE conversations
+        SET isPinned = :pinned, dataChangedAt = MAX(dataChangedAt + 1, :at)
+        WHERE id = :conversationId AND taskId IS NULL AND isPinned != :pinned
+        """
+    )
+    suspend fun setConversationPinned(conversationId: String, pinned: Boolean, at: Long): Int
 
     @Query(
         """
@@ -107,10 +168,17 @@ interface ChatDao :
         unread: Boolean,
     ): Int
 
-    @Query("UPDATE conversations SET modelId = :newModelId WHERE modelId = :oldModelId")
+    @Query(
+        """
+        UPDATE conversations
+        SET modelId = :newModelId, dataChangedAt = MAX(dataChangedAt + 1, :at)
+        WHERE modelId = :oldModelId
+        """
+    )
     suspend fun replaceConversationModelReferences(
         oldModelId: String,
         newModelId: String?,
+        at: Long,
     ): Int
 
     @Query("UPDATE new_chat_persist SET modelId = :newModelId WHERE id = 0 AND modelId = :oldModelId")
@@ -122,7 +190,7 @@ interface ChatDao :
     @Query(
         """
         UPDATE conversations
-        SET title = :newTitle
+        SET title = :newTitle, dataChangedAt = :at
         WHERE id = :conversationId AND title = :expectedTitle
         """
     )
@@ -130,6 +198,7 @@ interface ChatDao :
         conversationId: String,
         expectedTitle: String,
         newTitle: String,
+        at: Long,
     ): Int
 
     @Upsert
@@ -150,7 +219,8 @@ interface ChatDao :
         UPDATE conversations
         SET selectedBranchesJson = :selectedBranchesJson,
             selectedRunBranchesJson = :selectedRunBranchesJson,
-            modelId = :modelId,
+            modelId = CASE WHEN :modelId IS NULL THEN modelId ELSE :modelId END,
+            dataChangedAt = :at,
             lastUpdated = CASE
                 WHEN :touchConversationOnAdmission THEN :at
                 ELSE lastUpdated
@@ -162,7 +232,7 @@ interface ChatDao :
         conversationId: String,
         selectedBranchesJson: String,
         selectedRunBranchesJson: String,
-        modelId: String,
+        modelId: String?,
         at: Long,
         touchConversationOnAdmission: Boolean,
     ): Int
@@ -215,14 +285,14 @@ interface ChatDao :
         run: RunEntity,
         messages: List<MessageEntity>,
         messageSelectionUpdates: Map<String?, String>,
-        conversationModelId: String,
+        conversationModelId: String?,
         at: Long,
         touchConversationOnAdmission: Boolean,
     ): RunGraphCommit {
         require(run.status == RunStatus.ACTIVE)
         require(run.activeSlot == 1)
         require(messages.isNotEmpty())
-        require(conversationModelId.isNotBlank())
+        require(conversationModelId == null || conversationModelId.isNotBlank())
         require(messages.all { it.runId == run.id })
         require(messages.map { it.runSequence } == messages.indices.map { it.toLong() })
         val conversation = checkNotNull(getConversation(run.conversationId)) {
@@ -440,6 +510,7 @@ interface ChatDao :
         }
         assigned.forEach { insertMessage(it) }
         touchRun(runId, maxOf(run.lastCheckpointAt, assigned.maxOf { it.timestamp }))
+        check(touchConversationData(run.conversationId, System.currentTimeMillis()) == 1)
         return ToolRoundCommit(assigned, inserted = true)
     }
 
@@ -497,6 +568,9 @@ interface ChatDao :
         val messageUpdated = updateMessageCheckpoint(checkpoint) == 1
         val runUpdated = terminalizeLiveRun(runId, status, reason, at) == 1
         val completed = messageUpdated && runUpdated
+        if (completed) {
+            check(touchConversationData(conversationId, at) == 1)
+        }
         if (completed && markConversationUnread) {
             setConversationUnreadGeneration(conversationId, true)
         }
@@ -510,17 +584,20 @@ interface ChatDao :
     @Transaction
     suspend fun finishStoppedGeneration(
         checkpoints: List<MessageStreamCheckpoint>,
+        conversationId: String,
         runId: String?,
         at: Long,
     ): Boolean {
         checkpoints.forEach { updateMessageCheckpoint(it) }
         if (runId != null) stopInFlightModelMessages(runId)
-        return runId == null || terminalizeLiveRun(
+        val completed = runId == null || terminalizeLiveRun(
             runId,
             RunStatus.STOPPED,
             RunEndReason.USER_STOPPED,
             at,
         ) == 1
+        if (completed) check(touchConversationData(conversationId, at) == 1)
+        return completed
     }
 
     /**
@@ -531,96 +608,17 @@ interface ChatDao :
     suspend fun recoverConversationRuntime(
         conversationId: String,
         at: Long,
-    ): Int {
-        val conversation = getConversation(conversationId) ?: return 0
-        var changedRows = 0
-        val liveRun = getLiveRun(conversationId)
-        if (liveRun != null) {
-            val snapshot = RunRecoverySnapshot(
-                conversationId = conversationId,
-                runId = liveRun.id,
-                pass = liveRun.currentPass,
-                status = liveRun.status,
-            )
-            val requested = ConversationRuntimeReducer.reduce(
-                RunState.Idle(conversationId),
-                ConversationCommand.Recover(snapshot),
-            )
-            val recoveryEffect = requested.effects
-                .filterIsInstance<RunEffect.RecoverDurableRun>()
-                .single()
-            check(recoveryEffect.priorStatus == liveRun.status)
-            getMessagesForRuns(listOf(liveRun.id)).forEach { message ->
-                val recoveredStatus = RunRecoveryPolicy.recoverMessageStatus(
-                    message.participant,
-                    message.status,
-                )
-                val recoveredToolJson = message.toolCallJson?.let { raw ->
-                    RunRecoveryPolicy.stopIncompleteToolsJson(raw) ?: raw
-                }
-                if (recoveredStatus != message.status || recoveredToolJson != message.toolCallJson) {
-                    changedRows += updateMessageCheckpoint(
-                        MessageStreamCheckpoint(
-                            id = message.id,
-                            text = message.text,
-                            images = message.images,
-                            thoughts = message.thoughts,
-                            thoughtTitle = message.thoughtTitle,
-                            tokenCount = message.tokenCount,
-                            inputTokenCount = message.inputTokenCount,
-                            cachedInputTokenCount = message.cachedInputTokenCount,
-                            cacheWriteInputTokenCount = message.cacheWriteInputTokenCount,
-                            uncachedInputTokenCount = message.uncachedInputTokenCount,
-                            outputTokenCount = message.outputTokenCount,
-                            reasoningTokenCount = message.reasoningTokenCount,
-                            generationDurationMs = message.generationDurationMs,
-                            status = recoveredStatus,
-                            thoughtTimeMs = message.thoughtTimeMs,
-                            toolCallJson = recoveredToolJson,
-                        )
-                    )
-                }
-            }
-            val durableSuccess = terminalizeLiveRun(
-                runId = recoveryEffect.identity.runId,
-                status = RunStatus.STOPPED,
-                reason = RunEndReason.PROCESS_RECOVERED,
-                at = at,
-            ) == 1
-            val completed = ConversationRuntimeReducer.reduce(
-                requested.newState,
-                ConversationCommand.RecoveryCompleted(
-                    recoveryEffect.identity,
-                    durableSuccess,
-                ),
-            )
-            check(durableSuccess && completed.accepted && completed.newState is RunState.Idle) {
-                "Run recovery transaction lost ownership for ${liveRun.id}"
-            }
-            changedRows += 1
-        }
+    ): Int = executeRuntimeRecovery(conversationId, at)
 
-        conversation.selectedRunBranchesJson?.let { raw ->
-            val decoded = runCatching {
-                Json.decodeFromString<Map<String, String>>(raw)
-                    .mapKeys { if (it.key == "null") null else it.key }
-            }.getOrNull()
-            if (decoded != null) {
-                val repaired = RunBranchSelectionIntegrity.retainValidEdges(
-                    selections = decoded,
-                    runs = getRunsForConversationSnapshot(conversationId),
-                )
-                if (repaired != decoded) {
-                    changedRows += compareAndSetRunBranchSelections(
-                        conversationId = conversationId,
-                        expected = raw,
-                        replacement = encodeSelectionMap(repaired),
-                    )
-                }
-            }
-        }
-        changedRows += stopStuckMessagesForConversation(conversationId)
-        return changedRows
+    @Transaction
+    suspend fun updateConversationMessageCheckpoint(
+        conversationId: String,
+        checkpoint: MessageStreamCheckpoint,
+        at: Long,
+    ): Boolean {
+        val updated = updateMessageCheckpoint(checkpoint) == 1
+        if (updated) check(touchConversationData(conversationId, at) == 1)
+        return updated
     }
 
     @Update(entity = MessageEntity::class)
@@ -645,9 +643,16 @@ interface ChatDao :
     suspend fun getLastMessageForConversation(conversationId: String): MessageEntity?
 
     /** Message invalidations for task execution summaries. Unlike getExecutionsForTask(),
-     * this Flow observes the messages table, so terminal status/snippet changes are emitted. */
-    @Query("SELECT m.* FROM messages m INNER JOIN conversations c ON m.conversationId = c.id WHERE c.taskId = :taskId ORDER BY m.timestamp ASC")
-    fun observeExecutionMessagesForTask(taskId: String): Flow<List<MessageEntity>>
+     * this Flow observes the messages table, so terminal status/snippet changes are emitted.
+     * Only the summary columns and a bounded text prefix are read: a full message row can
+     * exceed the CursorWindow and crash the execution list. */
+    @Query(
+        "SELECT m.id, m.conversationId, m.participant, m.status, m.timestamp, " +
+            "substr(m.text, 1, $EXECUTION_PREVIEW_MAX_CHARS) AS preview " +
+            "FROM messages m INNER JOIN conversations c ON m.conversationId = c.id " +
+            "WHERE c.taskId = :taskId AND m.participant IN ('MODEL', 'ERROR') ORDER BY m.timestamp ASC",
+    )
+    fun observeExecutionMessagesForTask(taskId: String): Flow<List<ExecutionMessageSummaryRow>>
 
     // Embeddings
     @Insert
@@ -665,8 +670,8 @@ interface ChatDao :
     @Query("SELECT * FROM messages WHERE id IN (:ids)")
     suspend fun getMessagesByIds(ids: List<String>): List<MessageEntity>
 
-    @Query("UPDATE conversations SET draftText = :text, draftAttachments = :attachments WHERE id = :id")
-    suspend fun updateDraft(id: String, text: String, attachments: String?)
+    @Query("UPDATE conversations SET draftText = :text, draftAttachments = :attachments, dataChangedAt = :at WHERE id = :id")
+    suspend fun updateDraft(id: String, text: String, attachments: String?, at: Long)
 
     // Bulk export/import
     @Query("SELECT * FROM conversations")
@@ -702,6 +707,13 @@ interface ChatDao :
         """
     )
     suspend fun getMessagesPage(afterId: String?, limit: Int): List<MessageEntity>
+    @Query("SELECT * FROM messages WHERE conversationId = :conversationId " +
+        "AND (:afterId IS NULL OR id > :afterId) ORDER BY id LIMIT :limit")
+    suspend fun getConversationMessagesPage(
+        conversationId: String,
+        afterId: String?,
+        limit: Int,
+    ): List<MessageEntity>
 
     @Query("DELETE FROM conversations")
     suspend fun deleteAllConversations()
@@ -715,7 +727,7 @@ interface ChatDao :
         oldModelId: String,
         newModelId: String?,
     ) {
-        replaceConversationModelReferences(oldModelId, newModelId)
+        replaceConversationModelReferences(oldModelId, newModelId, System.currentTimeMillis())
         replaceNewChatModelReference(oldModelId, newModelId)
         replaceTaskModelReferences(oldModelId, newModelId)
     }
@@ -723,14 +735,28 @@ interface ChatDao :
     @Query(
         """
         UPDATE conversations
-        SET modelId = :newProvider || substr(modelId, length(:oldProvider) + 1)
+        SET modelId = :newProvider || substr(modelId, length(:oldProvider) + 1),
+            dataChangedAt = MAX(dataChangedAt + 1, :at)
         WHERE substr(modelId, 1, length(:oldProvider) + 1) = :oldProvider || ':'
         """
     )
     suspend fun renameConversationProviderModelReferences(
         oldProvider: String,
         newProvider: String,
+        at: Long,
     ): Int
+    /** Marks conversations whose messages name [oldProvider] before those names are rewritten. */
+    @Query(
+        """
+        UPDATE conversations
+        SET dataChangedAt = MAX(dataChangedAt + 1, :at)
+        WHERE id IN (
+            SELECT conversationId FROM messages
+            WHERE substr(modelName, 1, length(:oldProvider) + 1) = :oldProvider || ':'
+        )
+        """
+    )
+    suspend fun touchConversationsWithMessageProvider(oldProvider: String, at: Long): Int
 
     @Query(
         """
@@ -759,9 +785,11 @@ interface ChatDao :
 
     @Transaction
     suspend fun renameConfiguredProviderModelReferences(oldProvider: String, newProvider: String) {
-        renameConversationProviderModelReferences(oldProvider, newProvider)
+        val at = System.currentTimeMillis()
+        renameConversationProviderModelReferences(oldProvider, newProvider, at)
         renameNewChatProviderModelReference(oldProvider, newProvider)
         renameTaskProviderModelReferences(oldProvider, newProvider)
+        touchConversationsWithMessageProvider(oldProvider, at)
         renameMessageProviderModelReferences(oldProvider, newProvider)
     }
 }

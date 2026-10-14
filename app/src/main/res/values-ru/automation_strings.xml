@@ -12,7 +12,7 @@
     <string name="task_run_now">Запустить сейчас</string>
     <string name="task_delete">Удалить задачу</string>
     <string name="task_delete_confirm">Удалить «%1$s» и всю историю её запусков?</string>
-    <string name="import_conversation_graph_counts">Беседы (%1$d) · Задачи (%2$d) · Циклы (%3$d)</string>
+    <string name="import_conversation_graph_counts">Беседы (%1$d) · Задачи (%2$d)</string>
     <string name="task_enabled">Запускать по расписанию</string>
     <string name="task_enabled_desc">Если отключено, задача запускается только после нажатия «Запустить сейчас».</string>
     <string name="task_enabled_needs_schedule">Сначала выберите расписание.</string>
@@ -58,6 +58,7 @@
     <string name="task_status_unknown">Ожидает</string>
     <string name="task_running_notification">Выполняется запланированная задача…</string>
     <string name="loop_running_notification">Выполняется цикл беседы…</string>
+    <string name="auto_backup_running_notification">Создание резервной копии…</string>
     <string name="loop_running">Цикл выполняется…</string>
     <string name="loop_next_in">Следующий запуск через %1$s</string>
     <string name="loop_cycle">Цикл %1$d/%2$d</string>

@@ -12,7 +12,7 @@
     <string name="task_run_now">今すぐ実行</string>
     <string name="task_delete">タスクを削除</string>
     <string name="task_delete_confirm">「%1$s」とその実行履歴をすべて削除しますか？</string>
-    <string name="import_conversation_graph_counts">会話（%1$d）· タスク（%2$d）· ループ（%3$d）</string>
+    <string name="import_conversation_graph_counts">会話（%1$d）· タスク（%2$d）</string>
     <string name="task_enabled">スケジュールで実行</string>
     <string name="task_enabled_desc">オフにすると、「今すぐ実行」をタップした場合にのみタスクが実行されます。</string>
     <string name="task_enabled_needs_schedule">先にスケジュールを選択してください。</string>
@@ -58,6 +58,7 @@
     <string name="task_status_unknown">保留中</string>
     <string name="task_running_notification">スケジュール済みタスクを実行中…</string>
     <string name="loop_running_notification">会話ループを実行中…</string>
+    <string name="auto_backup_running_notification">バックアップを作成中…</string>
     <string name="loop_running">ループ実行中…</string>
     <string name="loop_next_in">次回まで %1$s</string>
     <string name="loop_cycle">サイクル %1$d/%2$d</string>

@@ -1,4 +1,4 @@
-<resources>
+<?xml version="1.0" encoding="utf-8"?><resources>
     <!-- Settings - Main -->
     <string name="settings_title">Paramètres</string>
     <string name="settings_provider">Fournisseurs</string>
@@ -44,7 +44,7 @@
     <string name="custom_provider_add">Ajouter</string>
     <string name="custom_provider_add_title">Ajouter un fournisseur</string>
     <string name="custom_provider_empty">Aucun fournisseur personnalisé ajouté</string>
-    <string name="settings_group_multimodal">Multimodal</string>
+    <string name="settings_group_multimodal">Multimédia</string>
     <string name="settings_image_gen">Génération d\'images</string>
     <string name="settings_image_gen_desc">Générer des images à partir d\'une invite textuelle</string>
     <string name="image_gen_enable">Activer la génération d\'images</string>
@@ -171,7 +171,7 @@
     <string name="gen_thinking_level_high">Élevé</string>
     <string name="gen_thinking_level_minimal">Très faible</string>
     <string name="gen_thinking_level_xhigh">Très élevé</string>
-    <string name="gen_thinking_level_max">Max</string>
+    <string name="gen_thinking_level_max">Max.</string>
     <string name="thinking_effort_label">Effort de réflexion</string>
     <string name="thinking_effort_desc">Contrôle avec quelle profondeur le modèle raisonne avant de répondre</string>
     <string name="thinking_use_budget">Utiliser un budget de réflexion</string>
@@ -242,7 +242,7 @@
     <string name="web_search_searxng_url_hint">https://searx.be</string>
 
     <!-- Settings - Shell Page -->
-    <string name="shell_title">Shell</string>
+    <string name="shell_title">Terminal</string>
     <string name="shell_desc">Exécution de commandes shell à distance</string>
     <string name="shell_enable">Activer l\'outil shell</string>
     <string name="shell_enable_desc">Permettre au modèle d\'exécuter des commandes shell sur des serveurs distants</string>
@@ -414,7 +414,7 @@
     <string name="scheme_style">Style du schéma</string>
     <string name="scheme_style_tonal_spot">Touche tonale</string>
     <string name="scheme_style_expressive">Expressif</string>
-    <string name="scheme_style_vibrant">Vibrant</string>
+    <string name="scheme_style_vibrant">Vivant</string>
     <string name="scheme_style_neutral">Neutre</string>
     <string name="font_title">Police</string>
     <string name="font_app_default">Par défaut</string>
@@ -428,8 +428,10 @@
     <string name="visual_effects">Effets visuels</string>
     <string name="blur_effects">Effets de flou</string>
     <string name="blur_effects_desc">Floute le haut de la liste de discussion sous la barre d’outils. Désactivez cette option pour économiser les performances.</string>
-    <string name="parse_inline_dollar_math">Parse $…$ as inline math</string>
-    <string name="parse_inline_dollar_math_desc">When disabled, single-dollar expressions such as $ x $ remain ordinary text. Other math delimiters are unchanged.</string>
+    <string name="parse_inline_dollar_math">Analyser $…$ comme équation en ligne</string>
+    <string name="parse_inline_dollar_math_desc">Si elle est désactivée, les expressions à dollar simple comme $ x $ restent du texte ordinaire. Les autres délimiteurs mathématiques ne changent pas.</string>
+    <string name="auto_wrap_code_blocks">Retour automatique à la ligne des blocs de code</string>
+    <string name="auto_wrap_code_blocks_desc">Les lignes longues des blocs de code reviennent à la ligne au lieu de défiler horizontalement.</string>
     <string name="reduce_motion">Réduire les animations</string>
     <string name="reduce_motion_desc">Réduit les mouvements continus et les grands déplacements spatiaux, tout en conservant les fondus, les gestes directs et les retours d’état utiles.</string>
 
@@ -481,4 +483,12 @@
     <string name="openai_service_tier_priority">Prioritaire</string>
     <string name="openai_service_tier_fast">Rapide</string>
     <string name="openai_service_tier_ultrafast">Ultra-rapide</string>
+    <string name="settings_interaction">Interaction</string>
+    <string name="settings_interaction_desc">Questions que l\'assistant vous pose</string>
+    <string name="ask_user_enable">Autoriser l\'assistant à demander</string>
+    <string name="ask_user_enable_desc">Donne au modèle un outil pour vous poser une question et attendre votre choix</string>
+    <string name="unsaved_changes_title">Modifications non enregistrées</string>
+    <string name="unsaved_changes_message">Certaines modifications ne sont pas enregistrées. Les abandonner ?</string>
+    <string name="unsaved_changes_discard">Abandonner</string>
+    <string name="unsaved_changes_keep_editing">Continuer la modification</string>
 </resources>

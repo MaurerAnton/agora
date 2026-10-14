@@ -96,6 +96,34 @@ class GenerationApiPathBuilderTest {
             path.providerConfig.maxContextWindow,
         )
     }
+    @Test
+    fun `deepseek chat with tools enables ordinary reasoning accounting`() = runTest {
+        val repository = mockk<ConversationRepository>(relaxed = true)
+        val user = message("user", null, 0, Participant.USER)
+        suspend fun build(config: GenerationConfig, withTools: Boolean = true) =
+            GenerationApiPathBuilder(
+                conversations = repository,
+                generationErrorFormatter = { it },
+                toolDefinitions = { if (withTools) listOf(toolDefinition()) else emptyList() },
+            ).build(
+                GenerationApiPathRequest(
+                    parentId = user.id,
+                    conversationId = "conversation",
+                    config = config,
+                    context = GenerationContext(),
+                    loadedMessages = listOf(user),
+                ),
+            ).providerConfig.includeAssistantReasoning
+        val deepSeek = generationConfig(Constants.PROVIDER_DEEPSEEK).copy(
+            modelId = "deepseek-chat",
+            thinkingEnabled = true,
+        )
+        assertTrue(build(deepSeek))
+        assertTrue(build(deepSeek.copy(providerName = "Relay")))
+        assertFalse(build(deepSeek, withTools = false))
+        assertFalse(build(deepSeek.copy(responsesApiEnabled = true)))
+        assertFalse(build(deepSeek.copy(thinkingEnabled = false)))
+    }
 
     @Test
     fun `nearest normally completed compact on the parent chain is the context boundary`() = runTest {
@@ -203,7 +231,7 @@ class GenerationApiPathBuilderTest {
         assertEquals(listOf(oldUser.id, stoppedModel.id, queuedUser.id), path.messages.map { it.id })
         assertEquals(Participant.MODEL, path.messages[1].participant)
         assertTrue(path.messages[1].text.startsWith("partial answer"))
-        assertTrue(path.messages[1].text.contains("[Generation status: STOPPED]"))
+        assertTrue(path.messages[1].text.contains("<generation_interrupted reason=\"stopped\" />"))
         val projected = projectGenerationInputMessages(
             messages = path.messages,
             includeImages = true,
@@ -220,7 +248,10 @@ class GenerationApiPathBuilderTest {
         assertEquals(1, Regex(Regex.escape("partial answer")).findAll(wireText).count())
         assertEquals(1, Regex(Regex.escape("first guidance")).findAll(wireText).count())
         assertEquals(1, Regex(Regex.escape("second guidance")).findAll(wireText).count())
-        assertEquals(1, Regex(Regex.escape("[Generation status: STOPPED]")).findAll(wireText).count())
+        assertEquals(
+            1,
+            Regex(Regex.escape("<generation_interrupted reason=\"stopped\" />")).findAll(wireText).count(),
+        )
     }
 
     @Test
@@ -353,16 +384,16 @@ class GenerationApiPathBuilderTest {
         )
         val message = message("user", null, 0, Participant.USER)
 
-        val official = builder.build(
+        val enabled = builder.build(
             GenerationApiPathRequest(
                 parentId = message.id,
                 conversationId = "conversation",
-                config = generationConfig(Constants.PROVIDER_OPENAI),
+                config = generationConfig("OpenAI Compatible").copy(promptCacheKeyEnabled = true),
                 context = GenerationContext(),
                 loadedMessages = listOf(message),
             ),
         )
-        val compatible = builder.build(
+        val disabled = builder.build(
             GenerationApiPathRequest(
                 parentId = message.id,
                 conversationId = "conversation",
@@ -372,8 +403,8 @@ class GenerationApiPathBuilderTest {
             ),
         )
 
-        assertEquals("conversation", official.providerConfig.promptCacheKey)
-        assertEquals(null, compatible.providerConfig.promptCacheKey)
+        assertEquals("conversation", enabled.providerConfig.promptCacheKey)
+        assertEquals(null, disabled.providerConfig.promptCacheKey)
     }
 
     private fun generationConfig(providerName: String = "provider") = GenerationConfig(

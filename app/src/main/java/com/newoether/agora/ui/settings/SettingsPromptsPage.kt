@@ -8,7 +8,6 @@ import androidx.compose.animation.core.*
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
-import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
@@ -38,6 +37,9 @@ import com.newoether.agora.ui.motion.MotionAwareModalBottomSheet as ModalBottomS
 import com.newoether.agora.viewmodel.ChatViewModel
 import kotlinx.coroutines.launch
 import java.util.UUID
+import com.newoether.agora.ui.components.AgoraDropdownMenu
+import com.newoether.agora.ui.components.AgoraDropdownMenuItem
+import com.newoether.agora.ui.components.sheetOptionClickable
 
 private const val DUPLICATE_TITLE_TOKEN = "__AGORA_PROMPT_TITLE__"
 
@@ -95,30 +97,32 @@ fun SettingsPromptsPage(viewModel: ChatViewModel, onBack: () -> Unit) {
         forward = editingEntry != null
     ) { currentEntry ->
         if (currentEntry != null) {
-            SystemPromptEditorPage(
-                entry = currentEntry,
-                onSave = { title, systemItems, userItems, assistantItems ->
-                    if (systemPrompts.any { it.id == currentEntry.id }) {
-                        viewModel.settings.updateSystemPrompt(
-                            currentEntry.id,
-                            title,
-                            systemItems,
-                            userItems,
-                            assistantItems,
-                        )
-                    } else {
-                        viewModel.settings.addSystemPrompt(
-                            title,
-                            systemItems,
-                            userItems,
-                            assistantItems,
-                        )
-                    }
-                    editingEntry = null
-                },
-                onBack = { editingEntry = null },
-                showDocFab = showDocFab
-            )
+            SettingsSecondaryPane {
+                SystemPromptEditorPage(
+                    entry = currentEntry,
+                    onSave = { title, systemItems, userItems, assistantItems ->
+                        if (systemPrompts.any { it.id == currentEntry.id }) {
+                            viewModel.settings.updateSystemPrompt(
+                                currentEntry.id,
+                                title,
+                                systemItems,
+                                userItems,
+                                assistantItems,
+                            )
+                        } else {
+                            viewModel.settings.addSystemPrompt(
+                                title,
+                                systemItems,
+                                userItems,
+                                assistantItems,
+                            )
+                        }
+                        editingEntry = null
+                    },
+                    onBack = { editingEntry = null },
+                    showDocFab = showDocFab,
+                )
+            }
         } else {
             PromptList(
                 systemPrompts = systemPrompts,
@@ -151,7 +155,6 @@ fun SettingsPromptsPage(viewModel: ChatViewModel, onBack: () -> Unit) {
                 showTemplatePicker = false
             },
             sheetState = templateSheetState,
-            shape = RoundedCornerShape(topStart = 16.dp, topEnd = 16.dp),
             containerColor = MaterialTheme.colorScheme.surfaceContainer
         ) {
             DialogWindowEdgeToEdge()
@@ -168,7 +171,9 @@ fun SettingsPromptsPage(viewModel: ChatViewModel, onBack: () -> Unit) {
                 leadingContent = {
                     Icon(Icons.Default.Add, contentDescription = null, tint = MaterialTheme.colorScheme.primary)
                 },
-                modifier = Modifier.fillMaxWidth().clickable(
+                startPadding = SETTINGS_ITEM_SHEET_PADDING,
+                endPadding = SETTINGS_ITEM_SHEET_PADDING,
+                modifier = Modifier.fillMaxWidth().sheetOptionClickable(
                     enabled = !templateActionInFlight,
                 ) {
                     pickTemplate(SystemPromptEntry(title = ""))
@@ -180,7 +185,9 @@ fun SettingsPromptsPage(viewModel: ChatViewModel, onBack: () -> Unit) {
                 leadingContent = {
                     Icon(Icons.Default.Psychology, contentDescription = null, tint = MaterialTheme.colorScheme.primary)
                 },
-                modifier = Modifier.fillMaxWidth().clickable(
+                startPadding = SETTINGS_ITEM_SHEET_PADDING,
+                endPadding = SETTINGS_ITEM_SHEET_PADDING,
+                modifier = Modifier.fillMaxWidth().sheetOptionClickable(
                     enabled = !templateActionInFlight,
                 ) {
                     pickTemplate(
@@ -275,10 +282,10 @@ private fun PromptList(
                                     IconButton(onClick = { showMenu = true }, modifier = Modifier.size(24.dp)) {
                                         Icon(Icons.Default.MoreVert, contentDescription = stringResource(R.string.options), modifier = Modifier.size(18.dp))
                                     }
-                                    DropdownMenu(expanded = showMenu, onDismissRequest = { showMenu = false }, containerColor = MaterialTheme.colorScheme.surfaceContainer, tonalElevation = 16.dp, shape = RoundedCornerShape(12.dp)) {
-                                        DropdownMenuItem(text = { Text(stringResource(R.string.provider_edit)) }, leadingIcon = { Icon(Icons.Default.Edit, null) }, onClick = { showMenu = false; onEdit(entry) })
-                                        DropdownMenuItem(text = { Text(stringResource(R.string.prompts_duplicate)) }, leadingIcon = { Icon(Icons.Default.ContentCopy, null, modifier = Modifier.scale(0.9f)) }, onClick = { showMenu = false; onDuplicate(entry) })
-                                        DropdownMenuItem(text = { Text(stringResource(R.string.provider_delete), color = MaterialTheme.colorScheme.error) }, leadingIcon = { Icon(Icons.Default.Delete, null, tint = MaterialTheme.colorScheme.error) }, onClick = { showMenu = false; onDeleteRequest(entry) })
+                                    AgoraDropdownMenu(expanded = showMenu, onDismissRequest = { showMenu = false }, containerColor = MaterialTheme.colorScheme.surfaceContainer, tonalElevation = 16.dp) {
+                                        AgoraDropdownMenuItem(text = { Text(stringResource(R.string.provider_edit)) }, leadingIcon = { Icon(Icons.Default.Edit, null) }, onClick = { showMenu = false; onEdit(entry) })
+                                        AgoraDropdownMenuItem(text = { Text(stringResource(R.string.prompts_duplicate)) }, leadingIcon = { Icon(Icons.Default.ContentCopy, null, modifier = Modifier.scale(0.9f)) }, onClick = { showMenu = false; onDuplicate(entry) })
+                                        AgoraDropdownMenuItem(text = { Text(stringResource(R.string.provider_delete), color = MaterialTheme.colorScheme.error) }, leadingIcon = { Icon(Icons.Default.Delete, null, tint = MaterialTheme.colorScheme.error) }, onClick = { showMenu = false; onDeleteRequest(entry) })
                                     }
                                 }
                             },

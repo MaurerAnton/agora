@@ -42,11 +42,9 @@ import com.newoether.agora.ui.chat.MediaLoadPresentation
 import com.newoether.agora.ui.chat.toMediaLoadPresentation
 import com.newoether.agora.ui.motion.MotionAwareCircularProgressIndicator
 
-import androidx.compose.foundation.horizontalScroll
-import androidx.compose.foundation.rememberScrollState
-import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
 import com.newoether.agora.ui.components.LatexImageTransformer
+import com.newoether.agora.ui.components.latexSourceForLink
 import com.mikepenz.markdown.compose.LocalImageTransformer
 import com.mikepenz.markdown.compose.LocalReferenceLinkHandler
 import com.mikepenz.markdown.compose.components.MarkdownComponentModel
@@ -124,20 +122,14 @@ internal fun ScrollableDisplayLatexImage(model: MarkdownComponentModel) {
     val link = markdownImageLink(model.content, model.node, LocalReferenceLinkHandler.current)
     if (link != null && (LocalImageTransformer.current as? LatexImageTransformer)
             ?.renderInlineImage(link) == true) return
-    if (!isScrollableDisplayLatexImage(model.content, model.node)) {
-        MarkdownImage(model.content, model.node)
+    // Any formula on its own line, display or inline promoted out of its paragraph, is one
+    // selectable unit that copies its source.
+    val latexSource = link?.let(::latexSourceForLink)
+    if (link != null && latexSource != null) {
+        DisplayLatexBlock(link, latexSource, model.typography.paragraph)
         return
     }
-
-    val horizontalScrollState = rememberScrollState()
-    TrackStreamingHorizontalScroll(horizontalScrollState)
-    Row(
-        modifier = Modifier
-            .fillMaxWidth()
-            .horizontalScroll(horizontalScrollState),
-    ) {
-        MarkdownImage(model.content, model.node)
-    }
+    MarkdownImage(model.content, model.node)
 }
 
 @Composable

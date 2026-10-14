@@ -62,7 +62,7 @@ class ToolPresentationResolverTest {
             singleLineShellCommand(command),
         )
         assertEquals(null, singleLineShellCommand(" \n\t "))
-        assertEquals("12345", singleLineShellCommand("123456789", maxCharacters = 5))
+        assertEquals("1234\u2026", singleLineShellCommand("123456789", maxCharacters = 5))
     }
 
     @Test
@@ -272,7 +272,7 @@ class ToolPresentationResolverTest {
     }
 
     @Test
-    fun nonZeroShellExitIsFailed() {
+    fun nonZeroShellExitIsCompleted() {
         val presentation = ToolPresentationResolver.resolve(
             MessageSegment(
                 type = "tool",
@@ -281,12 +281,12 @@ class ToolPresentationResolverTest {
             ),
         )
 
-        assertEquals(ToolPresentationState.FAILED, presentation.state)
+        assertEquals(ToolPresentationState.COMPLETED, presentation.state)
         assertEquals(127, presentation.exitCode)
     }
 
     @Test
-    fun nonZeroShellExitOverridesStaleSucceededWireState() {
+    fun nonZeroShellExitKeepsSucceededWireState() {
         val presentation = ToolPresentationResolver.resolve(
             MessageSegment(
                 type = "tool",
@@ -296,7 +296,7 @@ class ToolPresentationResolverTest {
             ),
         )
 
-        assertEquals(ToolPresentationState.FAILED, presentation.state)
+        assertEquals(ToolPresentationState.COMPLETED, presentation.state)
         assertEquals(2, presentation.exitCode)
     }
 
@@ -628,5 +628,147 @@ class ToolPresentationResolverTest {
 
         assertEquals(1, presentation.count)
         assertEquals(ToolPresentationState.COMPLETED, presentation.state)
+    }
+
+    @Test
+    fun fileReadErrorEnvelopeFailsInsteadOfAnEmptyCard() {
+        val presentation = ToolPresentationResolver.resolve(
+            MessageSegment(
+                type = "tool",
+                toolName = "file_read",
+                toolArgs = """{"path":"/tmp/missing.txt"}""",
+                toolResult = """{"error":"not_found","message":"File not found: /tmp/missing.txt"}""",
+                toolState = ToolExecutionStates.FAILED,
+            ),
+        )
+
+        assertEquals(ToolPresentationState.FAILED, presentation.state)
+        assertEquals("File not found: /tmp/missing.txt", presentation.errorMessage)
+    }
+
+    @Test
+    fun declaredPlainTextToolFailureFailsEvenForContentLessToolKinds() {
+        val presentation = ToolPresentationResolver.resolve(
+            MessageSegment(
+                type = "tool",
+                toolName = "file_read",
+                toolArgs = """{"path":"/tmp/x.txt"}""",
+                toolResult = "Error: unexpected end of stream",
+                toolState = ToolExecutionStates.FAILED,
+            ),
+        )
+
+        assertEquals(ToolPresentationState.FAILED, presentation.state)
+        assertEquals("Error: unexpected end of stream", presentation.errorMessage)
+    }
+
+    @Test
+    fun explicitFailedFlagFailsAndUsesItsMessageText() {
+        val presentation = ToolPresentationResolver.resolve(
+            MessageSegment(
+                type = "tool",
+                toolName = "view_image",
+                toolArgs = """{"path":"/tmp/x.png","server":"tinybox"}""",
+                toolResult = """{"failed":true,"message":"Device is offline"}""",
+            ),
+        )
+
+        assertEquals(ToolPresentationState.FAILED, presentation.state)
+        assertEquals("Device is offline", presentation.errorMessage)
+    }
+
+    @Test
+    fun shellTransportFailureFailsWithoutAnExitCodeStatus() {
+        val presentation = ToolPresentationResolver.resolve(
+            MessageSegment(
+                type = "tool",
+                toolName = "execute_shell_command",
+                toolArgs = """{"command":"printf done","server":"tinybox"}""",
+                toolResult = """{"error":"error","message":"unexpected end of stream"}""",
+            ),
+        )
+
+        assertEquals(ToolPresentationState.FAILED, presentation.state)
+        assertEquals("unexpected end of stream", presentation.errorMessage)
+        assertEquals(
+            ShellPresentationStatus.Failed(code = null, message = "unexpected end of stream"),
+            shellPresentationStatus(presentation),
+        )
+    }
+
+    @Test
+    fun failedWireStateOverridesAnEmptyLookingResult() {
+        val presentation = ToolPresentationResolver.resolve(
+            MessageSegment(
+                type = "tool",
+                toolName = "file_grep",
+                toolArgs = """{"pattern":"x"}""",
+                toolResult = """{"type":"file_grep","matches":[]}""",
+                toolState = ToolExecutionStates.FAILED,
+            ),
+        )
+
+        assertEquals(ToolPresentationState.FAILED, presentation.state)
+        assertNull(presentation.errorMessage)
+    }
+
+    @Test
+    fun genuinelyEmptyFileReadIsStillEmpty() {
+        val presentation = ToolPresentationResolver.resolve(
+            MessageSegment(
+                type = "tool",
+                toolName = "file_read",
+                toolArgs = """{"path":"/tmp/empty.txt"}""",
+                toolResult = """{"type":"file_read","path":"/tmp/empty.txt","content":"","lines":0}""",
+                toolState = ToolExecutionStates.SUCCEEDED,
+            ),
+        )
+
+        assertEquals(ToolPresentationState.EMPTY, presentation.state)
+        assertNull(presentation.errorMessage)
+    }
+    @Test
+    fun malformedStandInPresentsTheToolAndArgumentsTheModelSent() {
+        val sent = """[{"question":"Pick one","options":["a","b"]}]"""
+        val wrapper = JsonObject(
+            mapOf(
+                "error" to JsonPrimitive("arguments were not a valid JSON object"),
+                "original_name" to JsonPrimitive("ask_user"),
+                "original_arguments" to JsonPrimitive(sent),
+            ),
+        ).toString()
+        val presentation = ToolPresentationResolver.resolve(
+            MessageSegment(
+                type = "tool",
+                toolName = "agora_malformed_tool_call",
+                toolArgs = wrapper,
+                toolResult = "Error: the previous tool call was malformed and was not executed",
+                toolState = ToolExecutionStates.FAILED,
+            ),
+        )
+        assertEquals("ask_user", presentation.toolName)
+        assertEquals(sent, presentation.rawArguments)
+        assertEquals(ToolKind.UNKNOWN, presentation.kind)
+        assertEquals(ToolPresentationState.FAILED, presentation.state)
+        assertEquals(
+            "Error: the previous tool call was malformed and was not executed",
+            presentation.errorMessage,
+        )
+    }
+    @Test
+    fun malformedStandInWithoutCarriedOriginalsKeepsTheStandInItself() {
+        val wrapper = """{"error":"duplicate tool call id"}"""
+        val presentation = ToolPresentationResolver.resolve(
+            MessageSegment(
+                type = "tool",
+                toolName = "agora_malformed_tool_call",
+                toolArgs = wrapper,
+                toolResult = "Error: the previous tool call was malformed and was not executed",
+                toolState = ToolExecutionStates.FAILED,
+            ),
+        )
+        assertEquals("agora_malformed_tool_call", presentation.toolName)
+        assertEquals(wrapper, presentation.rawArguments)
+        assertEquals(ToolPresentationState.FAILED, presentation.state)
     }
 }

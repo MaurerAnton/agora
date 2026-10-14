@@ -42,12 +42,16 @@ class OllamaProviderRequestSerializationTest {
 
     @Test
     fun ordinaryModelsForwardBooleanThinkAndGenerationOptions() = withServer { server ->
-        val enabled = server.capture(config(server, "qwen3:8b"))
+        val enabled = server.capture(config(server, "qwen3:8b").copy(
+            frequencyPenalty = 0.2f, presencePenalty = -0.1f,
+        ))
         assertTrue(enabled["think"]!!.jsonPrimitive.boolean)
         val options = enabled["options"]!!.jsonObject
         assertEquals(0.7f, options["temperature"]!!.jsonPrimitive.float)
         assertEquals(0.8f, options["top_p"]!!.jsonPrimitive.float)
         assertEquals(777, options["num_predict"]!!.jsonPrimitive.int)
+        assertFalse(options.containsKey("frequency_penalty"))
+        assertFalse(options.containsKey("presence_penalty"))
 
         val disabled = server.capture(
             config(server, "llama3.2:3b").copy(thinkingEnabled = false),
@@ -67,13 +71,13 @@ class OllamaProviderRequestSerializationTest {
     }
 
     @Test
-    fun gptOssOffOrNoneFailsBeforeHttp() = withServer { server ->
-        val off = collect(server, config(server, "gpt-oss:20b").copy(thinkingEnabled = false))
-        val none = collect(server, config(server, "gpt-oss:120b").copy(thinkingLevel = "none"))
+    fun thinkingOffIsSentAsFalseInsteadOfFailing() = withServer { server ->
+        val off = server.capture(config(server, "gpt-oss:20b").copy(thinkingEnabled = false))
+        val none = server.capture(config(server, "gpt-oss:120b").copy(thinkingLevel = "none"))
 
-        assertRequestFormat(off)
-        assertRequestFormat(none)
-        assertTrue(server.bodies.isEmpty())
+        assertEquals(false, off["think"]!!.jsonPrimitive.boolean)
+        assertEquals("low", none["think"]!!.jsonPrimitive.content)
+        assertTrue(server.bodies.isNotEmpty())
     }
 
     @Test

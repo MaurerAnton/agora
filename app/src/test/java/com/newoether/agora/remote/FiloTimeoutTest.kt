@@ -14,6 +14,7 @@ import java.util.concurrent.atomic.AtomicInteger
 class FiloTimeoutTest {
     private val token = "a".repeat(64)
     private val id = "00000000-0000-4000-8000-000000000001"
+    private val clientId = "22222222-2222-4222-8222-222222222222"
 
     @Test fun coldCreationOutlivesReadDeadlineWithoutChangingOrdinaryReads() = runBlocking {
         val posts = AtomicInteger()
@@ -26,7 +27,7 @@ class FiloTimeoutTest {
             if (write) posts.incrementAndGet()
             exchange.requestBody.use { it.readBytes() }
             Thread.sleep(150)
-            val body = if (write) """{"id":"$id","title":"Created","cwd":"/fixture","updatedAt":1}"""
+            val body = if (write) """{"id":"$id","title":"Created","cwd":"/fixture","updatedAt":1,"turnId":"turn-1","clientId":"$clientId"}"""
                 else """{"models":[]}"""
             try {
                 exchange.sendResponseHeaders(200, body.toByteArray().size.toLong())
@@ -38,7 +39,8 @@ class FiloTimeoutTest {
             .readTimeout(40, TimeUnit.MILLISECONDS).callTimeout(100, TimeUnit.MILLISECONDS).build()
         try {
             val client = FiloClient("http://127.0.0.1:${server.address.port}/", token, transport, 1000)
-            assertEquals(id, client.create().id)
+            val created = client.create("hello", clientId, settings = RemoteSettings(model = "model"))
+        assertEquals(id, created.id)
             try { client.models(); fail("Ordinary reads retain their shorter deadline") }
             catch (_: IOException) { }
             assertEquals(1, posts.get())
@@ -62,7 +64,7 @@ class FiloTimeoutTest {
         try {
             val transport = OkHttpClient.Builder().retryOnConnectionFailure(true).build()
             val client = FiloClient("http://127.0.0.1:${server.address.port}/", token, transport, 100)
-            try { client.create(); fail("Unknown native acceptance must be reported") }
+            try { client.create("hello", clientId, settings = RemoteSettings(model = "model")); fail("Unknown native acceptance must be reported") }
             catch (_: IOException) { }
             assertEquals(1, posts.get())
         } finally { server.stop(0) }

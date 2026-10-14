@@ -11,7 +11,7 @@
     <string name="task_run_now">Run Now</string>
     <string name="task_delete">Delete Task</string>
     <string name="task_delete_confirm">Delete “%1$s” and all of its execution history?</string>
-    <string name="import_conversation_graph_counts">Conversations (%1$d) · Tasks (%2$d) · Loops (%3$d)</string>
+    <string name="import_conversation_graph_counts">Conversations (%1$d) · Tasks (%2$d)</string>
     <string name="task_enabled">Run on Schedule</string>
     <string name="task_enabled_desc">Off means the task only runs when you tap Run now.</string>
     <string name="task_enabled_needs_schedule">Pick a schedule first.</string>
@@ -59,6 +59,7 @@
     <string name="task_status_unknown">Pending</string>
     <string name="task_running_notification">Running scheduled task…</string>
     <string name="loop_running_notification">Running conversation loop…</string>
+    <string name="auto_backup_running_notification">Backing up your data…</string>
     <string name="loop_running">Loop running…</string>
     <string name="loop_next_in">Next in %1$s</string>
     <string name="loop_cycle">Cycle %1$d/%2$d</string>

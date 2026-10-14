@@ -3,9 +3,11 @@ package com.newoether.agora.tool
 import android.content.Context
 import android.graphics.BitmapFactory
 import android.util.Base64
+import android.util.Base64InputStream
 import com.newoether.agora.model.ToolImageAttachment
 import java.io.File
 import java.io.IOException
+import java.io.InputStream
 import java.security.MessageDigest
 import java.util.UUID
 
@@ -25,11 +27,15 @@ class ToolImageStore(
     }
 
     /** Binary streams retain the same validation/atomic-file owner without an image-sized byte array. */
-    fun persistStream(input: java.io.InputStream, mimeType: String): ToolImageAttachment {
+    fun persistStream(
+        input: InputStream,
+        mimeType: String,
+        filePrefix: String = "tool",
+    ): ToolImageAttachment {
         val mime = mimeType.substringBefore(';').trim().lowercase()
         if (!mime.startsWith("image/")) throw IOException("Unsupported tool image type")
         if (!directory.exists() && !directory.mkdirs()) throw IOException("Could not create tool media directory")
-        val destination = File(directory, "tool_" + UUID.randomUUID() + "." + extensionFor(mime))
+        val destination = File(directory, "${safePrefix(filePrefix)}_${UUID.randomUUID()}.${extensionFor(mime)}")
         val temporary = File(directory, "." + destination.name + ".tmp")
         val digest = MessageDigest.getInstance("SHA-256")
         var size = 0L
@@ -66,12 +72,34 @@ class ToolImageStore(
         if (estimatedBytes > MAX_IMAGE_BYTES + 3L) {
             throw IOException("Tool image exceeds ${MAX_IMAGE_BYTES / (1024 * 1024)} MB")
         }
-        val bytes = try {
-            Base64.decode(data, Base64.DEFAULT)
-        } catch (error: IllegalArgumentException) {
-            throw IOException("Tool image contains invalid base64", error)
+        val encoded = object : InputStream() {
+            private var position = 0
+
+            override fun read(): Int {
+                if (position >= data.length) return -1
+                val value = data[position++].code
+                if (value > 127) throw IOException("Tool image contains invalid base64")
+                return value
+            }
+
+            override fun read(buffer: ByteArray, offset: Int, length: Int): Int {
+                if (offset < 0 || length < 0 || offset > buffer.size - length) {
+                    throw IndexOutOfBoundsException()
+                }
+                if (length == 0) return 0
+                if (position >= data.length) return -1
+                val count = minOf(length, data.length - position)
+                for (index in 0 until count) {
+                    val value = data[position++].code
+                    if (value > 127) throw IOException("Tool image contains invalid base64")
+                    buffer[offset + index] = value.toByte()
+                }
+                return count
+            }
         }
-        return persistBytes(bytes, mimeType, filePrefix)
+        return Base64InputStream(encoded, Base64.DEFAULT).use { decoded ->
+            persistStream(decoded, mimeType, filePrefix)
+        }
     }
 
     fun persistGeneratedBytes(
@@ -109,12 +137,7 @@ class ToolImageStore(
         if (!directory.exists() && !directory.mkdirs()) {
             throw IOException("Could not create tool media directory")
         }
-        val safePrefix = filePrefix
-            .map { char -> if (char.isLetterOrDigit() || char == '_') char else '_' }
-            .joinToString("")
-            .trim('_')
-            .ifBlank { "tool" }
-            .take(32)
+        val safePrefix = safePrefix(filePrefix)
         val destination = File(
             directory,
             "${safePrefix}_${UUID.randomUUID()}.${extensionFor(mime)}",
@@ -144,6 +167,13 @@ class ToolImageStore(
             sha256 = sha256,
         )
     }
+
+    private fun safePrefix(filePrefix: String): String = filePrefix
+        .map { char -> if (char.isLetterOrDigit() || char == '_') char else '_' }
+        .joinToString("")
+        .trim('_')
+        .ifBlank { "tool" }
+        .take(32)
 
     private fun extensionFor(mime: String): String = when (mime) {
         "image/jpeg", "image/jpg" -> "jpg"

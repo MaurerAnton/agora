@@ -9,6 +9,8 @@ import androidx.work.NetworkType
 import androidx.work.PeriodicWorkRequestBuilder
 import androidx.work.WorkManager
 import androidx.work.WorkerParameters
+import androidx.work.OneTimeWorkRequestBuilder
+import androidx.work.ExistingWorkPolicy
 import com.newoether.agora.AgoraApplication
 import com.newoether.agora.data.BackupResult
 import com.newoether.agora.util.DebugLog
@@ -27,6 +29,14 @@ class AutoBackupWorker(
             ?: return Result.failure()
 
         return try {
+            // This worker ticks hourly but backups are far less frequent; exit silently when
+            // nothing is due so the foreground notification only shows for actual exports.
+            if (!manager.isBackupDue()) return Result.success()
+
+            // A full export can exceed the background execution window on large databases,
+            // so promote to a foreground service before starting it.
+            setForeground(AutomationForegroundInfo.forAutoBackup(applicationContext))
+
             when (manager.checkAndBackup()) {
                 BackupResult.FAILED -> {
                     DebugLog.w("AutoBackup", "Worker: backup failed, retrying")
@@ -34,6 +44,8 @@ class AutoBackupWorker(
                 }
                 else -> Result.success()
             }
+        } catch (e: kotlinx.coroutines.CancellationException) {
+            throw e
         } catch (e: Exception) {
             DebugLog.e("AutoBackup", "Worker: unexpected error", e)
             Result.retry()
@@ -45,6 +57,12 @@ class AutoBackupWorker(
         private const val TAG = "auto_backup"
 
         fun schedule(context: Context) {
+            // Startup checks use the same foreground execution owner as periodic backups.
+            WorkManager.getInstance(context).enqueueUniqueWork(
+                "auto_backup_startup",
+                ExistingWorkPolicy.KEEP,
+                OneTimeWorkRequestBuilder<AutoBackupWorker>().addTag(TAG).build(),
+            )
             val request = PeriodicWorkRequestBuilder<AutoBackupWorker>(1, TimeUnit.HOURS)
                 .setConstraints(
                     Constraints.Builder()
@@ -67,6 +85,7 @@ class AutoBackupWorker(
         }
 
         fun cancel(context: Context) {
+            WorkManager.getInstance(context).cancelUniqueWork("auto_backup_startup")
             WorkManager.getInstance(context).cancelUniqueWork(WORK_NAME)
         }
     }

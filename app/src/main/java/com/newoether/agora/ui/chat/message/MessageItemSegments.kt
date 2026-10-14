@@ -1,5 +1,6 @@
 package com.newoether.agora.ui.chat.message
 
+import android.content.res.Resources
 import androidx.compose.animation.core.AnimationSpec
 import androidx.compose.animation.core.FastOutSlowInEasing
 import androidx.compose.animation.core.animateDpAsState
@@ -504,10 +505,13 @@ internal fun rememberSegmentAppearance(
 
 // Label a transcription segment; numbers them ("Image Transcription 1/2/…") only
 // when more than one is present, so a single image keeps the clean unnumbered name.
-@Composable
-internal fun transcriptionLabel(segs: List<MessageSegment>, index: Int): String {
+internal fun Resources.transcriptionLabel(segs: List<MessageSegment>, index: Int): String {
     val total = segs.count { it.type == "transcription" }
-    if (total <= 1) return stringResource(R.string.transcription_label)
+    if (total <= 1) return getString(R.string.transcription_label)
     val ordinal = segs.take(index + 1).count { it.type == "transcription" }
-    return stringResource(R.string.transcription_label_numbered, ordinal)
+    return getString(R.string.transcription_label_numbered, ordinal)
 }
+
+@Composable
+internal fun transcriptionLabel(segs: List<MessageSegment>, index: Int): String =
+    currentResources().transcriptionLabel(segs, index)

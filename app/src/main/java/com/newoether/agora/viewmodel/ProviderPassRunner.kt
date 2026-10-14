@@ -5,6 +5,7 @@ import com.newoether.agora.api.LlmProvider
 import com.newoether.agora.api.ProviderConfig
 import com.newoether.agora.api.StreamEvent
 import com.newoether.agora.api.util.ProviderStreamNormalizer
+import com.newoether.agora.api.util.malformedToolCallRequest
 import com.newoether.agora.api.util.safeWireToolCallId
 import com.newoether.agora.api.util.safeWireToolName
 import com.newoether.agora.model.ChatMessage
@@ -12,7 +13,7 @@ import com.newoether.agora.model.RunEffectIdentity
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.flow.collect
 import kotlinx.serialization.json.Json
-import kotlinx.serialization.json.JsonObject
+import java.util.UUID
 
 internal sealed interface ProviderPassOutcome {
     val identity: RunEffectIdentity
@@ -140,52 +141,65 @@ internal class ProviderPassRunner(
             return errorOutcome(identity, error)
         }
 
-        validateCompletedTools(
-            completedCalls,
-            openToolStreams,
-            sawEmptyToolBatch,
-            config.tools.orEmpty().map { it.function.name }.toSet(),
-        )?.let { error ->
-            onEvent(StreamEvent.Error(error))
-            return ProviderPassOutcome.Failed(identity, error)
-        }
-
-        return if (completedCalls.isEmpty()) {
+        val calls = pairableCalls(completedCalls, openToolStreams, sawEmptyToolBatch)
+        return if (calls.isEmpty()) {
             ProviderPassOutcome.CompletedText(identity)
         } else {
-            ProviderPassOutcome.CompletedToolCalls(identity, completedCalls.toList())
+            ProviderPassOutcome.CompletedToolCalls(identity, calls)
         }
     }
 
-    private fun validateCompletedTools(
+    /**
+     * Makes every completed call pairable with a tool result. A call whose id or name is unusable,
+     * and a tool stream that never completed, is replaced by a malformed-call stand-in that the
+     * executor answers with an error result, so the model can correct itself instead of the run
+     * failing. Unoffered tools and non-object arguments pass through unchanged: the executor
+     * already answers those with an error result.
+     */
+    private fun pairableCalls(
         calls: List<StreamEvent.ToolCallRequest>,
         openToolStreams: Set<String>,
         sawEmptyToolBatch: Boolean,
-        offeredToolNames: Set<String>,
-    ): GenerationError? {
-        val invalidCause = when {
-            sawEmptyToolBatch -> "Provider returned an empty tool call batch"
-            openToolStreams.isNotEmpty() -> "Provider ended with incomplete tool metadata"
-            calls.map { it.id }.distinct().size != calls.size ->
-                "Provider returned duplicate tool call ids"
-            calls.map { it.streamKey }.distinct().size != calls.size ->
-                "Provider returned duplicate tool stream identities"
-            calls.any { it.streamKey.isBlank() } ->
-                "Provider returned an invalid tool stream identity"
-            calls.any { !it.id.matches(safeWireToolCallId) } ->
-                "Provider returned an invalid tool call id"
-            calls.any { !it.name.matches(safeWireToolName) } ->
-                "Provider returned an invalid or incomplete tool name"
-            calls.any { it.name !in offeredToolNames } ->
-                "Provider returned a tool that was not offered in this request"
-            calls.any { call ->
-                runCatching {
-                    json.parseToJsonElement(call.arguments.ifBlank { "{}" }) is JsonObject
-                }.getOrDefault(false).not()
-            } -> "Provider returned incomplete tool arguments"
-            else -> null
-        } ?: return null
-        return GenerationError.SseParse(rawLine = "tool_calls", cause = invalidCause)
+    ): List<StreamEvent.ToolCallRequest> {
+        val seenIds = mutableSetOf<String>()
+        val seenStreamKeys = mutableSetOf<String>()
+        val repaired = calls.map { call ->
+            val cause = when {
+                !call.id.matches(safeWireToolCallId) -> "invalid tool call id"
+                !seenIds.add(call.id) -> "duplicate tool call id"
+                !call.name.matches(safeWireToolName) -> "invalid or incomplete tool name"
+                else -> null
+            }
+            val streamKeyUsable = call.streamKey.isNotBlank() && seenStreamKeys.add(call.streamKey)
+            when {
+                cause != null -> malformedToolCallRequest(
+                    cause = cause,
+                    originalName = call.name,
+                    originalArguments = call.arguments,
+                    streamKey = call.streamKey.takeIf { streamKeyUsable },
+                    signature = call.signature,
+                )
+                streamKeyUsable -> call
+                // The stream key is local bookkeeping only; a fresh one keeps the call executable.
+                else -> call.copy(streamKey = "call_stream_${UUID.randomUUID()}")
+            }
+        }
+        val unfinished = openToolStreams.map { streamKey ->
+            malformedToolCallRequest(
+                cause = "the tool call stream ended before the call was complete",
+                streamKey = streamKey.takeIf { seenStreamKeys.add(it) },
+            )
+        }
+        val emptyBatch = if (sawEmptyToolBatch && repaired.isEmpty() && unfinished.isEmpty()) {
+            listOf(
+                malformedToolCallRequest(
+                    cause = "a tool call batch was announced but contained no calls",
+                ),
+            )
+        } else {
+            emptyList()
+        }
+        return repaired + unfinished + emptyBatch
     }
 
     private fun errorOutcome(

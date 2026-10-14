@@ -219,17 +219,28 @@ in presentation text, not interior whitespace, tool payloads or original cached 
 Reuse MessageList, Markdown/glyph fade, ChatTopBar, composer/TextField, message menus,
 ChatScrollCoordinator, ChatLaunchInteractionEffects and bottom-scroll button directly.
 No invented Remote renderer, scroll algorithm, keyboard behavior or animation.
+The bottom-scroll button must use ordinary ChatApp's canonical visibility owner, including its
+scroll-direction latch, not only the lower-level availability predicate. Each conversation starts
+with the button hidden. Preserve the existing 32dp directional-travel rule, readiness, near-bottom,
+auto-follow and competing-scroll exclusions. Do not add a Remote-only latch or visibility rule.
 Unsupported message mutations are hidden; Copy, Select text and Info remain available.
 Top More contains Search only, with original highlights and navigation. Absent/ID titles
 display New Chat. Remote title subtitle uses the shared Devices status dot beside Online, Offline or Connecting
 from its real connection/read state, replacing context usage there. The composer context
 indicator retains native telemetry; unknown context shows an empty circular indicator
 without a dash or fabricated numeric usage.
+Remote context shows only one Used category in the theme's primary color. Reserved, System Prompt,
+Tools, Messages and Free breakdown rows are absent: native telemetry supplies no classification.
+Do not infer categories or reserves from ordinary-chat defaults. Ordinary ChatApp context breakdown
+and compaction-reserve behavior remain unchanged.
 
 The chat loading cover is the original content-area ChatApp block before the composer:
-48dp/5dp circle, 200ms opacity. Its lifetime is initial history opening/scroll settling,
-ended by readiness or error. No Remote-wide cover, extra pointer interceptor, or loading
-cover for ordinary settings changes/generation. Devices/Sessions retain their own behavior.
+48dp/5dp circle, 200ms opacity. Center it in ChatApp's same measured top-bar/bottom-bar available
+range, including IME changes, not in the whole body. Its lifetime is initial history opening/scroll
+settling, ended by readiness or error. The cover itself blocks touch to covered content through its
+visible enter/loading/exit lifetime, as required by application-ui.md; a background alone is not
+enough. No Remote-wide cover, separate interception layer, or loading cover for ordinary settings
+changes/generation is allowed. Devices/Sessions retain their own behavior.
 
 The native active turn plus native user acknowledgement drives streaming presentation.
 Never create the assistant dot before input exists. Appended SSE snapshot text supplies

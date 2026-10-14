@@ -1,5 +1,6 @@
 package com.newoether.agora.api.anthropic
 
+import com.newoether.agora.api.util.MALFORMED_TOOL_CALL_NAME
 import com.newoether.agora.api.GenerationError
 import com.newoether.agora.api.StreamEvent
 import kotlinx.serialization.json.Json
@@ -137,16 +138,16 @@ class AnthropicStreamTerminationTest {
     }
 
     @Test
-    fun namelessToolBlockClosing_reportsAnErrorInsteadOfVanishing() {
+    fun namelessToolBlockClosing_becomesAMalformedCallInsteadOfVanishing() {
         val router = AnthropicStreamEventRouter()
         router.route(
             decode("""{"type":"content_block_start","index":0,"content_block":{"type":"tool_use","id":"call_1"}}""")
         )
         val events = router.route(decode("""{"type":"content_block_stop","index":0}"""))
 
-        val error = events.single() as StreamEvent.Error
-        assertTrue(error.error is GenerationError.SseParse)
-        assertTrue(router.reportedError)
+        // The model gets an error result for the damaged block and can re-issue the call.
+        val call = events.single() as StreamEvent.ToolCallRequest
+        assertEquals(MALFORMED_TOOL_CALL_NAME, call.name)
     }
 
     @Test
@@ -161,9 +162,9 @@ class AnthropicStreamTerminationTest {
 
         val events = router.route(decode("""{"type":"content_block_stop","index":0}"""))
 
-        assertEquals(1, events.size)
-        assertTrue((events.single() as StreamEvent.Error).error is GenerationError.SseParse)
-        assertTrue(events.none { it is StreamEvent.ToolCallRequest })
+        // Truncated JSON is never executed as file_read; it is answered as a malformed call.
+        val call = events.single() as StreamEvent.ToolCallRequest
+        assertEquals(MALFORMED_TOOL_CALL_NAME, call.name)
     }
 
     @Test
@@ -192,7 +193,9 @@ class AnthropicStreamTerminationTest {
             if (index == 0) {
                 assertTrue(events.single() is StreamEvent.ToolCallRequest)
             } else {
-                assertTrue((events.single() as StreamEvent.Error).error is GenerationError.SseParse)
+                val call = events.single() as StreamEvent.ToolCallRequest
+                assertEquals(MALFORMED_TOOL_CALL_NAME, call.name)
+                assertTrue(call.id != "call_1")
             }
         }
     }

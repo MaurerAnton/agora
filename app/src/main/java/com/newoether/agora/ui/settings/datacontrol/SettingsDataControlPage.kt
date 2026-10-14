@@ -30,6 +30,7 @@ import com.newoether.agora.ui.settings.SettingsItem
 import com.newoether.agora.data.DataExporter
 import com.newoether.agora.data.DataImporter
 import com.newoether.agora.viewmodel.ChatViewModel
+import com.newoether.agora.ui.components.optionClickable
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -410,7 +411,7 @@ fun SettingsDataControlPage(viewModel: ChatViewModel, onBack: () -> Unit) {
                             Row(
                                 modifier = Modifier
                                     .fillMaxWidth()
-                                    .clickable {
+                                    .optionClickable {
                                         claudeSelectedIds = if (conv.uuid in claudeSelectedIds) {
                                             claudeSelectedIds - conv.uuid
                                         } else {
@@ -644,7 +645,7 @@ fun SettingsDataControlPage(viewModel: ChatViewModel, onBack: () -> Unit) {
                             Row(
                                 modifier = Modifier
                                     .fillMaxWidth()
-                                    .clickable {
+                                    .optionClickable {
                                         gptSelectedIds = if (conv.uuid in gptSelectedIds) {
                                             gptSelectedIds - conv.uuid
                                         } else {

@@ -42,8 +42,6 @@ import androidx.compose.material.icons.filled.MoreVert
 import androidx.compose.material.icons.filled.Pause
 import androidx.compose.material.icons.filled.PlayArrow
 import androidx.compose.material3.AlertDialog
-import androidx.compose.material3.DropdownMenu
-import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.FloatingActionButton
 import androidx.compose.material3.Icon
@@ -93,6 +91,8 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import kotlinx.serialization.json.Json
+import com.newoether.agora.ui.components.AgoraDropdownMenu
+import com.newoether.agora.ui.components.AgoraDropdownMenuItem
 
 private const val CaptureCrossfadeDurationMillis = 250
 private val CaptureEdgeTolerance = 2.dp
@@ -246,14 +246,13 @@ internal fun SettingsDeveloperCapturePage(
                         )
                     }
                 }
-                DropdownMenu(
+                AgoraDropdownMenu(
                     expanded = showActionsMenu,
                     onDismissRequest = { showActionsMenu = false },
                     containerColor = MaterialTheme.colorScheme.surfaceContainer,
                     tonalElevation = 16.dp,
-                    shape = RoundedCornerShape(12.dp),
                 ) {
-                    DropdownMenuItem(
+                    AgoraDropdownMenuItem(
                         text = {
                             Text(
                                 stringResource(
@@ -480,7 +479,7 @@ private fun CaptureExportMenuItem(
     enabled: Boolean,
     onClick: () -> Unit,
 ) {
-    DropdownMenuItem(
+    AgoraDropdownMenuItem(
         text = { Text(label) },
         leadingIcon = { Icon(Icons.Default.FileUpload, contentDescription = null) },
         enabled = enabled,
@@ -742,15 +741,16 @@ private suspend fun shareDiagnosticCapture(
     format: DiagnosticExportFormat,
     chooserTitle: String,
 ) {
+    val generatedAtMillis = System.currentTimeMillis()
     val content = withContext(Dispatchers.Default) {
-        com.newoether.agora.diagnostics.DiagnosticBundleExporter.export(snapshot, format)
+        com.newoether.agora.diagnostics.DiagnosticBundleExporter.export(snapshot, format, generatedAtMillis)
     }
     val sendIntent = withContext(Dispatchers.IO) {
         val extension = if (format == DiagnosticExportFormat.SUMMARY_TEXT) "txt" else "json"
         val mimeType = if (extension == "txt") "text/plain" else "application/json"
-        val formatName = format.name.lowercase().replace('_', '-')
         val shareDirectory = File(context.cacheDir, "shared").apply { mkdirs() }
-        val file = File(shareDirectory, "agora-diagnostics-$formatName.$extension").apply {
+        val fileName = com.newoether.agora.diagnostics.DiagnosticBundleExporter.fileName(format, generatedAtMillis)
+        val file = File(shareDirectory, fileName).apply {
             writeText(content, Charsets.UTF_8)
         }
         val uri = FileProvider.getUriForFile(

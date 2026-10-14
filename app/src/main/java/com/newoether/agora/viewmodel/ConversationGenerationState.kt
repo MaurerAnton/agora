@@ -61,12 +61,13 @@ class ConversationGenerationState(
     val conversationId: String,
     private val onRegistryActive: (String) -> Unit = {},
     private val onRegistryIdle: (String) -> Unit = {},
+    reclaimQueuedAttachments: (List<com.newoether.agora.model.SelectedAttachment>) -> Unit,
 ) {
 
     val scope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
 
     private val resources = ConversationRuntimeResources()
-    private val guidanceLeases = GuidanceLeaseStore()
+    private val guidanceLeases = GuidanceLeaseStore(reclaimQueuedAttachments)
 
     /** Read-only process-resource projection observed by the UI and effect runners. */
     val streamScope = resources.streamScope
@@ -535,10 +536,10 @@ class ConversationGenerationState(
 
     /**
      * Remove a queued send by id (X button). Returns the removed item (or null) so the caller can
-     * delete its now-orphaned attachment files — the composer already cleared its own reference on
-     * enqueue, so the QueuedSend holds the only handle to those copied files.
+     * settle its live ownership and schedule reference-aware cleanup through [discardQueuedSend].
      */
     internal fun removeQueuedSend(id: String): QueuedSend? = guidanceLeases.remove(id)
+    internal fun discardQueuedSend(send: QueuedSend) = guidanceLeases.discard(send)
 
     /** Transfer the pending batch to one explicit in-flight owner before leaving memory-only state. */
     internal fun claimQueuedSends(): GuidanceBatchLease? = guidanceLeases.claim()

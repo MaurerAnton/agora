@@ -17,6 +17,7 @@ import com.newoether.agora.model.MessageStatus
 import com.newoether.agora.model.Participant
 import com.newoether.agora.model.ToolImageAttachment
 import com.newoether.agora.service.AgoraForegroundService
+import com.newoether.agora.util.Constants
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
@@ -180,6 +181,9 @@ class TranscriptionManager(
             baseUrl = ctx.transcriptionBaseUrl,
             anthropicCacheEnabled = ctx.transcriptionAnthropicCacheEnabled,
             anthropicCacheTtl = ctx.transcriptionAnthropicCacheTtl,
+            sessionId = conversationId.takeIf {
+                ctx.transcriptionProviderName == Constants.PROVIDER_OPENCODE_GO
+            },
         )
         val promptMessages = listOf(
             ChatMessage(
@@ -284,6 +288,9 @@ class TranscriptionManager(
             baseUrl = baseUrl,
             anthropicCacheEnabled = anthropicCacheEnabled,
             anthropicCacheTtl = anthropicCacheTtl,
+            sessionId = conversationId.takeIf {
+                providerName == Constants.PROVIDER_OPENCODE_GO
+            },
         )
         val placeholder = conversations.getMessage(modelMessageId)
         val parentId = placeholder?.parentId

@@ -13,7 +13,11 @@ class TaskEditorSourceContractTest {
             .substringAfter("internal fun TaskDetailPage(")
             .substringBefore("internal fun formatDateTime(")
 
-        assertTrue(detail.contains("BackHandler(enabled = backHandlingEnabled) { onBack() }"))
+        // Back (system and top bar) goes through the unsaved-changes guard; Save leaves directly.
+        assertTrue(detail.contains("rememberUnsavedChangesBack("))
+        assertTrue(detail.contains("hasUnsavedChanges = editorSession.hasUnsavedChanges"))
+        assertTrue(detail.contains("BackHandler(enabled = backHandlingEnabled) { guardedBack() }"))
+        assertTrue(detail.contains("onBack = guardedBack,"))
         assertFalse(detail.contains("BackHandler { onBack() }"))
         assertFalse(detail.contains("fun leave()"))
         assertTrue(detail.contains("viewModel.saveTask(current())\n                    onBack()"))
@@ -21,8 +25,6 @@ class TaskEditorSourceContractTest {
         assertTrue(detail.contains("preservePersistedEnabled = false"))
         assertTrue(detail.contains("collectAsState(initial = null)"))
         assertTrue(detail.contains("taskExecutionHistoryForPresentation("))
-        assertTrue(detail.contains("if (scrollRestored || !executionsLoaded) return@LaunchedEffect"))
-        assertTrue(detail.contains("initialFirstVisibleItemIndex = savedListIndex"))
         assertTrue(detail.contains("editorSession.retainExecutionHistory(task.id, executions)"))
         assertFalse(detail.contains("collectAsState(initial = emptyList())"))
         assertFalse(detail.contains("rememberSaveable"))
@@ -48,7 +50,7 @@ class TaskEditorSourceContractTest {
         assertTrue(listCall.contains("backHandlingEnabled = backHandlingEnabled"))
         assertTrue(detailCall.contains("backHandlingEnabled = backHandlingEnabled"))
         assertTrue(tasks.contains("BackHandler(enabled = backHandlingEnabled) { onBack() }"))
-        assertTrue(detail.contains("BackHandler(enabled = backHandlingEnabled) { onBack() }"))
+        assertTrue(detail.contains("BackHandler(enabled = backHandlingEnabled) { guardedBack() }"))
         assertFalse(tasks.contains("BackHandler { onBack() }"))
         assertFalse(detail.contains("BackHandler { onBack() }"))
     }
@@ -105,6 +107,75 @@ class TaskEditorSourceContractTest {
         assertFalse(atRow.contains("Icons.Default.Timer"))
         assertTrue(scheduleRow.contains("Icons.Default.Timer"))
         assertFalse(scheduleRow.contains("Icons.Default.Schedule"))
+    }
+
+    @Test
+    fun thePromptIsEditedInADialogOpenedFromAPreviewRow() {
+        val editor = source("ui/tasks/TaskEditorPage.kt")
+        val dialog = source("ui/tasks/TaskPromptDialog.kt")
+
+        assertTrue(editor.contains("TaskPromptRow(prompt) { showPromptDialog = true }"))
+        assertTrue(editor.contains("TaskPromptDialog("))
+        assertFalse(editor.contains("onValueChange = editorSession::updatePrompt"))
+        assertTrue(dialog.contains("Modifier.clickable(onClick = onClick)"))
+        assertTrue(dialog.contains("minLines = 4,\n                maxLines = 12,"))
+        assertTrue(dialog.contains("onClick = { onSave(draft) }"))
+    }
+
+    @Test
+    fun loadingHistoryShowsAProgressRowAndNeverCorrectsTheScrollAfterwards() {
+        val editor = source("ui/tasks/TaskEditorPage.kt")
+
+        assertTrue(editor.contains("if (!executionsLoaded) {"))
+        assertTrue(editor.contains("CircularProgressIndicator("))
+        assertTrue(
+            editor.contains(
+                "initialFirstVisibleItemIndex = " +
+                    "if (retainedExecutionSnapshot != null) savedListIndex else 0",
+            ),
+        )
+        assertFalse(editor.contains("shouldRestoreTaskDetailScroll"))
+        assertFalse(editor.contains("scrollRestored"))
+        assertFalse(editor.contains("scrollToItem("))
+    }
+
+    @Test
+    fun onlyAUserDragDismissesTheKeyboardSoATappedFieldKeepsItsCursor() {
+        val detail = source("ui/tasks/TaskEditorPage.kt")
+            .substringAfter("internal fun TaskDetailPage(")
+            .substringBefore("internal fun formatDateTime(")
+
+        // Focusing a field makes the list scroll itself into view; that must not clear focus.
+        assertFalse(detail.contains("LaunchedEffect(listState.isScrollInProgress)"))
+        assertTrue(detail.contains("listState.interactionSource.interactions.collect"))
+        assertTrue(detail.contains("if (interaction is DragInteraction.Start) focusManager.clearFocus()"))
+    }
+
+    @Test
+    fun taskCarriesASavedSystemPromptByReferenceNotByCopiedText() {
+        val editor = source("ui/tasks/TaskEditorPage.kt")
+        val components = source("ui/tasks/TaskEditorSupportingComponents.kt")
+        val session = source("ui/tasks/TaskEditorSessionViewModel.kt")
+        val manager = source("automation/TaskManager.kt")
+
+        assertTrue(editor.contains("viewModel.settings.systemPrompts.collectAsState()"))
+        assertTrue(
+            editor.contains("TaskSystemPromptRow(editorSession.systemPromptId, systemPrompts, activeSystemPromptId)"),
+        )
+        // The task picker is Chat's picker, not a lookalike.
+        assertTrue(editor.contains("import com.newoether.agora.ui.components.SystemPromptPickerDialog"))
+        assertTrue(editor.contains("settings = viewModel.settings,"))
+        assertFalse(components.contains("fun SystemPromptPickerDialog("))
+        assertTrue(components.contains("Icon(Icons.Default.Psychology, null"))
+        assertTrue(session.contains("fun updateSystemPromptId(value: String?)"))
+        assertTrue(session.contains("systemPromptId = systemPromptId,"))
+        // The run must resolve the prompt through the conversation, so later prompt edits apply.
+        assertTrue(manager.contains("systemPromptId = task.systemPromptId,"))
+        assertTrue(
+            manager.contains(
+                "systemPromptOverride = if (task.systemPromptId != null) null else task.systemPrompt ?: \"\"",
+            ),
+        )
     }
 
     private fun source(relativePath: String): String =

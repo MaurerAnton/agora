@@ -1,4 +1,4 @@
-<resources>
+<?xml version="1.0" encoding="utf-8"?><resources>
     <!-- Settings - Main -->
     <string name="settings_title">Ajustes</string>
     <string name="settings_provider">Proveedores</string>
@@ -242,7 +242,7 @@
     <string name="web_search_searxng_url_hint">https://searx.be</string>
 
     <!-- Settings - Shell Page -->
-    <string name="shell_title">Shell</string>
+    <string name="shell_title">Terminal</string>
     <string name="shell_desc">Ejecución remota de comandos de shell</string>
     <string name="shell_enable">Activar herramienta de shell</string>
     <string name="shell_enable_desc">Permite que el modelo ejecute comandos de shell en servidores remotos</string>
@@ -428,8 +428,10 @@
     <string name="visual_effects">Efectos visuales</string>
     <string name="blur_effects">Efectos de desenfoque</string>
     <string name="blur_effects_desc">Desenfoca la parte superior de la lista de chat bajo la barra. Desactívalo para ahorrar rendimiento.</string>
-    <string name="parse_inline_dollar_math">Parse $…$ as inline math</string>
-    <string name="parse_inline_dollar_math_desc">When disabled, single-dollar expressions such as $ x $ remain ordinary text. Other math delimiters are unchanged.</string>
+    <string name="parse_inline_dollar_math">Analizar $…$ como matemáticas en ligne</string>
+    <string name="parse_inline_dollar_math_desc">Si está desactivado, las expresiones con un solo símbolo de dólar como $ x $ permanecen como texto normal. Los demás delimitadores matemáticos no cambian.</string>
+    <string name="auto_wrap_code_blocks">Ajustar bloques de código automáticamente</string>
+    <string name="auto_wrap_code_blocks_desc">Las líneas largas dentro de los bloques de código se ajustan en lugar de desplazarse horizontalmente.</string>
     <string name="reduce_motion">Reducir movimiento</string>
     <string name="reduce_motion_desc">Reduce el movimiento continuo y los desplazamientos espaciales amplios, y conserva los fundidos, los gestos directos y la información de estado útil.</string>
 
@@ -481,4 +483,12 @@
     <string name="openai_service_tier_priority">Prioridad</string>
     <string name="openai_service_tier_fast">Rápido</string>
     <string name="openai_service_tier_ultrafast">Ultrarrápido</string>
+    <string name="settings_interaction">Interacción</string>
+    <string name="settings_interaction_desc">Preguntas que te hace el asistente</string>
+    <string name="ask_user_enable">Permitir que el asistente pregunte</string>
+    <string name="ask_user_enable_desc">Da al modelo una herramienta para preguntarte y esperar tu elección</string>
+    <string name="unsaved_changes_title">Cambios sin guardar</string>
+    <string name="unsaved_changes_message">Hay cambios sin guardar. ¿Descartarlos?</string>
+    <string name="unsaved_changes_discard">Descartar</string>
+    <string name="unsaved_changes_keep_editing">Seguir editando</string>
 </resources>

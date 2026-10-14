@@ -77,10 +77,12 @@ fun SettingsDeveloperPage(
         forward = showCapturePage,
     ) { captureVisible ->
         if (captureVisible) {
-            SettingsDeveloperCapturePage(
-                onBack = { showCapturePage = false },
-                onExportFailed = { viewModel.emitSnackbar(exportFailedMessage) },
-            )
+            SettingsSecondaryPane {
+                SettingsDeveloperCapturePage(
+                    onBack = { showCapturePage = false },
+                    onExportFailed = { viewModel.emitSnackbar(exportFailedMessage) },
+                )
+            }
         } else {
             CollapsingSettingsScaffold(
                 title = stringResource(R.string.developer_options_title),

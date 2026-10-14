@@ -59,7 +59,8 @@ interface ChatContextCompactDao {
         UPDATE conversations
         SET selectedBranchesJson = :selectedBranchesJson,
             selectedRunBranchesJson = :selectedRunBranchesJson,
-            lastUpdated = :at
+            lastUpdated = :at,
+            dataChangedAt = :at
         WHERE id = :conversationId
         """
     )
@@ -73,32 +74,37 @@ interface ChatContextCompactDao {
     @Query(
         """
         UPDATE conversations
-        SET selectedBranchesJson = :selectedBranchesJson
+        SET selectedBranchesJson = :selectedBranchesJson,
+            dataChangedAt = :at
         WHERE id = :conversationId
         """
     )
     suspend fun updateMessageBranchSelections(
         conversationId: String,
         selectedBranchesJson: String,
+        at: Long,
     ): Int
 
     @Query(
         """
         UPDATE conversations
-        SET selectedRunBranchesJson = :selectedRunBranchesJson
+        SET selectedRunBranchesJson = :selectedRunBranchesJson,
+            dataChangedAt = :at
         WHERE id = :conversationId
         """
     )
     suspend fun updateRunBranchSelections(
         conversationId: String,
         selectedRunBranchesJson: String,
+        at: Long,
     ): Int
 
     @Query(
         """
         UPDATE conversations
         SET selectedBranchesJson = :selectedBranchesJson,
-            selectedRunBranchesJson = :selectedRunBranchesJson
+            selectedRunBranchesJson = :selectedRunBranchesJson,
+            dataChangedAt = :at
         WHERE id = :conversationId
         """
     )
@@ -106,6 +112,7 @@ interface ChatContextCompactDao {
         conversationId: String,
         selectedBranchesJson: String,
         selectedRunBranchesJson: String,
+        at: Long,
     ): Int
 
     @Query("SELECT * FROM runs WHERE conversationId = :conversationId AND activeSlot = 1 LIMIT 1")

@@ -26,8 +26,6 @@
     <string name="mcp_header_value_error">Nhập giá trị không chứa ký tự điều khiển</string>
     <string name="mcp_add_header">Thêm tiêu đề</string>
     <string name="mcp_delete_header">Xóa tiêu đề</string>
-    <string name="mcp_show_header_value">Hiện giá trị tiêu đề</string>
-    <string name="mcp_hide_header_value">Ẩn giá trị tiêu đề</string>
     <string name="mcp_timeout">Thời gian chờ (giây)</string>
     <string name="mcp_timeout_desc">5–300 giây</string>
     <string name="mcp_status">Trạng thái</string>

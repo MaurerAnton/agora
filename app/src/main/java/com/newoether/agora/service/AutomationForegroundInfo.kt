@@ -33,6 +33,13 @@ object AutomationForegroundInfo {
         conversationId = conversationId,
     )
 
+    /** Ongoing notification shown while the periodic auto-backup export runs. */
+    fun forAutoBackup(context: Context): ForegroundInfo = create(
+        context = context,
+        text = context.getString(R.string.auto_backup_running_notification),
+        notificationId = notificationId("auto-backup"),
+    )
+
     internal val executionConstraints: Constraints = Constraints.Builder()
         .setRequiredNetworkType(NetworkType.CONNECTED)
         .build()

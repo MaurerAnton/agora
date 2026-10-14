@@ -206,39 +206,12 @@ class OpenAiNativeSearchWiringTest {
             "target title width must be measured independently",
             "rememberTextMeasurer()" in normalBar,
         )
+        // The clip deadline, rebasing and terminal-frame rules are exercised by IdentityClipWidthTest.
         assertTrue(
-            "one owner must animate only the clip boundary",
-            "var titleClipWidth by remember { mutableStateOf(targetTitleCapsuleWidth) }" in normalBar &&
-                "var titleMotionRunning by remember { mutableStateOf(false) }" in normalBar,
-        )
-        assertTrue(
-            "clip changes must keep one approved deadline",
-            "TITLE_CLIP_DURATION_MILLIS = 400" in topBar &&
-                "val clipDeadlineNanos = clipStartNanos +" in normalBar &&
-                "TITLE_CLIP_DURATION_MILLIS * 1_000_000L" in normalBar,
-        )
-        assertTrue(
-            "identity motion must not be keyed by token-dependent target width",
-            "LaunchedEffect(titlePresentation, allowSpatialTransitions)" in normalBar,
-        )
-        assertTrue(
-            "active identity motion must continuously consume the latest token target",
-            "rememberUpdatedState(targetTitleCapsuleWidth)" in normalBar &&
-                "val latestTarget = latestTargetTitleCapsuleWidth" in normalBar &&
-                "if (latestTarget != segmentTargetWidth)" in normalBar &&
-                "segmentStartWidth = titleClipWidth" in normalBar &&
-                "segmentTargetWidth = latestTarget" in normalBar &&
-                "FastOutSlowInEasing.transform(segmentFraction)" in normalBar,
-        )
-        assertTrue(
-            "the first terminal frame must equal the stable latest boundary",
-            "if (frameNanos >= clipDeadlineNanos)" in normalBar &&
-                "titleClipWidth = latestTarget" in normalBar,
-        )
-        assertFalse(
-            "the clip owner must not finish at an obsolete target and snap afterward",
-            "titleClipWidth.animateTo(" in normalBar ||
-                "titleClipWidth.snapTo(" in normalBar,
+            "one shared owner must animate only the clip boundary, keyed by title identity",
+            "val visibleTitleCapsuleWidth = rememberIdentityClipWidth(" in normalBar &&
+                "identity = titlePresentation," in normalBar &&
+                "targetWidth = targetTitleCapsuleWidth," in normalBar,
         )
         assertTrue(
             "the full title capsule must share one rounded drawing clip",
@@ -263,9 +236,8 @@ class OpenAiNativeSearchWiringTest {
             "easing = FastOutSlowInEasing" in normalBar,
         )
         assertTrue(
-            "Reduced Motion must snap the clip owner",
-            "if (!allowSpatialTransitions || !titleChanged)" in normalBar &&
-                "titleClipWidth = latestTargetTitleCapsuleWidth" in normalBar,
+            "Reduced Motion must reach the clip owner, which snaps it",
+            "allowSpatialTransitions = allowSpatialTransitions," in normalBar,
         )
         assertTrue(
             "title identity must exclude token count",

@@ -5,6 +5,7 @@ import com.newoether.agora.model.ConversationCommand
 import com.newoether.agora.model.RunEffectIdentity
 import com.newoether.agora.model.ToolExecutionStates
 import com.newoether.agora.tool.ToolExecutionEvent
+import com.newoether.agora.tool.ToolExecutionResult
 import com.newoether.agora.tool.ToolProvider
 import kotlinx.coroutines.CompletableDeferred
 import kotlinx.coroutines.NonCancellable
@@ -26,7 +27,7 @@ class GenerationToolExecutorTest {
         val result =
             """{"type":"wait_for_job","job_id":"same-job","state":"running","timed_out":true}"""
 
-        assertEquals(ToolExecutionStates.BACKGROUND_RUNNING, finalToolState(result))
+        assertEquals(ToolExecutionStates.BACKGROUND_RUNNING, finalToolState(ToolExecutionResult(result), "wait_for_job"))
     }
 
     @Test
@@ -166,7 +167,7 @@ class GenerationToolExecutorTest {
             override fun handles(name: String): Boolean = name == "blocking_tool"
         }
         val executor = GenerationToolExecutor.forTest(listOf(provider))
-        val state = ConversationGenerationState("conversation")
+        val state = ConversationGenerationState("conversation", reclaimQueuedAttachments = {})
         val token = state.acquireForSend()!!
         state.bindRun(token, "run")
         val unwind = CompletableDeferred<Unit>()

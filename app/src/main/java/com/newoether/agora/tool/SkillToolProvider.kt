@@ -102,18 +102,24 @@ class SkillToolProvider(
         name: String,
         arguments: String,
         ctx: GenerationContext,
-    ): String = withContext(Dispatchers.IO) {
+    ): String = executeOneShotResult(name, arguments, ctx).text
+
+    override suspend fun executeOneShotResult(
+        name: String,
+        arguments: String,
+        ctx: GenerationContext,
+    ): ToolExecutionResult = withContext(Dispatchers.IO) {
         if (!ctx.skillReadAccess && name in READ_TOOL_NAMES) {
-            return@withContext "Error: Skill read access is disabled."
+            return@withContext ToolExecutionResult("Error: Skill read access is disabled.", isError = true)
         }
         if (!ctx.skillModifyAccess && name in MODIFY_TOOL_NAMES) {
-            return@withContext "Error: Skill modify access is disabled."
+            return@withContext ToolExecutionResult("Error: Skill modify access is disabled.", isError = true)
         }
         val args = Json.decodeFromString<Map<String, kotlinx.serialization.json.JsonElement>>(
             arguments.ifBlank { "{}" },
         )
         fun arg(key: String): String = (args[key] as? JsonPrimitive)?.content.orEmpty()
-        when (name) {
+        ToolExecutionResult(when (name) {
             "list_skill_files" -> buildJsonObject {
                 put("type", "list_skill_files")
                 putJsonArray("files") {
@@ -136,7 +142,7 @@ class SkillToolProvider(
                         "--- $fileName ---\n${skillManager.readFile(fileName)}"
                     }
                     arg("name").isNotBlank() -> skillManager.readFile(arg("name"))
-                    else -> "Error: Provide name or names."
+                    else -> return@withContext ToolExecutionResult("Error: Provide name or names.", isError = true)
                 }
             }
             "create_skill_file" -> skillManager.createFile(
@@ -154,7 +160,9 @@ class SkillToolProvider(
                     "patch" -> {
                         val oldString = arg("old_string")
                         if (oldString.isEmpty()) {
-                            "Error: patch requires a non-empty old_string."
+                            return@withContext ToolExecutionResult(
+                                "Error: patch requires a non-empty old_string.", isError = true,
+                            )
                         } else {
                             skillManager.editFile(
                                 name = fileName,
@@ -166,7 +174,9 @@ class SkillToolProvider(
                     "rename" -> {
                         val newName = arg("new_name").takeIf(String::isNotBlank)
                         if (newName == null) {
-                            "Error: rename requires a non-blank new_name."
+                            return@withContext ToolExecutionResult(
+                                "Error: rename requires a non-blank new_name.", isError = true,
+                            )
                         } else {
                             skillManager.editFile(
                                 name = fileName,
@@ -178,12 +188,14 @@ class SkillToolProvider(
                         name = fileName,
                         description = arg("description"),
                     )
-                    else -> "Error: operation must be replace, patch, rename, or describe."
+                    else -> return@withContext ToolExecutionResult(
+                        "Error: operation must be replace, patch, rename, or describe.", isError = true,
+                    )
                 }
             }
             "delete_skill_file" -> skillManager.deleteFile(arg("name"))
-            else -> "Unknown tool: $name"
-        }
+            else -> return@withContext ToolExecutionResult("Unknown tool: $name", isError = true)
+        })
     }
 
     override fun handles(name: String): Boolean = name in TOOL_NAMES

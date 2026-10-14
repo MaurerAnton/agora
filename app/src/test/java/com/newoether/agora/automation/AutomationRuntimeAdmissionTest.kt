@@ -15,7 +15,7 @@ import org.junit.Test
 class AutomationRuntimeAdmissionTest {
     @Test
     fun idleConversation_entersTheExactNormalAcceptedInputContract() = runBlocking {
-        val state = ConversationGenerationState("conversation")
+        val state = ConversationGenerationState("conversation", reclaimQueuedAttachments = {})
 
         val decision = AutomationRuntimeAdmission.request(state, "run", "automation-send")
 
@@ -34,7 +34,7 @@ class AutomationRuntimeAdmissionTest {
 
     @Test
     fun activeConversation_returnsBusyWithoutChangingTheCurrentRun() = runBlocking {
-        val state = ConversationGenerationState("conversation")
+        val state = ConversationGenerationState("conversation", reclaimQueuedAttachments = {})
         val token = state.acquireForSend()!!
         state.bindRun(token, "active-run")
 
@@ -47,7 +47,7 @@ class AutomationRuntimeAdmissionTest {
 
     @Test
     fun uninstalledAutomationClaim_canBeAbandonedByItsExactEffectIdentity() = runBlocking {
-        val state = ConversationGenerationState("conversation")
+        val state = ConversationGenerationState("conversation", reclaimQueuedAttachments = {})
         val accepted = AutomationRuntimeAdmission.request(state, "run", "automation-send")
             as AutomationRuntimeAdmission.Decision.Accepted
 
@@ -58,7 +58,7 @@ class AutomationRuntimeAdmissionTest {
 
     @Test
     fun pendingGuidance_cannotBeLeapfroggedByAnIdleAutomationSend() = runBlocking {
-        val state = ConversationGenerationState("conversation")
+        val state = ConversationGenerationState("conversation", reclaimQueuedAttachments = {})
         state.enqueueSend(
             QueuedSend(
                 id = "guidance",

@@ -118,12 +118,24 @@ prompt, and one frozen API-only Compact invocation. It reuses ordinary admission
 creation, context/API-path assembly, Provider execution, streaming/checkpoints, Stop/cancellation,
 terminal settlement, recovery, and queue release.
 
+Compact's frozen request parameters are separate from the ordinary conversation preferences.
+Manual Compact, automatic Compact, and Recompact use their selected model in the request snapshot
+and output message's model identity, but must not overwrite the conversation's ordinary model,
+System Prompt, or saved generation controls. The shared admission transaction accepts an explicit
+optional conversation-model update: no update retains the current stored value atomically, including
+an unset value. Ordinary admissions continue to commit their selected conversation model. Neither
+the UI nor a caller may copy and restore a previous model after Compact admission or settlement.
+
 The Compact invocation is appended by the shared pre-Provider request projection as the final USER
 message. It is request-only configuration: it participates in exact token accounting but is never
 written to Room, rendered as a visible message, assigned a Run boundary, or used to alter durable
 parentage. The configured Compact summary instructions remain the complete system prompt; the final
 USER turn only invokes that behavior. A saved custom Compact prompt replaces the built-in system
-prompt in full, with no hidden prefix, suffix, or mandatory guardrail added by Agora. The built-in
+prompt in full, with no hidden prefix, suffix, or mandatory guardrail added by Agora. This legacy
+shape is the `Preserve System Prompt = off` mode. With Preserve on (the default), the compaction
+request instead keeps the conversation's ordinary resolved system prompt, captured for the compact
+model at admission, and the Compact Prompt moves to the head of the final USER message followed by
+a blank line and the built-in Compact invocation. The built-in
 default therefore owns its provenance, task-state, prior-summary reconciliation, language, fidelity,
 and anti-recursion rules, while a custom prompt intentionally assumes responsibility for all of
 those semantics. The API-only invocation is tagged as application-generated control input and must
@@ -839,6 +851,6 @@ retained-message calculation.
 | Delete isolation | Target-only delete, direct-child reparent, unchanged surviving rows, independent Run presentation. |
 | Priority | Only Compact SUCCESS permits handoff; then pending and already-claimed queue guidance beat loop and the no-guidance path admits loop once. ERROR/STOPPED/cancellation/anomaly starts neither. |
 | Request terminal role | Compact dispatch appends one non-durable initial USER invocation after an Assistant or tool-result parent; provider-visible input ends USER and fixed token accounting includes it. |
-| Provider-hosted output | OpenAI-compatible Chat requests serialize applicable numeric and model-specific thinking controls; Responses requests preserve all seven recognized `service_tier` values and serialize enabled `web_search` plus reasoning summaries; impossible thinking-off requests fail before HTTP; summary indices preserve part boundaries and headings supply titles; OpenAI Search and Gemini Google Search/Code Execution settle display-only tool blocks without local execution; Gemini Code Execution replays typed parts and fails closed when a result is missing. |
+| Provider-hosted output | OpenAI-compatible Chat requests serialize applicable numeric and model-specific thinking controls; Responses requests serialize the five normalized `service_tier` values after mapping the stored tier to the actual model's supported choices and serialize enabled `web_search` plus reasoning summaries; impossible thinking-off requests fail before HTTP; summary indices preserve part boundaries and headings supply titles; OpenAI Search and Gemini Google Search/Code Execution settle display-only tool blocks without local execution; Gemini Code Execution replays typed parts and fails closed when a result is missing. |
 | Races and failures | Stop before/after bind, consecutive origin/Compact release suppressions in both settlement orders, selection drift, missing target/status, transaction rollback, stale callbacks, checkpoint-versus-terminal ordering, and queue claim failure. |
 | UI stability | Compact row/pill vertical bounds do not change across progress and terminal content; entrance is draw-only and does not alter apparent vertical spacing; message and Thinking Tool terminal text reuse the shared neutral body-text tokens and alpha without Segment error cards. |

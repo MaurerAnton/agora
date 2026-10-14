@@ -9,7 +9,6 @@ import kotlinx.coroutines.CoroutineExceptionHandler
 import kotlinx.coroutines.CompletableDeferred
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.SupervisorJob
-import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.test.StandardTestDispatcher
 import kotlinx.coroutines.test.runCurrent
@@ -30,7 +29,7 @@ class ConversationLifecycleControllerTest {
             releaseDeletion.await()
             fixture.events += "delete-end"
         }
-        fixture.controller.delete("conversation")
+        fixture.controller.delete(fixture.origin, "conversation")
         runCurrent()
         backgroundScope.launch {
             fixture.executionCoordinator.withAutomationConversationLock("conversation") {
@@ -54,7 +53,7 @@ class ConversationLifecycleControllerTest {
         coEvery { fixture.conversations.getMessageTopologySnapshot("conversation") } returns emptyList()
         val results = mutableListOf<Boolean>()
 
-        fixture.controller.delete("conversation", setOf("confirmed-message"), results::add)
+        fixture.controller.delete(fixture.origin, "conversation", setOf("confirmed-message"), results::add)
         runCurrent()
 
         assertEquals(listOf(false), results)
@@ -75,7 +74,7 @@ class ConversationLifecycleControllerTest {
         runCurrent()
         val results = mutableListOf<Boolean>()
 
-        assertTrue(fixture.controller.delete("conversation", onResult = results::add))
+        assertTrue(fixture.controller.delete(fixture.origin, "conversation", onResult = results::add))
         runCurrent()
 
         assertEquals(listOf(false), results)
@@ -93,7 +92,7 @@ class ConversationLifecycleControllerTest {
         val fixture = Fixture(this, controllerScope = controllerScope)
         fixture.onOverlay = { CompletableDeferred<Unit>().await() }
         val results = mutableListOf<Boolean>()
-        fixture.controller.delete("conversation", onResult = results::add)
+        fixture.controller.delete(fixture.origin, "conversation", onResult = results::add)
         runCurrent()
 
         controllerJob.cancel()
@@ -124,7 +123,7 @@ class ConversationLifecycleControllerTest {
             fixture.events += "delete"
         }
 
-        fixture.controller.delete("conversation")
+        fixture.controller.delete(fixture.origin, "conversation")
         assertTrue(fixture.events.isEmpty())
         runCurrent()
 
@@ -150,7 +149,7 @@ class ConversationLifecycleControllerTest {
             fixture.events += "delete"
         }
 
-        fixture.controller.delete("conversation")
+        fixture.controller.delete(fixture.origin, "conversation")
         runCurrent()
 
         assertEquals(listOf("lock-start", "stop-loop", "delete", "lock-end", "remove"), fixture.events)
@@ -164,9 +163,9 @@ class ConversationLifecycleControllerTest {
         coEvery { fixture.conversations.deleteConversation("conversation") } answers {
             fixture.events += "delete"
         }
-        fixture.onLockStart = { fixture.currentConversationId.value = "other" }
+        fixture.onLockStart = { fixture.origin.open = "other" }
 
-        fixture.controller.delete("conversation")
+        fixture.controller.delete(fixture.origin, "conversation")
         runCurrent()
 
         assertTrue("stop" !in fixture.events)
@@ -180,9 +179,9 @@ class ConversationLifecycleControllerTest {
         coEvery { fixture.conversations.deleteConversation("conversation") } answers {
             fixture.events += "delete"
         }
-        fixture.onRemove = { fixture.currentConversationId.value = "other" }
+        fixture.onRemove = { fixture.origin.open = "other" }
 
-        fixture.controller.delete("conversation")
+        fixture.controller.delete(fixture.origin, "conversation")
         runCurrent()
 
         assertTrue("stop" in fixture.events)
@@ -193,7 +192,7 @@ class ConversationLifecycleControllerTest {
     fun frozenSubmissionRejectsDeletionBeforeAnySideEffect() = runTest {
         val fixture = Fixture(this, deleteLocked = true)
 
-        assertFalse(fixture.controller.delete("conversation"))
+        assertFalse(fixture.controller.delete(fixture.origin, "conversation"))
         runCurrent()
 
         assertTrue(fixture.events.isEmpty())
@@ -212,13 +211,48 @@ class ConversationLifecycleControllerTest {
         coEvery { fixture.conversations.deleteConversation("conversation") } throws
             IllegalStateException("delete failed")
 
-        fixture.controller.delete("conversation")
+        fixture.controller.delete(fixture.origin, "conversation")
         runCurrent()
 
         assertTrue(failures.isEmpty())
         assertTrue("remove" !in fixture.events)
         assertTrue(fixture.events.none { it.startsWith("settle:") })
         assertTrue("abort:7" in fixture.events)
+    }
+
+    @Test
+    fun otherClientsShowingTheDeletedConversationAreToldAndLeaveIt() = runTest {
+        val fixture = Fixture(this)
+        val viewer = FakeChatClient(open = "conversation").apply {
+            onSettleDeleted = { conversationId -> fixture.events += "viewer-settle:$conversationId" }
+        }
+        val elsewhere = FakeChatClient(open = "other")
+        fixture.clients.attach(viewer)
+        fixture.clients.attach(elsewhere)
+        coEvery { fixture.conversations.deleteConversation("conversation") } answers {
+            fixture.events += "delete"
+        }
+
+        fixture.controller.delete(fixture.origin, "conversation")
+        runCurrent()
+
+        assertEquals(listOf("deleted elsewhere"), viewer.snackbars)
+        assertTrue("viewer-settle:conversation" in fixture.events)
+        assertTrue("settle:conversation" in fixture.events)
+        assertTrue(fixture.origin.snackbars.isEmpty())
+        assertTrue(elsewhere.snackbars.isEmpty())
+    }
+
+    @Test
+    fun anotherClientSubmittingIntoTheConversationLocksDeletion() = runTest {
+        val fixture = Fixture(this)
+        fixture.clients.attach(FakeChatClient(open = "conversation").apply { frozen = true })
+
+        assertFalse(fixture.controller.delete(fixture.origin, "conversation"))
+        runCurrent()
+
+        assertTrue(fixture.events.isEmpty())
+        coVerify(exactly = 0) { fixture.conversations.deleteConversation(any()) }
     }
 
     private class Fixture(
@@ -229,16 +263,26 @@ class ConversationLifecycleControllerTest {
     ) {
         val conversations = mockk<ConversationRepository>()
         val executionCoordinator = ConversationExecutionCoordinator()
-        val currentConversationId = MutableStateFlow(currentConversationId)
         val events = mutableListOf<String>()
         var onRemove: () -> Unit = {}
         var onLockStart: () -> Unit = {}
         var onOverlay: suspend () -> Unit = {}
+        val origin = FakeChatClient(open = currentConversationId).apply {
+            frozen = deleteLocked
+            onBeginTreeMutation = { conversationId, _ ->
+                events += "overlay:$conversationId"
+                onOverlay()
+                7L
+            }
+            onFailTreeMutation = { requestId -> events += "abort:$requestId" }
+            onSettleDeleted = { conversationId -> events += "settle:$conversationId" }
+        }
+        val clients = ChatClients().also { it.attach(origin) }
         private val dispatcher = StandardTestDispatcher(testScope.testScheduler)
         val controller = ConversationLifecycleController(
-            currentConversationId = this.currentConversationId,
             conversations = conversations,
             scope = controllerScope,
+            clients = clients,
             stopLoop = { events += "stop-loop" },
             tryWithConversationLock = { id, block ->
                 executionCoordinator.tryWithConversationLock(id) {
@@ -252,19 +296,8 @@ class ConversationLifecycleControllerTest {
                 events += "remove"
                 onRemove()
             },
-            stopVisibleGeneration = { events += "stop" },
-            settleDeletedSelectedConversation = { conversationId ->
-                events += "settle:$conversationId"
-            },
-            beginSelectedDeleteTransition = { conversationId ->
-                events += "overlay:$conversationId"
-                onOverlay()
-                7L
-            },
-            abortSelectedDeleteTransition = { requestId ->
-                events += "abort:$requestId"
-            },
-            isDeleteLocked = { deleteLocked },
+            stopGeneration = { _, _ -> events += "stop" },
+            deletedElsewhereText = { "deleted elsewhere" },
             ioDispatcher = dispatcher,
             mainDispatcher = dispatcher,
         )

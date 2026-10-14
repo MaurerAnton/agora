@@ -28,10 +28,10 @@ internal data class RemoteState(
     val saving: Boolean = false, val loading: Boolean = false, val loadingMore: Boolean = false, val failure: RemoteFailure? = null,
     val restoring: Boolean = true, val storageError: Boolean = false, val addingDevice: Boolean = false,
     val editedDeviceId: String? = null,
-    val runtime: RemoteRuntime? = null, val models: List<RemoteModel> = emptyList(),
+    val runtime: RemoteRuntime? = null, val lastKnownModel: String? = null,
+    val models: List<RemoteModel> = emptyList(),
     val controlling: Boolean = false, val composerFocusOwner: String? = null,
     val draftSessionId: String? = null, val draftSettings: RemoteSettings = RemoteSettings(),
-    val draftNativeSession: RemoteSession? = null,
     val modelsLoading: Boolean = false,
     val sessionOwners: Map<String, String> = emptyMap(),
     val sessionStatuses: Map<String, RemoteSessionStatus> = emptyMap(),
@@ -53,7 +53,7 @@ internal data class RemoteState(
     val isDraft: Boolean get() = session != null && session.id == draftSessionId
     val selectedModel: String? get() = if (isDraft) {
         draftSettings.model ?: models.firstOrNull { it.isDefault }?.id
-    } else runtime?.model
+    } else runtime?.model ?: lastKnownModel
     val settingsModel: RemoteModel? get() = models.firstOrNull { it.id == selectedModel }
     val selectedEffort: String? get() = if (isDraft) draftSettings.effort ?: settingsModel?.defaultReasoningEffort else runtime?.effort
     val selectedServiceTier: String? get() = (if (isDraft) {

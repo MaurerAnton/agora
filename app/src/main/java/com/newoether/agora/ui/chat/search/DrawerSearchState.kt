@@ -28,8 +28,12 @@ internal class DrawerSearchState(
         private set
     var isSearching by mutableStateOf(false)
         private set
+    // Each query change cancels the previous run. Only the newest run may clear [isSearching];
+    // a cancelled run finishing late must not hide the indicator of the run that replaced it.
+    private var searchGeneration = 0
 
     suspend fun runSearch(method: String) {
+        val generation = ++searchGeneration
         if (query.isBlank()) {
             results = emptyList()
             isActive = false
@@ -48,7 +52,7 @@ internal class DrawerSearchState(
                 isActive = true
             }
         } finally {
-            isSearching = false
+            if (generation == searchGeneration) isSearching = false
         }
     }
 }

@@ -13,6 +13,7 @@ import androidx.compose.foundation.layout.RowScope
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.asPaddingValues
+import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
@@ -62,6 +63,7 @@ internal val SettingsTitleBottomInset = 70.dp   // big title's top-left, measure
 internal val SettingsTitleAreaHeight = 90.dp    // big-title header room; taller = longer rise
 internal val SettingsTitleExpandedFont = 33.sp
 internal val SettingsTitleCollapsedFont = 22.sp
+internal val SettingsContentMaxWidth = 840.dp
 
 /** Gentle ease applied to the title's scale + horizontal tuck only — its vertical rise stays
  *  glued 1:1 to the scrolling header, so the shrink-and-dock follows a curve, not dead-linear. */
@@ -93,9 +95,22 @@ internal fun CollapsingSettingsTitleBar(
     val density = LocalDensity.current
     val textMeasurer = rememberTextMeasurer()
 
-    BoxWithConstraints(modifier = Modifier.fillMaxWidth()) {
-        // The expanded title runs from a 24dp start inset; keep a 16dp end margin.
-        val availableTitleWidth = (maxWidth - 24.dp - 16.dp).coerceAtLeast(0.dp)
+    Box(modifier = Modifier.fillMaxWidth()) {
+        // Opaque bar (incl. the status-bar strip) hides list content scrolling underneath it.
+        Box(
+            modifier = Modifier
+                .fillMaxWidth()
+                .height(statusBarTop + SettingsBarHeight)
+                .background(MaterialTheme.colorScheme.background)
+        )
+        BoxWithConstraints(
+            modifier = Modifier
+                .align(Alignment.TopCenter)
+                .widthIn(max = SettingsContentMaxWidth)
+                .fillMaxWidth(),
+        ) {
+            // Expanded titles align with the shared 24dp content inset.
+            val availableTitleWidth = (maxWidth - 24.dp - 16.dp).coerceAtLeast(0.dp)
 
         // Auto-fit the expanded font: shrink from 33sp until even long translations
         // (Spanish/French/Russian page names, etc.) fit on one line — down to a 20sp floor.
@@ -120,20 +135,19 @@ internal fun CollapsingSettingsTitleBar(
 
         val expandedY = statusBarTop + SettingsBarHeight + titleAreaHeight - SettingsTitleBottomInset
         val titleY = expandedY - titleTravel * fraction   // linear 1:1 with scroll → docks at expandedY − travel
-        val titleX = 24.dp + (70.dp - 24.dp) * eased       // eased shrink-and-tuck beside the back arrow
+        val titleX = if (LocalSettingsPaneBackButtonVisible.current) {
+            24.dp + (70.dp - 24.dp) * eased
+        } else {
+            24.dp
+        }
 
-        // Opaque bar (incl. the status-bar strip) hides list content scrolling underneath it.
-        Box(
-            modifier = Modifier
-                .fillMaxWidth()
-                .height(statusBarTop + SettingsBarHeight)
-                .background(MaterialTheme.colorScheme.background)
-        )
-        CircularBackButton(
-            onClick = onBack,
-            contentDescription = backDescription,
-            modifier = Modifier.padding(start = 16.dp, top = statusBarTop + 12.dp)
-        )
+        if (LocalSettingsPaneBackButtonVisible.current) {
+            CircularBackButton(
+                onClick = onBack,
+                contentDescription = backDescription,
+                modifier = Modifier.padding(start = 16.dp, top = statusBarTop + 12.dp)
+            )
+        }
         Row(
             modifier = Modifier
                 .align(Alignment.TopEnd)
@@ -161,6 +175,7 @@ internal fun CollapsingSettingsTitleBar(
                     transformOrigin = TransformOrigin(if (isRtl) 1f else 0f, 0f)
                 }
         )
+        }
     }
 }
 
@@ -193,12 +208,15 @@ fun CollapsingSettingsScaffold(
     ) {
         Column(
             modifier = Modifier
-                .fillMaxSize()
+                .align(Alignment.TopCenter)
+                .fillMaxHeight()
+                .widthIn(max = SettingsContentMaxWidth)
+                .fillMaxWidth()
                 .navigationBarsPadding()
                 .imePadding()
                 .verticalScroll(scrollState)
                 .clearFocusOnTap()
-                .padding(horizontal = 16.dp)
+                .padding(horizontal = 24.dp)
         ) {
             Spacer(modifier = Modifier.height(statusBarTop + SettingsBarHeight + titleAreaHeight))
             content()
@@ -238,7 +256,7 @@ fun CollapsingSettingsLazyScaffold(
     onBack: () -> Unit,
     modifier: Modifier = Modifier,
     listState: LazyListState = rememberLazyListState(),
-    contentHorizontalPadding: Dp = 16.dp,
+    contentHorizontalPadding: Dp = 24.dp,
     contentBottomPadding: Dp = 32.dp,
     actions: @Composable RowScope.() -> Unit = {},
     floatingActionButton: @Composable () -> Unit = {},
@@ -262,7 +280,10 @@ fun CollapsingSettingsLazyScaffold(
         LazyColumn(
             state = listState,
             modifier = Modifier
-                .fillMaxSize()
+                .align(Alignment.TopCenter)
+                .fillMaxHeight()
+                .widthIn(max = SettingsContentMaxWidth)
+                .fillMaxWidth()
                 .navigationBarsPadding()
                 .imePadding()
                 .clearFocusOnTap()

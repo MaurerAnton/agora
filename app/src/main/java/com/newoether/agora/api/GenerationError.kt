@@ -34,6 +34,15 @@ sealed class GenerationError {
     ) : GenerationError()
 
     /**
+     * The model wrote a tool call that cannot be paired with a result: its syntax could not be
+     * parsed, or its id or stream identity is missing, invalid or duplicated. Calls that are merely
+     * wrong (an unoffered tool, bad arguments) are answered by the tool executor instead.
+     */
+    data class MalformedToolCall(
+        val cause: String,
+    ) : GenerationError()
+
+    /**
      * The stream ended without a semantic terminal marker (`message_stop` / `finish_reason` /
      * `[DONE]`), so the response is provably incomplete rather than merely finished.
      *
@@ -120,6 +129,7 @@ sealed class GenerationError {
             append(message)
         }
         is SseParse -> "Failed to parse server response."
+        is MalformedToolCall -> "The model returned a tool call that could not be used: $cause"
         is IncompleteStream -> buildString {
             append("$provider ended the response early")
             if (toolCallInFlight) append(" while a tool call was still being written")

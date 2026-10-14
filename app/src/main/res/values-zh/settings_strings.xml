@@ -72,6 +72,7 @@
     <string name="conversation_search_hint">搜索…</string>
     <string name="conversation_fork_failed">无法创建对话分支：%1$s</string>
     <string name="conversation_share_failed">无法分享对话：%1$s</string>
+    <string name="conversation_deleted_elsewhere">此对话已在另一台设备上删除。</string>
     <string name="img_saved">已保存到相册</string>
     <string name="img_save_failed">保存失败</string>
     <string name="img_info_dimensions">尺寸</string>
@@ -431,6 +432,8 @@
     <string name="blur_effects_desc">对聊天列表顶部工具栏下方应用模糊。关闭可节省性能。</string>
     <string name="parse_inline_dollar_math">解析 $…$ 行内公式</string>
     <string name="parse_inline_dollar_math_desc">关闭后，$ x $ 这类单美元符号表达式将按普通文本显示，其他数学公式分隔符不受影响。</string>
+    <string name="auto_wrap_code_blocks">代码块自动换行</string>
+    <string name="auto_wrap_code_blocks_desc">开启后，代码块中的长行自动换行显示；关闭后恢复横向滚动。</string>
     <string name="reduce_motion">减少动态效果</string>
     <string name="reduce_motion_desc">减少持续运动和大范围空间位移，同时保留淡入淡出、直接手势和必要的状态反馈。</string>
     <string name="message_display">消息显示</string>
@@ -497,4 +500,12 @@
     <string name="openai_service_tier_priority">优先</string>
     <string name="openai_service_tier_fast">快速</string>
     <string name="openai_service_tier_ultrafast">超高速</string>
+    <string name="settings_interaction">交互</string>
+    <string name="settings_interaction_desc">助手向你提问的方式</string>
+    <string name="ask_user_enable">允许助手提问</string>
+    <string name="ask_user_enable_desc">让模型可以用工具向你提问，并等你做出选择</string>
+    <string name="unsaved_changes_title">未保存的更改</string>
+    <string name="unsaved_changes_message">有未保存的更改，确定要放弃吗？</string>
+    <string name="unsaved_changes_discard">放弃</string>
+    <string name="unsaved_changes_keep_editing">继续编辑</string>
 </resources>

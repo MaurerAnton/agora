@@ -375,7 +375,7 @@ object HttpClient {
         jsonBody: String,
         headers: Map<String, String> = emptyMap(),
         scope: com.newoether.agora.viewmodel.StreamScope?,
-        callClient: OkHttpClient = client,
+        callClient: okhttp3.Call.Factory = client,
         maxLineBytes: Long? = null,
         maxErrorBytes: Long? = null,
     ): StreamHandle = streamPostBody(
@@ -408,7 +408,7 @@ object HttpClient {
         headers: Map<String, String> = emptyMap(),
         diagnosticBody: String? = null,
         scope: com.newoether.agora.viewmodel.StreamScope?,
-        callClient: OkHttpClient = client,
+        callClient: okhttp3.Call.Factory = client,
         maxLineBytes: Long? = null,
         maxErrorBytes: Long? = null,
     ): StreamHandle {

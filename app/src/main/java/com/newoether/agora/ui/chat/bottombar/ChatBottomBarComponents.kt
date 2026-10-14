@@ -25,7 +25,6 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Language
 import androidx.compose.material.icons.filled.Check
-import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.Icon
 import androidx.compose.material3.LocalContentColor
 import androidx.compose.material3.MaterialTheme
@@ -43,27 +42,50 @@ import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.isSpecified
+import androidx.compose.animation.Crossfade
+import androidx.compose.animation.core.FastOutSlowInEasing
+import androidx.compose.foundation.layout.Box
+import androidx.compose.ui.draw.clip
+import androidx.compose.ui.platform.LocalDensity
+import androidx.compose.ui.text.AnnotatedString
+import androidx.compose.ui.text.rememberTextMeasurer
+import com.newoether.agora.ui.motion.rememberIdentityClipWidth
 import com.newoether.agora.R
 import com.newoether.agora.ui.theme.ChatType
+import com.newoether.agora.ui.components.AgoraDropdownMenuItem
+import com.newoether.agora.ui.components.AgoraExposedDropdownMenu
 
 internal const val CHAT_DROPDOWN_MENU_ICON_SIZE_DP = 24
 
-/** The same controls capsule is used by ordinary and externally owned conversations. */
+private val MODEL_SELECTOR_HEIGHT = 38.dp
+private val MODEL_SELECTOR_PADDING = 8.dp
+private val COMPOSER_SEND_BUTTON_GAP = 14.dp
+
+/**
+ * The same controls capsule is used by ordinary and externally owned conversations. It may grow
+ * up to the send button minus a fixed gap; only the model selector inside it is flexible.
+ */
 @Composable
-internal fun ComposerControlGroup(content: @Composable RowScope.() -> Unit) {
+internal fun RowScope.ComposerControlGroup(content: @Composable RowScope.() -> Unit) {
     Row(
         verticalAlignment = Alignment.CenterVertically,
-        modifier = Modifier.height(48.dp)
-            .background(MaterialTheme.colorScheme.surfaceColorAtElevation(10.dp), RoundedCornerShape(100))
-            .padding(horizontal = 8.dp, vertical = 4.dp),
+        modifier = Modifier.weight(1f, fill = false).height(COMPOSER_CONTROL_HEIGHT)
+            .background(MaterialTheme.colorScheme.surfaceColorAtElevation(8.dp), RoundedCornerShape(100))
+            // The 32 dp end buttons stay concentric with the capsule (radius 16 + 8 = 24); the Row
+            // centers the 38 dp model selector vertically (radius 19 + 5 = 24).
+            .padding(horizontal = COMPOSER_CONTROL_HEIGHT / 2 - 16.dp),
         content = content,
     )
+    Spacer(modifier = Modifier.width(COMPOSER_SEND_BUTTON_GAP))
 }
 
+/** The only flexible child of [ComposerControlGroup]; the space left in the group caps its width. */
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-internal fun ComposerModelSelector(
+internal fun RowScope.ComposerModelSelector(
     displayText: String,
     isModelValid: Boolean,
     expanded: Boolean,
@@ -72,37 +94,84 @@ internal fun ComposerModelSelector(
     enabled: Boolean = true,
     menuContent: @Composable ColumnScope.() -> Unit,
 ) {
-    ExposedDropdownMenuBox(expanded = expanded && enabled, onExpandedChange = {}) {
-        TextButton(
-            onClick = onClick,
-            enabled = enabled,
-            modifier = Modifier.height(38.dp).widthIn(max = 160.dp)
-                .menuAnchor(type = ExposedDropdownMenuAnchorType.PrimaryNotEditable, enabled = enabled),
-            contentPadding = PaddingValues(8.dp),
-        ) {
-            Text(
-                text = displayText,
-                style = MaterialTheme.typography.labelMedium.copy(fontSize = 13.sp),
+    val labelStyle = MaterialTheme.typography.labelMedium.copy(fontSize = 13.sp)
+    BoxWithConstraints(modifier = Modifier.weight(1f, fill = false)) {
+        val availableWidth = if (constraints.hasBoundedWidth) maxWidth else Dp.Unspecified
+        val labelMaxWidth = if (availableWidth.isSpecified) availableWidth - MODEL_SELECTOR_PADDING * 2 else Dp.Unspecified
+        val textMeasurer = rememberTextMeasurer()
+        val density = LocalDensity.current
+        // The final button width, measured on its own so that no animated value ever constrains the
+        // button or its label: 8 dp padding on each side, the button's minimum width, and the space
+        // left in the controls group.
+        val targetWidth = with(density) {
+            val labelWidth = textMeasurer.measure(
+                text = AnnotatedString(displayText),
+                style = labelStyle,
                 maxLines = 1,
-                overflow = TextOverflow.Ellipsis,
-                color = if (isModelValid) MaterialTheme.colorScheme.primary
-                    else MaterialTheme.colorScheme.onSurface.copy(alpha = 0.5f),
+                softWrap = false,
+            ).size.width.toDp()
+            (labelWidth + MODEL_SELECTOR_PADDING * 2)
+                .coerceAtLeast(ButtonDefaults.MinWidth)
+                .let { width -> if (availableWidth.isSpecified) width.coerceAtMost(availableWidth) else width }
+        }
+        val clipWidth = rememberIdentityClipWidth(
+            identity = displayText,
+            targetWidth = targetWidth,
+            allowSpatialTransitions = LocalAgoraMotionPolicy.current.allowSpatialTransitions,
+        )
+        ExposedDropdownMenuBox(expanded = expanded && enabled, onExpandedChange = {}) {
+            // The slot takes the clip width, so the controls after it follow the visible edge, and one
+            // start-anchored rounded clip cuts the whole button, ripple included, at that edge.
+            Box(
+                modifier = Modifier
+                    .height(MODEL_SELECTOR_HEIGHT)
+                    .width(clipWidth)
+                    .clip(RoundedCornerShape(50)),
+            ) {
+                TextButton(
+                    onClick = onClick,
+                    enabled = enabled,
+                    modifier = Modifier
+                        .wrapContentWidth(Alignment.Start, unbounded = true)
+                        .size(targetWidth, MODEL_SELECTOR_HEIGHT)
+                        .menuAnchor(type = ExposedDropdownMenuAnchorType.PrimaryNotEditable, enabled = enabled),
+                    contentPadding = PaddingValues(MODEL_SELECTOR_PADDING),
+                ) {
+                    Crossfade(
+                        targetState = displayText,
+                        animationSpec = tween(durationMillis = 200, easing = FastOutSlowInEasing),
+                        label = "composerModelSelector",
+                    ) { label ->
+                        // Each label keeps its own width while it fades, so an outgoing longer name is
+                        // cut only by the moving clip; it ellipsizes only past the space left.
+                        Text(
+                            text = label,
+                            style = labelStyle,
+                            maxLines = 1,
+                            overflow = TextOverflow.Ellipsis,
+                            color = if (isModelValid) MaterialTheme.colorScheme.primary
+                                else MaterialTheme.colorScheme.onSurface.copy(alpha = 0.5f),
+                            modifier = Modifier
+                                .wrapContentWidth(Alignment.Start, unbounded = true)
+                                .widthIn(max = labelMaxWidth),
+                        )
+                    }
+                }
+            }
+            AgoraExposedDropdownMenu(
+                containerColor = MaterialTheme.colorScheme.surfaceContainer,
+                expanded = expanded && enabled,
+                onDismissRequest = onDismissRequest,
+                matchAnchorWidth = false,
+                content = menuContent,
             )
         }
-        ExposedDropdownMenu(
-            containerColor = MaterialTheme.colorScheme.surfaceContainer,
-            expanded = expanded && enabled,
-            onDismissRequest = onDismissRequest,
-            matchTextFieldWidth = false,
-            shape = CHAT_DROPDOWN_MENU_SHAPE,
-            content = menuContent,
-        )
     }
 }
 
 @Composable
 internal fun ComposerModelMenuItem(displayText: String, selected: Boolean, onClick: () -> Unit) {
-    DropdownMenuItem(
+    AgoraDropdownMenuItem(
         text = { Text(displayText) },
         leadingIcon = {
             if (selected) Icon(Icons.Default.Check, null, Modifier.size(CHAT_DROPDOWN_MENU_ICON_SIZE_DP.dp))
@@ -118,15 +187,23 @@ internal fun ComposerContextIndicator(
     estimatedTokens: Int?,
     tokenBudget: Int?,
     compactThresholdPercent: Int = 90,
+    compactEnabled: Boolean = true,
+    systemPromptTokens: Int = 0,
+    toolTokens: Int = 0,
+    showBreakdown: Boolean = true,
     expanded: Boolean,
     onClick: () -> Unit,
     onDismissRequest: () -> Unit,
 ) {
     val motionPolicy = LocalAgoraMotionPolicy.current
     val available = estimatedTokens != null && tokenBudget != null
-    val contextProgressColor = if (estimatedTokens != null && tokenBudget != null && contextUsageExceedsCompactThreshold(
-        estimatedTokens, tokenBudget, compactThresholdPercent,
-    )) MaterialTheme.colorScheme.error else MaterialTheme.colorScheme.primary
+    val overCompactThreshold = showBreakdown && estimatedTokens != null && tokenBudget != null &&
+        contextUsageExceedsCompactThreshold(estimatedTokens, tokenBudget, compactThresholdPercent)
+    val contextProgressColor = if (overCompactThreshold) {
+        MaterialTheme.colorScheme.error
+    } else {
+        MaterialTheme.colorScheme.primary
+    }
     val contextProgressTarget = if (estimatedTokens == null || tokenBudget == null || tokenBudget <= 0) 0f
         else (estimatedTokens.toFloat() / tokenBudget).coerceIn(0f, 1f)
     val contextProgress by animateFloatAsState(
@@ -140,6 +217,11 @@ internal fun ComposerContextIndicator(
         ContextBudget.compactLabel(estimatedTokens),
         ContextBudget.compactLabel(tokenBudget),
     ) else stringResource(R.string.unknown)
+    val usagePercent = if (estimatedTokens != null && tokenBudget != null) {
+        java.text.NumberFormat.getPercentInstance().format(contextUsagePercent(estimatedTokens, tokenBudget) / 100.0)
+    } else {
+        null
+    }
     ExposedDropdownMenuBox(expanded = expanded && available, onExpandedChange = {}) {
         IconButton(
             onClick = onClick,
@@ -155,25 +237,37 @@ internal fun ComposerContextIndicator(
                 color = contextProgressColor,
             )
         }
-        ExposedDropdownMenu(
+        AgoraExposedDropdownMenu(
             containerColor = MaterialTheme.colorScheme.surfaceContainer,
             expanded = expanded && available,
             onDismissRequest = onDismissRequest,
-            matchTextFieldWidth = false,
-            shape = CHAT_DROPDOWN_MENU_SHAPE,
+            matchAnchorWidth = false,
         ) {
             Column(
-                modifier = Modifier.padding(horizontal = 16.dp, vertical = 12.dp),
-                verticalArrangement = Arrangement.spacedBy(8.dp),
+                modifier = Modifier.width(CONTEXT_MENU_WIDTH).padding(horizontal = 16.dp, vertical = 12.dp),
+                verticalArrangement = Arrangement.spacedBy(10.dp),
             ) {
-                Text(text = title, style = MaterialTheme.typography.titleSmall)
-                CircularProgressIndicator(
-                    progress = { contextProgress },
-                    modifier = Modifier.size(36.dp).align(Alignment.CenterHorizontally),
-                    strokeWidth = 4.dp,
-                    color = contextProgressColor,
+                // The usage heads the popup; "Context" stays the anchor's accessibility label.
+                Row(modifier = Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
+                    Text(text = usage, style = MaterialTheme.typography.titleSmall)
+                    Spacer(Modifier.weight(1f))
+                    if (usagePercent != null) {
+                        Spacer(Modifier.width(12.dp))
+                        Text(text = usagePercent, style = MaterialTheme.typography.titleSmall)
+                    }
+                }
+                ContextCompositionBar(
+                    systemPromptTokens = systemPromptTokens,
+                    toolTokens = toolTokens,
+                    messageTokens = (
+                        (estimatedTokens ?: 0) - systemPromptTokens - toolTokens
+                        ).coerceAtLeast(0),
+                    tokenBudget = tokenBudget ?: 0,
+                    compactThresholdPercent = compactThresholdPercent,
+                    compactEnabled = compactEnabled,
+                    overCompactThreshold = overCompactThreshold,
+                    showBreakdown = showBreakdown,
                 )
-                Text(text = usage, style = MaterialTheme.typography.bodyMedium)
             }
         }
     }
@@ -182,14 +276,18 @@ internal fun ComposerContextIndicator(
 fun Modifier.verticalScrollbar(
     scrollState: ScrollState,
     color: Color,
-    width: androidx.compose.ui.unit.Dp = 3.dp
+    width: androidx.compose.ui.unit.Dp = 3.dp,
+    // The track starts this far below the top edge, e.g. to stay clear of a rounded container corner.
+    topInset: androidx.compose.ui.unit.Dp = 0.dp,
 ): Modifier = drawWithContent {
     drawContent()
     if (scrollState.maxValue > 0) {
         val viewPortHeight = size.height
+        val trackTop = topInset.toPx().coerceAtMost(viewPortHeight)
+        val trackHeight = viewPortHeight - trackTop
         val totalHeight = scrollState.maxValue + viewPortHeight
-        val thumbHeight = (viewPortHeight / totalHeight) * viewPortHeight
-        val thumbOffset = (scrollState.value / totalHeight.toFloat()) * viewPortHeight
+        val thumbHeight = (viewPortHeight / totalHeight) * trackHeight
+        val thumbOffset = trackTop + (scrollState.value / totalHeight.toFloat()) * trackHeight
         drawRoundRect(color = color, topLeft = Offset(size.width - width.toPx() - 4.dp.toPx(), thumbOffset), size = Size(width.toPx(), thumbHeight), cornerRadius = CornerRadius(width.toPx() / 2))
     }
 }
@@ -201,7 +299,7 @@ internal fun NativeSearchMenuItem(
     enabled: Boolean = true,
     onCheckedChange: (Boolean) -> Unit,
 ) {
-    DropdownMenuItem(
+    AgoraDropdownMenuItem(
         text = {
             Row(verticalAlignment = Alignment.CenterVertically) {
                 Icon(
@@ -252,6 +350,13 @@ internal fun ProviderBadge(provider: String) {
         )
     }
 }
+
+/**
+ * Share of the whole window already used by the system prompt, tools and messages, rounded to a
+ * whole percent. The compaction reserve is not usage, so it is not counted.
+ */
+internal fun contextUsagePercent(estimatedTokens: Int, tokenBudget: Int): Int =
+    if (tokenBudget <= 0) 0 else Math.round(estimatedTokens.coerceAtLeast(0) * 100.0 / tokenBudget).toInt()
 
 internal fun contextUsageAtCapacity(estimatedTokens: Int, tokenBudget: Int): Boolean =
     tokenBudget > 0 && estimatedTokens >= tokenBudget

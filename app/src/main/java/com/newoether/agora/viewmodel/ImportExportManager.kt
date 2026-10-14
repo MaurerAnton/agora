@@ -190,6 +190,9 @@ class ImportExportManager(
                         },
                     ),
                 )
+            } catch (cancelled: kotlinx.coroutines.CancellationException) {
+                _exportProgress.value = null
+                throw cancelled
             } catch (e: Exception) {
                 _exportProgress.value = null
                 emitSnackbar(SnackbarEvent(
@@ -213,17 +216,17 @@ class ImportExportManager(
                     skillManager,
                     conversationSettingsTransfers,
                 )
-                val manifest = importer.readManifest(uri)
-                if (manifest == null) {
+                // One open answers both questions: is this a backup, and what does it hold.
+                val preview = importer.preview(uri)
+                if (preview.manifest.version == 0) {
                     emitSnackbar(SnackbarEvent(app.getString(R.string.import_invalid_file)))
                     return@launch
                 }
-                val preview = importer.preview(uri)
                 if (!preview.hasImportableData) {
                     emitSnackbar(SnackbarEvent(app.getString(R.string.import_no_data)))
                     return@launch
                 }
-                _importManifest.value = manifest
+                _importManifest.value = preview.manifest
                 _importPreview.value = preview
             } catch (e: Exception) {
                 emitSnackbar(SnackbarEvent(app.getString(R.string.import_failed, e.localizedMessage ?: "")))
@@ -328,7 +331,7 @@ class ImportExportManager(
 
                 // Convert to Room entities
                 val chatEntities = importData.conversations.map { ce ->
-                    ChatEntity(ce.id, ce.title, ce.lastUpdated, ce.selectedBranchesJson, ce.systemPromptId, ce.modelId)
+                    ChatEntity(ce.id, ce.title, ce.lastUpdated, dataChangedAt = 0L, selectedBranchesJson = ce.selectedBranchesJson, systemPromptId = ce.systemPromptId, modelId = ce.modelId)
                 }
                 if (strategy == ImportStrategy.REPLACE) {
                     val graph = planImportedLegacyMessages(importData.messages)
@@ -431,7 +434,7 @@ class ImportExportManager(
                 _gptImportProgress.value = 0.6f
 
                 val chatEntities = importData.conversations.map { ce ->
-                    ChatEntity(ce.id, ce.title, ce.lastUpdated, ce.selectedBranchesJson, ce.systemPromptId, ce.modelId)
+                    ChatEntity(ce.id, ce.title, ce.lastUpdated, dataChangedAt = 0L, selectedBranchesJson = ce.selectedBranchesJson, systemPromptId = ce.systemPromptId, modelId = ce.modelId)
                 }
                 val thoughtsCount = importData.messages.count { it.thoughts != null && it.thoughts.isNotBlank() }
                 if (strategy == ImportStrategy.REPLACE) {

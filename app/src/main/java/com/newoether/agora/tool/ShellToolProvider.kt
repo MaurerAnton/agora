@@ -45,7 +45,7 @@ class ShellToolProvider(
      * normally proceeds directly; once shared storage is mounted, local commands/writes are gated
      * too because they can mutate files outside the app sandbox.
      */
-    var confirm: (suspend (server: String, summary: String) -> Boolean)? = null
+    var confirm: (suspend (server: String, summary: String, conversationId: String?) -> Boolean)? = null
 
     /** Best-effort cleanup after the caller has committed these exact results to Room. */
     internal suspend fun acknowledgeCommittedJobs(
@@ -76,6 +76,7 @@ class ShellToolProvider(
     }
 
     private suspend fun confirmTarget(
+        ctx: GenerationContext,
         device: ShellDeviceConfig?,
         summary: String,
         localSharedStorageExposed: Boolean = false,
@@ -83,7 +84,7 @@ class ShellToolProvider(
         if (device == null && !localSharedStorageExposed) return true
         val target = device?.name?.ifBlank { "${device.type} server" }
             ?: "Local Sandbox · /mnt/shared"
-        return confirm?.invoke(target, summary) ?: true
+        return confirm?.invoke(target, summary, ctx.conversationId) ?: true
     }
 
     private fun targetsSharedStorage(path: String): Boolean {
@@ -247,7 +248,7 @@ class ShellToolProvider(
                     command = command,
                 )
             return try {
-                if (!confirmTarget(backend.device, "start background job: $ $command")) {
+                if (!confirmTarget(ctx, backend.device, "start background job: $ $command")) {
                     return jsonError(
                         "execute_shell_command",
                         "denied_by_user: the user declined to run this background command",
@@ -276,6 +277,7 @@ class ShellToolProvider(
             // Gate on the backend's ACTUAL target: with a blank server name the sandbox wins
             // resolution, while resolveShellDevice() would name an unrelated remote device.
             if (!confirmTarget(
+                    ctx,
                     backend.device,
                     "$ $command",
                     localSharedStorageExposed =
@@ -389,6 +391,7 @@ class ShellToolProvider(
         )
         try {
             if (!confirmTarget(
+                    ctx,
                     backend.device,
                     "$ $command",
                     localSharedStorageExposed =
@@ -463,7 +466,7 @@ class ShellToolProvider(
                 server = serverName,
             )
         return try {
-            if (!confirmTarget(backend.device, "stop background shell job: $jobId")) {
+            if (!confirmTarget(ctx, backend.device, "stop background shell job: $jobId")) {
                 return jsonError(
                     "stop_shell_job",
                     "denied_by_user: the user declined to stop this job",
@@ -618,6 +621,7 @@ class ShellToolProvider(
             ?: return jsonError("file_write", serverNotFoundMessage(serverName, ctx))
         try {
             if (!confirmTarget(
+                    ctx,
                     backend.device,
                     "write file: $path",
                     localSharedStorageExposed =
@@ -650,6 +654,7 @@ class ShellToolProvider(
             ?: return jsonError("file_edit", serverNotFoundMessage(serverName, ctx))
         try {
             if (!confirmTarget(
+                    ctx,
                     backend.device,
                     "edit file: $path",
                     localSharedStorageExposed =

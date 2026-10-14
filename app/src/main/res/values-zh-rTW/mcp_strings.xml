@@ -26,8 +26,6 @@
     <string name="mcp_header_value_error">請輸入不含控制字元的值</string>
     <string name="mcp_add_header">新增標頭</string>
     <string name="mcp_delete_header">刪除標頭</string>
-    <string name="mcp_show_header_value">顯示標頭值</string>
-    <string name="mcp_hide_header_value">隱藏標頭值</string>
     <string name="mcp_timeout">逾時（秒）</string>
     <string name="mcp_timeout_desc">5–300 秒</string>
     <string name="mcp_status">狀態</string>

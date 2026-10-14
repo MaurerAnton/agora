@@ -27,8 +27,6 @@ import androidx.compose.material.icons.filled.MoreVert
 import androidx.compose.material.icons.filled.Psychology
 import androidx.compose.material.icons.filled.Search
 import androidx.compose.material.icons.filled.Share
-import androidx.compose.material3.DropdownMenu
-import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
@@ -53,15 +51,18 @@ import androidx.compose.ui.text.rememberTextMeasurer
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.zIndex
 import androidx.compose.ui.res.stringResource
 import com.newoether.agora.R
 import com.newoether.agora.model.ChatConversation
 import com.newoether.agora.model.ContextBudget
 import com.newoether.agora.ui.motion.LocalAgoraMotionPolicy
+import com.newoether.agora.ui.motion.rememberIdentityClipWidth
 import com.newoether.agora.ui.theme.ChatType
+import com.newoether.agora.ui.components.AgoraDropdownMenu
+import com.newoether.agora.ui.components.AgoraDropdownMenuItem
 
 private const val TITLE_CAPSULE_MAX_WIDTH_DP = 260
-private const val TITLE_CLIP_DURATION_MILLIS = 400
 
 /**
  * The chat screen's top bar: a title capsule (drawer menu + brand/conversation
@@ -117,6 +118,10 @@ internal fun ChatTopBar(
         modifier = Modifier
             .fillMaxWidth()
             .defaultMinSize(minHeight = 180.dp)
+            // An expanded composer fills the screen and paints a background gradient across it, and
+            // the Scaffold draws the bottom bar after the top one, so that fill would otherwise lie
+            // over this bar's title and action capsules. The composer's own layer sits at 1f.
+            .zIndex(1.5f)
             .background(
                 Brush.verticalGradient(
                     0.0f to MaterialTheme.colorScheme.background.copy(alpha = 0.98f),
@@ -311,64 +316,12 @@ internal fun ChatTopBar(
                     5.dp + 44.dp + 5.dp + targetTitleContentWidth + 20.dp,
                     TITLE_CAPSULE_MAX_WIDTH_DP.dp,
                 )
-                val latestTargetTitleCapsuleWidth by rememberUpdatedState(targetTitleCapsuleWidth)
-                var titleClipWidth by remember { mutableStateOf(targetTitleCapsuleWidth) }
-                var settledTitlePresentation by remember { mutableStateOf(titlePresentation) }
-                var titleMotionRunning by remember { mutableStateOf(false) }
-                val titleTransitionPending = settledTitlePresentation != titlePresentation
-                LaunchedEffect(titlePresentation, allowSpatialTransitions) {
-                    val titleChanged = settledTitlePresentation != titlePresentation
-                    if (!allowSpatialTransitions || !titleChanged) {
-                        titleClipWidth = latestTargetTitleCapsuleWidth
-                        settledTitlePresentation = titlePresentation
-                        return@LaunchedEffect
-                    }
-                    titleMotionRunning = true
-                    try {
-                        val clipStartNanos = withFrameNanos { it }
-                        val clipDeadlineNanos = clipStartNanos +
-                            TITLE_CLIP_DURATION_MILLIS * 1_000_000L
-                        var segmentStartNanos = clipStartNanos
-                        var segmentStartWidth = titleClipWidth
-                        var segmentTargetWidth = latestTargetTitleCapsuleWidth
-                        while (true) {
-                            val frameNanos = withFrameNanos { it }
-                            val latestTarget = latestTargetTitleCapsuleWidth
-                            if (frameNanos >= clipDeadlineNanos) {
-                                titleClipWidth = latestTarget
-                                break
-                            }
-                            if (latestTarget != segmentTargetWidth) {
-                                segmentStartNanos = frameNanos
-                                segmentStartWidth = titleClipWidth
-                                segmentTargetWidth = latestTarget
-                            }
-                            val segmentDurationNanos =
-                                (clipDeadlineNanos - segmentStartNanos).coerceAtLeast(1L)
-                            val segmentFraction = (
-                                (frameNanos - segmentStartNanos).toFloat() /
-                                    segmentDurationNanos.toFloat()
-                                ).coerceIn(0f, 1f)
-                            val easedFraction = FastOutSlowInEasing.transform(segmentFraction)
-                            titleClipWidth = segmentStartWidth +
-                                (segmentTargetWidth - segmentStartWidth) * easedFraction
-                        }
-                        settledTitlePresentation = titlePresentation
-                    } finally {
-                        titleMotionRunning = false
-                    }
-                }
-                LaunchedEffect(
-                    targetTitleCapsuleWidth,
-                    titleTransitionPending,
-                    titleMotionRunning,
-                    allowSpatialTransitions,
-                ) {
-                    if (!titleTransitionPending && !titleMotionRunning) {
-                        titleClipWidth = targetTitleCapsuleWidth
-                    }
-                }
-                val visibleTitleCapsuleWidth = titleClipWidth
+                // Only the rounded clip moves; the title content keeps its final layout.
+                val visibleTitleCapsuleWidth = rememberIdentityClipWidth(
+                    identity = titlePresentation,
+                    targetWidth = targetTitleCapsuleWidth,
+                    allowSpatialTransitions = allowSpatialTransitions,
+                )
                 val visibleTitleCapsuleWidthPx = with(density) {
                     visibleTitleCapsuleWidth.toPx()
                 }
@@ -503,15 +456,14 @@ internal fun ChatTopBar(
                                     modifier = Modifier.size(26.dp),
                                 )
                             }
-                            DropdownMenu(
+                            AgoraDropdownMenu(
                                 expanded = moreMenuOpen,
                                 onDismissRequest = { moreMenuOpen = false },
-                                shape = RoundedCornerShape(12.dp),
                                 containerColor = MaterialTheme.colorScheme.surfaceContainer,
                                 tonalElevation = 16.dp,
                             ) {
                                 if (moreMenuContent != null) moreMenuContent { moreMenuOpen = false } else {
-                                DropdownMenuItem(
+                                AgoraDropdownMenuItem(
                                     text = { Text(stringResource(R.string.conversation_search)) },
                                     leadingIcon = { Icon(Icons.Default.Search, contentDescription = null) },
                                     enabled = conversationActionsEnabled,
@@ -520,7 +472,7 @@ internal fun ChatTopBar(
                                         onSearchClick()
                                     },
                                 )
-                                DropdownMenuItem(
+                                AgoraDropdownMenuItem(
                                     text = { Text(stringResource(R.string.system_prompt)) },
                                     leadingIcon = {
                                         Icon(Icons.Default.Psychology, contentDescription = null)
@@ -531,7 +483,7 @@ internal fun ChatTopBar(
                                         onSystemPromptClick()
                                     },
                                 )
-                                DropdownMenuItem(
+                                AgoraDropdownMenuItem(
                                     text = { Text(stringResource(R.string.conversation_fork_menu)) },
                                     leadingIcon = {
                                         Icon(Icons.Default.CallSplit, contentDescription = null)
@@ -542,7 +494,7 @@ internal fun ChatTopBar(
                                         onForkConversation()
                                     },
                                 )
-                                DropdownMenuItem(
+                                AgoraDropdownMenuItem(
                                     text = { Text(stringResource(R.string.conversation_share)) },
                                     leadingIcon = {
                                         Icon(Icons.Default.Share, contentDescription = null)

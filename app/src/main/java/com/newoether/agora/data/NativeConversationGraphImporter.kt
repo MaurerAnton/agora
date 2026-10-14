@@ -22,6 +22,7 @@ import com.newoether.agora.data.local.migration.RegenerationTreeRepairPlanner
 import com.newoether.agora.data.local.migration.V17MessageRecord
 import com.newoether.agora.data.local.migration.V17RunRecord
 import com.newoether.agora.data.local.migration.regenerationInputFingerprint
+import com.newoether.agora.model.MessageSource
 import com.newoether.agora.model.MessageStatus
 import com.newoether.agora.model.Participant
 import com.newoether.agora.model.RunEndReason
@@ -153,6 +154,7 @@ internal class NativeConversationGraphImporter(
                 name = task.name,
                 prompt = task.prompt,
                 systemPrompt = task.systemPrompt,
+                systemPromptId = resolveSystemPromptId(task.systemPromptId),
                 modelId = task.modelId,
                 cronExpr = task.cronExpr,
                 runAt = task.runAt,
@@ -174,6 +176,7 @@ internal class NativeConversationGraphImporter(
                     id = conversation.id,
                     title = conversation.title,
                     lastUpdated = conversation.lastUpdated,
+                    isPinned = conversation.isPinned,
                     selectedBranchesJson = conversation.selectedBranchesJson,
                     systemPromptId = resolveSystemPromptId(conversation.systemPromptId),
                     modelId = conversation.modelId,
@@ -321,6 +324,7 @@ internal class NativeConversationGraphImporter(
             runId = assignment.runId,
             runSequence = assignment.runSequence,
             consumedAtPass = assignment.consumedAtPass,
+            sourceJson = MessageSource.sanitizeImported(sourceJson, parsedParticipant),
         )
     }
 
@@ -587,16 +591,16 @@ internal class NativeConversationGraphImporter(
     }
 
     suspend fun importConversationGraph(
-        archive: NativeBackupArchive,
+        graphSource: NativeConversationGraphSource,
         strategy: ImportStrategy,
         headers: ConversationGraphHeaders,
         restoredMedia: RestoredMedia,
         archiveVersion: Int,
         semanticSnapshot: SemanticModelSnapshot,
     ): String {
-        val plannedRunGraph = archive.stream(NativeBackupFormat.CONVERSATIONS_ENTRY)?.use { stream ->
+        val plannedRunGraph = graphSource.open().use { stream ->
             planNativeRunGraph(stream, headers)
-        } ?: error("${NativeBackupFormat.CONVERSATIONS_ENTRY} is missing")
+        }
         val importedConversationIds = headers.conversations.mapTo(mutableSetOf()) { it.id }
         val importedSettings = headers.conversationSettings.filterKeys(importedConversationIds::contains)
         val settingsTransfer = ConversationSettingsImportTransferEntity(
@@ -639,7 +643,7 @@ internal class NativeConversationGraphImporter(
             for (run in plannedRunGraph.runs) {
                 if (chatDao.getRun(run.id) == null) chatDao.insertRun(run)
             }
-            archive.stream(NativeBackupFormat.CONVERSATIONS_ENTRY)?.use { stream ->
+            graphSource.open().use { stream ->
                 importMessagesFromGraph(
                     stream = stream,
                     strategy = strategy,
@@ -651,7 +655,7 @@ internal class NativeConversationGraphImporter(
                     messageParentOverrides = plannedRunGraph.messageParentOverrides,
                     archiveVersion = archiveVersion,
                 )
-            } ?: error("${NativeBackupFormat.CONVERSATIONS_ENTRY} is missing")
+            }
             headers.loops.forEach { chatDao.upsertLoop(it) }
             importedSettings.keys.forEach { conversationId ->
                 chatDao.deleteConversationSettingsTransfer(conversationId)
@@ -675,6 +679,7 @@ internal class NativeConversationGraphImporter(
         val id: String,
         val title: String,
         val lastUpdated: Long,
+        val isPinned: Boolean = false,
         val selectedBranchesJson: String? = null,
         val systemPromptId: String? = null,
         val modelId: String? = null,
@@ -710,6 +715,7 @@ internal class NativeConversationGraphImporter(
         val name: String,
         val prompt: String,
         val systemPrompt: String? = null,
+        val systemPromptId: String? = null,
         val modelId: String? = null,
         val cronExpr: String,
         /** One-shot fire instant; null for a recurring (cron) task. */
@@ -761,6 +767,8 @@ internal class NativeConversationGraphImporter(
         val runId: String? = null,
         val runSequence: Long? = null,
         val consumedAtPass: Int? = null,
+        /** Added in backup v6; absent in older archives. */
+        val sourceJson: String? = null,
     )
 
     private fun ExportRunEntity.toArchivedSnapshot() = ArchivedRunSnapshot(

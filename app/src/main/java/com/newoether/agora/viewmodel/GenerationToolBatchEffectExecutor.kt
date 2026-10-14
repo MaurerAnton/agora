@@ -264,7 +264,7 @@ internal class GenerationToolOverlay(
             toolResult = clipped,
             toolResultText = displayText,
             toolStructuredResult = structuredResult,
-            toolState = if (result.isError) ToolExecutionStates.FAILED else finalToolState(result.text),
+            toolState = finalToolState(result, call.name),
             toolImages = result.images,
             toolTranscription = transcription,
         )

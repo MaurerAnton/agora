@@ -1,5 +1,6 @@
 package com.newoether.agora.ui.chat.message
 
+import com.newoether.agora.api.util.MALFORMED_TOOL_CALL_NAME
 import com.newoether.agora.model.MessageSegment
 import com.newoether.agora.model.ToolExecutionStates
 import kotlinx.serialization.json.Json
@@ -46,6 +47,7 @@ internal enum class ToolKind {
     TASK_DELETE,
     LOOP_START,
     LOOP_STOP,
+    ASK_USER,
     MCP,
     UNKNOWN,
 }
@@ -78,6 +80,11 @@ internal data class ToolPresentation(
     val exitCode: Int?,
     val jobId: String?,
     val outputLength: Int?,
+    val jobState: String? = null,
+    val operation: String? = null,
+    val destination: String? = null,
+    val outcome: String? = null,
+    val answeredCount: Int? = null,
 ) {
     /**
      * Drives the group loading indicator. BACKGROUND_RUNNING is deliberately excluded: a
@@ -92,13 +99,41 @@ internal data class ToolPresentation(
 internal object ToolPresentationResolver {
     private val json = Json { ignoreUnknownKeys = true }
 
+    /** What Agora's malformed-call stand-in carried: the tool name and arguments the model sent. */
+    internal data class MalformedCallOriginals(val name: String?, val arguments: String?)
+
+    /**
+     * Agora replaces a call it cannot execute with a stand-in under [MALFORMED_TOOL_CALL_NAME], and
+     * keeps what the model actually sent inside the argument envelope so the round stays pairable.
+     * That envelope is transport bookkeeping, not what the user asked to see: the card should show
+     * the tool the model named and the arguments it streamed.
+     */
+    internal fun malformedCallOriginals(
+        toolName: String,
+        rawArguments: String?,
+    ): MalformedCallOriginals? {
+        if (toolName != MALFORMED_TOOL_CALL_NAME) return null
+        val fields = runCatching { json.parseToJsonElement(rawArguments.orEmpty()) as? JsonObject }
+            .getOrNull()
+            ?: return null
+        fun text(key: String) = (fields[key] as? JsonPrimitive)?.contentOrNull
+        return MalformedCallOriginals(
+            name = text("original_name")?.takeIf { it.isNotBlank() },
+            arguments = text("original_arguments"),
+        )
+    }
+
     fun kindForToolName(toolName: String?): ToolKind = kindFor(toolName.orEmpty())
 
     fun resolve(segment: MessageSegment): ToolPresentation {
         val toolName = segment.toolName.orEmpty()
+        val malformed = malformedCallOriginals(toolName, segment.toolArgs)
         val kind = kindFor(toolName)
+        val displayArguments = malformed?.arguments ?: segment.toolArgs
         val resultElement = parseElement(
-            segment.toolStructuredResult ?: segment.toolResult,
+            segment.toolStructuredResult ?: segment.toolResult.takeUnless {
+                kind == ToolKind.MEMORY_READ || kind == ToolKind.SKILL_READ || kind == ToolKind.MCP
+            },
         )
         val resultEnvelope = resultElement as? JsonObject
         val resultObject = effectiveResultObject(kind, resultEnvelope)
@@ -111,50 +146,71 @@ internal object ToolPresentationResolver {
         // remains available once the call has produced a result.
         val argumentsAwaitingResult =
             segment.toolResult == null && segment.toolStructuredResult == null
-        val args = if (argumentsAwaitingResult) null else parseObject(segment.toolArgs)
-        val streamingHints = StreamingToolArgumentHintResolver.resolve(kind, segment.toolArgs)
+        val args = if (argumentsAwaitingResult) null else parseObject(displayArguments)
+        val streamingHints = StreamingToolArgumentHintResolver.resolve(kind, displayArguments)
+        val jobState = if (kind in setOf(ToolKind.SHELL_EXECUTE, ToolKind.SHELL_JOB_GET,
+                ToolKind.SHELL_JOB_WAIT, ToolKind.SHELL_JOB_STOP)) resultObject.string("state")?.lowercase() else null
         val background = resultEnvelope.boolean("background") == true ||
-            resultObject.string("state").equals("running", ignoreCase = true) &&
+            jobState in setOf("running", "stopping", "settling") &&
             (resultObject.string("job_id") ?: resultEnvelope.string("job_id")) != null
-        val nonZeroShellExit = kind == ToolKind.SHELL_EXECUTE &&
-            exitCode != null &&
-            exitCode != 0
         val count = semanticCount(kind, resultObject)
             ?: tolerantSemanticCount(kind, segment.toolStructuredResult ?: segment.toolResult)
-        val semanticEmpty = isSemanticEmpty(
+            ?: if (kind == ToolKind.MEMORY_READ || kind == ToolKind.SKILL_READ) {
+                selectedReadNames(kind, args)?.size ?: streamingHints.count
+            } else null
+        // Failure semantics are authoritative. A Conch error envelope, an explicit `failed` flag, a
+        // FAILED wire state must never render as an empty or
+        // completed card just because the payload has no readable content field. The one exception
+        // is a provider-declared empty result (`no_results`), which is an explicit success even when
+        // the protocol row carries a terminal FAILED state.
+        val declaredEmpty = errorCode == "no_results"
+        val failureCode = errorCode?.takeIf { it.isNotBlank() && !declaredEmpty }
+        val failedFlag = resultObject.boolean("failed") == true ||
+            resultEnvelope.boolean("failed") == true
+        val wireFailure = explicitState == ToolPresentationState.FAILED
+        val failed = !declaredEmpty &&
+            (failureCode != null || failedFlag || wireFailure)
+        val semanticEmpty = !failed && isSemanticEmpty(
             kind = kind,
             rawResult = segment.toolResult.orEmpty(),
             result = resultObject,
             count = count,
             errorCode = errorCode,
         )
-        val error = if (errorCode != null && !semanticEmpty) {
-            resultObject.string("message")
-                ?.takeIf { it.isNotBlank() }
-                ?: errorCode.replace('_', ' ')
+        val error = if (!failed) {
+            null
         } else {
-            segment.toolResult
-                ?.takeIf { it.startsWith("Error", ignoreCase = true) }
+            failureCode?.let { code ->
+                (resultObject.string("message") ?: resultEnvelope.string("message")
+                    ?: resultObject.string("detail") ?: resultEnvelope.string("detail"))
+                    ?.takeIf { it.isNotBlank() }
+                    ?: code.replace('_', ' ')
+            } ?: (resultObject.string("message") ?: resultEnvelope.string("message"))
+                ?.takeIf { it.isNotBlank() }
+                ?: (segment.toolResultText ?: segment.toolResult)
+                    ?.takeIf {
+                        resultElement !is JsonObject && it.isNotBlank() && parseElement(it) == null
+                    }
         }
         val state = when {
             segment.toolResult == null -> explicitState ?: run {
                 if (segment.toolProgress.isNullOrEmpty()) ToolPresentationState.CALLING
                 else ToolPresentationState.RUNNING
             }
+            failed -> ToolPresentationState.FAILED
+            jobState == "stopped" || jobState == "interrupted" -> ToolPresentationState.STOPPED
             semanticEmpty -> ToolPresentationState.EMPTY
-            error != null -> ToolPresentationState.FAILED
             background -> ToolPresentationState.BACKGROUND_RUNNING
             explicitState == ToolPresentationState.STOPPED -> ToolPresentationState.STOPPED
-            nonZeroShellExit -> ToolPresentationState.FAILED
             else -> explicitState ?: ToolPresentationState.COMPLETED
         }
         return ToolPresentation(
-            toolName = toolName,
+            toolName = malformed?.name ?: toolName,
             kind = kind,
             state = state,
             arguments = args,
             result = resultObject ?: resultElement,
-            rawArguments = segment.toolArgs,
+            rawArguments = displayArguments,
             rawResult = segment.toolResult,
             rawTextResult = segment.toolResultText,
             rawStructuredResult = segment.toolStructuredResult,
@@ -174,6 +230,23 @@ internal object ToolPresentationResolver {
             exitCode = exitCode,
             jobId = resultEnvelope.string("job_id") ?: resultObject.string("job_id"),
             outputLength = resultObject.string("output")?.length,
+            jobState = jobState,
+            operation = (args.string("operation") ?: streamingHints.operation)?.trim()?.lowercase(),
+            destination = normalizeToolSummarySubject(args.string("new_name") ?: streamingHints.destination),
+            outcome = when (kind) {
+                ToolKind.ASK_USER -> when {
+                    resultObject.string("delivery") == "queued" -> "queued"
+                    resultObject.boolean("answered") == true -> "answered"
+                    resultObject.boolean("answered") == false -> "skipped"
+                    resultObject.array("answers") != null -> "answers"
+                    else -> null
+                }
+                ToolKind.LOOP_STOP -> resultObject.string("status")
+                else -> null
+            },
+            answeredCount = if (kind == ToolKind.ASK_USER) resultObject.array("answers")?.count {
+                (it as? JsonObject).boolean("answered") == true
+            } else null,
         )
     }
 
@@ -183,13 +256,14 @@ internal object ToolPresentationResolver {
         envelope: JsonObject?,
     ): JsonObject? {
         if (envelope == null) return null
-        if (kind != ToolKind.SHELL_EXECUTE && kind != ToolKind.SHELL_JOB_GET && kind != ToolKind.SHELL_JOB_WAIT) return envelope
+        if (kind != ToolKind.SHELL_EXECUTE && kind != ToolKind.SHELL_JOB_GET &&
+            kind != ToolKind.SHELL_JOB_WAIT && kind != ToolKind.SHELL_JOB_STOP) return envelope
         return envelope["result"] as? JsonObject ?: envelope
     }
 
     private fun kindFor(name: String): ToolKind = when (name) {
         "list_memory_files" -> ToolKind.MEMORY_LIST
-        "read_memory_file" -> ToolKind.MEMORY_READ
+        "read_memory_file", "read_active_memory" -> ToolKind.MEMORY_READ
         "create_memory_file" -> ToolKind.MEMORY_CREATE
         "edit_memory_file" -> ToolKind.MEMORY_EDIT
         "delete_memory_file" -> ToolKind.MEMORY_DELETE
@@ -222,6 +296,7 @@ internal object ToolPresentationResolver {
         "delete_task" -> ToolKind.TASK_DELETE
         "start_loop" -> ToolKind.LOOP_START
         "stop_loop" -> ToolKind.LOOP_STOP
+        "ask_user" -> ToolKind.ASK_USER
         else -> if (name.startsWith("mcp_")) ToolKind.MCP else ToolKind.UNKNOWN
     }
 
@@ -250,11 +325,14 @@ internal object ToolPresentationResolver {
         ToolKind.WEB_SEARCH -> result.arraySize("results")
         ToolKind.CONVERSATION_SEARCH -> result.arraySize("results")
         ToolKind.CONVERSATION_LIST -> result.arraySize("conversations")
+        ToolKind.CONVERSATION_READ -> result.arraySize("messages")
         ToolKind.SHELL_LIST -> result.arraySize("devices")
         ToolKind.SHELL_JOB_LIST -> result.arraySize("jobs")
         ToolKind.FILE_GLOB -> result.arraySize("files")
         ToolKind.FILE_GREP -> result.arraySize("matches")
         ToolKind.TASK_LIST -> result.arraySize("tasks")
+        ToolKind.ASK_USER -> result.arraySize("answers") ?: result.int("questions")
+            ?: result.boolean("answered")?.let { 1 }
         else -> null
     }
 
@@ -294,14 +372,14 @@ internal object ToolPresentationResolver {
         result: JsonObject?,
     ): String? = when (kind) {
         ToolKind.MEMORY_READ,
+        ToolKind.SKILL_READ -> selectedReadNames(kind, arguments)?.singleOrNull()
+            ?: arguments.string("name").takeIf { selectedReadNames(kind, arguments) == null }
         ToolKind.MEMORY_CREATE,
         ToolKind.MEMORY_EDIT,
         ToolKind.MEMORY_DELETE,
-        ToolKind.SKILL_READ,
         ToolKind.SKILL_CREATE,
         ToolKind.SKILL_EDIT,
         ToolKind.SKILL_DELETE -> arguments.string("name")
-            ?: arguments.array("names")?.singleOrNull()?.primitiveContent()
         ToolKind.WEB_SEARCH,
         ToolKind.CONVERSATION_SEARCH -> arguments.string("query")
         ToolKind.WEB_FETCH -> arguments.string("url")
@@ -327,6 +405,16 @@ internal object ToolPresentationResolver {
             ?: arguments.string("name")
             ?: arguments.string("task_id")
         else -> null
+    }
+
+    private fun selectedReadNames(kind: ToolKind, arguments: JsonObject?): List<String>? {
+        val array = arguments.array("names") ?: return null
+        val names = array.mapNotNull { it.primitiveContent()?.takeIf { name ->
+            if (kind == ToolKind.MEMORY_READ) name.isNotEmpty() else name.isNotBlank()
+        } }
+        return names.takeIf {
+            if (kind == ToolKind.MEMORY_READ) array.isNotEmpty() else names.isNotEmpty()
+        }
     }
 
     private fun JsonObject?.string(key: String): String? =

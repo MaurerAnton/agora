@@ -26,6 +26,8 @@ internal data class StandardGenerationContinuationRequest(
     val replacementMessageId: String? = null,
     val requestKind: String = "chat",
     val touchConversationOnAdmission: Boolean,
+    /** Null keeps the conversation preference; the request and output still use the snapshot model. */
+    val conversationModelId: String? = snapshot.selectedModelId,
     val queueDrainRequiresSuccess: Boolean = false,
     val transformFinalText: (String, MessageStatus) -> String = { text, _ -> text },
 )
@@ -149,7 +151,7 @@ internal class StandardGenerationContinuationLauncher(
                             ),
                             messages = listOf(modelEntity),
                             messageSelectionUpdates = mapOf(parent.id to messageId),
-                            conversationModelId = generationSnapshot.selectedModelId,
+                            conversationModelId = request.conversationModelId,
                             touchConversationOnAdmission = request.touchConversationOnAdmission,
                         )
                         messageSelections = graphCommit.messageSelections

@@ -49,7 +49,7 @@ class GenerationToolRoundBuilderTest {
         val input = convertToOpenAiMessages(
             projectProviderMessages(durablePath, includeStoredTranscriptions = false),
             base64Files = Base64FileRegistry(),
-        ).toResponsesInput(providerName = "OpenAI")
+        ).toResponsesInput(providerName = "OpenAI", targetModel = "model")
 
         assertEquals(
             listOf("reasoning", "function_call", "function_call_output"),

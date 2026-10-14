@@ -64,14 +64,16 @@ class MarkdownImageLayoutTest {
         assertTrue(file.length() > 12)
         val events = java.util.concurrent.ConcurrentLinkedQueue<String>()
         var lifecycle = "unknown"
+        var observedOwner: androidx.lifecycle.LifecycleOwner? = null
         Coil.setImageLoader(ImageLoader.Builder(context).eventListener(object : EventListener {
             override fun onSuccess(request: ImageRequest, result: SuccessResult) { events.add("loaded") }
             override fun onError(request: ImageRequest, result: ErrorResult) { events.add(result.throwable.toString()) }
         }).build())
         compose.setContent { MaterialTheme {
-            lifecycle = androidx.lifecycle.compose.LocalLifecycleOwner.current.lifecycle.currentState.name
+            observedOwner = androidx.lifecycle.compose.LocalLifecycleOwner.current
             MarkdownImageThumbnail("direct", MarkdownImage(ToolImageAttachment(file.path, "image/png", file.length(), sha256 = "fixture")), {})
         } }
+        lifecycle = observedOwner?.lifecycle?.currentState?.name ?: "unobserved"
         try { awaitImageLoad { events.isNotEmpty() } }
         catch (error: Throwable) { throw AssertionError("lifecycle=$lifecycle fileBytes=${file.length()}", error) }
         assertEquals(listOf("loaded"), events.toList())

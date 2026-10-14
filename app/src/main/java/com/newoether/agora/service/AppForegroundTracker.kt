@@ -27,6 +27,26 @@ object AppForegroundTracker {
         listeners.forEach { it(inForeground) }
     }
 
+    private val _presentedConversation = MutableStateFlow<String?>(null)
+
+    /** Conversation shown by the chat screen, or null for a new chat or when none is composed. */
+    val presentedConversation: StateFlow<String?> = _presentedConversation.asStateFlow()
+
+    fun setPresentedConversation(conversationId: String?) {
+        _presentedConversation.value = conversationId
+    }
+
+    /**
+     * Whether a request from [conversationId] is on screen: the app is in front with the chat
+     * showing that conversation. A request with no conversation can be answered from any chat.
+     */
+    fun isShownInChat(
+        conversationId: String?,
+        foreground: Boolean = _foreground.value,
+        chatPresented: Boolean = _chatPresented.value,
+        presented: String? = _presentedConversation.value,
+    ): Boolean = foreground && chatPresented && (conversationId == null || conversationId == presented)
+
     fun setChatPresented(presented: Boolean) {
         if (isChatPresented == presented) return
         isChatPresented = presented

@@ -182,7 +182,11 @@ private fun ApiGenerateContentRequest.validateTools(violations: MutableList<Stri
             if (!functionNames.add(declaration.name)) {
                 violations += "duplicate function declaration ${declaration.name}"
             }
-            if (declaration.parameters?.get("type")?.toString()?.trim('"') != "object") {
+            if (declaration.parameters != null && declaration.parametersJsonSchema != null) {
+                violations += "function ${declaration.name} declares both parameter schema forms"
+            }
+            val schema = declaration.parameters ?: declaration.parametersJsonSchema
+            if (schema?.get("type")?.toString()?.trim('"') != "object") {
                 violations += "function ${declaration.name} parameters are not an object schema"
             }
         }

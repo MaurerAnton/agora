@@ -65,7 +65,9 @@ class CurrentConversationRuntimeFacadeTest {
         val registry = mockk<ConversationStateRegistry>()
         val state = runtimeState(emptyList(), stopping = false)
         every { state.queueMutationMutex } returns Mutex()
-        every { state.removeQueuedSend("queued") } returns queued("queued")
+        val removed = queued("queued")
+        every { state.removeQueuedSend("queued") } returns removed
+        every { state.discardQueuedSend(any()) } returns Unit
         every { registry.getOrCreate("conversation") } returns state
         val facade = CurrentConversationRuntimeFacade(
             currentConversationId,
@@ -79,6 +81,7 @@ class CurrentConversationRuntimeFacadeTest {
         runCurrent()
 
         verify(exactly = 1) { state.removeQueuedSend("queued") }
+        verify(exactly = 1) { state.discardQueuedSend(removed) }
     }
 
     private companion object {

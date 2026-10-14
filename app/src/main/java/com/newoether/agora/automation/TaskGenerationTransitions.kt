@@ -92,6 +92,8 @@ internal suspend fun ConversationCompactController.continueTaskGenerations(
             contextLimit = current.generationRequest.snapshot.config.maxContextWindow,
             config = current.config,
             state = state,
+            // The Task run already holds this conversation's automation lease.
+            alreadyHoldsConversationLock = true,
         ) ?: return StandardCompactContinuationResult(lastModelMessageId, aborted = true)
         try {
             compactLaunch.job.join()

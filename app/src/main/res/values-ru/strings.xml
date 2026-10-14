@@ -1,4 +1,4 @@
-<resources>
+<?xml version="1.0" encoding="utf-8"?><resources>
     <string name="app_name">Agora</string>
     <string name="agora_responded">Agora ответила</string>
 
@@ -79,44 +79,44 @@
     <string name="tool_done">Готово</string>
     <string name="tool_context">Инструмент</string>
     <!-- New tool display names (P0) -->
-    <string name="tool_list_conversations">List Conversations</string>
-    <string name="tool_read_conversation">Read Conversation</string>
-    <string name="tool_file_read">Read File</string>
-    <string name="tool_file_write">Write File</string>
-    <string name="tool_file_edit">Edit File</string>
-    <string name="tool_file_glob">Find Files</string>
-    <string name="tool_file_grep">Search Files</string>
+    <string name="tool_list_conversations">Показать диалоги</string>
+    <string name="tool_read_conversation">Прочитать диалог</string>
+    <string name="tool_file_read">Прочитать файл</string>
+    <string name="tool_file_write">Записать файл</string>
+    <string name="tool_file_edit">Изменить файл</string>
+    <string name="tool_file_glob">Поиск файлов</string>
+    <string name="tool_file_grep">Поиск в файлах</string>
     <!-- Tool in-progress states (doing) -->
-    <string name="tool_listing_conversations">Listing conversations…</string>
-    <string name="tool_reading_conversation">Reading conversation…</string>
-    <string name="tool_reading_file">Reading %1$s…</string>
-    <string name="tool_writing_file">Writing %1$s…</string>
-    <string name="tool_editing_file">Editing %1$s…</string>
-    <string name="tool_finding_files">Finding %1$s…</string>
-    <string name="tool_searching_file">Searching %1$s…</string>
-    <string name="tool_executing_shell">Executing: %1$s…</string>
-    <string name="tool_reading_memory">Reading %1$s…</string>
-    <string name="tool_saving_memory">Saving %1$s…</string>
-    <string name="tool_updating_memory">Updating %1$s…</string>
-    <string name="tool_removing_memory">Removing %1$s…</string>
-    <string name="tool_looking_up_memories">Looking up memories…</string>
-    <string name="tool_updating_active">Updating active memory…</string>
-    <string name="tool_listing_shells">Listing shells…</string>
-    <string name="tool_searching_for">Searching for \'%1$s\'…</string>
+    <string name="tool_listing_conversations">Перечисляем диалоги…</string>
+    <string name="tool_reading_conversation">Читаем диалог…</string>
+    <string name="tool_reading_file">Читаем %1$s…</string>
+    <string name="tool_writing_file">Пишем %1$s…</string>
+    <string name="tool_editing_file">Изменяется %1$s…</string>
+    <string name="tool_finding_files">Ищем %1$s…</string>
+    <string name="tool_searching_file">Ищем в %1$s…</string>
+    <string name="tool_executing_shell">Выполняется: %1$s…</string>
+    <string name="tool_reading_memory">Читаем %1$s…</string>
+    <string name="tool_saving_memory">Сохраняем %1$s…</string>
+    <string name="tool_updating_memory">Обновляем %1$s…</string>
+    <string name="tool_removing_memory">Удаляем %1$s…</string>
+    <string name="tool_looking_up_memories">Ищем в памяти…</string>
+    <string name="tool_updating_active">Обновляем активную память…</string>
+    <string name="tool_listing_shells">Перечисляем терминалы…</string>
+    <string name="tool_searching_for">Ищем «%1$s»…</string>
     <!-- Tool done states (P0 + P1) -->
-    <string name="tool_listed_conversations">Listed %1$d conversations</string>
-    <string name="tool_listed_no_conversations">No conversations found</string>
-    <string name="tool_read_conversation_done">Read conversation: %1$s</string>
-    <string name="tool_read_file_done">Read %1$s</string>
-    <string name="tool_wrote_file">Wrote %1$s</string>
-    <string name="tool_edited_file">Edited %1$s</string>
-    <string name="tool_found_files">Found %1$d files</string>
-    <string name="tool_found_no_files">No files matched</string>
-    <string name="tool_searched_file">Found %1$d matches</string>
-    <string name="tool_executed_shell">Executed: %1$s (%2$d bytes)</string>
-    <string name="tool_executed_no_output">Executed: %1$s (no output)</string>
-    <string name="tool_read_file_failed">Read file failed</string>
-    <string name="crash_log_label">Crash Log</string>
+    <string name="tool_listed_conversations">Перечислено диалогов: %1$d</string>
+    <string name="tool_listed_no_conversations">Диалоги не найдены</string>
+    <string name="tool_read_conversation_done">Прочитан диалог: %1$s</string>
+    <string name="tool_read_file_done">Прочитан %1$s</string>
+    <string name="tool_wrote_file">Записан %1$s</string>
+    <string name="tool_edited_file">Изменён %1$s</string>
+    <string name="tool_found_files">Найдено файлов: %1$d</string>
+    <string name="tool_found_no_files">Совпадений не найдено</string>
+    <string name="tool_searched_file">Найдено совпадений: %1$d</string>
+    <string name="tool_executed_shell">Выполнено: %1$s (%2$d байт)</string>
+    <string name="tool_executed_no_output">Выполнено: %1$s (нет вывода)</string>
+    <string name="tool_read_file_failed">Не удалось прочитать файл</string>
+    <string name="crash_log_label">Журнал сбоев</string>
     <string name="message_info">Сведения о сообщении</string>
     <string name="time_with_label">Время: %1$s</string>
     <string name="model_with_label">Модель: %1$s</string>
@@ -172,6 +172,9 @@
 
     <!-- Drawer -->
     <string name="conversations">Беседы</string>
+    <string name="pinned_conversations">Закреплённые</string>
+    <string name="pin_conversation">Закрепить</string>
+    <string name="unpin_conversation">Открепить</string>
     <string name="conversation_unread_generation">Непрочитанный сгенерированный ответ</string>
     <string name="new_chat">Новый чат</string>
 
@@ -336,6 +339,9 @@
     <string name="about_contribute">Внести вклад</string>
     <string name="about_privacy_policy">Политика конфиденциальности</string>
     <string name="about_source_code">Исходный код</string>
+    <string name="about_license">Лицензия</string>
+    <string name="about_license_desc">GNU GPL-3.0</string>
+    <string name="about_license_history">Версии до v2.1.0 выпускались по лицензии MIT.</string>
     <string name="about_version">Версия</string>
     <string name="about_rating">Оценить приложение</string>
     <string name="about_rating_desc">Этот проект разработан одним человеком. Я искренне ценю ваши отзывы.</string>
@@ -456,7 +462,6 @@
     <string name="pdf_selected">Выбрано</string>
 
     <!-- Caching & Sync -->
-    <string name="embedding_model_caching">Модель эмбеддинга \"%1$s\" кэшируется…</string>
     <string name="messages_not_cached">%1$d из %2$d сообщений не кэшированы.</string>
     <string name="cache_now">Кэшировать сейчас</string>
     <string name="no_messages_to_cache">Нет сообщений для кэширования.</string>
@@ -513,8 +518,8 @@
     <string name="onboarding_no_models">Модели не загружены.</string>
     <string name="onboarding_invalid_gguf_title">Недопустимый файл GGUF</string>
     <string name="onboarding_invalid_gguf_desc">Выбранный файл, похоже, не является допустимой моделью GGUF.</string>
-    <string name="onboarding_hide_key">Скрыть ключ</string>
-    <string name="onboarding_show_key">Показать ключ</string>
+    <string name="secret_hide">Скрыть значение</string>
+    <string name="secret_show">Показать значение</string>
     <!-- ── Auto Backup ── -->
     <string name="auto_backup_title">Автоматическое резервное копирование</string>
     <string name="auto_backup_subtitle">Автоматически экспортировать данные по расписанию</string>
@@ -560,6 +565,19 @@
     <string name="shell_confirm_deny">Отклонить</string>
     <string name="shell_confirm_setting">Подтверждать действия удалённой оболочки</string>
     <string name="shell_confirm_setting_desc">Спрашивать перед тем, как ассистент выполнит команды или запишет файлы на удалённых серверах SSH/Conch</string>
+    <string name="shell_confirm_notification_channel">Подтверждение команд</string>
+    <string name="shell_confirm_notification_desc">Запрашивает разрешение или запрет удалённой команды, пока Agora в фоновом режиме</string>
+    <string name="ask_user_title">Ассистент спрашивает</string>
+    <string name="ask_user_send">Отправить</string>
+    <string name="ask_user_next">Далее</string>
+    <string name="interaction_ask_user">Вопрос</string>
+    <string name="interaction_approval">Подтверждение</string>
+    <string name="interaction_minimize">Свернуть</string>
+    <string name="interaction_expand">Развернуть</string>
+    <string name="ask_user_custom_answer">Ответьте своими словами</string>
+    <string name="ask_user_skip">Пропустить</string>
+    <string name="ask_user_notification_channel">Вопрос от Agora</string>
+    <string name="ask_user_notification_desc">Просит ответить на вопрос ассистента, когда экран чата закрыт</string>
 
     <!-- Crash reporting -->
     <string name="crash_title">Agora неожиданно завершилась</string>
@@ -579,6 +597,7 @@
     <string name="conversation_search_hint">Поиск…</string>
     <string name="conversation_share">Поделиться</string>
     <string name="conversation_share_failed">Не удалось поделиться диалогом: %1$s</string>
+    <string name="conversation_deleted_elsewhere">Этот диалог был удалён на другом устройстве.</string>
     <string name="custom_provider_protocol_label">Формат API</string>
     <string name="file_path_unknown">Неизвестный файл</string>
     <string name="import_file_too_large">Файл слишком большой (%1$d МБ). Выберите файл экспорта меньшего размера.</string>
@@ -588,7 +607,7 @@
     <string name="tool_background_job_running">Фоновая задача %1$s выполняется</string>
     <string name="tool_execution_stopped">Выполнение инструмента остановлено</string>
     <string name="tool_exit_code">Код выхода %1$d</string>
-    <string name="tool_exit">Выход</string>
+    <string name="tool_exit">Завершение</string>
     <string name="tool_shell_returned_code">Команда вернула %1$d</string>
     <string name="tool_shell_detail_executed">Выполнено</string>
     <string name="tool_shell_detail_returned_code">Возвращено %1$d</string>
@@ -633,6 +652,8 @@
     <string name="context_compact_model">Модель сжатия</string>
     <string name="context_compact_prompt">Промпт сжатия</string>
     <string name="context_compact_prompt_desc">Инструкции для сводки</string>
+    <string name="context_compact_preserve_system">Сохранять системный промпт</string>
+    <string name="context_compact_preserve_system_desc">При сжатии используется системный промпт диалога; компактный промпт открывает запрос сводки</string>
     <string name="context_compact_select_model">Выбрать модель сжатия</string>
     <string name="context_compact_threshold">Порог автоматического сжатия</string>
     <string name="context_compact_threshold_desc">Сжимать, когда оценённый контекст достигнет этого процента выбранного окна</string>
@@ -648,7 +669,13 @@
     <string name="thinking_segment_display_card">Карточка</string>
     <string name="thinking_segment_display_bottom_sheet">Нижняя панель</string>
     <string name="thinking_segments_title">Сегменты рассуждений</string>
-    <string name="context_usage_messages">~%1$s / %2$s токенов</string>
+    <string name="context_usage_messages">~%1$s / %2$s токенов</string>
+    <string name="context_part_system">Системный промпт</string>
+    <string name="context_part_tools">Инструменты</string>
+    <string name="context_part_messages">Сообщения</string>
+    <string name="context_part_free">Свободно</string>
+    <string name="context_part_reserved">Резерв</string>
+    <string name="context_part_used">Использовано</string>
     <string name="context_compact_streaming">Сжатие контекста…</string>
     <string name="context_compact_error">Ошибка сжатия</string>
     <string name="context_compact_stopped">Сжатие остановлено</string>
@@ -718,6 +745,7 @@
     <string name="generation_error_network">Ошибка сети: %1$s</string>
     <string name="generation_error_network_http">Ошибка сети (%1$d): %2$s</string>
     <string name="generation_error_sse_parse">Не удалось прочитать ответ сервера.</string>
+    <string name="generation_error_malformed_tool_call">Модель вернула вызов инструмента, который нельзя использовать: %1$s</string>
     <string name="generation_error_incomplete_stream">%1$s преждевременно завершил ответ. Сигнал завершения не получен, поэтому ответ неполный.</string>
     <string name="generation_error_incomplete_tool_stream">%1$s завершил ответ во время записи вызова инструмента. Сигнал завершения не получен, поэтому ответ неполный.</string>
     <string name="generation_error_incomplete_stream_reason">%1$s завершил ответ после причины остановки %2$s без сигнала завершения.</string>
@@ -775,4 +803,14 @@
     <string name="thought_for_a_while">Размышлял некоторое время</string>
     <string name="thought_for_a_while_called_tools">Размышлял некоторое время, вызвано инструментов: %1$d</string>
     <string name="remote_device">Устройство</string>
+    <!-- Upstream attribution copy, UTF-8 Base64 for lightweight bulk-rename resistance. -->
+    <string name="rating_origin_credit_b64">QWdvcmEgwrcg0KDQsNC30YDQsNCx0L7RgtGH0LjQujogbmV3by1ldGhlcg==</string>
+    <string name="rating_origin_project_b64">0JjRgdGF0L7QtNC90YvQuSDQv9GA0L7QtdC60YI6IGdpdGh1Yi5jb20vbmV3by1ldGhlci9BZ29yYQ==</string>
+    <string name="rating_origin_modified_title_b64">0JjQt9C80LXQvdGR0L3QvdCw0Y8g0LLQtdGA0YHQuNGP</string>
+    <string name="rating_origin_modified_body_b64">0JjQvNGPINC/0LDQutC10YLQsCDRjdGC0L7Qs9C+INC/0YDQuNC70L7QttC10L3QuNGPINC+0YLQu9C40YfQsNC10YLRgdGPINC+0YIg0LjRgdGF0L7QtNC90L7Qs9C+INC/0YDQvtC10LrRgtCwOiDQv9GA0LjQu9C+0LbQtdC90LjQtSDQsdGL0LvQviDQv9C10YDQtdC/0LDQutC+0LLQsNC90L4g0LjQu9C4INC40LfQvNC10L3QtdC90L4uINCY0YHRhdC+0LTQvdGL0Lkg0L/RgNC+0LXQutGCIOKAlCBBZ29yYSwg0YDQsNC30YDQsNCx0L7RgtCw0L3QvdGL0LkgbmV3by1ldGhlci4g0JfQsCDQuNC30LzQtdC90LXQvdC40Y8g0LIg0Y3RgtC+0Lkg0LLQtdGA0YHQuNC4INC+0YLQstC10YfQsNC10YIg0LXRkSDRgNCw0YHQv9GA0L7RgdGC0YDQsNC90LjRgtC10LvRjDsg0L7QvdC4INC90LUg0L/RgNC10LTRgdGC0LDQstC70Y/RjtGCINC/0LXRgNCy0L7QvdCw0YfQsNC70YzQvdC+0LPQviDQsNCy0YLQvtGA0LAu</string>
+    <string name="rating_origin_view_project_b64">0J7RgtC60YDRi9GC0Ywg0LjRgdGF0L7QtNC90YvQuSDQv9GA0L7QtdC60YI=</string>
+    <string name="message_source_task">Задача</string>
+    <string name="message_source_loop">Цикл</string>
+    <string name="message_source_ask_user">Вопрос</string>
+    <string name="message_source_unanswered">Без ответа</string>
 </resources>

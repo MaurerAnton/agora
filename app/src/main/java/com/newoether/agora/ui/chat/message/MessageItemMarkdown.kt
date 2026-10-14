@@ -409,11 +409,11 @@ internal fun String.toRenderableMarkdownText(parseInlineDollarMath: Boolean = fa
         this
     } else {
         spans.joinToString("") { span ->
-            if (span.isLatex) latexToMarkdown(span.content, span.display)
+            if (span.isLatex) latexToMarkdown(span.content, span.display, span.source)
             else span.content
         }
     }
-    return markdown.escapeForMarkdown()
+    return markdown.escapeForMarkdown().openTableBlocks()
 }
 
 internal fun String.escapeForMarkdown(): String = escapeDollarForMarkdown()

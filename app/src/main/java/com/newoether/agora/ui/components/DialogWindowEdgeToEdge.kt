@@ -3,10 +3,17 @@ package com.newoether.agora.ui.components
 import android.graphics.Color
 import android.os.Build
 import android.view.WindowManager
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.SideEffect
 import androidx.compose.ui.platform.LocalView
+import androidx.compose.ui.unit.dp
 import androidx.compose.ui.window.DialogWindowProvider
+
+internal val BottomSheetMaxWidth = 640.dp
+
+/** Top-corner shape shared by every bottom sheet in the app (Material's 28dp extra-large corner). */
+internal val BOTTOM_SHEET_SHAPE = RoundedCornerShape(topStart = 28.dp, topEnd = 28.dp)
 
 /**
  * Restores edge-to-edge / transparent navigation bar inside a Compose dialog window

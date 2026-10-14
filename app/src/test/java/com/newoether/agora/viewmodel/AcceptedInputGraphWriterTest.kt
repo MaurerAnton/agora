@@ -64,9 +64,13 @@ class AcceptedInputGraphWriterTest {
                 modelId = "OpenAI:model",
                 userTimestamp = 100L,
                 touchConversationOnAdmission = false,
+                source = com.newoether.agora.model.MessageSource.TASK,
             ),
             beforeRoomCommit = { beforeCommitCalled = true },
         )
+
+        assertEquals("""{"kind":"task"}""", result.userMessage.sourceJson)
+        assertNull(result.modelMessage.sourceJson)
 
         assertEquals("selected-run", insertedRun.parentRunId)
         assertEquals("selected", result.userMessage.parentId)
@@ -126,6 +130,8 @@ class AcceptedInputGraphWriterTest {
         )
 
         assertNull(result.userMessage.parentId)
+        // Typed input carries no automatic source.
+        assertNull(result.userMessage.sourceJson)
         assertEquals("model", result.messageSelections["user"])
         assertEquals(
             capturedSettings,

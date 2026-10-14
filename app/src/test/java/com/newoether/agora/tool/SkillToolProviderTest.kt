@@ -6,6 +6,7 @@ import io.mockk.every
 import io.mockk.mockk
 import io.mockk.verify
 import kotlinx.coroutines.test.runTest
+import kotlinx.coroutines.flow.toList
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
 import org.junit.Assert.assertTrue
@@ -72,6 +73,19 @@ class SkillToolProviderTest {
         assertTrue(result.contains("review.md"))
         assertTrue(result.contains("Review changes"))
         assertFalse(result.contains("skill body"))
+    }
+
+    @Test
+    fun successfulErrorPrefixedReadAndAccessFailureHaveExplicitMetadata() = runTest {
+        every { skillManager.readFile("review.md") } returns "Error: documented example"
+        val success = provider.executeEvents("read_skill_file", """{"name":"review.md"}""", enabled)
+            .toList().single() as ToolExecutionEvent.Completed
+        assertFalse(success.result.isError)
+        assertEquals("Error: documented example", success.result.text)
+        val failure = provider.executeEvents("read_skill_file", "{}", enabled.copy(skillReadAccess = false))
+            .toList().single() as ToolExecutionEvent.Completed
+        assertTrue(failure.result.isError)
+        assertTrue(failure.result.text.contains("disabled"))
     }
 
     @Test

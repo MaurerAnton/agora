@@ -30,7 +30,10 @@ class ExperimentalGenerationUiSourceContractTest {
         assertTrue(assistant.contains("fadeOut(tween(durationMillis = 180"))
         assertTrue(assistant.contains("errorText = errorContent?.errorText ?: retainedErrorText"))
         assertTrue(assistant.contains("precededByCard = terminalImmediatelyFollowsCard"))
-        assertTrue(assistant.contains("lastVisibleTerminalPredecessor"))
+        assertTrue(
+            source(root, "message/AssistantMessagePresentation.kt")
+                .contains("lastVisibleTerminalPredecessor"),
+        )
         assertTrue(terminalBar.contains("precededByCard: Boolean = false"))
         assertTrue(terminalBar.contains("if (precededByCard) 12.dp else 8.dp"))
         assertTrue(terminalBar.contains("if (precededByCard) 12.dp"))
@@ -102,7 +105,8 @@ class ExperimentalGenerationUiSourceContractTest {
     fun `Thinking card uses compact chrome one trailing rotating arrow and synchronized motion`() {
         val root = locateMainSourceRoot()
         val timeline = source(root, "message/MessageItemTimeline.kt") +
-            source(root, "message/TimelineSegmentsContent.kt")
+            source(root, "message/TimelineSegmentsContent.kt") +
+            source(root, "message/AssistantMessagePresentation.kt")
         val assistant = source(root, "message/AssistantMessageContent.kt")
         val presentation = source(root, "message/ThinkingSegmentPresentation.kt")
         val mutedText = source(root, "message/StreamingMutedText.kt")
@@ -175,7 +179,8 @@ class ExperimentalGenerationUiSourceContractTest {
     fun `Timeline and Thinking sheet rows reuse grouping while keeping their own outer insets`() {
         val root = locateMainSourceRoot()
         val timeline = source(root, "message/MessageItemTimeline.kt") +
-            source(root, "message/TimelineSegmentsContent.kt")
+            source(root, "message/TimelineSegmentsContent.kt") +
+            source(root, "message/AssistantMessagePresentation.kt")
         val detail = source(root, "message/SegmentDetailSheet.kt")
         val segments = source(root, "message/MessageItemSegments.kt")
 
@@ -208,7 +213,8 @@ class ExperimentalGenerationUiSourceContractTest {
     fun `Thinking sheet matches Settings chrome and uses primary card icons`() {
         val root = locateMainSourceRoot()
         val timeline = source(root, "message/MessageItemTimeline.kt") +
-            source(root, "message/TimelineSegmentsContent.kt")
+            source(root, "message/TimelineSegmentsContent.kt") +
+            source(root, "message/AssistantMessagePresentation.kt")
         val detail = source(root, "message/SegmentDetailSheet.kt")
         val presentation = source(root, "message/ThinkingSegmentPresentation.kt")
         val sharedBackButton = File(
@@ -324,23 +330,16 @@ class ExperimentalGenerationUiSourceContractTest {
         val terminalText = source(locateMainSourceRoot(), "message/GenerationErrorBar.kt")
             .substringAfter("internal fun GenerationTerminalText(")
             .substringBefore("internal fun GenerationErrorBar(")
-        val webSearchCompletionOnly = detail
-            .substringAfter("presentation.kind == ToolKind.WEB_SEARCH &&")
-            .substringBefore("ToolCompletedContent(presentation)")
-        val failedContent = detail
-            .substringAfter("ToolPresentationState.FAILED -> {")
+        val model = source(locateMainSourceRoot(), "message/ToolDetailPresentation.kt")
+        val failedContent = model
+            .substringAfter("ToolPresentationState.FAILED ->")
             .substringBefore("ToolPresentationState.STOPPED ->")
-        val completedContent = toolResult
-            .substringAfter("private fun ToolCompletedContent(")
-            .substringBefore("private fun McpResultContent(")
-
-        assertTrue(detail.contains("ToolPresentationState.FAILED ->"))
-        assertTrue(detail.contains("ToolErrorContent("))
-        assertFalse(failedContent.contains("McpResultContent("))
+        assertTrue(detail.contains("is ToolDetailBody.Failed ->"))
+        assertTrue(detail.contains("ToolErrorContent(body.text)"))
         assertFalse(failedContent.contains("rawTextResult"))
         assertFalse(failedContent.contains("rawStructuredResult"))
-        assertTrue(completedContent.contains("ToolKind.MCP -> McpResultContent(presentation)"))
-        assertTrue(detail.contains("ToolPresentationState.STOPPED -> GenerationTerminalText("))
+        assertTrue(model.contains("ToolKind.MCP ->"))
+        assertTrue(detail.contains("is ToolDetailBody.Stopped -> GenerationTerminalText("))
         assertTrue(errorContent.contains("GenerationTerminalText("))
         assertTrue(errorContent.contains("selectable = true"))
         assertTrue(errorContent.contains("fillWidth = true"))
@@ -353,10 +352,8 @@ class ExperimentalGenerationUiSourceContractTest {
                 "color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.55f)",
             ),
         )
-        assertTrue(webSearchCompletionOnly.contains("ToolPresentationState.EMPTY"))
-        assertTrue(webSearchCompletionOnly.contains("ToolPresentationState.COMPLETED"))
-        assertFalse(webSearchCompletionOnly.contains("ToolPresentationState.FAILED"))
-        assertFalse(webSearchCompletionOnly.contains("ToolPresentationState.STOPPED"))
+        assertTrue(model.contains("ToolPresentationState.EMPTY,"))
+        assertTrue(model.contains("ToolPresentationState.COMPLETED -> completedToolDetailBody(presentation)"))
     }
 
     @Test

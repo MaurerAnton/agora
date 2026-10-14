@@ -8,6 +8,7 @@ import com.newoether.agora.model.RuntimeRunIdentity
 import com.newoether.agora.model.RunState
 import com.newoether.agora.model.SelectedAttachment
 import com.newoether.agora.model.ToolExecutionStates
+import com.newoether.agora.util.AttachmentFiles
 import kotlinx.coroutines.Job
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
@@ -16,6 +17,32 @@ import org.junit.Assert.assertTrue
 import org.junit.Test
 
 class ConversationRuntimeResourceOwnershipTest {
+    @Test
+    fun sharedQueuedFilesStayOwnedAcrossClaimFailureRemoveAndDurableSettlement() {
+        val file = java.nio.file.Files.createTempFile("agora-shared-queue", ".tmp").toFile()
+        val store = GuidanceLeaseStore({ com.newoether.agora.util.AttachmentFiles.deleteBacking(it) }) { "lease" }
+        val first = queued("one", "first", file.path)
+        val second = queued("two", "second", file.path)
+        try {
+            store.enqueue(first)
+            store.enqueue(second)
+            val lease = store.claim()!!
+            assertFalse(AttachmentFiles.deleteIfUnowned(file))
+            assertTrue(store.settle(lease.id, durable = false))
+            store.discard(store.remove(first.id)!!)
+            assertTrue(file.exists())
+            assertFalse(AttachmentFiles.deleteIfUnowned(file))
+            val remaining = store.claim()!!
+            assertTrue(store.settle(remaining.id, durable = true))
+            assertTrue(file.exists())
+            assertTrue(AttachmentFiles.deleteIfUnowned(file))
+            assertFalse(file.exists())
+        } finally {
+            AttachmentFiles.releaseLivePaths(first)
+            AttachmentFiles.releaseLivePaths(second)
+            file.delete()
+        }
+    }
     @Test
     fun streamClear_commitsFinalMessageBeforeRemovingOverlay() {
         val resources = activeResources()
@@ -116,7 +143,7 @@ class ConversationRuntimeResourceOwnershipTest {
 
     @Test
     fun queuedGuidanceRemainsMemoryOnlyAndPreservesOrder() {
-        val store = GuidanceLeaseStore { "lease" }
+        val store = GuidanceLeaseStore({ com.newoether.agora.util.AttachmentFiles.deleteBacking(it) }) { "lease" }
         val first = queued("one", "first")
         val second = queued("two", "second")
 
@@ -132,7 +159,7 @@ class ConversationRuntimeResourceOwnershipTest {
 
     @Test
     fun guidanceClaimRevisionRecordsAClaimAfterTheVisibleQueueIsDrained() {
-        val store = GuidanceLeaseStore { "lease" }
+        val store = GuidanceLeaseStore({ com.newoether.agora.util.AttachmentFiles.deleteBacking(it) }) { "lease" }
         val revision = store.currentClaimRevision()
         assertFalse(store.hasPendingOrClaimedSince(revision))
 
@@ -147,7 +174,7 @@ class ConversationRuntimeResourceOwnershipTest {
 
     @Test
     fun failedGuidanceLeaseReturnsTheExactBatchToTheFront() {
-        val store = GuidanceLeaseStore { "lease" }
+        val store = GuidanceLeaseStore({ com.newoether.agora.util.AttachmentFiles.deleteBacking(it) }) { "lease" }
         val first = queued("one", "first")
         val second = queued("two", "second")
         store.enqueue(first)
@@ -164,7 +191,7 @@ class ConversationRuntimeResourceOwnershipTest {
 
     @Test
     fun disposalCleansPendingAndFailedInflightGuidanceOwnership() {
-        val store = GuidanceLeaseStore { "lease" }
+        val store = GuidanceLeaseStore({ com.newoether.agora.util.AttachmentFiles.deleteBacking(it) }) { "lease" }
         val pendingFile = java.nio.file.Files.createTempFile("agora-pending", ".tmp").toFile()
         val claimedFile = java.nio.file.Files.createTempFile("agora-claimed", ".tmp").toFile()
         try {
@@ -174,7 +201,7 @@ class ConversationRuntimeResourceOwnershipTest {
             val lease = store.claim()!!
             store.enqueue(pending)
 
-            store.disposePending().forEach(QueuedSend::deleteOwnedFiles)
+            store.disposePending().forEach(store::discard)
 
             assertFalse(pendingFile.exists())
             assertTrue(claimedFile.exists())
@@ -188,7 +215,7 @@ class ConversationRuntimeResourceOwnershipTest {
 
     @Test
     fun durableGuidanceLeaseTransfersFilesToRoomEvenAfterDisposal() {
-        val store = GuidanceLeaseStore { "lease" }
+        val store = GuidanceLeaseStore({ com.newoether.agora.util.AttachmentFiles.deleteBacking(it) }) { "lease" }
         val durableFile = java.nio.file.Files.createTempFile("agora-durable", ".tmp").toFile()
         store.enqueue(queued("durable", "durable", durableFile.absolutePath))
         val lease = store.claim()!!

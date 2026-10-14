@@ -290,11 +290,16 @@ class RagManager(
                             val running = unfinished.firstOrNull {
                                 it.state == androidx.work.WorkInfo.State.RUNNING
                             }
-                            val wasRunning = _cacheRows.value[modelId]?.workActive == true
+                            val wasActive = _cacheRows.value[modelId]?.workActive == true
+                            // Enqueued counts as caching. Waiting for WorkManager to start the
+                            // worker is part of caching, and reporting "not cached" in that window
+                            // made pressing Cache look like it did nothing.
                             _cacheRows.update { rows ->
                                 rows + (
                                     modelId to EmbeddingCacheRowReducer.workChanged(
-                                        rows[modelId], running != null, running?.cacheProgressOrNull(),
+                                        rows[modelId],
+                                        unfinished.isNotEmpty(),
+                                        running?.cacheProgressOrNull(),
                                     )
                                 )
                             }
@@ -303,7 +308,7 @@ class RagManager(
                                 it.id == scheduledId && it.state.isFinished
                             }
                             if (scheduledFinished) scheduledCacheWorkIds.remove(modelId, scheduledId)
-                            if (wasRunning && running == null || scheduledFinished ||
+                            if (wasActive && unfinished.isEmpty() || scheduledFinished ||
                                 previousActiveIds.any { it !in activeIds }) {
                                 requestCacheCountRefresh()
                             }
@@ -445,31 +450,24 @@ class RagManager(
 
     // -- Semantic ledger and durable cache work --------------------------------------------
 
-    fun cacheMessagesForModel(modelId: String, recache: Boolean = false, silent: Boolean = false) {
+    /**
+     * Schedules the cache work for one model. No snackbar: the row's own CACHING state is the
+     * feedback, and a message repeating it can only drift from what the row shows.
+     */
+    fun cacheMessagesForModel(modelId: String, recache: Boolean = false) {
         scope.launch(Dispatchers.IO) {
             settings.awaitInitialLoad()
-            val configuredModel = EmbeddingCacheLocks.forModel(modelId).withLock {
-                val current = settings.embeddingModels.value.find { it.id == modelId }
-                    ?: return@withLock null
-                val state = if (recache) {
-                    conversations.invalidateSemanticModel(modelId)
-                    conversations.getOrAdmitSemanticLedgerState(modelId)
-                } else {
-                    conversations.getOrAdmitSemanticLedgerState(modelId)
-                }
-                if (!recache && state == SemanticIndexLedgerEntity.STATE_CURRENT) null else current
-            } ?: return@launch
+            val needsWork = EmbeddingCacheLocks.forModel(modelId).withLock {
+                if (settings.embeddingModels.value.none { it.id == modelId }) return@withLock false
+                if (recache) conversations.invalidateSemanticModel(modelId)
+                val state = conversations.getOrAdmitSemanticLedgerState(modelId)
+                recache || state != SemanticIndexLedgerEntity.STATE_CURRENT
+            }
+            if (!needsWork) return@launch
             if (!scheduleCacheWork(modelId)) return@launch
             val models = settings.embeddingModels.value
             observeCacheWork(models.mapTo(linkedSetOf(), EmbeddingModelConfig::id))
             requestCacheCountRefresh(models = models)
-            if (!silent) {
-                emitSnackbar(
-                    SnackbarEvent(
-                        appContext.getString(R.string.embedding_model_caching, configuredModel.name),
-                    ),
-                )
-            }
         }
     }
 

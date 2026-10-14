@@ -77,8 +77,9 @@ interface ChatAutomationDao {
     @Query("SELECT * FROM loops WHERE active = 1")
     fun observeActiveLoops(): Flow<List<LoopEntity>>
 
+    /** Raw row write; callers use [ChatDao.upsertLoop], which also marks the conversation changed. */
     @Upsert
-    suspend fun upsertLoop(loop: LoopEntity)
+    suspend fun upsertLoopRow(loop: LoopEntity)
 
     /** Clock-change CAS: only the observed active loop revision/cycle may be moved. */
     @Query(
@@ -109,7 +110,7 @@ interface ChatAutomationDao {
           AND intervalMs = :expectedIntervalMs AND nextFireAt = :expectedNextFireAt
         """
     )
-    suspend fun deactivateLoopIfUnchanged(
+    suspend fun deactivateLoopRowIfUnchanged(
         conversationId: String,
         expectedRevision: Long,
         expectedCycleCount: Int,
@@ -119,11 +120,13 @@ interface ChatAutomationDao {
     ): Int
 
     @Query("DELETE FROM loops WHERE conversationId = :conversationId")
-    suspend fun deleteLoop(conversationId: String)
+    suspend fun deleteLoopRow(conversationId: String): Int
 
     @Query("DELETE FROM loops")
     suspend fun deleteAllLoops()
 
     @Query("SELECT * FROM loops")
     suspend fun getAllLoopsList(): List<LoopEntity>
+    @Query("SELECT * FROM loops WHERE conversationId = :conversationId")
+    suspend fun getLoopsForConversationSnapshot(conversationId: String): List<LoopEntity>
 }

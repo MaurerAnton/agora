@@ -3,9 +3,14 @@ package com.newoether.agora.viewmodel
 import java.util.concurrent.atomic.AtomicInteger
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.sync.Mutex
+import com.newoether.agora.util.AttachmentFiles
 
 /** One admitted draft owner. The controller retains ownership of its lifetime and locking. */
 internal class ComposerOwnerSession {
+    fun publish(snapshot: ConversationComposerSnapshot) {
+        AttachmentFiles.setLivePaths(this, AttachmentFiles.ownedPaths(snapshot.attachments))
+        state.value = snapshot
+    }
     val mutex = Mutex()
     val state = kotlinx.coroutines.flow.MutableStateFlow(ConversationComposerSnapshot())
     var durable = ConversationComposerSnapshot()

@@ -2,17 +2,41 @@
 
 This is a binding part of the [message generation contract](message-generation.md).
 It preserves the requirements of section 8.7; scope and authority are unchanged.
+Tool lifecycle wording and state semantics are defined by [tool-presentation.md](tool-presentation.md).
 
 Ordinary answer Markdown, Thinking Bottom Sheet Markdown, and Compact Bottom Sheet Markdown use one
 shared streaming Markdown message UI implementation. That implementation owns the existing
 incremental append-only scan, stable/live block split, off-main parsing, long-document update
 cadence, and stream-to-terminal renderer continuity. A caller must not keep a second streaming
 Markdown algorithm or switch to a different terminal renderer merely because streaming ended.
+The browser Compact detail uses the existing `DetailSheet` and `Markdown`, with authoritative
+running state, thought typography and App Reduced Motion passed into the shared renderer.
+The shared browser Markdown accepts an optional emptyStreamingText input. Compact passes the native
+localized Context compacting... label only for an actively streaming blank body. The label uses
+primary color, the caller's thought typography, 8px top padding and retained 180ms linear fades.
+Nonblank content replaces it; terminal blank content does not retain a status. This is shared
+renderer presentation, not a Compact-specific renderer, always-visible footer or status authority.
+Browser math placeholders expand only in rendered text nodes, never in source attributes,
+link attributes, or code literals. Source mapping stays intact; each occurrence creates exactly
+one formula node and cannot duplicate surrounding prose or emit HTML attribute fragments.
 
 Standalone/display LaTeX uses that same shared Markdown component graph. It remains start-aligned and
 renders at its intrinsic formula width inside a message-width horizontal viewport. A formula wider
 than that viewport scrolls horizontally so all content remains inspectable; a formula that fits has
-no effective scroll range. Inline LaTeX and ordinary Markdown images retain their existing layout.
+no effective scroll range. Every formula on its own line (display, height-promoted, or an inline
+formula wider than 80% of its paragraph width, decided at display time from that paragraph's width)
+renders as one single-line selectable Text holding one inline placeholder, so a covering selection
+highlights the whole formula. Every formula's alternate text is its exact original source slice,
+delimiters included, carried in its `latex://` link, so selection copies the original text and never
+a URL. Copied text must equal the original message text. Because a placeholder cannot lay out
+alternate text with line breaks, a source's `\n` and `\r` are stored in the alternate text as
+U+E000 and U+E001; the chat selection host's clipboard (`FormulaSourceClipboard`) restores them on
+copy, and the source parser restores them before resolving the formula. System text actions other
+than copy (for example Translate or Speak) receive the stored marks. Formula bitmaps render at `20 sp` and are padded with transparent rows so the TeX math axis
+sits on the bitmap's vertical center, which `TextCenter` placeholder alignment puts on the text
+center. Other inline LaTeX and ordinary Markdown images retain their existing layout; once a paragraph
+splits for a wide formula, its other images use their block presentation and search positions are
+not reported for that paragraph.
 During active streaming, display-formula scrolling uses the same interaction commit gate as code-block
 scrolling so an in-progress gesture is not replaced by a newer parsed Markdown snapshot.
 
@@ -190,7 +214,15 @@ discard or displace the right extension. This external-only rule must not change
 content padding. It must not use card-level `animateContentSize`: an explicit
 400 ms width-only transition matches the existing 400 ms vertical expansion/collapse and animates
 between the measured localized header width plus a 6 dp anti-ellipsis allowance and the extended
-parent maximum width with a fast-start, slow-finish `LinearOutSlowInEasing` curve. The collapsed
+parent maximum width with a fast-start, slow-finish `LinearOutSlowInEasing` curve. The bottom-aligned
+WebUI reveal keeps every segment at full measured height; the grid's animated track is aligned at its
+block end, and full-height children remain bottom-aligned within that track. The outer reveal alone
+owns the vertical clip; the inner track keeps visible overflow so fractional sizing cannot cut
+content a second time above the reveal's leading edge. Fractional track sizing
+must not leave unused space below the track while it expands. Flex shrinking must not compete with the
+400 ms clip motion or leave a blank region below the moving content. A segment's appearance scale
+uses its bottom-center origin so its painted bottom stays at the reveal bottom throughout entry.
+The collapsed
 target remains capped by the available width. The animated width belongs only to the card shell:
 leading header content and expanded content retain a stable target layout width, remain anchored at
 `Alignment.TopStart`, and are clipped/revealed by the shell instead of being squeezed, reflowed, or

@@ -1,6 +1,7 @@
 package com.newoether.agora.viewmodel
 
 import com.newoether.agora.model.AttachmentMeta
+import com.newoether.agora.model.MessageSource
 import com.newoether.agora.model.SelectedAttachment
 import com.newoether.agora.util.AttachmentFiles
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -29,6 +30,8 @@ internal data class QueuedSend(
     /** Immutable foreground admission; legacy/internal queue producers may capture at drain time. */
     val generationSnapshot: GenerationAdmissionSnapshot? = null,
     val createdAt: Long = System.currentTimeMillis(),
+    /** Null for a message the user typed; set for automatic input such as ask_user answers. */
+    val source: MessageSource? = null,
 )
 
 internal data class GuidanceBatchLease(
@@ -41,10 +44,31 @@ internal data class GuidanceBatchLease(
     }
 }
 
-/** One queue drain becomes one durable user bubble while preserving FIFO content and ownership. */
-internal fun mergeQueuedGuidance(batch: List<QueuedSend>): QueuedSend {
+/**
+ * One queue drain becomes one Run whose user bubbles are the FIFO batch with ADJACENT sends of the
+ * same kind merged: consecutive typed messages form one bubble, consecutive ask_user answers form
+ * another. Order, content and attachment ownership are preserved.
+ */
+internal fun mergeQueuedGuidance(batch: List<QueuedSend>): List<QueuedSend> {
     require(batch.isNotEmpty())
+    val groups = mutableListOf<MutableList<QueuedSend>>()
+    batch.forEach { queued ->
+        val last = groups.lastOrNull()
+        if (last != null && last.last().source?.kind == queued.source?.kind) last += queued
+        else groups += mutableListOf(queued)
+    }
+    return groups.map(::mergeSameKind)
+}
+
+private fun mergeSameKind(batch: List<QueuedSend>): QueuedSend {
     val first = batch.first()
+    val source = first.source?.let { firstSource ->
+        if (firstSource.kind == MessageSource.Kind.ASK_USER) {
+            MessageSource.askUser(batch.flatMap { checkNotNull(it.source).askUser })
+        } else {
+            firstSource
+        }
+    }
     val attachmentItems = buildList {
         var imageOffset = 0
         batch.forEach { queued ->
@@ -62,7 +86,12 @@ internal fun mergeQueuedGuidance(batch: List<QueuedSend>): QueuedSend {
         }
     }
     return first.copy(
-        text = batch.joinToString(separator = "\n\n", transform = QueuedSend::text),
+        text = if (source != null && source.kind == MessageSource.Kind.ASK_USER) {
+            source.askUserReadableText()
+        } else {
+            batch.joinToString(separator = "\n\n", transform = QueuedSend::text)
+        },
+        source = source,
         modelId = batch.last().modelId,
         attachments = batch.flatMap(QueuedSend::attachments),
         preparedImages = batch.flatMap(QueuedSend::preparedImages),
@@ -80,6 +109,7 @@ internal fun mergeQueuedGuidance(batch: List<QueuedSend>): QueuedSend {
  * durable claims transfer attachment ownership to Room; disposal owns only still-pending cleanup.
  */
 internal class GuidanceLeaseStore(
+    private val reclaimAttachments: (List<SelectedAttachment>) -> Unit,
     private val newLeaseId: () -> String = { UUID.randomUUID().toString() },
 ) {
     private val lock = Any()
@@ -100,6 +130,7 @@ internal class GuidanceLeaseStore(
     fun enqueue(send: QueuedSend) {
         synchronized(lock) {
             check(!disposed) { "Conversation guidance store was disposed" }
+            AttachmentFiles.setLivePaths(send, AttachmentFiles.ownedPaths(send.attachments) + send.preparedImages)
             _queuedSends.value = _queuedSends.value + send
         }
     }
@@ -126,13 +157,18 @@ internal class GuidanceLeaseStore(
         synchronized(lock) {
             val batch = claimedGuidance.remove(leaseId) ?: return false
             when {
-                durable -> Unit
+                durable -> batch.forEach(AttachmentFiles::releaseLivePaths)
                 disposed -> orphaned = batch
                 else -> _queuedSends.value = batch + _queuedSends.value
             }
         }
-        orphaned.forEach(QueuedSend::deleteOwnedFiles)
+        orphaned.forEach(::discard)
         return true
+    }
+
+    fun discard(send: QueuedSend) {
+        AttachmentFiles.releaseLivePaths(send)
+        if (send.attachments.isNotEmpty()) reclaimAttachments(send.attachments)
     }
 
     /** Mark the owner closed and transfer its still-pending batch to the disposal caller. */
@@ -140,8 +176,4 @@ internal class GuidanceLeaseStore(
         disposed = true
         _queuedSends.value.also { _queuedSends.value = emptyList() }
     }
-}
-
-internal fun QueuedSend.deleteOwnedFiles() {
-    AttachmentFiles.deleteBacking(attachments)
 }

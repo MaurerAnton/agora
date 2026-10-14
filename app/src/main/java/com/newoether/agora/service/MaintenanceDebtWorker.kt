@@ -44,8 +44,12 @@ class MaintenanceDebtWorker(
             }
             for (claim in claims) {
                 try {
-                    processClaim(claim, debtDao, attachmentSweeper)
-                    debtDao.complete(claim)
+                    if (processClaim(claim, debtDao, attachmentSweeper)) {
+                        debtDao.complete(claim)
+                    } else {
+                        debtDao.release(claim, System.currentTimeMillis())
+                        retryNeeded = true
+                    }
                 } catch (cancelled: CancellationException) {
                     throw cancelled
                 } catch (error: Exception) {
@@ -70,11 +74,12 @@ class MaintenanceDebtWorker(
         claim: MaintenanceDebtEntity,
         debtDao: MaintenanceDebtDao,
         attachmentSweeper: AttachmentOrphanSweeper,
-    ) {
-        when (claim.kind) {
+    ): Boolean {
+        return when (claim.kind) {
             MaintenanceDebtEntity.KIND_ATTACHMENT_ORPHANS -> {
                 if (claim.identity == MaintenanceDebtEntity.RECONCILE_IDENTITY) {
                     attachmentSweeper.sweep()
+                    true
                 } else {
                     attachmentSweeper.deleteExact(claim.identity)
                 }
@@ -86,6 +91,7 @@ class MaintenanceDebtWorker(
                 } else {
                     debtDao.deleteOrphanEmbeddingsForMessage(claim.identity)
                 }
+                true
             }
 
             MaintenanceDebtEntity.KIND_RUN_BRANCHES -> {
@@ -94,6 +100,7 @@ class MaintenanceDebtWorker(
                 } else {
                     debtDao.repairRunBranches(claim.identity)
                 }
+                true
             }
 
             else -> error("Unknown maintenance debt kind ${claim.kind}")

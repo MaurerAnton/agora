@@ -19,8 +19,9 @@ class CompactScrollLifecycleSourceContractTest {
 
         assertTrue(
             "Compact startup must retain attached-only scroll semantics",
-            generationController.contains(
-                "onCompactStarted = onScrollToAttachedBottomAfter",
+            generationController.replace("\r\n", "\n").contains(
+                "onCompactStarted = { conversationId, messageId ->\n" +
+                    "            requestScroll(conversationId, messageId, attachedOnly = true, origin = null)",
             ),
         )
 

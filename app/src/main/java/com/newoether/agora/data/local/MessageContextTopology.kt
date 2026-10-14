@@ -18,6 +18,22 @@ data class MessageContextTopology(
     val consumedAtPass: Int?,
 )
 
+/**
+ * Payload-free row behind a task's execution list. [preview] is a bounded text prefix, so one
+ * oversized message cannot exceed the Android CursorWindow while the list is read.
+ */
+data class ExecutionMessageSummaryRow(
+    val id: String,
+    val conversationId: String,
+    val participant: Participant,
+    val status: MessageStatus,
+    val timestamp: Long,
+    val preview: String,
+)
+
+/** Characters of message text an execution row reads; the list shows at most two lines. */
+const val EXECUTION_PREVIEW_MAX_CHARS = 500
+
 data class ConversationProviderContextState(
     val selectedBranchesJson: String?,
 )

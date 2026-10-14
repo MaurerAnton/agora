@@ -36,12 +36,16 @@ import com.newoether.agora.R
 import com.newoether.agora.util.noOpBringIntoView
 import com.newoether.agora.model.AttachmentItem
 import com.newoether.agora.model.ChatMessage
+import com.newoether.agora.model.MessageSource
 import com.newoether.agora.ui.chat.AttachmentThumbnailItem
 import com.newoether.agora.ui.chat.ThumbnailClickHandlers
+import com.newoether.agora.ui.chat.USER_BUBBLE_CONTENT_PADDING
 import com.newoether.agora.ui.chat.resolveAttachmentType
 import com.newoether.agora.ui.common.LocalAgoraHaptics
 import com.newoether.agora.ui.motion.LocalAgoraMotionPolicy
 import com.newoether.agora.ui.theme.ChatType
+import com.newoether.agora.ui.components.AgoraDropdownMenu
+import com.newoether.agora.ui.components.AgoraDropdownMenuItem
 
 /**
  * The right-aligned user message bubble: attachment thumbnails, the message text
@@ -131,12 +135,15 @@ internal fun UserMessageBubble(
             },
         ),
     ) {
+        message.source?.let { source ->
+            MessageSourceLabel(source = source, modifier = contextAlpha)
+        }
         Box {
             Surface(
             shape = shape,
             color = backgroundColor,
             modifier = Modifier
-                .widthIn(max = 300.dp)
+                .widthIn(min = USER_BUBBLE_MIN_WIDTH, max = 300.dp)
                 .then(contextAlpha)
                 .clip(shape)
                 .combinedClickable(
@@ -152,14 +159,31 @@ internal fun UserMessageBubble(
             if (isEditing) {
                 val editState = rememberTextFieldState(message.text)
                 val editScrollState = rememberScrollState()
-                Column(modifier = Modifier.padding(8.dp)) {
+                // Same inset as the read-only bubble, so the text stays put when editing starts;
+                // the field keeps only a bottom gap above its indicator line.
+                // The action buttons are 40dp tall around a 20sp label, so each carries 10dp of
+                // invisible height below its text; the bottom inset drops by that amount (and 1dp
+                // more, tuned by eye) so the visible gap under Cancel/Send matches the other sides.
+                Column(
+                    modifier = Modifier.padding(
+                        start = USER_BUBBLE_CONTENT_PADDING,
+                        top = USER_BUBBLE_CONTENT_PADDING,
+                        end = USER_BUBBLE_CONTENT_PADDING,
+                        bottom = EDIT_BOTTOM_INSET,
+                    ),
+                ) {
                     Box(modifier = Modifier.noOpBringIntoView()) {
                         TextField(
                             state = editState,
                             scrollState = editScrollState,
+                            // TextField applies a 56dp default min height only when no min
+                            // height is set; any explicit min lets the text decide the height, so a
+                            // single line keeps its indicator 8dp below the text.
                             modifier = Modifier
                                 .fillMaxWidth()
+                                .heightIn(min = 1.dp)
                                 .focusRequester(editFocusRequester),
+                            contentPadding = PaddingValues(bottom = 8.dp),
                             colors = TextFieldDefaults.colors(
                                 focusedContainerColor = Color.Transparent,
                                 unfocusedContainerColor = Color.Transparent
@@ -181,8 +205,11 @@ internal fun UserMessageBubble(
                     }
                 }
             } else {
+                // Content narrower than the minimum width sits centered; wider content fills the
+                // bubble and keeps its start alignment.
+                Box(contentAlignment = Alignment.Center) {
                 Column(
-                    modifier = Modifier.padding(16.dp).noOpBringIntoView(),
+                    modifier = Modifier.padding(USER_BUBBLE_CONTENT_PADDING).noOpBringIntoView(),
                     horizontalAlignment = Alignment.Start
                 ) {
                     val hasMetaItems = message.attachmentMeta?.items?.isNotEmpty() == true
@@ -265,7 +292,16 @@ internal fun UserMessageBubble(
                             }
                         }
                     }
-                    if (message.text.isNotEmpty()) {
+                    val askUser = message.source?.takeIf { it.kind == MessageSource.Kind.ASK_USER }
+                    if (askUser != null) {
+                        AskUserAnswerBlocks(
+                            source = askUser,
+                            unansweredLabel = stringResource(R.string.message_source_unanswered),
+                            bodyStyle = ChatType.userBody,
+                            textColor = textColor,
+                            searchHighlight = searchHighlight,
+                        )
+                    } else if (message.text.isNotEmpty()) {
                         SearchHighlightedPlainText(
                             text = message.text,
                             style = ChatType.userBody,
@@ -274,18 +310,18 @@ internal fun UserMessageBubble(
                         )
                     }
                 }
+                }
             }
         }
 
-            DropdownMenu(
+            AgoraDropdownMenu(
                 containerColor = MaterialTheme.colorScheme.surfaceContainer,
                 tonalElevation = 16.dp,
-                shape = RoundedCornerShape(12.dp),
                 expanded = showMenu && showActions && !isEditing,
                 onDismissRequest = { showMenu = false },
             ) {
                 if (!actionCopyText.isNullOrBlank()) {
-                    DropdownMenuItem(
+                    AgoraDropdownMenuItem(
                         text = { Text(stringResource(R.string.copy)) },
                         onClick = {
                             clipboardManager.setText(AnnotatedString(actionCopyText))
@@ -295,7 +331,7 @@ internal fun UserMessageBubble(
                         leadingIcon = { Icon(Icons.Default.ContentCopy, null) },
                     )
                 }
-                if (allowMutations) DropdownMenuItem(
+                if (allowMutations) AgoraDropdownMenuItem(
                     text = { Text(stringResource(R.string.edit)) },
                     onClick = {
                         showMenu = false
@@ -305,7 +341,7 @@ internal fun UserMessageBubble(
                     leadingIcon = { Icon(Icons.Default.Edit, null) },
                 )
                 if (message.text.isNotBlank()) {
-                    DropdownMenuItem(
+                    AgoraDropdownMenuItem(
                         text = { Text(stringResource(R.string.select_text)) },
                         onClick = {
                             showMenu = false
@@ -314,7 +350,7 @@ internal fun UserMessageBubble(
                         leadingIcon = { Icon(Icons.Default.SelectAll, null) },
                     )
                 }
-                DropdownMenuItem(
+                AgoraDropdownMenuItem(
                     text = { Text(stringResource(R.string.info)) },
                     onClick = {
                         showMenu = false
@@ -322,7 +358,7 @@ internal fun UserMessageBubble(
                     },
                     leadingIcon = { Icon(Icons.Default.Info, null) },
                 )
-                if (allowMutations) DropdownMenuItem(
+                if (allowMutations) AgoraDropdownMenuItem(
                     text = {
                         Text(
                             stringResource(R.string.delete),
@@ -375,3 +411,13 @@ internal fun UserMessageBubble(
 
     }
 }
+
+/**
+ * Bottom inset of the edit-mode bubble: the 15dp content padding minus the 10dp a Material
+ * TextButton (40dp min height, 20sp label) leaves below its label, minus 1dp tuned by eye.
+ */
+private val EDIT_BOTTOM_INSET = 4.dp
+
+/** Width of a single-line bubble's height (15dp padding twice plus one 24.2sp line), so the
+ * shortest message is a circle rather than a pinched capsule. */
+private val USER_BUBBLE_MIN_WIDTH = 54.dp

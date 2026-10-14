@@ -254,7 +254,10 @@ internal fun projectGenerationInputMessages(
 ): List<ChatMessage> {
     val projected = applyMessageTemplatesToMessages(
         messages = projectToolResultImagesToUserMessage(
-            messages = projectAssistantImagesToLatestUserMessage(messages, includeImages),
+            messages = projectAssistantImagesToLatestUserMessage(
+                projectAutomaticMessagesForApi(messages),
+                includeImages,
+            ),
             includeImages = includeImages,
         ),
         userPrepend = userPrepend,

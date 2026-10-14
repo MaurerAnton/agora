@@ -11,7 +11,12 @@ import kotlinx.coroutines.flow.callbackFlow
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.encodeToString
 import kotlinx.serialization.json.Json
+import kotlinx.serialization.json.JsonArray
+import kotlinx.serialization.json.JsonObject
+import kotlinx.serialization.json.JsonPrimitive
 import kotlinx.serialization.json.booleanOrNull
+import kotlinx.serialization.json.buildJsonObject
+import kotlinx.serialization.json.contentOrNull
 import kotlinx.serialization.json.jsonObject
 import kotlinx.serialization.json.jsonPrimitive
 import okhttp3.Call
@@ -39,6 +44,10 @@ private data class FiloInfo(
 private data class SendInput(val text: String, val clientId: String, val attachments: List<String> = emptyList())
 @Serializable
 private data class SendResult(val turnId: String, val clientId: String)
+// createSessionResponse: the full session spread plus the first-turn receipt.
+@Serializable
+private data class CreateResult(val id: String, val title: String, val cwd: String, val updatedAt: Long,
+    val status: String? = null, val turnId: String, val clientId: String)
 
 @Serializable
 private data class FiloError(val code: String? = null, val error: String? = null)
@@ -83,6 +92,9 @@ internal class FiloClient(
     private val token: String,
     private val calls: Call.Factory = OkHttpClient.Builder()
         .retryOnConnectionFailure(false).followRedirects(false).followSslRedirects(false)
+        // Conch closes idle connections at 120s, so pooled ones must expire earlier. Without this
+        // the encrypted path reuses a dead socket and the POST cannot be replayed safely.
+        .connectionPool(okhttp3.ConnectionPool(5, 45, TimeUnit.SECONDS))
         .addInterceptor(com.newoether.agora.util.ConchEncryptedHttp(token))
         .callTimeout(30, TimeUnit.SECONDS).build(),
     mutationTimeoutMillis: Long = 210_000,
@@ -220,7 +232,33 @@ internal class FiloClient(
         require(result["archived"]?.jsonPrimitive?.booleanOrNull == true) { "Native archive is unconfirmed" }
     }
 
-    suspend fun create(): RemoteSession = json.decodeFromString(request("v1/sessions", body = "{}"))
+    // Creation always carries the first message: no session ever exists without one.
+    suspend fun create(text: String, clientId: String, attachments: List<String> = emptyList(), settings: RemoteSettings? = null): RemoteSession {
+        if ((text.isBlank() && attachments.isEmpty()) || attachments.size > REMOTE_ATTACHMENT_COUNT ||
+            attachments.any { !it.matches(Regex("[a-f0-9]{32}")) }) throw FiloInputException()
+        if (settings?.model.isNullOrEmpty()) throw FiloInputException()
+        val body = JsonObject(buildJsonObject {
+            put("text", JsonPrimitive(text)); put("clientId", JsonPrimitive(clientId))
+            put("attachments", JsonArray(attachments.map(::JsonPrimitive)))
+            settings?.let { put("settings", it.jsonSettings()) }
+        }).toString()
+        if (body.toByteArray(Charsets.UTF_8).size > 65536) throw FiloInputException()
+        return json.decodeFromString<CreateResult>(request("v1/sessions", body = body))
+            .also { require(it.clientId == clientId && it.turnId.isNotBlank() && it.id.isNotBlank()) }
+            .let { RemoteSession(it.id, it.title, it.cwd, it.updatedAt, it.status) }
+    }
+
+    // Only the three next-turn keys leave the device; a malformed body never reaches native.
+    private fun RemoteSettings.jsonSettings(): JsonObject {
+        val source = (json.parseToJsonElement(body()) as? JsonObject) ?: JsonObject(emptyMap())
+        val settings = buildJsonObject {
+            source["model"]?.let { put("model", it) }
+            source["effort"]?.let { put("effort", it) }
+            source["serviceTier"]?.let { put("serviceTier", it) }
+        }
+        require((settings["model"] as? JsonPrimitive)?.contentOrNull?.isNotBlank() == true) { "Settings need a model" }
+        return JsonObject(settings)
+    }
     suspend fun models(): List<RemoteModel> = json.decodeFromString<RemoteModels>(request("v1/models")).models
     suspend fun usage(): RemoteUsage = json.decodeFromString(request("v1/usage"))
     suspend fun setModel(id: String, model: String) {

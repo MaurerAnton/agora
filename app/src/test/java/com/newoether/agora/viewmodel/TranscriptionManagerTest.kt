@@ -10,6 +10,7 @@ import com.newoether.agora.api.StreamEvent
 import com.newoether.agora.data.repository.ConversationRepository
 import com.newoether.agora.model.ChatMessage
 import com.newoether.agora.model.ToolImageAttachment
+import com.newoether.agora.util.Constants
 import io.mockk.every
 import io.mockk.mockk
 import io.mockk.mockkStatic
@@ -33,7 +34,8 @@ class TranscriptionManagerTest {
         val captured = mutableListOf<ProviderConfig>()
         val provider = mockk<LlmProvider>()
         every { provider.generateResponse(any(), capture(captured)) } returns flowOf(StreamEvent.TextChunk("Description"))
-        val manager = manager(mapOf("transcriber" to provider))
+        val providerName = Constants.PROVIDER_OPENCODE_GO
+        val manager = manager(mapOf(providerName to provider))
         Dispatchers.setMain(StandardTestDispatcher(testScheduler))
         mockkStatic(Looper::class)
         every { Looper.getMainLooper() } returns mockk(relaxed = true)
@@ -41,7 +43,7 @@ class TranscriptionManagerTest {
             for ((enabled, ttl) in listOf(false to "5m", true to "5m", true to "1h")) {
                 manager.describeImageWithProgress(
                     image = image,
-                    ctx = context("transcriber").copy(
+                    ctx = context(providerName).copy(
                         transcriptionAnthropicCacheEnabled = enabled,
                         transcriptionAnthropicCacheTtl = ttl,
                     ),
@@ -51,13 +53,14 @@ class TranscriptionManagerTest {
                 manager.transcribe(
                     targets = listOf(TranscriptionManager.TranscriptionTarget("user", image.path, 0)),
                     conversationId = "conversation", runId = "run", pass = 0,
-                    providerName = "transcriber", modelId = "vision-model", apiKey = "",
+                    providerName = providerName, modelId = "vision-model", apiKey = "",
                     baseUrl = null, prompt = "Describe", generationJob = null,
                     modelMessageId = "assistant", startTime = 0L,
                     anthropicCacheEnabled = enabled, anthropicCacheTtl = ttl, onProgress = {},
                 )
                 assertEquals(listOf(enabled, enabled), captured.takeLast(2).map { it.anthropicCacheEnabled })
                 assertEquals(listOf(ttl, ttl), captured.takeLast(2).map { it.anthropicCacheTtl })
+                assertEquals(listOf("conversation", "conversation"), captured.takeLast(2).map { it.sessionId })
             }
             assertEquals(6, captured.size)
         } finally {

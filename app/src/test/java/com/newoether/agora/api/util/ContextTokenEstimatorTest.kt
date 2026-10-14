@@ -1,5 +1,7 @@
 package com.newoether.agora.api.util
 
+import com.newoether.agora.model.AttachmentItem
+import com.newoether.agora.model.AttachmentMeta
 import com.newoether.agora.model.ChatMessage
 import com.newoether.agora.model.MessageSegment
 import com.newoether.agora.model.Participant
@@ -204,6 +206,21 @@ class ContextTokenEstimatorTest {
                 ContextTokenEstimator.estimate(listOf(lastOnly)),
         )
     }
+    @Test
+    fun ordinaryAssistantReasoningIsCountedOnlyWhenSerialized() {
+        val assistant = message("m1", "answer", Participant.MODEL).copy(
+            segments = listOf(
+                MessageSegment(type = "thought", content = "reasoning ".repeat(80)),
+                MessageSegment(type = "answer", content = "answer"),
+            ),
+        )
+        val withoutReasoning = ContextTokenEstimator.estimate(listOf(assistant))
+        val withReasoning = ContextTokenEstimator.estimate(
+            listOf(assistant),
+            includeAssistantReasoning = true,
+        )
+        assertTrue(withReasoning > withoutReasoning)
+    }
 
     @Test
     fun everyProjectedImageContributesToTheEstimate() {
@@ -262,6 +279,145 @@ class ContextTokenEstimatorTest {
             limitContext(listOf(user, tool, result), contextTokenBudget = 1).map { it.id },
         )
     }
+
+    @Test
+    fun imageCostGrowsWithStoredBytesAndStaysInsideTheBounds() {
+        // 768 bytes per token puts a 768 KiB image at the historical 1024-token figure.
+        assertEquals(300L, ContextTokenEstimator.estimateImageTokens(768L * 300L))
+        assertEquals(1_024L, ContextTokenEstimator.estimateImageTokens(768L * 1_024L))
+        assertEquals(1_400L, ContextTokenEstimator.estimateImageTokens(768L * 1_400L))
+        assertTrue(ContextTokenEstimator.estimateImageTokens(768L * 1_400L) >
+            ContextTokenEstimator.estimateImageTokens(768L * 300L))
+        // Bounds keep one image between a quarter and one and a half of that figure.
+        assertEquals(256L, ContextTokenEstimator.estimateImageTokens(1L))
+        assertEquals(256L, ContextTokenEstimator.estimateImageTokens(768L * 10L))
+        assertEquals(1_536L, ContextTokenEstimator.estimateImageTokens(768L * 1_536L))
+        assertEquals(1_536L, ContextTokenEstimator.estimateImageTokens(Long.MAX_VALUE))
+    }
+
+    @Test
+    fun imagesWithoutRecordedBytesFallBackToTheHistoricalFlatEstimate() {
+        assertEquals(1_024L, ContextTokenEstimator.estimateImageTokens(null))
+        assertEquals(1_024L, ContextTokenEstimator.estimateImageTokens(0L))
+        assertEquals(1_024L, ContextTokenEstimator.estimateImageTokens(-4_096L))
+    }
+
+    @Test
+    fun conversationCostTracksStoredImageBytesInsteadOfAFlatPerImageConstant() {
+        val text = "check the screenshots"
+        val noImage = message("u", text, Participant.USER)
+        val thumbnail = message("u", text, Participant.USER).copy(
+            images = listOf("thumb.jpg"),
+            attachmentMeta = attachment(type = "image", imageIndex = 0, fileSize = 768L * 300L),
+        )
+        val fullResolution = thumbnail.copy(
+            attachmentMeta = attachment(type = "image", imageIndex = 0, fileSize = 768L * 1_400L),
+        )
+
+        val withoutImage = ContextTokenEstimator.estimate(listOf(noImage))
+        val small = ContextTokenEstimator.estimate(listOf(thumbnail))
+        val large = ContextTokenEstimator.estimate(listOf(fullResolution))
+
+        assertTrue(small > withoutImage)
+        assertTrue(large > small)
+    }
+
+    @Test
+    fun unknownImageSizeIsStableAcrossMessagesAndRuns() {
+        val text = "check the screenshots"
+        val bare = message("u", text, Participant.USER).copy(images = listOf("legacy.jpg"))
+        val explicitMissingSize = bare.copy(
+            attachmentMeta = attachment(type = "image", imageIndex = 0, fileSize = null),
+        )
+        val unrenderedSizeBelongsToAnotherType = bare.copy(
+            attachmentMeta = attachment(type = "file", imageIndex = 0, fileSize = 768L * 1_400L),
+        )
+
+        assertEquals(ContextTokenEstimator.estimate(listOf(bare)), ContextTokenEstimator.estimate(listOf(bare)))
+        assertEquals(
+            ContextTokenEstimator.estimate(listOf(bare)),
+            ContextTokenEstimator.estimate(listOf(explicitMissingSize)),
+        )
+        assertEquals(
+            ContextTokenEstimator.estimate(listOf(bare)),
+            ContextTokenEstimator.estimate(listOf(unrenderedSizeBelongsToAnotherType)),
+        )
+    }
+
+    @Test
+    fun excessivePageCountIsBoundedByActualImages() {
+        val image = message("u", "read", Participant.USER).copy(
+            images = listOf("page.jpg"),
+            attachmentMeta = attachment("pdf", 0, Long.MAX_VALUE, Int.MAX_VALUE),
+        )
+        assertTrue(ContextTokenEstimator.estimate(listOf(image)) > 0)
+        val invalid = image.copy(attachmentMeta = attachment("pdf", -1, 768L, Int.MAX_VALUE))
+        assertEquals(
+            ContextTokenEstimator.estimate(listOf(image.copy(attachmentMeta = null))),
+            ContextTokenEstimator.estimate(listOf(invalid)),
+        )
+    }
+    @Test
+    fun oneAttachmentSplitsItsBytesAcrossTheImagesItRenders() {
+        val pages = message("u", "read the pdf", Participant.USER).copy(
+            images = listOf("page-1.jpg", "page-2.jpg", "page-3.jpg"),
+            attachmentMeta = attachment(
+                type = "pdf",
+                imageIndex = 0,
+                fileSize = 768L * 900L,
+                pageCount = 3,
+            ),
+        )
+        val withoutMeta = pages.copy(attachmentMeta = null)
+
+        // Three recorded pages cost one third of the attachment each instead of three unknown-size
+        // fallbacks, and stay deterministic.
+        assertTrue(ContextTokenEstimator.estimate(listOf(pages)) < ContextTokenEstimator.estimate(listOf(withoutMeta)))
+        assertEquals(
+            ContextTokenEstimator.estimate(listOf(pages)),
+            ContextTokenEstimator.estimate(listOf(pages)),
+        )
+    }
+
+    @Test
+    fun imagesOutsideTheUserRoleStayDisplayOnly() {
+        // Every provider adapter serializes images for user rows only, so counting a tool-result
+        // image would charge context that is never sent.
+        val toolResult = message(
+            Constants.RESULT_MSG_PREFIX + "1",
+            "",
+            Participant.MODEL,
+        ).copy(
+            images = listOf("captured-frame.jpg"),
+            attachmentMeta = attachment(
+                type = "image",
+                imageIndex = 0,
+                fileSize = 768L * 1_400L,
+            ),
+        )
+        val withoutImage = toolResult.copy(images = emptyList(), attachmentMeta = null)
+
+        assertEquals(
+            ContextTokenEstimator.estimate(listOf(withoutImage)),
+            ContextTokenEstimator.estimate(listOf(toolResult)),
+        )
+    }
+
+    private fun attachment(
+        type: String,
+        imageIndex: Int?,
+        fileSize: Long?,
+        pageCount: Int? = null,
+    ) = AttachmentMeta(
+        items = listOf(
+            AttachmentItem(
+                type = type,
+                imageIndex = imageIndex,
+                fileSize = fileSize,
+                pageCount = pageCount,
+            ),
+        ),
+    )
 
     private fun message(id: String, text: String, participant: Participant) = ChatMessage(
         id = id,

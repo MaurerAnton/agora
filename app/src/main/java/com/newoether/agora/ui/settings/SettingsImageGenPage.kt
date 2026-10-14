@@ -32,6 +32,7 @@ import com.newoether.agora.util.Constants
 import com.newoether.agora.util.noOpBringIntoView
 import com.newoether.agora.viewmodel.ChatViewModel
 import kotlinx.coroutines.delay
+import com.newoether.agora.ui.components.optionClickable
 
 /**
  * Substrings that identify text-to-image models across the major families/vendors. Aims for ~90%
@@ -207,7 +208,7 @@ fun SettingsImageGenPage(viewModel: ChatViewModel, onBack: () -> Unit) {
                     if (imageModels.isNotEmpty()) {
                         Row(
                             verticalAlignment = Alignment.CenterVertically,
-                            modifier = Modifier.fillMaxWidth().clickable { showAllModels = !showAllModels }
+                            modifier = Modifier.fillMaxWidth().optionClickable { showAllModels = !showAllModels }
                         ) {
                             Checkbox(checked = showAllModels, onCheckedChange = { showAllModels = it })
                             Text(stringResource(R.string.image_gen_show_all), style = MaterialTheme.typography.bodyMedium)
@@ -232,7 +233,7 @@ fun SettingsImageGenPage(viewModel: ChatViewModel, onBack: () -> Unit) {
                                         viewModel.settings.setImageGenModel(model); showModelDialog = false
                                     })
                                 },
-                                modifier = Modifier.clickable {
+                                modifier = Modifier.optionClickable {
                                     viewModel.settings.setImageGenModel(model); showModelDialog = false
                                 }
                             )

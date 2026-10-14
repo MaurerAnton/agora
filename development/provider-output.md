@@ -5,17 +5,23 @@ It preserves the requirements of section 8.9; scope and authority are unchanged.
 
 An official OpenAI Provider or a custom Provider selected as OpenAI-compatible, together with
 Responses API enabled, is sufficient to expose both `OpenAI Search` and `Service Tier` in the
-conversation UI. No model-name allowlist, capability-discovery request, local capability registry,
-or extra relay declaration may suppress those controls. This is a positive availability rule; it
-does not redefine any separately supported Service Tier surface outside Responses.
+conversation UI. No model-name allowlist, capability-discovery request, or extra relay declaration
+may suppress those controls. In local chat, the tier choices shown inside the available control
+follow the built-in official model support table; an unlisted official model or a custom relay's
+model offers all five choices for server-side validation. This is a positive control-availability
+rule; it does not redefine any separately supported Service Tier surface outside Responses.
 
 The immutable generation snapshot freezes both choices. When OpenAI Search is enabled, the existing
 OpenAI-compatible Responses request includes the native `web_search` tool. When Service Tier is
-enabled, that same request includes the normalized selected `service_tier` value. Recognized values
-are `auto`, `default`, `flex`, `scale`, `priority`, `fast`, and `ultrafast`; normalization must
-preserve each spelling rather than collapse a recognized tier to `auto`. Chat Completions omits this
-Responses-only field. The ordinary Provider owns request serialization; UI visibility must not
-create a second request path.
+enabled, that same request includes the selected model's mapped `service_tier` value. The five
+normalized values are `auto`, `default`, `flex`, `fast`, and `ultrafast`. Historical `scale` is
+normalized to `default`; historical `priority` is normalized to `fast` on read, save, import and
+request capture. Changing models never rewrites the stored choice. `auto` and `default` stay as
+selected; unsupported `flex` maps to `default`; unsupported `fast` or `ultrafast` maps to a
+supported accelerated tier if present, otherwise `default`. Only documented official models have
+restricted choices. Offering `ultrafast` for a model does not establish account access: the UI
+warns that permission may be required. Chat Completions omits this Responses-only field. The
+ordinary Provider owns request serialization; UI visibility must not create a second request path.
 
 Every OpenAI-compatible Chat request forwards a captured non-null `temperature`, `max_tokens`,
 `top_p`, `frequency_penalty`, and `presence_penalty` without model-family remapping. Thinking is a

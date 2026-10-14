@@ -6,6 +6,7 @@ import com.newoether.agora.data.local.RunEntity
 import com.newoether.agora.data.repository.ConversationRepository
 import com.newoether.agora.data.repository.SettingsRepository
 import com.newoether.agora.model.ChatMessage
+import com.newoether.agora.model.MessageSource
 import com.newoether.agora.model.MessageStatus
 import com.newoether.agora.model.Participant
 import com.newoether.agora.model.RunEffect
@@ -135,10 +136,10 @@ internal class QueuedGuidanceDrainExecutor(
                     graphCommitted
                 }
             try {
-                val queued = mergeQueuedGuidance(batch)
+                val bubbles = mergeQueuedGuidance(batch)
                 val persistId = state.nextPersistId()
                 executionCoordinator.withConversationLock(conversationId) {
-                    val generationSnapshot = queued.generationSnapshot
+                    val generationSnapshot = batch.last().generationSnapshot
                         ?.copy(conversationId = conversationId, runId = runId)
                         ?: requestBuilder.captureAdmissionSnapshot(
                             conversationId = conversationId,
@@ -153,23 +154,25 @@ internal class QueuedGuidanceDrainExecutor(
                     }
                     val parentId = leaf?.id
                     val start = clock()
-                    val users = listOf(
+                    // Each bubble chains onto the previous one; the model answers them together.
+                    val users = bubbles.mapIndexed { index, queued ->
                         MessageEntity(
                             id = queued.id,
                             conversationId = conversationId,
-                            parentId = parentId,
+                            parentId = if (index == 0) parentId else bubbles[index - 1].id,
                             text = queued.text,
                             images = queued.preparedImages,
                             thoughts = null,
                             status = MessageStatus.SUCCESS,
                             participant = Participant.USER,
-                            timestamp = start,
+                            timestamp = start + index,
                             attachmentMeta = queued.preparedAttachmentMetaJson,
                             runId = runId,
-                            runSequence = 0,
+                            runSequence = index.toLong(),
                             consumedAtPass = 0,
-                        ),
-                    )
+                            sourceJson = MessageSource.encode(queued.source),
+                        )
+                    }
                     val modelMessageId = idFactory()
                     setupModelMessageId = modelMessageId
                     val placeholderEntity = MessageEntity(

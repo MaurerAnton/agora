@@ -47,12 +47,36 @@ class ToolArgumentAccumulatorTest {
     }
 
     @Test
-    fun staleShorterSnapshot_isIgnored() {
+    fun staleLongerSnapshotResend_isIgnored() {
         val accumulator = ToolArgumentAccumulator()
-        accumulator.append("{\"a\":1,\"b\":2}")
-        accumulator.append("{\"a\":1")
+        accumulator.append("{\"path\":\"a.txt\",\"query\":\"search me\"}")
+        accumulator.append("{\"path\":\"a.txt\",\"que")
 
-        assertEquals("{\"a\":1,\"b\":2}", accumulator.toString())
+        assertEquals("{\"path\":\"a.txt\",\"query\":\"search me\"}", accumulator.toString())
+    }
+
+    @Test
+    fun nestedArrayOpeningBracePair_isAppendedNotDropped() {
+        // Real Anthropic chunking: `[` and `{"` arrive as separate deltas. `{"` is the head of
+        // every argument object, so reading it as a stale snapshot used to truncate the call and
+        // leave Agora holding arguments that never parse.
+        val accumulator = ToolArgumentAccumulator()
+        accumulator.append("{\"questions\":[")
+        accumulator.append("{\"")
+        accumulator.append("question\":\"Pick\",\"options\":[\"a\"]}]}")
+
+        assertEquals(
+            "{\"questions\":[{\"question\":\"Pick\",\"options\":[\"a\"]}]}",
+            accumulator.toString(),
+        )
+    }
+
+    @Test
+    fun shortIncrementMatchingTheAccumulatedHead_isAppended() {
+        val accumulator = ToolArgumentAccumulator("{\"outer\":")
+        accumulator.append("{\"")
+
+        assertEquals("{\"outer\":{\"", accumulator.toString())
     }
 
     @Test

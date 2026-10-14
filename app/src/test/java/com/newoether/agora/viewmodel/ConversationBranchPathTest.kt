@@ -13,6 +13,15 @@ import org.junit.Test
 
 class ConversationBranchPathTest {
     @Test
+    fun forkIdsKeepEveryRowKindPrefixIncludingTheCompactBoundary() {
+        assertEquals("tool_new", remapForkMessageId("tool_old", "new"))
+        assertEquals("result_new", remapForkMessageId("result_old", "new"))
+        // The context loader finds the compact boundary by this prefix.
+        assertEquals("compact_new", remapForkMessageId("compact_old", "new"))
+        assertEquals("new", remapForkMessageId("plain-message", "new"))
+    }
+
+    @Test
     fun selectedBranchClosesOverEveryParallelToolResult() {
         val messages = listOf(
             message("user", null, Participant.USER, 0),

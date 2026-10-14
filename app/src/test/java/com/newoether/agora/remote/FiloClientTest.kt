@@ -256,6 +256,38 @@ class FiloClientTest {
         } finally { server.stop(0) }
     }
 
+    @Test fun authenticatedDirectCreationCarriesTheFirstMessageAndSettingsAndNeverCreatesEmpty() = runBlocking {
+        val server = HttpServer.create(InetSocketAddress("127.0.0.1", 0), 0)
+        var method = ""
+        var path = ""
+        var body = ""
+        server.createContext("/v1/sessions") { exchange ->
+            method = exchange.requestMethod
+            path = exchange.requestURI.path
+            body = exchange.requestBody.reader().readText()
+            val bytes = """{"id":"$id","title":"New","cwd":"C:/work","updatedAt":2,"turnId":"turn-1","clientId":"$id"}""".toByteArray()
+            exchange.sendResponseHeaders(201, bytes.size.toLong())
+            exchange.responseBody.use { it.write(bytes) }
+        }
+        server.start()
+        try {
+            val client = applicationFixtureClient("http://127.0.0.1:${server.address.port}/", token)
+            val created = client.create("hello", id, settings = RemoteSettings(model = "chosen", updateServiceTier = true))
+            assertEquals("POST", method)
+            assertEquals("/v1/sessions", path)
+            assertEquals(id, created.id)
+            assertTrue(body.contains("\"text\":\"hello\""))
+            assertTrue(body.contains("\"clientId\":\"$id\""))
+            assertTrue(body.contains("\"attachments\":[]"))
+            assertTrue(body.contains("\"settings\":{\"model\":\"chosen\",\"serviceTier\":null}"))
+            try { client.create("", "11111111-1111-4111-8111-111111111111"); fail("Blank first message must be refused") }
+            catch (_: FiloInputException) { }
+            try { client.create("hi", "11111111-1111-4111-8111-111111111111", settings = RemoteSettings()); fail("Settings without a model must be refused") }
+            catch (_: FiloInputException) { }
+        } finally { server.stop(0) }
+        Unit
+    }
+
     @Test fun connectionAcceptsOriginalDesktopGatewayAndRejectsRetiredOrUnknownModes() = runBlocking {
         for (mode in listOf("existing", "standalone", "unsupported")) {
             val server = HttpServer.create(InetSocketAddress("127.0.0.1", 0), 0)

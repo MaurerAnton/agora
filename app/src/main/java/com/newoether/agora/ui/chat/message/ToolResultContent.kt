@@ -45,7 +45,6 @@ import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.res.stringResource
 import com.newoether.agora.R
-import com.newoether.agora.model.CitationPolicy
 import com.newoether.agora.model.MessageSegment
 import com.newoether.agora.model.ToolImageAttachment
 import com.newoether.agora.ui.chat.MEDIA_LOADING_INDICATOR_STROKE_WIDTH
@@ -54,12 +53,6 @@ import com.newoether.agora.ui.chat.MediaLoadPresentation
 import com.newoether.agora.ui.theme.ChatType
 import com.newoether.agora.ui.theme.MonoFamily
 import com.newoether.agora.util.NoAutoScrollSelectionContainer
-import kotlinx.serialization.json.JsonArray
-import kotlinx.serialization.json.JsonElement
-import kotlinx.serialization.json.JsonObject
-import kotlinx.serialization.json.JsonPrimitive
-import kotlinx.serialization.json.contentOrNull
-import kotlinx.serialization.json.intOrNull
 
 internal val LocalToolImageLoader =
     staticCompositionLocalOf<(suspend (String, String) -> ToolImageAttachment)?> { null }
@@ -69,37 +62,32 @@ internal fun ToolDetailContent(
     segment: MessageSegment,
     onMediaClick: (List<String>, Int) -> Unit,
 ) {
-    val presentation = ToolPresentationResolver.resolve(segment)
+    val presentation = currentResources().toolDetailPresentation(segment)
     val contentAlignmentModifier = if (presentation.kind == ToolKind.WEB_SEARCH) {
         Modifier.padding(horizontal = 8.dp)
     } else {
         Modifier
     }
-    val args = presentation.rawArguments
-    if (!args.isNullOrBlank() && args != "{}") {
+    presentation.arguments?.let { args ->
         Column(modifier = contentAlignmentModifier.fillMaxWidth()) {
-            ToolSectionLabel(stringResource(R.string.arguments_label))
+            ToolSectionLabel(presentation.argumentsLabel)
             Spacer(Modifier.height(5.dp))
             JsonOrPlainView(args)
             Spacer(Modifier.height(18.dp))
         }
     }
-
     if (presentation.kind == ToolKind.MCP) {
         Column(modifier = contentAlignmentModifier.fillMaxWidth()) {
             Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                 MetaPill(text = "MCP", emphasized = true)
-                presentation.device
-                    ?.takeIf(String::isNotBlank)
-                    ?.let { MetaPill(it) }
+                presentation.mcpDevice?.let { MetaPill(it) }
             }
             Spacer(Modifier.height(18.dp))
         }
     }
-
     Column(modifier = Modifier.fillMaxWidth()) {
         Column(modifier = contentAlignmentModifier.fillMaxWidth()) {
-            ToolSectionLabel(stringResource(R.string.result_label))
+            ToolSectionLabel(presentation.resultLabel)
             Spacer(Modifier.height(6.dp))
         }
         if (segment.toolImages.isNotEmpty() || segment.toolImageRequestKey != null) {
@@ -115,51 +103,38 @@ internal fun ToolDetailContent(
             Spacer(Modifier.height(12.dp))
         }
     }
-    if (presentation.kind == ToolKind.SHELL_EXECUTE ||
-        presentation.kind == ToolKind.SHELL_JOB_GET ||
-        presentation.kind == ToolKind.SHELL_JOB_WAIT
-    ) {
-        Column(modifier = contentAlignmentModifier.fillMaxWidth()) {
-            ShellResult(presentation)
+    val body = presentation.body
+    if (body is ToolDetailBody.Search) {
+        WebSearchResult(body)
+        return
+    }
+    if (presentation.kind == ToolKind.WEB_SEARCH && body is ToolDetailBody.Muted) {
+        Column(modifier = Modifier.padding(horizontal = 8.dp)) {
+            ToolMutedContent(body.text)
         }
         return
     }
-    if (
-        presentation.kind == ToolKind.WEB_SEARCH &&
-        (
-            presentation.state == ToolPresentationState.EMPTY ||
-                presentation.state == ToolPresentationState.COMPLETED
-            )
-    ) {
-        ToolCompletedContent(presentation)
-        return
-    }
     Column(modifier = contentAlignmentModifier.fillMaxWidth()) {
-        when (presentation.state) {
-            ToolPresentationState.CALLING -> ToolActiveContent(
-                text = toolSummary(presentation),
-                output = presentation.liveOutput,
-            )
-            ToolPresentationState.RUNNING,
-            ToolPresentationState.BACKGROUND_RUNNING -> ToolActiveContent(
-                text = toolSummary(presentation),
-                output = presentation.liveOutput ?: resultOutput(presentation.result),
-            )
-            ToolPresentationState.FAILED -> {
-                ToolErrorContent(
-                    presentation.errorMessage ?: stringResource(R.string.tool_call_failed),
-                )
-                if (!presentation.liveOutput.isNullOrBlank()) {
+        when (body) {
+            is ToolDetailBody.Active -> ToolActiveContent(body.text, body.output)
+            is ToolDetailBody.Failed -> {
+                ToolErrorContent(body.text)
+                if (!body.output.isNullOrBlank()) {
                     Spacer(Modifier.height(8.dp))
-                    TerminalOutput(presentation.liveOutput)
+                    TerminalOutput(body.output)
                 }
             }
-            ToolPresentationState.STOPPED -> GenerationTerminalText(
-                text = stringResource(R.string.tool_execution_stopped),
-                fillWidth = true,
-            )
-            ToolPresentationState.EMPTY,
-            ToolPresentationState.COMPLETED -> ToolCompletedContent(presentation)
+            is ToolDetailBody.Stopped -> GenerationTerminalText(text = body.text, fillWidth = true)
+            is ToolDetailBody.Muted -> ToolMutedContent(body.text)
+            is ToolDetailBody.JsonContent -> body.values.forEachIndexed { index, value ->
+                if (index > 0) Spacer(Modifier.height(12.dp))
+                JsonOrPlainView(value)
+            }
+            is ToolDetailBody.Shell -> ShellResult(body)
+            is ToolDetailBody.Paths -> FileGlobResult(body)
+            is ToolDetailBody.Grep -> FileGrepResult(body)
+            is ToolDetailBody.FileContent -> FileReadResult(body)
+            is ToolDetailBody.Search -> Unit
         }
     }
 }
@@ -355,93 +330,20 @@ private fun ToolMutedContent(message: String) {
     )
 }
 
-@Composable
-private fun ToolCompletedContent(
-    presentation: ToolPresentation,
-) {
-    when (presentation.kind) {
-        ToolKind.MCP -> McpResultContent(presentation)
-        ToolKind.FILE_GLOB -> FileGlobResult(presentation)
-        ToolKind.FILE_GREP -> FileGrepResult(presentation)
-        ToolKind.FILE_READ -> FileReadResult(presentation)
-        ToolKind.WEB_SEARCH -> WebSearchResult(presentation)
-        else -> {
-            val result = presentation.rawResult
-            if (result.isNullOrEmpty()) {
-                ToolMutedContent(toolSummary(presentation))
-            } else {
-                JsonOrPlainView(result)
-            }
-        }
-    }
-}
 
 @Composable
-private fun McpResultContent(
-    presentation: ToolPresentation,
-) {
-    val text = presentation.rawTextResult?.takeIf(String::isNotBlank)
-    val structured = presentation.rawStructuredResult?.takeIf(String::isNotBlank)
-
-    if (text != null) {
-        JsonOrPlainView(text)
-    }
-    if (structured != null) {
-        if (text != null) Spacer(Modifier.height(12.dp))
-        JsonOrPlainView(structured)
-    }
-    if (text == null && structured == null) {
-        val legacyResult = presentation.rawResult
-        if (legacyResult.isNullOrEmpty()) {
-            ToolMutedContent(toolSummary(presentation))
-        } else {
-            JsonOrPlainView(legacyResult)
-        }
-    }
-}
-
-@Composable
-private fun FileGlobResult(presentation: ToolPresentation) {
-    val files = (presentation.result as? JsonObject)
-        ?.get("files") as? JsonArray
-    if (files.isNullOrEmpty()) {
-        ToolMutedContent(stringResource(R.string.tool_found_no_files))
-        return
-    }
+private fun FileGlobResult(body: ToolDetailBody.Paths) {
     Column(verticalArrangement = Arrangement.spacedBy(7.dp)) {
-        files.forEachIndexed { index, value ->
-            val path = (value as? JsonPrimitive)?.contentOrNull ?: value.toString()
-            IndexedCodeLine(index + 1, path)
-        }
+        body.values.forEachIndexed { index, path -> IndexedCodeLine(index + 1, path) }
     }
 }
 
-private data class GrepUiMatch(
-    val path: String,
-    val line: Int?,
-    val content: String,
-)
-
 @Composable
-private fun FileGrepResult(presentation: ToolPresentation) {
-    val matches = ((presentation.result as? JsonObject)?.get("matches") as? JsonArray)
-        ?.mapNotNull { value ->
-            val item = value as? JsonObject ?: return@mapNotNull null
-            GrepUiMatch(
-                path = item.string("path").orEmpty(),
-                line = item.int("line"),
-                content = item.string("content").orEmpty(),
-            )
-        }
-        .orEmpty()
-    if (matches.isEmpty()) {
-        ToolMutedContent(stringResource(R.string.tool_found_no_matches))
-        return
-    }
+private fun FileGrepResult(body: ToolDetailBody.Grep) {
     Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
-        matches.groupBy { it.path }.forEach { (path, pathMatches) ->
+        body.groups.forEach { (path, pathMatches) ->
             Text(
-                text = path.ifBlank { stringResource(R.string.file_path_unknown) },
+                text = path,
                 style = ChatType.thoughtCodeLarge,
                 color = MaterialTheme.colorScheme.primary,
                 maxLines = 2,
@@ -481,118 +383,53 @@ private fun FileGrepResult(presentation: ToolPresentation) {
 }
 
 @Composable
-private fun ShellResult(
-    presentation: ToolPresentation,
-) {
+private fun ShellResult(body: ToolDetailBody.Shell) {
     Row(
         modifier = Modifier.fillMaxWidth(),
         horizontalArrangement = Arrangement.spacedBy(8.dp),
     ) {
-        MetaPill(
-            text = shellStatusLabel(presentation),
-            emphasized = true,
-        )
-        MetaPill(
-            presentation.device
-                ?.takeIf { it.isNotBlank() }
-                ?: stringResource(R.string.tool_unknown_device),
-        )
+        MetaPill(text = body.status, emphasized = true)
+        MetaPill(body.device)
     }
-    if (presentation.state == ToolPresentationState.FAILED &&
-        !presentation.errorMessage.isNullOrBlank()
-    ) {
+    body.error?.let {
         Spacer(Modifier.height(8.dp))
-        ToolErrorContent(presentation.errorMessage)
+        ToolErrorContent(it)
     }
     Spacer(Modifier.height(8.dp))
-    TerminalOutput(
-        shellOutputText(presentation)
-            ?: stringResource(R.string.tool_no_output),
-    )
+    TerminalOutput(body.output)
 }
 
 @Composable
-private fun shellStatusLabel(presentation: ToolPresentation): String {
-    return shellExecutionSummary(presentation)
-}
-
-internal fun shellOutputText(presentation: ToolPresentation): String? {
-    val result = presentation.result as? JsonObject
-    val completedOutput = result.string("output")
-        ?.takeIf(String::isNotBlank)
-        ?: listOfNotNull(
-            result.string("stdout")?.takeIf(String::isNotBlank),
-            result.string("stderr")?.takeIf(String::isNotBlank),
-        ).takeIf(List<String>::isNotEmpty)?.joinToString("\n")
-    if (completedOutput != null) return completedOutput
-
-    return presentation.liveOutput
-        ?.takeIf { it.isNotBlank() }
-        ?.takeUnless { output ->
-            output.startsWith("Connecting to ") ||
-                output == "Starting durable background job"
-        }
-}
-
-@Composable
-private fun FileReadResult(presentation: ToolPresentation) {
-    val result = presentation.result as? JsonObject
-    val path = result.string("path") ?: presentation.subject
-    val lines = result.int("lines")
-    if (path != null || lines != null) {
+private fun FileReadResult(body: ToolDetailBody.FileContent) {
+    if (body.path != null || body.lineCount != null) {
         Row(
             horizontalArrangement = Arrangement.spacedBy(8.dp),
             verticalAlignment = Alignment.CenterVertically,
         ) {
-            path?.let { MetaPill(it, modifier = Modifier.weight(1f, fill = false)) }
-            lines?.let { MetaPill(stringResource(R.string.tool_line_count, it)) }
+            body.path?.let { MetaPill(it, modifier = Modifier.weight(1f, fill = false)) }
+            body.lineCount?.let { MetaPill(it) }
         }
         Spacer(Modifier.height(8.dp))
     }
-    val content = result.string("content").orEmpty()
-    if (content.isEmpty()) {
-        ToolMutedContent(
-            if (path == null) {
-                stringResource(R.string.tool_read_file_empty_default)
-            } else {
-                stringResource(R.string.tool_read_file_empty, path)
-            },
-        )
-    } else {
-        TerminalOutput(content)
-    }
-    if (result.boolean("truncated") == true) {
-        val nextOffset = (result.long("offset") ?: 0L) +
-            (result.long("returned_bytes") ?: content.toByteArray(Charsets.UTF_8).size.toLong())
+    if (body.content.isEmpty()) ToolMutedContent(body.emptyText) else TerminalOutput(body.content)
+    body.truncationText?.let {
         Spacer(Modifier.height(8.dp))
-        ToolMutedContent(stringResource(R.string.tool_read_file_truncated, nextOffset))
+        ToolMutedContent(it)
     }
 }
 
 @Composable
 private fun WebSearchResult(
-    presentation: ToolPresentation,
+    body: ToolDetailBody.Search,
 ) {
     val uriHandler = LocalUriHandler.current
     val resultShape = RoundedCornerShape(12.dp)
-    val results = ((presentation.result as? JsonObject)?.get("results") as? JsonArray)
-        .orEmpty()
-    if (results.isEmpty()) {
-        Column(modifier = Modifier.padding(horizontal = 8.dp)) {
-            ToolMutedContent(toolSummary(presentation))
-        }
-        return
-    }
     Column {
-        results.forEachIndexed { index, value ->
-            val item = value as? JsonObject
-            val title = item.string("title") ?: stringResource(R.string.tool_web_result, index + 1)
-            val url = item.string("url") ?: item.string("href")
-            val safeUrl = remember(url) { CitationPolicy.safeHttpUrl(url) }
-            val snippet = item.string("snippet")
-                ?: item.string("description")
-                ?: item.string("content")
-                ?: item.string("body")
+        body.results.forEachIndexed { index, item ->
+            val title = item.title
+            val url = item.url
+            val safeUrl = item.safeUrl
+            val snippet = item.snippet
             Column(
                 modifier = Modifier
                     .fillMaxWidth()
@@ -632,7 +469,7 @@ private fun WebSearchResult(
                     )
                 }
             }
-            if (index < results.lastIndex) {
+            if (index < body.results.lastIndex) {
                 HorizontalDivider(
                     color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.35f),
                 )
@@ -711,16 +548,3 @@ private fun MetaPill(
         )
     }
 }
-
-private fun resultOutput(result: JsonElement?): String? =
-    (result as? JsonObject).string("output")
-
-private fun JsonObject?.string(key: String): String? =
-    (this?.get(key) as? JsonPrimitive)?.contentOrNull
-
-private fun JsonObject?.int(key: String): Int? =
-    (this?.get(key) as? JsonPrimitive)?.intOrNull
-private fun JsonObject?.long(key: String): Long? =
-    string(key)?.toLongOrNull()
-private fun JsonObject?.boolean(key: String): Boolean? =
-    string(key)?.toBooleanStrictOrNull()

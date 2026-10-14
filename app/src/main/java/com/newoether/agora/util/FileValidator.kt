@@ -3,6 +3,8 @@ package com.newoether.agora.util
 import android.content.Context
 import android.net.Uri
 import android.provider.OpenableColumns
+import com.newoether.agora.model.AttachmentStorage
+import com.newoether.agora.model.SelectedAttachment
 
 object FileValidator {
     enum class AttachmentRoute {
@@ -36,6 +38,31 @@ object FileValidator {
             mimeType.startsWith(allowed)
         } -> AttachmentRoute.TEXT
         else -> AttachmentRoute.LOCAL_SANDBOX
+    }
+    internal fun inspectAttachment(
+        source: String,
+        fileName: String?,
+        mimeType: String?,
+        fileSize: Long?,
+        forcedType: String?,
+        allowLocalSandbox: Boolean,
+    ): SelectedAttachment? {
+        val route = routeForMimeType(mimeType)
+        val sandbox = forcedType == null && route == AttachmentRoute.LOCAL_SANDBOX
+        if (sandbox && !allowLocalSandbox) return null
+        return SelectedAttachment(
+            uri = source,
+            type = forcedType ?: when (route) {
+                AttachmentRoute.IMAGE -> "image"
+                AttachmentRoute.VIDEO -> "video"
+                AttachmentRoute.PDF -> "pdf"
+                AttachmentRoute.TEXT, AttachmentRoute.LOCAL_SANDBOX -> "file"
+            },
+            fileName = fileName,
+            mimeType = mimeType,
+            fileSize = fileSize,
+            storage = if (sandbox) AttachmentStorage.LOCAL_SANDBOX_PENDING else AttachmentStorage.APP_PRIVATE,
+        )
     }
 
     fun validate(context: Context, uri: Uri): Result {

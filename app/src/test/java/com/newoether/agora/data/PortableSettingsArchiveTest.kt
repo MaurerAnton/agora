@@ -27,6 +27,44 @@ import org.junit.Test
 
 class PortableSettingsArchiveTest {
     @Test
+    fun legacyServiceTiersNormalizeThroughPortableImportAndExport() = runTest {
+        val directory = java.nio.file.Files.createTempDirectory("agora-tier-settings").toFile()
+        val context = mockk<android.content.Context>()
+        every { context.applicationContext } returns context
+        every { context.filesDir } returns directory
+        val movesClass = "androidx.datastore.core.FileMoves_androidKt"
+        val atomicMove = Class.forName(movesClass)
+            .getDeclaredMethod("atomicMoveTo", File::class.java, File::class.java)
+        mockkStatic(movesClass)
+        every { atomicMove.invoke(null, any<File>(), any<File>()) } answers {
+            java.nio.file.Files.move(firstArg<File>().toPath(), secondArg<File>().toPath(),
+                java.nio.file.StandardCopyOption.REPLACE_EXISTING)
+            true
+        }
+        try {
+            val manager = SettingsManager(context)
+            manager.saveOpenAiServiceTier("priority")
+            assertEquals("fast", manager.openAiServiceTier.first())
+            val legacy = Json.parseToJsonElement("""{"openAiServiceTier":"scale"}""") as JsonObject
+            PortableSettingsArchive.restoreFromJsonObject(legacy, manager, false, false, null) { it }
+            assertEquals("default", manager.openAiServiceTier.first())
+            assertEquals("default", PortableSettingsArchive.toJsonObject(manager, false)
+                .getValue("openAiServiceTier").jsonPrimitive.content)
+            manager.saveConversationSettings("conversation", ConversationSettings(openAiServiceTier = "scale"))
+            assertEquals("default", manager.conversationSettings.first()
+                .getValue("conversation").openAiServiceTier)
+            manager.saveConversationSettingsMap(
+                mapOf("conversation" to ConversationSettings(openAiServiceTier = "priority")),
+            )
+            assertEquals("fast", SettingsManager(context).conversationSettings.first()
+                .getValue("conversation").openAiServiceTier)
+        } finally {
+            unmockkStatic(movesClass)
+            directory.deleteRecursively()
+        }
+    }
+
+    @Test
     fun cacheArchiveRoundTripAndLegacyStrategiesUseRealSettingsStorage() = runTest {
         val directory = java.nio.file.Files.createTempDirectory("agora-cache-settings").toFile()
         val context = mockk<android.content.Context>()

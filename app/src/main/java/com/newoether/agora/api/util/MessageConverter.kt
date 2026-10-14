@@ -5,6 +5,8 @@ import com.newoether.agora.api.OpenAiImageUrl
 import com.newoether.agora.api.OpenAiMessage
 import com.newoether.agora.api.OpenAiRequestFunction
 import com.newoether.agora.api.OpenAiRequestToolCall
+import com.newoether.agora.api.util.tokens.ContextCostModel
+import com.newoether.agora.api.util.tokens.CostModelContextEstimator
 import com.newoether.agora.model.ChatMessage
 import com.newoether.agora.model.Participant
 import com.newoether.agora.util.Constants
@@ -34,11 +36,17 @@ fun imageMimeType(imagePath: String): String = when {
 }
 
 
+/**
+ * [forwardAssistantReasoning] replays each assistant turn's stored chain of thought as
+ * `reasoning_content`. DeepSeek thinking mode requires it for every earlier turn once a request
+ * carries tools; other providers ignore the field, so they keep the default.
+ */
 internal fun convertToOpenAiMessages(
     messages: List<ChatMessage>,
     systemPrompt: String? = null,
     includeImages: Boolean = true,
     base64Files: Base64FileRegistry,
+    forwardAssistantReasoning: Boolean = false,
 ): List<OpenAiMessage> {
     val apiMessages = mutableListOf<OpenAiMessage>()
 
@@ -58,7 +66,8 @@ internal fun convertToOpenAiMessages(
         // (tool results come from the following result_ messages)
         if (msg.id.startsWith(Constants.TOOL_MSG_PREFIX)) {
             val toolSegs = msg.segments?.filter { it.type == "tool" }
-            val thoughtContent = msg.segments?.lastOrNull { it.type == "thought" }?.content
+            val thoughtContent = msg.segments?.filter { it.type == "thought" }
+                ?.joinToString("\n") { it.content }
             if (!toolSegs.isNullOrEmpty()) {
                 val toolCalls = toolSegs.map { seg ->
                     val tid = seg.toolCallId ?: buildToolCallId(seg.toolName ?: "", seg.toolArgs ?: "{}")
@@ -78,6 +87,7 @@ internal fun convertToOpenAiMessages(
                     responseOutputItemProvider = toolSegs.firstOrNull {
                         it.responseOutputItems.isNotEmpty()
                     }?.responseOutputItemProvider,
+                    responseOutputItemModel = msg.modelName,
                 ))
             } else if (msg.toolCall != null) {
                 val tc = msg.toolCall!!
@@ -92,6 +102,7 @@ internal fun convertToOpenAiMessages(
                     reasoningContent = thoughtContent?.ifEmpty { null },
                     responseOutputItems = tc.responseOutputItems.ifEmpty { null },
                     responseOutputItemProvider = tc.responseOutputItemProvider,
+                    responseOutputItemModel = msg.modelName,
                 ))
             }
             return@flatMap entries
@@ -147,7 +158,15 @@ internal fun convertToOpenAiMessages(
 
         entries.add(OpenAiMessage(
             role = if (msg.participant == Participant.USER) "user" else "assistant",
-            content = parts
+            content = parts,
+            reasoningContent = if (forwardAssistantReasoning && msg.participant != Participant.USER) {
+                msg.segments
+                    ?.filter { it.type == "thought" }
+                    ?.joinToString("\n") { it.content }
+                    ?.takeIf { it.isNotBlank() }
+            } else {
+                null
+            },
         ))
         entries
     })
@@ -155,8 +174,14 @@ internal fun convertToOpenAiMessages(
     return apiMessages
 }
 
-fun limitContext(messages: List<ChatMessage>, contextTokenBudget: Int): List<ChatMessage> {
+fun limitContext(
+    messages: List<ChatMessage>,
+    contextTokenBudget: Int,
+    includeAssistantReasoning: Boolean = false,
+    costs: ContextCostModel = ContextCostModel.Default,
+): List<ChatMessage> {
     if (messages.isEmpty()) return emptyList()
+    val estimator = CostModelContextEstimator(costs)
 
     // A tool call and all of its results are one protocol unit. Truncating the flat list can leave
     // either an orphan result or an unanswered assistant tool call, so window complete units only.
@@ -167,7 +192,10 @@ fun limitContext(messages: List<ChatMessage>, contextTokenBudget: Int): List<Cha
     var hasNormalUserAnchor = false
     val tokenBudget = contextTokenBudget.coerceAtLeast(1).toLong()
     for (unit in units.asReversed()) {
-        val unitCost = ContextTokenEstimator.estimate(unit).toLong()
+        val unitCost = estimator.estimate(
+            unit,
+            includeAssistantReasoning = includeAssistantReasoning,
+        ).toLong()
         if (
             selected.isNotEmpty() &&
             hasNormalUserAnchor &&

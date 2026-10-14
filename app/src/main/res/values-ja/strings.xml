@@ -1,4 +1,4 @@
-<resources>
+<?xml version="1.0" encoding="utf-8"?><resources>
     <string name="app_name">Agora</string>
     <string name="agora_responded">Agora が応答しました</string>
 
@@ -79,44 +79,44 @@
     <string name="tool_done">完了</string>
     <string name="tool_context">ツール</string>
     <!-- New tool display names (P0) -->
-    <string name="tool_list_conversations">List Conversations</string>
-    <string name="tool_read_conversation">Read Conversation</string>
-    <string name="tool_file_read">Read File</string>
-    <string name="tool_file_write">Write File</string>
-    <string name="tool_file_edit">Edit File</string>
-    <string name="tool_file_glob">Find Files</string>
-    <string name="tool_file_grep">Search Files</string>
+    <string name="tool_list_conversations">会話を一覧表示</string>
+    <string name="tool_read_conversation">会話を読む</string>
+    <string name="tool_file_read">ファイルを読む</string>
+    <string name="tool_file_write">ファイルに書き込む</string>
+    <string name="tool_file_edit">ファイルを編集</string>
+    <string name="tool_file_glob">ファイル検索</string>
+    <string name="tool_file_grep">ファイル内検索</string>
     <!-- Tool in-progress states (doing) -->
-    <string name="tool_listing_conversations">Listing conversations…</string>
-    <string name="tool_reading_conversation">Reading conversation…</string>
-    <string name="tool_reading_file">Reading %1$s…</string>
-    <string name="tool_writing_file">Writing %1$s…</string>
-    <string name="tool_editing_file">Editing %1$s…</string>
-    <string name="tool_finding_files">Finding %1$s…</string>
-    <string name="tool_searching_file">Searching %1$s…</string>
-    <string name="tool_executing_shell">Executing: %1$s…</string>
-    <string name="tool_reading_memory">Reading %1$s…</string>
-    <string name="tool_saving_memory">Saving %1$s…</string>
-    <string name="tool_updating_memory">Updating %1$s…</string>
-    <string name="tool_removing_memory">Removing %1$s…</string>
-    <string name="tool_looking_up_memories">Looking up memories…</string>
-    <string name="tool_updating_active">Updating active memory…</string>
-    <string name="tool_listing_shells">Listing shells…</string>
-    <string name="tool_searching_for">Searching for \'%1$s\'…</string>
+    <string name="tool_listing_conversations">会話を一覧中…</string>
+    <string name="tool_reading_conversation">会話を読み込み中…</string>
+    <string name="tool_reading_file">%1$s を読み込み中…</string>
+    <string name="tool_writing_file">%1$s に書き込み中…</string>
+    <string name="tool_editing_file">%1$s を編集中…</string>
+    <string name="tool_finding_files">%1$s を検索中…</string>
+    <string name="tool_searching_file">%1$s を検索中…</string>
+    <string name="tool_executing_shell">実行中: %1$s…</string>
+    <string name="tool_reading_memory">%1$s を読み込み中…</string>
+    <string name="tool_saving_memory">%1$s を保存中…</string>
+    <string name="tool_updating_memory">%1$s を更新中…</string>
+    <string name="tool_removing_memory">%1$s を削除中…</string>
+    <string name="tool_looking_up_memories">メモリを検索中…</string>
+    <string name="tool_updating_active">アクティブメモリを更新中…</string>
+    <string name="tool_listing_shells">ターミナルを一覧中…</string>
+    <string name="tool_searching_for">「%1$s」を検索中…</string>
     <!-- Tool done states (P0 + P1) -->
-    <string name="tool_listed_conversations">Listed %1$d conversations</string>
-    <string name="tool_listed_no_conversations">No conversations found</string>
-    <string name="tool_read_conversation_done">Read conversation: %1$s</string>
-    <string name="tool_read_file_done">Read %1$s</string>
-    <string name="tool_wrote_file">Wrote %1$s</string>
-    <string name="tool_edited_file">Edited %1$s</string>
-    <string name="tool_found_files">Found %1$d files</string>
-    <string name="tool_found_no_files">No files matched</string>
-    <string name="tool_searched_file">Found %1$d matches</string>
-    <string name="tool_executed_shell">Executed: %1$s (%2$d bytes)</string>
-    <string name="tool_executed_no_output">Executed: %1$s (no output)</string>
-    <string name="tool_read_file_failed">Read file failed</string>
-    <string name="crash_log_label">Crash Log</string>
+    <string name="tool_listed_conversations">%1$d 件の会話を列挙</string>
+    <string name="tool_listed_no_conversations">会話が見つかりません</string>
+    <string name="tool_read_conversation_done">会話を読み込みました: %1$s</string>
+    <string name="tool_read_file_done">%1$s を読み込み済み</string>
+    <string name="tool_wrote_file">%1$s に書き込み完了</string>
+    <string name="tool_edited_file">%1$s を編集済み</string>
+    <string name="tool_found_files">%1$d 件のファイルを検出</string>
+    <string name="tool_found_no_files">一致するファイルはありません</string>
+    <string name="tool_searched_file">%1$d 件の一致を検出</string>
+    <string name="tool_executed_shell">実行済み: %1$s (%2$d バイト)</string>
+    <string name="tool_executed_no_output">実行済み: %1$s（出力なし）</string>
+    <string name="tool_read_file_failed">ファイルの読み込みに失敗</string>
+    <string name="crash_log_label">クラッシュログ</string>
     <string name="message_info">メッセージ情報</string>
     <string name="time_with_label">時刻: %1$s</string>
     <string name="model_with_label">モデル: %1$s</string>
@@ -172,6 +172,9 @@
 
     <!-- Drawer -->
     <string name="conversations">会話</string>
+    <string name="pinned_conversations">ピン留め済み</string>
+    <string name="pin_conversation">ピン留め</string>
+    <string name="unpin_conversation">ピン留めを解除</string>
     <string name="conversation_unread_generation">未読の生成済み回答</string>
     <string name="new_chat">新しいチャット</string>
 
@@ -336,6 +339,9 @@
     <string name="about_contribute">貢献する</string>
     <string name="about_privacy_policy">プライバシーポリシー</string>
     <string name="about_source_code">ソースコード</string>
+    <string name="about_license">ライセンス</string>
+    <string name="about_license_desc">GNU GPL-3.0</string>
+    <string name="about_license_history">v2.1.0 までのバージョンは MIT ライセンスで公開されていました。</string>
     <string name="about_version">バージョン</string>
     <string name="about_rating">アプリを評価</string>
     <string name="about_rating_desc">このプロジェクトは一人で開発しています。フィードバックを心より感謝します。</string>
@@ -456,7 +462,6 @@
     <string name="pdf_selected">選択済み</string>
 
     <!-- Caching & Sync -->
-    <string name="embedding_model_caching">埋め込みモデル \"%1$s\" をキャッシュ中…</string>
     <string name="messages_not_cached">%2$d 件中 %1$d 件のメッセージが未キャッシュです。</string>
     <string name="cache_now">今すぐキャッシュ</string>
     <string name="no_messages_to_cache">キャッシュするメッセージがありません。</string>
@@ -513,8 +518,8 @@
     <string name="onboarding_no_models">モデルが読み込まれていません。</string>
     <string name="onboarding_invalid_gguf_title">無効な GGUF ファイル</string>
     <string name="onboarding_invalid_gguf_desc">選択したファイルは有効な GGUF モデルではないようです。</string>
-    <string name="onboarding_hide_key">キーを隠す</string>
-    <string name="onboarding_show_key">キーを表示</string>
+    <string name="secret_hide">値を隠す</string>
+    <string name="secret_show">値を表示</string>
     <!-- ── Auto Backup ── -->
     <string name="auto_backup_title">自動バックアップ</string>
     <string name="auto_backup_subtitle">スケジュールに従ってデータを自動エクスポート</string>
@@ -560,6 +565,19 @@
     <string name="shell_confirm_deny">拒否</string>
     <string name="shell_confirm_setting">リモートシェル操作を確認</string>
     <string name="shell_confirm_setting_desc">アシスタントがリモートの SSH/Conch サーバーでコマンドを実行したりファイルを書き込んだりする前に確認する</string>
+    <string name="shell_confirm_notification_channel">コマンドの承認</string>
+    <string name="shell_confirm_notification_desc">Agora がバックグラウンドにある間に、リモートコマンドを許可または拒否するよう尋ねます</string>
+    <string name="ask_user_title">アシスタントからの質問</string>
+    <string name="ask_user_send">送信</string>
+    <string name="ask_user_next">次へ</string>
+    <string name="interaction_ask_user">質問</string>
+    <string name="interaction_approval">承認</string>
+    <string name="interaction_minimize">最小化</string>
+    <string name="interaction_expand">展開</string>
+    <string name="ask_user_custom_answer">自分の言葉で答える</string>
+    <string name="ask_user_skip">スキップ</string>
+    <string name="ask_user_notification_channel">Agora からの質問</string>
+    <string name="ask_user_notification_desc">チャット画面が開いていないときにアシスタントの質問への回答を求めます</string>
 
     <!-- Crash reporting -->
     <string name="crash_title">Agora が予期せず終了しました</string>
@@ -579,6 +597,7 @@
     <string name="conversation_search_hint">検索…</string>
     <string name="conversation_share">共有</string>
     <string name="conversation_share_failed">会話を共有できませんでした: %1$s</string>
+    <string name="conversation_deleted_elsewhere">この会話は別のデバイスで削除されました。</string>
     <string name="custom_provider_protocol_label">API 形式</string>
     <string name="file_path_unknown">不明なファイル</string>
     <string name="import_file_too_large">ファイルが大きすぎます（%1$d MB）。より小さいエクスポートファイルを選択してください。</string>
@@ -633,6 +652,8 @@
     <string name="context_compact_model">圧縮モデル</string>
     <string name="context_compact_prompt">圧縮プロンプト</string>
     <string name="context_compact_prompt_desc">要約の指示</string>
+    <string name="context_compact_preserve_system">システムプロンプトを保持</string>
+    <string name="context_compact_preserve_system_desc">圧縮時には会話のシステムプロンプトを使い、圧縮プロンプトは要約依頼の先頭指示になります</string>
     <string name="context_compact_select_model">圧縮モデルを選択</string>
     <string name="context_compact_threshold">自動圧縮のしきい値</string>
     <string name="context_compact_threshold_desc">推定コンテキストが選択したウィンドウのこの割合に達したら圧縮します</string>
@@ -648,7 +669,13 @@
     <string name="thinking_segment_display_card">カード</string>
     <string name="thinking_segment_display_bottom_sheet">ボトムシート</string>
     <string name="thinking_segments_title">思考セグメント</string>
-    <string name="context_usage_messages">約 %1$s / %2$s tokens</string>
+    <string name="context_usage_messages">約 %1$s / %2$s tokens</string>
+    <string name="context_part_system">システムプロンプト</string>
+    <string name="context_part_tools">ツール</string>
+    <string name="context_part_messages">メッセージ</string>
+    <string name="context_part_free">空き</string>
+    <string name="context_part_reserved">予約済み</string>
+    <string name="context_part_used">使用済み</string>
     <string name="context_compact_streaming">コンテキストを圧縮中…</string>
     <string name="context_compact_error">圧縮エラー</string>
     <string name="context_compact_stopped">圧縮を停止しました</string>
@@ -718,6 +745,7 @@
     <string name="generation_error_network">ネットワークエラー：%1$s</string>
     <string name="generation_error_network_http">ネットワークエラー（%1$d）：%2$s</string>
     <string name="generation_error_sse_parse">サーバー応答を読み取れませんでした。</string>
+    <string name="generation_error_malformed_tool_call">モデルが返したツール呼び出しを使用できません：%1$s</string>
     <string name="generation_error_incomplete_stream">%1$s が応答を途中で終了しました。完了信号がないため、返信は不完全です。</string>
     <string name="generation_error_incomplete_tool_stream">%1$s がツール呼び出しの書き込み中に応答を終了しました。完了信号がないため、返信は不完全です。</string>
     <string name="generation_error_incomplete_stream_reason">%1$s が停止理由 %2$s の後に、完了信号なしで応答を終了しました。</string>
@@ -775,4 +803,14 @@
     <string name="thought_for_a_while">しばらく思考しました</string>
     <string name="thought_for_a_while_called_tools">しばらく思考し、%1$d 個のツールを呼び出しました</string>
     <string name="remote_device">デバイス</string>
+    <!-- Upstream attribution copy, UTF-8 Base64 for lightweight bulk-rename resistance. -->
+    <string name="rating_origin_credit_b64">QWdvcmEgwrcg6ZaL55m66ICF77yabmV3by1ldGhlcg==</string>
+    <string name="rating_origin_project_b64">5YWD44Gu44OX44Ot44K444Kn44Kv44OI77yaZ2l0aHViLmNvbS9uZXdvLWV0aGVyL0Fnb3Jh</string>
+    <string name="rating_origin_modified_title_b64">5aSJ5pu044GV44KM44Gf44OQ44O844K444On44Oz</string>
+    <string name="rating_origin_modified_body_b64">44GT44Gu44Ki44OX44Oq44Gv5YWD44Gu44OX44Ot44K444Kn44Kv44OI44Go44Gv55Ww44Gq44KL44OR44OD44Kx44O844K45ZCN44KS5L2/55So44GX44Gm44GK44KK44CB5YaN44OR44OD44Kx44O844K45YyW44G+44Gf44Gv5aSJ5pu044GV44KM44Gm44GE44G+44GZ44CC5YWD44Gu44OX44Ot44K444Kn44Kv44OI44GvIG5ld28tZXRoZXIg44GM6ZaL55m644GX44GfIEFnb3JhIOOBp+OBmeOAguOBk+OBruODkOODvOOCuOODp+ODs+OBruWkieabtOOBr+mFjeW4g+iAheOBruiyrOS7u+OBp+OBguOCiuOAgeWFg+OBruS9nOiAheOCkuS7o+ihqOOBmeOCi+OCguOBruOBp+OBr+OBguOCiuOBvuOBm+OCk+OAgg==</string>
+    <string name="rating_origin_view_project_b64">5YWD44Gu44OX44Ot44K444Kn44Kv44OI44KS6KaL44KL</string>
+    <string name="message_source_task">タスク</string>
+    <string name="message_source_loop">ループ</string>
+    <string name="message_source_ask_user">質問</string>
+    <string name="message_source_unanswered">未回答</string>
 </resources>

@@ -412,8 +412,8 @@ internal class ApplicationUiSourceContractTest : UiSourceContractFixture() {
         assertTrue(groupIndices.zipWithNext().all { (current, next) -> current < next })
         assertFalse(appearance.contains("R.string.appearance_interface"))
         assertEquals(4, Regex("SettingsGroup\\(").findAll(appearance).count())
-        assertEquals(15, Regex("SettingsItem\\(").findAll(appearance).count())
-        assertEquals(15, Regex("leadingContent\\s*=").findAll(appearance).count())
+        assertEquals(16, Regex("SettingsItem\\(").findAll(appearance).count())
+        assertEquals(16, Regex("leadingContent\\s*=").findAll(appearance).count())
         listOf(
             "Palette",
             "Style",
@@ -529,8 +529,8 @@ internal class ApplicationUiSourceContractTest : UiSourceContractFixture() {
         val appearance = sourceFile(
             "app/src/main/java/com/newoether/agora/ui/settings/SettingsAppearancePage.kt",
         )
-        val assistant = sourceFile(
-            "app/src/main/java/com/newoether/agora/ui/chat/message/AssistantMessageContent.kt",
+        val presentation = sourceFile(
+            "app/src/main/java/com/newoether/agora/ui/chat/message/AssistantMessagePresentation.kt",
         )
         val messageItem = sourceFile(
             "app/src/main/java/com/newoether/agora/ui/chat/message/MessageItem.kt",
@@ -555,7 +555,7 @@ internal class ApplicationUiSourceContractTest : UiSourceContractFixture() {
         assertTrue(toolBlocksIndex >= 0)
         assertTrue(thinkingSegmentIndex > toolBlocksIndex)
         assertTrue(autoExpandIndex > thinkingSegmentIndex)
-        assertTrue(assistant.contains("ThinkingSegmentDisplayModes.effectiveMode("))
+        assertTrue(presentation.contains("ThinkingSegmentDisplayModes.effectiveMode("))
         assertTrue(messageItem.contains("ThinkingSegmentDisplayModes.allowsAutoExpand("))
     }
 
@@ -600,6 +600,9 @@ internal class ApplicationUiSourceContractTest : UiSourceContractFixture() {
         val home = sourceFile(
             "app/src/main/java/com/newoether/agora/ui/settings/SettingsScreen.kt",
         )
+        val twoPane = sourceFile(
+            "app/src/main/java/com/newoether/agora/ui/settings/SettingsTwoPane.kt",
+        )
         val shell = sourceFile(
             "app/src/main/java/com/newoether/agora/ui/settings/SettingsShellPage.kt",
         )
@@ -608,8 +611,9 @@ internal class ApplicationUiSourceContractTest : UiSourceContractFixture() {
         )
 
         assertFalse(home.contains("KeyboardArrowRight"))
-        assertTrue(home.contains(".clickable { selectedCategory = cat.key }"))
-        assertTrue(home.contains("Column(modifier = Modifier.weight(1f))"))
+        assertTrue(home.contains("onCategorySelected = { selectedCategory = it }"))
+        assertTrue(twoPane.contains(".clickable { onCategorySelected(category.key) }"))
+        assertTrue(twoPane.contains("Column(modifier = Modifier.weight(1f))"))
 
         val sandbox = shell
             .substringAfter("private fun SandboxSection(")
@@ -629,8 +633,59 @@ internal class ApplicationUiSourceContractTest : UiSourceContractFixture() {
     }
 
     @Test
+    fun `wide Settings navigation preserves user scroll and nested back behavior`() {
+        val twoPane = sourceFile(
+            "app/src/main/java/com/newoether/agora/ui/settings/SettingsTwoPane.kt",
+        )
+        val scaffold = sourceFile(
+            "app/src/main/java/com/newoether/agora/ui/settings/SettingsScaffold.kt",
+        )
+        val main = sourceFile("app/src/main/java/com/newoether/agora/MainActivity.kt")
+        val screenshotScript = sourceFile("scripts/generate-screenshots.ps1")
+
+        assertFalse(twoPane.contains("scrollToItem("))
+        assertFalse(twoPane.contains("rememberLazyListState"))
+        assertTrue(twoPane.contains("private val SettingsNavigationPaneWidth = 400.dp"))
+        assertTrue(twoPane.contains(".widthIn(max = SettingsContentMaxWidth)"))
+        assertTrue(twoPane.contains("Crossfade("))
+        assertTrue(twoPane.contains("label = \"settingsCategory\""))
+        assertTrue(twoPane.contains("animateColorAsState("))
+        assertTrue(twoPane.contains("label = \"settingsNavigationContainer\""))
+        assertTrue(twoPane.contains("Spacer(Modifier.height(3.dp))"))
+        assertTrue(twoPane.contains(".clipToBounds()"))
+        assertTrue(twoPane.contains(
+            "CompositionLocalProvider(LocalSettingsPaneBackButtonVisible provides false)"
+        ))
+        assertTrue(scaffold.contains("if (LocalSettingsPaneBackButtonVisible.current)"))
+        assertTrue(scaffold.contains(".widthIn(max = SettingsContentMaxWidth)"))
+        assertTrue(scaffold.contains(".align(Alignment.TopCenter)"))
+        val titlePosition = scaffold
+            .substringAfter("val titleX =")
+            .substringBefore("// Opaque bar")
+        assertTrue(titlePosition.contains("24.dp + (70.dp - 24.dp) * eased"))
+        assertTrue(titlePosition.contains("24.dp"))
+        assertTrue(scaffold.contains(".padding(horizontal = 24.dp)"))
+        assertTrue(scaffold.contains("contentHorizontalPadding: Dp = 24.dp"))
+        val providerPage = sourceFile(
+            "app/src/main/java/com/newoether/agora/ui/settings/SettingsProviderPage.kt",
+        )
+        assertTrue(providerPage.contains("SettingsSecondaryPane {"))
+        assertTrue(main.contains("onBack = { showScreenshotSettings = false }"))
+        assertTrue(screenshotScript.contains("} finally {"))
+        assertTrue(screenshotScript.contains(
+            "Restore-GlobalSetting \$setting \$savedAnimationSettings[\$setting]"
+        ))
+        assertTrue(screenshotScript.contains("\"window_animation_scale\""))
+        assertTrue(screenshotScript.contains("\"transition_animation_scale\""))
+        assertTrue(screenshotScript.contains("\"animator_duration_scale\""))
+    }
+
+    @Test
     fun `shell confirmation code surface provides standalone Markdown locals`() {
-        val main = sourceFile("app/src/main/java/com/newoether/agora/MainApplicationDialogs.kt")
+        val bar = sourceFile(
+            "app/src/main/java/com/newoether/agora/ui/chat/interaction/UserInteractionBar.kt",
+        )
+        val chatApp = sourceFile("app/src/main/java/com/newoether/agora/ui/chat/ChatApp.kt")
         val assets = sourceFile(
             "app/src/main/java/com/newoether/agora/ui/chat/message/ChatMarkdownCode.kt",
         )
@@ -638,7 +693,11 @@ internal class ApplicationUiSourceContractTest : UiSourceContractFixture() {
             .substringAfter("internal fun ChatMarkdownCodeBlock(")
             .substringBefore("internal fun TrackStreamingHorizontalScroll(")
 
-        assertTrue(main.contains("ChatMarkdownCodeBlock(code = pending.summary)"))
+        assertTrue(
+            bar.contains("ChatMarkdownCodeBlock(code = pending.summary, autoWrap = autoWrapCodeBlocks)"),
+        )
+        assertTrue(chatApp.contains("val autoWrapCodeBlocks by viewModel.settings.autoWrapCodeBlocks"))
+        assertTrue(codeBlock.contains("if (autoWrap) codeStyle.copy(lineBreak = LineBreak.Simple)"))
         assertTrue(codeBlock.contains("CompositionLocalProvider("))
         assertTrue(codeBlock.contains("LocalMarkdownColors provides assets.renderContext.colors"))
         assertTrue(codeBlock.contains("LocalMarkdownDimens provides markdownDimens()"))

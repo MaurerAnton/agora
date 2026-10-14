@@ -7,6 +7,7 @@ import java.io.ByteArrayOutputStream
 import java.io.Closeable
 import java.io.File
 import java.io.FileInputStream
+import java.io.FilterInputStream
 import java.io.IOException
 import java.io.InputStream
 import java.nio.channels.SeekableByteChannel
@@ -15,8 +16,11 @@ import org.apache.commons.compress.archivers.zip.ZipArchiveEntry
 import org.apache.commons.compress.archivers.zip.ZipFile as CommonsZipFile
 
 /**
- * On-demand reader over a validated backup ZIP. In-memory metadata is bounded, streamed payloads are
- * byte-verified without a fixed size cap, and resources are capacity-checked before import.
+ * On-demand reader over a validated backup ZIP. Opening checks the whole central directory and
+ * byte-verifies the small in-memory metadata, so a preview never has to decompress the archive.
+ * Streamed payloads carry no fixed size cap and are byte-verified as they are read: a [stream]
+ * that is read to its end fails on a size or CRC mismatch. Resources are capacity-checked before
+ * import and verified while they are copied.
  */
 internal class NativeBackupArchive private constructor(
     private val zip: CommonsZipFile,
@@ -24,12 +28,12 @@ internal class NativeBackupArchive private constructor(
     private val ownedTemporaryFile: File?,
     private val entries: Map<String, ZipArchiveEntry>,
     private val metadataLimitBytes: Long,
-) : Closeable {
-    fun has(name: String): Boolean = entries.containsKey(name)
+) : Closeable, NativeGraphEntrySource {
+    override fun has(name: String): Boolean = entries.containsKey(name)
 
     fun size(name: String): Long = entries[name]?.size ?: -1L
 
-    fun bytes(name: String): ByteArray? {
+    override fun bytes(name: String): ByteArray? {
         val entry = entries[name] ?: return null
         if (isResourceEntry(name)) {
             throw IOException("Resource entry must be copied to storage: $name")
@@ -44,12 +48,12 @@ internal class NativeBackupArchive private constructor(
 
     operator fun get(name: String): ByteArray? = bytes(name)
 
-    fun stream(name: String): InputStream? {
+    override fun stream(name: String): InputStream? {
         val entry = entries[name] ?: return null
         if (isResourceEntry(name)) {
             throw IOException("Resource entry must be copied to storage: $name")
         }
-        return zip.getInputStream(entry)
+        return CheckedEntryStream(zip.getInputStream(entry), entry.size, entry.crc, name)
     }
 
     fun prefix(name: String, byteCount: Int): ByteArray? {
@@ -89,7 +93,19 @@ internal class NativeBackupArchive private constructor(
             }
             if (fontEntry != null) selected += fontEntry
         }
-        val requiredBytes = selected.fold(0L) { total, entry ->
+        // A v5 import spools every conversation item and the task list to local storage first.
+        val spooledEntries = if (conversationsSelected && archiveVersion >= 5) {
+            entries.values.filter { entry ->
+                entry.name == NativeBackupFormat.TASKS_ENTRY ||
+                    entry.name.startsWith(NativeBackupFormat.CONVERSATION_ENTRY_PREFIX)
+            }
+        } else {
+            emptyList()
+        }
+        val spoolBytes = spooledEntries.fold(0L) { total, entry ->
+            checkedAdd(total, entry.size, "Conversation data size is too large")
+        }
+        val requiredBytes = selected.fold(spoolBytes) { total, entry ->
             val extractedSize = if (
                 isLegacyCustomFont(entry.name) && entry.size > customFontLimitBytes
             ) {
@@ -99,8 +115,9 @@ internal class NativeBackupArchive private constructor(
             }
             checkedAdd(total, extractedSize, "Selected resource size is too large")
         }
+        // Contents are verified by the checked copy that extracts them; reading them here too
+        // would double the cost of a large import.
         ensureAvailable(requiredBytes, availableBytes(), destinationRoot)
-        selected.forEach(::validateEntryStream)
         return requiredBytes
     }
 
@@ -124,11 +141,6 @@ internal class NativeBackupArchive private constructor(
         }
     }
 
-    private fun validateEntryStream(entry: ZipArchiveEntry) {
-        zip.getInputStream(entry).use { input ->
-            consumeChecked(input, entry.size, entry.crc, Long.MAX_VALUE, entry.name)
-        }
-    }
 
     override fun close() {
         try {
@@ -344,21 +356,13 @@ internal class NativeBackupArchive private constructor(
                     slash = parent.lastIndexOf('/')
                 }
             }
+            // Streamed payloads are the bulk of a large backup; they are verified where they are read
+            // instead of costing a full extra pass here.
             files.values.asSequence()
-                .filterNot { isResourceEntry(it.name) }
+                .filter { isInMemoryMetadata(it.name) }
                 .forEach { entry ->
                     zip.getInputStream(entry).use { input ->
-                        consumeChecked(
-                            input,
-                            entry.size,
-                            entry.crc,
-                            if (isInMemoryMetadata(entry.name)) {
-                                metadataLimitBytes
-                            } else {
-                                Long.MAX_VALUE
-                            },
-                            entry.name,
-                        )
+                        consumeChecked(input, entry.size, entry.crc, metadataLimitBytes, entry.name)
                     }
                 }
             return files
@@ -391,7 +395,9 @@ internal class NativeBackupArchive private constructor(
             isConversationResource(name) || isLegacyCustomFont(name)
 
         private fun isStreamedPayload(name: String): Boolean =
-            name == NativeBackupFormat.CONVERSATIONS_ENTRY
+            name == NativeBackupFormat.CONVERSATIONS_ENTRY ||
+                name == NativeBackupFormat.TASKS_ENTRY ||
+                name.startsWith(NativeBackupFormat.CONVERSATION_ENTRY_PREFIX)
 
         private fun isInMemoryMetadata(name: String): Boolean =
             !isResourceEntry(name) && !isStreamedPayload(name)
@@ -496,5 +502,72 @@ internal class NativeBackupArchive private constructor(
             } catch (_: ArithmeticException) {
                 throw IOException(message)
             }
+    }
+}
+
+/** Reads the rest of this stream, so a checked archive stream verifies its size and CRC. */
+internal fun InputStream.readToEnd() {
+    val buffer = ByteArray(8192)
+    while (read(buffer, 0, buffer.size) >= 0) Unit
+}
+
+/**
+ * Reads one streamed payload while checking it against its ZIP record. A mismatch surfaces when
+ * the end of the data is reached. Closing early only closes: an aborted or cancelled import must
+ * not wait for gigabytes to be read, and a reader that needs the check calls [readToEnd].
+ */
+private class CheckedEntryStream(
+    input: InputStream,
+    private val declaredSize: Long,
+    private val expectedCrc: Long,
+    private val sourceName: String,
+) : FilterInputStream(input) {
+    private val crc = CRC32()
+    private var total = 0L
+    private var verified = false
+
+    override fun read(): Int {
+        val value = super.read()
+        if (value < 0) verify() else record(1) { crc.update(value) }
+        return value
+    }
+
+    override fun read(b: ByteArray, off: Int, len: Int): Int {
+        val count = super.read(b, off, len)
+        if (count < 0) verify() else record(count) { crc.update(b, off, count) }
+        return count
+    }
+
+    override fun skip(n: Long): Long {
+        // Skipped bytes still have to be checked, so they are read rather than passed over.
+        val buffer = ByteArray(minOf(n, 8192L).toInt().coerceAtLeast(1))
+        var skipped = 0L
+        while (skipped < n) {
+            val count = read(buffer, 0, minOf(buffer.size.toLong(), n - skipped).toInt())
+            if (count < 0) break
+            skipped += count
+        }
+        return skipped
+    }
+
+    override fun markSupported(): Boolean = false
+
+    private inline fun record(bytes: Int, update: () -> Unit) {
+        total += bytes
+        if (declaredSize >= 0L && total > declaredSize) {
+            throw IOException("$sourceName size mismatch: declared $declaredSize bytes, read more")
+        }
+        update()
+    }
+
+    private fun verify() {
+        if (verified) return
+        verified = true
+        if (declaredSize >= 0L && total != declaredSize) {
+            throw IOException("$sourceName size mismatch: declared $declaredSize bytes, read $total")
+        }
+        if (expectedCrc >= 0L && crc.value != expectedCrc) {
+            throw IOException("$sourceName CRC mismatch")
+        }
     }
 }

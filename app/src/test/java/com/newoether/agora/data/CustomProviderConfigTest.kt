@@ -32,6 +32,41 @@ class CustomProviderConfigTest {
     private val json = Json { ignoreUnknownKeys = true }
 
     @Test
+    fun promptCacheKeyFollowsCacheSwitchOnOpenAiProtocolOnly() {
+        val openAi = CustomProviderConfig(
+            "sub2api", CustomEndpointProtocol.OPENAI,
+            id = "custom-provider-00000000-0000-4000-8000-000000000002",
+        )
+        val anthropic = CustomProviderConfig("Claude relay", CustomEndpointProtocol.ANTHROPIC)
+        val google = CustomProviderConfig("Gemini relay", CustomEndpointProtocol.GOOGLE)
+        val providers = listOf(openAi, anthropic, google)
+
+        for (reference in listOf(openAi.name, openAi.providerId)) {
+            assertTrue(supportsPromptCacheSetting(reference, providers))
+            assertTrue(isPromptCacheKeyEnabledForProvider(reference, providers))
+            assertFalse(
+                isPromptCacheKeyEnabledForProvider(
+                    reference, listOf(openAi.copy(anthropicCacheEnabled = false)),
+                ),
+            )
+            // The OpenAI switch must not leak into Anthropic cache_control.
+            assertFalse(isAnthropicCacheEnabledForProvider(reference, true, providers))
+        }
+        assertTrue(isPromptCacheKeyEnabledForProvider("OpenAI", providers))
+        assertTrue(supportsPromptCacheSetting("Claude relay", providers))
+        assertFalse(isPromptCacheKeyEnabledForProvider("Claude relay", providers))
+        assertFalse(supportsPromptCacheSetting("Gemini relay", providers))
+        assertFalse(isPromptCacheKeyEnabledForProvider("Gemini relay", providers))
+        assertFalse(isPromptCacheKeyEnabledForProvider("missing", providers))
+        assertFalse(isPromptCacheSettingEnabledForProvider("Anthropic", false, providers))
+        assertFalse(
+            isPromptCacheSettingEnabledForProvider(
+                "sub2api", true, listOf(openAi.copy(anthropicCacheEnabled = false)),
+            ),
+        )
+    }
+
+    @Test
     fun legacyConfigWithoutProtocolDefaultsToOpenAi() {
         val config = json.decodeFromString<CustomProviderConfig>("""{"name":"Legacy"}""")
 

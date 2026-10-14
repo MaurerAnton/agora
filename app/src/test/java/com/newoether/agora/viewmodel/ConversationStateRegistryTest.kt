@@ -14,7 +14,7 @@ import org.junit.Test
 class ConversationStateRegistryTest {
     @Test
     fun stoppingSlot_survivesUiOwnerReplacement() = runBlocking {
-        val registry = ConversationStateRegistry()
+        val registry = ConversationStateRegistry {}
         val firstOwner = Any()
         registry.attachUiCallbacks(firstOwner) { }
         val state = registry.getOrCreate("conversation")
@@ -47,7 +47,7 @@ class ConversationStateRegistryTest {
 
     @Test
     fun stopSettlementAfterUiReplacementUsesTheSharedDrainCallback() = runBlocking {
-        val registry = ConversationStateRegistry()
+        val registry = ConversationStateRegistry {}
         val firstOwner = Any()
         val secondOwner = Any()
         var firstDrainCount = 0
@@ -95,7 +95,7 @@ class ConversationStateRegistryTest {
 
     @Test
     fun staleOwnerCannotDetachNewerUiCallbacks() {
-        val registry = ConversationStateRegistry()
+        val registry = ConversationStateRegistry {}
         val firstOwner = Any()
         val secondOwner = Any()
         var secondOwnerActive = false
@@ -114,7 +114,7 @@ class ConversationStateRegistryTest {
 
     @Test
     fun remove_disposesExternalJobAndStreamsWithoutFabricatingUserStop() {
-        val registry = ConversationStateRegistry()
+        val registry = ConversationStateRegistry {}
         val state = registry.getOrCreate("conversation")
         val token = state.acquireForSend()!!
         val externalJob = Job()
@@ -133,7 +133,7 @@ class ConversationStateRegistryTest {
 
     @Test
     fun repeatedUiReplacementKeepsOnlyTheLatestPendingDrainHandoff() = runBlocking {
-        val registry = ConversationStateRegistry()
+        val registry = ConversationStateRegistry {}
         val firstOwner = Any()
         val secondOwner = Any()
         var firstDrainCount = 0

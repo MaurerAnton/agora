@@ -169,7 +169,7 @@ interface MaintenanceDebtDao {
     @Query(
         """
         UPDATE conversations
-        SET selectedRunBranchesJson = :replacement
+        SET selectedRunBranchesJson = :replacement, dataChangedAt = MAX(dataChangedAt + 1, :at)
         WHERE id = :conversationId AND selectedRunBranchesJson = :expected
         """,
     )
@@ -177,6 +177,7 @@ interface MaintenanceDebtDao {
         conversationId: String,
         expected: String,
         replacement: String,
+        at: Long,
     ): Int
 
     @Query("SELECT * FROM maintenance_debt WHERE kind = :kind AND identity = :identity")
@@ -286,6 +287,7 @@ interface MaintenanceDebtDao {
             conversationId = conversationId,
             expected = raw,
             replacement = encodeMaintenanceRunSelections(repaired),
+            at = System.currentTimeMillis(),
         ) == 1
     }
 

@@ -36,7 +36,7 @@ class GenerationTerminalSettlementControllerTest {
                 any(),
             )
         } returns true
-        val state = ConversationGenerationState("conversation")
+        val state = ConversationGenerationState("conversation", reclaimQueuedAttachments = {})
         val token = requireNotNull(state.acquireForSend())
         state.bindRun(token, "run", pass = 2)
         val committed = mutableListOf<ChatMessage>()
@@ -77,7 +77,7 @@ class GenerationTerminalSettlementControllerTest {
         val conversations = mockk<ConversationRepository>()
         coEvery { conversations.requestRunStop("run", any()) } returns true
         coEvery { conversations.finishStoppedGeneration(any(), "run", any()) } returns true
-        val state = ConversationGenerationState("conversation")
+        val state = ConversationGenerationState("conversation", reclaimQueuedAttachments = {})
         val token = requireNotNull(state.acquireForSend())
         state.bindRun(token, "run", pass = 1)
         state.streamUpdate(token, FAILED_MESSAGE.copy(status = MessageStatus.SENDING))
@@ -115,7 +115,7 @@ class GenerationTerminalSettlementControllerTest {
         } returns true
         val snackbars = mutableListOf<String>()
         val notifications = mutableListOf<String>()
-        val state = ConversationGenerationState("conversation")
+        val state = ConversationGenerationState("conversation", reclaimQueuedAttachments = {})
         mockkObject(DebugLog)
         every { DebugLog.e(any(), any()) } returns Unit
         try {
@@ -139,7 +139,7 @@ class GenerationTerminalSettlementControllerTest {
                 conversations.finishGeneration(any(), any(), any(), any(), any(), any(), any())
             } returns false
             notifications.clear()
-            val rejectedState = ConversationGenerationState("conversation")
+            val rejectedState = ConversationGenerationState("conversation", reclaimQueuedAttachments = {})
             controller.failGenerationSetup(
                 conversationId = "conversation",
                 runId = "run",

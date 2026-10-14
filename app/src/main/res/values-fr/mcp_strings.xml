@@ -26,8 +26,6 @@
     <string name="mcp_header_value_error">Saisissez une valeur sans caractère de contrôle</string>
     <string name="mcp_add_header">Ajouter un en-tête</string>
     <string name="mcp_delete_header">Supprimer l’en-tête</string>
-    <string name="mcp_show_header_value">Afficher la valeur de l’en-tête</string>
-    <string name="mcp_hide_header_value">Masquer la valeur de l’en-tête</string>
     <string name="mcp_timeout">Délai d’attente (secondes)</string>
     <string name="mcp_timeout_desc">5–300 secondes</string>
     <string name="mcp_status">État</string>

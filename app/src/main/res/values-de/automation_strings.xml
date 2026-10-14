@@ -12,7 +12,7 @@
     <string name="task_run_now">Jetzt ausführen</string>
     <string name="task_delete">Aufgabe löschen</string>
     <string name="task_delete_confirm">„%1$s“ und den gesamten Ausführungsverlauf löschen?</string>
-    <string name="import_conversation_graph_counts">Unterhaltungen (%1$d) · Aufgaben (%2$d) · Schleifen (%3$d)</string>
+    <string name="import_conversation_graph_counts">Unterhaltungen (%1$d) · Aufgaben (%2$d)</string>
     <string name="task_enabled">Nach Zeitplan ausführen</string>
     <string name="task_enabled_desc">Wenn deaktiviert, wird die Aufgabe nur über „Jetzt ausführen“ gestartet.</string>
     <string name="task_enabled_needs_schedule">Wähle zuerst einen Zeitplan aus.</string>
@@ -58,6 +58,7 @@
     <string name="task_status_unknown">Ausstehend</string>
     <string name="task_running_notification">Geplante Aufgabe wird ausgeführt…</string>
     <string name="loop_running_notification">Unterhaltungsschleife wird ausgeführt…</string>
+    <string name="auto_backup_running_notification">Datensicherung wird ausgeführt…</string>
     <string name="loop_running">Schleife läuft…</string>
     <string name="loop_next_in">Nächste Ausführung in %1$s</string>
     <string name="loop_cycle">Durchlauf %1$d/%2$d</string>

@@ -1,4 +1,4 @@
-<resources>
+<?xml version="1.0" encoding="utf-8"?><resources>
     <string name="app_name">Agora</string>
     <string name="agora_responded">Agora hat geantwortet</string>
 
@@ -50,7 +50,7 @@
     <string name="tool_shell_listing">Verfügbare Shells werden aufgelistet</string>
     <string name="tool_shell_list_done">Shell-Liste abgeschlossen</string>
     <string name="tool_shell_list_count">%1$d Shells aufgelistet</string>
-    <string name="tool_execute_shell">Shell</string>
+    <string name="tool_execute_shell">Terminal</string>
     <string name="tool_shell_executing">Ausgeführt: %1$s</string>
     <string name="tool_shell_done">Shell-Befehl abgeschlossen</string>
     <string name="tool_shell_failed">Shell-Befehl fehlgeschlagen</string>
@@ -79,44 +79,44 @@
     <string name="tool_done">Fertig</string>
     <string name="tool_context">Werkzeug</string>
     <!-- New tool display names (P0) -->
-    <string name="tool_list_conversations">List Conversations</string>
-    <string name="tool_read_conversation">Read Conversation</string>
-    <string name="tool_file_read">Read File</string>
-    <string name="tool_file_write">Write File</string>
-    <string name="tool_file_edit">Edit File</string>
-    <string name="tool_file_glob">Find Files</string>
-    <string name="tool_file_grep">Search Files</string>
+    <string name="tool_list_conversations">Unterhaltungen auflisten</string>
+    <string name="tool_read_conversation">Unterhaltung lesen</string>
+    <string name="tool_file_read">Datei lesen</string>
+    <string name="tool_file_write">Datei schreiben</string>
+    <string name="tool_file_edit">Datei bearbeiten</string>
+    <string name="tool_file_glob">Dateien finden</string>
+    <string name="tool_file_grep">Dateien durchsuchen</string>
     <!-- Tool in-progress states (doing) -->
-    <string name="tool_listing_conversations">Listing conversations…</string>
-    <string name="tool_reading_conversation">Reading conversation…</string>
-    <string name="tool_reading_file">Reading %1$s…</string>
-    <string name="tool_writing_file">Writing %1$s…</string>
-    <string name="tool_editing_file">Editing %1$s…</string>
-    <string name="tool_finding_files">Finding %1$s…</string>
-    <string name="tool_searching_file">Searching %1$s…</string>
-    <string name="tool_executing_shell">Executing: %1$s…</string>
-    <string name="tool_reading_memory">Reading %1$s…</string>
-    <string name="tool_saving_memory">Saving %1$s…</string>
-    <string name="tool_updating_memory">Updating %1$s…</string>
-    <string name="tool_removing_memory">Removing %1$s…</string>
-    <string name="tool_looking_up_memories">Looking up memories…</string>
-    <string name="tool_updating_active">Updating active memory…</string>
-    <string name="tool_listing_shells">Listing shells…</string>
-    <string name="tool_searching_for">Searching for \'%1$s\'…</string>
+    <string name="tool_listing_conversations">Unterhaltungen werden aufgelistet…</string>
+    <string name="tool_reading_conversation">Unterhaltung wird gelesen…</string>
+    <string name="tool_reading_file">%1$s wird gelesen…</string>
+    <string name="tool_writing_file">%1$s wird geschrieben…</string>
+    <string name="tool_editing_file">%1$s wird bearbeitet…</string>
+    <string name="tool_finding_files">%1$s wird gesucht…</string>
+    <string name="tool_searching_file">%1$s wird durchsucht…</string>
+    <string name="tool_executing_shell">Ausführen: %1$s…</string>
+    <string name="tool_reading_memory">%1$s wird gelesen…</string>
+    <string name="tool_saving_memory">%1$s wird gespeichert…</string>
+    <string name="tool_updating_memory">%1$s wird aktualisiert…</string>
+    <string name="tool_removing_memory">%1$s wird entfernt…</string>
+    <string name="tool_looking_up_memories">Speicher wird durchsucht…</string>
+    <string name="tool_updating_active">Aktiver Speicher wird aktualisiert…</string>
+    <string name="tool_listing_shells">Terminals werden aufgelistet…</string>
+    <string name="tool_searching_for">Suche nach „%1$s“…</string>
     <!-- Tool done states (P0 + P1) -->
-    <string name="tool_listed_conversations">Listed %1$d conversations</string>
-    <string name="tool_listed_no_conversations">No conversations found</string>
-    <string name="tool_read_conversation_done">Read conversation: %1$s</string>
-    <string name="tool_read_file_done">Read %1$s</string>
-    <string name="tool_wrote_file">Wrote %1$s</string>
-    <string name="tool_edited_file">Edited %1$s</string>
-    <string name="tool_found_files">Found %1$d files</string>
-    <string name="tool_found_no_files">No files matched</string>
-    <string name="tool_searched_file">Found %1$d matches</string>
-    <string name="tool_executed_shell">Executed: %1$s (%2$d bytes)</string>
-    <string name="tool_executed_no_output">Executed: %1$s (no output)</string>
-    <string name="tool_read_file_failed">Read file failed</string>
-    <string name="crash_log_label">Crash Log</string>
+    <string name="tool_listed_conversations">%1$d Unterhaltungen aufgelistet</string>
+    <string name="tool_listed_no_conversations">Keine Unterhaltungen gefunden</string>
+    <string name="tool_read_conversation_done">Unterhaltung gelesen: %1$s</string>
+    <string name="tool_read_file_done">%1$s gelesen</string>
+    <string name="tool_wrote_file">%1$s geschrieben</string>
+    <string name="tool_edited_file">Bearbeitet %1$s</string>
+    <string name="tool_found_files">%1$d Dateien gefunden</string>
+    <string name="tool_found_no_files">Keine passenden Dateien</string>
+    <string name="tool_searched_file">%1$d Treffer gefunden</string>
+    <string name="tool_executed_shell">Ausgeführt: %1$s (%2$d Bytes)</string>
+    <string name="tool_executed_no_output">Ausgeführt: %1$s (keine Ausgabe)</string>
+    <string name="tool_read_file_failed">Datei konnte nicht gelesen werden</string>
+    <string name="crash_log_label">Absturzprotokoll</string>
     <string name="message_info">Nachrichteninfo</string>
     <string name="time_with_label">Zeit: %1$s</string>
     <string name="model_with_label">Modell: %1$s</string>
@@ -172,6 +172,9 @@
 
     <!-- Drawer -->
     <string name="conversations">Unterhaltungen</string>
+    <string name="pinned_conversations">Angeheftet</string>
+    <string name="pin_conversation">Anheften</string>
+    <string name="unpin_conversation">Loslösen</string>
     <string name="conversation_unread_generation">Ungelesene generierte Antwort</string>
     <string name="new_chat">Neuer Chat</string>
 
@@ -184,7 +187,7 @@
     <string name="manual_search_method_desc">Wie die Suchleiste im Menü Ergebnisse findet</string>
     <string name="search_method_keyword">Stichwort</string>
     <string name="search_method_rag">Semantisch (RAG)</string>
-    <string name="embedding_title">Embedding</string>
+    <string name="embedding_title">Einbettung</string>
     <string name="embedding_model_label">Modell</string>
     <string name="embedding_base_url_label">Basis-URL</string>
     <string name="embedding_provider_label">Anbieter</string>
@@ -202,7 +205,7 @@
     <string name="import_model">Modell importieren (.gguf)</string>
     <string name="importing_model">Importieren...</string>
     <string name="no_embedding_models">Keine Embedding-Modelle konfiguriert</string>
-    <string name="embedding_type_remote">Remote</string>
+    <string name="embedding_type_remote">Entfernt</string>
     <string name="embedding_type_local">Lokal</string>
     <string name="cached">Zwischengespeichert</string>
     <string name="not_cached">Nicht zwischengespeichert</string>
@@ -326,7 +329,7 @@
     <string name="settings_about">Über</string>
     <string name="settings_about_desc">App-Infos, Links und App bewerten</string>
     <string name="about_title">Über</string>
-    <string name="about_info">Info</string>
+    <string name="about_info">Infos</string>
     <string name="about_links">Links</string>
     <string name="about_developer">Entwickler</string>
     <string name="about_developer_name">Newo Ether · Einzelentwickler</string>
@@ -336,6 +339,9 @@
     <string name="about_contribute">Mitwirken</string>
     <string name="about_privacy_policy">Datenschutzrichtlinie</string>
     <string name="about_source_code">Quellcode</string>
+    <string name="about_license">Lizenz</string>
+    <string name="about_license_desc">GNU GPL-3.0</string>
+    <string name="about_license_history">Versionen bis v2.1.0 wurden unter der MIT-Lizenz veröffentlicht.</string>
     <string name="about_version">Version</string>
     <string name="about_rating">App bewerten</string>
     <string name="about_rating_desc">Dieses Projekt wurde von einer einzelnen Person entwickelt. Ich schätze dein Feedback sehr.</string>
@@ -456,7 +462,6 @@
     <string name="pdf_selected">Ausgewählt</string>
 
     <!-- Caching & Sync -->
-    <string name="embedding_model_caching">Embedding-Modell \"%1$s\" wird zwischengespeichert…</string>
     <string name="messages_not_cached">%1$d von %2$d Nachrichten nicht zwischengespeichert.</string>
     <string name="cache_now">Jetzt zwischenspeichern</string>
     <string name="no_messages_to_cache">Keine Nachrichten zum Zwischenspeichern.</string>
@@ -513,8 +518,8 @@
     <string name="onboarding_no_models">Keine Modelle geladen.</string>
     <string name="onboarding_invalid_gguf_title">Ungültige GGUF-Datei</string>
     <string name="onboarding_invalid_gguf_desc">Die ausgewählte Datei scheint kein gültiges GGUF-Modell zu sein.</string>
-    <string name="onboarding_hide_key">Schlüssel verbergen</string>
-    <string name="onboarding_show_key">Schlüssel anzeigen</string>
+    <string name="secret_hide">Wert verbergen</string>
+    <string name="secret_show">Wert anzeigen</string>
     <!-- ── Auto Backup ── -->
     <string name="auto_backup_title">Automatische Sicherung</string>
     <string name="auto_backup_subtitle">Daten automatisch nach Zeitplan exportieren</string>
@@ -560,6 +565,19 @@
     <string name="shell_confirm_deny">Ablehnen</string>
     <string name="shell_confirm_setting">Remote-Shell-Aktionen bestätigen</string>
     <string name="shell_confirm_setting_desc">Nachfragen, bevor der Assistent Befehle ausführt oder Dateien auf Remote-SSH-/Conch-Servern schreibt</string>
+    <string name="shell_confirm_notification_channel">Befehlsgenehmigung</string>
+    <string name="shell_confirm_notification_desc">Fragt an, einen Remote-Befehl zu erlauben oder abzulehnen, während Agora im Hintergrund ist</string>
+    <string name="ask_user_title">Der Assistent fragt</string>
+    <string name="ask_user_send">Senden</string>
+    <string name="ask_user_next">Weiter</string>
+    <string name="interaction_ask_user">Rückfrage</string>
+    <string name="interaction_approval">Freigabe</string>
+    <string name="interaction_minimize">Minimieren</string>
+    <string name="interaction_expand">Erweitern</string>
+    <string name="ask_user_custom_answer">Mit eigenen Worten antworten</string>
+    <string name="ask_user_skip">Überspringen</string>
+    <string name="ask_user_notification_channel">Frage von Agora</string>
+    <string name="ask_user_notification_desc">Bittet dich, eine Frage des Assistenten zu beantworten, wenn der Chat nicht geöffnet ist</string>
 
     <!-- Crash reporting -->
     <string name="crash_title">Agora wurde unerwartet beendet</string>
@@ -579,6 +597,7 @@
     <string name="conversation_search_hint">Suchen…</string>
     <string name="conversation_share">Teilen</string>
     <string name="conversation_share_failed">Unterhaltung konnte nicht geteilt werden: %1$s</string>
+    <string name="conversation_deleted_elsewhere">Diese Unterhaltung wurde auf einem anderen Gerät gelöscht.</string>
     <string name="custom_provider_protocol_label">API-Format</string>
     <string name="file_path_unknown">Unbekannte Datei</string>
     <string name="import_file_too_large">Datei zu groß (%1$d MB). Bitte wähle eine kleinere Exportdatei.</string>
@@ -587,8 +606,8 @@
     <string name="queue_clear_all">Alle löschen</string>
     <string name="tool_background_job_running">Hintergrundauftrag %1$s wird ausgeführt</string>
     <string name="tool_execution_stopped">Werkzeugausführung gestoppt</string>
-    <string name="tool_exit_code">Exit %1$d</string>
-    <string name="tool_exit">Exit</string>
+    <string name="tool_exit_code">Exit-Code %1$d</string>
+    <string name="tool_exit">Beenden</string>
     <string name="tool_shell_returned_code">Befehl gab %1$d zurück</string>
     <string name="tool_shell_detail_executed">Ausgeführt</string>
     <string name="tool_shell_detail_returned_code">Rückgabewert %1$d</string>
@@ -604,7 +623,7 @@
     <string name="tool_waited_shell_job">Auf Shell-Auftrag %1$s gewartet</string>
     <string name="tool_shell_executed_successfully">Befehl erfolgreich ausgeführt</string>
     <string name="tool_shell_execution_completed">Befehlsausführung abgeschlossen</string>
-    <string name="tool_shell_exit_summary">Exit %1$d · %2$d Bytes</string>
+    <string name="tool_shell_exit_summary">Exit-Code %1$d · %2$d Bytes</string>
     <string name="tool_shell_job">Shell-Auftrag abrufen</string>
     <string name="tool_wait_for_job">Auf Shell-Auftrag warten</string>
     <string name="tool_shell_job_count">%1$d Shell-Aufträge aufgelistet</string>
@@ -633,6 +652,8 @@
     <string name="context_compact_model">Komprimierungsmodell</string>
     <string name="context_compact_prompt">Komprimierungsanweisung</string>
     <string name="context_compact_prompt_desc">Anweisungen für die Zusammenfassung</string>
+    <string name="context_compact_preserve_system">System-Prompt beibehalten</string>
+    <string name="context_compact_preserve_system_desc">Beim Verdichten wird das System-Prompt der Unterhaltung verwendet; das Kompakt-Prompt steht am Anfang der Zusammenfassungsanfrage</string>
     <string name="context_compact_select_model">Komprimierungsmodell auswählen</string>
     <string name="context_compact_threshold">Schwelle für automatische Komprimierung</string>
     <string name="context_compact_threshold_desc">Komprimieren, wenn der geschätzte Kontext diesen Anteil des ausgewählten Fensters erreicht</string>
@@ -648,7 +669,13 @@
     <string name="thinking_segment_display_card">Karte</string>
     <string name="thinking_segment_display_bottom_sheet">Unteres Dialogfeld</string>
     <string name="thinking_segments_title">Denksegmente</string>
-    <string name="context_usage_messages">~%1$s / %2$s Tokens</string>
+    <string name="context_usage_messages">~%1$s / %2$s Tokens</string>
+    <string name="context_part_system">System-Prompt</string>
+    <string name="context_part_tools">Tools</string>
+    <string name="context_part_messages">Nachrichten</string>
+    <string name="context_part_free">Frei</string>
+    <string name="context_part_reserved">Reserviert</string>
+    <string name="context_part_used">Verwendet</string>
     <string name="context_compact_streaming">Kontext wird komprimiert…</string>
     <string name="context_compact_error">Komprimierungsfehler</string>
     <string name="context_compact_stopped">Komprimierung gestoppt</string>
@@ -718,6 +745,7 @@
     <string name="generation_error_network">Netzwerkfehler: %1$s</string>
     <string name="generation_error_network_http">Netzwerkfehler (%1$d): %2$s</string>
     <string name="generation_error_sse_parse">Die Serverantwort konnte nicht gelesen werden.</string>
+    <string name="generation_error_malformed_tool_call">Das Modell hat einen unbrauchbaren Tool-Aufruf zurückgegeben: %1$s</string>
     <string name="generation_error_incomplete_stream">%1$s hat die Antwort vorzeitig beendet. Da kein Abschlusssignal empfangen wurde, ist die Antwort unvollständig.</string>
     <string name="generation_error_incomplete_tool_stream">%1$s hat die Antwort während eines Werkzeugaufrufs beendet. Da kein Abschlusssignal empfangen wurde, ist die Antwort unvollständig.</string>
     <string name="generation_error_incomplete_stream_reason">%1$s hat die Antwort nach dem Stoppgrund %2$s ohne Abschlusssignal beendet.</string>
@@ -735,9 +763,9 @@
     <string name="generation_error_connection_reset">Verbindung zurückgesetzt.</string>
     <string name="generation_error_unknown_host">Host konnte nicht gefunden werden.</string>
     <string name="generation_error_tls_failure">Sichere Verbindung fehlgeschlagen.</string>
-    <string name="settings_skills">Skills</string>
+    <string name="settings_skills">Fähigkeiten</string>
     <string name="settings_skills_desc">Wiederverwendbare Anweisungsdateien, die das Modell bei Bedarf lesen kann.</string>
-    <string name="skills_title">Skills</string>
+    <string name="skills_title">Fähigkeiten</string>
     <string name="skills_access">Skill-Zugriff erlauben</string>
     <string name="skills_access_desc">Skill-Katalog und Skill-Werkzeuge in neue Generierungen aufnehmen.</string>
     <string name="skills_saved_title">Gespeicherte Skills</string>
@@ -775,4 +803,14 @@
     <string name="thought_for_a_while">Eine Weile nachgedacht</string>
     <string name="thought_for_a_while_called_tools">Eine Weile nachgedacht, %1$d Werkzeuge aufgerufen</string>
     <string name="remote_device">Gerät</string>
+    <!-- Upstream attribution copy, UTF-8 Base64 for lightweight bulk-rename resistance. -->
+    <string name="rating_origin_credit_b64">QWdvcmEgwrcgRW50d2lja2VsdCB2b24gbmV3by1ldGhlcg==</string>
+    <string name="rating_origin_project_b64">T3JpZ2luYWxwcm9qZWt0OiBnaXRodWIuY29tL25ld28tZXRoZXIvQWdvcmE=</string>
+    <string name="rating_origin_modified_title_b64">R2XDpG5kZXJ0ZSBWZXJzaW9u</string>
+    <string name="rating_origin_modified_body_b64">RGllc2UgQXBwIHZlcndlbmRldCBlaW5lbiBhbmRlcmVuIFBha2V0bmFtZW4gYWxzIGRhcyBPcmlnaW5hbHByb2pla3QgdW5kIHd1cmRlIG5ldSBnZXBhY2t0IG9kZXIgZ2XDpG5kZXJ0LiBEYXMgT3JpZ2luYWxwcm9qZWt0IGlzdCBBZ29yYSwgZW50d2lja2VsdCB2b24gbmV3by1ldGhlci4gRsO8ciBkaWUgw4RuZGVydW5nZW4gZGllc2VyIFZlcnNpb24gaXN0IGRlcmVuIEhlcmF1c2dlYmVyIHZlcmFudHdvcnRsaWNoOyBzaWUgcmVwcsOkc2VudGllcmVuIG5pY2h0IGRlbiB1cnNwcsO8bmdsaWNoZW4gQXV0b3Iu</string>
+    <string name="rating_origin_view_project_b64">T3JpZ2luYWxwcm9qZWt0IGFuc2VoZW4=</string>
+    <string name="message_source_task">Aufgabe</string>
+    <string name="message_source_loop">Schleife</string>
+    <string name="message_source_ask_user">Rückfrage</string>
+    <string name="message_source_unanswered">Nicht beantwortet</string>
 </resources>

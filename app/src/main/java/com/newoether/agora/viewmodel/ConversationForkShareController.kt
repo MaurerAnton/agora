@@ -1,55 +1,92 @@
 package com.newoether.agora.viewmodel
 
 import kotlinx.coroutines.CoroutineScope
-import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.launch
 
-/** Adapts current-conversation fork/share UI intents to typed service outcomes. */
+/**
+ * Adapts a client's fork/share intents for the conversation it shows to typed service outcomes.
+ * Every outcome (the forked conversation to open, share text, failure) goes to that origin only.
+ */
 internal class ConversationForkShareController(
-    private val currentConversationId: StateFlow<String?>,
     private val service: ConversationForkShareService,
     private val scope: CoroutineScope,
-    private val onConversationForked: (String) -> Unit,
-    private val onShareReady: suspend (String) -> Unit,
     private val forkFailureText: (String) -> String,
     private val shareFailureText: (String) -> String,
-    private val onFailure: suspend (String) -> Unit,
 ) {
-    fun fork(messageId: String? = null) {
-        val conversationId = currentConversationId.value ?: return
+    /**
+     * Returns false when nothing was started. Otherwise [onResult] runs exactly once, after the
+     * fork is opened (true) or its failure is reported (false), so the origin can hold its
+     * confirmation until then. [onResult] may run off the main thread.
+     */
+    fun fork(
+        origin: ChatClient,
+        messageId: String? = null,
+        isCurrent: () -> Boolean = { true },
+        openFork: suspend (String) -> Boolean = { origin.openConversation(it); true },
+        onResult: (Boolean) -> Unit = {},
+    ): Boolean {
+        val conversationId = origin.openConversationId ?: return false
         scope.launch {
-            when (val result = service.fork(conversationId, messageId)) {
-                is ConversationForkShareService.ForkResult.Success ->
-                    onConversationForked(result.conversationId)
-                is ConversationForkShareService.ForkResult.Failure ->
-                    onFailure(forkFailureText(result.reason))
+            var forked = false
+            try {
+                when (val result = service.fork(conversationId, messageId)) {
+                    is ConversationForkShareService.ForkResult.Success -> {
+                        if (isCurrent()) forked = openFork(result.conversationId)
+                    }
+                    is ConversationForkShareService.ForkResult.Failure ->
+                        if (isCurrent()) origin.showSnackbar(forkFailureText(result.reason))
+                }
+            } finally {
+                onResult(forked)
             }
         }
+        return true
     }
 
-    fun shareConversation() {
-        share { conversationId -> service.shareAll(conversationId) }
+    fun shareConversation(
+        origin: ChatClient,
+        isCurrent: () -> Boolean = { true },
+        onResult: (String?) -> Unit = { text -> text?.let(origin::showShareText) },
+    ): Boolean = share(origin, isCurrent, onResult) { service.shareAll(it) }
+
+    /**
+     * Shares one generation. [onResult] receives the share text, or null when nothing was shared,
+     * so an origin that shows its own confirmation can hold it until the phone answers.
+     */
+    fun shareGeneration(
+        origin: ChatClient,
+        assistantMessageId: String,
+        isCurrent: () -> Boolean = { true },
+        onResult: (String?) -> Unit = { text -> text?.let(origin::showShareText) },
+    ): Boolean = share(origin, isCurrent, onResult) { conversationId ->
+        service.shareRun(conversationId, assistantMessageId)
     }
 
-    fun shareGeneration(assistantMessageId: String) {
-        share { conversationId -> service.shareRun(conversationId, assistantMessageId) }
-    }
-
-    fun shareMessages(messageIds: Set<String>) {
+    fun shareMessages(origin: ChatClient, messageIds: Set<String>) {
         if (messageIds.isEmpty()) return
-        share { conversationId -> service.shareMessages(conversationId, messageIds) }
+        share(origin) { conversationId -> service.shareMessages(conversationId, messageIds) }
     }
 
     private fun share(
+        origin: ChatClient,
+        isCurrent: () -> Boolean = { true },
+        onResult: (String?) -> Unit = { text -> text?.let(origin::showShareText) },
         load: suspend (conversationId: String) -> ConversationForkShareService.ShareResult,
-    ) {
-        val conversationId = currentConversationId.value ?: return
+    ): Boolean {
+        val conversationId = origin.openConversationId ?: return false
         scope.launch {
-            when (val result = load(conversationId)) {
-                is ConversationForkShareService.ShareResult.Success -> onShareReady(result.text)
-                is ConversationForkShareService.ShareResult.Failure ->
-                    onFailure(shareFailureText(result.reason))
+            var text: String? = null
+            try {
+                when (val result = load(conversationId)) {
+                    is ConversationForkShareService.ShareResult.Success ->
+                        if (isCurrent()) text = result.text
+                    is ConversationForkShareService.ShareResult.Failure ->
+                        if (isCurrent()) origin.showSnackbar(shareFailureText(result.reason))
+                }
+            } finally {
+                onResult(text)
             }
         }
+        return true
     }
 }

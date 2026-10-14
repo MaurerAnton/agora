@@ -56,6 +56,8 @@ internal class MessagePayloadBuilder {
                         fileName = attachment.fileName,
                         mimeType = attachment.mimeType,
                         imageIndex = imageIndex,
+                        pixelWidth = attachment.pixelWidth,
+                        pixelHeight = attachment.pixelHeight,
                         fileSize = attachment.fileSize,
                     )
                 }
@@ -77,6 +79,8 @@ internal class MessagePayloadBuilder {
                         mimeType = attachment.mimeType,
                         imageIndex = imageIndex,
                         pageCount = frames.size,
+                        pixelWidth = attachment.pixelWidth,
+                        pixelHeight = attachment.pixelHeight,
                         fileSize = attachment.fileSize,
                     )
                 }
@@ -98,6 +102,8 @@ internal class MessagePayloadBuilder {
                         mimeType = attachment.mimeType ?: "application/pdf",
                         imageIndex = imageIndex,
                         pageCount = pages.size,
+                        pixelWidth = attachment.pixelWidth,
+                        pixelHeight = attachment.pixelHeight,
                         fileSize = attachment.fileSize,
                     )
                 }

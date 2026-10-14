@@ -6,6 +6,7 @@ import com.newoether.agora.data.local.MessageEntity
 import com.newoether.agora.data.local.NewChatPersistEntity
 import com.newoether.agora.data.local.RunEntity
 import com.newoether.agora.data.repository.ConversationRepository
+import com.newoether.agora.model.MessageSource
 import com.newoether.agora.model.MessageStatus
 import com.newoether.agora.model.Participant
 import com.newoether.agora.model.RunEffect
@@ -34,6 +35,8 @@ internal class AcceptedInputGraphWriter(
         val modelId: String,
         val userTimestamp: Long,
         val touchConversationOnAdmission: Boolean,
+        /** Set when automation (Task, Loop) sends on the user's behalf; null for typed input. */
+        val source: MessageSource? = null,
         val newConversation: ChatEntity? = null,
         val newConversationSettings: ConversationSettings? = null,
         val newChatPersistSnapshot: NewChatPersistEntity? = null,
@@ -84,6 +87,7 @@ internal class AcceptedInputGraphWriter(
             runId = request.runId,
             runSequence = 0,
             consumedAtPass = 0,
+            sourceJson = MessageSource.encode(request.source),
         )
         val modelMessage = MessageEntity(
             id = request.modelMessageId,

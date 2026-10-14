@@ -1,5 +1,6 @@
 package com.newoether.agora.data.local
 
+import java.io.File
 import com.newoether.agora.model.MessageStatus
 import com.newoether.agora.model.Participant
 import com.newoether.agora.model.RunEndReason
@@ -50,6 +51,7 @@ class ChatDaoRunRecoveryTest {
         coVerify(exactly = 1) { dao.getConversation(CONVERSATION_ID) }
         coVerify(exactly = 1) { dao.getLiveRun(CONVERSATION_ID) }
         coVerify(exactly = 1) { dao.stopStuckMessagesForConversation(CONVERSATION_ID) }
+        coVerify(exactly = 1) { dao.touchConversationData(CONVERSATION_ID, 99L) }
         coVerify(exactly = 0) { dao.getAllConversationsList() }
     }
 
@@ -87,6 +89,7 @@ class ChatDaoRunRecoveryTest {
             )
         } returns 1
         coEvery { dao.stopStuckMessagesForConversation(CONVERSATION_ID) } returns 2
+        coEvery { dao.touchConversationData(CONVERSATION_ID, 99L) } returns 1
 
         assertEquals(3, dao.recoverConversationRuntime(CONVERSATION_ID, 99L))
 
@@ -95,6 +98,7 @@ class ChatDaoRunRecoveryTest {
         coVerify(exactly = 0) { dao.getLiveRun(OTHER_CONVERSATION_ID) }
         coVerify(exactly = 0) { dao.stopStuckMessagesForConversation(OTHER_CONVERSATION_ID) }
         coVerify(exactly = 0) { dao.getAllConversationsList() }
+        coVerify(exactly = 1) { dao.touchConversationData(CONVERSATION_ID, 99L) }
     }
 
     @Test
@@ -162,6 +166,19 @@ class ChatDaoRunRecoveryTest {
         assertEquals("true", segments[1].jsonObject["futureFlag"]?.toString())
     }
 
+    @Test
+    fun `runtime recovery keeps its transaction boundary on the DAO method`() {
+        // Room binds the transaction wrapper from this source declaration at compile time.
+        val source = generateSequence(File(requireNotNull(System.getProperty("user.dir"))).absoluteFile) { it.parentFile }
+            .map { File(it, "src/main/java/com/newoether/agora/data/local/ChatDao.kt") }
+            .firstOrNull(File::exists)
+        assertTrue("ChatDao.kt source not located", source != null)
+        assertTrue(
+            Regex("@Transaction\\s+suspend fun recoverConversationRuntime")
+                .containsMatchIn(requireNotNull(source).readText()),
+        )
+    }
+
     private fun stubExactOwner(dao: ChatDao, run: RunEntity?) {
         coEvery { dao.recoverConversationRuntime(any(), any()) } coAnswers { callOriginal() }
         coEvery { dao.getConversation(CONVERSATION_ID) } returns ChatEntity(
@@ -170,6 +187,7 @@ class ChatDaoRunRecoveryTest {
         )
         coEvery { dao.getLiveRun(CONVERSATION_ID) } returns run
         coEvery { dao.stopStuckMessagesForConversation(CONVERSATION_ID) } returns 0
+        coEvery { dao.touchConversationData(CONVERSATION_ID, any()) } returns 1
     }
 
     private fun liveRun(status: RunStatus) = RunEntity(

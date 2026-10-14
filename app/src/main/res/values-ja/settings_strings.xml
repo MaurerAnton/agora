@@ -1,4 +1,4 @@
-<resources>
+<?xml version="1.0" encoding="utf-8"?><resources>
     <!-- Settings - Main -->
     <string name="settings_title">設定</string>
     <string name="settings_provider">プロバイダー</string>
@@ -428,8 +428,10 @@
     <string name="visual_effects">視覚効果</string>
     <string name="blur_effects">ぼかし効果</string>
     <string name="blur_effects_desc">ツールバー下のチャット一覧上部をぼかします。オフにするとパフォーマンスを節約できます。</string>
-    <string name="parse_inline_dollar_math">Parse $…$ as inline math</string>
-    <string name="parse_inline_dollar_math_desc">When disabled, single-dollar expressions such as $ x $ remain ordinary text. Other math delimiters are unchanged.</string>
+    <string name="parse_inline_dollar_math">$…$をインライン数式として解析</string>
+    <string name="parse_inline_dollar_math_desc">無効にすると、$ x $ のようなドル記号1つの式は通常のテキストとして表示されます。他の数式デリミターは影響を受けません。</string>
+    <string name="auto_wrap_code_blocks">コードブロックの自動折り返し</string>
+    <string name="auto_wrap_code_blocks_desc">コードブロック内の長い行は横スクロールせず折り返して表示します。</string>
     <string name="reduce_motion">モーションを減らす</string>
     <string name="reduce_motion_desc">継続的な動きや大きな空間移動を減らし、フェード、直接操作、必要な状態フィードバックは維持します。</string>
 
@@ -481,4 +483,12 @@
     <string name="openai_service_tier_priority">優先</string>
     <string name="openai_service_tier_fast">高速</string>
     <string name="openai_service_tier_ultrafast">超高速</string>
+    <string name="settings_interaction">インタラクション</string>
+    <string name="settings_interaction_desc">アシスタントがあなたに尋ねる質問</string>
+    <string name="ask_user_enable">アシスタントの質問を許可</string>
+    <string name="ask_user_enable_desc">モデルが質問を出してあなたの選択を待てるツールを有効にします</string>
+    <string name="unsaved_changes_title">未保存の変更</string>
+    <string name="unsaved_changes_message">保存されていない変更があります。破棄しますか？</string>
+    <string name="unsaved_changes_discard">破棄</string>
+    <string name="unsaved_changes_keep_editing">編集を続ける</string>
 </resources>

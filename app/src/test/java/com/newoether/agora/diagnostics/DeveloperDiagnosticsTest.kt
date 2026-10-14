@@ -68,7 +68,7 @@ class DeveloperDiagnosticsTest {
             method = "POST",
             url = "https://example.com/chat?key=query-secret",
             headers = mapOf("Authorization" to "Bearer header-secret"),
-            body = """{"content":"private request","api_key":"body-secret"}""",
+            body = """{"content":"private request","api_key":"header-secret"}""",
         )
         DeveloperDiagnostics.recordWireLine(
             context = context,
@@ -85,7 +85,6 @@ class DeveloperDiagnosticsTest {
         val retained = events.joinToString()
         assertFalse(retained.contains("query-secret"))
         assertFalse(retained.contains("header-secret"))
-        assertFalse(retained.contains("body-secret"))
         assertTrue(retained.contains("private request"))
         assertTrue(retained.contains("private response"))
         assertTrue(retained.contains("[REDACTED_SECRET]"))

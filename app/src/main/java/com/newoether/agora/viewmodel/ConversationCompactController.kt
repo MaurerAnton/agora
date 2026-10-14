@@ -55,11 +55,17 @@ internal class ConversationCompactController(
         ).second
     }
 
+    /**
+     * [alreadyHoldsConversationLock] must be true when the caller already owns this conversation's
+     * execution lease (headless Task/Loop runs). The coordinator is non-reentrant, so acquiring it
+     * again would suspend the Compact launch forever after it has claimed the generation slot.
+     */
     suspend fun startAutomaticStandard(
         conversationId: String,
         contextLimit: Int,
         config: AutomaticCompactConfig,
         state: ConversationGenerationState,
+        alreadyHoldsConversationLock: Boolean = false,
     ): StandardCompactLaunch? {
         if (!operation.automaticNeeded(conversationId, contextLimit, config)) return null
         val snapshot = automaticSnapshot(conversationId, config)
@@ -70,6 +76,7 @@ internal class ConversationCompactController(
             state = state,
             awaitCompletion = false,
             touchConversationOnAdmission = false,
+            alreadyHoldsConversationLock = alreadyHoldsConversationLock,
         ).first
     }
 
@@ -114,6 +121,7 @@ internal class ConversationCompactController(
         state: ConversationGenerationState,
         awaitCompletion: Boolean,
         touchConversationOnAdmission: Boolean,
+        alreadyHoldsConversationLock: Boolean = false,
     ): Pair<StandardCompactLaunch?, CompactResult> {
         val topology = conversations.getProviderContextTopologySnapshot(conversationId)
             ?: return null to CompactResult.NotNeeded
@@ -162,7 +170,9 @@ internal class ConversationCompactController(
                 modelMessageId = messageId,
                 replacementMessageId = target?.id,
                 requestKind = "compact",
+                conversationModelId = null,
                 touchConversationOnAdmission = touchConversationOnAdmission,
+                alreadyHoldsConversationLock = alreadyHoldsConversationLock,
                 queueDrainRequiresSuccess = true,
                 transformFinalText = transform,
             ),
@@ -224,8 +234,19 @@ internal class ConversationCompactController(
         request: CompactRequest,
     ): GenerationAdmissionSnapshot = copy(
         config = config.copy(
-            effectiveSystemPrompt = request.prompt,
-            initialUserPrompt = BuiltInPrompts.CONTEXT_COMPACT_USER,
+            // Preserved mode keeps the system prompt captured for the compact request (the
+            // conversation's ordinary one) and moves the Compact Prompt to the head of the
+            // user message; legacy mode replaces the system prompt with the Compact Prompt.
+            effectiveSystemPrompt = if (request.preserveSystemPrompt) {
+                config.effectiveSystemPrompt
+            } else {
+                request.prompt
+            },
+            initialUserPrompt = if (request.preserveSystemPrompt) {
+                request.prompt + "\n\n" + BuiltInPrompts.CONTEXT_COMPACT_USER
+            } else {
+                BuiltInPrompts.CONTEXT_COMPACT_USER
+            },
             userPrepend = null,
             userPostpend = null,
             assistantPrepend = null,
@@ -245,6 +266,7 @@ internal class ConversationCompactController(
             accessPastConversations = false,
             webSearchEnabled = false,
             imageGenEnabled = false,
+            askUserEnabled = false,
             automationToolsEnabled = false,
             shellEnabled = false,
             sandboxEnabled = false,

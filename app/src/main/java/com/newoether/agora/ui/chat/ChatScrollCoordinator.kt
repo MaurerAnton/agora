@@ -13,6 +13,8 @@ import androidx.compose.runtime.Stable
 import androidx.compose.runtime.State
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.runtime.setValue
 import androidx.compose.runtime.snapshotFlow
@@ -126,7 +128,7 @@ internal class ChatScrollCoordinator internal constructor(
             )
             if (next != imeBottomAnchorState) imeBottomAnchorStateHolder.value = next
         }
-        val bottomButtonHideThresholdPx = with(density) { 64.dp.toPx() }
+        val bottomButtonHideThresholdPx = with(density) { 48.dp.toPx() }
         val bottomButtonShowThresholdPx = with(density) { 96.dp.toPx() }
         LaunchedEffect(
             listState,
@@ -248,7 +250,11 @@ internal class ChatScrollCoordinator internal constructor(
         imeBottomPx: Int,
         viewModel: ChatViewModel,
         haptics: AgoraHaptics,
+        chatPresented: Boolean,
     ) {
+        val latestChatPresented by rememberUpdatedState(chatPresented)
+        // Request id of a completed conversation switch whose haptic was covered by an overlay.
+        var pendingSwitchHapticRequestId by remember { mutableStateOf<Long?>(null) }
         val latestCurrentConversationId by rememberUpdatedState(currentConversationId)
         val latestCurrentConversation by rememberUpdatedState(currentConversation)
         val latestLoadedMessagesConversationId by rememberUpdatedState(
@@ -328,7 +334,13 @@ internal class ChatScrollCoordinator internal constructor(
                         request.kind == SwitchingRequestKind.CONVERSATION &&
                         request.hapticOnCompletion
                     ) {
-                        haptics.confirm()
+                        // A covering overlay (e.g. Tasks exiting after opening history) disables
+                        // Chat haptics; defer the confirm until Chat is presented again.
+                        if (latestChatPresented) {
+                            haptics.confirm()
+                        } else {
+                            pendingSwitchHapticRequestId = request.id
+                        }
                     }
                 } else {
                     viewModel.failSwitchingScroll(request.id, "layout failed to stabilize")
@@ -347,6 +359,17 @@ internal class ChatScrollCoordinator internal constructor(
             }
         }
 
+        LaunchedEffect(pendingSwitchHapticRequestId, chatPresented, switchingScrollRequest?.id) {
+            val pendingId = pendingSwitchHapticRequestId ?: return@LaunchedEffect
+            val activeRequestId = switchingScrollRequest?.id
+            if (activeRequestId != null && activeRequestId != pendingId) {
+                // A newer switch superseded the covered one; its own completion owns feedback.
+                pendingSwitchHapticRequestId = null
+            } else if (chatPresented) {
+                pendingSwitchHapticRequestId = null
+                haptics.confirm()
+            }
+        }
         LaunchedEffect(currentConversationId) {
             if (viewModel.scrollRequests.suppressNextOpenScroll) {
                 viewModel.scrollRequests.suppressNextOpenScroll = false
@@ -637,7 +660,6 @@ internal class ChatScrollCoordinator internal constructor(
                     canScrollForward = listState.canScrollForward,
                     sentinelIndex = sentinel?.index,
                     sentinelKey = sentinel?.key,
-                    lastTurnHydrated = hydrationRegistry.containsAll(lastTurnMessageIds),
                 )
                 if (sample.needsScroll) {
                     listState.scrollToItem(sample.targetIndex)

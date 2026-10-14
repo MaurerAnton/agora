@@ -9,13 +9,25 @@ import okhttp3.HttpUrl.Companion.toHttpUrlOrNull
 import java.nio.ByteBuffer
 import java.nio.charset.CodingErrorAction
 
-/** Permanently removes credentials before diagnostic payloads enter memory or durable storage. */
+/**
+ * Permanently removes credentials before diagnostic payloads enter memory or durable storage.
+ *
+ * Scope is credentials only. Message text, tool arguments and tool results are captured verbatim:
+ * a keyword match inside prose (for example `token:` or `key` mentioned by a user) must never
+ * rewrite captured conversation content. Two strengths are used:
+ * - [redactCredentialValues] for anything that can carry message content (bodies, wire lines,
+ *   parsed stream content). It only masks credential-shaped values.
+ * - [redactRequestMetadata] for request metadata (URLs, header values, identifiers) where no
+ *   conversation content is expected and keyword-shaped secrets are common.
+ */
 internal object DiagnosticRedactor {
     private const val REDACTED_SECRET = "[REDACTED_SECRET]"
-    private const val REDACTED_CONTENT = "[REDACTED_CONTENT]"
     private const val INVALID_URL = "[UNAVAILABLE_INVALID_URL]"
     private const val MAX_IDENTIFIER_CHARS = 1_024
     private const val MAX_HEADERS = 128
+
+    /** Conch authenticates with `X-Conch-*` headers, so every such value is a credential. */
+    private const val CONCH_KEY_PREFIX = "xconch"
 
     private val json = Json { ignoreUnknownKeys = true }
 
@@ -30,7 +42,7 @@ internal object DiagnosticRedactor {
             parsed.queryParameterNames
                 .filter(::isSecretKey)
                 .forEach { name -> builder.setQueryParameter(name, REDACTED_SECRET) }
-            redactSecrets(builder.build().toString())
+            redactRequestMetadata(builder.build().toString())
         }
         return capture(rawUrl, sanitized)
     }
@@ -39,7 +51,7 @@ internal object DiagnosticRedactor {
         headers.entries.take(MAX_HEADERS).forEach { (name, value) ->
             put(
                 name.take(MAX_IDENTIFIER_CHARS),
-                if (isSecretKey(name)) REDACTED_SECRET else redactSecrets(value),
+                if (isSecretKey(name)) REDACTED_SECRET else redactRequestMetadata(value),
             )
         }
         if (headers.size > MAX_HEADERS) {
@@ -47,14 +59,25 @@ internal object DiagnosticRedactor {
         }
     }
 
-    fun captureJson(rawJson: String): CapturedDiagnosticText {
+    fun captureJson(
+        rawJson: String,
+        credentialValues: Collection<String> = emptyList(),
+    ): CapturedDiagnosticText {
         val (input, inputTruncated) = boundedInput(rawJson)
-        val parsed = runCatching { json.parseToJsonElement(input) }.getOrNull()
-        val sanitized = parsed
-            ?.let(::sanitizeCredentialElement)
-            ?.toString()
-            ?: redactSecrets(input)
-        return capture(rawJson, sanitized, alreadyTruncated = inputTruncated)
+        return capture(
+            original = rawJson,
+            sanitized = credentialText(input, credentialValues),
+            alreadyTruncated = inputTruncated,
+        )
+    }
+    fun credentialValues(headers: Map<String, String>): Set<String> = buildSet {
+        headers.forEach { (name, value) ->
+            if (!isSecretKey(name) || value.isBlank()) return@forEach
+            add(value)
+            BEARER_VALUE.matchEntire(value.trim())?.groupValues?.getOrNull(1)
+                ?.takeIf(String::isNotBlank)
+                ?.let(::add)
+        }
     }
 
     fun captureWireLine(rawLine: String): CapturedDiagnosticText {
@@ -67,12 +90,11 @@ internal object DiagnosticRedactor {
                 if (data == "[DONE]") {
                     leading + "data: [DONE]"
                 } else {
-                    leading + "data: " + captureJson(data).value
+                    leading + "data: " + credentialText(data)
                 }
             }
-            trimmed.startsWith("{") || trimmed.startsWith("[") ->
-                leading + captureJson(trimmed).value
-            else -> redactSecrets(input)
+            trimmed.startsWith("{") || trimmed.startsWith("[") -> leading + credentialText(trimmed)
+            else -> redactCredentialValues(input)
         }
         return capture(rawLine, sanitized, alreadyTruncated = inputTruncated)
     }
@@ -81,20 +103,16 @@ internal object DiagnosticRedactor {
         val (input, inputTruncated) = boundedInput(content)
         return capture(
             original = content,
-            sanitized = redactSecrets(input),
+            sanitized = redactCredentialValues(input),
             alreadyTruncated = inputTruncated,
         )
     }
 
-    fun redactJsonContent(captured: CapturedDiagnosticText): CapturedDiagnosticText {
-        val parsed = runCatching { json.parseToJsonElement(captured.value) }.getOrNull()
-        val sanitized = parsed
-            ?.let { redactContentElement(it, key = null, contentScope = false) }
-            ?.toString()
-            ?: REDACTED_CONTENT
-        return project(captured, sanitized)
-    }
+    /** Export projection for a JSON body; content is preserved, only credentials are masked. */
+    fun redactJsonContent(captured: CapturedDiagnosticText): CapturedDiagnosticText =
+        project(captured, credentialText(captured.value))
 
+    /** Export projection for one wire line; content is preserved, only credentials are masked. */
     fun redactWireContent(captured: CapturedDiagnosticText): CapturedDiagnosticText {
         val rawLine = captured.value
         val trimmed = rawLine.trimStart()
@@ -105,86 +123,68 @@ internal object DiagnosticRedactor {
                 if (data == "[DONE]") {
                     leading + "data: [DONE]"
                 } else {
-                    val parsed = runCatching { json.parseToJsonElement(data) }.getOrNull()
-                    leading + "data: " + (
-                        parsed
-                            ?.let { redactContentElement(it, key = null, contentScope = false) }
-                            ?.toString()
-                            ?: REDACTED_CONTENT
-                        )
+                    leading + "data: " + credentialText(data)
                 }
             }
-            trimmed.startsWith("{") || trimmed.startsWith("[") -> {
-                val parsed = runCatching { json.parseToJsonElement(trimmed) }.getOrNull()
-                leading + (
-                    parsed
-                        ?.let { redactContentElement(it, key = null, contentScope = false) }
-                        ?.toString()
-                        ?: REDACTED_CONTENT
-                    )
-            }
+            trimmed.startsWith("{") || trimmed.startsWith("[") -> leading + credentialText(trimmed)
             isSseControl(trimmed) -> rawLine
-            else -> REDACTED_CONTENT
+            else -> redactCredentialValues(rawLine)
         }
         return project(captured, redacted)
     }
 
+    /** Export projection for parsed stream content; the text itself is preserved. */
     fun redactContent(captured: CapturedDiagnosticText): CapturedDiagnosticText =
-        project(captured, REDACTED_CONTENT)
+        project(captured, redactCredentialValues(captured.value))
 
     fun safeIdentifier(value: String): String =
-        redactSecrets(value).take(MAX_IDENTIFIER_CHARS)
+        redactRequestMetadata(value).take(MAX_IDENTIFIER_CHARS)
+
+    /** Re-applies credential rules to a JSON text and returns it unchanged when it parses. */
+    private fun credentialText(
+        rawJson: String,
+        credentialValues: Collection<String> = emptyList(),
+    ): String =
+        runCatching { json.parseToJsonElement(rawJson) }.getOrNull()
+            ?.let { sanitizeCredentialElement(it, credentialValues) }
+            ?.toString()
+            ?: redactKnownCredentials(redactCredentialValues(rawJson), credentialValues)
 
     private fun sanitizeCredentialElement(
         element: JsonElement,
-        key: String? = null,
+        credentialValues: Collection<String>,
     ): JsonElement {
-        if (key != null && isSecretKey(key)) return JsonPrimitive(REDACTED_SECRET)
         return when (element) {
             is JsonObject -> JsonObject(
-                element.mapValues { (childKey, childValue) ->
-                    sanitizeCredentialElement(childValue, childKey)
+                element.mapValues { (_, childValue) ->
+                    sanitizeCredentialElement(childValue, credentialValues)
                 },
             )
             is JsonArray -> JsonArray(
-                element.map { child -> sanitizeCredentialElement(child) },
-            )
-            is JsonPrimitive -> if (element.isString) {
-                JsonPrimitive(redactSecrets(element.content))
-            } else {
-                element
-            }
-        }
-    }
-
-    private fun redactContentElement(
-        element: JsonElement,
-        key: String?,
-        contentScope: Boolean,
-    ): JsonElement {
-        if (key != null && isSecretKey(key)) return JsonPrimitive(REDACTED_SECRET)
-        val nextContentScope = contentScope ||
-            (key?.normalizeKey()?.let { it in CONTENT_KEYS } == true)
-        return when (element) {
-            is JsonObject -> JsonObject(
-                element.mapValues { (childKey, childValue) ->
-                    redactContentElement(childValue, childKey, nextContentScope)
-                },
-            )
-            is JsonArray -> JsonArray(
-                element.map { child ->
-                    redactContentElement(child, key = null, contentScope = nextContentScope)
-                },
+                element.map { child -> sanitizeCredentialElement(child, credentialValues) },
             )
             is JsonPrimitive -> if (element.isString) {
                 JsonPrimitive(
-                    if (nextContentScope) REDACTED_CONTENT else redactSecrets(element.content),
+                    redactKnownCredentials(
+                        redactCredentialValues(element.content),
+                        credentialValues,
+                    ),
                 )
             } else {
                 element
             }
         }
     }
+    private fun redactKnownCredentials(
+        value: String,
+        credentialValues: Collection<String>,
+    ): String = credentialValues
+        .asSequence()
+        .filter(String::isNotBlank)
+        .sortedByDescending(String::length)
+        .fold(value) { sanitized, credential ->
+            sanitized.replace(credential, REDACTED_SECRET)
+        }
 
     private fun boundedInput(value: String): Pair<String, Boolean> {
         val bytes = value.toByteArray(Charsets.UTF_8)
@@ -230,25 +230,36 @@ internal object DiagnosticRedactor {
 
     private fun isSecretKey(key: String): Boolean {
         val normalized = key.normalizeKey()
-        return normalized in SECRET_KEYS || SECRET_KEY_SUFFIXES.any(normalized::endsWith)
+        return normalized in SECRET_KEYS ||
+            normalized.startsWith(CONCH_KEY_PREFIX) ||
+            SECRET_KEY_SUFFIXES.any(normalized::endsWith)
     }
 
     private fun String.normalizeKey(): String =
         lowercase().filter(Char::isLetterOrDigit)
 
-    private fun redactSecrets(value: String): String {
-        var result = PRIVATE_KEY_BLOCK.replace(value, REDACTED_SECRET)
-        result = PRIVATE_KEY_PREFIX.replace(result, REDACTED_SECRET)
-        result = BEARER_SECRET.replace(result) { match ->
+    /**
+     * Masks values that are credentials by shape: bearer tokens and provider API key formats.
+     * Ordinary prose, including the words `token`, `key` or `password`, is left untouched.
+     */
+    private fun redactCredentialValues(value: String): String {
+        var result = BEARER_SECRET.replace(value) { match ->
             match.groupValues[1] + REDACTED_SECRET
-        }
-        result = NAMED_SECRET.replace(result) { match ->
-            match.groupValues[1] + match.groupValues[2] + REDACTED_SECRET
         }
         SECRET_TOKEN_PATTERNS.forEach { pattern ->
             result = pattern.replace(result, REDACTED_SECRET)
         }
         return result
+    }
+
+    /** Stronger masking for request metadata, where conversation content is never expected. */
+    private fun redactRequestMetadata(value: String): String {
+        var result = PRIVATE_KEY_BLOCK.replace(value, REDACTED_SECRET)
+        result = PRIVATE_KEY_PREFIX.replace(result, REDACTED_SECRET)
+        result = NAMED_SECRET.replace(result) { match ->
+            match.groupValues[1] + match.groupValues[2] + REDACTED_SECRET
+        }
+        return redactCredentialValues(result)
     }
 
     private fun decodeUtf8Prefix(bytes: ByteArray, maxBytes: Int): String =
@@ -299,26 +310,10 @@ internal object DiagnosticRedactor {
         "signature",
         "credential",
     )
-    private val CONTENT_KEYS = setOf(
-        "arguments",
-        "content",
-        "input",
-        "output",
-        "prompt",
-        "query",
-        "reasoning",
-        "reasoningcontent",
-        "result",
-        "systeminstruction",
-        "text",
-        "thinking",
-        "thought",
-        "toolarguments",
-        "toolresult",
-    )
     private val BEARER_SECRET = Regex(
         """(?i)\b(Bearer\s+)[A-Za-z0-9._~+/=-]+""",
     )
+    private val BEARER_VALUE = Regex("""(?i)Bearer\s+(.+)""")
     private val NAMED_SECRET = Regex(
         """(?i)\b(api[_-]?key|access[_-]?token|refresh[_-]?token|security[_-]?token|session[_-]?token|authorization|proxy[_-]?authorization|cookie|password|secret|signature|credential|token)\s*([=:])\s*["']?[^\s"'&,}]+""",
     )

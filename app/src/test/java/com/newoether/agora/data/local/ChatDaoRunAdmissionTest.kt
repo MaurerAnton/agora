@@ -1,5 +1,8 @@
 package com.newoether.agora.data.local
 
+import android.content.Context
+import androidx.room.Room
+import androidx.test.core.app.ApplicationProvider
 import com.newoether.agora.model.MessageStatus
 import com.newoether.agora.model.Participant
 import com.newoether.agora.model.RunStatus
@@ -14,8 +17,65 @@ import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
 import org.junit.Assert.assertTrue
 import org.junit.Test
+import org.junit.runner.RunWith
+import org.robolectric.RobolectricTestRunner
 
+@RunWith(RobolectricTestRunner::class)
 class ChatDaoRunAdmissionTest {
+    @Test
+    fun nullModelUpdatePreservesPreferenceWhileTheMessageUsesAnotherModel() = runTest {
+        val database = Room.inMemoryDatabaseBuilder(
+            ApplicationProvider.getApplicationContext<Context>(),
+            ChatDatabase::class.java,
+        ).allowMainThreadQueries().build()
+        try {
+            val dao = database.chatDao()
+            for ((index, preference) in listOf(null, "provider:chat", "provider:newer-choice").withIndex()) {
+                val conversation = ChatEntity(
+                    id = "c$index", title = "title", modelId = preference,
+                    systemPromptId = "chat-prompt", draftText = "draft",
+                    lastUpdated = 1L, dataChangedAt = 1L,
+                )
+                dao.upsertConversation(conversation)
+                val run = RunEntity(
+                    id = "r$index", conversationId = conversation.id, parentRunId = null,
+                    status = RunStatus.ACTIVE, activeSlot = 1,
+                    startedAt = 10L, lastCheckpointAt = 10L,
+                )
+                val message = MessageEntity(
+                    id = "compact_$index", conversationId = conversation.id,
+                    text = "", participant = Participant.MODEL, status = MessageStatus.SENDING,
+                    timestamp = 10L, modelName = "provider:compact", runId = run.id, runSequence = 0,
+                )
+                val commit = dao.createRunWithMessages(
+                    run, listOf(message), mapOf(null to message.id),
+                    conversationModelId = null, at = 10L,
+                    touchConversationOnAdmission = index != 0,
+                )
+                val stored = requireNotNull(dao.getConversation(conversation.id))
+                assertEquals(conversation.copy(
+                    selectedBranchesJson = stored.selectedBranchesJson,
+                    selectedRunBranchesJson = stored.selectedRunBranchesJson,
+                    lastUpdated = if (index == 0) 1L else 10L,
+                    dataChangedAt = 10L,
+                ), stored)
+                assertEquals("provider:compact", dao.getMessage(message.id)?.modelName)
+                assertEquals(run, dao.getRun(run.id))
+                assertEquals(mapOf(null to message.id), commit.messageSelections)
+                assertEquals(mapOf(null to run.id), commit.runSelections)
+                assertEquals(1, dao.updateConversationForRunAdmission(
+                    conversation.id, stored.selectedBranchesJson!!, stored.selectedRunBranchesJson!!,
+                    modelId = "provider:next-chat", at = 20L, touchConversationOnAdmission = false,
+                ))
+                assertEquals("provider:next-chat", dao.getConversation(conversation.id)?.modelId)
+                assertEquals(stored.lastUpdated, dao.getConversation(conversation.id)?.lastUpdated)
+                assertEquals("provider:compact", dao.getMessage(message.id)?.modelName)
+            }
+        } finally {
+            database.close()
+        }
+    }
+
     @Test
     fun selectionOnlyQueriesNeverWriteConversationRecency() {
         val dao = sourceFile("app/src/main/java/com/newoether/agora/data/local/ChatContextCompactDao.kt")

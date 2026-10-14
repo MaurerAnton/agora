@@ -100,7 +100,14 @@ data class MessageSegment(
     /** In-memory Provider delta boundaries for the active answer; never persisted to Room JSON. */
     @Transient
     val streamingTextDeltas: List<StreamingTextDelta> = emptyList(),
-)
+) {
+    /** Provider-native segments keep their own replay format, not client function results. */
+    val isProviderHostedTool: Boolean
+        get() = type == "tool" && when (toolName) {
+            "openai_search", "google_search", "code_execution" -> true
+            else -> false
+        }
+}
 
 object ToolExecutionStates {
     const val CALLING = "calling"
@@ -189,6 +196,8 @@ data class ChatMessage(
     val runId: String? = null,
     val runSequence: Long? = null,
     val consumedAtPass: Int? = null,
+    /** Set only on automatic user input (Task, Loop, non-blocking ask_user answers). */
+    val source: MessageSource? = null,
     /** Optional in-memory page boundary; older pages cannot reparent a rendered list item. */
     val displayPageId: String? = null,
     /** Authenticated private files for inline Markdown images; never part of native history. */
@@ -210,6 +219,7 @@ data class ChatConversation(
     val origin: String = "user",
     val graduated: Boolean = false,
     val hasUnreadGeneration: Boolean = false,
+    val isPinned: Boolean = false,
     val selectedBranchesJson: String? = null,
 )
 

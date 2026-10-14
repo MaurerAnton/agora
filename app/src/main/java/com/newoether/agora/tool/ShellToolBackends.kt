@@ -94,7 +94,7 @@ internal class ConchBackend(override val device: ShellDeviceConfig) : Backend {
                 prepared.body,
                 prepared.headers,
                 scope = HttpClient.boundStreamScope(),
-                callClient = com.newoether.agora.util.ConchNetwork.client,
+                callClient = com.newoether.agora.util.ConchNetwork.streamCalls,
                 maxLineBytes = com.newoether.agora.util.ConchNetwork.LINE_LIMIT,
                 maxErrorBytes = com.newoether.agora.util.ConchNetwork.CONTROL_LIMIT,
             )

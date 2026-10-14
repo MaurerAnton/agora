@@ -22,10 +22,11 @@ internal class ConversationBranchMutationService(
     private val executionCoordinator: ConversationExecutionCoordinator,
     private val toUiMessage: (MessageEntity) -> ChatMessage,
     private val isConversationOpen: (String) -> Boolean,
-    private val projectGraph: (List<ChatMessage>, Map<String?, String>) -> Unit,
-    private val onMutationStart: suspend (conversationId: String, scrollToTarget: Boolean) -> Long?,
-    private val onMutationSettling: (Long?, String?) -> Unit,
-    private val onMutationFailed: (Long?) -> Unit,
+    private val projectGraph: (
+        conversationId: String,
+        messages: List<ChatMessage>,
+        selectedChildren: Map<String?, String>,
+    ) -> Unit,
     private val ioDispatcher: CoroutineDispatcher = Dispatchers.IO,
     private val resultDispatcher: CoroutineDispatcher = Dispatchers.Main,
 ) {
@@ -34,6 +35,8 @@ internal class ConversationBranchMutationService(
         messageId: String,
         state: ConversationGenerationState,
         snapshot: List<ChatMessage>,
+        /** Client that issued the delete; it covers the tree mutation until its path settles. */
+        origin: ChatClient,
         onResult: ((Boolean) -> Unit)? = null,
     ): Int {
         if (state.generating.value) {
@@ -55,7 +58,7 @@ internal class ConversationBranchMutationService(
             var switchingRequestId: Long? = null
             var committed = false
             try {
-                switchingRequestId = onMutationStart(conversationId, !compactOnly)
+                switchingRequestId = origin.beginTreeMutation(conversationId, !compactOnly)
                 state.queueMutationMutex.withLock {
                     // Recheck after the overlay fade and under the same mutex that accepts Send.
                     if (state.generating.value) return@withLock
@@ -67,9 +70,9 @@ internal class ConversationBranchMutationService(
                                 .getMessageTopologySnapshot(conversationId)
                                 .map { message -> message.toUiChatMessageStub() }
                             val selections = conversations.restoreBranchSelections(conversationId)
-                            onMutationSettling(switchingRequestId, null)
+                            origin.settleTreeMutation(switchingRequestId, null)
                             if (isConversationOpen(conversationId)) {
-                                projectGraph(remainingChatMessages, selections)
+                                projectGraph(conversationId, remainingChatMessages, selections)
                             }
                             committed = true
                             return@lock
@@ -115,9 +118,9 @@ internal class ConversationBranchMutationService(
                             deletedRootMessageId = messageId,
                             remainingPath = remainingPath,
                         )
-                        onMutationSettling(switchingRequestId, targetAfterDelete)
+                        origin.settleTreeMutation(switchingRequestId, targetAfterDelete)
                         if (isConversationOpen(conversationId)) {
-                            projectGraph(remainingMessages, plan.messageSelections)
+                            projectGraph(conversationId, remainingMessages, plan.messageSelections)
                         }
                         committed = true
                     }
@@ -128,7 +131,7 @@ internal class ConversationBranchMutationService(
                 DebugLog.e("AgoraVM", "Failed to delete message branch $messageId", error)
             } finally {
                 withContext(NonCancellable + resultDispatcher) {
-                    if (!committed) onMutationFailed(switchingRequestId)
+                    if (!committed) origin.failTreeMutation(switchingRequestId)
                     onResult?.invoke(committed)
                 }
             }

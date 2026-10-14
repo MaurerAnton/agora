@@ -1,4 +1,4 @@
-<resources>
+<?xml version="1.0" encoding="utf-8"?><resources>
     <string name="app_name">Agora</string>
     <string name="agora_responded">ردّت Agora</string>
 
@@ -79,44 +79,44 @@
     <string name="tool_done">تم</string>
     <string name="tool_context">أداة</string>
     <!-- New tool display names (P0) -->
-    <string name="tool_list_conversations">List Conversations</string>
-    <string name="tool_read_conversation">Read Conversation</string>
-    <string name="tool_file_read">Read File</string>
-    <string name="tool_file_write">Write File</string>
-    <string name="tool_file_edit">Edit File</string>
-    <string name="tool_file_glob">Find Files</string>
-    <string name="tool_file_grep">Search Files</string>
+    <string name="tool_list_conversations">عرض المحادثات</string>
+    <string name="tool_read_conversation">قراءة المحادثة</string>
+    <string name="tool_file_read">قراءة الملف</string>
+    <string name="tool_file_write">كتابة الملف</string>
+    <string name="tool_file_edit">تعديل الملف</string>
+    <string name="tool_file_glob">البحث عن ملفات</string>
+    <string name="tool_file_grep">البحث داخل الملفات</string>
     <!-- Tool in-progress states (doing) -->
-    <string name="tool_listing_conversations">Listing conversations…</string>
-    <string name="tool_reading_conversation">Reading conversation…</string>
-    <string name="tool_reading_file">Reading %1$s…</string>
-    <string name="tool_writing_file">Writing %1$s…</string>
-    <string name="tool_editing_file">Editing %1$s…</string>
-    <string name="tool_finding_files">Finding %1$s…</string>
-    <string name="tool_searching_file">Searching %1$s…</string>
-    <string name="tool_executing_shell">Executing: %1$s…</string>
-    <string name="tool_reading_memory">Reading %1$s…</string>
-    <string name="tool_saving_memory">Saving %1$s…</string>
-    <string name="tool_updating_memory">Updating %1$s…</string>
-    <string name="tool_removing_memory">Removing %1$s…</string>
-    <string name="tool_looking_up_memories">Looking up memories…</string>
-    <string name="tool_updating_active">Updating active memory…</string>
-    <string name="tool_listing_shells">Listing shells…</string>
-    <string name="tool_searching_for">Searching for \'%1$s\'…</string>
+    <string name="tool_listing_conversations">جارٍ سرد المحادثات…</string>
+    <string name="tool_reading_conversation">جارٍ قراءة المحادثة…</string>
+    <string name="tool_reading_file">جارٍ قراءة %1$s…</string>
+    <string name="tool_writing_file">جارٍ كتابة %1$s…</string>
+    <string name="tool_editing_file">جارٍ تعديل %1$s…</string>
+    <string name="tool_finding_files">جارٍ البحث عن %1$s…</string>
+    <string name="tool_searching_file">جارٍ البحث في %1$s…</string>
+    <string name="tool_executing_shell">جارٍ التنفيذ: %1$s…</string>
+    <string name="tool_reading_memory">جارٍ قراءة %1$s…</string>
+    <string name="tool_saving_memory">جارٍ حفظ %1$s…</string>
+    <string name="tool_updating_memory">جارٍ تحديث %1$s…</string>
+    <string name="tool_removing_memory">جارٍ حذف %1$s…</string>
+    <string name="tool_looking_up_memories">جارٍ البحث في الذاكرة…</string>
+    <string name="tool_updating_active">جارٍ تحديث الذاكرة النشطة…</string>
+    <string name="tool_listing_shells">جارٍ سرد الطرفيات…</string>
+    <string name="tool_searching_for">جارٍ البحث عن «%1$s»…</string>
     <!-- Tool done states (P0 + P1) -->
-    <string name="tool_listed_conversations">Listed %1$d conversations</string>
-    <string name="tool_listed_no_conversations">No conversations found</string>
-    <string name="tool_read_conversation_done">Read conversation: %1$s</string>
-    <string name="tool_read_file_done">Read %1$s</string>
-    <string name="tool_wrote_file">Wrote %1$s</string>
-    <string name="tool_edited_file">Edited %1$s</string>
-    <string name="tool_found_files">Found %1$d files</string>
-    <string name="tool_found_no_files">No files matched</string>
-    <string name="tool_searched_file">Found %1$d matches</string>
-    <string name="tool_executed_shell">Executed: %1$s (%2$d bytes)</string>
-    <string name="tool_executed_no_output">Executed: %1$s (no output)</string>
-    <string name="tool_read_file_failed">Read file failed</string>
-    <string name="crash_log_label">Crash Log</string>
+    <string name="tool_listed_conversations">تم سرد %1$d محادثة</string>
+    <string name="tool_listed_no_conversations">لم يتم العثور على محادثات</string>
+    <string name="tool_read_conversation_done">تمت قراءة المحادثة: %1$s</string>
+    <string name="tool_read_file_done">تمت قراءة %1$s</string>
+    <string name="tool_wrote_file">تمت كتابة %1$s</string>
+    <string name="tool_edited_file">تم تعديل %1$s</string>
+    <string name="tool_found_files">تم العثور على %1$d ملف</string>
+    <string name="tool_found_no_files">لا ملفات مطابقة</string>
+    <string name="tool_searched_file">تم العثور على %1$d تطابق</string>
+    <string name="tool_executed_shell">نُفّذ: %1$s (%2$d بايت)</string>
+    <string name="tool_executed_no_output">نُفّذ: %1$s (بدون مخرجات)</string>
+    <string name="tool_read_file_failed">فشل قراءة الملف</string>
+    <string name="crash_log_label">سجل الأعطال</string>
     <string name="message_info">معلومات الرسالة</string>
     <string name="time_with_label">الوقت: %1$s</string>
     <string name="model_with_label">النموذج: %1$s</string>
@@ -172,6 +172,9 @@
 
     <!-- Drawer -->
     <string name="conversations">المحادثات</string>
+    <string name="pinned_conversations">المثبتة</string>
+    <string name="pin_conversation">تثبيت</string>
+    <string name="unpin_conversation">إلغاء التثبيت</string>
     <string name="conversation_unread_generation">رد مُنشأ غير مقروء</string>
     <string name="new_chat">محادثة جديدة</string>
 
@@ -336,6 +339,9 @@
     <string name="about_contribute">المساهمة</string>
     <string name="about_privacy_policy">سياسة الخصوصية</string>
     <string name="about_source_code">الكود المصدري</string>
+    <string name="about_license">الترخيص</string>
+    <string name="about_license_desc">GNU GPL-3.0</string>
+    <string name="about_license_history">الإصدارات حتى v2.1.0 صدرت بموجب رخصة MIT.</string>
     <string name="about_version">الإصدار</string>
     <string name="about_rating">قيّم التطبيق</string>
     <string name="about_rating_desc">طُوِّر هذا المشروع بواسطة شخص واحد. أقدّر ملاحظاتك حقًا.</string>
@@ -456,7 +462,6 @@
     <string name="pdf_selected">محدد</string>
 
     <!-- Caching & Sync -->
-    <string name="embedding_model_caching">جارٍ تخزين نموذج التضمين \"%1$s\" مؤقتًا…</string>
     <string name="messages_not_cached">%1$d من %2$d رسالة غير مخزّنة مؤقتًا.</string>
     <string name="cache_now">التخزين المؤقت الآن</string>
     <string name="no_messages_to_cache">لا توجد رسائل للتخزين المؤقت.</string>
@@ -513,8 +518,8 @@
     <string name="onboarding_no_models">لم يتم تحميل نماذج.</string>
     <string name="onboarding_invalid_gguf_title">ملف GGUF غير صالح</string>
     <string name="onboarding_invalid_gguf_desc">لا يبدو الملف المحدد نموذج GGUF صالحًا.</string>
-    <string name="onboarding_hide_key">إخفاء المفتاح</string>
-    <string name="onboarding_show_key">إظهار المفتاح</string>
+    <string name="secret_hide">إخفاء القيمة</string>
+    <string name="secret_show">إظهار القيمة</string>
     <!-- ── Auto Backup ── -->
     <string name="auto_backup_title">النسخ الاحتياطي التلقائي</string>
     <string name="auto_backup_subtitle">تصدير البيانات تلقائيًا وفق جدول</string>
@@ -560,6 +565,19 @@
     <string name="shell_confirm_deny">رفض</string>
     <string name="shell_confirm_setting">تأكيد إجراءات الصدفة البعيدة</string>
     <string name="shell_confirm_setting_desc">الطلب قبل أن يشغّل المساعد أوامر أو يكتب ملفات على خوادم SSH/Conch البعيدة</string>
+    <string name="shell_confirm_notification_channel">الموافقة على الأوامر</string>
+    <string name="shell_confirm_notification_desc">يطلب السماح بأمر عن بُعد أو رفضه عندما يكون Agora في الخلفية</string>
+    <string name="ask_user_title">المساعد يسأل</string>
+    <string name="ask_user_send">إرسال</string>
+    <string name="ask_user_next">التالي</string>
+    <string name="interaction_ask_user">سؤال</string>
+    <string name="interaction_approval">موافقة</string>
+    <string name="interaction_minimize">تصغير</string>
+    <string name="interaction_expand">توسيع</string>
+    <string name="ask_user_custom_answer">أجب بكلماتك</string>
+    <string name="ask_user_skip">تخطي</string>
+    <string name="ask_user_notification_channel">سؤال من Agora</string>
+    <string name="ask_user_notification_desc">يطلب منك الإجابة على سؤال المساعد عندما لا تكون شاشة المحادثة مفتوحة</string>
 
     <!-- Crash reporting -->
     <string name="crash_title">أُغلق Agora بشكل غير متوقع</string>
@@ -579,6 +597,7 @@
     <string name="conversation_search_hint">بحث…</string>
     <string name="conversation_share">مشاركة</string>
     <string name="conversation_share_failed">تعذرت مشاركة المحادثة: %1$s</string>
+    <string name="conversation_deleted_elsewhere">تم حذف هذه المحادثة على جهاز آخر.</string>
     <string name="custom_provider_protocol_label">تنسيق API</string>
     <string name="file_path_unknown">ملف غير معروف</string>
     <string name="import_file_too_large">الملف كبير جدًا (%1$d م.ب.). اختر ملف تصدير أصغر.</string>
@@ -588,7 +607,7 @@
     <string name="tool_background_job_running">المهمة الخلفية %1$s قيد التشغيل</string>
     <string name="tool_execution_stopped">توقف تنفيذ الأداة</string>
     <string name="tool_exit_code">الخروج %1$d</string>
-    <string name="tool_exit">الخروج</string>
+    <string name="tool_exit">خروج</string>
     <string name="tool_shell_returned_code">أعاد الأمر %1$d</string>
     <string name="tool_shell_detail_executed">تم التنفيذ</string>
     <string name="tool_shell_detail_returned_code">القيمة المرجعة %1$d</string>
@@ -633,6 +652,8 @@
     <string name="context_compact_model">نموذج الضغط</string>
     <string name="context_compact_prompt">مطالبة الضغط</string>
     <string name="context_compact_prompt_desc">تعليمات التلخيص</string>
+    <string name="context_compact_preserve_system">الاحتفاظ بموجه النظام</string>
+    <string name="context_compact_preserve_system_desc">يستخدم الضغط موجه النظام الخاص بالمحادثة، ويصبح موجه الضغط بداية طلب الملخص</string>
     <string name="context_compact_select_model">اختر نموذج الضغط</string>
     <string name="context_compact_threshold">حد الضغط التلقائي</string>
     <string name="context_compact_threshold_desc">اضغط عندما يصل السياق المقدّر إلى هذه النسبة من النافذة المحددة</string>
@@ -648,7 +669,13 @@
     <string name="thinking_segment_display_card">بطاقة</string>
     <string name="thinking_segment_display_bottom_sheet">لوحة سفلية</string>
     <string name="thinking_segments_title">مقاطع التفكير</string>
-    <string name="context_usage_messages">~%1$s / %2$s tokens</string>
+    <string name="context_usage_messages">~%1$s / %2$s tokens</string>
+    <string name="context_part_system">مطالبة النظام</string>
+    <string name="context_part_tools">الأدوات</string>
+    <string name="context_part_messages">الرسائل</string>
+    <string name="context_part_free">متاح</string>
+    <string name="context_part_reserved">محجوز</string>
+    <string name="context_part_used">المستخدم</string>
     <string name="context_compact_streaming">جارٍ ضغط السياق…</string>
     <string name="context_compact_error">خطأ في ضغط السياق</string>
     <string name="context_compact_stopped">تم إيقاف ضغط السياق</string>
@@ -718,6 +745,7 @@
     <string name="generation_error_network">خطأ في الشبكة: %1$s</string>
     <string name="generation_error_network_http">خطأ في الشبكة (%1$d): %2$s</string>
     <string name="generation_error_sse_parse">تعذرت قراءة استجابة الخادم.</string>
+    <string name="generation_error_malformed_tool_call">أعاد النموذج استدعاء أداة لا يمكن استخدامه: %1$s</string>
     <string name="generation_error_incomplete_stream">أنهى %1$s الاستجابة مبكرا. لم تصل إشارة إكمال، لذا فالرد غير مكتمل.</string>
     <string name="generation_error_incomplete_tool_stream">أنهى %1$s الاستجابة أثناء كتابة استدعاء أداة. لم تصل إشارة إكمال، لذا فالرد غير مكتمل.</string>
     <string name="generation_error_incomplete_stream_reason">أنهى %1$s الاستجابة بعد سبب الإيقاف %2$s من دون إشارة إكمال.</string>
@@ -775,4 +803,14 @@
     <string name="thought_for_a_while">فكّر لبعض الوقت</string>
     <string name="thought_for_a_while_called_tools">فكّر لبعض الوقت، واستدعى %1$d أداة</string>
     <string name="remote_device">جهاز</string>
+    <!-- Upstream attribution copy, UTF-8 Base64 for lightweight bulk-rename resistance. -->
+    <string name="rating_origin_credit_b64">QWdvcmEgwrcg2YXZhiDYqti32YjZitixIG5ld28tZXRoZXI=</string>
+    <string name="rating_origin_project_b64">2KfZhNmF2LTYsdmI2Lkg2KfZhNij2LXZhNmKOiBnaXRodWIuY29tL25ld28tZXRoZXIvQWdvcmE=</string>
+    <string name="rating_origin_modified_title_b64">2YbYs9iu2Kkg2YXYudiv2ZHZhNip</string>
+    <string name="rating_origin_modified_body_b64">2YrYs9iq2K7Yr9mFINmH2LDYpyDYp9mE2KrYt9io2YrZgiDYp9iz2YUg2K3YstmF2Kkg2YXYrtiq2YTZgdmL2Kcg2LnZhiDYp9mE2YXYtNix2YjYuSDYp9mE2KPYtdmE2YrYjCDZiNmC2K8g2KPZj9i52YrYryDYqtit2LLZitmF2Ycg2KPZiCDYqti52K/ZitmE2YcuINin2YTZhdi02LHZiNi5INin2YTYo9i12YTZiiDZh9mIIEFnb3Jh2Iwg2YXZhiDYqti32YjZitixIG5ld28tZXRoZXIuINmK2KrYrdmF2YQg2YXZiNiy2ZHYuSDZh9iw2Ycg2KfZhNmG2LPYrtipINmF2LPYpNmI2YTZitipINin2YTYqti52K/ZitmE2KfYqtiMINmI2YfZiiDZhNinINiq2YXYq9mEINin2YTZhdik2YTZgSDYp9mE2KPYtdmE2You</string>
+    <string name="rating_origin_view_project_b64">2LnYsdi2INin2YTZhdi02LHZiNi5INin2YTYo9i12YTZig==</string>
+    <string name="message_source_task">مهمة</string>
+    <string name="message_source_loop">حلقة</string>
+    <string name="message_source_ask_user">سؤال</string>
+    <string name="message_source_unanswered">بلا إجابة</string>
 </resources>

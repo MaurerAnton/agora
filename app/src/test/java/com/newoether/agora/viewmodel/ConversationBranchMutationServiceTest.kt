@@ -26,12 +26,14 @@ import org.junit.Test
 
 @OptIn(ExperimentalCoroutinesApi::class)
 class ConversationBranchMutationServiceTest {
+    /** Client that issues every delete in these tests; hooks are set by [service]. */
+    private val origin = FakeChatClient(open = "conversation")
     @Test
     fun cancellationDuringOverlayStillCompletesTheBlockedDialog() = runTest {
         val owner = SupervisorJob()
         val events = mutableListOf<String>()
         val results = mutableListOf<Boolean>()
-        val state = ConversationGenerationState("conversation")
+        val state = ConversationGenerationState("conversation", reclaimQueuedAttachments = {})
         val service = service(
             conversations = mockk(),
             events = events,
@@ -43,7 +45,7 @@ class ConversationBranchMutationServiceTest {
         )
         service.delete(
             "conversation", "model", state,
-            listOf(chat("model", null, Participant.MODEL)), results::add,
+            listOf(chat("model", null, Participant.MODEL)), origin, results::add,
         )
         runCurrent()
         owner.cancel()
@@ -59,7 +61,7 @@ class ConversationBranchMutationServiceTest {
         val coordinator = ConversationExecutionCoordinator()
         val events = mutableListOf<String>()
         val results = mutableListOf<Boolean>()
-        val state = ConversationGenerationState("conversation")
+        val state = ConversationGenerationState("conversation", reclaimQueuedAttachments = {})
         backgroundScope.launch {
             coordinator.withAutomationConversationLock("conversation") {
                 CompletableDeferred<Unit>().await()
@@ -72,7 +74,7 @@ class ConversationBranchMutationServiceTest {
         )
         service.delete(
             "conversation", "model", state,
-            listOf(chat("model", null, Participant.MODEL)), results::add,
+            listOf(chat("model", null, Participant.MODEL)), origin, results::add,
         )
         runCurrent()
 
@@ -110,13 +112,14 @@ class ConversationBranchMutationServiceTest {
             events = events,
             onFailed = failed::add,
         )
-        val state = ConversationGenerationState("conversation")
+        val state = ConversationGenerationState("conversation", reclaimQueuedAttachments = {})
 
         val previewCount = service.delete(
             conversationId = "conversation",
             messageId = compactId,
             state = state,
             snapshot = listOf(chat(compactId, null, Participant.MODEL)),
+            origin = origin,
         )
         advanceUntilIdle()
 
@@ -168,13 +171,14 @@ class ConversationBranchMutationServiceTest {
             true
         }
         val service = service(conversations, events)
-        val state = ConversationGenerationState("conversation")
+        val state = ConversationGenerationState("conversation", reclaimQueuedAttachments = {})
 
         val previewCount = service.delete(
             conversationId = "conversation",
             messageId = "model",
             state = state,
             snapshot = listOf(chat("user", null, Participant.USER), chat("model", "user", Participant.MODEL)),
+            origin = origin,
             onResult = { events += "result:$it" },
         )
         advanceUntilIdle()
@@ -191,7 +195,7 @@ class ConversationBranchMutationServiceTest {
     @Test
     fun activeRunRejectsDeletionBeforeLaunchingMutation() = runTest {
         val conversations = mockk<ConversationRepository>()
-        val state = ConversationGenerationState("conversation")
+        val state = ConversationGenerationState("conversation", reclaimQueuedAttachments = {})
         requireNotNull(state.acquireForSend())
 
         val results = mutableListOf<Boolean>()
@@ -200,6 +204,7 @@ class ConversationBranchMutationServiceTest {
             messageId = "model",
             state = state,
             snapshot = listOf(chat("model", null, Participant.MODEL)),
+            origin = origin,
             onResult = results::add,
         )
         advanceUntilIdle()
@@ -221,7 +226,11 @@ class ConversationBranchMutationServiceTest {
             events += "start:$it"
             7L
         },
-    ) = ConversationBranchMutationService(
+    ): ConversationBranchMutationService {
+        origin.onBeginTreeMutation = { _, scrollToTarget -> start(scrollToTarget) }
+        origin.onSettleTreeMutation = { _, target -> events += "settle:$target" }
+        origin.onFailTreeMutation = onFailed
+        return ConversationBranchMutationService(
         scope = ownerScope,
         conversations = conversations,
         executionCoordinator = coordinator,
@@ -229,13 +238,11 @@ class ConversationBranchMutationServiceTest {
             chat(entity.id, entity.parentId, entity.participant)
         },
         isConversationOpen = { true },
-        projectGraph = { messages, _ -> events += "project:${messages.joinToString { it.id }}" },
-        onMutationStart = { _, scrollToTarget -> start(scrollToTarget) },
-        onMutationSettling = { _, target -> events += "settle:$target" },
-        onMutationFailed = onFailed,
+        projectGraph = { _, messages, _ -> events += "project:${messages.joinToString { it.id }}" },
         ioDispatcher = StandardTestDispatcher(testScheduler),
         resultDispatcher = StandardTestDispatcher(testScheduler),
     )
+    }
 
     private fun entity(
         id: String,

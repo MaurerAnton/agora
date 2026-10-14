@@ -105,6 +105,9 @@ data class ChatEntity(
     @PrimaryKey val id: String,
     val title: String,
     val lastUpdated: Long = System.currentTimeMillis(),
+    /** Durable data-change watermark for incremental backup; unlike [lastUpdated], it is
+     * touched on every write that changes exported content (conversations/runs/messages). */
+    val dataChangedAt: Long = 0L,
     val selectedBranchesJson: String? = null,
     val systemPromptId: String? = null,
     val modelId: String? = null,
@@ -123,6 +126,7 @@ data class ChatEntity(
     val selectedRunBranchesJson: String? = null,
     /** True after a completed model generation until this conversation becomes the open target. */
     val hasUnreadGeneration: Boolean = false,
+    @ColumnInfo(defaultValue = "0") val isPinned: Boolean = false,
 )
 
 /** A saved automation: a prompt + schedule that fans out a fresh conversation on each run. */
@@ -133,6 +137,12 @@ data class TaskEntity(
     /** Replayed as the first user message of every execution. */
     val prompt: String,
     val systemPrompt: String? = null,
+    /**
+     * Saved system prompt this task runs with. It wins over [systemPrompt] and resolves per run, so
+     * placeholders expand and later edits to that prompt apply. null = keep the literal
+     * [systemPrompt] behavior.
+     */
+    val systemPromptId: String? = null,
     /** null = use the app default model. */
     val modelId: String? = null,
     /** 5-field cron expression driving a RECURRING schedule; blank for a one-shot. */
@@ -263,6 +273,8 @@ data class MessageEntity(
     val runSequence: Long = UNASSIGNED_RUN_SEQUENCE,
     /** Non-null only for visible user input; null for model/tool/result rows. */
     val consumedAtPass: Int? = null,
+    /** [com.newoether.agora.model.MessageSource] JSON; non-null only for automatic user input. */
+    val sourceJson: String? = null,
 ) {
     companion object {
         const val UNASSIGNED_RUN_SEQUENCE = -1L

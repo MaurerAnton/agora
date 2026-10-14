@@ -55,6 +55,7 @@ import java.io.File
 import java.io.InputStream
 import java.io.IOException
 import java.util.Locale
+import com.newoether.agora.ui.components.sheetOptionClickable
 
 private fun directImageFile(url: String): File? {
     val path = if (url.startsWith("file://", ignoreCase = true)) {
@@ -446,7 +447,7 @@ private fun StableImageInfoDialog(
 @Composable
 private fun ActionRow(icon: ImageVector, label: String, onClick: () -> Unit) {
     Row(
-        modifier = Modifier.fillMaxWidth().clickable(onClick = onClick).padding(horizontal = 24.dp, vertical = 16.dp),
+        modifier = Modifier.fillMaxWidth().sheetOptionClickable(onClick = onClick).padding(horizontal = 16.dp, vertical = 16.dp),
         verticalAlignment = Alignment.CenterVertically
     ) {
         Icon(icon, null, tint = MaterialTheme.colorScheme.onSurface)

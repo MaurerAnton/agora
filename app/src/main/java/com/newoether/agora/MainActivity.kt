@@ -35,6 +35,7 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalFocusManager
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.zIndex
 import androidx.lifecycle.lifecycleScope
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.newoether.agora.data.SettingsManager
@@ -51,6 +52,7 @@ import com.newoether.agora.ui.tasks.TaskEditorSessionViewModel
 import com.newoether.agora.ui.tasks.TaskHistoryPreviewPhase
 import com.newoether.agora.ui.theme.AgoraTheme
 import com.newoether.agora.util.snackbarTimeoutMillis
+import com.newoether.agora.util.withAppLocale
 import com.newoether.agora.viewmodel.ChatViewModel
 import kotlinx.coroutines.*
 import kotlinx.coroutines.flow.first
@@ -63,35 +65,15 @@ class MainActivity : ComponentActivity() {
 
     companion object {
         const val EXTRA_CONVERSATION_ID = "com.newoether.agora.extra.CONVERSATION_ID"
+        const val EXTRA_SCREENSHOT_DESTINATION = "com.newoether.agora.extra.SCREENSHOT_DESTINATION"
     }
 
     override fun attachBaseContext(newBase: Context) {
         val langCode = kotlinx.coroutines.runBlocking {
             SettingsManager(newBase).appLanguage.first()
         }
-        val locale = when (langCode) {
-            "zh" -> java.util.Locale("zh", "CN")
-            "en" -> java.util.Locale("en")
-            "es" -> java.util.Locale("es")
-            "fr" -> java.util.Locale("fr")
-            "de" -> java.util.Locale("de")
-            "ru" -> java.util.Locale("ru")
-            "pt-BR" -> java.util.Locale("pt", "BR")
-            "ja" -> java.util.Locale("ja")
-            "ko" -> java.util.Locale("ko")
-            "ar" -> java.util.Locale("ar")
-            "vi" -> java.util.Locale("vi")
-            "zh-Hant" -> java.util.Locale.forLanguageTag("zh-Hant")
-            else -> null
-        }
-        if (locale != null) {
-            java.util.Locale.setDefault(locale)
-            val config = android.content.res.Configuration(newBase.resources.configuration)
-            config.setLocale(locale)
-            super.attachBaseContext(newBase.createConfigurationContext(config))
-        } else {
-            super.attachBaseContext(newBase)
-        }
+        com.newoether.agora.util.appLocaleFor(langCode)?.let { java.util.Locale.setDefault(it) }
+        super.attachBaseContext(newBase.withAppLocale(langCode))
     }
 
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -109,6 +91,21 @@ class MainActivity : ComponentActivity() {
             val databaseStartupState = agoraApplication.awaitDatabaseStartup()
             val needsErrorDialog = databaseStartupState is DatabaseStartupState.Blocked
             withContext(Dispatchers.IO) {
+                intent?.getStringExtra(EXTRA_SCREENSHOT_DESTINATION)?.let { destination ->
+                    runCatching {
+                        Class.forName("com.newoether.agora.screenshot.ScreenshotFixture")
+                            .getMethod("seed", AgoraApplication::class.java, String::class.java)
+                            .invoke(null, agoraApplication, destination)
+                    }.onFailure { error ->
+                        if (error !is ClassNotFoundException) {
+                            com.newoether.agora.util.DebugLog.e(
+                                "MainActivity",
+                                "Screenshot fixture failed",
+                                error,
+                            )
+                        }
+                    }
+                }
                 runCatching {
                     settingsManager.initializeFirstInstallDefaults(
                         locale = java.util.Locale.getDefault()
@@ -207,6 +204,8 @@ class MainActivity : ComponentActivity() {
                     // Create ViewModel via the process-scoped DI container (owned by AgoraApplication),
                     // so the same shared singletons back both the UI and background task execution.
                     val container = agoraApplication.requireContainer()
+                    // The WebUI mirrors the app's resolved colors and font.
+                    com.newoether.agora.webui.PublishWebUiTheme(container.webUi, fontPreference, customFontPath)
                     val factory = remember { container.chatViewModelFactory() }
                     val viewModel: ChatViewModel = viewModel(factory = factory)
 
@@ -232,6 +231,7 @@ class MainActivity : ComponentActivity() {
                                 onNotificationConversationConsumed = { expectedId ->
                                     consumeNotificationTarget(notificationConversationId, expectedId)
                                 },
+                                screenshotDestination = intent?.getStringExtra(EXTRA_SCREENSHOT_DESTINATION),
                             )
                         }
                     }
@@ -246,6 +246,10 @@ class MainActivity : ComponentActivity() {
     override fun onResume() {
         super.onResume()
         AppForegroundTracker.setInForeground(true)
+        // A foreground service may only start from the foreground; restore an enabled WebUI here.
+        lifecycleScope.launch {
+            (application as AgoraApplication).awaitContainer()?.webUi?.startIfEnabled()
+        }
     }
 
     override fun onPause() {
@@ -275,6 +279,7 @@ fun MainNavigation(
     settingsManager: SettingsManager,
     notificationConversationId: kotlinx.coroutines.flow.StateFlow<String?>,
     onNotificationConversationConsumed: (String) -> Unit,
+    screenshotDestination: String? = null,
 ) {
     val appContext = LocalContext.current.applicationContext
     val motionPolicy = LocalAgoraMotionPolicy.current
@@ -283,7 +288,7 @@ fun MainNavigation(
         appContext.checkSelfPermission(Manifest.permission.POST_NOTIFICATIONS) !=
         PackageManager.PERMISSION_GRANTED
     var initialComposerFocusReady by remember {
-        mutableStateOf(!shouldRequestNotificationPermission)
+        mutableStateOf(screenshotDestination == null && !shouldRequestNotificationPermission)
     }
     val notificationPermissionLauncher = rememberLauncherForActivityResult(
         ActivityResultContracts.RequestPermission(),
@@ -296,7 +301,18 @@ fun MainNavigation(
             notificationPermissionLauncher.launch(Manifest.permission.POST_NOTIFICATIONS)
         }
     }
-    var showSettings by rememberSaveable { mutableStateOf(false) }
+    var showSettings by rememberSaveable {
+        mutableStateOf(screenshotDestination?.startsWith("settings") == true)
+    }
+    var showScreenshotSettings by rememberSaveable(screenshotDestination) {
+        mutableStateOf(screenshotDestination?.startsWith("settings") == true)
+    }
+    LaunchedEffect(screenshotDestination) {
+        if (screenshotDestination?.startsWith("settings") == true) {
+            showSettings = true
+            showScreenshotSettings = true
+        }
+    }
     var showTasks by rememberSaveable { mutableStateOf(false) }
     var showRemote by rememberSaveable { mutableStateOf(false) }
     val topLevelPresentation = remember {
@@ -394,16 +410,21 @@ fun MainNavigation(
 
     val customProviders by viewModel.settings.customProviders.collectAsState()
 
-    // Sandbox outcomes are buffered by their manager and displayed in production order.
+    // Sandbox outcomes are buffered by their manager and consumed in production order, but display
+    // is interrupting: a newer outcome dismisses the one on screen instead of waiting it out.
     LaunchedEffect(Unit) {
+        var sandboxSnackbarJob: Job? = null
         viewModel.sandboxManager?.snackbarMessage?.collect { msg ->
             snackbarHostState.currentSnackbarData?.dismiss()
-            try {
-                snackbarHostState.showSnackbar(
-                    viewModel.displayText(msg),
-                )
-            } finally {
-                snackbarVersion++
+            sandboxSnackbarJob?.cancel()
+            sandboxSnackbarJob = launch {
+                try {
+                    snackbarHostState.showSnackbar(
+                        viewModel.displayText(msg),
+                    )
+                } finally {
+                    snackbarVersion++
+                }
             }
         }
     }
@@ -457,6 +478,8 @@ fun MainNavigation(
                         }
                     },
                 drawerEnabled = taskHistoryPreview.backTaskId(currentConversationId, isNewChatMode) == null,
+                openDrawerOnStart = screenshotDestination == "drawer",
+                initialScrollToTop = screenshotDestination == "chat",
                 onOpenSettings = {
                     topLevelPresentation.present(TopLevelPresentation.SETTINGS)
                     showSettings = true
@@ -509,7 +532,7 @@ fun MainNavigation(
             )
 
             SettingsOverlayHost(
-                visible = showSettings,
+                visible = showSettings && screenshotDestination?.startsWith("settings") != true,
                 onDismiss = { showSettings = false },
                 onExitFinished = {
                     topLevelPresentation.release(TopLevelPresentation.SETTINGS)
@@ -519,10 +542,27 @@ fun MainNavigation(
                     viewModel = viewModel,
                     onBack = {
                         showSettings = false
-                    }
+                    },
+                    initialCategory = screenshotDestination
+                        ?.substringAfter("settings:", "")
+                        ?.ifBlank { null },
                 )
             }
 
+            if (showScreenshotSettings && screenshotDestination?.startsWith("settings") == true) {
+                Surface(
+                    modifier = Modifier.fillMaxSize().zIndex(2f),
+                    color = MaterialTheme.colorScheme.background,
+                ) {
+                    SettingsScreen(
+                        viewModel = viewModel,
+                        onBack = { showScreenshotSettings = false },
+                        initialCategory = screenshotDestination
+                            .substringAfter("settings:", "")
+                            .ifBlank { null },
+                    )
+                }
+            }
             SettingsOverlayHost(
                 visible = showTasks,
                 onDismiss = {

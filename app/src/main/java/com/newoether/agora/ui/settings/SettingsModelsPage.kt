@@ -53,9 +53,9 @@ import com.newoether.agora.ui.motion.LocalAgoraMotionPolicy
 import com.newoether.agora.util.Constants
 import com.newoether.agora.util.noOpBringIntoView
 import com.newoether.agora.viewmodel.ChatViewModel
+import com.newoether.agora.ui.components.optionClickable
 
-// Shape constants matching SettingsGroup's per-position rounding.
-// Each encodes top-corners / bottom-corners for its place in the group.
+// Shape constants matching SettingsGroup's per-position rounding (top / bottom corners by place).
 private val FullRounded   = RoundedCornerShape(24.dp)
 private val TopRounded    = RoundedCornerShape(topStart = 24.dp, topEnd = 24.dp, bottomStart = 5.dp, bottomEnd = 5.dp)
 private val BottomRounded = RoundedCornerShape(topStart = 5.dp, topEnd = 5.dp, bottomStart = 24.dp, bottomEnd = 24.dp)
@@ -73,6 +73,7 @@ private val RemoteModelProviders = listOf(
     Constants.PROVIDER_GROQ,
     Constants.PROVIDER_OLLAMA,
     Constants.PROVIDER_OPEN_ROUTER,
+    Constants.PROVIDER_OPENCODE_GO,
 )
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -499,7 +500,7 @@ fun SettingsModelsPage(viewModel: ChatViewModel, onBack: () -> Unit) {
                                     }
                                 )
                             },
-                            modifier = Modifier.clickable {
+                            modifier = Modifier.optionClickable {
                                 viewModel.settings.setSelectedModel(model)
                                 showActiveModelDialog = false
                             }
@@ -764,7 +765,6 @@ fun SettingsModelsPage(viewModel: ChatViewModel, onBack: () -> Unit) {
         )
     }
 }
-
 @Composable
 private fun ModelProviderNameSwitch(checked: Boolean, onCheckedChange: (Boolean) -> Unit) {
     val rippleOutset = 8.dp

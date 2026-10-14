@@ -26,8 +26,6 @@
     <string name="mcp_header_value_error">请输入不含控制字符的值</string>
     <string name="mcp_add_header">添加请求头</string>
     <string name="mcp_delete_header">删除请求头</string>
-    <string name="mcp_show_header_value">显示请求头值</string>
-    <string name="mcp_hide_header_value">隐藏请求头值</string>
     <string name="mcp_timeout">超时（秒）</string>
     <string name="mcp_timeout_desc">5–300 秒</string>
     <string name="mcp_status">状态</string>

@@ -1,4 +1,4 @@
-<resources>
+<?xml version="1.0" encoding="utf-8"?><resources>
     <!-- Settings - Main -->
     <string name="settings_title">Configurações</string>
     <string name="settings_provider">Provedores</string>
@@ -135,7 +135,7 @@
     <string name="models_custom_details">Detalhes do modelo personalizado</string>
     <string name="models_rename">Renomear modelo</string>
     <string name="models_rename_current">ID atual: %1$s</string>
-    <string name="models_alias_hint">Alias</string>
+    <string name="models_alias_hint">Apelido</string>
     <string name="models_select_default">Selecionar modelo padrão</string>
 
     <!-- Settings - Generation Page -->
@@ -242,7 +242,7 @@
     <string name="web_search_searxng_url_hint">https://searx.be</string>
 
     <!-- Settings - Shell Page -->
-    <string name="shell_title">Shell</string>
+    <string name="shell_title">Terminal</string>
     <string name="shell_desc">Execução remota de comandos shell</string>
     <string name="shell_enable">Ativar ferramenta shell</string>
     <string name="shell_enable_desc">Permitir que o modelo execute comandos shell em servidores remotos</string>
@@ -428,8 +428,10 @@
     <string name="visual_effects">Efeitos visuais</string>
     <string name="blur_effects">Efeitos de desfoque</string>
     <string name="blur_effects_desc">Desfoca o topo da lista de chat sob a barra. Desative para economizar desempenho.</string>
-    <string name="parse_inline_dollar_math">Parse $…$ as inline math</string>
-    <string name="parse_inline_dollar_math_desc">When disabled, single-dollar expressions such as $ x $ remain ordinary text. Other math delimiters are unchanged.</string>
+    <string name="parse_inline_dollar_math">Analisar $…$ como matemática embutida</string>
+    <string name="parse_inline_dollar_math_desc">Quando desativado, expressões com cifrão simples como $ x $ permanecem como texto normal. Outros delimitadores matemáticos não mudam.</string>
+    <string name="auto_wrap_code_blocks">Ajustar blocos de código automaticamente</string>
+    <string name="auto_wrap_code_blocks_desc">As linhas longas dentro dos blocos de código são ajustadas em vez de rolar horizontalmente.</string>
     <string name="reduce_motion">Reduzir movimento</string>
     <string name="reduce_motion_desc">Reduz movimentos contínuos e grandes deslocamentos espaciais, mantendo transições por opacidade, gestos diretos e feedbacks úteis de estado.</string>
 
@@ -481,4 +483,12 @@
     <string name="openai_service_tier_priority">Prioridade</string>
     <string name="openai_service_tier_fast">Rápido</string>
     <string name="openai_service_tier_ultrafast">Ultrarrápido</string>
+    <string name="settings_interaction">Interação</string>
+    <string name="settings_interaction_desc">Perguntas que o assistente faz a você</string>
+    <string name="ask_user_enable">Permitir que o assistente pergunte</string>
+    <string name="ask_user_enable_desc">Dá ao modelo uma ferramenta para perguntar e esperar sua escolha</string>
+    <string name="unsaved_changes_title">Alterações não salvas</string>
+    <string name="unsaved_changes_message">Há alterações não salvas. Descartá-las?</string>
+    <string name="unsaved_changes_discard">Descartar</string>
+    <string name="unsaved_changes_keep_editing">Continuar editando</string>
 </resources>

@@ -26,8 +26,6 @@
     <string name="mcp_header_value_error">Введите значение без управляющих символов</string>
     <string name="mcp_add_header">Добавить заголовок</string>
     <string name="mcp_delete_header">Удалить заголовок</string>
-    <string name="mcp_show_header_value">Показать значение заголовка</string>
-    <string name="mcp_hide_header_value">Скрыть значение заголовка</string>
     <string name="mcp_timeout">Тайм-аут (секунды)</string>
     <string name="mcp_timeout_desc">5–300 секунд</string>
     <string name="mcp_status">Состояние</string>

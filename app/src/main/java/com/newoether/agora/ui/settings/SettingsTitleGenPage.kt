@@ -23,6 +23,7 @@ import com.newoether.agora.data.modelAliasDisplayName
 import com.newoether.agora.data.modelDisplayName
 import com.newoether.agora.data.providerDisplayName
 import com.newoether.agora.viewmodel.ChatViewModel
+import com.newoether.agora.ui.components.optionClickable
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -138,7 +139,7 @@ fun SettingsTitleGenPage(viewModel: ChatViewModel, onBack: () -> Unit) {
                                     showTitleModelDialog = false
                                 })
                             },
-                            modifier = Modifier.clickable {
+                            modifier = Modifier.optionClickable {
                                 viewModel.settings.setTitleGenerationModel(null)
                                 showTitleModelDialog = false
                             }
@@ -160,7 +161,7 @@ fun SettingsTitleGenPage(viewModel: ChatViewModel, onBack: () -> Unit) {
                                     showTitleModelDialog = false
                                 })
                             },
-                            modifier = Modifier.clickable {
+                            modifier = Modifier.optionClickable {
                                 viewModel.settings.setTitleGenerationModel(model)
                                 showTitleModelDialog = false
                             }

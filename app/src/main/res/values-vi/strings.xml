@@ -1,4 +1,4 @@
-<resources>
+<?xml version="1.0" encoding="utf-8"?><resources>
     <string name="app_name">Agora</string>
     <string name="agora_responded">Agora đã phản hồi</string>
 
@@ -50,7 +50,7 @@
     <string name="tool_shell_listing">Đang liệt kê các shell khả dụng</string>
     <string name="tool_shell_list_done">Hoàn thành danh sách shell</string>
     <string name="tool_shell_list_count">Đã liệt kê %1$d shell</string>
-    <string name="tool_execute_shell">Shell</string>
+    <string name="tool_execute_shell">Terminal</string>
     <string name="tool_shell_executing">Đã thực thi: %1$s</string>
     <string name="tool_shell_done">Lệnh shell đã hoàn thành</string>
     <string name="tool_shell_failed">Lệnh shell thất bại</string>
@@ -108,7 +108,7 @@
 
     <!-- Tool done states (P0 + P1) -->
     <string name="tool_listed_conversations">Đã liệt kê %1$d cuộc trò chuyện</string>
-    <string name="tool_listed_no_conversations">Không tìm thấy cuộc trò chuyện nào</string>
+    <string name="tool_listed_no_conversations">Không tìm thấy hội thoại</string>
     <string name="tool_read_conversation_done">Đã đọc cuộc trò chuyện: %1$s</string>
     <string name="tool_read_file_done">Đã đọc %1$s</string>
     <string name="tool_wrote_file">Đã ghi %1$s</string>
@@ -175,6 +175,9 @@
 
     <!-- Drawer -->
     <string name="conversations">Cuộc trò chuyện</string>
+    <string name="pinned_conversations">Đã ghim</string>
+    <string name="pin_conversation">Ghim</string>
+    <string name="unpin_conversation">Bỏ ghim</string>
     <string name="conversation_unread_generation">Phản hồi đã tạo chưa đọc</string>
     <string name="new_chat">Trò chuyện mới</string>
 
@@ -339,6 +342,9 @@
     <string name="about_contribute">Đóng góp</string>
     <string name="about_privacy_policy">Chính sách quyền riêng tư</string>
     <string name="about_source_code">Mã nguồn</string>
+    <string name="about_license">Giấy phép</string>
+    <string name="about_license_desc">GNU GPL-3.0</string>
+    <string name="about_license_history">Các phiên bản đến v2.1.0 được phát hành theo giấy phép MIT.</string>
     <string name="about_version">Phiên bản</string>
     <string name="about_rating">Đánh giá ứng dụng</string>
     <string name="about_rating_desc">Dự án này được phát triển bởi một người. Tôi rất trân trọng phản hồi của bạn.</string>
@@ -458,7 +464,6 @@
     <string name="pdf_selected">Đã chọn</string>
 
     <!-- Caching & Sync -->
-    <string name="embedding_model_caching">Mô hình nhúng \"%1$s\" đang lưu bộ đệm…</string>
     <string name="messages_not_cached">%1$d trên %2$d tin nhắn chưa được lưu bộ đệm.</string>
     <string name="cache_now">Lưu bộ đệm ngay</string>
     <string name="no_messages_to_cache">Không có tin nhắn nào để lưu bộ đệm.</string>
@@ -518,8 +523,8 @@
     <string name="onboarding_no_models">Chưa tải mô hình nào.</string>
     <string name="onboarding_invalid_gguf_title">Tệp GGUF không hợp lệ</string>
     <string name="onboarding_invalid_gguf_desc">Tệp được chọn dường như không phải là mô hình GGUF hợp lệ.</string>
-    <string name="onboarding_hide_key">Ẩn khóa</string>
-    <string name="onboarding_show_key">Hiển thị khóa</string>
+    <string name="secret_hide">Ẩn giá trị</string>
+    <string name="secret_show">Hiện giá trị</string>
 
     <!-- ── Auto Backup ── -->
     <string name="auto_backup_title">Tự động sao lưu</string>
@@ -569,6 +574,19 @@
     <string name="shell_confirm_deny">Từ chối</string>
     <string name="shell_confirm_setting">Xác nhận các hành động shell từ xa</string>
     <string name="shell_confirm_setting_desc">Hỏi trước khi trợ lý chạy các lệnh hoặc ghi tệp trên các máy chủ SSH/Conch từ xa</string>
+    <string name="shell_confirm_notification_channel">Phê duyệt lệnh</string>
+    <string name="shell_confirm_notification_desc">Yêu cầu cho phép hoặc từ chối lệnh từ xa khi Agora chạy ngầm</string>
+    <string name="ask_user_title">Trợ lý đang hỏi</string>
+    <string name="ask_user_send">Gửi</string>
+    <string name="ask_user_next">Tiếp</string>
+    <string name="interaction_ask_user">Hỏi người dùng</string>
+    <string name="interaction_approval">Phê duyệt</string>
+    <string name="interaction_minimize">Thu nhỏ</string>
+    <string name="interaction_expand">Mở rộng</string>
+    <string name="ask_user_custom_answer">Trả lời bằng lời của bạn</string>
+    <string name="ask_user_skip">Bỏ qua</string>
+    <string name="ask_user_notification_channel">Câu hỏi từ Agora</string>
+    <string name="ask_user_notification_desc">Yêu cầu bạn trả lời câu hỏi của trợ lý khi màn hình trò chuyện không mở</string>
 
     <!-- Crash reporting -->
     <string name="crash_title">Agora đã thoát đột ngột</string>
@@ -588,6 +606,7 @@
     <string name="conversation_search_hint">Tìm kiếm…</string>
     <string name="conversation_share">Chia sẻ</string>
     <string name="conversation_share_failed">Không thể chia sẻ cuộc trò chuyện: %1$s</string>
+    <string name="conversation_deleted_elsewhere">Cuộc trò chuyện này đã bị xóa trên thiết bị khác.</string>
     <string name="custom_provider_protocol_label">Định dạng API</string>
     <string name="file_path_unknown">Tệp không xác định</string>
     <string name="queue_clear_all">Xóa tất cả</string>
@@ -639,6 +658,8 @@
     <string name="context_compact_model">Mô hình thu gọn</string>
     <string name="context_compact_prompt">Lời nhắc thu gọn</string>
     <string name="context_compact_prompt_desc">Hướng dẫn tóm tắt</string>
+    <string name="context_compact_preserve_system">Giữ System Prompt</string>
+    <string name="context_compact_preserve_system_desc">Khi nén sẽ dùng system prompt của cuộc trò chuyện; prompt nén đứng đầu yêu cầu tóm tắt</string>
     <string name="context_compact_select_model">Chọn mô hình thu gọn</string>
     <string name="context_compact_threshold">Ngưỡng tự động thu gọn</string>
     <string name="context_compact_threshold_desc">Thu gọn khi ngữ cảnh ước tính đạt tỷ lệ này của cửa sổ đã chọn</string>
@@ -654,7 +675,13 @@
     <string name="thinking_segment_display_card">Thẻ</string>
     <string name="thinking_segment_display_bottom_sheet">Bảng dưới</string>
     <string name="thinking_segments_title">Phân đoạn suy luận</string>
-    <string name="context_usage_messages">~%1$s / %2$s token</string>
+    <string name="context_usage_messages">~%1$s / %2$s token</string>
+    <string name="context_part_system">Lời nhắc hệ thống</string>
+    <string name="context_part_tools">Công cụ</string>
+    <string name="context_part_messages">Tin nhắn</string>
+    <string name="context_part_free">Còn trống</string>
+    <string name="context_part_reserved">Dự trữ</string>
+    <string name="context_part_used">Đã dùng</string>
     <string name="context_compact_streaming">Đang thu gọn ngữ cảnh…</string>
     <string name="context_compact_error">Lỗi thu gọn</string>
     <string name="context_compact_stopped">Đã dừng thu gọn</string>
@@ -724,6 +751,7 @@
     <string name="generation_error_network">Lỗi mạng: %1$s</string>
     <string name="generation_error_network_http">Lỗi mạng (%1$d): %2$s</string>
     <string name="generation_error_sse_parse">Không thể đọc phản hồi từ máy chủ.</string>
+    <string name="generation_error_malformed_tool_call">Mô hình trả về lệnh gọi công cụ không dùng được: %1$s</string>
     <string name="generation_error_incomplete_stream">%1$s đã kết thúc phản hồi sớm. Không có tín hiệu hoàn tất nên câu trả lời chưa đầy đủ.</string>
     <string name="generation_error_incomplete_tool_stream">%1$s đã kết thúc phản hồi khi lệnh gọi công cụ vẫn đang được ghi. Không có tín hiệu hoàn tất nên câu trả lời chưa đầy đủ.</string>
     <string name="generation_error_incomplete_stream_reason">%1$s đã kết thúc phản hồi sau lý do dừng %2$s mà không có tín hiệu hoàn tất.</string>
@@ -781,4 +809,14 @@
     <string name="thought_for_a_while">Đã suy nghĩ một lúc</string>
     <string name="thought_for_a_while_called_tools">Đã suy nghĩ một lúc, đã gọi %1$d công cụ</string>
     <string name="remote_device">Thiết bị</string>
+    <!-- Upstream attribution copy, UTF-8 Base64 for lightweight bulk-rename resistance. -->
+    <string name="rating_origin_credit_b64">QWdvcmEgwrcgxJDGsOG7o2MgcGjDoXQgdHJp4buDbiBi4bufaSBuZXdvLWV0aGVy</string>
+    <string name="rating_origin_project_b64">ROG7sSDDoW4gZ+G7kWM6IGdpdGh1Yi5jb20vbmV3by1ldGhlci9BZ29yYQ==</string>
+    <string name="rating_origin_modified_title_b64">UGhpw6puIGLhuqNuIMSRw6Mgc+G7rWEgxJHhu5Vp</string>
+    <string name="rating_origin_modified_body_b64">4buobmcgZOG7pW5nIG7DoHkgZMO5bmcgdMOqbiBnw7NpIGtow6FjIHbhu5tpIGThu7Egw6FuIGfhu5FjIHbDoCDEkcOjIMSRxrDhu6NjIMSRw7NuZyBnw7NpIGzhuqFpIGhv4bq3YyBz4butYSDEkeG7lWkuIEThu7Egw6FuIGfhu5FjIGzDoCBBZ29yYSwgZG8gbmV3by1ldGhlciBwaMOhdCB0cmnhu4NuLiBOaMOgIHBow6JuIHBo4buRaSBwaGnDqm4gYuG6o24gbsOgeSBjaOG7i3UgdHLDoWNoIG5oaeG7h20gduG7gSBjw6FjIHRoYXkgxJHhu5VpOyBjw6FjIHRoYXkgxJHhu5VpIMSRw7Mga2jDtG5nIMSR4bqhaSBkaeG7h24gY2hvIHTDoWMgZ2nhuqMgZ+G7kWMu</string>
+    <string name="rating_origin_view_project_b64">WGVtIGThu7Egw6FuIGfhu5Fj</string>
+    <string name="message_source_task">Tác vụ</string>
+    <string name="message_source_loop">Vòng lặp</string>
+    <string name="message_source_ask_user">Hỏi người dùng</string>
+    <string name="message_source_unanswered">Chưa trả lời</string>
 </resources>

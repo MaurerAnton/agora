@@ -26,8 +26,6 @@
     <string name="mcp_header_value_error">أدخل قيمة بلا محارف تحكم</string>
     <string name="mcp_add_header">إضافة رأس</string>
     <string name="mcp_delete_header">حذف الرأس</string>
-    <string name="mcp_show_header_value">إظهار قيمة الرأس</string>
-    <string name="mcp_hide_header_value">إخفاء قيمة الرأس</string>
     <string name="mcp_timeout">المهلة (بالثواني)</string>
     <string name="mcp_timeout_desc">5–300 ثانية</string>
     <string name="mcp_status">الحالة</string>

@@ -18,7 +18,8 @@ class ChatBottomBarControlOrderTest {
         assertTrue(source.contains("val gradientWidthPx = with(density) { 40.dp.toPx() }"))
         assertTrue(source.contains("if (!isExpanded) Spacer(modifier = Modifier.height(12.dp))"))
         assertTrue(source.contains("expandedHeightPx = with(density) { 44.dp.toPx() }"))
-        assertTrue(source.contains("modifier = Modifier.fillMaxSize().gradientBlur("))
+        assertTrue(source.contains(".fillMaxHeight().widthIn(max = 840.dp).fillMaxWidth()"))
+        assertTrue(source.contains(".gradientBlur("))
         assertTrue(source.contains("blurAtTopDp = if (blurEffectsEnabled) 8f else 0f"))
         assertTrue(masks.contains("Modifier.verticalBottomOverlayFade(fadeHeightDp, bottomOverlayHeight, renderEffect)"))
         assertTrue(source.contains("fadeHeightDp = 40f"))
@@ -29,6 +30,25 @@ class ChatBottomBarControlOrderTest {
         assertTrue(masks.contains("fun bottomOverlayFadeStops("))
         assertTrue(masks.contains("CompositingStrategy.Offscreen"))
         assertTrue(masks.contains("blendMode = BlendMode.DstIn"))
+    }
+
+    @Test
+    fun `local model mapping displays resolved options without saving unchanged slider selections`() {
+        val bar = mainSource("com/newoether/agora/ui/chat/bottombar/ChatBottomBar.kt")
+        val overlay = mainSource("com/newoether/agora/ui/chat/bottombar/ChatBottomBarOverlayHost.kt")
+        val thinking = mainSource("com/newoether/agora/ui/common/ThinkingControlPanel.kt")
+        val tier = mainSource("com/newoether/agora/ui/common/OpenAiServiceTierControlPanel.kt")
+
+        assertTrue(bar.contains("thinkingCapabilityForSelectedModel(selectedModel, customProviders)"))
+        assertTrue(bar.contains("val displayedThinking = ThinkingResolution.resolve("))
+        assertTrue(bar.contains("thinkingBudgetEnabled = displayedThinkingBudgetEnabled"))
+        assertTrue(bar.contains("thinkingBudgetTokens = displayedThinkingBudgetTokens"))
+        assertTrue(bar.contains("openAiServiceTier = displayedServiceTier"))
+        assertTrue(overlay.contains("availableEfforts = thinkingCapability.supportedEfforts"))
+        assertTrue(overlay.contains("availableTiers = availableServiceTiers"))
+        assertFalse(overlay.contains("openai_service_tier_ultrafast_access_note"))
+        assertTrue(thinking.contains("if (effort != normalizedEffort) onLevelChange(effort)"))
+        assertTrue(tier.contains("if (selectedTier != normalizedTier) onTierChange(selectedTier)"))
     }
 
     @Test
@@ -121,22 +141,25 @@ class ChatBottomBarControlOrderTest {
     }
     @Test
     fun `System Prompt create action stays left and uses the default template`() {
-        val dialogs = mainSource("com/newoether/agora/ui/chat/ChatDialogs.kt")
-        val host = mainSource("com/newoether/agora/ui/chat/ChatAppDialogHost.kt")
-        val actions = dialogs
-            .substringAfter("internal fun ChatSystemPromptDialog(")
-            .substringBefore("internal fun ChatAdvancedSettingsDialog(")
+        val host = mainSource("com/newoether/agora/ui/components/SystemPromptPickerDialog.kt")
+        val chat = mainSource("com/newoether/agora/ui/chat/ChatDialogs.kt")
+        val tasks = mainSource("com/newoether/agora/ui/tasks/TaskEditorPage.kt")
+        val actions = host
+            .substringAfter("internal fun SystemPromptPickerDialog(")
+            .substringBefore("promptDraft?.let")
             .substringAfter("confirmButton = {")
-        val create = actions.indexOf("TextButton(onClick = onCreate)")
+        val create = actions.indexOf(
+            "TextButton(onClick = { promptDraft = DefaultSystemPrompt.create().copy(title = \"\") })",
+        )
         val flexible = actions.indexOf("Spacer(modifier = Modifier.weight(1f))")
         val cancel = actions.indexOf("Text(stringResource(R.string.cancel))")
         val fixed = actions.indexOf("Spacer(modifier = Modifier.width(8.dp))")
         val save = actions.indexOf("Text(stringResource(R.string.save))")
         assertTrue(create >= 0 && create < flexible && flexible < cancel)
         assertTrue(cancel < fixed && fixed < save)
-        assertTrue(host.contains(
-            "onCreate = { promptDraft = DefaultSystemPrompt.create().copy(title = \"\") }",
-        ))
+        // Chat and Tasks show the same picker, so their layouts cannot drift apart.
+        assertTrue(chat.contains("SystemPromptPickerDialog("))
+        assertTrue(tasks.contains("SystemPromptPickerDialog("))
         assertTrue(host.contains("isNew = true"))
         assertTrue(host.contains("addSystemPromptAndAwait("))
     }

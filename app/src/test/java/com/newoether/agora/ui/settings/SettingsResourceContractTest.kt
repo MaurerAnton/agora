@@ -12,7 +12,7 @@ class SettingsResourceContractTest {
     @Test
     fun anthropicCacheControlsFollowProviderScopeAndAppearanceInteractions() {
         val detail = readSettingsSource("SettingsProviderDetailPage.kt")
-        val gate = "if (isAnthropicProtocolProvider(currentName, customProviders))"
+        val gate = "if (supportsPromptCacheSetting(currentName, customProviders))"
         val apiKeys = readSettingsSource("ProviderApiKeysSettings.kt")
         val keysPosition = detail.indexOf("ProviderApiKeysSettings(")
         assertTrue(keysPosition >= 0 && detail.indexOf(gate) > keysPosition)
@@ -23,7 +23,12 @@ class SettingsResourceContractTest {
         assertTrue(controls.contains("Switch(checked = cacheEnabled, onCheckedChange = null)"))
         assertTrue(controls.contains("role = Role.Switch"))
         assertTrue(controls.contains("setAnthropicCacheEnabled(providerId, it)"))
-        assertTrue(controls.indexOf("if (cacheEnabled)") < controls.indexOf("R.string.provider_cache_duration"))
+        // OpenAI endpoints share the switch; only Anthropic exposes the TTL picker.
+        assertTrue(controls.contains("val cacheTtlSupported = isAnthropicProtocolProvider(currentName, customProviders)"))
+        assertTrue(
+            controls.indexOf("if (cacheEnabled && cacheTtlSupported)") in
+                0 until controls.indexOf("R.string.provider_cache_duration"),
+        )
         assertTrue(controls.contains("listOf(\"5m\", \"1h\")"))
         assertTrue(controls.contains("setAnthropicCacheTtl(providerId, ttl)"))
         assertTrue(controls.contains("Modifier.clickable { expanded = true }"))
@@ -31,7 +36,7 @@ class SettingsResourceContractTest {
         assertTrue(controls.contains("Icons.Default.Check"))
         assertTrue(controls.contains("MaterialTheme.colorScheme.surfaceContainer"))
         assertTrue(controls.contains("tonalElevation = 16.dp"))
-        assertTrue(controls.contains("RoundedCornerShape(12.dp)"))
+        assertTrue(controls.contains("AgoraDropdownMenu("))
         assertFalse(controls.contains("R.string.save"))
         val resources = locateResourceDirectory()
         val defaults = readStringValues(File(resources, "values"))
@@ -114,8 +119,8 @@ class SettingsResourceContractTest {
         val values = readStringValues(File(locateResourceDirectory(), "values"))
         val expected = linkedMapOf(
             "mcp_delete_header" to "Delete Header",
-            "mcp_show_header_value" to "Show Header Value",
-            "mcp_hide_header_value" to "Hide Header Value",
+            "secret_show" to "Show Value",
+            "secret_hide" to "Hide Value",
             "task_model_default" to "App Default",
             "task_run_now" to "Run Now",
             "task_delete" to "Delete Task",

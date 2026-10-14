@@ -6,6 +6,7 @@ import com.newoether.agora.data.local.MessageEntity
 import com.newoether.agora.model.AttachmentMeta
 import com.newoether.agora.model.ChatMessage
 import com.newoether.agora.model.MessageSegment
+import com.newoether.agora.model.MessageSource
 import com.newoether.agora.model.MessageStatus
 import com.newoether.agora.model.Participant
 import com.newoether.agora.model.RunRecoveryPolicy
@@ -150,5 +151,6 @@ internal fun MessageEntity.toUiChatMessage(
         runId = runId,
         runSequence = runSequence,
         consumedAtPass = consumedAtPass,
+        source = if (isSynthetic) null else MessageSource.decode(sourceJson),
     )
 }

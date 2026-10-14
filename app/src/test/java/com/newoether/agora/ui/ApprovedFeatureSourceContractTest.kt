@@ -52,7 +52,7 @@ internal class ApprovedFeatureSourceContractTest : UiSourceContractFixture() {
         assertTrue(dao.contains("GROUP BY e.modelId"))
         assertTrue(dao.contains("getEmbeddingCountsByModels"))
         assertTrue(entities.contains("Index(value = [\"modelId\"])"))
-        assertTrue(database.contains("CURRENT_VERSION = 32"))
+        assertTrue(database.contains("CURRENT_VERSION = 36"))
         assertTrue(database.contains("MIGRATION_23_24"))
         assertTrue(database.contains("MIGRATION_24_25"))
         assertTrue(database.contains("MIGRATION_25_26"))
@@ -78,7 +78,10 @@ internal class ApprovedFeatureSourceContractTest : UiSourceContractFixture() {
         assertTrue(controls.contains("motionPolicy.allowContinuousMotion"))
         assertTrue(controls.contains("tween(durationMillis = 400)"))
         assertTrue(controls.contains("snap()"))
-        assertTrue(controls.contains("progress = { if (available) contextProgress else 0f }") && controls.contains("progress = { contextProgress }"))
+        assertTrue(controls.contains("progress = { if (available) contextProgress else 0f }"))
+        // The opened menu shows the composition breakdown instead of a second progress ring.
+        assertFalse(controls.contains("progress = { contextProgress }"))
+        assertTrue(controls.contains("ContextCompositionBar("))
         assertFalse(sharedProgress.contains("animateFloatAsState"))
     }
 
@@ -268,7 +271,7 @@ internal class ApprovedFeatureSourceContractTest : UiSourceContractFixture() {
         assertTrue(capture.contains("Icons.Default.MoreVert"))
         assertTrue(capture.contains("containerColor = MaterialTheme.colorScheme.surfaceContainer"))
         assertTrue(capture.contains("tonalElevation = 16.dp"))
-        assertTrue(capture.contains("shape = RoundedCornerShape(12.dp)"))
+        assertTrue(capture.contains("AgoraDropdownMenu("))
         assertTrue(
             capture.contains("R.string.developer_options_clear_diagnostics_action"),
         )
@@ -544,9 +547,18 @@ internal class ApprovedFeatureSourceContractTest : UiSourceContractFixture() {
             admission.indexOf("providerRegistry.awaitInitialSync()") in
                 0 until admission.indexOf("providerRegistry.canonicalModelId(modelId)"),
         )
-        assertTrue(builder.contains("internal suspend fun awaitProviderKey(modelId: String)"))
-        assertTrue(builder.contains("providerRegistry.awaitInitialSync()\n        return resolveProviderKey(modelId)"))
-        assertEquals(3, Regex("requestBuilder\\.awaitProviderKey\\(").findAll(generation).count())
+        assertTrue(builder.contains("internal suspend fun awaitProviderKey(modelId: String, report: (String) -> Unit)"))
+        assertTrue(builder.contains("providerRegistry.awaitInitialSync()\n        return resolveProviderKey(modelId, report)"))
+        assertEquals(2, Regex("requestBuilder\\.awaitProviderKey\\(").findAll(generation).count())
+        val foregroundAdmission = builder
+            .substringAfter("internal suspend fun prepareForegroundSend(")
+            .substringBefore("internal suspend fun awaitProviderKey(")
+        assertTrue(generation.contains("requestBuilder.prepareForegroundSend(target, composer, application, origin::showSnackbar)"))
+        assertTrue(
+            foregroundAdmission.indexOf("awaitProviderKey(target.modelId, report)") in
+                0 until foregroundAdmission.indexOf("captureAdmissionSnapshot("),
+        )
+        assertFalse(foregroundAdmission.contains("resolveProviderKey("))
         assertFalse(generation.contains("requestBuilder.resolveProviderKey("))
         val queuedLaunch = queuedDrain.substringAfter("fun launchClaim(")
         assertFalse(
@@ -648,11 +660,19 @@ internal class ApprovedFeatureSourceContractTest : UiSourceContractFixture() {
             .substringAfter("internal fun captureForegroundSendTarget(")
             .substringBefore("internal suspend fun prepareForegroundSend(")
         assertTrue(foregroundTargetCapture.contains("val wasNewChat ="))
-        assertTrue(foregroundTargetCapture.contains("modelId = currentActiveModel.value"))
+        assertTrue(foregroundTargetCapture.contains("modelId = modelId"))
+        assertTrue(
+            source(root, "com/newoether/agora/viewmodel/ChatViewModel.kt")
+                .contains("modelId = currentActiveModel.value"),
+        )
 
-        val foregroundAdmission = generation
+        val foregroundDelegation = generation
             .substringAfter("internal suspend fun prepareForegroundSend(")
             .substringBefore("internal suspend fun sendMessage(")
+        assertTrue(foregroundDelegation.contains("requestBuilder.prepareForegroundSend(target, composer, application, origin::showSnackbar)"))
+        val foregroundAdmission = source(root, "com/newoether/agora/viewmodel/GenerationRequestBuilder.kt")
+            .substringAfter("internal suspend fun prepareForegroundSend(")
+            .substringBefore("internal suspend fun awaitProviderKey(")
         assertTrue(foregroundTargetCapture.contains("captureNewChatWorkspace()"))
         assertTrue(foregroundAdmission.contains("target.newChatWorkspace?.awaitCaptured()"))
         assertTrue(workspace.contains("fun captureNewChatSnapshot()"))

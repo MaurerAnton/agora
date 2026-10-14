@@ -1,4 +1,4 @@
-<resources>
+<?xml version="1.0" encoding="utf-8"?><resources>
     <!-- Settings - Main -->
     <string name="settings_title">Einstellungen</string>
     <string name="settings_provider">Anbieter</string>
@@ -175,7 +175,7 @@
     <string name="thinking_effort_label">Nachdenkaufwand</string>
     <string name="thinking_effort_desc">Steuert, wie gründlich das Modell vor der Antwort nachdenkt</string>
     <string name="thinking_use_budget">Nachdenkbudget verwenden</string>
-    <string name="thinking_budget_input_label">Budget (Tokens)</string>
+    <string name="thinking_budget_input_label">Budget (tokens)</string>
     <string name="thinking_control_off">Aus</string>
     <string name="thinking_control_auto">Automatisch</string>
     <string name="thinking_control_quick">Schnell</string>
@@ -242,7 +242,7 @@
     <string name="web_search_searxng_url_hint">https://searx.be</string>
 
     <!-- Settings - Shell Page -->
-    <string name="shell_title">Shell</string>
+    <string name="shell_title">Terminal</string>
     <string name="shell_desc">Ausführung von Remote-Shell-Befehlen</string>
     <string name="shell_enable">Shell-Werkzeug aktivieren</string>
     <string name="shell_enable_desc">Dem Modell erlauben, Shell-Befehle auf Remote-Servern auszuführen</string>
@@ -428,8 +428,10 @@
     <string name="visual_effects">Visuelle Effekte</string>
     <string name="blur_effects">Unschärfeeffekte</string>
     <string name="blur_effects_desc">Den oberen Bereich der Chatliste unter der Toolbar weichzeichnen. Zum Sparen von Leistung deaktivieren.</string>
-    <string name="parse_inline_dollar_math">Parse $…$ as inline math</string>
-    <string name="parse_inline_dollar_math_desc">When disabled, single-dollar expressions such as $ x $ remain ordinary text. Other math delimiters are unchanged.</string>
+    <string name="parse_inline_dollar_math">$…$ als Inline-Mathematik parsen</string>
+    <string name="parse_inline_dollar_math_desc">Wenn deaktiviert, bleiben Ausdrücke mit einfachen Dollarzeichen wie $ x $ normaler Text. Andere Mathematik-Begrenzer bleiben unverändert.</string>
+    <string name="auto_wrap_code_blocks">Codeblöcke automatisch umbrechen</string>
+    <string name="auto_wrap_code_blocks_desc">Lange Zeilen in Codeblöcken werden umgebrochen statt horizontal gescrollt.</string>
     <string name="reduce_motion">Bewegung reduzieren</string>
     <string name="reduce_motion_desc">Reduziert kontinuierliche und großflächige räumliche Bewegungen; Überblendungen, direkte Gesten und nützliche Statusrückmeldungen bleiben erhalten.</string>
 
@@ -476,9 +478,17 @@
     <string name="openai_service_tier_off">Aus</string>
     <string name="openai_service_tier_auto">Automatisch</string>
     <string name="openai_service_tier_default">Standard</string>
-    <string name="openai_service_tier_flex">Flex</string>
+    <string name="openai_service_tier_flex">Flexibel</string>
     <string name="openai_service_tier_scale">Skalierung</string>
     <string name="openai_service_tier_priority">Priorität</string>
     <string name="openai_service_tier_fast">Schnell</string>
     <string name="openai_service_tier_ultrafast">Ultraschnell</string>
+    <string name="settings_interaction">Interaktion</string>
+    <string name="settings_interaction_desc">Fragen, die der Assistent dir stellt</string>
+    <string name="ask_user_enable">Assistent darf fragen</string>
+    <string name="ask_user_enable_desc">Gibt dem Modell ein Werkzeug, um dich zu fragen und auf deine Wahl zu warten</string>
+    <string name="unsaved_changes_title">Ungespeicherte Änderungen</string>
+    <string name="unsaved_changes_message">Es gibt ungespeicherte Änderungen. Verwerfen?</string>
+    <string name="unsaved_changes_discard">Verwerfen</string>
+    <string name="unsaved_changes_keep_editing">Weiter bearbeiten</string>
 </resources>

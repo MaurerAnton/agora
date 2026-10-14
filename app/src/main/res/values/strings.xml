@@ -209,18 +209,12 @@
 
     <!-- Drawer -->
     <string name="conversations">Conversations</string>
+    <string name="pinned_conversations">Pinned</string>
+    <string name="pin_conversation">Pin</string>
+    <string name="unpin_conversation">Unpin</string>
     <string name="conversation_unread_generation">Unread generated response</string>
     <string name="new_chat">New Chat</string>
 
-    <!-- Settings - Tor -->
-    <string name="tor_title">Tor</string>
-    <string name="tor_desc">Route API requests through Tor network</string>
-    <string name="tor_enable">Enable Tor Proxy</string>
-    <string name="tor_enable_desc">Route all API requests through a Tor SOCKS5 proxy for anonymous access</string>
-    <string name="tor_socks_settings">SOCKS5 Proxy</string>
-    <string name="tor_socks_port">Port</string>
-    <string name="tor_socks_port_desc">Tor SOCKS5 proxy port (default: 9050)</string>
-    <string name="tor_info">Requires a running Tor daemon with SOCKS5 proxy. Install Orbot from F-Droid or run tor on your device.</string>
     <!-- Memory Access -->
     <string name="memory_access_title">Access</string>
     <string name="search_methods_title">Search Methods</string>
@@ -388,6 +382,9 @@
     <string name="about_contribute">Contribute</string>
     <string name="about_privacy_policy">Privacy Policy</string>
     <string name="about_source_code">Source Code</string>
+    <string name="about_license">License</string>
+    <string name="about_license_desc">GNU GPL-3.0</string>
+    <string name="about_license_history">Versions up to v2.1.0 were released under the MIT License.</string>
     <string name="about_version">Version</string>
     <string name="about_rating">Rate the App</string>
     <string name="about_rating_desc">This project was developed by a single person. I truly appreciate your feedback.</string>
@@ -508,7 +505,6 @@
     <string name="pdf_selected">Selected</string>
 
     <!-- Caching & Sync -->
-    <string name="embedding_model_caching">Embedding model \"%1$s\" is caching…</string>
     <string name="messages_not_cached">%1$d of %2$d messages not cached.</string>
     <string name="cache_now">Cache Now</string>
     <string name="no_messages_to_cache">No messages to cache.</string>
@@ -569,8 +565,8 @@
     <string name="onboarding_no_models">No models loaded.</string>
     <string name="onboarding_invalid_gguf_title">Invalid GGUF File</string>
     <string name="onboarding_invalid_gguf_desc">The selected file does not appear to be a valid GGUF model.</string>
-    <string name="onboarding_hide_key">Hide key</string>
-    <string name="onboarding_show_key">Show key</string>
+    <string name="secret_hide">Hide Value</string>
+    <string name="secret_show">Show Value</string>
     <!-- ── Auto Backup ── -->
     <string name="auto_backup_title">Auto Backup</string>
     <string name="auto_backup_subtitle">Automatically export data on a schedule</string>
@@ -616,6 +612,20 @@
     <string name="shell_confirm_deny">Deny</string>
     <string name="shell_confirm_setting">Confirm Remote Shell Actions</string>
     <string name="shell_confirm_setting_desc">Ask before the assistant runs commands or writes files on remote SSH/Conch servers</string>
+    <string name="shell_confirm_notification_channel">Command approval</string>
+    <string name="shell_confirm_notification_desc">Asks you to allow or deny a remote command while Agora is in the background</string>
+
+    <string name="ask_user_title">The assistant is asking</string>
+    <string name="ask_user_send">Send</string>
+    <string name="ask_user_next">Next</string>
+    <string name="interaction_ask_user">Ask User</string>
+    <string name="interaction_approval">Approval</string>
+    <string name="interaction_minimize">Minimize</string>
+    <string name="interaction_expand">Expand</string>
+    <string name="ask_user_custom_answer">Answer in your own words</string>
+    <string name="ask_user_skip">Skip</string>
+    <string name="ask_user_notification_channel">Question from Agora</string>
+    <string name="ask_user_notification_desc">Asks you to answer a question from the assistant while the chat screen is not open</string>
 
     <!-- Crash reporting -->
     <string name="crash_title">Agora quit unexpectedly</string>
@@ -632,6 +642,8 @@
     <string name="context_compact_model">Compact Model</string>
     <string name="context_compact_prompt">Compact Prompt</string>
     <string name="context_compact_prompt_desc">Summary instructions</string>
+    <string name="context_compact_preserve_system">Preserve System Prompt</string>
+    <string name="context_compact_preserve_system_desc">Use the conversation system prompt for compaction; the Compact Prompt leads the summary request instead</string>
     <string name="context_compact_select_model">Select Compact Model</string>
     <string name="context_compact_retain">Recent Messages to Keep</string>
     <string name="context_compact_retain_desc">Messages preserved verbatim after each compact</string>
@@ -644,6 +656,13 @@
     <string name="context_compact_prompt_empty">Prompt cannot be empty</string>
     <string name="context_compact_retain_invalid">Enter a valid retained message count</string>
     <string name="context_usage_messages">~%1$s / %2$s tokens</string>
+
+    <string name="context_part_system">System prompt</string>
+    <string name="context_part_tools">Tools</string>
+    <string name="context_part_messages">Messages</string>
+    <string name="context_part_free">Free</string>
+    <string name="context_part_reserved">Reserved</string>
+    <string name="context_part_used">Used</string>
     <string name="context_compact_streaming">Context compacting…</string>
     <string name="context_compact_error">Compact error</string>
     <string name="context_compact_stopped">Compact stopped</string>
@@ -718,6 +737,7 @@
     <string name="generation_error_network">Network error: %1$s</string>
     <string name="generation_error_network_http">Network error (%1$d): %2$s</string>
     <string name="generation_error_sse_parse">The server response could not be read.</string>
+    <string name="generation_error_malformed_tool_call">The model returned a tool call that could not be used: %1$s</string>
     <string name="generation_error_incomplete_stream">%1$s ended the response early. No completion signal arrived, so the reply is incomplete.</string>
     <string name="generation_error_incomplete_tool_stream">%1$s ended the response early while a tool call was still being written. No completion signal arrived, so the reply is incomplete.</string>
     <string name="generation_error_incomplete_stream_reason">%1$s ended the response early after stop reason %2$s, without a completion signal.</string>
@@ -769,4 +789,24 @@
     <string name="thought_for_a_while">Thought for a while</string>
     <string name="thought_for_a_while_called_tools">Thought for a while, called %1$d tools</string>
     <string name="remote_device">Device</string>
+    <!-- Upstream attribution copy, UTF-8 Base64 for lightweight bulk-rename resistance. -->
+    <string name="rating_origin_credit_b64">QWdvcmEgwrcgRGV2ZWxvcGVkIGJ5IG5ld28tZXRoZXI=</string>
+    <string name="rating_origin_project_b64">T3JpZ2luYWwgcHJvamVjdDogZ2l0aHViLmNvbS9uZXdvLWV0aGVyL0Fnb3Jh</string>
+    <string name="rating_origin_modified_title_b64">TW9kaWZpZWQgVmVyc2lvbg==</string>
+    <string name="rating_origin_modified_body_b64">VGhpcyBhcHAgdXNlcyBhIGRpZmZlcmVudCBwYWNrYWdlIG5hbWUgZnJvbSB0aGUgb3JpZ2luYWwgcHJvamVjdCBhbmQgaGFzIGJlZW4gcmVwYWNrYWdlZCBvciBtb2RpZmllZC4gVGhlIG9yaWdpbmFsIHByb2plY3QgaXMgQWdvcmEsIGRldmVsb3BlZCBieSBuZXdvLWV0aGVyLiBDaGFuZ2VzIGluIHRoaXMgdmVyc2lvbiBhcmUgdGhlIHJlc3BvbnNpYmlsaXR5IG9mIGl0cyBkaXN0cmlidXRvciBhbmQgZG8gbm90IHJlcHJlc2VudCB0aGUgb3JpZ2luYWwgYXV0aG9yLg==</string>
+    <string name="rating_origin_view_project_b64">VmlldyBPcmlnaW5hbCBQcm9qZWN0</string>
+    <string name="message_source_task">Task</string>
+    <string name="message_source_loop">Loop</string>
+    <string name="message_source_ask_user">Ask User</string>
+    <string name="message_source_unanswered">Unanswered</string>
+
+    <!-- Settings - Tor -->
+    <string name="tor_title">Tor</string>
+    <string name="tor_desc">Route API requests through Tor network</string>
+    <string name="tor_enable">Enable Tor Proxy</string>
+    <string name="tor_enable_desc">Route all API requests through a Tor SOCKS5 proxy for anonymous access</string>
+    <string name="tor_socks_settings">SOCKS5 Proxy</string>
+    <string name="tor_socks_port">Port</string>
+    <string name="tor_socks_port_desc">Tor SOCKS5 proxy port (default: 9050)</string>
+    <string name="tor_info">Requires a running Tor daemon with SOCKS5 proxy. Install Orbot from F-Droid or run tor on your device.</string>
 </resources>

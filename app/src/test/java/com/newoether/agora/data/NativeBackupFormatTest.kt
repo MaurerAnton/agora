@@ -11,6 +11,14 @@ import org.junit.Test
 
 class NativeBackupFormatTest {
     @Test
+    fun conversationEntriesAreStableAndPathSafe() {
+        assertEquals("conv/items/612f622e2e2f63.json", NativeBackupFormat.conversationEntry("a/b../c"))
+        assertEquals(
+            NativeBackupFormat.conversationEntry("conversation"),
+            NativeBackupFormat.conversationEntry("conversation"),
+        )
+    }
+    @Test
     fun versionPolicy_acceptsOnlyKnownNativeFormats() {
         assertFalse(NativeBackupFormat.isSupported(0))
         assertTrue(NativeBackupFormat.isSupported(1))
@@ -105,4 +113,3 @@ class NativeBackupFormatTest {
         assertFalse(restored.hasUnreadGeneration)
     }
 }
-

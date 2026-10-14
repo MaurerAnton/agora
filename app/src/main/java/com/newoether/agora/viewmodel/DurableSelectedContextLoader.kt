@@ -72,15 +72,13 @@ internal class DurableSelectedContextLoader(
                 val entity = fetched[topology.id]
                     ?: throw DurableContextLoadException("A Provider context message disappeared")
                 validateEntity(request.conversationId, topology, entity)
-                entity.copy(
-                    modelName = entity.modelName ?: planned.inheritedModelName,
-                    toolCallJson = if (planned.stripAggregateToolSegments) {
-                        stripAggregatedToolSegments(entity.toolCallJson)
-                    } else {
-                        entity.toolCallJson
-                    },
+                InterruptedToolRounds.Row(
+                    entity = entity.copy(
+                        modelName = entity.modelName ?: planned.inheritedModelName,
+                    ),
+                    stripAggregateToolSegments = planned.stripAggregateToolSegments,
                 )
-            }
+            }.let(InterruptedToolRounds::materialize)
             DurableSelectedContext(
                 messages = projectProviderMessages(
                     entities = entities,

@@ -11,9 +11,8 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import com.newoether.agora.R
-import com.newoether.agora.data.CustomProviderConfig
-import com.newoether.agora.data.providerDisplayName
-import com.newoether.agora.model.AttachmentStorage
+import com.newoether.agora.model.ModelThinkingCapability
+import com.newoether.agora.model.OpenAiServiceTiers
 import com.newoether.agora.model.SelectedAttachment
 import com.newoether.agora.ui.chat.PdfPageSelectDialog
 import com.newoether.agora.ui.chat.VideoSliceDialog
@@ -38,19 +37,19 @@ internal fun ChatBottomBarOverlayHost(
     onDismissThinkingSheet: () -> Unit,
     thinkingEnabled: Boolean,
     thinkingLevel: String,
+    thinkingCapability: ModelThinkingCapability,
     thinkingBudgetEnabled: Boolean,
     thinkingBudgetTokens: Int,
     onThinkingToggle: (Boolean) -> Unit,
     onThinkingLevelChange: (String) -> Unit,
     onThinkingBudgetEnabledChange: (Boolean) -> Unit,
     onThinkingBudgetTokensChange: (Int) -> Unit,
-    selectedModel: String,
-    customProviders: List<CustomProviderConfig>,
     showOpenAiServiceTierSheet: Boolean,
     openAiServiceTierAvailable: Boolean,
     onDismissOpenAiServiceTierSheet: () -> Unit,
     openAiServiceTierEnabled: Boolean,
     openAiServiceTier: String,
+    availableServiceTiers: List<String>,
     onOpenAiServiceTierToggle: (Boolean) -> Unit,
     onOpenAiServiceTierChange: (String) -> Unit,
     internalCameraPath: String?,
@@ -132,10 +131,11 @@ internal fun ChatBottomBarOverlayHost(
                     onLevelChange = onThinkingLevelChange,
                     onBudgetEnabledChange = onThinkingBudgetEnabledChange,
                     onBudgetTokensChange = onThinkingBudgetTokensChange,
-                    providerName = providerDisplayName(
-                        com.newoether.agora.model.ModelId.parse(selectedModel).providerName,
-                        customProviders,
-                    ),
+                    // Exactly the options the selected model accepts: its effort levels, whether
+                    // thinking can be turned off, and whether it takes a token budget.
+                    availableEfforts = thinkingCapability.supportedEfforts,
+                    allowDisable = thinkingCapability.canDisableThinking,
+                    showBudgetControls = thinkingCapability.supportsThinkingBudget,
                     animateSections = true,
                 )
                 Spacer(modifier = Modifier.height(24.dp))
@@ -160,6 +160,14 @@ internal fun ChatBottomBarOverlayHost(
                     tier = openAiServiceTier,
                     onEnabledChange = onOpenAiServiceTierToggle,
                     onTierChange = onOpenAiServiceTierChange,
+                    availableTiers = availableServiceTiers,
+                    tierLabels = mapOf(
+                        OpenAiServiceTiers.AUTO to stringResource(R.string.openai_service_tier_auto),
+                        OpenAiServiceTiers.DEFAULT to stringResource(R.string.openai_service_tier_default),
+                        OpenAiServiceTiers.FLEX to stringResource(R.string.openai_service_tier_flex),
+                        OpenAiServiceTiers.FAST to stringResource(R.string.openai_service_tier_fast),
+                        OpenAiServiceTiers.ULTRAFAST to stringResource(R.string.openai_service_tier_ultrafast),
+                    ),
                 )
                 Spacer(modifier = Modifier.height(24.dp))
             }
@@ -294,31 +302,14 @@ internal suspend fun inspectAttachmentIngress(
     val rejected = mutableListOf<String?>()
     val attachments = uris.mapNotNull { uri ->
         val mimeType = FileValidator.resolveMimeType(context, uri.toString())
-        val route = FileValidator.routeForMimeType(mimeType)
-        val useSandbox = forcedType == null && route == FileValidator.AttachmentRoute.LOCAL_SANDBOX
-        if (useSandbox && !allowLocalSandbox) {
-            rejected += mimeType
-            return@mapNotNull null
-        }
-        val type = forcedType ?: when (route) {
-            FileValidator.AttachmentRoute.IMAGE -> "image"
-            FileValidator.AttachmentRoute.VIDEO -> "video"
-            FileValidator.AttachmentRoute.PDF -> "pdf"
-            FileValidator.AttachmentRoute.TEXT,
-            FileValidator.AttachmentRoute.LOCAL_SANDBOX -> "file"
-        }
-        SelectedAttachment(
-            uri = uri.toString(),
-            type = type,
+        FileValidator.inspectAttachment(
+            source = uri.toString(),
             fileName = FileValidator.resolveFileName(context, uri),
             mimeType = mimeType,
             fileSize = FileValidator.resolveFileSize(context, uri),
-            storage = if (useSandbox) {
-                AttachmentStorage.LOCAL_SANDBOX_PENDING
-            } else {
-                AttachmentStorage.APP_PRIVATE
-            },
-        )
+            forcedType = forcedType,
+            allowLocalSandbox = allowLocalSandbox,
+        ).also { if (it == null) rejected += mimeType }
     }
     attachments to rejected
 }

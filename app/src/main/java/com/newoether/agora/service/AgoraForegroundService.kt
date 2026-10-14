@@ -165,15 +165,22 @@ class AgoraForegroundService : Service() {
         private val mainHandler = Handler(Looper.getMainLooper())
         @Volatile private var instance: AgoraForegroundService? = null
         private val ownerLeases = ForegroundOwnerLeases()
+        // Conversation of each live lease, in acquisition order. The ongoing notification opens
+        // the most recently started conversation that is still generating.
+        private val ownerConversations = LinkedHashMap<String, String>()
 
         /** Acquires this generation's lease; returns false for a duplicate owner/start failure. */
-        fun acquire(context: Context, owner: String): Boolean {
+        fun acquire(context: Context, owner: String, conversationId: String? = null): Boolean {
             if (owner.isBlank()) return false
             val transition = ownerLeases.acquire(owner)
             if (!transition.accepted) return false
             if (transition.action == ForegroundServiceLeaseAction.Start && !startService(context)) {
                 ownerLeases.startRequestFailed(owner)
                 return false
+            }
+            if (!conversationId.isNullOrBlank()) {
+                synchronized(ownerConversations) { ownerConversations[owner] = conversationId }
+                instance?.refreshGenerationNotification()
             }
             CrashReporter.note(
                 "FGS.acquire owners=${ownerLeases.size()} state=${ownerLeases.lifecycleState()}"
@@ -231,7 +238,14 @@ class AgoraForegroundService : Service() {
          */
         fun release(owner: String) {
             val transition = ownerLeases.release(owner)
+            val hadConversation = synchronized(ownerConversations) {
+                ownerConversations.remove(owner) != null
+            }
             val action = transition.action
+            // A stopping service removes its notification; re-posting it would leave it behind.
+            if (hadConversation && action !is ForegroundServiceLeaseAction.Stop) {
+                instance?.refreshGenerationNotification()
+            }
             if (action is ForegroundServiceLeaseAction.Stop) {
                 CrashReporter.note("FGS.stop requested startId=${action.startId}")
                 instance?.requestLeaseStop(action.startId)
@@ -241,6 +255,9 @@ class AgoraForegroundService : Service() {
                     "state=${ownerLeases.lifecycleState()}"
             )
         }
+
+        private fun notificationConversationId(): String? =
+            synchronized(ownerConversations) { ownerConversations.values.lastOrNull() }
 
         fun createChannels(context: Context) {
             createGenerationChannel(context)
@@ -439,6 +456,10 @@ class AgoraForegroundService : Service() {
         }
     }
 
+    private fun refreshGenerationNotification() {
+        updateNotificationText(currentText ?: getString(R.string.generating_response))
+    }
+
     private fun buildGenerationNotification(text: String): Notification {
         return NotificationCompat.Builder(this, CHANNEL_ID)
             .setContentTitle(getString(R.string.app_name))
@@ -448,7 +469,7 @@ class AgoraForegroundService : Service() {
             .setOnlyAlertOnce(true)
             .setPriority(NotificationCompat.PRIORITY_LOW)
             .setCategory(NotificationCompat.CATEGORY_PROGRESS)
-            .setContentIntent(createPendingIntent(this, 0))
+            .setContentIntent(createPendingIntent(this, 0, notificationConversationId()))
             .build()
     }
 

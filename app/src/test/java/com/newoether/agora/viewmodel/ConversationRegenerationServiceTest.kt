@@ -26,7 +26,7 @@ class ConversationRegenerationServiceTest {
     @Test
     fun rejectsNonBoundaryOutputBeforeTransitionOrRuntimeClaim() = runBlocking {
         val fixture = Fixture()
-        val state = ConversationGenerationState("conversation")
+        val state = ConversationGenerationState("conversation", reclaimQueuedAttachments = {})
         val result = fixture.service.regenerate(
             fixture.request.copy(
                 visiblePath = listOf(
@@ -48,7 +48,7 @@ class ConversationRegenerationServiceTest {
     @Test
     fun transitionConflictDelegatesExactUnlaunchedSlotRelease() = runBlocking {
         val fixture = Fixture()
-        val state = ConversationGenerationState("conversation")
+        val state = ConversationGenerationState("conversation", reclaimQueuedAttachments = {})
         val existing = checkNotNull(
             fixture.transitions.begin("conversation", "other-model", "source-input"),
         )
@@ -69,7 +69,7 @@ class ConversationRegenerationServiceTest {
     @Test
     fun fadeAdmissionCommitsReplacementRunBeforeProjectionAndBoundLaunch() = runBlocking {
         val fixture = Fixture()
-        val state = ConversationGenerationState("conversation")
+        val state = ConversationGenerationState("conversation", reclaimQueuedAttachments = {})
         coEvery {
             fixture.conversations.getMessagesByIds(
                 listOf("target-model", "target-model", "source-input"),
@@ -128,7 +128,7 @@ class ConversationRegenerationServiceTest {
     @Test
     fun adjacentAssistantRunRegeneratesOnlyItsOwnRootFromItsDirectParent() = runBlocking {
         val fixture = Fixture()
-        val state = ConversationGenerationState("conversation")
+        val state = ConversationGenerationState("conversation", reclaimQueuedAttachments = {})
         val upper = TARGET_MODEL.copy(
             id = "upper-model",
             parentId = "source-input",
@@ -224,7 +224,6 @@ class ConversationRegenerationServiceTest {
             conversations = conversations,
             requestBuilder = requestBuilder,
             executionCoordinator = ConversationExecutionCoordinator(),
-            transitions = transitions,
             terminalSettlement = terminalSettlement,
             boundRunGenerationLauncher = boundLauncher,
             guidanceDrain = guidanceDrain,
@@ -249,6 +248,7 @@ class ConversationRegenerationServiceTest {
             messageId = "target-model",
             modelId = "provider:model",
             visiblePath = listOf(SOURCE_USER, TARGET_MODEL),
+            origin = FakeChatClient(open = "conversation", branchTransitions = transitions),
         )
     }
 

@@ -6,6 +6,9 @@ internal const val MAX_TOOL_SUMMARY_SUBJECT_CHARS = 120
 internal data class StreamingToolArgumentHints(
     val subject: String?,
     val server: String?,
+    val count: Int? = null,
+    val operation: String? = null,
+    val destination: String? = null,
 )
 
 /**
@@ -30,12 +33,27 @@ internal object StreamingToolArgumentHintResolver {
         val root = StreamingJsonParser.parse(source).root as? StreamingJsonObject
             ?: return StreamingToolArgumentHints(subject = null, server = null)
 
+        val read = kind == ToolKind.MEMORY_READ || kind == ToolKind.SKILL_READ
+        val namesArray = root.entries.firstOrNull { it.keyComplete && it.key == "names" }
+            ?.value as? StreamingJsonArray
+        val names = namesArray?.values?.mapNotNull { node ->
+            (node as? StreamingJsonScalar)?.content?.takeIf {
+                if (kind == ToolKind.MEMORY_READ) it.isNotEmpty() else it.isNotBlank()
+            }
+        }.orEmpty()
+        val namesSelected = read && namesArray != null && (!namesArray.complete ||
+            if (kind == ToolKind.MEMORY_READ) namesArray.values.isNotEmpty() else names.isNotEmpty())
         val subject = when (kind) {
             ToolKind.MEMORY_READ,
+            ToolKind.SKILL_READ -> if (namesSelected) {
+                names.singleOrNull()?.takeIf { namesArray.complete }
+            } else root.scalar("name")
             ToolKind.MEMORY_CREATE,
             ToolKind.MEMORY_EDIT,
-            ToolKind.MEMORY_DELETE -> root.scalar("name")
-                ?: root.firstArrayScalar("names")
+            ToolKind.MEMORY_DELETE,
+            ToolKind.SKILL_CREATE,
+            ToolKind.SKILL_EDIT,
+            ToolKind.SKILL_DELETE -> root.scalar("name")
             ToolKind.WEB_SEARCH,
             ToolKind.CONVERSATION_SEARCH -> root.scalar("query")
             ToolKind.WEB_FETCH -> root.scalar("url")
@@ -61,6 +79,9 @@ internal object StreamingToolArgumentHintResolver {
         return StreamingToolArgumentHints(
             subject = normalizeToolSummarySubject(subject),
             server = normalizeToolSummarySubject(root.scalar("server")),
+            count = if (namesSelected && namesArray.complete) names.size else null,
+            operation = root.scalar("operation"),
+            destination = normalizeToolSummarySubject(root.scalar("new_name")),
         )
     }
 
@@ -71,15 +92,6 @@ internal object StreamingToolArgumentHintResolver {
             .let { it as? StreamingJsonScalar }
             ?.content
 
-    private fun StreamingJsonObject.firstArrayScalar(key: String): String? =
-        entries
-            .firstOrNull { it.keyComplete && it.key == key }
-            ?.value
-            .let { it as? StreamingJsonArray }
-            ?.values
-            ?.firstOrNull()
-            .let { it as? StreamingJsonScalar }
-            ?.content
 }
 
 internal fun normalizeToolSummarySubject(
@@ -87,9 +99,10 @@ internal fun normalizeToolSummarySubject(
     maxCharacters: Int = MAX_TOOL_SUMMARY_SUBJECT_CHARS,
 ): String? {
     require(maxCharacters > 0)
-    return value
+    val subject = value
         ?.replace(Regex("\\s+"), " ")
         ?.trim()
         ?.takeIf { it.isNotEmpty() }
-        ?.take(maxCharacters)
+        ?: return null
+    return if (subject.length > maxCharacters) subject.take(maxCharacters - 1) + "\u2026" else subject
 }

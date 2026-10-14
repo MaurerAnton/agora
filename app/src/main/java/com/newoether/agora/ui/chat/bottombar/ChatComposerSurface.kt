@@ -11,6 +11,7 @@ import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.onSizeChanged
 import androidx.compose.ui.platform.LocalDensity
+import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 
 /** Original chat bar surface and inset ownership, shared by both transports. */
@@ -21,6 +22,7 @@ internal fun ChatComposerSurface(
     modifier: Modifier = Modifier,
     outerSpacerHeightPx: Float = 0f,
     backdrop: @Composable () -> Unit = {},
+    contentMaxWidth: Dp = Dp.Unspecified,
     content: @Composable () -> Unit,
 ) {
     val density = LocalDensity.current
@@ -61,6 +63,8 @@ Surface(
         }
         Column(
             modifier = Modifier
+                .align(Alignment.CenterHorizontally)
+                .widthIn(max = contentMaxWidth)
                 .fillMaxWidth()
                 .then(if (isExpanded) Modifier.fillMaxHeight() else Modifier)
                 .onSizeChanged {

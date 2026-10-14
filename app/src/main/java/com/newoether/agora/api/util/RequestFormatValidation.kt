@@ -1,6 +1,7 @@
 package com.newoether.agora.api.util
 
 import com.newoether.agora.api.ToolDefinition
+import com.newoether.agora.api.ToolProperty
 import kotlinx.serialization.json.Json
 import kotlinx.serialization.json.JsonArray
 import kotlinx.serialization.json.JsonObject
@@ -80,17 +81,44 @@ internal fun validateToolDefinitions(tools: List<ToolDefinition>?): List<String>
         if (unknownRequired.isNotEmpty()) {
             violations += "tool ${function.name} requires undefined properties"
         }
-        function.parameters.properties.forEach { (propertyName, property) ->
-            if (propertyName.isBlank()) {
-                violations += "tool ${function.name} has a blank property name"
-            }
-            if (property.type.isBlank()) {
-                violations += "tool ${function.name} property $propertyName has no type"
-            }
-            if (property.type == "array" && property.items == null) {
-                violations += "tool ${function.name} array $propertyName has no items schema"
+        // An external (MCP) schema is sent verbatim and may use JSON Schema forms the typed model
+        // cannot express, such as a map object with only additionalProperties; its nesting is the
+        // server's contract, so only the typed schemas Agora builds itself are checked below the top.
+        if (function.parameters.schema == null) {
+            function.parameters.properties.forEach { (propertyName, property) ->
+                violations += propertyViolations(function.name, propertyName, property)
             }
         }
+    }
+    return violations
+}
+
+/**
+ * Checks one property and whatever it nests. Nesting is checked too, because a malformed inner
+ * schema is rejected by the provider just like a malformed outer one.
+ */
+private fun propertyViolations(
+    toolName: String,
+    path: String,
+    property: ToolProperty,
+): List<String> {
+    val violations = mutableListOf<String>()
+    if (path.isBlank()) violations += "tool $toolName has a blank property name"
+    if (property.type.isBlank()) violations += "tool $toolName property $path has no type"
+    if (property.type == "array" && property.items == null) {
+        violations += "tool $toolName array $path has no items schema"
+    }
+    if (property.type == "object" && property.properties.isNullOrEmpty()) {
+        violations += "tool $toolName object $path has no property schema"
+    }
+    val declared = property.properties?.keys.orEmpty()
+    val unknownRequired = property.required.orEmpty().toSet() - declared
+    if (unknownRequired.isNotEmpty()) {
+        violations += "tool $toolName object $path requires undefined properties"
+    }
+    property.items?.let { violations += propertyViolations(toolName, "$path[]", it) }
+    property.properties?.forEach { (nestedName, nested) ->
+        violations += propertyViolations(toolName, "$path.$nestedName", nested)
     }
     return violations
 }

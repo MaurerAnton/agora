@@ -1,5 +1,10 @@
 package com.newoether.agora.automation
 
+import android.content.Context
+import android.content.pm.ApplicationInfo
+import com.newoether.agora.util.DebugLog
+import io.mockk.every
+import io.mockk.mockk
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.async
 import kotlinx.coroutines.awaitCancellation
@@ -9,10 +14,20 @@ import kotlinx.coroutines.test.runTest
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
 import org.junit.Assert.assertTrue
+import org.junit.Before
 import org.junit.Test
 
 @OptIn(ExperimentalCoroutinesApi::class)
 class AutomationWakeLockOwnerTest {
+    @Before
+    fun disableAndroidLoggingForJvmTests() {
+        // DebugLog state is JVM-global; set it here so the result does not depend on test order.
+        val context = mockk<Context>()
+        every { context.applicationInfo } returns ApplicationInfo().apply { flags = 0 }
+        DebugLog.forceEnabled = false
+        DebugLog.init(context)
+    }
+
     @Test
     fun disabledExecutionNeverAcquiresLease() = runTest {
         var acquired = false

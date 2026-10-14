@@ -26,8 +26,6 @@
     <string name="mcp_header_value_error">制御文字を含まない値を入力してください</string>
     <string name="mcp_add_header">ヘッダーを追加</string>
     <string name="mcp_delete_header">ヘッダーを削除</string>
-    <string name="mcp_show_header_value">ヘッダー値を表示</string>
-    <string name="mcp_hide_header_value">ヘッダー値を非表示</string>
     <string name="mcp_timeout">タイムアウト（秒）</string>
     <string name="mcp_timeout_desc">5～300 秒</string>
     <string name="mcp_status">状態</string>

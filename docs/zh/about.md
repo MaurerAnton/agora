@@ -13,3 +13,9 @@
 发生意外崩溃后，Agora 会在本地保留一份待处理报告，并在下次启动时询问是否发送；没有明确操作就不会上传。报告包含堆栈、应用/Android 版本、设备厂商/型号、时间戳和有界诊断事件，不包含对话文本、凭据或设备标识符。
 
 数据处理和网络去向详见[隐私与安全](privacy.md)。
+
+## 许可证
+
+Agora v2.2.0 及后续版本采用 [GNU GPL v3.0](https://github.com/newo-ether/Agora/blob/master/LICENSE)。
+
+v2.1.0 及更早版本仍按其[原 MIT 许可证](https://github.com/newo-ether/Agora/blob/9fc92fc3518c880158111ae1e9534ed8ffd09c6d/LICENSE)提供。这是按版本划分的许可历史，不表示当前项目可在 MIT 与 GPL 之间任选。

@@ -14,10 +14,12 @@ import com.newoether.agora.api.util.carriesModelOutput
 import com.newoether.agora.api.util.requireValidSerializedRequest
 import com.newoether.agora.api.util.safeWireToolCallId
 import com.newoether.agora.api.util.safeWireToolName
+import com.newoether.agora.api.util.malformedToolCallRequest
 import com.newoether.agora.model.ChatMessage
 import com.newoether.agora.model.Participant
-import com.newoether.agora.model.ThinkingLevels
+import com.newoether.agora.model.ThinkingProviderFamily
 import com.newoether.agora.model.TokenUsage
+import com.newoether.agora.api.util.resolvedThinking
 import com.newoether.agora.util.Constants
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.Dispatchers
@@ -215,24 +217,12 @@ class OllamaProvider : LlmProvider {
             config.maxTokens?.let { put("num_predict", kotlinx.serialization.json.JsonPrimitive(it)) }
         }.takeIf { it.isNotEmpty() }?.let { JsonObject(it) }
 
-        val thinkingLevel = ThinkingLevels.normalize(config.thinkingLevel)
-        val gptOss = isOllamaGptOss(modelName)
-        val thinkViolation = if (
-            gptOss && (!config.thinkingEnabled || thinkingLevel == "none")
-        ) {
-            "model $modelName cannot disable thinking"
-        } else null
-        val think = if (gptOss) {
-            JsonPrimitive(
-                when (thinkingLevel) {
-                    "minimal", "low" -> "low"
-                    "medium" -> "medium"
-                    else -> "high"
-                }
-            )
-        } else {
-            JsonPrimitive(config.thinkingEnabled)
-        }
+        // think accepts a boolean or one of low/medium/high/max for every model the endpoint serves,
+        // so the value follows the model's capability and no request is rejected locally.
+        val resolvedThinking = config.resolvedThinking(ThinkingProviderFamily.OLLAMA)
+        val think = resolvedThinking.effort
+            ?.let { JsonPrimitive(it) }
+            ?: JsonPrimitive(resolvedThinking.enabled)
 
         fun buildRequestBody(
             resolvedRequest: ProviderRequestInput,
@@ -247,7 +237,6 @@ class OllamaProvider : LlmProvider {
         )
 
         try {
-            thinkViolation?.let { throw RequestFormatException(name, listOf(it)) }
             val url = "$baseUrl/api/chat"
             val headers = mutableMapOf("Content-Type" to "application/json")
             if (config.apiKey.isNotEmpty()) {
@@ -349,7 +338,7 @@ class OllamaProvider : LlmProvider {
                                 response.message?.let { msg ->
                                     // 1. Handle explicit thinking field (Ollama 0.5.4+)
                                     msg.thinking?.let { thinking ->
-                                        if (thinking.isNotBlank()) {
+                                        if (thinking.isNotEmpty()) {
                                             emitTracked(StreamEvent.ThoughtChunk(thinking, null))
                                         }
                                     }
@@ -390,22 +379,24 @@ class OllamaProvider : LlmProvider {
                                                 }.getOrDefault(false),
                                             )
                                         }
-                                        val callIds = parsed.map { it.second.id }
-                                        if (
-                                            parsed.any { !it.third } ||
-                                            callIds.distinct().size != callIds.size
-                                        ) {
-                                            toolCallInFlight = true
-                                            streamError = GenerationError.SseParse(
-                                                rawLine = "tool_calls",
-                                                cause = "Ollama returned incomplete tool metadata",
-                                            )
-                                        } else {
-                                            parsed.forEach { emitTracked(it.first) }
-                                            val calls = parsed.map { it.second }
-                                            if (calls.size == 1) emitTracked(calls.single())
-                                            else emitTracked(StreamEvent.ToolCallsRequest(calls))
+                                        // A damaged call becomes a stand-in the executor answers
+                                        // with an error, so the model can re-issue it.
+                                        val seenIds = mutableSetOf<String>()
+                                        val calls = parsed.map { (_, call, valid) ->
+                                            if (valid && seenIds.add(call.id)) {
+                                                call
+                                            } else {
+                                                malformedToolCallRequest(
+                                                    cause = "Ollama returned incomplete or duplicate tool metadata",
+                                                    originalName = call.name,
+                                                    originalArguments = call.arguments,
+                                                    streamKey = call.streamKey,
+                                                )
+                                            }
                                         }
+                                        parsed.forEach { emitTracked(it.first) }
+                                        if (calls.size == 1) emitTracked(calls.single())
+                                        else emitTracked(StreamEvent.ToolCallsRequest(calls))
                                     }
 
                                     // 3. Compatibility parsing of inline thinking markers is
@@ -508,5 +499,4 @@ class OllamaProvider : LlmProvider {
     }
 }
 
-private fun isOllamaGptOss(modelName: String): Boolean =
-    modelName.trim().substringAfterLast('/').substringBefore(':').equals("gpt-oss", ignoreCase = true)
+

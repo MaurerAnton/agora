@@ -3,6 +3,27 @@ package com.newoether.agora.viewmodel
 import com.newoether.agora.model.AttachmentImportState
 import com.newoether.agora.model.SelectedAttachment
 
+internal fun durableAttachmentProjection(
+    durable: ConversationComposerSnapshot,
+    visible: ConversationComposerSnapshot,
+    attachmentId: String,
+    replacement: SelectedAttachment,
+): List<SelectedAttachment> {
+    val remaining = durable.attachments.associateByTo(linkedMapOf()) { it.localId }
+    return buildList {
+        visible.attachments.forEach { attachment ->
+            when {
+                attachment.localId == attachmentId -> {
+                    remaining.remove(attachmentId)
+                    add(replacement)
+                }
+                else -> remaining.remove(attachment.localId)?.let(::add)
+            }
+        }
+        addAll(remaining.values)
+    }
+}
+
 internal fun LoadedComposerDraft.toSnapshot() = ConversationComposerSnapshot(
     text = text,
     attachments = attachments,

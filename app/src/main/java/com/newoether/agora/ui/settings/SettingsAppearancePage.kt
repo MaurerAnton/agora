@@ -9,8 +9,8 @@ import androidx.compose.foundation.clickable
 import androidx.compose.foundation.selection.toggleable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.CircleShape
-import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.filled.WrapText
 import androidx.compose.material.icons.filled.BlurOn
 import androidx.compose.material.icons.filled.Check
 import androidx.compose.material.icons.filled.Contrast
@@ -51,6 +51,8 @@ import java.io.File
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
+import com.newoether.agora.ui.components.AgoraDropdownMenu
+import com.newoether.agora.ui.components.AgoraDropdownMenuItem
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -64,6 +66,7 @@ fun SettingsAppearancePage(viewModel: ChatViewModel, onBack: () -> Unit) {
     val reduceMotion by viewModel.settings.reduceMotion.collectAsState()
     val stickToBottom by viewModel.settings.stickToBottom.collectAsState()
     val parseInlineDollarMath by viewModel.settings.parseInlineDollarMath.collectAsState()
+    val autoWrapCodeBlocks by viewModel.settings.autoWrapCodeBlocks.collectAsState()
     val hapticsEnabled by viewModel.settings.hapticsEnabled.collectAsState()
 
     val toolCallDisplayMode by viewModel.settings.toolCallDisplayMode.collectAsState()
@@ -180,12 +183,11 @@ fun SettingsAppearancePage(viewModel: ChatViewModel, onBack: () -> Unit) {
                                             maxLines = 1,
                                             overflow = TextOverflow.Ellipsis
                                         )
-                                        DropdownMenu(
+                                        AgoraDropdownMenu(
                                             expanded = expanded,
                                             onDismissRequest = { expanded = false },
                                             containerColor = MaterialTheme.colorScheme.surfaceContainer,
-                                            tonalElevation = 16.dp,
-                                            shape = RoundedCornerShape(12.dp)
+                                            tonalElevation = 16.dp
                                         ) {
                                             options.forEach { (mode, pair) ->
                                                 val (label, icon) = pair
@@ -194,7 +196,7 @@ fun SettingsAppearancePage(viewModel: ChatViewModel, onBack: () -> Unit) {
                                                     "DARK" -> themeMode == "DARK"
                                                     else -> themeMode != "LIGHT" && themeMode != "DARK"
                                                 }
-                                                DropdownMenuItem(
+                                                AgoraDropdownMenuItem(
                                                     text = { Text(label) },
                                                     leadingIcon = {
                                                         if (isSelected) Icon(Icons.Default.Check, null, tint = MaterialTheme.colorScheme.primary)
@@ -282,18 +284,17 @@ fun SettingsAppearancePage(viewModel: ChatViewModel, onBack: () -> Unit) {
                                         maxLines = 1,
                                         overflow = TextOverflow.Ellipsis
                                     )
-                                    DropdownMenu(
+                                    AgoraDropdownMenu(
                                         expanded = expanded,
                                         onDismissRequest = { expanded = false },
                                         containerColor = MaterialTheme.colorScheme.surfaceContainer,
-                                        tonalElevation = 16.dp,
-                                        shape = RoundedCornerShape(12.dp)
+                                        tonalElevation = 16.dp
                                     ) {
                                         ColorSchemePreset.entries.forEach { preset ->
                                             val presetPrimary = remember(preset, currentStyle, isDark) {
                                                 colorSchemeForPreset(preset, currentStyle, isDark).primary
                                             }
-                                            DropdownMenuItem(
+                                            AgoraDropdownMenuItem(
                                                 text = { Text(presetDisplayName(preset)) },
                                                 leadingIcon = {
                                                     if (preset == currentPreset) Icon(Icons.Default.Check, null, tint = MaterialTheme.colorScheme.primary)
@@ -335,15 +336,14 @@ fun SettingsAppearancePage(viewModel: ChatViewModel, onBack: () -> Unit) {
                                         maxLines = 1,
                                         overflow = TextOverflow.Ellipsis
                                     )
-                                    DropdownMenu(
+                                    AgoraDropdownMenu(
                                         expanded = expanded,
                                         onDismissRequest = { expanded = false },
                                         containerColor = MaterialTheme.colorScheme.surfaceContainer,
-                                        tonalElevation = 16.dp,
-                                        shape = RoundedCornerShape(12.dp)
+                                        tonalElevation = 16.dp
                                     ) {
                                         SchemeStyle.entries.forEach { style ->
-                                            DropdownMenuItem(
+                                            AgoraDropdownMenuItem(
                                                 text = { Text(styleDisplayName(style)) },
                                                 leadingIcon = {
                                                     if (style == currentStyle) Icon(Icons.Default.Check, null, tint = MaterialTheme.colorScheme.primary)
@@ -485,6 +485,17 @@ fun SettingsAppearancePage(viewModel: ChatViewModel, onBack: () -> Unit) {
                             )
                         }
                         add {
+                            SettingsItem(
+                                headlineContent = { Text(stringResource(R.string.auto_wrap_code_blocks)) },
+                                supportingContent = { Text(stringResource(R.string.auto_wrap_code_blocks_desc)) },
+                                leadingContent = { Icon(Icons.AutoMirrored.Filled.WrapText, null, tint = MaterialTheme.colorScheme.primary, modifier = Modifier.size(24.dp)) },
+                                trailingContent = {
+                                    Switch(checked = autoWrapCodeBlocks, onCheckedChange = viewModel.settings::setAutoWrapCodeBlocks)
+                                },
+                                modifier = Modifier.clickable { viewModel.settings.setAutoWrapCodeBlocks(!autoWrapCodeBlocks) },
+                            )
+                        }
+                        add {
                             var expanded by remember { mutableStateOf(false) }
                             val selectedLabel = when (normalizedToolCallDisplayMode) {
                                 ToolCallDisplayModes.GROUPED_TIMELINE -> stringResource(R.string.tool_call_display_mode_grouped_timeline)
@@ -523,15 +534,14 @@ fun SettingsAppearancePage(viewModel: ChatViewModel, onBack: () -> Unit) {
                                             maxLines = 1,
                                             overflow = TextOverflow.Ellipsis
                                         )
-                                        DropdownMenu(
+                                        AgoraDropdownMenu(
                                             containerColor = MaterialTheme.colorScheme.surfaceContainer,
                                             tonalElevation = 16.dp,
                                             expanded = expanded,
-                                            onDismissRequest = { expanded = false },
-                                            shape = RoundedCornerShape(12.dp)
+                                            onDismissRequest = { expanded = false }
                                         ) {
                                             options.forEach { (mode, label) ->
-                                                DropdownMenuItem(
+                                                AgoraDropdownMenuItem(
                                                     text = { Text(label) },
                                                     leadingIcon = {
                                                         if (normalizedToolCallDisplayMode == mode) {
@@ -585,12 +595,11 @@ fun SettingsAppearancePage(viewModel: ChatViewModel, onBack: () -> Unit) {
                                                 style = MaterialTheme.typography.labelLarge,
                                                 color = MaterialTheme.colorScheme.primary,
                                             )
-                                            DropdownMenu(
+                                            AgoraDropdownMenu(
                                                 expanded = expanded,
                                                 onDismissRequest = { expanded = false },
                                                 containerColor = MaterialTheme.colorScheme.surfaceContainer,
                                                 tonalElevation = 16.dp,
-                                                shape = RoundedCornerShape(12.dp),
                                             ) {
                                                 listOf(
                                                     ThinkingSegmentDisplayModes.CARD to
@@ -598,7 +607,7 @@ fun SettingsAppearancePage(viewModel: ChatViewModel, onBack: () -> Unit) {
                                                     ThinkingSegmentDisplayModes.BOTTOM_SHEET to
                                                         stringResource(R.string.thinking_segment_display_bottom_sheet),
                                                 ).forEach { (mode, label) ->
-                                                    DropdownMenuItem(
+                                                    AgoraDropdownMenuItem(
                                                         text = { Text(label) },
                                                         leadingIcon = {
                                                             if (
@@ -711,15 +720,14 @@ fun SettingsAppearancePage(viewModel: ChatViewModel, onBack: () -> Unit) {
                                             maxLines = 1,
                                             overflow = TextOverflow.Ellipsis
                                         )
-                                        DropdownMenu(
+                                        AgoraDropdownMenu(
                                             expanded = expanded,
                                             onDismissRequest = { expanded = false },
                                             containerColor = MaterialTheme.colorScheme.surfaceContainer,
-                                            tonalElevation = 16.dp,
-                                            shape = RoundedCornerShape(12.dp)
+                                            tonalElevation = 16.dp
                                         ) {
                                             options.forEach { (value, label) ->
-                                                DropdownMenuItem(
+                                                AgoraDropdownMenuItem(
                                                     text = { Text(label) },
                                                     leadingIcon = {
                                                         if (fontPreference == value) Icon(Icons.Default.Check, null, tint = MaterialTheme.colorScheme.primary)
@@ -777,24 +785,4 @@ fun SettingsAppearancePage(viewModel: ChatViewModel, onBack: () -> Unit) {
             }
             if (showDocFab) { Spacer(modifier = Modifier.height(80.dp)) }
     }
-}
-
-@Composable
-private fun presetDisplayName(preset: ColorSchemePreset): String = when (preset) {
-    ColorSchemePreset.MIDNIGHT -> stringResource(R.string.color_scheme_midnight)
-    ColorSchemePreset.NORDIC -> stringResource(R.string.color_scheme_nordic)
-    ColorSchemePreset.FOREST -> stringResource(R.string.color_scheme_forest)
-    ColorSchemePreset.SUNSET -> stringResource(R.string.color_scheme_sunset)
-    ColorSchemePreset.ROSE -> stringResource(R.string.color_scheme_rose)
-    ColorSchemePreset.LAVENDER -> stringResource(R.string.color_scheme_lavender)
-    ColorSchemePreset.SLATE -> stringResource(R.string.color_scheme_slate)
-    ColorSchemePreset.OCEAN -> stringResource(R.string.color_scheme_ocean)
-}
-
-@Composable
-private fun styleDisplayName(style: SchemeStyle): String = when (style) {
-    SchemeStyle.TONAL_SPOT -> stringResource(R.string.scheme_style_tonal_spot)
-    SchemeStyle.EXPRESSIVE -> stringResource(R.string.scheme_style_expressive)
-    SchemeStyle.VIBRANT -> stringResource(R.string.scheme_style_vibrant)
-    SchemeStyle.NEUTRAL -> stringResource(R.string.scheme_style_neutral)
 }

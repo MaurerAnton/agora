@@ -344,32 +344,11 @@ class ChatViewModel(
     fun saveTask(task: com.newoether.agora.data.local.TaskEntity) {
         viewModelScope.launch { taskManager.saveTask(task) }
     }
-    val appLanguage = settingsManager.appLanguage.stateIn(viewModelScope, SharingStarted.Eagerly, "system")
-    val webSearchEnabled = settingsManager.webSearchEnabled.stateIn(viewModelScope, SharingStarted.Eagerly, false)
-    val webSearchProvider = settingsManager.webSearchProvider.stateIn(viewModelScope, SharingStarted.Eagerly, "brave")
-    val webSearchApiKeys = settingsManager.webSearchApiKeys.stateIn(viewModelScope, SharingStarted.Eagerly, emptyMap())
-    val webSearchNumResults = settingsManager.webSearchNumResults.stateIn(viewModelScope, SharingStarted.Eagerly, 5)
-    val webSearchBaseUrl = settingsManager.webSearchBaseUrl.stateIn(viewModelScope, SharingStarted.Eagerly, "")
     val showDocumentationFab = settingsManager.showDocumentationFab.stateIn(viewModelScope, SharingStarted.Eagerly, true)
-    val shellEnabled = settingsManager.shellEnabled.stateIn(viewModelScope, SharingStarted.Eagerly, false)
-    val shellDevices = settingsManager.shellDevices.stateIn(viewModelScope, SharingStarted.Eagerly, emptyList())
     val torEnabled = settingsManager.torEnabled.stateIn(viewModelScope, SharingStarted.Eagerly, false)
     val torSocksPort = settingsManager.torSocksPort.stateIn(viewModelScope, SharingStarted.Eagerly, 9050)
     fun setTorEnabled(enabled: Boolean) { viewModelScope.launch { settingsManager.saveTorEnabled(enabled) } }
     fun setTorSocksPort(port: Int) { viewModelScope.launch { settingsManager.saveTorSocksPort(port) } }
-    val defaultTemperature = settingsManager.defaultTemperature.stateIn(viewModelScope, SharingStarted.Eagerly, null)
-    val defaultMaxTokens = settingsManager.defaultMaxTokens.stateIn(viewModelScope, SharingStarted.Eagerly, null)
-    val defaultTopP = settingsManager.defaultTopP.stateIn(viewModelScope, SharingStarted.Eagerly, null)
-    val defaultFrequencyPenalty = settingsManager.defaultFrequencyPenalty.stateIn(viewModelScope, SharingStarted.Eagerly, null)
-    val defaultPresencePenalty = settingsManager.defaultPresencePenalty.stateIn(viewModelScope, SharingStarted.Eagerly, null)
-    val conversationSettings = settingsManager.conversationSettings.stateIn(viewModelScope, SharingStarted.Eagerly, emptyMap())
-    val themeMode = settingsManager.themeMode.stateIn(viewModelScope, SharingStarted.Eagerly, "FOLLOW_DEVICE")
-    val colorScheme = settingsManager.colorScheme.stateIn(viewModelScope, SharingStarted.Eagerly, "DEFAULT")
-    val dynamicColor = settingsManager.dynamicColor.stateIn(viewModelScope, SharingStarted.Eagerly, true)
-    val schemeStyle = settingsManager.schemeStyle.stateIn(viewModelScope, SharingStarted.Eagerly, "TONAL_SPOT")
-    val searchContextWindow = settingsManager.searchContextWindow.stateIn(viewModelScope, SharingStarted.Eagerly, 8)
-    val searchMatchLimit = settingsManager.searchMatchLimit.stateIn(viewModelScope, SharingStarted.Eagerly, 10)
-    val ragThreshold = settingsManager.ragThreshold.stateIn(viewModelScope, SharingStarted.Eagerly, 0.5f)
 
     fun deleteTask(taskId: String) {
         viewModelScope.launch { taskManager.deleteTask(taskId) }

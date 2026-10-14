@@ -109,10 +109,9 @@ internal class BoundRunGenerationLauncher(
                 ),
             )
             var cjkRetries = 0
-            suspend fun runGeneration(): GenerationExecutionResult {
-                while (true) {
-                    try {
-                        return generationManager.generate(
+            suspend fun attempt(): GenerationExecutionResult {
+                try {
+                    val result = generationManager.generate(
                         conversationId = request.conversationId,
                         modelMessageId = request.modelMessageId,
                         startTime = request.startTime,
@@ -146,6 +145,7 @@ internal class BoundRunGenerationLauncher(
                         streamScope = state.streamScope,
                         requestTrace = requestTrace,
                     )
+                    return result
                 } catch (aborted: CjkAutoRetryAbort) {
                     if (!attemptSnapshot.config.autoRegenOnCjk || cjkRetries >= MAX_CJK_AUTO_RETRIES) throw aborted
                     cjkRetries++
@@ -163,10 +163,10 @@ internal class BoundRunGenerationLauncher(
                             ).joinToString("\n\n"),
                         ),
                     )
+                    return attempt()
                 }
             }
-            }
-            val result = runGeneration()
+            val result = attempt()
             result.followUpParentMessageId?.let { parentMessageId ->
                 onAutomaticCompactContinuation(
                     AutomaticCompactContinuationRequest(

@@ -819,4 +819,14 @@
     <string name="message_source_loop">Vòng lặp</string>
     <string name="message_source_ask_user">Hỏi người dùng</string>
     <string name="message_source_unanswered">Chưa trả lời</string>
+
+    <!-- Settings - Tor -->
+    <string name="tor_title">Tor</string>
+    <string name="tor_desc">Route API requests through Tor network</string>
+    <string name="tor_enable">Enable Tor Proxy</string>
+    <string name="tor_enable_desc">Route all API requests through a Tor SOCKS5 proxy for anonymous access</string>
+    <string name="tor_socks_settings">SOCKS5 Proxy</string>
+    <string name="tor_socks_port">Port</string>
+    <string name="tor_socks_port_desc">Tor SOCKS5 proxy port (default: 9050)</string>
+    <string name="tor_info">Requires a running Tor daemon with SOCKS5 proxy. Install Orbot from F-Droid or run tor on your device.</string>
 </resources>

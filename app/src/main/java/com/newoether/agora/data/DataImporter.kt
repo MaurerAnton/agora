@@ -108,7 +108,6 @@ class DataImporter(
         private const val MAX_CUSTOM_FONT_BYTES = 64L * 1024L * 1024L
     }
 
-    private val importJson = Json { ignoreUnknownKeys = true }
     private val conversationMediaRestorer = NativeConversationMediaRestorer(context, importJson)
     private val conversationGraphImporter = NativeConversationGraphImporter(
         database = database,

@@ -178,25 +178,6 @@ class ChatViewModel(
 
     private fun startInitJobs() {
         viewModelScope.launch {
-            settingsManager.localChatModels.collect { models ->
-                val localIds = models.map { "Local:${it.modelId}" }
-                settingsManager.saveAvailableModels("Local", localIds)
-                // Keep aliases in sync
-                val aliases = modelAliases.value.toMutableMap()
-                models.forEach { aliases["Local:${it.modelId}"] = it.alias }
-                settingsManager.saveModelAliases(aliases)
-            }
-        }
-        // Sync custom providers into the providers map
-        viewModelScope.launch {
-            settingsManager.customProviders.collect { custom ->
-                providers.keys.filter { it !in builtInProviders }.forEach { providers.remove(it) }
-                val baseUrls = settingsManager.providerBaseUrls.first()
-                custom.forEach { config ->
-                    providers[config.name] = CustomOpenAiProvider(config.name, baseUrls[config.name] ?: "")
-                }
-            }
-        }
         // Apply Tor SOCKS proxy settings
         viewModelScope.launch(Dispatchers.IO) {
             combine(
@@ -217,51 +198,7 @@ class ChatViewModel(
                 }
             }
         }
-        // Auto-clear available models when a provider loses its credentials.
-        // Watches all three configuration sources (API keys, active key IDs,
-        // and base URLs) and uses the shared isProviderConfigured() to decide
-        // whether a provider just became unconfigured.
-        viewModelScope.launch {
-            var prevConfigured = emptyMap<String, Boolean>()
 
-            combine(
-                settingsManager.apiKeys,
-                settingsManager.activeApiKeyIds,
-                settingsManager.providerBaseUrls
-            ) { keys, activeIds, baseUrls ->
-                // Read current values; the parameters are here so combine
-                // re-emits when any of the three sources changes.
-                Triple(keys, activeIds, baseUrls)
-            }.collect { (keys, activeIds, _) ->
-                // Skip the initial empty-state emission.
-                if (keys.isEmpty() && activeIds.isEmpty()) return@collect
-
-                val current = mutableMapOf<String, Boolean>()
-                providers.toMap().forEach { (name, _) ->
-                    val activeKey = keys.find { it.id == activeIds[name] }?.key ?: ""
-                    current[name] = isProviderConfigured(name, activeKey)
-                }
-
-                var changed = false
-                current.forEach { (name, configured) ->
-                    if (prevConfigured[name] == true && !configured) {
-                        val existing = settingsManager.availableModels.first()[name]
-                        if (!existing.isNullOrEmpty()) {
-                            settingsManager.saveAvailableModels(name, emptyList())
-                            changed = true
-                        }
-                    }
-                }
-                prevConfigured = current
-
-                if (changed) {
-                    val allAvailable = settingsManager.availableModels.first().values.flatten().toSet()
-                    val newEnabled = enabledModels.value.intersect(allAvailable)
-                    if (newEnabled != enabledModels.value) {
-                        setEnabledModels(newEnabled)
-                    }
-                }
-            }
             conversations.filterNotNull().first()
             startProcessServices()
             proxySettingsSynchronizer.start()

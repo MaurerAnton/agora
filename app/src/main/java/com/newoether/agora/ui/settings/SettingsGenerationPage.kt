@@ -6,6 +6,9 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.text.KeyboardActions
+import androidx.compose.foundation.text.KeyboardOptions
+import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.foundation.rememberScrollState
@@ -47,13 +50,7 @@ fun SettingsGenerationPage(viewModel: ChatViewModel, onBack: () -> Unit) {
     val thinkingEnabled by viewModel.settings.thinkingEnabled.collectAsState()
     val autoRegenOnCjk by viewModel.settings.autoRegenOnCjk.collectAsState()
     val maxCjkRetries by viewModel.settings.maxCjkRetries.collectAsState()
-    val cjkRetryGate = remember {
-        PersistedSliderFeedbackGate(
-            initialPersisted = maxCjkRetries,
-            toDisplay = Int::toFloat,
-        )
-    }
-    LaunchedEffect(maxCjkRetries) { cjkRetryGate.reconcile(maxCjkRetries) }
+    var maxCjkRetriesText by remember(maxCjkRetries) { mutableStateOf(maxCjkRetries.toString()) }
     val thinkingLevel by viewModel.settings.thinkingLevel.collectAsState()
     val thinkingBudgetEnabled by viewModel.settings.thinkingBudgetEnabled.collectAsState()
     val thinkingBudgetTokens by viewModel.settings.thinkingBudgetTokens.collectAsState()
@@ -123,37 +120,35 @@ fun SettingsGenerationPage(viewModel: ChatViewModel, onBack: () -> Unit) {
                             )
                         },
                         {
-                            Column(
+                            Row(
                                 modifier = Modifier
                                     .fillMaxWidth()
-                                    .padding(horizontal = 16.dp, vertical = 8.dp)
+                                    .padding(horizontal = 16.dp, vertical = 8.dp),
+                                verticalAlignment = Alignment.CenterVertically,
                             ) {
                                 Text(
                                     stringResource(R.string.auto_regen_cjk_retries, maxCjkRetries),
                                     style = MaterialTheme.typography.bodyMedium,
                                     color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                    modifier = Modifier.weight(1f),
                                 )
-                                Slider(
-                                    value = cjkRetryGate.displayed,
-                                    onValueChange = cjkRetryGate::updateFromGesture,
-                                    onValueChangeFinished = {
-                                        val committed = cjkRetryGate.displayed.toInt()
-                                        if (committed == maxCjkRetries) {
-                                            cjkRetryGate.settleWithoutWrite(
-                                                maxCjkRetries,
-                                                committed.toFloat(),
-                                            )
-                                        } else {
-                                            cjkRetryGate.expectPersisted(
-                                                committed,
-                                                committed.toFloat(),
-                                            )
-                                            viewModel.settings.setMaxCjkRetries(committed)
-                                        }
+                                OutlinedTextField(
+                                    value = maxCjkRetriesText,
+                                    onValueChange = { input ->
+                                        maxCjkRetriesText = input.filter(Char::isDigit).take(2)
                                     },
-                                    valueRange = 0f..5f,
-                                    steps = 4,
-                                    modifier = Modifier.fillMaxWidth(),
+                                    keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
+                                    keyboardActions = KeyboardActions(
+                                        onDone = {
+                                            maxCjkRetriesText.toIntOrNull()?.let {
+                                                viewModel.settings.setMaxCjkRetries(it)
+                                            } ?: run {
+                                                maxCjkRetriesText = maxCjkRetries.toString()
+                                            }
+                                        }
+                                    ),
+                                    singleLine = true,
+                                    modifier = Modifier.width(72.dp),
                                 )
                             }
                         }

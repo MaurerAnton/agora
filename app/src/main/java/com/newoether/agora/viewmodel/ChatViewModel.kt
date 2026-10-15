@@ -21,6 +21,7 @@ import com.newoether.agora.data.repository.ConversationSettingsTransferCoordinat
 import com.newoether.agora.data.repository.SettingsRepository
 import com.newoether.agora.model.ChatConversation
 import com.newoether.agora.model.ChatMessage
+import com.newoether.agora.model.MessageGenerationBoundaryResolver
 import com.newoether.agora.sandbox.SandboxManager
 import com.newoether.agora.sandbox.SandboxManagerFactory
 import com.newoether.agora.service.AgoraForegroundService
@@ -592,7 +593,7 @@ class ChatViewModel(
 
     /** Consecutive CJK auto-retries per conversation+parent; manual regenerates reset it. */
     private val cjkRetryChains = java.util.concurrent.ConcurrentHashMap<String, Int>()
-    private val cjkAutoRetryHandler: (conversationId: String, modelMessageId: String) -> Boolean =
+    private val cjkAutoRetryHandler: suspend (conversationId: String, modelMessageId: String) -> Boolean =
         ::autoRegenerateOnCjk
 
     init {
@@ -720,16 +721,21 @@ class ChatViewModel(
      * Returns false when the feature is off, the cap is reached, or the retry was
      * not admitted — the caller then preserves plain Stop semantics.
      */
-    fun autoRegenerateOnCjk(conversationId: String, abortedMessageId: String): Boolean {
+    suspend fun autoRegenerateOnCjk(conversationId: String, abortedMessageId: String): Boolean {
         if (!settings.autoRegenOnCjk.value) return false
         val max = settings.maxCjkRetries.value
-        val parentId = messages.value.find { it.id == abortedMessageId }?.parentId
-        val key = "$conversationId:${parentId ?: "?"}"
+        val boundary = MessageGenerationBoundaryResolver.containing(
+            messages.value.toList(),
+            abortedMessageId,
+        )
+        if (boundary == null) return denyAutoRetry("not in list")
+        if (boundary.lastAssistant?.id != abortedMessageId) return denyAutoRetry("not last")
+        val key = "$conversationId:${boundary.lastAssistant?.parentId ?: "?"}"
         val used = cjkRetryChains.getOrDefault(key, 0)
-        if (used >= max) {
-            DebugLog.d("AgoraCJK", "retry budget exhausted for $key")
-            return false
-        }
+        if (used >= max) return denyAutoRetry("cap $used/$max")
+        // Let stop-settlement (slot release, Room persist, UI sync) finish: the
+        // regenerate admission only succeeds on an idle conversation.
+        kotlinx.coroutines.delay(1500)
         val launched = generationController.regenerate(
             origin = phoneClient,
             conversationId = conversationId,
@@ -751,6 +757,12 @@ class ChatViewModel(
             DebugLog.d("AgoraCJK", "regenerate declined for $abortedMessageId")
         }
         return launched
+    }
+
+    private fun denyAutoRetry(reason: String): Boolean {
+        DebugLog.d("AgoraCJK", "auto-retry denied: $reason")
+        emitSnackbar(appContext.getString(R.string.auto_regen_cjk_denied, reason))
+        return false
     }
 
     fun switchBranch(parentId: String?, currentMessageId: String, direction: Int) =

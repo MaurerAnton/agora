@@ -84,7 +84,7 @@ internal class MessageGenerationController(
         },
     )
     /** Auto-retry hook for CJK-aborted chat answers; ChatViewModel assigns its handler. */
-    var onCjkAutoRetry: (conversationId: String, modelMessageId: String) -> Boolean =
+    var onCjkAutoRetry: suspend (conversationId: String, modelMessageId: String) -> Boolean =
         { _, _ -> false }
     private val boundRunGenerationLauncher = BoundRunGenerationLauncher(
         conversations = convRepo,

@@ -62,7 +62,7 @@ internal class BoundRunGenerationLauncher(
      * run was launched (the aborted attempt is then swallowed); false rethrows,
      * preserving plain Stop semantics. Defaults to no auto-retry (tasks, compactions).
      */
-    private val onCjkAutoRetry: (conversationId: String, modelMessageId: String) -> Boolean =
+    private val onCjkAutoRetry: suspend (conversationId: String, modelMessageId: String) -> Boolean =
         { _, _ -> false },
     private val clock: () -> Long = System::currentTimeMillis,
 ) {

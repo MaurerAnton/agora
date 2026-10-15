@@ -8,9 +8,14 @@ import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.Chat
+import androidx.compose.material.icons.filled.Clear
+import androidx.compose.material.icons.filled.ContentCopy
 import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.Description
+import androidx.compose.material.icons.filled.DriveFileMove
 import androidx.compose.material.icons.filled.Edit
+import androidx.compose.material.icons.filled.Folder
+import androidx.compose.material.icons.filled.Home
 import androidx.compose.material.icons.filled.Memory
 import androidx.compose.material.icons.filled.MoreVert
 import androidx.compose.material.icons.filled.Search
@@ -21,6 +26,8 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.LocalClipboardManager
+import androidx.compose.ui.text.AnnotatedString
 import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
@@ -56,10 +63,119 @@ fun SettingsMemoryPage(viewModel: ChatViewModel, onBack: () -> Unit) {
     var newFileContent by remember { mutableStateOf("") }
     var newFileDesc by remember { mutableStateOf("") }
     var showDeleteFileConfirm by remember { mutableStateOf<String?>(null) }
+    var memorySearchQuery by remember { mutableStateOf("") }
+    var currentFolder by remember { mutableStateOf("") }
+    var showMoveDialog by remember { mutableStateOf<String?>(null) }
+    val clipboardManager = LocalClipboardManager.current
+    val copiedText = stringResource(R.string.memory_copied)
 
     fun reportMemoryFailure(action: String, error: Throwable) {
         DebugLog.e("SettingsMemory", action, error)
         viewModel.emitSnackbar(error.localizedMessage ?: unknownError)
+    }
+
+    fun copyMemoryText(text: String) {
+        clipboardManager.setText(AnnotatedString(text))
+        viewModel.emitSnackbar(copiedText)
+    }
+
+    fun copyMemoryFile(name: String) {
+        if (memoryOperationInFlight) return
+        memoryOperationInFlight = true
+        scope.launch {
+            val loaded = withContext(Dispatchers.IO) {
+                runCatching { viewModel.memoryManager.readFile(name) }
+            }
+            loaded.onSuccess { content ->
+                copyMemoryText(content)
+            }.onFailure { error ->
+                reportMemoryFailure("Unable to copy memory file", error)
+            }
+            memoryOperationInFlight = false
+        }
+    }
+
+    fun copyAllMemories() {
+        if (memoryOperationInFlight) return
+        memoryOperationInFlight = true
+        scope.launch {
+            val loaded = withContext(Dispatchers.IO) {
+                runCatching {
+                    buildString {
+                        var firstSection = true
+                        fun sectionHeader(title: String) {
+                            if (!firstSection) append("\n\n")
+                            firstSection = false
+                            append("# $title\n\n")
+                        }
+                        val active = viewModel.memoryManager.getActiveMemory()
+                        if (active.isNotBlank()) {
+                            sectionHeader("Active memory")
+                            append(active)
+                        }
+                        for (file in viewModel.memoryManager.listFiles()) {
+                            sectionHeader(file.name.removeSuffix(".md"))
+                            append(viewModel.memoryManager.readFile(file.name))
+                        }
+                    }
+                }
+            }
+            loaded.onSuccess { text ->
+                copyMemoryText(text)
+            }.onFailure { error ->
+                reportMemoryFailure("Unable to copy memories", error)
+            }
+            memoryOperationInFlight = false
+        }
+    }
+
+    val visibleMemoryFiles = remember(memoryFiles, memorySearchQuery) {
+        val query = memorySearchQuery.trim()
+        if (query.isEmpty()) memoryFiles
+        else memoryFiles.filter {
+            it.name.contains(query, ignoreCase = true) ||
+                it.description.contains(query, ignoreCase = true)
+        }
+    }
+
+    fun parentFolderOf(path: String): String =
+        if ('/' in path) path.substringBeforeLast('/') else ""
+
+    val allFolders = remember(memoryFiles) {
+        memoryFiles.flatMap { file ->
+            val parts = file.name.split('/').dropLast(1)
+            (1..parts.size).map { parts.take(it).joinToString("/") }
+        }.distinct().sorted()
+    }
+    val childFolders = remember(allFolders, currentFolder) {
+        allFolders.filter { parentFolderOf(it) == currentFolder }
+    }
+    val childFiles = remember(visibleMemoryFiles, currentFolder, memorySearchQuery) {
+        if (memorySearchQuery.isBlank()) {
+            visibleMemoryFiles.filter { parentFolderOf(it.name) == currentFolder }
+        } else visibleMemoryFiles
+    }
+
+    fun moveMemoryFile(name: String, targetFolder: String) {
+        if (memoryOperationInFlight) return
+        val base = name.substringAfterLast('/')
+        val target = if (targetFolder.isBlank()) base else "$targetFolder/$base"
+        if (target == name) return
+        memoryOperationInFlight = true
+        scope.launch {
+            val moved = withContext(Dispatchers.IO) {
+                runCatching {
+                    viewModel.memoryManager.editFile(name = name, newName = target)
+                    viewModel.memoryManager.listFiles()
+                }
+            }
+            moved.onSuccess { files ->
+                memoryFiles = files
+            }.onFailure { error ->
+                reportMemoryFailure("Unable to move memory file", error)
+            }
+            memoryOperationInFlight = false
+        }
     }
 
     LaunchedEffect(catalogRevision, activeMemoryRevision) {
@@ -158,7 +274,96 @@ fun SettingsMemoryPage(viewModel: ChatViewModel, onBack: () -> Unit) {
                                 )
                             }
                         }
-                    } else if (memoryFiles.isEmpty()) {
+                    } else {
+                        add {
+                            OutlinedTextField(
+                                value = memorySearchQuery,
+                                onValueChange = { memorySearchQuery = it },
+                                placeholder = { Text(stringResource(R.string.memory_search_hint)) },
+                                leadingIcon = { Icon(Icons.Default.Search, null) },
+                                trailingIcon = if (memorySearchQuery.isEmpty()) null else ({
+                                    IconButton(onClick = { memorySearchQuery = "" }) {
+                                        Icon(Icons.Default.Clear, stringResource(R.string.provider_cancel))
+                                    }
+                                }),
+                                singleLine = true,
+                                shape = RoundedCornerShape(16.dp),
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .padding(horizontal = 16.dp, vertical = 4.dp),
+                            )
+                        }
+                        if (memoryFiles.isNotEmpty() && memorySearchQuery.isBlank()) {
+                            if (currentFolder.isNotEmpty()) {
+                                add {
+                                    Row(
+                                        modifier = Modifier
+                                            .fillMaxWidth()
+                                            .padding(horizontal = 16.dp, vertical = 2.dp),
+                                        verticalAlignment = Alignment.CenterVertically,
+                                    ) {
+                                        IconButton(onClick = { currentFolder = "" }) {
+                                            Icon(Icons.Default.Home, stringResource(R.string.memory_saved_title))
+                                        }
+                                        var path = ""
+                                        currentFolder.split('/').forEach { segment ->
+                                            Text(
+                                                "/",
+                                                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                            )
+                                            path = if (path.isEmpty()) segment else "$path/$segment"
+                                            val target = path
+                                            TextButton(onClick = { currentFolder = target }) {
+                                                Text(segment)
+                                            }
+                                        }
+                                    }
+                                }
+                            }
+                            childFolders.forEach { folder ->
+                                add {
+                                    val contained = memoryFiles.count {
+                                        it.name == folder || it.name.startsWith("$folder/")
+                                    }
+                                    SettingsItem(
+                                        headlineContent = {
+                                            Text(
+                                                folder.substringAfterLast('/') + " ($contained)",
+                                                fontWeight = FontWeight.Medium,
+                                            )
+                                        },
+                                        leadingContent = { Icon(Icons.Default.Folder, null, tint = MaterialTheme.colorScheme.primary.copy(alpha = 0.6f)) },
+                                        modifier = Modifier.clickable { currentFolder = folder },
+                                    )
+                                }
+                            }
+                        }
+                        if (memoryFiles.isNotEmpty()) {
+                            add {
+                                SettingsItem(
+                                    headlineContent = {
+                                        Text(
+                                            stringResource(R.string.memory_copy_all) +
+                                                " (${memoryFiles.size})"
+                                        )
+                                    },
+                                    leadingContent = { Icon(Icons.Default.ContentCopy, null, tint = MaterialTheme.colorScheme.primary.copy(alpha = 0.6f)) },
+                                    trailingContent = if (memoryOperationInFlight) {
+                                        {
+                                            CircularProgressIndicator(
+                                                modifier = Modifier.size(18.dp),
+                                                strokeWidth = 2.dp,
+                                            )
+                                        }
+                                    } else null,
+                                    modifier = Modifier.clickable(enabled = !memoryOperationInFlight) {
+                                        copyAllMemories()
+                                    },
+                                )
+                            }
+                        }
+                    }
+                    if (memoryLoaded && childFiles.isEmpty() && childFolders.isEmpty() && memorySearchQuery.isBlank()) {
                         add {
                             SettingsItem(
                                 headlineContent = { Text(stringResource(R.string.memory_no_files), color = MaterialTheme.colorScheme.onSurfaceVariant) },
@@ -167,11 +372,24 @@ fun SettingsMemoryPage(viewModel: ChatViewModel, onBack: () -> Unit) {
                                 modifier = Modifier.heightIn(min = 64.dp)
                             )
                         }
-                    } else {
-                        memoryFiles.forEach { file ->
+                    } else if (memoryLoaded) {
+                        if (visibleMemoryFiles.isEmpty() && memorySearchQuery.isNotBlank()) {
+                            add {
+                                SettingsItem(
+                                    headlineContent = { Text(stringResource(R.string.tool_conversation_search_no_result, memorySearchQuery.trim()), color = MaterialTheme.colorScheme.onSurfaceVariant) },
+                                    leadingContent = { Icon(Icons.Default.Search, null, tint = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.4f)) },
+                                    modifier = Modifier.heightIn(min = 64.dp)
+                                )
+                            }
+                        }
+                        val listedFiles =
+                            if (memorySearchQuery.isBlank()) childFiles else visibleMemoryFiles
+                        listedFiles.forEach { file ->
                             add {
                                 var showFileMenu by remember { mutableStateOf(false) }
-                                val displayName = file.name.removeSuffix(".md")
+                                val displayName = if (memorySearchQuery.isBlank()) {
+                                    file.name.substringAfterLast('/').removeSuffix(".md")
+                                } else file.name.removeSuffix(".md")
                                 SettingsItem(
                                     headlineContent = { Text(displayName, fontWeight = FontWeight.Medium) },
                                     supportingContent = if (file.description.isNotBlank()) {{ Text(file.description) }} else null,
@@ -191,6 +409,24 @@ fun SettingsMemoryPage(viewModel: ChatViewModel, onBack: () -> Unit) {
                                                 expanded = showFileMenu,
                                                 onDismissRequest = { showFileMenu = false }
                                             ) {
+                                                AgoraDropdownMenuItem(
+                                                    text = { Text(stringResource(R.string.copy)) },
+                                                    leadingIcon = { Icon(Icons.Default.ContentCopy, null) },
+                                                    onClick = {
+                                                        showFileMenu = false
+                                                        copyMemoryFile(file.name)
+                                                    },
+                                                    enabled = !memoryOperationInFlight,
+                                                )
+                                                AgoraDropdownMenuItem(
+                                                    text = { Text(stringResource(R.string.memory_move)) },
+                                                    leadingIcon = { Icon(Icons.Default.DriveFileMove, null) },
+                                                    onClick = {
+                                                        showFileMenu = false
+                                                        showMoveDialog = file.name
+                                                    },
+                                                    enabled = !memoryOperationInFlight,
+                                                )
                                                 AgoraDropdownMenuItem(
                                                     text = { Text(stringResource(R.string.provider_edit)) },
                                                     leadingIcon = { Icon(Icons.Default.Edit, null) },
@@ -247,6 +483,19 @@ fun SettingsMemoryPage(viewModel: ChatViewModel, onBack: () -> Unit) {
             )
             }
             if (showDocFab) { Spacer(modifier = Modifier.height(80.dp)) }
+    }
+
+    // Move file dialog
+    showMoveDialog?.let { fileName ->
+        SettingsMemoryMoveDialog(
+            fileName = fileName,
+            folders = allFolders,
+            onDismiss = { showMoveDialog = null },
+            onConfirm = { target ->
+                showMoveDialog = null
+                moveMemoryFile(fileName, target)
+            },
+        )
     }
 
     // Delete file confirmation
@@ -393,11 +642,16 @@ fun SettingsMemoryPage(viewModel: ChatViewModel, onBack: () -> Unit) {
                 ) { Text(stringResource(R.string.provider_save)) }
             },
             dismissButton = {
-                TextButton(onClick = {
-                    showFileEditor = null
-                    fileEditorContent = ""
-                    fileEditorDesc = ""
-                }) { Text(stringResource(R.string.provider_cancel)) }
+                Row {
+                    TextButton(onClick = { copyMemoryText(editContent) }) {
+                        Text(stringResource(R.string.copy))
+                    }
+                    TextButton(onClick = {
+                        showFileEditor = null
+                        fileEditorContent = ""
+                        fileEditorDesc = ""
+                    }) { Text(stringResource(R.string.provider_cancel)) }
+                }
             }
         )
     }
@@ -453,7 +707,8 @@ fun SettingsMemoryPage(viewModel: ChatViewModel, onBack: () -> Unit) {
                                 val created = withContext(Dispatchers.IO) {
                                     runCatching {
                                         viewModel.memoryManager.createFile(
-                                            nameSnapshot,
+                                            if (currentFolder.isBlank()) nameSnapshot
+                                            else "$currentFolder/$nameSnapshot",
                                             contentSnapshot,
                                             descriptionSnapshot,
                                         )

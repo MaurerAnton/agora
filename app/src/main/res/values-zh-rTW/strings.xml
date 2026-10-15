@@ -833,4 +833,10 @@
     <string name="auto_regen_cjk_retries">Max retries: %1$d</string>
     <string name="auto_regen_cjk_retrying">Chinese detected, retrying (%1$d/%2$d)</string>
     <string name="auto_regen_cjk_denied">Auto-retry declined: %1$s</string>
+    <string name="memory_copy_all">Copy all</string>
+    <string name="memory_search_hint">Search memories...</string>
+    <string name="memory_copied">Copied to clipboard</string>
+    <string name="memory_move">Move</string>
+    <string name="memory_move_title">Move to folder: %1$s</string>
+    <string name="memory_new_folder">New or existing folder (empty = root)</string>
 </resources>

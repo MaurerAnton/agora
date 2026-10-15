@@ -76,7 +76,7 @@ class MemoryManager(context: Context) {
     fun getDescription(name: String): String {
         val resolved = resolveFile(name)
         if (!resolved.exists()) return ""
-        return metadata.read()[resolved.name].orEmpty()
+        return metadata.read()[relativePath(resolved)].orEmpty()
     }
 
     @Synchronized
@@ -85,7 +85,7 @@ class MemoryManager(context: Context) {
         require(resolved.exists()) { "File not found: $name" }
         val values = metadata.read()
         val original = values.toMap()
-        updateDescription(values, resolved.name, description)
+        updateDescription(values, relativePath(resolved), description)
         if (values != original) {
             metadata.write(values)
             _catalogRevision.value += 1
@@ -95,11 +95,13 @@ class MemoryManager(context: Context) {
     @Synchronized
     fun listFiles(): List<MemoryFileInfo> {
         val values = metadata.read()
-        return memoryDir.listFiles()
-            ?.filter { it.extension == "md" }
-            ?.map { MemoryFileInfo(it.name, values[it.name].orEmpty()) }
-            ?.sortedBy { it.name }
-            .orEmpty()
+        val out: MutableList<MemoryFileInfo> = mutableListOf()
+        memoryDir.walkTopDown().forEach {
+            if (it.isFile && it.extension == "md") {
+                out += MemoryFileInfo(relativePath(it), values[relativePath(it)].orEmpty())
+            }
+        }
+        return out.sortedBy { it.name }
     }
 
     @Synchronized
@@ -121,12 +123,13 @@ class MemoryManager(context: Context) {
     @Synchronized
     fun createFile(name: String, content: String, description: String = ""): String {
         val file = resolveFile(name)
-        require(!file.exists()) { "File already exists: ${file.name}" }
+        require(!file.exists()) { "File already exists: ${relativePath(file)}" }
         val values = description.takeIf(String::isNotBlank)?.let { metadata.read() }
         try {
+            file.parentFile?.mkdirs()
             file.writeText(content)
             if (values != null) {
-                values[file.name] = description
+                values[relativePath(file)] = description
                 metadata.write(values)
             }
         } catch (error: Exception) {
@@ -136,7 +139,7 @@ class MemoryManager(context: Context) {
             throw error
         }
         _catalogRevision.value += 1
-        return "Created ${file.name}"
+        return "Created ${relativePath(file)}"
     }
 
     @Synchronized
@@ -159,7 +162,7 @@ class MemoryManager(context: Context) {
 
         val renameTarget = newName
             ?.let(::resolveFile)
-            ?.takeIf { it.name != file.name }
+            ?.takeIf { it.canonicalFile != file.canonicalFile }
         if (renameTarget != null) {
             require(!renameTarget.exists()) {
                 "Target file already exists: ${renameTarget.name}"
@@ -184,9 +187,9 @@ class MemoryManager(context: Context) {
 
         val values = if (renameTarget != null || description != null) metadata.read() else null
         val originalValues = values?.toMap()
-        val targetName = renameTarget?.name ?: file.name
+        val targetName = renameTarget?.let(::relativePath) ?: relativePath(file)
         if (renameTarget != null) {
-            values?.remove(file.name)?.let { values[renameTarget.name] = it }
+            values?.remove(relativePath(file))?.let { values[relativePath(renameTarget)] = it }
         }
         if (description != null) {
             updateDescription(requireNotNull(values), targetName, description)
@@ -202,6 +205,7 @@ class MemoryManager(context: Context) {
                 file.writeText(replacementContent)
             }
             if (renameTarget != null) {
+                renameTarget.parentFile?.mkdirs()
                 if (!file.renameTo(renameTarget)) {
                     throw IOException("Unable to rename ${file.name}")
                 }
@@ -227,6 +231,7 @@ class MemoryManager(context: Context) {
         }
 
         if (replacementContent != null || renamed || metadataChanged) {
+            if (renamed) pruneEmptyParents(file.parentFile)
             _catalogRevision.value += 1
         }
         return if (replacementContent != null || renamed || metadataChanged) {
@@ -244,7 +249,7 @@ class MemoryManager(context: Context) {
         val originalValues = values.toMap()
         val content = file.readBytes()
         require(file.delete()) { "Unable to delete ${file.name}" }
-        values.remove(file.name)
+        values.remove(relativePath(file))
         if (values != originalValues) {
             try {
                 metadata.write(values)
@@ -258,6 +263,7 @@ class MemoryManager(context: Context) {
             }
         }
         _catalogRevision.value += 1
+        pruneEmptyParents(file.parentFile)
         return "Deleted ${file.name}"
     }
 
@@ -281,12 +287,38 @@ class MemoryManager(context: Context) {
         }
     }
 
+    private fun relativePath(file: File): String =
+        file.canonicalFile.relativeTo(memoryDir.canonicalFile).invariantSeparatorsPath
+
+    /** Removes dirs left empty under [memoryDir] (never [memoryDir] itself). */
+    private fun pruneEmptyParents(dir: File?) {
+        val root = memoryDir.canonicalFile
+        var current = dir?.canonicalFile
+        while (current != null && current != root && current.isDirectory &&
+            current.list()?.isEmpty() == true
+        ) {
+            if (!current.delete()) return
+            current = current.parentFile
+        }
+    }
+
     private fun resolveFile(name: String): File {
-        val sanitized = name.replace(Regex("""[/\\]"""), "_")
-        val file = File(memoryDir, if (sanitized.endsWith(".md")) sanitized else "$sanitized.md")
+        val trimmed = name.trim().replace('\\', '/').trim('/')
+        require(trimmed.isNotEmpty() && trimmed != ".") { "Invalid file name: $name" }
+        val segments = trimmed.split('/').filter { it.isNotEmpty() && it != "." }
+        require(segments.isNotEmpty() && segments.none { it == ".." }) {
+            "Invalid file name: $name"
+        }
+        val withExt =
+            if (segments.last().endsWith(".md", ignoreCase = true)) segments
+            else segments.dropLast(1) + (segments.last() + ".md")
+        val file = withExt.fold(memoryDir) { dir, segment -> File(dir, segment) }
         val canonicalDirectory = memoryDir.canonicalFile
         val canonicalFile = file.canonicalFile
-        require(canonicalFile.parentFile == canonicalDirectory) { "Invalid file name: $name" }
+        require(
+            canonicalFile == canonicalDirectory ||
+                canonicalFile.startsWith(canonicalDirectory.absolutePath + File.separator)
+        ) { "Invalid file name: $name" }
         return canonicalFile
     }
 }

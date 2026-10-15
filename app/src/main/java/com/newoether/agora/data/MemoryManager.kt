@@ -95,10 +95,13 @@ class MemoryManager(context: Context) {
     @Synchronized
     fun listFiles(): List<MemoryFileInfo> {
         val values = metadata.read()
-        return memoryDir.walkTopDown()
-            .filter { it.isFile && it.extension == "md" }
-            .map { MemoryFileInfo(relativePath(it), values[relativePath(it)].orEmpty()) }
-            .sortedBy { it.name }
+        val out: MutableList<MemoryFileInfo> = mutableListOf()
+        memoryDir.walkTopDown().forEach {
+            if (it.isFile && it.extension == "md") {
+                out += MemoryFileInfo(relativePath(it), values[relativePath(it)].orEmpty())
+            }
+        }
+        return out.sortedBy { it.name }
     }
 
     @Synchronized

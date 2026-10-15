@@ -589,6 +589,11 @@ class ChatViewModel(
     fun failSwitchingScroll(requestId: Long, reason: String) =
         selectionController.failSwitchingScroll(requestId, reason)
 
+    /** Consecutive CJK auto-retries per conversation+parent; manual regenerates reset it. */
+    private val cjkRetryChains = java.util.concurrent.ConcurrentHashMap<String, Int>()
+    private val cjkAutoRetryHandler: (conversationId: String, modelMessageId: String) -> Boolean =
+        ::autoRegenerateOnCjk
+
     init {
         chatRuntime.clients.attach(phoneClient)
         generationController.onCjkAutoRetry = cjkAutoRetryHandler
@@ -708,11 +713,6 @@ class ChatViewModel(
             cjkRetryChains.keys.removeIf { it.startsWith("$convId:") }
         }
     }
-
-    /** Consecutive CJK auto-retries per conversation+parent; manual regenerates reset it. */
-    private val cjkRetryChains = java.util.concurrent.ConcurrentHashMap<String, Int>()
-    private val cjkAutoRetryHandler: (conversationId: String, modelMessageId: String) -> Boolean =
-        ::autoRegenerateOnCjk
 
     /**
      * Retries a CJK-aborted answer as a fresh sibling run with a no-Chinese guard.

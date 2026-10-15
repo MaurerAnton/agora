@@ -22,6 +22,8 @@ internal data class ConversationRegenerationRequest(
     val visiblePath: List<ChatMessage>,
     /** Client that issued the regenerate; it plays the branch transition. */
     val origin: ChatClient,
+    /** API-only extra user instruction for this regeneration (e.g. CJK guard). */
+    val extraInitialUserPrompt: String? = null,
 )
 
 /**
@@ -128,6 +130,7 @@ internal class ConversationRegenerationService(
                         conversationId = request.conversationId,
                         runId = runId,
                         modelId = request.modelId,
+                        extraInitialUserPrompt = request.extraInitialUserPrompt,
                     )
                     val modelMessageId = idFactory()
                     setupModelMessageId = modelMessageId

@@ -268,6 +268,7 @@ class GenerationRequestBuilder(
         conversationOverride: ChatEntity? = null,
         resolvedPromptOverride: ResolvedPrompt? = null,
         conversationSettingsOverride: ConversationSettings? = null,
+        extraInitialUserPrompt: String? = null,
     ): GenerationAdmissionSnapshot {
         providerRegistry.awaitInitialSync()
         val selectedModelId = providerRegistry.canonicalModelId(modelId)
@@ -293,6 +294,7 @@ class GenerationRequestBuilder(
             effectiveSettings = effectiveSettings,
             currentId = conversationId,
             applyLowContextMode = true,
+            extraInitialUserPrompt = extraInitialUserPrompt,
             includeSkillCatalog =
                 settings.accessSkills.value &&
                     !(
@@ -485,6 +487,7 @@ class GenerationRequestBuilder(
         currentId: String,
         applyLowContextMode: Boolean,
         includeSkillCatalog: Boolean,
+        extraInitialUserPrompt: String? = null,
     ): Pair<GenerationConfig, GenerationContext> {
         val lowContextModeEnabled =
             applyLowContextMode &&
@@ -523,7 +526,6 @@ class GenerationRequestBuilder(
             else effectiveSettings.googleSearchEnabled ?: settings.googleSearchEnabled.value,
             thinkingEnabled = effectiveSettings.thinkingEnabled ?: settings.thinkingEnabled.value,
             autoRegenOnCjk = settings.autoRegenOnCjk.value,
-            maxCjkRetries = settings.maxCjkRetries.value,
             thinkingLevel = effectiveSettings.thinkingLevel ?: settings.thinkingLevel.value,
             thinkingBudgetEnabled = effectiveSettings.thinkingBudgetEnabled ?: settings.thinkingBudgetEnabled.value,
             thinkingBudgetTokens = effectiveSettings.thinkingBudgetTokens ?: settings.thinkingBudgetTokens.value,
@@ -539,6 +541,7 @@ class GenerationRequestBuilder(
                 !lowContextModeEnabled &&
                     effectiveSettings.openAiWebSearchEnabled == true && responsesApiEnabled,
             baseUrl = providerRegistry.getEffectiveBaseUrl(providerName),
+            initialUserPrompt = extraInitialUserPrompt,
             userPrepend = resolvedUserPrepend,
             userPostpend = resolvedUserPostpend,
             lowContextModeEnabled = lowContextModeEnabled,

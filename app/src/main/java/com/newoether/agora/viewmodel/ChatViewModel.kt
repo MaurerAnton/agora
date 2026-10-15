@@ -235,6 +235,9 @@ class ChatViewModel(
         super.onCleared()
         // The runtime is process-scoped while this ViewModel is not; detaching the phone client
         // releases every reference the runtime holds to this ViewModel graph.
+        if (generationController.onCjkAutoRetry === cjkAutoRetryHandler) {
+            generationController.onCjkAutoRetry = { _, _ -> false }
+        }
         chatRuntime.clients.detach(phoneClient)
         dataControl.destroy()
     }
@@ -588,6 +591,7 @@ class ChatViewModel(
 
     init {
         chatRuntime.clients.attach(phoneClient)
+        generationController.onCjkAutoRetry = cjkAutoRetryHandler
         startInitJobs()
         unreadGenerationAcknowledger.start()
         conversationUi.start()
@@ -698,7 +702,41 @@ class ChatViewModel(
         messageId = messageId,
         modelId = currentActiveModel.value,
         visiblePath = messages.value.toList(),
-    )
+    ).also { launched ->
+        if (launched) {
+            val convId = currentConversationId.value ?: return@also
+            cjkRetryChains.keys.removeIf { it.startsWith("$convId:") }
+        }
+    }
+
+    /** Consecutive CJK auto-retries per conversation+parent; manual regenerates reset it. */
+    private val cjkRetryChains = java.util.concurrent.ConcurrentHashMap<String, Int>()
+    private val cjkAutoRetryHandler: (conversationId: String, modelMessageId: String) -> Boolean =
+        ::autoRegenerateOnCjk
+
+    /**
+     * Retries a CJK-aborted answer as a fresh sibling run with a no-Chinese guard.
+     * Returns false when the feature is off, the cap is reached, or the retry was
+     * not admitted — the caller then preserves plain Stop semantics.
+     */
+    fun autoRegenerateOnCjk(conversationId: String, abortedMessageId: String): Boolean {
+        if (!settings.autoRegenOnCjk.value) return false
+        val max = settings.maxCjkRetries.value
+        val parentId = messages.value.find { it.id == abortedMessageId }?.parentId
+        val key = "$conversationId:${parentId ?: "?"}"
+        val used = cjkRetryChains.getOrDefault(key, 0)
+        if (used >= max) return false
+        val launched = generationController.regenerate(
+            origin = phoneClient,
+            conversationId = conversationId,
+            messageId = abortedMessageId,
+            modelId = currentActiveModel.value,
+            visiblePath = messages.value.toList(),
+            extraInitialUserPrompt = com.newoether.agora.model.CJK_RETRY_GUARD_PROMPT,
+        )
+        if (launched) cjkRetryChains[key] = used + 1
+        return launched
+    }
 
     fun switchBranch(parentId: String?, currentMessageId: String, direction: Int) =
         selectionController.switchBranch(parentId, currentMessageId, direction)

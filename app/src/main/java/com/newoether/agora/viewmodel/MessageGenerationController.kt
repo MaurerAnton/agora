@@ -83,6 +83,9 @@ internal class MessageGenerationController(
             generationManagerProvider().showTerminalNotification(text, conversationId, status)
         },
     )
+    /** Auto-retry hook for CJK-aborted chat answers; ChatViewModel assigns its handler. */
+    var onCjkAutoRetry: (conversationId: String, modelMessageId: String) -> Boolean =
+        { _, _ -> false }
     private val boundRunGenerationLauncher = BoundRunGenerationLauncher(
         conversations = convRepo,
         generationManagerProvider = generationManagerProvider,
@@ -91,6 +94,7 @@ internal class MessageGenerationController(
         toUiMessage = { it.toUiChatMessage(appContext) },
         isConversationVisible = ::isConversationVisible,
         onAutomaticCompactContinuation = ::scheduleAutomaticCompactContinuation,
+        onCjkAutoRetry = { conversationId, modelMessageId -> onCjkAutoRetry(conversationId, modelMessageId) },
     )
     private val standardContinuationLauncher = StandardGenerationContinuationLauncher(
         conversations = convRepo,
@@ -271,6 +275,7 @@ internal class MessageGenerationController(
         messageId: String,
         modelId: String,
         visiblePath: List<ChatMessage>,
+        extraInitialUserPrompt: String? = null,
     ): Boolean {
         val genId = conversationId ?: return false
         val state = registry.getOrCreate(genId)
@@ -281,6 +286,7 @@ internal class MessageGenerationController(
                 modelId = modelId,
                 visiblePath = visiblePath,
                 origin = origin,
+                extraInitialUserPrompt = extraInitialUserPrompt,
             ),
             state,
         )

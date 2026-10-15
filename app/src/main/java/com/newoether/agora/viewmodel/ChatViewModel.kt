@@ -725,7 +725,10 @@ class ChatViewModel(
         val parentId = messages.value.find { it.id == abortedMessageId }?.parentId
         val key = "$conversationId:${parentId ?: "?"}"
         val used = cjkRetryChains.getOrDefault(key, 0)
-        if (used >= max) return false
+        if (used >= max) {
+            android.util.Log.d("AgoraCJK", "retry budget exhausted for $key")
+            return false
+        }
         val launched = generationController.regenerate(
             origin = phoneClient,
             conversationId = conversationId,
@@ -734,7 +737,18 @@ class ChatViewModel(
             visiblePath = messages.value.toList(),
             extraInitialUserPrompt = com.newoether.agora.model.CJK_RETRY_GUARD_PROMPT,
         )
-        if (launched) cjkRetryChains[key] = used + 1
+        if (launched) {
+            cjkRetryChains[key] = used + 1
+            emitSnackbar(
+                appContext.getString(
+                    R.string.auto_regen_cjk_retrying,
+                    used + 1,
+                    max,
+                )
+            )
+        } else {
+            android.util.Log.d("AgoraCJK", "regenerate declined for $abortedMessageId")
+        }
         return launched
     }
 

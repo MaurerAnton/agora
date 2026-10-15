@@ -829,4 +829,7 @@
     <string name="auto_regen_cjk_desc">Останавливать и перезапускать ответ, если в нём появляются китайские символы</string>
     <string name="auto_regen_cjk_retries">Максимум ретраев: %1$d</string>
     <string name="auto_regen_cjk_retrying">Обнаружен китайский, перезапуск (%1$d/%2$d)</string>
+    <string name="memory_copy_all">Скопировать все</string>
+    <string name="memory_search_hint">Поиск по мемори...</string>
+    <string name="memory_copied">Скопировано в буфер обмена</string>
 </resources>

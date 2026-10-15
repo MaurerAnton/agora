@@ -25,6 +25,7 @@ import com.newoether.agora.sandbox.SandboxManager
 import com.newoether.agora.sandbox.SandboxManagerFactory
 import com.newoether.agora.service.AgoraForegroundService
 import com.newoether.agora.service.AppForegroundTracker
+import com.newoether.agora.util.DebugLog
 import com.newoether.agora.util.SnackbarEvent
 import com.newoether.agora.util.UpdateChecker
 import com.newoether.agora.util.UpdateInfo
@@ -726,7 +727,7 @@ class ChatViewModel(
         val key = "$conversationId:${parentId ?: "?"}"
         val used = cjkRetryChains.getOrDefault(key, 0)
         if (used >= max) {
-            android.util.Log.d("AgoraCJK", "retry budget exhausted for $key")
+            DebugLog.d("AgoraCJK", "retry budget exhausted for $key")
             return false
         }
         val launched = generationController.regenerate(
@@ -747,7 +748,7 @@ class ChatViewModel(
                 )
             )
         } else {
-            android.util.Log.d("AgoraCJK", "regenerate declined for $abortedMessageId")
+            DebugLog.d("AgoraCJK", "regenerate declined for $abortedMessageId")
         }
         return launched
     }

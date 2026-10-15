@@ -38,6 +38,8 @@ data class GenerationConfig(
     val thinkingLevel: String = "medium",
     /** Abort a streaming answer the moment CJK text arrives; the launcher retries it. */
     val autoRegenOnCjk: Boolean = false,
+    /** CJK auto-retries per generation (0 disables retries, shows the stopped answer). */
+    val maxCjkRetries: Int = 2,
     val thinkingBudgetEnabled: Boolean = false,
     val thinkingBudgetTokens: Int = 4096,
     val openAiServiceTier: String? = null,

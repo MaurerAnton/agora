@@ -827,4 +827,5 @@
     <!-- Auto-regenerate on Chinese -->
     <string name="auto_regen_cjk_title">Auto-regenerate on Chinese</string>
     <string name="auto_regen_cjk_desc">Stop and retry the answer if Chinese characters appear while it streams</string>
+    <string name="auto_regen_cjk_retries">Max retries: %1$d</string>
 </resources>

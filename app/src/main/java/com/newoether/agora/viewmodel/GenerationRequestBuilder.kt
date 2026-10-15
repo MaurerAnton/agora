@@ -523,6 +523,7 @@ class GenerationRequestBuilder(
             else effectiveSettings.googleSearchEnabled ?: settings.googleSearchEnabled.value,
             thinkingEnabled = effectiveSettings.thinkingEnabled ?: settings.thinkingEnabled.value,
             autoRegenOnCjk = settings.autoRegenOnCjk.value,
+            maxCjkRetries = settings.maxCjkRetries.value,
             thinkingLevel = effectiveSettings.thinkingLevel ?: settings.thinkingLevel.value,
             thinkingBudgetEnabled = effectiveSettings.thinkingBudgetEnabled ?: settings.thinkingBudgetEnabled.value,
             thinkingBudgetTokens = effectiveSettings.thinkingBudgetTokens ?: settings.thinkingBudgetTokens.value,

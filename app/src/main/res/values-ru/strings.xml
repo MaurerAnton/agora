@@ -827,4 +827,5 @@
     <!-- Auto-regenerate on Chinese -->
     <string name="auto_regen_cjk_title">Автоперегенерация при китайском</string>
     <string name="auto_regen_cjk_desc">Останавливать и перезапускать ответ, если в нём появляются китайские символы</string>
+    <string name="auto_regen_cjk_retries">Максимум ретраев: %1$d</string>
 </resources>

@@ -115,6 +115,10 @@ internal class ProviderPassRunner(
                 streamNormalizer.emit(event, ::acceptEvent)
             }
             streamNormalizer.finish(::acceptEvent)
+        } catch (retry: CjkAutoRetryAbort) {
+            // Auto-retry signal, not a user stop: must reach the launcher, never
+            // collapse into a Cancelled outcome here.
+            throw retry
         } catch (cancelled: CancellationException) {
             return ProviderPassOutcome.Cancelled(identity)
         } catch (consumerFailure: EventConsumerException) {
@@ -127,6 +131,8 @@ internal class ProviderPassRunner(
             }
             try {
                 streamNormalizer.finish(::acceptEvent, releaseTextTools = false)
+            } catch (retry: CjkAutoRetryAbort) {
+                throw retry
             } catch (cancelled: CancellationException) {
                 return ProviderPassOutcome.Cancelled(identity)
             } catch (consumerFailure: EventConsumerException) {

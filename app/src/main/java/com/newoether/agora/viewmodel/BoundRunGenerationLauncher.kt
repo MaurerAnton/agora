@@ -43,9 +43,6 @@ internal data class AutomaticCompactContinuationRequest(
     val config: AutomaticCompactConfig,
 )
 
-/** Auto-retries after a mid-stream CJK abort, on top of the timed-out first attempt. */
-private const val MAX_CJK_AUTO_RETRIES = 2
-
 internal class BoundRunGenerationLauncher(
     private val conversations: ConversationRepository,
     private val generationManagerProvider: () -> GenerationManager,
@@ -147,11 +144,12 @@ internal class BoundRunGenerationLauncher(
                     )
                     return result
                 } catch (aborted: CjkAutoRetryAbort) {
-                    if (!attemptSnapshot.config.autoRegenOnCjk || cjkRetries >= MAX_CJK_AUTO_RETRIES) throw aborted
+                    val maxRetries = attemptSnapshot.config.maxCjkRetries
+                    if (!attemptSnapshot.config.autoRegenOnCjk || cjkRetries >= maxRetries) throw aborted
                     cjkRetries++
                     DebugLog.d(
                         "AgoraVM",
-                        "CJK detected mid-stream, auto-retry $cjkRetries/$MAX_CJK_AUTO_RETRIES " +
+                        "CJK detected mid-stream, auto-retry $cjkRetries/$maxRetries " +
                             "conversation=${request.conversationId}",
                     )
                     val base = attemptSnapshot.config

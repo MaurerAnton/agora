@@ -33,6 +33,7 @@ internal val CODE_EXECUTION_ENABLED = booleanPreferencesKey("code_execution_enab
 internal val GOOGLE_SEARCH_ENABLED = booleanPreferencesKey("google_search_enabled")
 internal val THINKING_ENABLED = booleanPreferencesKey("thinking_enabled")
 internal val AUTO_REGEN_ON_CJK = booleanPreferencesKey("auto_regen_on_cjk")
+internal val MAX_CJK_AUTO_RETRIES = intPreferencesKey("max_cjk_auto_retries")
 internal val THINKING_LEVEL = stringPreferencesKey("thinking_level")
 internal val THINKING_BUDGET_ENABLED = booleanPreferencesKey("thinking_budget_enabled")
 

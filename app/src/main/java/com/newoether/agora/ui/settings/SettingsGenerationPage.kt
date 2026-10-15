@@ -46,6 +46,14 @@ fun SettingsGenerationPage(viewModel: ChatViewModel, onBack: () -> Unit) {
     val defaultPresencePenalty by viewModel.settings.defaultPresencePenalty.collectAsState()
     val thinkingEnabled by viewModel.settings.thinkingEnabled.collectAsState()
     val autoRegenOnCjk by viewModel.settings.autoRegenOnCjk.collectAsState()
+    val maxCjkRetries by viewModel.settings.maxCjkRetries.collectAsState()
+    val cjkRetryGate = remember {
+        PersistedSliderFeedbackGate(
+            initialPersisted = maxCjkRetries,
+            toDisplay = Int::toFloat,
+        )
+    }
+    LaunchedEffect(maxCjkRetries) { cjkRetryGate.reconcile(maxCjkRetries) }
     val thinkingLevel by viewModel.settings.thinkingLevel.collectAsState()
     val thinkingBudgetEnabled by viewModel.settings.thinkingBudgetEnabled.collectAsState()
     val thinkingBudgetTokens by viewModel.settings.thinkingBudgetTokens.collectAsState()
@@ -113,6 +121,41 @@ fun SettingsGenerationPage(viewModel: ChatViewModel, onBack: () -> Unit) {
                                 },
                                 modifier = Modifier.clickable { viewModel.settings.setAutoRegenOnCjk(!autoRegenOnCjk) }
                             )
+                        },
+                        {
+                            Column(
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .padding(horizontal = 16.dp, vertical = 8.dp)
+                            ) {
+                                Text(
+                                    stringResource(R.string.auto_regen_cjk_retries, maxCjkRetries),
+                                    style = MaterialTheme.typography.bodyMedium,
+                                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                )
+                                Slider(
+                                    value = cjkRetryGate.displayed,
+                                    onValueChange = cjkRetryGate::updateFromGesture,
+                                    onValueChangeFinished = {
+                                        val committed = cjkRetryGate.displayed.toInt()
+                                        if (committed == maxCjkRetries) {
+                                            cjkRetryGate.settleWithoutWrite(
+                                                maxCjkRetries,
+                                                committed.toFloat(),
+                                            )
+                                        } else {
+                                            cjkRetryGate.expectPersisted(
+                                                committed,
+                                                committed.toFloat(),
+                                            )
+                                            viewModel.settings.setMaxCjkRetries(committed)
+                                        }
+                                    },
+                                    valueRange = 0f..5f,
+                                    steps = 4,
+                                    modifier = Modifier.fillMaxWidth(),
+                                )
+                            }
                         }
                     )
                 )

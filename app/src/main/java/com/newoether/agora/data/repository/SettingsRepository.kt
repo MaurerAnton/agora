@@ -140,6 +140,7 @@ class SettingsRepository(
     val googleSearchEnabled: StateFlow<Boolean> = hot(settingsManager.googleSearchEnabled, false)
     val thinkingEnabled: StateFlow<Boolean> = hot(settingsManager.thinkingEnabled, true)
     val autoRegenOnCjk: StateFlow<Boolean> = hot(settingsManager.autoRegenOnCjk, true)
+    val maxCjkRetries: StateFlow<Int> = hot(settingsManager.maxCjkRetries, 2)
     val thinkingLevel: StateFlow<String> = hot(settingsManager.thinkingLevel, "medium")
     val thinkingBudgetEnabled: StateFlow<Boolean> = hot(settingsManager.thinkingBudgetEnabled, false)
     val thinkingBudgetTokens: StateFlow<Int> = hot(settingsManager.thinkingBudgetTokens, 4096)
@@ -603,14 +604,12 @@ class SettingsRepository(
         settingsManager.saveProviderBaseUrl(provider, url)
     }
     fun setTitleGenerationEnabled(enabled: Boolean) = scope.launch { settingsManager.saveTitleGenerationEnabled(enabled) }
-    fun setTitleGenerationNotificationsEnabled(enabled: Boolean) =
-        scope.launch { settingsManager.saveTitleGenerationNotificationsEnabled(enabled) }
+    fun setTitleGenerationNotificationsEnabled(enabled: Boolean) = scope.launch { settingsManager.saveTitleGenerationNotificationsEnabled(enabled) }
     fun setContextCompactEnabled(enabled: Boolean) = scope.launch { settingsManager.saveContextCompactEnabled(enabled) }
     fun setContextCompactModel(model: String?) = scope.launch { settingsManager.saveContextCompactModel(model) }
     fun setContextCompactPrompt(prompt: String) = scope.launch { settingsManager.saveContextCompactPrompt(prompt) }
     fun setContextCompactRetainCount(count: Int) = scope.launch { settingsManager.saveContextCompactRetainCount(count) }
-    fun setContextCompactPreserveSystemPrompt(enabled: Boolean) =
-        scope.launch { settingsManager.saveContextCompactPreserveSystemPrompt(enabled) }
+    fun setContextCompactPreserveSystemPrompt(enabled: Boolean) = scope.launch { settingsManager.saveContextCompactPreserveSystemPrompt(enabled) }
     fun setContextCompactThresholdPercent(percent: Int) = scope.launch {
         settingsManager.saveContextCompactThresholdPercent(percent)
     }
@@ -665,6 +664,7 @@ class SettingsRepository(
     fun setSandboxSharedStorageEnabled(enabled: Boolean) = scope.launch { settingsManager.saveSandboxSharedStorageEnabled(enabled) }
     fun setThinkingEnabled(enabled: Boolean) = scope.launch { settingsManager.saveThinkingEnabled(enabled) }
     fun setAutoRegenOnCjk(enabled: Boolean) = scope.launch { settingsManager.saveAutoRegenOnCjk(enabled) }
+    fun setMaxCjkRetries(retries: Int) = scope.launch { settingsManager.saveMaxCjkRetries(retries) }
     fun setThinkingLevel(level: String) = scope.launch { settingsManager.saveThinkingLevel(level) }
     fun setThinkingBudgetEnabled(enabled: Boolean) = scope.launch { settingsManager.saveThinkingBudgetEnabled(enabled) }
     fun setThinkingBudgetTokens(tokens: Int) = scope.launch { settingsManager.saveThinkingBudgetTokens(tokens) }

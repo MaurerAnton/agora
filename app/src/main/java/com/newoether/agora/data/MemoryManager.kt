@@ -98,8 +98,7 @@ class MemoryManager(context: Context) {
         return memoryDir.walkTopDown()
             .filter { it.isFile && it.extension == "md" }
             .map { MemoryFileInfo(relativePath(it), values[relativePath(it)].orEmpty()) }
-            ?.sortedBy { it.name }
-            .orEmpty()
+            .sortedBy { it.name }
     }
 
     @Synchronized

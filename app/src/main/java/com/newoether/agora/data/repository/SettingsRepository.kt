@@ -139,6 +139,7 @@ class SettingsRepository(
     val codeExecutionEnabled: StateFlow<Boolean> = hot(settingsManager.codeExecutionEnabled, false)
     val googleSearchEnabled: StateFlow<Boolean> = hot(settingsManager.googleSearchEnabled, false)
     val thinkingEnabled: StateFlow<Boolean> = hot(settingsManager.thinkingEnabled, true)
+    val autoRegenOnCjk: StateFlow<Boolean> = hot(settingsManager.autoRegenOnCjk, true)
     val thinkingLevel: StateFlow<String> = hot(settingsManager.thinkingLevel, "medium")
     val thinkingBudgetEnabled: StateFlow<Boolean> = hot(settingsManager.thinkingBudgetEnabled, false)
     val thinkingBudgetTokens: StateFlow<Int> = hot(settingsManager.thinkingBudgetTokens, 4096)
@@ -663,14 +664,13 @@ class SettingsRepository(
     fun setSandboxEnabled(enabled: Boolean) = scope.launch { settingsManager.saveSandboxEnabled(enabled) }
     fun setSandboxSharedStorageEnabled(enabled: Boolean) = scope.launch { settingsManager.saveSandboxSharedStorageEnabled(enabled) }
     fun setThinkingEnabled(enabled: Boolean) = scope.launch { settingsManager.saveThinkingEnabled(enabled) }
+    fun setAutoRegenOnCjk(enabled: Boolean) = scope.launch { settingsManager.saveAutoRegenOnCjk(enabled) }
     fun setThinkingLevel(level: String) = scope.launch { settingsManager.saveThinkingLevel(level) }
     fun setThinkingBudgetEnabled(enabled: Boolean) = scope.launch { settingsManager.saveThinkingBudgetEnabled(enabled) }
     fun setThinkingBudgetTokens(tokens: Int) = scope.launch { settingsManager.saveThinkingBudgetTokens(tokens) }
     fun setOpenAiServiceTierEnabled(enabled: Boolean) = scope.launch { settingsManager.saveOpenAiServiceTierEnabled(enabled) }
-    fun setOpenAiServiceTier(tier: String) =
-        scope.launch { settingsManager.saveOpenAiServiceTier(tier) }
-    fun setOpenAiResponsesApiEnabled(enabled: Boolean) =
-        scope.launch { settingsManager.saveOpenAiResponsesApiEnabled(enabled) }
+    fun setOpenAiServiceTier(tier: String) = scope.launch { settingsManager.saveOpenAiServiceTier(tier) }
+    fun setOpenAiResponsesApiEnabled(enabled: Boolean) = scope.launch { settingsManager.saveOpenAiResponsesApiEnabled(enabled) }
     fun setDefaultTemperature(v: Float?) = scope.launch { settingsManager.saveDefaultTemperature(v) }
     fun setDefaultMaxTokens(v: Int?) = scope.launch { settingsManager.saveDefaultMaxTokens(v) }
     fun setDefaultTopP(v: Float?) = scope.launch { settingsManager.saveDefaultTopP(v) }

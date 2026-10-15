@@ -13,6 +13,7 @@ import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.Memory
+import androidx.compose.material.icons.filled.Language
 import androidx.compose.material.icons.filled.Speed
 import androidx.compose.ui.res.painterResource
 import androidx.compose.material.icons.filled.Tune
@@ -44,6 +45,7 @@ fun SettingsGenerationPage(viewModel: ChatViewModel, onBack: () -> Unit) {
     val defaultFrequencyPenalty by viewModel.settings.defaultFrequencyPenalty.collectAsState()
     val defaultPresencePenalty by viewModel.settings.defaultPresencePenalty.collectAsState()
     val thinkingEnabled by viewModel.settings.thinkingEnabled.collectAsState()
+    val autoRegenOnCjk by viewModel.settings.autoRegenOnCjk.collectAsState()
     val thinkingLevel by viewModel.settings.thinkingLevel.collectAsState()
     val thinkingBudgetEnabled by viewModel.settings.thinkingBudgetEnabled.collectAsState()
     val thinkingBudgetTokens by viewModel.settings.thinkingBudgetTokens.collectAsState()
@@ -90,6 +92,26 @@ fun SettingsGenerationPage(viewModel: ChatViewModel, onBack: () -> Unit) {
                                 modifier = Modifier.padding(horizontal = 16.dp, vertical = 16.dp),
                                 showHeader = false,
                                 animateSections = true
+                            )
+                        }
+                    )
+                )
+
+                // ── Auto-regenerate on Chinese ──
+                SettingsGroup(
+                    title = stringResource(R.string.auto_regen_cjk_title),
+                    items = listOf(
+                        {
+                            SettingsItem(
+                                headlineContent = { Text(stringResource(R.string.auto_regen_cjk_title)) },
+                                supportingContent = { Text(stringResource(R.string.auto_regen_cjk_desc)) },
+                                leadingContent = {
+                                    Icon(Icons.Default.Language, contentDescription = null, tint = MaterialTheme.colorScheme.primary)
+                                },
+                                trailingContent = {
+                                    Switch(checked = autoRegenOnCjk, onCheckedChange = { viewModel.settings.setAutoRegenOnCjk(it) })
+                                },
+                                modifier = Modifier.clickable { viewModel.settings.setAutoRegenOnCjk(!autoRegenOnCjk) }
                             )
                         }
                     )

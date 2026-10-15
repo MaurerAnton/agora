@@ -10,6 +10,7 @@ import com.newoether.agora.model.RunEffectIdentity
 import com.newoether.agora.model.RunEndReason
 import com.newoether.agora.model.RunStatus
 import com.newoether.agora.util.Constants
+import kotlinx.coroutines.CancellationException
 
 data class GenerationPromptTemplate(
     val systemItems: List<PromptTemplateItem>,
@@ -35,6 +36,8 @@ data class GenerationConfig(
     val googleSearchEnabled: Boolean,
     val thinkingEnabled: Boolean,
     val thinkingLevel: String = "medium",
+    /** Abort a streaming answer the moment CJK text arrives; the launcher retries it. */
+    val autoRegenOnCjk: Boolean = false,
     val thinkingBudgetEnabled: Boolean = false,
     val thinkingBudgetTokens: Int = 4096,
     val openAiServiceTier: String? = null,
@@ -246,3 +249,10 @@ internal sealed interface ToolRoundBoundaryDecision {
 internal data class GenerationExecutionResult(
     val followUpParentMessageId: String? = null,
 )
+
+/**
+ * Aborts a streaming provider pass the moment CJK text arrives in an answer chunk.
+ * A [CancellationException] so in-flight streams settle exactly like a user Stop;
+ * [BoundRunGenerationLauncher] catches it to auto-retry with a no-CJK guard.
+ */
+internal class CjkAutoRetryAbort : CancellationException("cjk-auto-retry")

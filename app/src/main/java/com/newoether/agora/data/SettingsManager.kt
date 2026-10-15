@@ -88,6 +88,7 @@ class SettingsManager(private val context: Context) {
     val codeExecutionEnabled: Flow<Boolean> = context.dataStore.data.map { it[CODE_EXECUTION_ENABLED] ?: false }
     val googleSearchEnabled: Flow<Boolean> = context.dataStore.data.map { it[GOOGLE_SEARCH_ENABLED] ?: false }
     val thinkingEnabled: Flow<Boolean> = context.dataStore.data.map { it[THINKING_ENABLED] ?: true }
+    val autoRegenOnCjk: Flow<Boolean> = context.dataStore.data.map { it[AUTO_REGEN_ON_CJK] ?: true }
     val thinkingLevel: Flow<String> = context.dataStore.data.map { ThinkingLevels.normalize(it[THINKING_LEVEL]) }
     val thinkingBudgetEnabled: Flow<Boolean> = context.dataStore.data.map { pref ->
         pref[THINKING_BUDGET_ENABLED] ?: (ThinkingLevels.legacyBudgetTokens(pref[THINKING_LEVEL]) != null)
@@ -347,6 +348,9 @@ class SettingsManager(private val context: Context) {
     }
     suspend fun saveThinkingEnabled(enabled: Boolean) {
         context.dataStore.edit { it[THINKING_ENABLED] = enabled }
+    }
+    suspend fun saveAutoRegenOnCjk(enabled: Boolean) {
+        context.dataStore.edit { it[AUTO_REGEN_ON_CJK] = enabled }
     }
     suspend fun saveThinkingLevel(level: String) {
         context.dataStore.edit { it[THINKING_LEVEL] = ThinkingLevels.normalize(level) }

@@ -823,4 +823,8 @@
     <string name="tor_socks_port">Port</string>
     <string name="tor_socks_port_desc">Tor SOCKS5 proxy port (default: 9050)</string>
     <string name="tor_info">Requires a running Tor daemon with SOCKS5 proxy. Install Orbot from F-Droid or run tor on your device.</string>
+
+    <!-- Auto-regenerate on Chinese -->
+    <string name="auto_regen_cjk_title">Автоперегенерация при китайском</string>
+    <string name="auto_regen_cjk_desc">Останавливать и перезапускать ответ, если в нём появляются китайские символы</string>
 </resources>

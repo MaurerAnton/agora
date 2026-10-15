@@ -82,7 +82,9 @@ internal class ConversationRegenerationService(
             var runBound = false
             var stopFinalizationClaimed = false
             try {
-                if (!transitions.awaitFade(transition.id)) return@generation
+                // The fade animation plays concurrently and acknowledges on its own;
+                // the provider request must not wait for list recomposition + tween.
+                // Navigation/supersede safety stays covered by the guards below.
                 if (
                     !state.isCurrentToken(uiToken) ||
                     !transitions.isAnimating(transition.id) ||

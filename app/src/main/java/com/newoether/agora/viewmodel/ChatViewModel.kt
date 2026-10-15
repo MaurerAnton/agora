@@ -593,7 +593,7 @@ class ChatViewModel(
 
     /** Consecutive CJK auto-retries per conversation+parent; manual regenerates reset it. */
     private val cjkRetryChains = java.util.concurrent.ConcurrentHashMap<String, Int>()
-    private val cjkAutoRetryHandler: suspend (conversationId: String, modelMessageId: String) -> Boolean =
+    private val cjkAutoRetryHandler: (conversationId: String, modelMessageId: String) -> Boolean =
         ::autoRegenerateOnCjk
 
     init {
@@ -718,10 +718,11 @@ class ChatViewModel(
 
     /**
      * Retries a CJK-aborted answer as a fresh sibling run with a no-Chinese guard.
-     * Returns false when the feature is off, the cap is reached, or the retry was
-     * not admitted — the caller then preserves plain Stop semantics.
+     * Fires the retry in the ViewModel scope (independent of the dying run) and
+     * returns immediately; the snackbar below proves synchronously that the
+     * handler ran at all — its absence on device means stale APK or dead wiring.
      */
-    suspend fun autoRegenerateOnCjk(conversationId: String, abortedMessageId: String): Boolean {
+    fun autoRegenerateOnCjk(conversationId: String, abortedMessageId: String): Boolean {
         if (!settings.autoRegenOnCjk.value) return false
         val max = settings.maxCjkRetries.value
         val boundary = MessageGenerationBoundaryResolver.containing(
@@ -733,30 +734,33 @@ class ChatViewModel(
         val key = "$conversationId:${boundary.lastAssistant?.parentId ?: "?"}"
         val used = cjkRetryChains.getOrDefault(key, 0)
         if (used >= max) return denyAutoRetry("cap $used/$max")
-        // Let stop-settlement (slot release, Room persist, UI sync) finish: the
-        // regenerate admission only succeeds on an idle conversation.
-        kotlinx.coroutines.delay(1500)
-        val launched = generationController.regenerate(
-            origin = phoneClient,
-            conversationId = conversationId,
-            messageId = abortedMessageId,
-            modelId = currentActiveModel.value,
-            visiblePath = messages.value.toList(),
-            extraInitialUserPrompt = com.newoether.agora.model.CJK_RETRY_GUARD_PROMPT,
-        )
-        if (launched) {
-            cjkRetryChains[key] = used + 1
-            emitSnackbar(
-                appContext.getString(
-                    R.string.auto_regen_cjk_retrying,
-                    used + 1,
-                    max,
-                )
+        emitSnackbar(
+            appContext.getString(
+                R.string.auto_regen_cjk_retrying,
+                used + 1,
+                max,
             )
-        } else {
-            DebugLog.d("AgoraCJK", "regenerate declined for $abortedMessageId")
+        )
+        viewModelScope.launch {
+            // Let stop-settlement (slot release, Room persist, UI sync) finish: the
+            // regenerate admission only succeeds on an idle conversation.
+            kotlinx.coroutines.delay(1500)
+            val launched = generationController.regenerate(
+                origin = phoneClient,
+                conversationId = conversationId,
+                messageId = abortedMessageId,
+                modelId = currentActiveModel.value,
+                visiblePath = messages.value.toList(),
+                extraInitialUserPrompt = com.newoether.agora.model.CJK_RETRY_GUARD_PROMPT,
+            )
+            if (launched) {
+                cjkRetryChains[key] = used + 1
+            } else {
+                DebugLog.d("AgoraCJK", "regenerate declined for $abortedMessageId")
+                emitSnackbar(appContext.getString(R.string.auto_regen_cjk_denied, "not admitted"))
+            }
         }
-        return launched
+        return true
     }
 
     private fun denyAutoRetry(reason: String): Boolean {

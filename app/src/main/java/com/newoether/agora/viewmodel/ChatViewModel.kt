@@ -21,6 +21,7 @@ import com.newoether.agora.data.repository.ConversationSettingsTransferCoordinat
 import com.newoether.agora.data.repository.SettingsRepository
 import com.newoether.agora.model.ChatConversation
 import com.newoether.agora.model.ChatMessage
+import com.newoether.agora.model.MessageGenerationBoundaryResolver
 import com.newoether.agora.sandbox.SandboxManager
 import com.newoether.agora.sandbox.SandboxManagerFactory
 import com.newoether.agora.service.AgoraForegroundService
@@ -717,40 +718,55 @@ class ChatViewModel(
 
     /**
      * Retries a CJK-aborted answer as a fresh sibling run with a no-Chinese guard.
-     * Returns false when the feature is off, the cap is reached, or the retry was
-     * not admitted — the caller then preserves plain Stop semantics.
+     * Fires the retry in the ViewModel scope (independent of the dying run) and
+     * returns immediately; the snackbar below proves synchronously that the
+     * handler ran at all — its absence on device means stale APK or dead wiring.
      */
     fun autoRegenerateOnCjk(conversationId: String, abortedMessageId: String): Boolean {
         if (!settings.autoRegenOnCjk.value) return false
         val max = settings.maxCjkRetries.value
-        val parentId = messages.value.find { it.id == abortedMessageId }?.parentId
-        val key = "$conversationId:${parentId ?: "?"}"
-        val used = cjkRetryChains.getOrDefault(key, 0)
-        if (used >= max) {
-            DebugLog.d("AgoraCJK", "retry budget exhausted for $key")
-            return false
-        }
-        val launched = generationController.regenerate(
-            origin = phoneClient,
-            conversationId = conversationId,
-            messageId = abortedMessageId,
-            modelId = currentActiveModel.value,
-            visiblePath = messages.value.toList(),
-            extraInitialUserPrompt = com.newoether.agora.model.CJK_RETRY_GUARD_PROMPT,
+        val boundary = MessageGenerationBoundaryResolver.containing(
+            messages.value.toList(),
+            abortedMessageId,
         )
-        if (launched) {
-            cjkRetryChains[key] = used + 1
-            emitSnackbar(
-                appContext.getString(
-                    R.string.auto_regen_cjk_retrying,
-                    used + 1,
-                    max,
-                )
+        if (boundary == null) return denyAutoRetry("not in list")
+        if (boundary.lastAssistant?.id != abortedMessageId) return denyAutoRetry("not last")
+        val key = "$conversationId:${boundary.lastAssistant?.parentId ?: "?"}"
+        val used = cjkRetryChains.getOrDefault(key, 0)
+        if (used >= max) return denyAutoRetry("cap $used/$max")
+        emitSnackbar(
+            appContext.getString(
+                R.string.auto_regen_cjk_retrying,
+                used + 1,
+                max,
             )
-        } else {
-            DebugLog.d("AgoraCJK", "regenerate declined for $abortedMessageId")
+        )
+        viewModelScope.launch {
+            // Let stop-settlement (slot release, Room persist, UI sync) finish: the
+            // regenerate admission only succeeds on an idle conversation.
+            kotlinx.coroutines.delay(1500)
+            val launched = generationController.regenerate(
+                origin = phoneClient,
+                conversationId = conversationId,
+                messageId = abortedMessageId,
+                modelId = currentActiveModel.value,
+                visiblePath = messages.value.toList(),
+                extraInitialUserPrompt = com.newoether.agora.model.CJK_RETRY_GUARD_PROMPT,
+            )
+            if (launched) {
+                cjkRetryChains[key] = used + 1
+            } else {
+                DebugLog.d("AgoraCJK", "regenerate declined for $abortedMessageId")
+                emitSnackbar(appContext.getString(R.string.auto_regen_cjk_denied, "not admitted"))
+            }
         }
-        return launched
+        return true
+    }
+
+    private fun denyAutoRetry(reason: String): Boolean {
+        DebugLog.d("AgoraCJK", "auto-retry denied: $reason")
+        emitSnackbar(appContext.getString(R.string.auto_regen_cjk_denied, reason))
+        return false
     }
 
     fun switchBranch(parentId: String?, currentMessageId: String, direction: Int) =

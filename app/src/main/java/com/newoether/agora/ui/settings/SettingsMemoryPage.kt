@@ -12,7 +12,10 @@ import androidx.compose.material.icons.filled.Clear
 import androidx.compose.material.icons.filled.ContentCopy
 import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.Description
+import androidx.compose.material.icons.filled.DriveFileMove
 import androidx.compose.material.icons.filled.Edit
+import androidx.compose.material.icons.filled.Folder
+import androidx.compose.material.icons.filled.Home
 import androidx.compose.material.icons.filled.Memory
 import androidx.compose.material.icons.filled.MoreVert
 import androidx.compose.material.icons.filled.Search
@@ -61,6 +64,8 @@ fun SettingsMemoryPage(viewModel: ChatViewModel, onBack: () -> Unit) {
     var newFileDesc by remember { mutableStateOf("") }
     var showDeleteFileConfirm by remember { mutableStateOf<String?>(null) }
     var memorySearchQuery by remember { mutableStateOf("") }
+    var currentFolder by remember { mutableStateOf("") }
+    var showMoveDialog by remember { mutableStateOf<String?>(null) }
     val clipboardManager = LocalClipboardManager.current
     val copiedText = stringResource(R.string.memory_copied)
 
@@ -130,6 +135,46 @@ fun SettingsMemoryPage(viewModel: ChatViewModel, onBack: () -> Unit) {
         else memoryFiles.filter {
             it.name.contains(query, ignoreCase = true) ||
                 it.description.contains(query, ignoreCase = true)
+        }
+    }
+
+    fun parentFolderOf(path: String): String =
+        if ('/' in path) path.substringBeforeLast('/') else ""
+
+    val allFolders = remember(memoryFiles) {
+        memoryFiles.flatMap { file ->
+            val parts = file.name.split('/').dropLast(1)
+            (1..parts.size).map { parts.take(it).joinToString("/") }
+        }.distinct().sorted()
+    }
+    val childFolders = remember(allFolders, currentFolder) {
+        allFolders.filter { parentFolderOf(it) == currentFolder }
+    }
+    val childFiles = remember(visibleMemoryFiles, currentFolder, memorySearchQuery) {
+        if (memorySearchQuery.isBlank()) {
+            visibleMemoryFiles.filter { parentFolderOf(it.name) == currentFolder }
+        } else visibleMemoryFiles
+    }
+
+    fun moveMemoryFile(name: String, targetFolder: String) {
+        if (memoryOperationInFlight) return
+        val base = name.substringAfterLast('/')
+        val target = if (targetFolder.isBlank()) base else "$targetFolder/$base"
+        if (target == name) return
+        memoryOperationInFlight = true
+        scope.launch {
+            val moved = withContext(Dispatchers.IO) {
+                runCatching {
+                    viewModel.memoryManager.editFile(name = name, newName = target)
+                    viewModel.memoryManager.listFiles()
+                }
+            }
+            moved.onSuccess { files ->
+                memoryFiles = files
+            }.onFailure { error ->
+                reportMemoryFailure("Unable to move memory file", error)
+            }
+            memoryOperationInFlight = false
         }
     }
 
@@ -248,6 +293,51 @@ fun SettingsMemoryPage(viewModel: ChatViewModel, onBack: () -> Unit) {
                                     .padding(horizontal = 16.dp, vertical = 4.dp),
                             )
                         }
+                        if (memoryFiles.isNotEmpty() && memorySearchQuery.isBlank()) {
+                            if (currentFolder.isNotEmpty()) {
+                                add {
+                                    Row(
+                                        modifier = Modifier
+                                            .fillMaxWidth()
+                                            .padding(horizontal = 16.dp, vertical = 2.dp),
+                                        verticalAlignment = Alignment.CenterVertically,
+                                    ) {
+                                        IconButton(onClick = { currentFolder = "" }) {
+                                            Icon(Icons.Default.Home, stringResource(R.string.memory_saved_title))
+                                        }
+                                        var path = ""
+                                        currentFolder.split('/').forEach { segment ->
+                                            Text(
+                                                "/",
+                                                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                            )
+                                            path = if (path.isEmpty()) segment else "$path/$segment"
+                                            val target = path
+                                            TextButton(onClick = { currentFolder = target }) {
+                                                Text(segment)
+                                            }
+                                        }
+                                    }
+                                }
+                            }
+                            childFolders.forEach { folder ->
+                                add {
+                                    val contained = memoryFiles.count {
+                                        it.name == folder || it.name.startsWith("$folder/")
+                                    }
+                                    SettingsItem(
+                                        headlineContent = {
+                                            Text(
+                                                folder.substringAfterLast('/') + " ($contained)",
+                                                fontWeight = FontWeight.Medium,
+                                            )
+                                        },
+                                        leadingContent = { Icon(Icons.Default.Folder, null, tint = MaterialTheme.colorScheme.primary.copy(alpha = 0.6f)) },
+                                        modifier = Modifier.clickable { currentFolder = folder },
+                                    )
+                                }
+                            }
+                        }
                         if (memoryFiles.isNotEmpty()) {
                             add {
                                 SettingsItem(
@@ -273,7 +363,7 @@ fun SettingsMemoryPage(viewModel: ChatViewModel, onBack: () -> Unit) {
                             }
                         }
                     }
-                    if (memoryLoaded && memoryFiles.isEmpty()) {
+                    if (memoryLoaded && childFiles.isEmpty() && childFolders.isEmpty() && memorySearchQuery.isBlank()) {
                         add {
                             SettingsItem(
                                 headlineContent = { Text(stringResource(R.string.memory_no_files), color = MaterialTheme.colorScheme.onSurfaceVariant) },
@@ -292,10 +382,14 @@ fun SettingsMemoryPage(viewModel: ChatViewModel, onBack: () -> Unit) {
                                 )
                             }
                         }
-                        visibleMemoryFiles.forEach { file ->
+                        val listedFiles =
+                            if (memorySearchQuery.isBlank()) childFiles else visibleMemoryFiles
+                        listedFiles.forEach { file ->
                             add {
                                 var showFileMenu by remember { mutableStateOf(false) }
-                                val displayName = file.name.removeSuffix(".md")
+                                val displayName = if (memorySearchQuery.isBlank()) {
+                                    file.name.substringAfterLast('/').removeSuffix(".md")
+                                } else file.name.removeSuffix(".md")
                                 SettingsItem(
                                     headlineContent = { Text(displayName, fontWeight = FontWeight.Medium) },
                                     supportingContent = if (file.description.isNotBlank()) {{ Text(file.description) }} else null,
@@ -321,6 +415,15 @@ fun SettingsMemoryPage(viewModel: ChatViewModel, onBack: () -> Unit) {
                                                     onClick = {
                                                         showFileMenu = false
                                                         copyMemoryFile(file.name)
+                                                    },
+                                                    enabled = !memoryOperationInFlight,
+                                                )
+                                                AgoraDropdownMenuItem(
+                                                    text = { Text(stringResource(R.string.memory_move)) },
+                                                    leadingIcon = { Icon(Icons.Default.DriveFileMove, null) },
+                                                    onClick = {
+                                                        showFileMenu = false
+                                                        showMoveDialog = file.name
                                                     },
                                                     enabled = !memoryOperationInFlight,
                                                 )
@@ -380,6 +483,19 @@ fun SettingsMemoryPage(viewModel: ChatViewModel, onBack: () -> Unit) {
             )
             }
             if (showDocFab) { Spacer(modifier = Modifier.height(80.dp)) }
+    }
+
+    // Move file dialog
+    showMoveDialog?.let { fileName ->
+        SettingsMemoryMoveDialog(
+            fileName = fileName,
+            folders = allFolders,
+            onDismiss = { showMoveDialog = null },
+            onConfirm = { target ->
+                showMoveDialog = null
+                moveMemoryFile(fileName, target)
+            },
+        )
     }
 
     // Delete file confirmation
@@ -591,7 +707,8 @@ fun SettingsMemoryPage(viewModel: ChatViewModel, onBack: () -> Unit) {
                                 val created = withContext(Dispatchers.IO) {
                                     runCatching {
                                         viewModel.memoryManager.createFile(
-                                            nameSnapshot,
+                                            if (currentFolder.isBlank()) nameSnapshot
+                                            else "$currentFolder/$nameSnapshot",
                                             contentSnapshot,
                                             descriptionSnapshot,
                                         )

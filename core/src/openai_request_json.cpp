@@ -501,15 +501,17 @@ std::string format_kotlin_float(float value) {
         magnitude < static_cast<long double>(std::numeric_limits<float>::min()) ? 2 : 1;
 
     // e10: magnitude == 0.d1d2... x 10^(e10+1); floor(log10) can land a ulp off, so adjust.
-    int e10 = static_cast<int>(std::floorl(std::log10l(magnitude)));
-    while (static_cast<long double>(std::powl(10.0L, e10)) > magnitude) --e10;
-    while (static_cast<long double>(std::powl(10.0L, e10 + 1)) <= magnitude) ++e10;
+    // Plain std::floor/log10/pow: the C99 'l'-suffixed names are not portable (absent on some
+    // runners' headers), while the long double overloads are guaranteed by <cmath>.
+    int e10 = static_cast<int>(std::floor(std::log10(magnitude)));
+    while (std::pow(10.0L, e10) > magnitude) --e10;
+    while (std::pow(10.0L, e10 + 1) <= magnitude) ++e10;
 
     for (std::size_t digits_count = min_digits; digits_count <= 9; ++digits_count) {
         int scale_exponent = e10 - static_cast<int>(digits_count) + 1;
-        const long double scale = std::powl(10.0L, scale_exponent);
+        const long double scale = std::pow(10.0L, scale_exponent);
         const long double scaled = magnitude / scale;
-        const long double integral = std::floorl(scaled);
+        const long double integral = std::floor(scaled);
         long long digits_value = static_cast<long long>(integral);
         const long double fraction = scaled - integral;
         if (fraction > 0.5L) {

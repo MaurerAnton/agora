@@ -7,6 +7,7 @@
 // RequestFormatValidation) and OpenAiChatRequestFactory itself. Every branch is pinned by the
 // golden traces under core/tools/golden/openai-request and must stay byte-identical.
 #include <algorithm>
+#include <charconv>
 #include <chrono>
 #include <cstdint>
 #include <filesystem>
@@ -16,6 +17,7 @@
 #include <sstream>
 #include <string>
 #include <string_view>
+#include <system_error>
 #include <vector>
 
 #include "agora/core/openai_request.hpp"
@@ -368,6 +370,36 @@ std::string normalize_effort_level(const std::string& raw) {
     return normalize_effort_alias(value);
 }
 
+std::string effort_for_index(std::size_t index) {
+    const auto& efforts = effort_values();
+    return index < efforts.size() ? efforts[index] : std::string{kDefaultEffort};
+}
+
+std::size_t index_for_effort(const std::string& effort) {
+    // indexOf(normalizeEffort(effort)).coerceAtLeast(0): a level outside the ordered list lands
+    // on the lowest position, matching the Kotlin helper's UI-facing clamp.
+    const std::string normalized = normalize_effort_alias(effort);
+    const auto& order = effort_values();
+    const auto it = std::find(order.begin(), order.end(), normalized);
+    return it == order.end() ? 0 : static_cast<std::size_t>(it - order.begin());
+}
+
+std::optional<std::int32_t> legacy_budget_tokens(const std::string& raw) {
+    const std::string value = lower_ascii(json::trim(raw));
+    if (!starts_with(value, "budget:")) return std::nullopt;
+    std::string_view digits(value.data() + 7, value.size() - 7);
+    // Kotlin String.toIntOrNull also accepts a leading '+' sign.
+    if (!digits.empty() && digits.front() == '+') digits.remove_prefix(1);
+    if (digits.empty()) return std::nullopt;
+    std::int32_t parsed = 0;
+    const auto result = std::from_chars(digits.data(), digits.data() + digits.size(), parsed);
+    if (result.ec != std::errc{} || result.ptr != digits.data() + digits.size()) {
+        return std::nullopt;
+    }
+    // takeIf { it > 0 }
+    return parsed > 0 ? std::optional<std::int32_t>{parsed} : std::nullopt;
+}
+
 const ModelThinkingCapability& ModelThinkingCapability::permissive() {
     static const ModelThinkingCapability kPermissive{};
     return kPermissive;
@@ -568,6 +600,12 @@ ResolvedThinking resolved_thinking(const ProviderConfig& config, ThinkingProvide
     return resolve_thinking(capability_for_model(family, config.model_id),
                             config.thinking_enabled, config.thinking_level,
                             config.thinking_budget_enabled, config.thinking_budget_tokens);
+}
+
+ModelThinkingCapability capability_for_provider(
+    const std::optional<std::string>& provider_name, const std::string& model_id,
+    const std::optional<std::string>& custom_protocol_wire_value) {
+    return capability_for_model(family_for(provider_name, custom_protocol_wire_value), model_id);
 }
 
 // -- cheapest-inference helpers ------------------------------------------------------------------

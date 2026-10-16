@@ -231,14 +231,51 @@ TEST(thinking_resolution_unit_pins) {
     CHECK_EQ(1, *floor.budget_tokens);
 
     // Nearest-effort ties resolve upward (deepseek medium -> high; qwen38 high -> xhigh).
-    CHECK_EQ(std::string("high"),
-             *capability_for_model(ThinkingProviderFamily::DeepSeek, "deepseek-v4")
-                  .nearest_effort("medium"));
-    CHECK_EQ(std::string("xhigh"),
-             *capability_for_model(ThinkingProviderFamily::Qwen, "qwen3.8-flash")
-                  .nearest_effort("high"));
+    // The optionals are bound to locals first: CHECK_EQ stores a reference, and dereferencing a
+    // temporary optional inside the macro would leave that reference dangling.
+    const auto deepseek_capability =
+        capability_for_model(ThinkingProviderFamily::DeepSeek, "deepseek-v4");
+    const auto qwen_flash_capability =
+        capability_for_model(ThinkingProviderFamily::Qwen, "qwen3.8-flash");
+    const auto open_ai_capability = capability_for_model(ThinkingProviderFamily::OpenAi, "gpt-4.1");
+    CHECK_EQ(std::string("high"), *deepseek_capability.nearest_effort("medium"));
+    CHECK_EQ(std::string("xhigh"), *qwen_flash_capability.nearest_effort("high"));
     // "none" is not on the ordered selector list: the first accepted value wins.
-    CHECK_EQ(std::string("minimal"),
-             *capability_for_model(ThinkingProviderFamily::OpenAi, "gpt-4.1")
-                  .nearest_effort("none"));
+    CHECK_EQ(std::string("minimal"), *open_ai_capability.nearest_effort("none"));
+}
+
+TEST(thinking_levels_unit_pins) {
+    // ThinkingLevels helpers the wire never reaches: selector indexing and the budget migration.
+    CHECK_EQ(std::string("minimal"), request::effort_for_index(0));
+    CHECK_EQ(std::string("max"), request::effort_for_index(5));
+    CHECK_EQ(std::string("medium"), request::effort_for_index(6));   // past the end
+    CHECK_EQ(std::string("medium"), request::effort_for_index(999));
+
+    CHECK_EQ(std::size_t{3}, request::index_for_effort("HIGH"));
+    CHECK_EQ(std::size_t{2}, request::index_for_effort("medium"));
+    CHECK_EQ(std::size_t{0}, request::index_for_effort("none"));     // clamped to zero
+    CHECK_EQ(std::size_t{2}, request::index_for_effort("garbage"));  // unknown normalizes to medium
+
+    // CHECK_EQ binds const references: keep the optionals alive in locals before dereferencing.
+    const auto plain_budget = request::legacy_budget_tokens("budget:2048");
+    CHECK(plain_budget.has_value());
+    CHECK_EQ(2048, *plain_budget);
+    const auto spaced_budget = request::legacy_budget_tokens("  Budget:2048  ");
+    CHECK_EQ(2048, *spaced_budget);
+    const auto signed_budget = request::legacy_budget_tokens("budget:+7");
+    CHECK_EQ(7, *signed_budget);
+    CHECK(!request::legacy_budget_tokens("budget:0").has_value());
+    CHECK(!request::legacy_budget_tokens("budget:-5").has_value());
+    CHECK(!request::legacy_budget_tokens("budget:abc").has_value());
+    CHECK(!request::legacy_budget_tokens("budget:").has_value());
+    CHECK(!request::legacy_budget_tokens("2048").has_value());
+    CHECK(!request::legacy_budget_tokens("").has_value());
+    CHECK(!request::legacy_budget_tokens("budget:99999999999").has_value());  // Int overflow
+
+    // forProvider: the display-name family plus the per-model refinement.
+    CHECK(!request::capability_for_provider("openai", "gpt-6-astra").can_disable_thinking);
+    CHECK(request::capability_for_provider("OpenRouter", "deepseek/deepseek-r1")
+              .supports_effort_with_budget == false);
+    CHECK(request::capability_for_provider("relay", "anything")
+              .supports_thinking_budget);  // unknown name -> OpenAI-compatible permissive
 }

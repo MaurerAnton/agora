@@ -227,6 +227,15 @@ const std::vector<std::string>& effort_values();
 /** ThinkingLevels.normalizeEffortValue: trim/lowercase, legacy aliases, blank -> "medium". */
 std::string normalize_effort_level(const std::string& raw);
 
+/** ThinkingLevels.effortForIndex: the ordered selector, defaulting past the end. */
+std::string effort_for_index(std::size_t index);
+
+/** ThinkingLevels.indexForEffort: normalized effort position, clamped to zero. */
+std::size_t index_for_effort(const std::string& effort);
+
+/** ThinkingLevels.legacyBudgetTokens: the "budget:<n>" migration helper. */
+std::optional<std::int32_t> legacy_budget_tokens(const std::string& raw);
+
 struct ModelThinkingCapability {
     bool can_disable_thinking = true;
     std::vector<std::string> supported_efforts = [] { return effort_values(); }();
@@ -262,6 +271,11 @@ ThinkingProviderFamily family_for(const std::optional<std::string>& provider_nam
 const ModelThinkingCapability& family_default(ThinkingProviderFamily family);
 ModelThinkingCapability capability_for_model(ThinkingProviderFamily family,
                                              const std::string& model_id);
+
+/** ModelThinkingCapabilities.forProvider: protocol/display-name family plus model refinement. */
+ModelThinkingCapability capability_for_provider(
+    const std::optional<std::string>& provider_name, const std::string& model_id,
+    const std::optional<std::string>& custom_protocol_wire_value = std::nullopt);
 
 ResolvedThinking resolve_thinking(const ModelThinkingCapability& capability,
                                   bool requested_enabled,

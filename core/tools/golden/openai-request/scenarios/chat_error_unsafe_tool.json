@@ -1,0 +1,34 @@
+{
+  "name": "chat_error_unsafe_tool",
+  "kind": "openai",
+  "providerName": "OpenAI",
+  "config": {
+    "modelId": "gpt-4.1"
+  },
+  "requestInput": {
+    "messages": [
+      { "id": "user_1", "participant": "USER", "text": "Compute." },
+      {
+        "id": "tool_1",
+        "participant": "MODEL",
+        "toolCall": {
+          "toolName": "bad name!",
+          "arguments": "not-json",
+          "result": "",
+          "toolCallId": "bad id!"
+        }
+      },
+      {
+        "id": "result_1",
+        "participant": "USER",
+        "toolCall": {
+          "toolName": "bad name!",
+          "arguments": "not-json",
+          "result": "x",
+          "toolCallId": "bad id!"
+        }
+      },
+      { "id": "user_2", "participant": "USER", "text": "Thanks." }
+    ]
+  }
+}

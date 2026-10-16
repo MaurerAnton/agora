@@ -1,0 +1,5 @@
+name|chat_legacy_toolcall
+kind|openai
+mode|factory
+apiMessages|[{"role":"user","content":[{"type":"text","text":"Compute."}]},{"role":"assistant","tool_calls":[{"id":"call_calculator_916ede21c14aacfa","type":"function","function":{"name":"calculator","arguments":"{\\"a\\":2,\\"b\\":2}"}}]},{"role":"tool","content":[{"type":"text","text":"4"}],"tool_call_id":"call_calculator_916ede21c14aacfa"},{"role":"user","content":[{"type":"text","text":"Thanks."}]}]
+body|{"model":"gpt-4.1","messages":[{"role":"user","content":[{"type":"text","text":"Compute."}]},{"role":"assistant","tool_calls":[{"id":"call_calculator_916ede21c14aacfa","type":"function","function":{"name":"calculator","arguments":"{\\"a\\":2,\\"b\\":2}"}}]},{"role":"tool","content":[{"type":"text","text":"4"}],"tool_call_id":"call_calculator_916ede21c14aacfa"},{"role":"user","content":[{"type":"text","text":"Thanks."}]}],"stream":true,"stream_options":{"include_usage":true},"reasoning_effort":"medium"}

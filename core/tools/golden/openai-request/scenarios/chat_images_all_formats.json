@@ -1,0 +1,29 @@
+{
+  "name": "chat_images_all_formats",
+  "kind": "openai",
+  "providerName": "OpenAI",
+  "config": {
+    "modelId": "gpt-4.1"
+  },
+  "requestInput": {
+    "systemPrompt": "vision",
+    "messages": [
+      {
+        "id": "user_1",
+        "participant": "USER",
+        "text": "What is shown?",
+        "images": [
+          "files/a.png",
+          "files/missing.png",
+          "files/b.jpg",
+          "files/c.webp",
+          "files/d.gif",
+          "files/e.odd",
+          "files/empty.png",
+          "files/f.bin",
+          "files/g.bin"
+        ]
+      }
+    ]
+  }
+}

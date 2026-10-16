@@ -1,0 +1,34 @@
+{
+  "name": "chat_legacy_toolcall",
+  "kind": "openai",
+  "providerName": "OpenAI",
+  "config": {
+    "modelId": "gpt-4.1"
+  },
+  "requestInput": {
+    "messages": [
+      { "id": "user_1", "participant": "USER", "text": "Compute." },
+      {
+        "id": "tool_1",
+        "participant": "MODEL",
+        "toolCall": {
+          "toolName": "calculator",
+          "arguments": "{\"a\":2,\"b\":2}",
+          "result": "4"
+        }
+      },
+      {
+        "id": "result_1",
+        "participant": "USER",
+        "toolCall": {
+          "toolName": "calculator",
+          "arguments": "{\"a\":2,\"b\":2}",
+          "result": "4"
+        }
+      },
+      { "id": "tool_2", "participant": "MODEL" },
+      { "id": "result_2", "participant": "USER" },
+      { "id": "user_2", "participant": "USER", "text": "Thanks." }
+    ]
+  }
+}

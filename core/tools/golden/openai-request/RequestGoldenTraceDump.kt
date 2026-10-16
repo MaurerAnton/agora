@@ -14,6 +14,9 @@ import com.newoether.agora.api.OpenAiMessage
 import com.newoether.agora.api.ProviderConfig
 import com.newoether.agora.api.ProviderRequestInput
 import com.newoether.agora.api.ToolDefinition
+import com.newoether.agora.api.ToolFunction
+import com.newoether.agora.api.ToolParameters
+import com.newoether.agora.api.ToolProperty
 import com.newoether.agora.api.openai.OpenAiChatRequestFactory
 import com.newoether.agora.api.openai.requireValidWireFormat
 import com.newoether.agora.api.openai.withCustomOpenAiThinking
@@ -32,10 +35,15 @@ import com.newoether.agora.model.ThinkingProviderFamily
 import com.newoether.agora.model.ToolCallData
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.builtins.ListSerializer
+import kotlinx.serialization.builtins.MapSerializer
+import kotlinx.serialization.builtins.serializer
 import kotlinx.serialization.json.Json
 import kotlinx.serialization.json.JsonObject
 import kotlinx.serialization.json.JsonPrimitive
 import kotlinx.serialization.json.decodeFromJsonElement
+import kotlinx.serialization.json.jsonArray
+import kotlinx.serialization.json.jsonObject
+import kotlinx.serialization.json.jsonPrimitive
 import java.io.ByteArrayOutputStream
 import java.io.File
 import java.nio.file.Path
@@ -153,7 +161,7 @@ private data class ScenarioConfig(
     val frequencyPenalty: JsonPrimitive? = null,
     val presencePenalty: JsonPrimitive? = null,
     val promptCacheKey: String? = null,
-    val tools: List<ToolDefinition>? = null,
+    val tools: List<JsonObject>? = null,
 )
 
 @Serializable
@@ -247,8 +255,43 @@ private fun buildConfig(config: ScenarioConfig): ProviderConfig = ProviderConfig
     frequencyPenalty = config.frequencyPenalty?.let { it.content.toFloat() },
     presencePenalty = config.presencePenalty?.let { it.content.toFloat() },
     promptCacheKey = config.promptCacheKey,
-    tools = config.tools,
+    tools = buildTools(config.tools),
 )
+
+/**
+ * Builds the tool list the way the app does. The app never decodes a `schema` block from JSON
+ * ([ToolParametersSerializer.deserialize] reads the typed fields only) — MCP tools populate
+ * [ToolParameters.schema] programmatically — so the harness carries a `schema` block straight into
+ * the object, exactly like tool settings do.
+ */
+private fun buildTools(rawTools: List<JsonObject>?): List<ToolDefinition>? = rawTools?.map { raw ->
+    val functionJson = raw["function"]?.jsonObject ?: error("tool without function")
+    ToolDefinition(
+        type = raw["type"]?.jsonPrimitive?.content ?: "function",
+        function = ToolFunction(
+            name = functionJson["name"]?.jsonPrimitive?.content ?: error("tool without name"),
+            description = functionJson["description"]?.jsonPrimitive?.content ?: "",
+            parameters = buildToolParameters(functionJson["parameters"]?.jsonObject),
+        ),
+    )
+}
+
+private fun buildToolParameters(json: JsonObject?): ToolParameters {
+    if (json == null) return ToolParameters(properties = emptyMap())
+    val properties = json["properties"]?.jsonObject?.let { rawProperties ->
+        traceJson.decodeFromJsonElement(
+            MapSerializer(String.serializer(), ToolProperty.serializer()),
+            rawProperties,
+        )
+    } ?: emptyMap()
+    val required = json["required"]?.jsonArray?.map { it.jsonPrimitive.content } ?: emptyList()
+    return ToolParameters(
+        type = json["type"]?.jsonPrimitive?.content ?: "object",
+        properties = properties,
+        required = required,
+        schema = json["schema"]?.jsonObject,
+    )
+}
 
 fun main(args: Array<String>) {
     require(args.size == 2) { "usage: RequestGoldenTraceDump <scenario.json> <filesRoot>" }
@@ -317,7 +360,12 @@ fun main(args: Array<String>) {
                         hex(part.sha256),
                     )
                 }
-                line("resolvedBody", norm(esc(resolvedBodyText(body))))
+                val resolved = resolvedBodyText(body)
+                val resolvedBytes = resolved.toByteArray(Charsets.UTF_8)
+                require(resolvedBytes.size.toLong() == body.contentLength) {
+                    "resolved body is ${resolvedBytes.size} bytes but contentLength is ${body.contentLength}"
+                }
+                line("resolvedBody", norm(esc(resolved)))
             }
         }
     } catch (error: Exception) {

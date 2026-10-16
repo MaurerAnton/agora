@@ -50,7 +50,8 @@ exactly (`core/tests/openai_request_parity_test.cpp`).
     "frequencyPenalty": null,
     "presencePenalty": null,
     "promptCacheKey": null,
-    "tools": null                      // ToolDefinition wire JSON, decoded by the app serializer
+    "tools": null                      // ToolDefinition wire JSON; a `schema` block is carried
+                                       // straight into ToolParameters.schema (see README)
   },
   "requestInput": {
     "systemPrompt": "You are helpful.",

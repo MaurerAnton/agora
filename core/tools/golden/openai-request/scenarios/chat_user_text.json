@@ -1,0 +1,14 @@
+{
+  "name": "chat_user_text",
+  "kind": "deepseek",
+  "providerName": "DeepSeek",
+  "config": {
+    "modelId": "deepseek-v4"
+  },
+  "requestInput": {
+    "systemPrompt": "You are a helpful assistant.",
+    "messages": [
+      { "id": "user_1", "participant": "USER", "text": "Hello there" }
+    ]
+  }
+}

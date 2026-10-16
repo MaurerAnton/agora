@@ -1,0 +1,14 @@
+{
+  "name": "chat_thinking_deepseek_disabled",
+  "kind": "deepseek",
+  "providerName": "DeepSeek",
+  "config": {
+    "modelId": "deepseek-v4",
+    "thinkingEnabled": false
+  },
+  "requestInput": {
+    "messages": [
+      { "id": "user_1", "participant": "USER", "text": "hi" }
+    ]
+  }
+}

@@ -1,0 +1,17 @@
+{
+  "name": "split_logical_all",
+  "mode": "splitLogical",
+  "retainLogicalMessages": 99,
+  "messages": [
+    {
+      "id": "user_1",
+      "participant": "USER",
+      "text": "q"
+    },
+    {
+      "id": "model_1",
+      "participant": "MODEL",
+      "text": "a"
+    }
+  ]
+}

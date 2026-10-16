@@ -1,0 +1,6 @@
+name|project_statuses_terminal_rows
+mode|projectStatuses
+msg|0|user_1|-|USER|SUCCESS|q||-|-|0|-|-|[]|-|[]
+msg|1|model_1|-|MODEL|SUCCESS|partial answer\n\n<generation_interrupted reason="stopped" />||-|-|0|-|-|[]|-|[]
+msg|2|user_2|-|USER|SUCCESS|again||-|-|0|-|-|[]|-|[]
+msg|3|model_2|-|MODEL|SUCCESS|<generation_interrupted reason="error">\nformatted:provider said: bad request\n</generation_interrupted>||-|-|0|-|-|[]|-|[]

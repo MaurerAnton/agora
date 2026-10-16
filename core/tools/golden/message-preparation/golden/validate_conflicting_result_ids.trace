@@ -1,0 +1,5 @@
+name|validate_conflicting_result_ids
+mode|validateTools
+msg|0|tool_1|-|MODEL|SUCCESS|||-|-|0|-|-|[{"type":"tool","content":"","toolName":"a","toolArgs":"{}","toolCallId":"call_a","responseOutputItems":0},{"type":"tool","content":"","toolName":"b","toolArgs":"{}","toolCallId":"call_b","responseOutputItems":0}]|-|[]
+msg|1|result_1|-|USER|SUCCESS|||-|-|0|-|-|[{"type":"tool","content":"","toolName":"b","toolArgs":"{}","toolResult":"1","toolCallId":"call_b","responseOutputItems":0}]|-|[]
+msg|2|result_2|-|USER|SUCCESS|||-|-|0|-|-|[{"type":"tool","content":"","toolName":"a","toolArgs":"{}","toolResult":"2","toolCallId":"call_a","responseOutputItems":0}]|-|[]

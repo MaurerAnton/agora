@@ -1,0 +1,5 @@
+name|merge_error_pair
+mode|merge
+msg|0|user_1|-|USER|SUCCESS|hi||-|-|0|-|-|[]|-|[]
+msg|1|model_1|-|MODEL|SUCCESS|hello||-|-|0|-|-|[]|-|[]
+msg|2|error_1|-|ERROR|SUCCESS|boom\n\nbang||-|-|0|-|-|[]|-|[]

@@ -1,0 +1,19 @@
+{
+  "name": "usage_default_heuristic",
+  "mode": "usage",
+  "budget": 200,
+  "messages": [
+    {
+      "id": "user_1",
+      "participant": "USER",
+      "text": "Hello world, this is a plain user message."
+    },
+    {
+      "id": "model_1",
+      "participant": "MODEL",
+      "text": "Answer."
+    }
+  ],
+  "fixedSystemPromptTokens": 12,
+  "fixedToolTokens": 34
+}

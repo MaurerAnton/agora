@@ -1,0 +1,4 @@
+name|project_statuses_persisted_error
+mode|projectStatuses
+msg|0|user_1|-|USER|SUCCESS|q||-|-|0|-|-|[]|-|[]
+msg|1|model_1|-|MODEL|SUCCESS|answer text\n\n<generation_interrupted reason="error">\nformatted:rate limited\n</generation_interrupted>||-|-|0|-|-|[]|-|[]

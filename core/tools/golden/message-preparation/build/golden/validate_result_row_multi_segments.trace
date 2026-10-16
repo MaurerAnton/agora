@@ -1,0 +1,4 @@
+name|validate_result_row_multi_segments
+mode|validateTools
+msg|0|tool_1|-|MODEL|SUCCESS|||-|-|0|-|-|[{"type":"tool","content":"","toolName":"a","toolArgs":"{}","toolCallId":"call_a","responseOutputItems":0},{"type":"tool","content":"","toolName":"b","toolArgs":"{\\"x\\":1}","toolCallId":"call_b","responseOutputItems":0}]|-|[]
+msg|1|result_1|-|USER|SUCCESS|||-|-|0|-|-|[{"type":"tool","content":"","toolName":"a","toolArgs":"{}","toolResult":"ra","toolCallId":"call_a","responseOutputItems":0},{"type":"tool","content":"","toolName":"b","toolArgs":"{\\"x\\":1}","toolResult":"rb","toolCallId":"call_b","responseOutputItems":0}]|-|[]

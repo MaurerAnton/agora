@@ -1,0 +1,5 @@
+name|split_logical_groups
+mode|splitLogical
+prefix|user_1,model_1,compact_ok
+suffix|user_2,tool_1,result_1,user_3,model_2
+count|4

@@ -1,0 +1,38 @@
+{
+  "name": "estimate_messages_bpe",
+  "mode": "estimate",
+  "costModel": "OpenAI:gpt-4.1",
+  "includeAssistantReasoning": true,
+  "messages": [
+    {
+      "id": "user_1",
+      "participant": "USER",
+      "text": "hello",
+      "images": [
+        "a.png"
+      ],
+      "attachmentMeta": {
+        "items": [
+          {
+            "type": "image",
+            "imageIndex": 0,
+            "pixelWidth": 1024,
+            "pixelHeight": 768,
+            "fileSize": 900000
+          }
+        ]
+      }
+    },
+    {
+      "id": "model_1",
+      "participant": "MODEL",
+      "text": "hi",
+      "segments": [
+        {
+          "type": "thought",
+          "content": "let me think"
+        }
+      ]
+    }
+  ]
+}

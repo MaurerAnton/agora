@@ -1,0 +1,25 @@
+{
+  "name": "estimate_images_default_cost",
+  "mode": "estimate",
+  "messages": [
+    {
+      "id": "user_1",
+      "participant": "USER",
+      "text": "see",
+      "images": [
+        "x.png",
+        "y.png"
+      ],
+      "attachmentMeta": {
+        "items": [
+          {
+            "type": "image",
+            "imageIndex": 0,
+            "pageCount": 2,
+            "fileSize": 768000
+          }
+        ]
+      }
+    }
+  ]
+}

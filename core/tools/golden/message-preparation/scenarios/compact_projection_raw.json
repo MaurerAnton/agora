@@ -1,0 +1,33 @@
+{
+  "name": "compact_projection_raw",
+  "mode": "compactProjection",
+  "messages": [
+    {
+      "id": "user_1",
+      "participant": "USER",
+      "text": "before"
+    },
+    {
+      "id": "compact_ok",
+      "participant": "USER",
+      "text": "  the summary  ",
+      "status": "SUCCESS"
+    },
+    {
+      "id": "model_1",
+      "participant": "MODEL",
+      "text": "after"
+    },
+    {
+      "id": "compact_stop",
+      "participant": "USER",
+      "text": "stopped",
+      "status": "STOPPED"
+    },
+    {
+      "id": "user_2",
+      "participant": "USER",
+      "text": "tail"
+    }
+  ]
+}

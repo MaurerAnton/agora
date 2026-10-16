@@ -1,0 +1,27 @@
+{
+  "name": "fixed_default_costs",
+  "mode": "estimateFixed",
+  "systemPrompt": "You are helpful.",
+  "initialUserPrompt": "Start here.",
+  "tools": [
+    {
+      "type": "function",
+      "function": {
+        "name": "get_weather",
+        "description": "Looks up weather",
+        "parameters": {
+          "type": "object",
+          "properties": {
+            "city": {
+              "type": "string",
+              "description": "City name"
+            }
+          },
+          "required": [
+            "city"
+          ]
+        }
+      }
+    }
+  ]
+}

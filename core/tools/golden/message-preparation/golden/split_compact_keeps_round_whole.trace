@@ -1,0 +1,5 @@
+name|split_compact_keeps_round_whole
+mode|splitCompact
+prefix|user_1,model_1
+retained|tool_1,result_1,user_2,model_2
+count|4

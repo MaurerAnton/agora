@@ -1,0 +1,60 @@
+{
+  "name": "split_logical_groups",
+  "mode": "splitLogical",
+  "retainLogicalMessages": 2,
+  "messages": [
+    {
+      "id": "user_1",
+      "participant": "USER",
+      "text": "q1"
+    },
+    {
+      "id": "model_1",
+      "participant": "MODEL",
+      "text": "a1"
+    },
+    {
+      "id": "compact_ok",
+      "participant": "USER",
+      "text": "summary",
+      "status": "SUCCESS"
+    },
+    {
+      "id": "user_2",
+      "participant": "USER",
+      "text": "q2"
+    },
+    {
+      "id": "tool_1",
+      "participant": "MODEL",
+      "segments": [
+        {
+          "type": "tool",
+          "toolName": "calc",
+          "toolArgs": "{}",
+          "toolResult": ""
+        }
+      ]
+    },
+    {
+      "id": "result_1",
+      "participant": "USER",
+      "segments": [
+        {
+          "type": "tool",
+          "toolResult": "r"
+        }
+      ]
+    },
+    {
+      "id": "user_3",
+      "participant": "USER",
+      "text": "q3"
+    },
+    {
+      "id": "model_2",
+      "participant": "MODEL",
+      "text": "a2"
+    }
+  ]
+}

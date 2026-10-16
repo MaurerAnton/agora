@@ -1,0 +1,42 @@
+{
+  "name": "usage_openai_bpe_cost",
+  "mode": "usage",
+  "budget": 512,
+  "costModel": "OpenAI:gpt-4.1",
+  "messages": [
+    {
+      "id": "user_1",
+      "participant": "USER",
+      "text": "Count me with the real o200k vocabulary, \u56fe\u50cf included."
+    },
+    {
+      "id": "tool_1",
+      "participant": "MODEL",
+      "segments": [
+        {
+          "type": "tool",
+          "toolName": "calc",
+          "toolArgs": "{\"a\":1}",
+          "toolResult": "2",
+          "toolCallId": "call_c"
+        }
+      ]
+    },
+    {
+      "id": "result_1",
+      "participant": "USER",
+      "segments": [
+        {
+          "type": "tool",
+          "toolResult": "2",
+          "toolCallId": "call_c"
+        }
+      ]
+    },
+    {
+      "id": "model_1",
+      "participant": "MODEL",
+      "text": "done"
+    }
+  ]
+}

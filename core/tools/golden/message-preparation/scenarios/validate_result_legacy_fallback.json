@@ -1,0 +1,29 @@
+{
+  "name": "validate_result_legacy_fallback",
+  "mode": "validateTools",
+  "messages": [
+    {
+      "id": "tool_1",
+      "participant": "MODEL",
+      "toolCall": {
+        "toolName": "legacy",
+        "arguments": "{}",
+        "result": "call-side"
+      }
+    },
+    {
+      "id": "result_1",
+      "participant": "USER",
+      "toolCall": {
+        "toolName": "legacy",
+        "arguments": "{}",
+        "result": ""
+      }
+    },
+    {
+      "id": "result_2",
+      "participant": "USER",
+      "text": "row text fallback"
+    }
+  ]
+}

@@ -1,0 +1,49 @@
+{
+  "name": "merge_same_role_runs",
+  "mode": "merge",
+  "messages": [
+    {
+      "id": "user_1",
+      "participant": "USER",
+      "text": "one",
+      "images": [
+        "i1.png"
+      ]
+    },
+    {
+      "id": "user_2",
+      "participant": "USER",
+      "text": "two",
+      "images": [
+        "i2.png"
+      ]
+    },
+    {
+      "id": "model_1",
+      "participant": "MODEL",
+      "text": "answer"
+    },
+    {
+      "id": "tool_1",
+      "participant": "MODEL",
+      "segments": [
+        {
+          "type": "tool",
+          "toolName": "calc",
+          "toolArgs": "{}",
+          "toolResult": ""
+        }
+      ]
+    },
+    {
+      "id": "user_3",
+      "participant": "USER",
+      "text": "after"
+    },
+    {
+      "id": "user_4",
+      "participant": "USER",
+      "text": "also after"
+    }
+  ]
+}

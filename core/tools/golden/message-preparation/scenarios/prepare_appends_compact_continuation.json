@@ -1,0 +1,28 @@
+{
+  "name": "prepare_appends_compact_continuation",
+  "mode": "prepare",
+  "budget": 100000,
+  "messages": [
+    {
+      "id": "user_1",
+      "participant": "USER",
+      "text": "early"
+    },
+    {
+      "id": "compact_ok",
+      "participant": "USER",
+      "text": "the compacted summary",
+      "status": "SUCCESS"
+    },
+    {
+      "id": "model_1",
+      "participant": "MODEL",
+      "text": "continuing"
+    },
+    {
+      "id": "user_2",
+      "participant": "USER",
+      "text": "and now"
+    }
+  ]
+}

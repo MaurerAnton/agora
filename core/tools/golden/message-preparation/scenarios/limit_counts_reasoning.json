@@ -1,0 +1,29 @@
+{
+  "name": "limit_counts_reasoning",
+  "mode": "limit",
+  "budget": 40,
+  "includeAssistantReasoning": true,
+  "messages": [
+    {
+      "id": "user_1",
+      "participant": "USER",
+      "text": "q"
+    },
+    {
+      "id": "model_1",
+      "participant": "MODEL",
+      "text": "a",
+      "segments": [
+        {
+          "type": "thought",
+          "content": "long reasoning chain"
+        }
+      ]
+    },
+    {
+      "id": "user_2",
+      "participant": "USER",
+      "text": "follow-up"
+    }
+  ]
+}

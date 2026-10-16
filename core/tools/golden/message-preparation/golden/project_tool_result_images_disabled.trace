@@ -1,0 +1,6 @@
+name|project_tool_result_images_disabled
+mode|projectToolResultImages
+msg|0|user_1|-|USER|SUCCESS|look||-|-|0|-|-|[]|-|[]
+msg|1|tool_1|-|MODEL|SUCCESS|||-|-|0|-|-|[{"type":"tool","content":"","toolName":"view_image","toolArgs":"{}","toolResult":"","toolCallId":"call_v","responseOutputItems":0}]|-|[]
+msg|2|result_1|-|USER|SUCCESS||shot.png|-|-|0|-|-|[{"type":"tool","content":"","toolResult":"img","toolCallId":"call_v","responseOutputItems":0}]|-|[]
+msg|3|image_context_99d7b066c604c9b0|result_1|USER|SUCCESS|[Tool visual result unavailable: the current model does not support image input.]||-|-|0|-|-|[]|-|[]

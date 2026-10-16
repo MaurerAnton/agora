@@ -1,0 +1,7 @@
+name|strip_drops_blank_turns
+mode|strip
+msg|0|user_3|-|USER|SUCCESS|keep me||-|-|0|-|-|[]|-|[]
+msg|1|model_1|-|MODEL|SUCCESS||a.png|-|-|0|-|-|[]|-|[]
+msg|2|tool_1|-|MODEL|SUCCESS|||-|-|0|-|-|[{"type":"tool","content":"","toolName":"calc","toolArgs":"{}","toolResult":"","responseOutputItems":0}]|-|[]
+msg|3|result_1|-|USER|SUCCESS|||-|-|0|-|-|[{"type":"tool","content":"","toolResult":"r","responseOutputItems":0}]|-|[]
+msg|4|model_3|-|MODEL|SUCCESS|||-|-|0|-|-|[]|{"toolName":"x","arguments":"{}","result":"y","responseOutputItems":0}|[]

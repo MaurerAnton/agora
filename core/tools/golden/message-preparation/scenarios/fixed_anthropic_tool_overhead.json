@@ -1,0 +1,19 @@
+{
+  "name": "fixed_anthropic_tool_overhead",
+  "mode": "estimateFixed",
+  "costModel": "Anthropic:claude-sonnet-4-5",
+  "systemPrompt": "Sys",
+  "tools": [
+    {
+      "type": "function",
+      "function": {
+        "name": "t",
+        "description": "",
+        "parameters": {
+          "type": "object",
+          "properties": {}
+        }
+      }
+    }
+  ]
+}

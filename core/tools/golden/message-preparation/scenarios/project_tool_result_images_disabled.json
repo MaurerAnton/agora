@@ -1,0 +1,39 @@
+{
+  "name": "project_tool_result_images_disabled",
+  "mode": "projectToolResultImages",
+  "includeImages": false,
+  "messages": [
+    {
+      "id": "user_1",
+      "participant": "USER",
+      "text": "look"
+    },
+    {
+      "id": "tool_1",
+      "participant": "MODEL",
+      "segments": [
+        {
+          "type": "tool",
+          "toolName": "view_image",
+          "toolArgs": "{}",
+          "toolResult": "",
+          "toolCallId": "call_v"
+        }
+      ]
+    },
+    {
+      "id": "result_1",
+      "participant": "USER",
+      "images": [
+        "shot.png"
+      ],
+      "segments": [
+        {
+          "type": "tool",
+          "toolResult": "img",
+          "toolCallId": "call_v"
+        }
+      ]
+    }
+  ]
+}

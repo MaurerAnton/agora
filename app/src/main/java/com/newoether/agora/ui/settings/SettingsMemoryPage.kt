@@ -66,6 +66,7 @@ fun SettingsMemoryPage(viewModel: ChatViewModel, onBack: () -> Unit) {
     var memorySearchQuery by remember { mutableStateOf("") }
     var currentFolder by remember { mutableStateOf("") }
     var showMoveDialog by remember { mutableStateOf<String?>(null) }
+    var showNewFolderDialog by remember { mutableStateOf(false) }
     val clipboardManager = LocalClipboardManager.current
     val copiedText = stringResource(R.string.memory_copied)
 
@@ -294,6 +295,15 @@ fun SettingsMemoryPage(viewModel: ChatViewModel, onBack: () -> Unit) {
                             )
                         }
                         if (memoryFiles.isNotEmpty() && memorySearchQuery.isBlank()) {
+                            add {
+                                SettingsItem(
+                                    headlineContent = {
+                                        Text(stringResource(R.string.memory_new_folder_title))
+                                    },
+                                    leadingContent = { Icon(Icons.Default.Folder, null, tint = MaterialTheme.colorScheme.primary.copy(alpha = 0.6f)) },
+                                    modifier = Modifier.clickable { showNewFolderDialog = true },
+                                )
+                            }
                             if (currentFolder.isNotEmpty()) {
                                 add {
                                     Row(
@@ -494,6 +504,43 @@ fun SettingsMemoryPage(viewModel: ChatViewModel, onBack: () -> Unit) {
             onConfirm = { target ->
                 showMoveDialog = null
                 moveMemoryFile(fileName, target)
+            },
+        )
+    }
+
+    // New folder dialog: no disk writes — the folder materializes with its first file.
+    if (showNewFolderDialog) {
+        var folderName by remember { mutableStateOf("") }
+        val normalized = folderName.trim().trim('/').split('/').filter { it.isNotEmpty() }
+        val valid = normalized.isNotEmpty() && normalized.none { it == ".." }
+        AlertDialog(
+            modifier = Modifier.clearFocusOnTap(),
+            containerColor = MaterialTheme.colorScheme.surfaceContainer,
+            onDismissRequest = { showNewFolderDialog = false },
+            title = { Text(stringResource(R.string.memory_new_folder_title), fontWeight = FontWeight.Bold) },
+            text = {
+                OutlinedTextField(
+                    value = folderName,
+                    onValueChange = { folderName = it },
+                    label = { Text(stringResource(R.string.memory_new_folder)) },
+                    singleLine = true,
+                    shape = RoundedCornerShape(16.dp),
+                    modifier = Modifier.fillMaxWidth(),
+                )
+            },
+            confirmButton = {
+                TextButton(
+                    onClick = {
+                        currentFolder = normalized.joinToString("/")
+                        showNewFolderDialog = false
+                    },
+                    enabled = valid,
+                ) { Text(stringResource(R.string.memory_create)) }
+            },
+            dismissButton = {
+                TextButton(onClick = { showNewFolderDialog = false }) {
+                    Text(stringResource(R.string.provider_cancel))
+                }
             },
         )
     }

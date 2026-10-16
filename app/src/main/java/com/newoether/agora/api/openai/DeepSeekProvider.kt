@@ -1,10 +1,8 @@
 package com.newoether.agora.api.openai
 
 import com.newoether.agora.api.OpenAiChatRequest
-import com.newoether.agora.api.OpenAiThinking
 import com.newoether.agora.api.ProviderConfig
 import com.newoether.agora.api.util.resolvedThinking
-import com.newoether.agora.model.ResolvedThinking
 import com.newoether.agora.model.ThinkingProviderFamily
 import com.newoether.agora.util.Constants
 
@@ -33,18 +31,3 @@ class DeepSeekProvider : BaseOpenAiProvider() {
 /** True when a model id names a DeepSeek model, including hub- and relay-style prefixes. */
 internal fun isDeepSeekModel(modelId: String): Boolean =
     modelId.contains("deepseek", ignoreCase = true)
-
-/**
- * Applies the DeepSeek thinking controls to an OpenAI-format request. `thinking.type` toggles
- * thinking and `reasoning_effort` carries the level the model accepts.
- */
-internal fun OpenAiChatRequest.withDeepSeekThinking(
-    resolved: ResolvedThinking,
-): OpenAiChatRequest = if (resolved.disabled) {
-    copy(thinking = OpenAiThinking(type = "disabled"))
-} else {
-    copy(
-        thinking = OpenAiThinking(type = "enabled"),
-        reasoningEffort = resolved.effort,
-    )
-}

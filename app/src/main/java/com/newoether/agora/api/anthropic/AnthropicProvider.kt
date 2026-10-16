@@ -14,6 +14,7 @@ import com.newoether.agora.api.util.adaptToolRoundsForProvider
 import com.newoether.agora.api.util.resolvedThinking
 import com.newoether.agora.api.util.RequestFormatException
 import com.newoether.agora.api.util.requireValidSerializedRequest
+import com.newoether.agora.api.util.toRequestBody
 import com.newoether.agora.api.util.StreamTermination
 import com.newoether.agora.api.util.asRetryableResponseBodyReadError
 import com.newoether.agora.api.util.asRetryableTransportError
@@ -403,7 +404,7 @@ class AnthropicProvider(
                     if (streamingRequest != null) {
                         HttpClient.streamPostBody(
                             url,
-                            streamingRequest.body,
+                            streamingRequest.toRequestBody(),
                             headers,
                             streamingRequest.diagnosticJson,
                         )

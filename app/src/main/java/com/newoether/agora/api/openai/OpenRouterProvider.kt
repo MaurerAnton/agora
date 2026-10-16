@@ -40,6 +40,9 @@ class OpenRouterProvider : BaseOpenAiProvider() {
         "X-Title" to "Agora"
     )
 
+    /** Structured reasoning_details and thought titles deviate from the base delta semantics. */
+    override val usesDefaultDeltaParsing: Boolean get() = false
+
     override suspend fun parseDeltaContent(
         delta: OpenAiDelta,
         config: ProviderConfig,

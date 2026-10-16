@@ -27,6 +27,7 @@ import com.newoether.agora.api.openai.withOpenRouterReasoning
 import com.newoether.agora.api.openai.withQwenThinking
 import com.newoether.agora.api.util.RequestFormatException
 import com.newoether.agora.api.util.StreamingJsonBody
+import com.newoether.agora.api.util.buildToolCallId
 import com.newoether.agora.api.util.requireValidSerializedRequest
 import com.newoether.agora.api.util.resolvedThinking
 import com.newoether.agora.model.ChatMessage
@@ -53,7 +54,7 @@ import java.util.Base64
 private val traceJson = Json { ignoreUnknownKeys = true; encodeDefaults = true; explicitNulls = false }
 
 private val uuidPattern = Regex(
-    "[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}|[0-9a-f]{32}"
+    "[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}",
 )
 
 /** Random UUIDs (base64 placeholders, scenario data) are not comparable across implementations. */
@@ -146,6 +147,9 @@ private data class Scenario(
     val serializedBody: String? = null,
     val serializedRequiredStringFields: List<String> = emptyList(),
     val serializedRequiredArrayFields: List<String> = emptyList(),
+    val toolIdName: String? = null,
+    val toolIdArguments: String? = null,
+    val toolIdPrefix: String? = null,
 )
 
 @Serializable
@@ -324,7 +328,18 @@ fun main(args: Array<String>) {
     line("kind", esc(scenario.kind))
     line("mode", esc(scenario.mode))
     try {
-        if (scenario.mode == "serialized") {
+        if (scenario.mode == "toolid") {
+            val name = requireNotNull(scenario.toolIdName) { "toolid mode requires toolIdName" }
+            val arguments = requireNotNull(scenario.toolIdArguments) {
+                "toolid mode requires toolIdArguments"
+            }
+            val id = if (scenario.toolIdPrefix != null) {
+                buildToolCallId(name, arguments, scenario.toolIdPrefix)
+            } else {
+                buildToolCallId(name, arguments)
+            }
+            line("toolId", esc(id))
+        } else if (scenario.mode == "serialized") {
             requireValidSerializedRequest(
                 provider = scenario.providerName,
                 body = requireNotNull(scenario.serializedBody) {

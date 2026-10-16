@@ -1,0 +1,5 @@
+name|chat_tool_id_take32
+kind|deepseek
+mode|factory
+apiMessages|[{"role":"user","content":[{"type":"text","text":"Go."}]},{"role":"assistant","tool_calls":[{"id":"call_aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa_94b60cdf6a2f7c39","type":"function","function":{"name":"aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa","arguments":"{}"}}]},{"role":"tool","content":[{"type":"text","text":"done"}],"tool_call_id":"call_aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa_94b60cdf6a2f7c39"},{"role":"user","content":[{"type":"text","text":"Thanks."}]}]
+body|{"model":"deepseek-v4","messages":[{"role":"user","content":[{"type":"text","text":"Go."}]},{"role":"assistant","tool_calls":[{"id":"call_aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa_94b60cdf6a2f7c39","type":"function","function":{"name":"aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa","arguments":"{}"}}]},{"role":"tool","content":[{"type":"text","text":"done"}],"tool_call_id":"call_aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa_94b60cdf6a2f7c39"},{"role":"user","content":[{"type":"text","text":"Thanks."}]}],"stream":true,"stream_options":{"include_usage":true},"reasoning_effort":"high","thinking":{"type":"enabled"}}

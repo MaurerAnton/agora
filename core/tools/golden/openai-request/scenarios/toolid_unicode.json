@@ -1,0 +1,8 @@
+{
+  "name": "toolid_unicode",
+  "kind": "openai",
+  "providerName": "OpenAI",
+  "mode": "toolid",
+  "toolIdName": "\u043f\u043e\u0438\u0441\u043a_\u0432\u0435\u0431",
+  "toolIdArguments": "{}"
+}

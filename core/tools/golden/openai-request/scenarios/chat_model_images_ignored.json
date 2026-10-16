@@ -1,0 +1,30 @@
+{
+  "name": "chat_model_images_ignored",
+  "kind": "openai",
+  "providerName": "OpenAI",
+  "config": {
+    "modelId": "gpt-4.1"
+  },
+  "requestInput": {
+    "messages": [
+      {
+        "id": "user_1",
+        "participant": "USER",
+        "text": "look"
+      },
+      {
+        "id": "model_1",
+        "participant": "MODEL",
+        "text": "I looked.",
+        "images": [
+          "files/a.png"
+        ]
+      },
+      {
+        "id": "user_2",
+        "participant": "USER",
+        "text": "ok"
+      }
+    ]
+  }
+}

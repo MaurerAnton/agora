@@ -1,0 +1,8 @@
+{
+  "name": "toolid_trim_spaces",
+  "kind": "openai",
+  "providerName": "OpenAI",
+  "mode": "toolid",
+  "toolIdName": "  spaced_tool  ",
+  "toolIdArguments": "{}"
+}

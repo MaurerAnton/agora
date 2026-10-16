@@ -1,0 +1,4 @@
+name|validate_user_null_content
+kind|openai
+mode|validate
+error|RequestFormatException|OpenAI request validation failed: messages[0] user content is empty

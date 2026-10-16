@@ -33,7 +33,7 @@ exactly (`core/tests/openai_request_parity_test.cpp`).
   "kind": "deepseek",                  // openai | deepseek | groq | qwen | openrouter | custom
   "providerName": "DeepSeek",          // provider identity used in errors and invalid-request text
   "providerBaseUrl": null,             // custom only: defaultBaseUrl for the cheapest-inference rule
-  "mode": "factory",                   // factory | validate | serialized
+  "mode": "factory",                   // factory | validate | serialized | toolid
   "config": {                          // ProviderConfig fields the pipeline reads
     "modelId": "deepseek-v4",
     "thinkingEnabled": true,
@@ -78,6 +78,10 @@ branches the converter can never produce (invalid roles, tool fields on system m
 `serializedRequiredStringFields` / `serializedRequiredArrayFields`; it pins the serialized-body gate
 without a JSON decode of the request.
 
+`mode: "toolid"` calls `buildToolCallId(toolIdName, toolIdArguments, toolIdPrefix)` directly (the
+prefix defaults to `call_` when omitted) and records `toolId|<id>`; it pins every name-normalization
+branch, including the ones a valid request body can never reach.
+
 ## Boundary
 
 `openAiWebSearchEnabled` chat requests are rejected by the provider orchestration before the factory
@@ -88,8 +92,9 @@ slice never sees those paths.
 ## Trace format (`golden/*.trace`)
 
 One `|`-separated record per line, escaped like the SSE stand (`\\` `\p` `\s` `\n` `\r` `\t`),
-with every UUID (dashed or compacted) collapsed to `<uuid>` — base64 placeholders therefore read
-`__AGORA_BASE64_<uuid>__`.
+with every dashed UUID collapsed to `<uuid>` — base64 placeholders therefore read
+`__AGORA_BASE64_<uuid>__`. (Only the dashed form is normalized: the compact 32-hex alternative
+would also swallow deterministic hex runs, and the placeholders are the only random data here.)
 
 ```
 name|<scenario name>

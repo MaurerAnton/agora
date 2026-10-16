@@ -1,0 +1,8 @@
+{
+  "name": "toolid_blank",
+  "kind": "openai",
+  "providerName": "OpenAI",
+  "mode": "toolid",
+  "toolIdName": "   ",
+  "toolIdArguments": "{}"
+}

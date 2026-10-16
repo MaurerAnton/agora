@@ -11,7 +11,10 @@
         "id": "user_1",
         "participant": "USER",
         "text": "",
-        "images": ["files/missing.png"]
+        "images": [
+          "files/missing.png",
+          "files"
+        ]
       }
     ]
   }

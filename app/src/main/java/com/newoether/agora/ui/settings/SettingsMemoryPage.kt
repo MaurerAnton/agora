@@ -300,7 +300,7 @@ fun SettingsMemoryPage(viewModel: ChatViewModel, onBack: () -> Unit) {
                                     headlineContent = {
                                         Text(stringResource(R.string.memory_new_folder_title))
                                     },
-                                    leadingContent = { Icon(Icons.Default.CreateNewFolder, null, tint = MaterialTheme.colorScheme.primary.copy(alpha = 0.6f)) },
+                                    leadingContent = { Icon(Icons.Default.Folder, null, tint = MaterialTheme.colorScheme.primary.copy(alpha = 0.6f)) },
                                     modifier = Modifier.clickable { showNewFolderDialog = true },
                                 )
                             }

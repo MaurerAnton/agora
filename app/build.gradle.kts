@@ -43,7 +43,7 @@ android {
             cmake {
                 cppFlags += "-std=c++17"
                 arguments += listOf("-DANDROID_STL=c++_shared")
-                targets += listOf("agora_llama", "agora_proot")
+                targets += listOf("agora_llama", "agora_proot", "agora_core")
             }
         }
     }
@@ -98,7 +98,7 @@ android {
             applicationIdSuffix = ".dev"
             // Dev lineage is offset +10000 so test builds always update over
             // each other; keep the offset when bumping release versionCode.
-            versionCode = 10032
+            versionCode = 10033
             versionNameSuffix = "-dev"
             resValue("string", "app_name", "Agora Dev")
         }

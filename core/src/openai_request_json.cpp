@@ -24,6 +24,22 @@ namespace json = agora::core::json;
     throw ProviderRequestError{"JsonDecodingException", what};
 }
 
+/**
+ * Decimal text -> float, correctly rounded, whole-string match like String.toFloat().
+ * std::from_chars for floats is deleted in the NDK's libc++, so it cannot be used on Android;
+ * strtof is correctly rounded on both bionic and glibc. Native code keeps the C locale.
+ */
+bool parse_float(std::string_view text, float& out) {
+    if (text.empty()) return false;
+    const std::string copy(text);
+    const char* const begin = copy.c_str();
+    char* end = nullptr;
+    out = std::strtof(begin, &end);
+    if (end != begin + copy.size()) return false;
+    // Strict JSON never carries non-finite literals; the kotlinx decoder rejects them too.
+    return std::isfinite(out);
+}
+
 void append_quoted(std::string& out, std::string_view text) {
     out.push_back('"');
     json::escape_to(out, text);
@@ -273,10 +289,7 @@ std::optional<std::int32_t> decode_optional_int(const json::Value& object, std::
 float decode_float_value(const json::Value& value) {
     if (value.kind != json::Kind::Literal) throw_decode("expected a JSON number");
     float parsed = 0.0f;
-    const char* begin = value.text.data();
-    const char* end = begin + value.text.size();
-    const auto result = std::from_chars(begin, end, parsed);
-    if (result.ec != std::errc{} || result.ptr != end) throw_decode("expected a Float");
+    if (!parse_float(value.text, parsed)) throw_decode("expected a Float");
     return parsed;
 }
 
@@ -531,10 +544,7 @@ std::string format_kotlin_float(float value) {
         }
         std::string candidate = digits + "e" + std::to_string(scale_exponent);
         float parsed = 0.0f;
-        const auto result = std::from_chars(candidate.data(), candidate.data() + candidate.size(),
-                                            parsed);
-        if (result.ec == std::errc{} && result.ptr == candidate.data() + candidate.size() &&
-            std::fabs(parsed) == magnitude) {
+        if (parse_float(candidate, parsed) && std::fabs(parsed) == magnitude) {
             const std::int64_t dec_exp =
                 static_cast<std::int64_t>(scale_exponent) + static_cast<std::int64_t>(digits.size());
             return format_with_digits(digits, dec_exp, negative);

@@ -1,0 +1,6 @@
+# Pins the exact kotlinx string escaping used when the malformed stand-in is
+# built: control characters, the Unicode line/paragraph separators, an astral
+# character, backslash, slash, quote and the short escapes all appear in the
+# saved original_arguments.
+L data: {"choices":[{"index":0,"delta":{"tool_calls":[{"index":0,"id":"c1","function":{"name":"bad name","arguments":"a\u0001b\u001fc\u2028d\u2029e\ud83d\ude00f\\g/h\"i\bj\fk\nl\rm\tn"}}]}}]}
+L data: [DONE]

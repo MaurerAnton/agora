@@ -1,0 +1,4 @@
+L data: {"choices":[{"index":0,"delta":{"content":"x"}}]}
+L data: {"choices":[],"usage":{"prompt_tokens":100,"completion_tokens":20,"prompt_cache_hit_tokens":30,"prompt_cache_miss_tokens":70,"cache_write_tokens":7}}
+L data: {"choices":[{"index":0,"delta":{},"finish_reason":"stop"}]}
+L data: [DONE]

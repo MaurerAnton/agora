@@ -1,0 +1,2 @@
+# choices must be a JSON array; an object must fail the decode.
+L data: {"choices":{}}

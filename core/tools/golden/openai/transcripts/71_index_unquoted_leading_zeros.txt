@@ -1,0 +1,6 @@
+# Unquoted numbers with leading zeros and a bare minus: kotlinx does not enforce
+# the RFC 8259 grammar, its per-character scan accepts them all.
+L data: {"choices":[{"index":007,"delta":{"content":"a"}}]}
+L data: {"choices":[{"index":00,"delta":{"content":"b"}}]}
+L data: {"choices":[{"index":-0,"delta":{"content":"c"}}]}
+L data: [DONE]

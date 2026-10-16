@@ -1,0 +1,3 @@
+# 1e2-3 evaluates through the double accumulator to 1e-23, which is not
+# integral, so the Int decode must fail.
+L data: {"choices":[{"index":1e2-3,"delta":{"content":"a"}}]}

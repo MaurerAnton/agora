@@ -1,0 +1,4 @@
+L data: {"choices":[{"index":0,"delta":{"reasoning":"raw thought"}}]}
+L data: {"choices":[{"index":0,"delta":{"reasoning_content":"preferred"}}]}
+L data: {"choices":[{"index":0,"delta":{"content":"done"},"finish_reason":"stop"}]}
+L data: [DONE]

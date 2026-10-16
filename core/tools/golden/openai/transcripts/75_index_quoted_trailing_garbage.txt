@@ -1,0 +1,3 @@
+# A quoted numeric literal scans until a non-token character; 'x' is TC_OTHER so
+# it is fed to the digit check and the decode must fail.
+L data: {"choices":[{"index":"1x","delta":{"content":"a"}}]}

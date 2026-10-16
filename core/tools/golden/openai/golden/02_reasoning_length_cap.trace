@@ -1,0 +1,7 @@
+thought|Think|title=-|signature=-
+thought|ing...|title=-|signature=-
+text|Answer
+term|sawTerminal=1|stop=length|produced=1|inFlight=0|timedOut=0|reported=0|retryable=0|truncCap=1
+streamError|none
+toError|outputTruncated|provider=agora|stop=length
+describe|stop_reason=length terminal_marker=true produced_content=true tool_in_flight=false timed_out=false stream_error=false reported_error=false retryable=false

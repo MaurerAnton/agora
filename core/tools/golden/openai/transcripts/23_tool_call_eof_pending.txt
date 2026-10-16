@@ -1,0 +1,2 @@
+L data: {"choices":[{"index":0,"delta":{"tool_calls":[{"index":0,"id":"call_p","function":{"name":"fp","arguments":"{\"a\":1}"}}]}}]}
+E

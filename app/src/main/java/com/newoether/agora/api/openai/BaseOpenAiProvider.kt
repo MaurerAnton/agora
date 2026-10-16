@@ -14,9 +14,6 @@ import com.newoether.agora.api.util.asRetryableResponseBodyReadError
 import com.newoether.agora.api.util.asRetryableTransportError
 import com.newoether.agora.api.util.carriesModelOutput
 import com.newoether.agora.api.util.ProviderRetryPolicy
-import com.newoether.agora.api.util.safeWireToolCallId
-import com.newoether.agora.api.util.safeWireToolName
-import com.newoether.agora.api.util.malformedToolCallRequest
 import com.newoether.agora.model.ChatMessage
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.delay
@@ -71,17 +68,21 @@ abstract class BaseOpenAiProvider : LlmProvider {
         config: ProviderConfig,
         emit: suspend (StreamEvent) -> Unit
     ) {
-        // reasoning_content is the vLLM/DeepSeek-compatible field; `reasoning` is the bare-string
-        // form many relays emit instead. Take whichever the endpoint actually populated.
-        val reasoning = delta.reasoningContent?.takeIf(String::isNotEmpty)
-            ?: delta.reasoning?.takeIf(String::isNotEmpty)
-        reasoning?.let {
-            emit(StreamEvent.ThoughtChunk(it))
-        }
-        delta.content?.takeIf(String::isNotEmpty)?.let { content ->
-            emit(StreamEvent.TextChunk(content))
-        }
+        defaultOpenAiDeltaContent(delta, emit)
     }
+
+    /**
+     * One stream consumer per attempt. A provider whose [parseDeltaContent] deviates from
+     * [defaultOpenAiDeltaContent] must keep the Kotlin reference implementation; the native
+     * consumer implements only the base semantics.
+     */
+    internal open fun createChatStreamConsumer(config: ProviderConfig): OpenAiChatStreamConsumption =
+        OpenAiChatStreamConsumer(
+            json = json,
+            providerName = name,
+            parseDelta = { delta, emit -> parseDeltaContent(delta, config, emit) },
+            logMalformed = { DebugLog.e("AgoraAPI", it) },
+        )
 
     protected open val retryableStatusCodes: Set<Int> = setOf(429, 502, 503, 504)
 
@@ -419,67 +420,21 @@ abstract class BaseOpenAiProvider : LlmProvider {
      * socket EOF is produced identically by a clean finish and by a relay cutting the connection
      * between content blocks. Fatal errors the consumer itself raises are flagged so the caller
      * does not report a second, contradictory diagnostic.
+     *
+     * The provider owns the socket, the read-timeout budget and the terminal grace deadline; the
+     * per-line meaning is owned by [OpenAiChatStreamConsumption].
      */
     private suspend fun consumeSuccessfulStream(
         handle: HttpClient.StreamHandle,
         config: ProviderConfig,
         emit: suspend (StreamEvent) -> Unit
     ): StreamTermination {
-        val pendingToolCalls = mutableMapOf<Int, PendingToolCall>()
-        var producedContent = false
-        var reportedError = false
-        var streamError: GenerationError? = null
-        var finishReason: String? = null
-        var sawDone = false
-        var timedOut = false
-        val emitTracked: suspend (StreamEvent) -> Unit = { event ->
-            if (event.carriesModelOutput()) producedContent = true
-            if (event is StreamEvent.Error) reportedError = true
-            emit(event)
-        }
+        val consumer = createChatStreamConsumer(config)
         var terminalDeadlineNanos: Long? = null
-
-        suspend fun emitPendingStructuredToolCalls() {
-            if (pendingToolCalls.isEmpty()) return
-            val pending = pendingToolCalls.values.toList()
-            pendingToolCalls.clear()
-            val seenIds = mutableSetOf<String>()
-            val calls = pending.map { candidate ->
-                val callId = candidate.id.ifBlank { candidate.streamKey }
-                val arguments = candidate.args.toString().ifBlank { "{}" }
-                val argumentsAreObject = runCatching {
-                    json.parseToJsonElement(arguments) is kotlinx.serialization.json.JsonObject
-                }.getOrDefault(false)
-                // A damaged call becomes a stand-in the executor answers with this cause, so the
-                // model can correct itself instead of the whole run failing.
-                val cause = when {
-                    !callId.matches(safeWireToolCallId) -> "Provider returned an invalid tool call id"
-                    !seenIds.add(callId) -> "Provider returned duplicate tool call ids"
-                    !candidate.name.matches(safeWireToolName) ->
-                        "Provider ended before the tool name was complete"
-                    !argumentsAreObject ->
-                        "Provider ended before the tool arguments formed a complete JSON object"
-                    else -> null
-                }
-                if (cause == null) {
-                    StreamEvent.ToolCallRequest(
-                        id = callId,
-                        name = candidate.name,
-                        arguments = arguments,
-                        streamKey = candidate.streamKey,
-                    )
-                } else {
-                    malformedToolCallRequest(cause, candidate.name, arguments, candidate.streamKey)
-                }
-            }
-            if (calls.size == 1) emitTracked(calls.first())
-            else emitTracked(StreamEvent.ToolCallsRequest(calls))
-        }
 
         // Read timeouts are tolerated for long thinking pauses (read timeout = 5 min), but a
         // silently-dead connection (NAT drop with no RST) must not hang forever: give up after
         // 3 consecutive timeouts (~15 min without a single byte).
-        var consecutiveReadTimeouts = 0
         while (currentCoroutineContext().isActive) {
             terminalDeadlineNanos?.let { deadline ->
                 val remainingNanos = deadline - System.nanoTime()
@@ -495,122 +450,23 @@ abstract class BaseOpenAiProvider : LlmProvider {
                 if (!currentCoroutineContext().isActive) break
                 // A semantic terminal event already completed the model response. This timeout
                 // only closes its optional usage/[DONE] grace tail and is therefore success.
-                if (terminalDeadlineNanos != null) break
-                if (++consecutiveReadTimeouts >= 3) {
-                    timedOut = true
-                    break
-                }
+                if (!consumer.onReadTimeout(terminalDeadlineNanos != null)) break
                 continue
             } catch (e: Exception) {
                 if (!currentCoroutineContext().isActive) break
-                streamError = e.asRetryableResponseBodyReadError() ?: throw e
+                val mapped = e.asRetryableResponseBodyReadError() ?: throw e
+                consumer.onReadError(mapped)
                 break
             } ?: break
-            consecutiveReadTimeouts = 0
 
-            if (!line.startsWith("data: ")) continue
-            val jsonStr = line.substring(6).trim()
-            if (jsonStr == "[DONE]") {
-                sawDone = true
-                emitPendingStructuredToolCalls()
-                break
-            }
+            if (!consumer.consumeLine(line, emit)) break
 
-            try {
-                val response = json.decodeFromString<OpenAiStreamResponse>(jsonStr)
-
-                // A relay signals a mid-stream failure as a bare {"error":{...}} chunk on a 200
-                // response. Previously ignoreUnknownKeys discarded it and the generation just
-                // stopped with no diagnostic at all.
-                response.error?.let { error ->
-                    streamError = GenerationError.Api(
-                        code = error.code,
-                        type = error.type,
-                        message = error.message.ifBlank {
-                            "Provider reported an error in the response stream"
-                        },
-                    )
-                }
-                if (
-                    streamError == null &&
-                    ProviderRetryPolicy.isFailedToGenerateOutcome(response.outcome)
-                ) {
-                    streamError = GenerationError.Api(
-                        code = null,
-                        type = "failed_to_generate",
-                        message = response.outcome.orEmpty(),
-                    )
-                }
-
-                val choice = response.choices?.firstOrNull()
-
-                choice?.delta?.let { delta ->
-                    parseDeltaContent(delta, config, emitTracked)
-
-                    delta.toolCalls?.forEach { tc ->
-                        val existingEntry = tc.id?.let { id ->
-                            pendingToolCalls.entries.firstOrNull { it.value.id == id }
-                        }
-                        val index = tc.index
-                            ?: existingEntry?.key
-                            ?: pendingToolCalls.keys.singleOrNull()
-                            ?: pendingToolCalls.size
-                        val pending = pendingToolCalls.getOrPut(index) { PendingToolCall() }
-                        tc.id?.takeIf(String::isNotBlank)?.let { pending.id = it }
-                        tc.function?.name?.takeIf(String::isNotBlank)?.let { pending.name = it }
-                        tc.function?.arguments?.let {
-                            // Snapshot-tolerant: a relay that resends the whole argument string in
-                            // every delta must not produce `{"a":1}{"a":1}`, and an empty
-                            // placeholder delta must not erase what was already accumulated.
-                            pending.args.append(
-                                if (it is JsonPrimitive) it.content else it.toString()
-                            )
-                        }
-                        emitTracked(
-                            StreamEvent.ToolCallUpdate(
-                                streamKey = pending.streamKey,
-                                id = pending.id.ifBlank { null },
-                                name = pending.name,
-                                arguments = pending.args.toString(),
-                            )
+            if (terminalDeadlineNanos == null && consumer.hasSemanticTerminal) {
+                terminalDeadlineNanos =
+                    System.nanoTime() +
+                        java.util.concurrent.TimeUnit.MILLISECONDS.toNanos(
+                            terminalSseGraceMillis.coerceAtLeast(1L)
                         )
-                    }
-                }
-
-                choice?.finishReason?.takeIf(String::isNotBlank)?.let {
-                    finishReason = it.lowercase()
-                }
-
-                if (!choice?.finishReason.isNullOrBlank()) {
-                    // Several OpenAI-compatible gateways return "stop" (or close directly)
-                    // after streaming a perfectly valid structured tool call. The accumulated
-                    // call is authoritative; never discard it based on the terminal spelling.
-                    emitPendingStructuredToolCalls()
-                }
-
-                response.usage?.let { usage ->
-                    emitTracked(StreamEvent.UsageUpdate(usage.toTokenUsage()))
-                }
-
-                if (streamError != null) break
-
-                if (!choice?.finishReason.isNullOrBlank() && terminalDeadlineNanos == null) {
-                    terminalDeadlineNanos =
-                        System.nanoTime() +
-                            java.util.concurrent.TimeUnit.MILLISECONDS.toNanos(
-                                terminalSseGraceMillis.coerceAtLeast(1L)
-                            )
-                }
-            } catch (e: Exception) {
-                DebugLog.e(
-                    "AgoraAPI",
-                    "[$name] malformed stream payload exception=${e.javaClass.simpleName}",
-                )
-                streamError = GenerationError.SseParse(
-                    rawLine = jsonStr.take(512),
-                    cause = e.localizedMessage ?: "Malformed SSE payload",
-                )
-                break
             }
         }
 
@@ -622,17 +478,7 @@ abstract class BaseOpenAiProvider : LlmProvider {
             throw CancellationException("Stream cancelled")
         }
 
-        return StreamTermination(
-            // Either signal proves the message ended semantically. Many gateways omit one of them,
-            // so requiring both would report false truncations.
-            sawTerminalMarker = sawDone || finishReason != null,
-            stopReason = finishReason,
-            producedContent = producedContent,
-            toolCallInFlight = pendingToolCalls.isNotEmpty(),
-            streamError = streamError,
-            alreadyReportedError = reportedError,
-            timedOut = timedOut,
-        )
+        return consumer.finish()
     }
 
     private fun buildGenerationError(

@@ -1,0 +1,4 @@
+# Kotlin String.trim() removes every Char.isWhitespace character, which
+# includes NBSP and the Unicode separators, before the payload is parsed.
+L data:   {"choices":[{"index":0,"delta":{"content":"x"}}]} 　
+L data: [DONE]

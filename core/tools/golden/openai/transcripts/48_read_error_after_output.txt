@@ -1,0 +1,2 @@
+L data: {"choices":[{"index":0,"delta":{"content":"half"}}]}
+R the server response could not be read

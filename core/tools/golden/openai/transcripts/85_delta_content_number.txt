@@ -1,0 +1,2 @@
+# content is a String field; a number must fail the decode.
+L data: {"choices":[{"index":0,"delta":{"content":5}}]}

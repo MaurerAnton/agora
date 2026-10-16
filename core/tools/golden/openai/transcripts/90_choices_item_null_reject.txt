@@ -1,0 +1,2 @@
+# A null list item cannot decode into a non-nullable OpenAiChoice.
+L data: {"choices":[null]}

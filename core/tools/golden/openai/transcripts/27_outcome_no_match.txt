@@ -1,0 +1,3 @@
+L data: {"outcome":"all good"}
+L data: {"choices":[{"index":0,"delta":{"content":"ok"},"finish_reason":"stop"}]}
+L data: [DONE]

@@ -1,0 +1,5 @@
+L data: {"choices":[{"index":0,"delta":{"reasoning_content":"Think"}}]}
+L data: {"choices":[{"index":0,"delta":{"reasoning_content":"ing..."}}]}
+L data: {"choices":[{"index":0,"delta":{"content":"Answer"}}]}
+L data: {"choices":[{"index":0,"delta":{},"finish_reason":"length"}]}
+E

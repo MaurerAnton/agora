@@ -1,0 +1,5 @@
+# Error chunk handling: an explicit null is fine, but a message is required by
+# the wire model, so {"error":{...}} without one is a decode failure.
+L data: {"error":null}
+L data: {"choices":[{"index":0,"delta":{"content":"x"}}]}
+L data: {"error":{"type":"oops"}}

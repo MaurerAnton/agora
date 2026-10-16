@@ -1,0 +1,4 @@
+# Raw control bytes inside a JSON string are content, not syntax: kotlinx
+# validates escapes only and passes every other character through.
+L data: {"choices":[{"index":0,"delta":{"content":"abcde	f"}}]}
+L data: [DONE]

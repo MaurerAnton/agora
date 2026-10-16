@@ -1,0 +1,7 @@
+L data: {"choices":[{"index":0,"delta":{"tool_calls":[{"index":0,"id":"call_st","function":{"name":"fa","arguments":"{\"alpha\":1,\"beta\":2"}}]}}]}
+L data: {"choices":[{"index":0,"delta":{"tool_calls":[{"index":0,"function":{"arguments":""}}]}}]}
+L data: {"choices":[{"index":0,"delta":{"tool_calls":[{"index":0,"function":{"arguments":"{\"alpha\":1,\"beta\":2"}}]}}]}
+L data: {"choices":[{"index":0,"delta":{"tool_calls":[{"index":0,"function":{"arguments":"{\"alpha\":1,\"beta\":2,\"gamma\":3}"}}]}}]}
+L data: {"choices":[{"index":0,"delta":{"tool_calls":[{"index":0,"function":{"arguments":"{\"alpha\":1,\"beta\":2"}}]}}]}
+L data: {"choices":[{"index":0,"delta":{},"finish_reason":"tool_calls"}]}
+L data: [DONE]

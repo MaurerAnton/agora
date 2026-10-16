@@ -1,0 +1,5 @@
+L event: message
+L 
+L data:{no space}
+L data: {"choices":[{"index":0,"delta":{"content":"kept"},"finish_reason":"stop"}]}
+L data: [DONE]

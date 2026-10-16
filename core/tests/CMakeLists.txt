@@ -3,6 +3,7 @@ find_package(Threads REQUIRED)
 add_executable(agora_core_tests
     test_main.cpp
     token_count_test.cpp
+    openai_stream_parity_test.cpp
     parity_test.cpp
     fuzz_parity_test.cpp
 )
@@ -17,6 +18,7 @@ target_compile_definitions(agora_core_tests PRIVATE
     AGORA_FIXTURE_REFERENCE="${CMAKE_CURRENT_SOURCE_DIR}/../../app/src/test/resources/tokenizers/o200k_ref.json"
     AGORA_FIXTURE_CORPUS="${CMAKE_CURRENT_SOURCE_DIR}/../tools/golden/corpus.b64"
     AGORA_FIXTURE_CORPUS_COUNTS="${CMAKE_CURRENT_SOURCE_DIR}/../tools/golden/golden_counts.txt"
+    AGORA_FIXTURE_OPENAI_GOLDEN_DIR="${CMAKE_CURRENT_SOURCE_DIR}/../tools/golden/openai"
 )
 
 add_test(NAME agora_core_tests COMMAND agora_core_tests)

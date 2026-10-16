@@ -1,0 +1,5 @@
+# choices is nullable: an explicit null is indistinguishable from absent, and a
+# usage-only chunk still counts.
+L data: {"choices":null}
+L data: {"usage":{"total_tokens":5}}
+L data: [DONE]

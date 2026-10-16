@@ -1,0 +1,5 @@
+# An empty placeholder delta must not erase anything; the real arguments that
+# arrive later must form a complete object.
+L data: {"choices":[{"index":0,"delta":{"tool_calls":[{"index":0,"id":"c1","function":{"name":"f","arguments":""}}]}}]}
+L data: {"choices":[{"index":0,"delta":{"tool_calls":[{"index":0,"function":{"arguments":"{\"a\":1}"}}]}}]}
+L data: [DONE]

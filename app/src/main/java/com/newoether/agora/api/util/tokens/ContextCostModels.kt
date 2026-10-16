@@ -80,14 +80,16 @@ object ContextCostModels {
         ContextCostFamily.LOCAL -> LocalModelTextCounter(
             exactCount = { text -> LocalModelRuntime.exactTokenCountOrNull(text) },
         )
-        // Every remote family counts through the one vocabulary that ships with the app. It is the
+        // Every remote family counts through the one vocabulary that ships with the app — in the
+        // C++ core when its native library is up, in the Kotlin implementation otherwise. It is the
         // OpenAI families' own tokenizer; for the others it is a much closer proxy than counting
         // characters, and correcting it per family waits for measured factors rather than guesses.
         ContextCostFamily.ANTHROPIC,
         ContextCostFamily.OPENAI,
         ContextCostFamily.GEMINI,
         ContextCostFamily.GENERIC,
-        -> BpeTextTokenCounter(vocabulary = O200kBase::loadedOrNull)
+        -> O200kBase.nativeCounter()
+            ?: BpeTextTokenCounter(vocabulary = O200kBase::loadedOrNull)
     }
 
     /** Image rules per family, the other half of what a family can differ in today. */

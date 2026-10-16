@@ -3,7 +3,7 @@
 #
 # The traces are produced by the REAL Kotlin consumer compiled straight from the app sources
 # (see SOURCES below) plus two leaf stubs for Android-only types. The C++ port must reproduce
-# them byte for byte (core/tests/openai_stream_test.cpp).
+# them byte for byte (core/tests/openai_stream_parity_test.cpp).
 #
 # Requirements:
 #   - kotlinc (KOTLINC env or on PATH), any 2.x distribution

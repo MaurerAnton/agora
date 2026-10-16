@@ -21,6 +21,8 @@ add_library(agora_core_lib STATIC
     src/unicode.cpp
 )
 target_include_directories(agora_core_lib PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/include)
+# The library gets linked into shared objects (the Android JNI shim, host smoke builds).
+set_target_properties(agora_core_lib PROPERTIES POSITION_INDEPENDENT_CODE ON)
 if(NOT MSVC)
     target_compile_options(agora_core_lib PRIVATE -Wall -Wextra)
 endif()

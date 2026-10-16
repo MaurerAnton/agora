@@ -109,6 +109,8 @@ add_subdirectory(${AGORA_CORE_DIR} ${CMAKE_CURRENT_BINARY_DIR}/agora_core)
 
 add_library(agora_core SHARED core_jni.cpp)
 target_link_libraries(agora_core agora_core_lib log)
+# The core is C++20; override the project-wide -std=c++17 flag for this target.
+set_target_properties(agora_core PROPERTIES CXX_STANDARD 20 CXX_STANDARD_REQUIRED ON)
 target_link_options(agora_core PRIVATE
     -Wl,--build-id=none -Wl,--hash-style=gnu -Wl,--icf=all -Wl,--threads=1
 )

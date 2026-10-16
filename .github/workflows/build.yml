@@ -107,17 +107,17 @@ jobs:
           chmod +x ./gradlew
           ./gradlew assembleFdroidRelease assembleDevRelease
 
-      - name: Verify PRoot runtime packaging
+      - name: Verify native library packaging
         run: |
           for apk_path in $(find app/build/outputs/apk/fdroid/release app/build/outputs/apk/dev/release -name '*.apk'); do
             echo "checking $apk_path"
             apk_entries=$(mktemp)
             trap 'rm -f "$apk_entries"' EXIT
             unzip -Z1 "$apk_path" > "$apk_entries"
-            for library in libproot_exec.so libproot_loader.so libtalloc.so; do
+            for library in libproot_exec.so libproot_loader.so libtalloc.so libagora_core.so; do
               entry="lib/arm64-v8a/$library"
               grep -Fxq "$entry" "$apk_entries" || {
-                echo "Missing PRoot runtime library: $library in $apk_path" >&2
+                echo "Missing native library: $library in $apk_path" >&2
                 exit 1
               }
             done

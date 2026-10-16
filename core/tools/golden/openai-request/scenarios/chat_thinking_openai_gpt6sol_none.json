@@ -1,0 +1,19 @@
+{
+  "name": "chat_thinking_openai_gpt6sol_none",
+  "kind": "openai",
+  "providerName": "OpenAI",
+  "config": {
+    "modelId": "gpt-6-sol",
+    "thinkingLevel": "none"
+  },
+  "requestInput": {
+    "systemPrompt": null,
+    "messages": [
+      {
+        "id": "user_1",
+        "participant": "USER",
+        "text": "hi"
+      }
+    ]
+  }
+}

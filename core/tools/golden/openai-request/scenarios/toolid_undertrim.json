@@ -1,0 +1,8 @@
+{
+  "name": "toolid_undertrim",
+  "kind": "openai",
+  "providerName": "OpenAI",
+  "mode": "toolid",
+  "toolIdName": "___",
+  "toolIdArguments": "{}"
+}

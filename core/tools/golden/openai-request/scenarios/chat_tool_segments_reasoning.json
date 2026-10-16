@@ -1,0 +1,47 @@
+{
+  "name": "chat_tool_segments_reasoning",
+  "kind": "deepseek",
+  "providerName": "DeepSeek",
+  "config": {
+    "modelId": "deepseek-v4",
+    "includeAssistantReasoning": true
+  },
+  "requestInput": {
+    "messages": [
+      { "id": "user_1", "participant": "USER", "text": "hello" },
+      {
+        "id": "model_1",
+        "participant": "MODEL",
+        "text": "Hi!",
+        "modelName": "deepseek-v4",
+        "segments": [
+          { "type": "thought", "content": "First thought." },
+          { "type": "thought", "content": "Second thought." }
+        ]
+      },
+      { "id": "user_2", "participant": "USER", "text": "now tools" },
+      {
+        "id": "tool_1",
+        "participant": "MODEL",
+        "modelName": "deepseek-v4",
+        "segments": [
+          {
+            "type": "tool",
+            "toolName": "lookup",
+            "toolArgs": "{}",
+            "responseOutputItems": [{ "type": "function_call", "id": "fc_1" }],
+            "responseOutputItemProvider": "openai"
+          }
+        ]
+      },
+      {
+        "id": "result_1",
+        "participant": "USER",
+        "segments": [
+          { "type": "tool", "toolName": "lookup", "toolArgs": "{}", "toolResult": "ok" }
+        ]
+      },
+      { "id": "user_3", "participant": "USER", "text": "done" }
+    ]
+  }
+}

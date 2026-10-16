@@ -1,0 +1,5 @@
+name|chat_thinking_qwen_thinking_only
+kind|qwen
+mode|factory
+apiMessages|[{"role":"user","content":[{"type":"text","text":"hi"}]}]
+body|{"model":"qwq-plus","messages":[{"role":"user","content":[{"type":"text","text":"hi"}]}],"stream":true,"stream_options":{"include_usage":true},"enable_thinking":true}

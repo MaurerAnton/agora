@@ -1,0 +1,4 @@
+name|chat_error_pending_tool
+kind|openai
+mode|factory
+error|RequestFormatException|OpenAI request validation failed: tool calls are missing results\s history does not end in user/tool input

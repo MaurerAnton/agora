@@ -1,0 +1,4 @@
+name|validate_system_blank
+kind|openai
+mode|validate
+error|RequestFormatException|OpenAI request validation failed: messages[0] content is empty\s messages[0] system content is empty

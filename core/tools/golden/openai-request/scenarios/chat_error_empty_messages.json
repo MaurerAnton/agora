@@ -1,0 +1,11 @@
+{
+  "name": "chat_error_empty_messages",
+  "kind": "openai",
+  "providerName": "OpenAI",
+  "config": {
+    "modelId": "gpt-4.1"
+  },
+  "requestInput": {
+    "messages": []
+  }
+}

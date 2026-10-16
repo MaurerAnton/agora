@@ -1,0 +1,13 @@
+{
+  "name": "chat_error_model_blank",
+  "kind": "openai",
+  "providerName": "OpenAI",
+  "config": {
+    "modelId": ""
+  },
+  "requestInput": {
+    "messages": [
+      { "id": "user_1", "participant": "USER", "text": "hi" }
+    ]
+  }
+}

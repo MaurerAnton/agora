@@ -1,0 +1,19 @@
+{
+  "name": "chat_thinking_qwen_thinking_only",
+  "kind": "qwen",
+  "providerName": "Qwen",
+  "config": {
+    "modelId": "qwq-plus",
+    "thinkingEnabled": false
+  },
+  "requestInput": {
+    "systemPrompt": null,
+    "messages": [
+      {
+        "id": "user_1",
+        "participant": "USER",
+        "text": "hi"
+      }
+    ]
+  }
+}

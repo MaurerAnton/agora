@@ -1,0 +1,27 @@
+{
+  "name": "project_statuses_persisted_error",
+  "mode": "projectStatuses",
+  "messages": [
+    {
+      "id": "user_1",
+      "participant": "USER",
+      "text": "q"
+    },
+    {
+      "id": "model_1",
+      "participant": "MODEL",
+      "text": "answer text",
+      "status": "ERROR",
+      "segments": [
+        {
+          "type": "answer",
+          "content": "partial"
+        },
+        {
+          "type": "error",
+          "content": "rate limited"
+        }
+      ]
+    }
+  ]
+}

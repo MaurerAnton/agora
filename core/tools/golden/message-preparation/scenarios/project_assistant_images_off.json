@@ -1,0 +1,25 @@
+{
+  "name": "project_assistant_images_off",
+  "mode": "projectAssistantImages",
+  "includeImages": false,
+  "messages": [
+    {
+      "id": "user_1",
+      "participant": "USER",
+      "text": "draw"
+    },
+    {
+      "id": "model_1",
+      "participant": "MODEL",
+      "text": "",
+      "images": [
+        "gen1.png"
+      ]
+    },
+    {
+      "id": "user_2",
+      "participant": "USER",
+      "text": "thanks"
+    }
+  ]
+}

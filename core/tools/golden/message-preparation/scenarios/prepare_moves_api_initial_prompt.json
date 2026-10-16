@@ -1,0 +1,23 @@
+{
+  "name": "prepare_moves_api_initial_prompt",
+  "mode": "prepare",
+  "budget": 100000,
+  "messages": [
+    {
+      "id": "user_1",
+      "participant": "USER",
+      "text": "history"
+    },
+    {
+      "id": "model_1",
+      "participant": "MODEL",
+      "text": "reply"
+    },
+    {
+      "id": "api_initial_user_model_1",
+      "participant": "USER",
+      "text": "the fresh prompt",
+      "parentId": "model_1"
+    }
+  ]
+}

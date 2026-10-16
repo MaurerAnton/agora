@@ -1,0 +1,28 @@
+{
+  "name": "retained_recovers_compact_anchor",
+  "mode": "retained",
+  "budget": 40,
+  "messages": [
+    {
+      "id": "user_1",
+      "participant": "USER",
+      "text": "ancient history"
+    },
+    {
+      "id": "compact_ok",
+      "participant": "USER",
+      "text": "summary",
+      "status": "SUCCESS"
+    },
+    {
+      "id": "user_2",
+      "participant": "USER",
+      "text": "recent"
+    },
+    {
+      "id": "model_1",
+      "participant": "MODEL",
+      "text": "reply"
+    }
+  ]
+}

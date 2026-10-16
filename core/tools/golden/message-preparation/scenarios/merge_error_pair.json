@@ -1,0 +1,26 @@
+{
+  "name": "merge_error_pair",
+  "mode": "merge",
+  "messages": [
+    {
+      "id": "user_1",
+      "participant": "USER",
+      "text": "hi"
+    },
+    {
+      "id": "model_1",
+      "participant": "MODEL",
+      "text": "hello"
+    },
+    {
+      "id": "error_1",
+      "participant": "ERROR",
+      "text": "boom"
+    },
+    {
+      "id": "error_2",
+      "participant": "ERROR",
+      "text": "bang"
+    }
+  ]
+}

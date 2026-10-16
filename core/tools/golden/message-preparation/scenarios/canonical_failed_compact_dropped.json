@@ -1,0 +1,22 @@
+{
+  "name": "canonical_failed_compact_dropped",
+  "mode": "canonical",
+  "messages": [
+    {
+      "id": "user_1",
+      "participant": "USER",
+      "text": "q"
+    },
+    {
+      "id": "compact_1",
+      "participant": "USER",
+      "text": "failed summary",
+      "status": "ERROR"
+    },
+    {
+      "id": "user_2",
+      "participant": "USER",
+      "text": "follow-up"
+    }
+  ]
+}

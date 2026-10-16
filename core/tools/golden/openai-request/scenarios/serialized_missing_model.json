@@ -1,0 +1,13 @@
+{
+  "name": "serialized_missing_model",
+  "kind": "openai",
+  "providerName": "OpenAI",
+  "mode": "serialized",
+  "serializedBody": "{\"messages\":[{\"role\":\"user\"}]}",
+  "serializedRequiredStringFields": [
+    "model"
+  ],
+  "serializedRequiredArrayFields": [
+    "messages"
+  ]
+}

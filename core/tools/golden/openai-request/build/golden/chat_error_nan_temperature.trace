@@ -1,0 +1,4 @@
+name|chat_error_nan_temperature
+kind|openai
+mode|factory
+error|JsonEncodingException|

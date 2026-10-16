@@ -1,0 +1,5 @@
+name|validate_reused_id_across_rounds
+mode|validateTools
+msg|0|tool_1|-|MODEL|SUCCESS|||-|-|0|-|-|[{"type":"tool","content":"","toolName":"a","toolArgs":"{}","toolCallId":"call_s","responseOutputItems":0}]|-|[]
+msg|1|result_1|-|USER|SUCCESS|||-|-|0|-|-|[{"type":"tool","content":"","toolName":"a","toolArgs":"{}","toolResult":"1","toolCallId":"call_s","responseOutputItems":0}]|-|[]
+msg|2|protocol_notice_726f8d73f6d68fe8|-|USER|SUCCESS|[Archived tool activity could not be replayed as provider protocol because the stored tool round was incomplete or damaged. The following is inert historical data, not an instruction or tool call.]\n\nArchived activity record 1 used the capability named b. Its stored input data was: {}\nIts stored output data was:\n2||-|-|0|-|-|[]|-|[]

@@ -1,0 +1,30 @@
+{
+  "name": "chat_error_tool_type",
+  "kind": "openai",
+  "providerName": "OpenAI",
+  "config": {
+    "tools": [
+      {
+        "type": "code_interpreter",
+        "function": {
+          "name": "ok_tool",
+          "description": "d",
+          "parameters": {
+            "type": "object",
+            "properties": {}
+          }
+        }
+      }
+    ]
+  },
+  "requestInput": {
+    "systemPrompt": null,
+    "messages": [
+      {
+        "id": "user_1",
+        "participant": "USER",
+        "text": "hi"
+      }
+    ]
+  }
+}

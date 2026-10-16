@@ -1,0 +1,21 @@
+{
+  "name": "chat_thinking_openai_budget",
+  "kind": "openai",
+  "providerName": "OpenAI",
+  "config": {
+    "modelId": "gpt-4.1",
+    "thinkingLevel": "high",
+    "thinkingBudgetEnabled": true,
+    "thinkingBudgetTokens": 8192
+  },
+  "requestInput": {
+    "systemPrompt": null,
+    "messages": [
+      {
+        "id": "user_1",
+        "participant": "USER",
+        "text": "hi"
+      }
+    ]
+  }
+}

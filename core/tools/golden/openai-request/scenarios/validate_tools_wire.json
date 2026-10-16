@@ -1,0 +1,55 @@
+{
+  "name": "validate_tools_wire",
+  "kind": "openai",
+  "providerName": "OpenAI",
+  "mode": "validate",
+  "request": {
+    "model": "gpt-4.1",
+    "tools": [
+      {
+        "type": "function",
+        "function": {
+          "name": "dup",
+          "description": "d",
+          "parameters": {
+            "type": "object",
+            "properties": {}
+          }
+        }
+      },
+      {
+        "type": "function",
+        "function": {
+          "name": "dup",
+          "description": "d",
+          "parameters": {
+            "type": "object",
+            "properties": {}
+          }
+        }
+      },
+      {
+        "type": "custom",
+        "function": {
+          "name": "other",
+          "description": "",
+          "parameters": {
+            "type": "object",
+            "properties": {}
+          }
+        }
+      }
+    ],
+    "messages": [
+      {
+        "role": "user",
+        "content": [
+          {
+            "type": "text",
+            "text": "x"
+          }
+        ]
+      }
+    ]
+  }
+}

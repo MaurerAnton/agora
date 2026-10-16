@@ -1,0 +1,20 @@
+{
+  "name": "chat_thinking_custom_cheapest_low",
+  "kind": "custom",
+  "providerName": "Cheapest",
+  "providerBaseUrl": "https://api.cheapestinference.com/v1",
+  "config": {
+    "modelId": "deepseek-v4",
+    "thinkingLevel": "low"
+  },
+  "requestInput": {
+    "systemPrompt": null,
+    "messages": [
+      {
+        "id": "user_1",
+        "participant": "USER",
+        "text": "hi"
+      }
+    ]
+  }
+}

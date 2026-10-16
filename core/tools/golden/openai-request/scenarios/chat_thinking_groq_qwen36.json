@@ -1,0 +1,19 @@
+{
+  "name": "chat_thinking_groq_qwen36",
+  "kind": "groq",
+  "providerName": "Groq",
+  "config": {
+    "modelId": "qwen/qwen3.6-27b",
+    "thinkingLevel": "high"
+  },
+  "requestInput": {
+    "systemPrompt": null,
+    "messages": [
+      {
+        "id": "user_1",
+        "participant": "USER",
+        "text": "hi"
+      }
+    ]
+  }
+}

@@ -1,0 +1,4 @@
+name|chat_error_tool_names
+kind|openai
+mode|factory
+error|RequestFormatException|OpenAI request validation failed: tools[0].function.name is blank\s tools[1].function.name is not wire-safe\s duplicate tool name same

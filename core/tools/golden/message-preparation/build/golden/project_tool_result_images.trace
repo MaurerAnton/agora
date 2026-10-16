@@ -1,0 +1,7 @@
+name|project_tool_result_images
+mode|projectToolResultImages
+msg|0|user_1|-|USER|SUCCESS|look||-|-|0|-|-|[]|-|[]
+msg|1|tool_1|-|MODEL|SUCCESS|||-|-|0|-|-|[{"type":"tool","content":"","toolName":"view_image","toolArgs":"{}","toolResult":"","toolCallId":"call_v","responseOutputItems":0}]|-|[]
+msg|2|result_1|-|USER|SUCCESS||shot.png|-|-|0|-|-|[{"type":"tool","content":"","toolResult":"an image","toolCallId":"call_v","toolTranscription":"a sunset","responseOutputItems":0}]|-|[]
+msg|3|image_context_99d7b066c604c9b0|result_1|USER|SUCCESS|[Tool visual result: inspect the attached image before continuing.]\n\n--- Image Transcription: view_image ---\na sunset|shot.png|-|-|0|-|-|[]|-|[]
+msg|4|user_2|-|USER|SUCCESS|ok||-|-|0|-|-|[]|-|[]

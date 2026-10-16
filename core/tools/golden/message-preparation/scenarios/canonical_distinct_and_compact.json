@@ -1,0 +1,32 @@
+{
+  "name": "canonical_distinct_and_compact",
+  "mode": "canonical",
+  "messages": [
+    {
+      "id": "user_1",
+      "participant": "USER",
+      "text": "old question"
+    },
+    {
+      "id": "model_1",
+      "participant": "MODEL",
+      "text": "old answer"
+    },
+    {
+      "id": "compact_1",
+      "participant": "USER",
+      "text": "summary text",
+      "status": "SUCCESS"
+    },
+    {
+      "id": "compact_1",
+      "participant": "USER",
+      "text": "duplicate id row"
+    },
+    {
+      "id": "user_2",
+      "participant": "USER",
+      "text": "new question"
+    }
+  ]
+}

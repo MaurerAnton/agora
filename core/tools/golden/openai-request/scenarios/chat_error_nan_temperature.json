@@ -1,0 +1,19 @@
+{
+  "name": "chat_error_nan_temperature",
+  "kind": "openai",
+  "providerName": "OpenAI",
+  "config": {
+    "temperature": "NaN",
+    "topP": 0.5
+  },
+  "requestInput": {
+    "systemPrompt": null,
+    "messages": [
+      {
+        "id": "user_1",
+        "participant": "USER",
+        "text": "hi"
+      }
+    ]
+  }
+}

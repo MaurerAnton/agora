@@ -1,0 +1,30 @@
+{
+  "name": "validate_part_shapes",
+  "kind": "openai",
+  "providerName": "OpenAI",
+  "mode": "validate",
+  "request": {
+    "model": "gpt-4.1",
+    "messages": [
+      {
+        "role": "user",
+        "content": [
+          {
+            "type": "text",
+            "text": "x",
+            "image_url": {
+              "url": "u"
+            }
+          },
+          {
+            "type": "image_url",
+            "text": "t"
+          },
+          {
+            "type": "input_audio"
+          }
+        ]
+      }
+    ]
+  }
+}

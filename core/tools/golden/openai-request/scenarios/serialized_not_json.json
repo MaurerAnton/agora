@@ -1,0 +1,13 @@
+{
+  "name": "serialized_not_json",
+  "kind": "openai",
+  "providerName": "OpenAI",
+  "mode": "serialized",
+  "serializedBody": "definitely not json",
+  "serializedRequiredStringFields": [
+    "model"
+  ],
+  "serializedRequiredArrayFields": [
+    "messages"
+  ]
+}

@@ -1,0 +1,22 @@
+{
+  "name": "chat_error_pending_tool",
+  "kind": "openai",
+  "providerName": "OpenAI",
+  "config": {
+    "modelId": "gpt-4.1"
+  },
+  "requestInput": {
+    "messages": [
+      { "id": "user_1", "participant": "USER", "text": "Compute." },
+      {
+        "id": "tool_1",
+        "participant": "MODEL",
+        "toolCall": {
+          "toolName": "calculator",
+          "arguments": "{\"a\":1}",
+          "result": ""
+        }
+      }
+    ]
+  }
+}

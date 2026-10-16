@@ -12,26 +12,13 @@ class GroqProvider : BaseOpenAiProvider() {
 
     /**
      * Groq's `reasoning_effort` accepts low/medium/high, plus none/default on the models documented
-     * for them. A model that cannot turn reasoning off keeps its lowest effort and hides the
-     * reasoning with `include_reasoning: false` instead of failing the request.
+     * for them. The reasoning shape lives in [withGroqThinking].
      */
     override fun customizeRequest(
         request: OpenAiChatRequest,
         config: ProviderConfig,
-    ): OpenAiChatRequest {
-        val resolved = config.resolvedThinking(ThinkingProviderFamily.GROQ)
-        val capability = resolved.capability
-        if (!config.thinkingEnabled && !capability.canDisableThinking) {
-            return request.copy(
-                reasoningEffort = resolved.effort,
-                includeReasoning = false,
-            )
-        }
-        val effort = if (resolved.disabled) {
-            "none".takeIf { capability.supportsEffort }
-        } else {
-            resolved.effort
-        }
-        return request.copy(reasoningEffort = effort)
-    }
+    ): OpenAiChatRequest = request.withGroqThinking(
+        config.resolvedThinking(ThinkingProviderFamily.GROQ),
+        config.thinkingEnabled,
+    )
 }

@@ -1,0 +1,44 @@
+{
+  "name": "validate_multi_order",
+  "kind": "openai",
+  "providerName": "OpenAI",
+  "mode": "validate",
+  "request": {
+    "model": "",
+    "max_tokens": 0,
+    "top_p": 2.0,
+    "messages": [
+      {
+        "role": "system",
+        "content": [
+          {
+            "type": "text"
+          }
+        ]
+      },
+      {
+        "role": "user",
+        "content": [
+          {
+            "type": "text",
+            "text": "x"
+          }
+        ]
+      },
+      {
+        "role": "assistant",
+        "content": null,
+        "tool_calls": [
+          {
+            "id": "bad id",
+            "type": "function",
+            "function": {
+              "name": "n",
+              "arguments": "{}"
+            }
+          }
+        ]
+      }
+    ]
+  }
+}

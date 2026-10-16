@@ -1,0 +1,32 @@
+{
+  "name": "chat_tool_segments",
+  "kind": "deepseek",
+  "providerName": "DeepSeek",
+  "config": {
+    "modelId": "deepseek-v4",
+    "includeAssistantReasoning": false
+  },
+  "requestInput": {
+    "messages": [
+      { "id": "user_1", "participant": "USER", "text": "Search for agora." },
+      {
+        "id": "tool_1",
+        "participant": "MODEL",
+        "segments": [
+          { "type": "thought", "content": "I should search." },
+          { "type": "tool", "toolName": "web_search", "toolArgs": "{\"query\":\"agora\"}" },
+          { "type": "tool", "toolName": "second_tool", "toolArgs": "{\"x\":1}", "toolCallId": "call_explicit01" }
+        ]
+      },
+      {
+        "id": "result_1",
+        "participant": "USER",
+        "segments": [
+          { "type": "tool", "toolName": "web_search", "toolArgs": "{\"query\":\"agora\"}", "toolResult": "Found 3 pages." },
+          { "type": "tool", "toolName": "second_tool", "toolArgs": "{\"x\":1}", "toolResult": null, "toolCallId": "call_explicit01" }
+        ]
+      },
+      { "id": "user_2", "participant": "USER", "text": "Summarize." }
+    ]
+  }
+}

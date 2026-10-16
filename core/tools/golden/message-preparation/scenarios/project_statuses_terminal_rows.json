@@ -1,0 +1,28 @@
+{
+  "name": "project_statuses_terminal_rows",
+  "mode": "projectStatuses",
+  "messages": [
+    {
+      "id": "user_1",
+      "participant": "USER",
+      "text": "q"
+    },
+    {
+      "id": "model_1",
+      "participant": "MODEL",
+      "text": "partial answer",
+      "status": "STOPPED"
+    },
+    {
+      "id": "user_2",
+      "participant": "USER",
+      "text": "again"
+    },
+    {
+      "id": "model_2",
+      "participant": "MODEL",
+      "text": "provider said: bad request",
+      "status": "ERROR"
+    }
+  ]
+}

@@ -1,0 +1,33 @@
+{
+  "name": "validate_round_legacy_ids",
+  "mode": "validateTools",
+  "messages": [
+    {
+      "id": "user_1",
+      "participant": "USER",
+      "text": "go"
+    },
+    {
+      "id": "tool_1",
+      "participant": "MODEL",
+      "segments": [
+        {
+          "type": "tool",
+          "toolName": "search",
+          "toolArgs": "{\"q\":\"x\"}",
+          "toolResult": ""
+        }
+      ]
+    },
+    {
+      "id": "result_1",
+      "participant": "USER",
+      "segments": [
+        {
+          "type": "tool",
+          "toolResult": "found"
+        }
+      ]
+    }
+  ]
+}

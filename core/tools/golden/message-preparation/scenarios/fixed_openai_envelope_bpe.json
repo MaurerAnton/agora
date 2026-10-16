@@ -1,0 +1,65 @@
+{
+  "name": "fixed_openai_envelope_bpe",
+  "mode": "estimateFixed",
+  "costModel": "OpenAI:gpt-4.1",
+  "systemPrompt": "System text",
+  "tools": [
+    {
+      "type": "function",
+      "function": {
+        "name": "lookup",
+        "description": "Lookup",
+        "parameters": {
+          "type": "object",
+          "properties": {
+            "b": {
+              "type": "string",
+              "description": "b prop"
+            },
+            "a": {
+              "type": "string",
+              "description": "a prop"
+            }
+          },
+          "required": [
+            "b",
+            "a"
+          ]
+        }
+      }
+    },
+    {
+      "type": "function",
+      "function": {
+        "name": "mcp_tool",
+        "description": "MCP",
+        "parameters": {
+          "type": "object",
+          "properties": {
+            "x": {
+              "type": "string",
+              "description": "x"
+            }
+          },
+          "required": [
+            "x"
+          ],
+          "schema": {
+            "type": "object",
+            "properties": {
+              "nested": {
+                "type": "number",
+                "minimum": 2.5
+              }
+            },
+            "required": [
+              "nested"
+            ]
+          }
+        }
+      }
+    }
+  ],
+  "codeExecutionEnabled": true,
+  "googleSearchEnabled": true
+}

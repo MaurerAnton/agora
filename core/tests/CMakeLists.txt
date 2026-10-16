@@ -5,6 +5,8 @@ add_executable(agora_core_tests
     token_count_test.cpp
     openai_stream_parity_test.cpp
     openai_stream_codec_test.cpp
+    openai_request_parity_test.cpp
+    openai_request_test.cpp
     parity_test.cpp
     fuzz_parity_test.cpp
 )
@@ -21,6 +23,7 @@ target_compile_definitions(agora_core_tests PRIVATE
     AGORA_FIXTURE_CORPUS_COUNTS="${CMAKE_CURRENT_SOURCE_DIR}/../tools/golden/golden_counts.txt"
     AGORA_FIXTURE_OPENAI_GOLDEN_DIR="${CMAKE_CURRENT_SOURCE_DIR}/../tools/golden/openai"
     AGORA_FIXTURE_OPENAI_CODEC_DIR="${CMAKE_CURRENT_SOURCE_DIR}/../../app/src/test/resources/openai_stream_codec"
+    AGORA_FIXTURE_OPENAI_REQUEST_DIR="${CMAKE_CURRENT_SOURCE_DIR}/../tools/golden/openai-request"
 )
 
 add_test(NAME agora_core_tests COMMAND agora_core_tests)

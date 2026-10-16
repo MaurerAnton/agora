@@ -1,0 +1,22 @@
+{
+  "name": "chat_float_extremes",
+  "kind": "openai",
+  "providerName": "OpenAI",
+  "config": {
+    "temperature": 3.4028235e+38,
+    "topP": 1e-45,
+    "frequencyPenalty": 0.1,
+    "presencePenalty": -123456.79,
+    "maxTokens": 2147483647
+  },
+  "requestInput": {
+    "systemPrompt": null,
+    "messages": [
+      {
+        "id": "user_1",
+        "participant": "USER",
+        "text": "hi"
+      }
+    ]
+  }
+}

@@ -1,0 +1,87 @@
+{
+  "name": "validate_tool_role",
+  "kind": "openai",
+  "providerName": "OpenAI",
+  "mode": "validate",
+  "request": {
+    "model": "gpt-4.1",
+    "messages": [
+      {
+        "role": "user",
+        "content": [
+          {
+            "type": "text",
+            "text": "x"
+          }
+        ]
+      },
+      {
+        "role": "assistant",
+        "content": null,
+        "tool_calls": [
+          {
+            "id": "call_a",
+            "type": "function",
+            "function": {
+              "name": "n",
+              "arguments": "{}"
+            }
+          },
+          {
+            "id": "call_b",
+            "type": "function",
+            "function": {
+              "name": "n",
+              "arguments": "{}"
+            }
+          }
+        ]
+      },
+      {
+        "role": "tool",
+        "content": [
+          {
+            "type": "text",
+            "text": "r1"
+          }
+        ],
+        "tool_call_id": "call_a"
+      },
+      {
+        "role": "tool",
+        "content": null,
+        "tool_call_id": "call_b"
+      },
+      {
+        "role": "tool",
+        "content": [
+          {
+            "type": "text",
+            "text": "x"
+          }
+        ],
+        "tool_call_id": ""
+      },
+      {
+        "role": "tool",
+        "content": [
+          {
+            "type": "text",
+            "text": "x"
+          }
+        ],
+        "tool_call_id": "call_z",
+        "tool_calls": [
+          {
+            "id": "call_w",
+            "type": "function",
+            "function": {
+              "name": "n",
+              "arguments": "{}"
+            }
+          }
+        ]
+      }
+    ]
+  }
+}

@@ -1,0 +1,40 @@
+{
+  "name": "validate_result_row_multi_segments",
+  "mode": "validateTools",
+  "messages": [
+    {
+      "id": "tool_1",
+      "participant": "MODEL",
+      "segments": [
+        {
+          "type": "tool",
+          "toolName": "a",
+          "toolArgs": "{}",
+          "toolResult": "",
+          "toolCallId": "call_a"
+        },
+        {
+          "type": "tool",
+          "toolName": "b",
+          "toolArgs": "{\"x\":1}",
+          "toolResult": "",
+          "toolCallId": "call_b"
+        }
+      ]
+    },
+    {
+      "id": "result_1",
+      "participant": "USER",
+      "segments": [
+        {
+          "type": "tool",
+          "toolResult": "ra"
+        },
+        {
+          "type": "tool",
+          "toolResult": "rb"
+        }
+      ]
+    }
+  ]
+}

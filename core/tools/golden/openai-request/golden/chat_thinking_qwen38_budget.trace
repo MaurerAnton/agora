@@ -1,0 +1,5 @@
+name|chat_thinking_qwen38_budget
+kind|qwen
+mode|factory
+apiMessages|[{"role":"user","content":[{"type":"text","text":"hi"}]}]
+body|{"model":"qwen3.8-max","messages":[{"role":"user","content":[{"type":"text","text":"hi"}]}],"stream":true,"stream_options":{"include_usage":true},"thinking_budget":4096}

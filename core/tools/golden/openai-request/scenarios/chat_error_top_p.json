@@ -1,0 +1,14 @@
+{
+  "name": "chat_error_top_p",
+  "kind": "openai",
+  "providerName": "OpenAI",
+  "config": {
+    "modelId": "gpt-4.1",
+    "topP": 1.5
+  },
+  "requestInput": {
+    "messages": [
+      { "id": "user_1", "participant": "USER", "text": "hi" }
+    ]
+  }
+}

@@ -1,0 +1,30 @@
+{
+  "name": "validate_unsafe_tool_name",
+  "mode": "validateTools",
+  "messages": [
+    {
+      "id": "tool_1",
+      "participant": "MODEL",
+      "segments": [
+        {
+          "type": "tool",
+          "toolName": "my tool!",
+          "toolArgs": "{}",
+          "toolResult": "",
+          "toolCallId": "call_a"
+        }
+      ]
+    },
+    {
+      "id": "result_1",
+      "participant": "USER",
+      "segments": [
+        {
+          "type": "tool",
+          "toolResult": "1",
+          "toolCallId": "call_a"
+        }
+      ]
+    }
+  ]
+}

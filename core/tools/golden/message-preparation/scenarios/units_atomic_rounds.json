@@ -1,0 +1,89 @@
+{
+  "name": "units_atomic_rounds",
+  "mode": "units",
+  "messages": [
+    {
+      "id": "user_1",
+      "participant": "USER",
+      "text": "first question"
+    },
+    {
+      "id": "model_1",
+      "participant": "MODEL",
+      "text": "first answer"
+    },
+    {
+      "id": "tool_1",
+      "participant": "MODEL",
+      "segments": [
+        {
+          "type": "tool",
+          "toolName": "lookup",
+          "toolArgs": "{}",
+          "toolResult": "",
+          "toolCallId": "call_l"
+        }
+      ]
+    },
+    {
+      "id": "result_1",
+      "participant": "USER",
+      "segments": [
+        {
+          "type": "tool",
+          "toolResult": "payload"
+        }
+      ]
+    },
+    {
+      "id": "user_2",
+      "participant": "USER",
+      "text": "second question"
+    },
+    {
+      "id": "model_2",
+      "participant": "MODEL",
+      "text": "second answer"
+    },
+    {
+      "id": "tool_2",
+      "participant": "MODEL",
+      "segments": [
+        {
+          "type": "tool",
+          "toolName": "a",
+          "toolArgs": "{}",
+          "toolResult": "",
+          "toolCallId": "call_a"
+        }
+      ]
+    },
+    {
+      "id": "result_2a",
+      "participant": "USER",
+      "segments": [
+        {
+          "type": "tool",
+          "toolResult": "1",
+          "toolCallId": "call_a"
+        }
+      ]
+    },
+    {
+      "id": "result_2b",
+      "participant": "USER",
+      "segments": [
+        {
+          "type": "tool",
+          "toolResult": "2",
+          "toolCallId": "call_a"
+        }
+      ]
+    },
+    {
+      "id": "user_3",
+      "participant": "USER",
+      "text": "end"
+    }
+  ]
+}

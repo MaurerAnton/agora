@@ -1,0 +1,19 @@
+{
+  "name": "chat_thinking_groq_oss_enabled",
+  "kind": "groq",
+  "providerName": "Groq",
+  "config": {
+    "modelId": "openai/gpt-oss-120b",
+    "thinkingLevel": "high"
+  },
+  "requestInput": {
+    "systemPrompt": null,
+    "messages": [
+      {
+        "id": "user_1",
+        "participant": "USER",
+        "text": "hi"
+      }
+    ]
+  }
+}

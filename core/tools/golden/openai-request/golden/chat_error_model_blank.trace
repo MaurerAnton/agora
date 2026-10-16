@@ -1,0 +1,4 @@
+name|chat_error_model_blank
+kind|openai
+mode|factory
+error|RequestFormatException|OpenAI request validation failed: model is blank

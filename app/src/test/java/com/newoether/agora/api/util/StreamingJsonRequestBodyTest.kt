@@ -34,13 +34,14 @@ class StreamingJsonRequestBodyTest {
                 separator = "\",\"",
                 postfix = "\"]}",
             )
-            val request = checkNotNull(registry.prepare(template))
+            val body = checkNotNull(registry.prepare(template))
+            val request = body.toRequestBody()
 
-            val first = Buffer().also(request.body::writeTo).readByteArray()
-            val second = Buffer().also(request.body::writeTo).readByteArray()
+            val first = Buffer().also(request::writeTo).readByteArray()
+            val second = Buffer().also(request::writeTo).readByteArray()
 
             assertArrayEquals(first, second)
-            assertEquals(first.size.toLong(), request.body.contentLength())
+            assertEquals(first.size.toLong(), body.contentLength)
             val images = Json.parseToJsonElement(first.decodeToString())
                 .jsonObject.getValue("images").jsonArray
             assertEquals(65, images.size)
@@ -50,10 +51,10 @@ class StreamingJsonRequestBodyTest {
                     images[index].jsonPrimitive.content,
                 )
             }
-            assertTrue(request.diagnosticJson.contains("[STREAMED_BASE64:"))
-            assertTrue(request.diagnosticJson.contains("_BYTES]"))
-            assertFalse(request.diagnosticJson.contains("__AGORA_BASE64_"))
-            assertFalse(request.diagnosticJson.contains(images[1].jsonPrimitive.content))
+            assertTrue(body.diagnosticJson.contains("[STREAMED_BASE64:"))
+            assertTrue(body.diagnosticJson.contains("_BYTES]"))
+            assertFalse(body.diagnosticJson.contains("__AGORA_BASE64_"))
+            assertFalse(body.diagnosticJson.contains(images[1].jsonPrimitive.content))
         } finally {
             directory.deleteRecursively()
         }
@@ -70,8 +71,8 @@ class StreamingJsonRequestBodyTest {
             val placeholder = checkNotNull(registry.register(file.absolutePath))
             val request = checkNotNull(
                 registry.prepare("{\"image\":\"$placeholder\"}"),
-            )
-            request.body.writeTo(Buffer())
+            ).toRequestBody()
+            request.writeTo(Buffer())
 
             file.writeBytes(original.map { byte -> (byte.toInt() xor 0x5a).toByte() }.toByteArray())
             assertTrue(file.setLastModified(originalTimestamp))
@@ -79,7 +80,7 @@ class StreamingJsonRequestBodyTest {
             assertEquals(originalTimestamp, file.lastModified())
 
             assertThrows(IOException::class.java) {
-                request.body.writeTo(Buffer())
+                request.writeTo(Buffer())
             }
         } finally {
             file.delete()

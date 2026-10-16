@@ -1,0 +1,21 @@
+{
+  "name": "chat_empty_text_missing_image",
+  "kind": "openai",
+  "providerName": "OpenAI",
+  "config": {
+    "modelId": "gpt-4.1"
+  },
+  "requestInput": {
+    "messages": [
+      {
+        "id": "user_1",
+        "participant": "USER",
+        "text": "",
+        "images": [
+          "files/missing.png",
+          "files"
+        ]
+      }
+    ]
+  }
+}

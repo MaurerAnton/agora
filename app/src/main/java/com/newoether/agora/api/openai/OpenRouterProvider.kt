@@ -18,22 +18,15 @@ class OpenRouterProvider : BaseOpenAiProvider() {
     override val defaultBaseUrl: String = "https://openrouter.ai/api/v1"
 
     /**
-     * OpenRouter takes `reasoning.effort` (minimal..max) or `reasoning.max_tokens`, never both, and
-     * `reasoning.enabled = false` turns thinking off. The accepted set comes from the model's
-     * capability entry rather than a name test.
+     * OpenRouter takes `reasoning.effort` or `reasoning.max_tokens`, never both; the shape lives in
+     * [withOpenRouterReasoning]. The accepted set comes from the model's capability entry rather
+     * than a name test.
      */
-    override fun customizeRequest(request: OpenAiChatRequest, config: ProviderConfig): OpenAiChatRequest {
-        val resolved = config.resolvedThinking(ThinkingProviderFamily.OPENROUTER)
-        val reasoning = if (resolved.disabled) {
-            OpenAiReasoning(enabled = false)
-        } else {
-            OpenAiReasoning(effort = resolved.effort, maxTokens = resolved.budgetTokens)
-        }
-        return request.copy(
-            reasoning = reasoning,
-            plugins = if (config.googleSearchEnabled) listOf(OpenAiPlugin(id = "web")) else null
+    override fun customizeRequest(request: OpenAiChatRequest, config: ProviderConfig): OpenAiChatRequest =
+        request.withOpenRouterReasoning(
+            config.resolvedThinking(ThinkingProviderFamily.OPENROUTER),
+            config.googleSearchEnabled,
         )
-    }
 
     override fun getExtraHeaders(config: ProviderConfig): Map<String, String> = mapOf(
         "HTTP-Referer" to "https://github.com/newo-ether/Agora",

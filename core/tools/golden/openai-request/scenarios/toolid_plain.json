@@ -1,0 +1,8 @@
+{
+  "name": "toolid_plain",
+  "kind": "openai",
+  "providerName": "OpenAI",
+  "mode": "toolid",
+  "toolIdName": "calculator",
+  "toolIdArguments": "{\"a\":2,\"b\":2}"
+}

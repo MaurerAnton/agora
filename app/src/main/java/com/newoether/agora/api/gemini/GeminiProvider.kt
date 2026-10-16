@@ -12,6 +12,7 @@ import com.newoether.agora.api.util.resolvedThinking
 import com.newoether.agora.api.util.adaptToolRoundsForProvider
 import com.newoether.agora.api.util.RequestFormatException
 import com.newoether.agora.api.util.requireValidSerializedRequest
+import com.newoether.agora.api.util.toRequestBody
 import com.newoether.agora.api.util.ProviderRetryPolicy
 import com.newoether.agora.api.util.StreamTermination
 import com.newoether.agora.api.util.asRetryableResponseBodyReadError
@@ -479,7 +480,7 @@ class GeminiProvider(
                     if (streamingRequest != null) {
                         HttpClient.streamPostBody(
                             finalUrlString,
-                            streamingRequest.body,
+                            streamingRequest.toRequestBody(),
                             headers,
                             streamingRequest.diagnosticJson,
                         )

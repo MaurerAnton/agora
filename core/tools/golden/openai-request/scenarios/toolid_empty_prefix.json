@@ -1,0 +1,9 @@
+{
+  "name": "toolid_empty_prefix",
+  "kind": "openai",
+  "providerName": "OpenAI",
+  "mode": "toolid",
+  "toolIdName": "calc",
+  "toolIdArguments": "{}",
+  "toolIdPrefix": ""
+}

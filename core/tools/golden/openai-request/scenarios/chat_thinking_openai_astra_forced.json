@@ -1,0 +1,19 @@
+{
+  "name": "chat_thinking_openai_astra_forced",
+  "kind": "openai",
+  "providerName": "OpenAI",
+  "config": {
+    "modelId": "gpt-6-astra",
+    "thinkingEnabled": false
+  },
+  "requestInput": {
+    "systemPrompt": null,
+    "messages": [
+      {
+        "id": "user_1",
+        "participant": "USER",
+        "text": "hi"
+      }
+    ]
+  }
+}

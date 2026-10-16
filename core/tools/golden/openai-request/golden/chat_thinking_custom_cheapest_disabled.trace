@@ -1,0 +1,5 @@
+name|chat_thinking_custom_cheapest_disabled
+kind|custom
+mode|factory
+apiMessages|[{"role":"user","content":[{"type":"text","text":"hi"}]}]
+body|{"model":"deepseek-v4","messages":[{"role":"user","content":[{"type":"text","text":"hi"}]}],"stream":true,"stream_options":{"include_usage":true},"reasoning_effort":"none"}

@@ -1,0 +1,6 @@
+{
+  "name": "text_bpe_o200k",
+  "mode": "estimateText",
+  "costModel": "OpenAI:gpt-4.1",
+  "text": "Hello world \u56fe\u50cf \ttab"
+}

@@ -1,0 +1,18 @@
+{
+  "name": "chat_thinking_openrouter_claude",
+  "kind": "openrouter",
+  "providerName": "OpenRouter",
+  "config": {
+    "modelId": "anthropic/claude-sonnet-4"
+  },
+  "requestInput": {
+    "systemPrompt": null,
+    "messages": [
+      {
+        "id": "user_1",
+        "participant": "USER",
+        "text": "hi"
+      }
+    ]
+  }
+}

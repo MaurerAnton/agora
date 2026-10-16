@@ -1,0 +1,20 @@
+{
+  "name": "chat_float_boundaries",
+  "kind": "openai",
+  "providerName": "OpenAI",
+  "config": {
+    "temperature": 0.001,
+    "topP": 0.9999999,
+    "frequencyPenalty": 16777218,
+    "presencePenalty": 0.3
+  },
+  "requestInput": {
+    "messages": [
+      {
+        "id": "user_1",
+        "participant": "USER",
+        "text": "hi"
+      }
+    ]
+  }
+}

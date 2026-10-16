@@ -1,0 +1,23 @@
+{
+  "name": "chat_error_orphan_result",
+  "kind": "openai",
+  "providerName": "OpenAI",
+  "config": {
+    "modelId": "gpt-4.1"
+  },
+  "requestInput": {
+    "messages": [
+      { "id": "user_1", "participant": "USER", "text": "Compute." },
+      {
+        "id": "result_1",
+        "participant": "USER",
+        "toolCall": {
+          "toolName": "calculator",
+          "arguments": "{\"a\":1}",
+          "result": "1"
+        }
+      },
+      { "id": "user_2", "participant": "USER", "text": "Thanks." }
+    ]
+  }
+}

@@ -1,0 +1,5 @@
+name|chat_thinking_openrouter_budget
+kind|openrouter
+mode|factory
+apiMessages|[{"role":"user","content":[{"type":"text","text":"hi"}]}]
+body|{"model":"deepseek/deepseek-r1","messages":[{"role":"user","content":[{"type":"text","text":"hi"}]}],"stream":true,"stream_options":{"include_usage":true},"reasoning":{"max_tokens":2048}}

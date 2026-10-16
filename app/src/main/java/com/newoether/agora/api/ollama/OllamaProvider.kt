@@ -12,6 +12,7 @@ import com.newoether.agora.api.util.asRetryableResponseBodyReadError
 import com.newoether.agora.api.util.asRetryableTransportError
 import com.newoether.agora.api.util.carriesModelOutput
 import com.newoether.agora.api.util.requireValidSerializedRequest
+import com.newoether.agora.api.util.toRequestBody
 import com.newoether.agora.api.util.safeWireToolCallId
 import com.newoether.agora.api.util.safeWireToolName
 import com.newoether.agora.api.util.malformedToolCallRequest
@@ -272,7 +273,7 @@ class OllamaProvider : LlmProvider {
                     if (streamingRequest != null) {
                         HttpClient.streamPostBody(
                             url,
-                            streamingRequest.body,
+                            streamingRequest.toRequestBody(),
                             headers,
                             streamingRequest.diagnosticJson,
                         )

@@ -1,0 +1,21 @@
+{
+  "name": "validate_orphan_result",
+  "mode": "validateTools",
+  "messages": [
+    {
+      "id": "user_1",
+      "participant": "USER",
+      "text": "go"
+    },
+    {
+      "id": "result_9",
+      "participant": "USER",
+      "segments": [
+        {
+          "type": "tool",
+          "toolResult": "lost"
+        }
+      ]
+    }
+  ]
+}

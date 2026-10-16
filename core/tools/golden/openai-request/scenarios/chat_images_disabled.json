@@ -1,0 +1,19 @@
+{
+  "name": "chat_images_disabled",
+  "kind": "openai",
+  "providerName": "OpenAI",
+  "config": {
+    "modelId": "gpt-4.1",
+    "includeImages": false
+  },
+  "requestInput": {
+    "messages": [
+      {
+        "id": "user_1",
+        "participant": "USER",
+        "text": "What is shown?",
+        "images": ["files/a.png", "files/b.jpg"]
+      }
+    ]
+  }
+}

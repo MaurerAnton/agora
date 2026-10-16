@@ -1,0 +1,23 @@
+{
+  "name": "usage_compact_boundary",
+  "mode": "usage",
+  "budget": 5000,
+  "messages": [
+    {
+      "id": "user_1",
+      "participant": "USER",
+      "text": "q"
+    },
+    {
+      "id": "compact_ok",
+      "participant": "USER",
+      "text": "summary",
+      "status": "SUCCESS"
+    },
+    {
+      "id": "user_2",
+      "participant": "USER",
+      "text": "follow-up"
+    }
+  ]
+}

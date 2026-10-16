@@ -51,10 +51,10 @@ class StreamingJsonRequestBodyTest {
                     images[index].jsonPrimitive.content,
                 )
             }
-            assertTrue(request.diagnosticJson.contains("[STREAMED_BASE64:"))
-            assertTrue(request.diagnosticJson.contains("_BYTES]"))
-            assertFalse(request.diagnosticJson.contains("__AGORA_BASE64_"))
-            assertFalse(request.diagnosticJson.contains(images[1].jsonPrimitive.content))
+            assertTrue(body.diagnosticJson.contains("[STREAMED_BASE64:"))
+            assertTrue(body.diagnosticJson.contains("_BYTES]"))
+            assertFalse(body.diagnosticJson.contains("__AGORA_BASE64_"))
+            assertFalse(body.diagnosticJson.contains(images[1].jsonPrimitive.content))
         } finally {
             directory.deleteRecursively()
         }
@@ -80,7 +80,7 @@ class StreamingJsonRequestBodyTest {
             assertEquals(originalTimestamp, file.lastModified())
 
             assertThrows(IOException::class.java) {
-                request.body.writeTo(Buffer())
+                request.writeTo(Buffer())
             }
         } finally {
             file.delete()

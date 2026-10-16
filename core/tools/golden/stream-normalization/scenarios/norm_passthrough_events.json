@@ -1,0 +1,23 @@
+{
+  "name": "norm_passthrough_events",
+  "mode": "normalizer",
+  "tools": [
+    "calc",
+    "search"
+  ],
+  "events": [
+    {
+      "type": "usage",
+      "tokenCount": 42
+    },
+    {
+      "type": "retrying",
+      "attempt": 1,
+      "maxAttempts": 5
+    },
+    {
+      "type": "text",
+      "text": "end"
+    }
+  ]
+}

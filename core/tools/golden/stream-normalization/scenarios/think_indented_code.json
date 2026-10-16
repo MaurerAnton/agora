@@ -1,0 +1,7 @@
+{
+  "name": "think_indented_code",
+  "mode": "thinkingParser",
+  "chunks": [
+    "   <thinking>\ntext "
+  ]
+}

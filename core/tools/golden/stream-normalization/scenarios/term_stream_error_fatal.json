@@ -1,0 +1,7 @@
+{
+  "name": "term_stream_error_fatal",
+  "mode": "termination",
+  "hasStreamError": true,
+  "streamErrorMessage": "invalid api key",
+  "retryableStreamError": false
+}

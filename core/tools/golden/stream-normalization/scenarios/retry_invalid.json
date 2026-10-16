@@ -1,0 +1,5 @@
+{
+  "name": "retry_invalid",
+  "mode": "retry",
+  "retryNumber": 0
+}

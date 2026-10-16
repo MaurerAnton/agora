@@ -1,4 +1,0 @@
-name|validate_system_only
-kind|openai
-mode|validate
-error|RequestFormatException|OpenAI request validation failed: history does not end in user/tool input

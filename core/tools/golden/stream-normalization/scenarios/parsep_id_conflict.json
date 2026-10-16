@@ -1,0 +1,5 @@
+{
+  "name": "parsep_id_conflict",
+  "mode": "toolParser",
+  "content": "<tool_call>{\"id\":\"call_a\",\"call_id\":\"call_b\",\"name\":\"calc\",\"arguments\":\"{}\"}</tool_call>"
+}

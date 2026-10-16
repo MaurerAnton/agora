@@ -1,0 +1,3 @@
+name|norm_text_tool_bare_json
+mode|normalizer
+toolCall|call_text_<uuid>|calc|{}|-|text_tool_<uuid>|0

@@ -1,0 +1,5 @@
+name|norm_native_multi_passthrough
+mode|normalizer
+toolCalls|2
+toolCall|call_a|calc|{"a":1}|-|call_a|0
+toolCall|call_b|search|{"q":"x"}|-|call_b|0

@@ -1,0 +1,3 @@
+name|norm_no_tools_passthrough
+mode|normalizer
+text|<tool_call>{"name":"calc","arguments":"{}"}</tool_call>

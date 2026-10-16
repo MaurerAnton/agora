@@ -1,0 +1,5 @@
+{
+  "name": "parsep_array_atomic",
+  "mode": "toolParser",
+  "content": "[{\"name\":\"calc\",\"arguments\":\"{}\"},{\"name\":\"search\",\"arguments\":\"{}\"}]"
+}

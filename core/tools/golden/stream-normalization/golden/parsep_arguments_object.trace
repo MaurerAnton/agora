@@ -1,0 +1,3 @@
+name|parsep_arguments_object
+mode|toolParser
+call|-|calc|{"a":1}

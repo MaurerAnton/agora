@@ -1,4 +1,0 @@
-name|validate_multi_order
-kind|openai
-mode|validate
-error|RequestFormatException|OpenAI request validation failed: model is blank\s max_tokens must be positive\s top_p is outside 0..1\s messages[0].content[0] is not a valid text part\s messages[0] system content is empty\s messages[2].tool_calls[0] id is not wire-safe\s tool calls are missing results\s history does not end in user/tool input

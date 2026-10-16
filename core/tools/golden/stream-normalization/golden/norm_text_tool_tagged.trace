@@ -1,0 +1,5 @@
+name|norm_text_tool_tagged
+mode|normalizer
+text|Let me check.
+text|<tool_call>{"name":"calc","arguments":"{\\"a\\": 2}"}</tool_call>
+text|Done.

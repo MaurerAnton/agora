@@ -1,6 +1,0 @@
-name|merge_same_role_runs
-mode|merge
-msg|0|user_1|-|USER|SUCCESS|one\n\ntwo|i1.png,i2.png|-|-|0|-|-|[]|-|[]
-msg|1|model_1|-|MODEL|SUCCESS|answer||-|-|0|-|-|[]|-|[]
-msg|2|tool_1|-|MODEL|SUCCESS|||-|-|0|-|-|[{"type":"tool","content":"","toolName":"calc","toolArgs":"{}","toolResult":"","responseOutputItems":0}]|-|[]
-msg|3|user_3|-|USER|SUCCESS|after\n\nalso after||-|-|0|-|-|[]|-|[]

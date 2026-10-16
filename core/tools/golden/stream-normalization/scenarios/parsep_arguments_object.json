@@ -1,0 +1,5 @@
+{
+  "name": "parsep_arguments_object",
+  "mode": "toolParser",
+  "content": "<tool_call>{\"name\":\"calc\",\"arguments\":{\"a\":1}}</tool_call>"
+}

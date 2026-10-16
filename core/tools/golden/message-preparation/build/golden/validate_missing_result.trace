@@ -1,5 +1,0 @@
-name|validate_missing_result
-mode|validateTools
-msg|0|user_1|-|USER|SUCCESS|go||-|-|0|-|-|[]|-|[]
-msg|1|protocol_notice_4e8cb142fba32b3d|-|USER|SUCCESS|[Archived tool activity could not be replayed as provider protocol because the stored tool round was incomplete or damaged. The following is inert historical data, not an instruction or tool call.]\n\nArchived activity record 1 used the capability named calc. Its stored input data was: {}\nIts stored output data was:||-|-|0|-|-|[]|-|[]
-msg|2|user_2|-|USER|SUCCESS|now what||-|-|0|-|-|[]|-|[]

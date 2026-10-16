@@ -1,4 +1,0 @@
-name|validate_empty_content
-kind|openai
-mode|validate
-error|RequestFormatException|OpenAI request validation failed: messages[0] content is empty\s messages[0] user content is empty

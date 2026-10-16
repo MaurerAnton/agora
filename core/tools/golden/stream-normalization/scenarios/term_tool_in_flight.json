@@ -1,0 +1,6 @@
+{
+  "name": "term_tool_in_flight",
+  "mode": "termination",
+  "sawTerminalMarker": true,
+  "toolCallInFlight": true
+}

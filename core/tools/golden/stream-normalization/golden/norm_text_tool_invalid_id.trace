@@ -1,0 +1,3 @@
+name|norm_text_tool_invalid_id
+mode|normalizer
+toolCall|call_malformed_<uuid>|agora_malformed_tool_call|{"error":"Tagged tool call was not valid complete JSON"}|-|malformed_tool_<uuid>|0

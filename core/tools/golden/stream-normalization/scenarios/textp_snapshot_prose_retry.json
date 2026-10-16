@@ -1,0 +1,8 @@
+{
+  "name": "textp_snapshot_prose_retry",
+  "mode": "textParser",
+  "chunks": [
+    "{\"name\":\"nope\"}",
+    " not a call at all"
+  ]
+}

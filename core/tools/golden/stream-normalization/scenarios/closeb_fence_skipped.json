@@ -1,0 +1,5 @@
+{
+  "name": "closeb_fence_skipped",
+  "mode": "closeBoundary",
+  "text": "```\n</thinking>\n```\nthen </thinking> end"
+}

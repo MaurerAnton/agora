@@ -1,0 +1,9 @@
+{
+  "name": "carry_error",
+  "mode": "carriesOutput",
+  "events": [
+    {
+      "type": "error"
+    }
+  ]
+}

@@ -1,0 +1,10 @@
+{
+  "name": "accum_snapshot_growing",
+  "mode": "accumulator",
+  "fragments": [
+    "{\"a\":1",
+    "}",
+    "{\"a\":1}",
+    "{\"a\":12}"
+  ]
+}

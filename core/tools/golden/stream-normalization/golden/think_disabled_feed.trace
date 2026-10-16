@@ -1,0 +1,12 @@
+name|think_disabled_feed
+mode|thinkingParser
+chunk|0
+pending|<think
+chunk|1
+pending|
+chunk|2
+text|shown
+pending|
+flush
+pending|
+inThinking|0

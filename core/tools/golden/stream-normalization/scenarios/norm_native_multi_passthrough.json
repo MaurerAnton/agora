@@ -1,0 +1,27 @@
+{
+  "name": "norm_native_multi_passthrough",
+  "mode": "normalizer",
+  "tools": [
+    "calc",
+    "search"
+  ],
+  "events": [
+    {
+      "type": "toolCalls",
+      "calls": [
+        {
+          "type": "toolCall",
+          "id": "call_a",
+          "name": "calc",
+          "arguments": "{\"a\":1}"
+        },
+        {
+          "type": "toolCall",
+          "id": "call_b",
+          "name": "search",
+          "arguments": "{\"q\":\"x\"}"
+        }
+      ]
+    }
+  ]
+}

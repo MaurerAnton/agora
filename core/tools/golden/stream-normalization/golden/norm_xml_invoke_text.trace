@@ -1,0 +1,3 @@
+name|norm_xml_invoke_text
+mode|normalizer
+text| calling now <invoke name="calc"><parameter name="a">1</parameter></invoke> done

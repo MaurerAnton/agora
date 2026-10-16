@@ -1,5 +1,0 @@
-name|prepare_moves_api_initial_prompt
-mode|prepare
-msg|0|user_1|-|USER|SUCCESS|history||-|-|0|-|-|[]|-|[]
-msg|1|model_1|-|MODEL|SUCCESS|reply||-|-|0|-|-|[]|-|[]
-msg|2|api_initial_user_model_1|model_1|USER|SUCCESS|the fresh prompt||-|-|0|-|-|[]|-|[]

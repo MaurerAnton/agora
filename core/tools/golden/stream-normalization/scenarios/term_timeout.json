@@ -1,0 +1,6 @@
+{
+  "name": "term_timeout",
+  "mode": "termination",
+  "sawTerminalMarker": false,
+  "timedOut": true
+}

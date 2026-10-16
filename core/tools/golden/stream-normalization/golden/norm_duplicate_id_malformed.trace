@@ -1,0 +1,4 @@
+name|norm_duplicate_id_malformed
+mode|normalizer
+toolCall|call_a|calc|{"a":1}|-|call_a|0
+toolCall|call_malformed_<uuid>|agora_malformed_tool_call|{"error":"Text tool payload contained an invalid or duplicate id","original_name":"calc","original_arguments":"{\\"a\\":2}"}|-|text_tool_<uuid>|0

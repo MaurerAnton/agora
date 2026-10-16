@@ -1,0 +1,10 @@
+{
+  "name": "carry_usage",
+  "mode": "carriesOutput",
+  "events": [
+    {
+      "type": "usage",
+      "tokenCount": 1
+    }
+  ]
+}

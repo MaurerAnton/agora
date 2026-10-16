@@ -1,0 +1,15 @@
+name|think_partial_boundary
+mode|thinkingParser
+chunk|0
+pending|<think
+chunk|1
+thought|hidden
+pending|
+chunk|2
+pending|</think
+chunk|3
+text|shown
+pending|
+flush
+pending|
+inThinking|0

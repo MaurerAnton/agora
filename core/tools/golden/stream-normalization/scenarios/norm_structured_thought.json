@@ -1,0 +1,30 @@
+{
+  "name": "norm_structured_thought",
+  "mode": "normalizer",
+  "tools": [
+    "calc",
+    "search"
+  ],
+  "events": [
+    {
+      "type": "text",
+      "text": "plan: "
+    },
+    {
+      "type": "thought",
+      "thought": "step one",
+      "title": "Plan",
+      "signature": "sig-1"
+    },
+    {
+      "type": "thought",
+      "thought": "step two",
+      "title": "Plan",
+      "signature": "sig-1"
+    },
+    {
+      "type": "text",
+      "text": "answer"
+    }
+  ]
+}

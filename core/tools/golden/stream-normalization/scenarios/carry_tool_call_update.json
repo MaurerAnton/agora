@@ -1,0 +1,11 @@
+{
+  "name": "carry_tool_call_update",
+  "mode": "carriesOutput",
+  "events": [
+    {
+      "type": "toolCallUpdate",
+      "streamKey": "k",
+      "name": "calc"
+    }
+  ]
+}

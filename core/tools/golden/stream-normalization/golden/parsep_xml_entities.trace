@@ -1,0 +1,3 @@
+name|parsep_xml_entities
+mode|toolParser
+call|-|calc|{"a":"<b>&c"}

@@ -1,0 +1,14 @@
+name|think_disabled_passthrough
+mode|thinkingParser
+chunk|0
+text|plain 
+pending|
+chunk|1
+text|thinking 
+pending|
+chunk|2
+text|</thinking> tail
+pending|
+flush
+pending|
+inThinking|0

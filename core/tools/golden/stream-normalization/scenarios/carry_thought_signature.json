@@ -1,0 +1,10 @@
+{
+  "name": "carry_thought_signature",
+  "mode": "carriesOutput",
+  "events": [
+    {
+      "type": "thought",
+      "signature": "s"
+    }
+  ]
+}

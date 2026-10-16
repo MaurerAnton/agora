@@ -1,0 +1,8 @@
+{
+  "name": "accum_stale_snapshot",
+  "mode": "accumulator",
+  "fragments": [
+    "{\"key_aaaaaaaaaaaaaaaaaaaaaa\":1}",
+    "{\"key_aaaaaaaaaaaaaaaaaaaaaa\":1}"
+  ]
+}

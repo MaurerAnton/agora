@@ -1,0 +1,5 @@
+{
+  "name": "retry_delays",
+  "mode": "retry",
+  "retryNumber": 3
+}

@@ -1,4 +1,0 @@
-name|chat_error_unsafe_tool
-kind|openai
-mode|factory
-error|RequestFormatException|OpenAI request validation failed: messages[1].tool_calls[0] id is not wire-safe\s messages[1].tool_calls[0] name is not wire-safe\s messages[1].tool_calls[0] arguments are not a JSON object

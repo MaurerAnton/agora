@@ -1,0 +1,10 @@
+{
+  "name": "think_partial_boundary",
+  "mode": "thinkingParser",
+  "chunks": [
+    "<think",
+    "ing>hidden",
+    "</think",
+    "ing>shown"
+  ]
+}

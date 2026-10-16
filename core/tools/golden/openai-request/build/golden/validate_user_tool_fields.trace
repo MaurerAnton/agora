@@ -1,4 +1,0 @@
-name|validate_user_tool_fields
-kind|openai
-mode|validate
-error|RequestFormatException|OpenAI request validation failed: messages[0] user message carries tool fields

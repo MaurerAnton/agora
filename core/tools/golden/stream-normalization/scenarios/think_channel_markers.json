@@ -1,0 +1,8 @@
+{
+  "name": "think_channel_markers",
+  "mode": "thinkingParser",
+  "chunks": [
+    "<|channel|>thought<|message|>deep",
+    "<|channel|>final<|message|>final text"
+  ]
+}

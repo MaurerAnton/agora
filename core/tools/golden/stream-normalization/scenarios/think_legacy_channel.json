@@ -1,0 +1,8 @@
+{
+  "name": "think_legacy_channel",
+  "mode": "thinkingParser",
+  "chunks": [
+    "<|channel>thought\nlegacy",
+    "<channel|>after"
+  ]
+}

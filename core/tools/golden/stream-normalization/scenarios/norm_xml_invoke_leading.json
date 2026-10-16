@@ -1,0 +1,13 @@
+{
+  "name": "norm_xml_invoke_leading",
+  "mode": "normalizer",
+  "tools": [
+    "calc"
+  ],
+  "events": [
+    {
+      "type": "text",
+      "text": "<invoke name=\"calc\"><parameter name=\"a\">1</parameter></invoke>"
+    }
+  ]
+}

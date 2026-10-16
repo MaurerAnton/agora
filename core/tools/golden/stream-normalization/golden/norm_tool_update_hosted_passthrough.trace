@@ -1,0 +1,5 @@
+name|norm_tool_update_hosted_passthrough
+mode|normalizer
+toolCallUpdate|key-1|call_a|calc|{"a":1}|-
+hosted|key-2|openai_search|{}|-|0
+text|ok

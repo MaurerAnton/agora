@@ -1,0 +1,14 @@
+{
+  "name": "norm_text_tool_malformed_json",
+  "mode": "normalizer",
+  "tools": [
+    "calc",
+    "search"
+  ],
+  "events": [
+    {
+      "type": "text",
+      "text": "{\"name\":\"calc\",\"arguments\":{broken}"
+    }
+  ]
+}

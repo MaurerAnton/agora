@@ -1,4 +1,0 @@
-name|chat_error_orphan_result
-kind|openai
-mode|factory
-error|RequestFormatException|OpenAI request validation failed: messages[1] does not match a pending tool call

@@ -1,0 +1,14 @@
+{
+  "name": "norm_text_tool_invalid_id",
+  "mode": "normalizer",
+  "tools": [
+    "calc",
+    "search"
+  ],
+  "events": [
+    {
+      "type": "text",
+      "text": "<tool_call>{\"name\":\"calc\",\"id\":\"bad id!\",\"arguments\":\"{}\"}</tool_call>"
+    }
+  ]
+}

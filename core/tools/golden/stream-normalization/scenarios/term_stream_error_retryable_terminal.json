@@ -1,0 +1,8 @@
+{
+  "name": "term_stream_error_retryable_terminal",
+  "mode": "termination",
+  "sawTerminalMarker": true,
+  "hasStreamError": true,
+  "streamErrorMessage": "some relay failure",
+  "retryableStreamError": true
+}

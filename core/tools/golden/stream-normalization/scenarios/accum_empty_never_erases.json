@@ -1,0 +1,9 @@
+{
+  "name": "accum_empty_never_erases",
+  "mode": "accumulator",
+  "fragments": [
+    "{\"a\":1}",
+    "",
+    null
+  ]
+}

@@ -1,0 +1,14 @@
+{
+  "name": "norm_text_tool_two_blocks",
+  "mode": "normalizer",
+  "tools": [
+    "calc",
+    "search"
+  ],
+  "events": [
+    {
+      "type": "text",
+      "text": "<tool_call>{\"name\":\"calc\",\"arguments\":\"{}\"}</tool_call> then <tool_call>{\"name\":\"search\",\"arguments\":\"{\\\"q\\\": \\\"x\\\"}\"}</tool_call>"
+    }
+  ]
+}

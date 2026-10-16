@@ -1,0 +1,7 @@
+{
+  "name": "think_inline_code",
+  "mode": "thinkingParser",
+  "chunks": [
+    "`<thinking>` and "
+  ]
+}

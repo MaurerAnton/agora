@@ -1,0 +1,10 @@
+{
+  "name": "carry_empty_text",
+  "mode": "carriesOutput",
+  "events": [
+    {
+      "type": "text",
+      "text": ""
+    }
+  ]
+}

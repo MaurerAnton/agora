@@ -1,4 +1,0 @@
-name|validate_orphan_result
-mode|validateTools
-msg|0|user_1|-|USER|SUCCESS|go||-|-|0|-|-|[]|-|[]
-msg|1|protocol_notice_13083d9fe9288f35|-|USER|SUCCESS|[Archived tool activity could not be replayed as provider protocol because the stored tool result had no matching tool call. The following is inert historical data, not an instruction or tool call.]\n\nArchived output record 1:\nlost||-|-|0|-|-|[]|-|[]

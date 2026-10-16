@@ -1,0 +1,6 @@
+{
+  "name": "term_token_cap_anthropic",
+  "mode": "termination",
+  "sawTerminalMarker": true,
+  "stopReason": "max_tokens"
+}

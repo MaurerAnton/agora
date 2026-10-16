@@ -1,0 +1,10 @@
+{
+  "name": "carry_matrix",
+  "mode": "carriesOutput",
+  "events": [
+    {
+      "type": "text",
+      "text": "hi"
+    }
+  ]
+}

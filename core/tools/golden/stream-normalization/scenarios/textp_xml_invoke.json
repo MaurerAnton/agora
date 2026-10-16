@@ -1,0 +1,7 @@
+{
+  "name": "textp_xml_invoke",
+  "mode": "textParser",
+  "chunks": [
+    "<invoke name=\"calc\"><parameter name=\"a\">1</parameter></invoke>"
+  ]
+}

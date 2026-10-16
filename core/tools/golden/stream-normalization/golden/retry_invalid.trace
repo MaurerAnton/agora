@@ -1,0 +1,3 @@
+name|retry_invalid
+mode|retry
+error|IllegalStateException

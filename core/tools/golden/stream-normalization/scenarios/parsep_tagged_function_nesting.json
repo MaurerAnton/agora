@@ -1,0 +1,5 @@
+{
+  "name": "parsep_tagged_function_nesting",
+  "mode": "toolParser",
+  "content": "<tool_call>{\"function\":{\"name\":\"calc\",\"arguments\":\"{}\"}}</tool_call>"
+}

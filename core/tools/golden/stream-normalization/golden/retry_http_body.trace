@@ -1,0 +1,6 @@
+name|retry_http_body
+mode|retry
+delay|5000
+upstreamFailure|1
+retryHttp|1
+streamRetry|0

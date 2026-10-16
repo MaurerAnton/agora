@@ -1,4 +1,0 @@
-name|validate_system_with_tools
-kind|openai
-mode|validate
-error|RequestFormatException|OpenAI request validation failed: messages[0] system message carries tool fields

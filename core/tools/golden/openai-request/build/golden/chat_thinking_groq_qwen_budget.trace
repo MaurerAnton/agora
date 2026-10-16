@@ -1,5 +1,0 @@
-name|chat_thinking_groq_qwen_budget
-kind|groq
-mode|factory
-apiMessages|[{"role":"user","content":[{"type":"text","text":"hi"}]}]
-body|{"model":"qwen/qwen3-32b","messages":[{"role":"user","content":[{"type":"text","text":"hi"}]}],"stream":true,"stream_options":{"include_usage":true},"reasoning_effort":"low"}

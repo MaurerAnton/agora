@@ -1,0 +1,9 @@
+{
+  "name": "carry_citation",
+  "mode": "carriesOutput",
+  "events": [
+    {
+      "type": "citation"
+    }
+  ]
+}

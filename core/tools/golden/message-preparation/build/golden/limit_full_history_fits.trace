@@ -1,8 +1,0 @@
-name|limit_full_history_fits
-mode|limit
-msg|0|user_1|-|USER|SUCCESS|first question||-|-|0|-|-|[]|-|[]
-msg|1|model_1|-|MODEL|SUCCESS|first answer||-|-|0|-|-|[]|-|[]
-msg|2|tool_1|-|MODEL|SUCCESS|||-|-|0|-|-|[{"type":"tool","content":"","toolName":"lookup","toolArgs":"{}","toolResult":"","toolCallId":"call_l","responseOutputItems":0}]|-|[]
-msg|3|result_1|-|USER|SUCCESS|||-|-|0|-|-|[{"type":"tool","content":"","toolResult":"payload","responseOutputItems":0}]|-|[]
-msg|4|user_2|-|USER|SUCCESS|second question||-|-|0|-|-|[]|-|[]
-msg|5|model_2|-|MODEL|SUCCESS|second answer||-|-|0|-|-|[]|-|[]

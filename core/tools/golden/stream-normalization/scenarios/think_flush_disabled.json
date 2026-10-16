@@ -1,0 +1,8 @@
+{
+  "name": "think_flush_disabled",
+  "mode": "thinkingParser",
+  "flushThinkingEnabled": false,
+  "chunks": [
+    "<thinking>held"
+  ]
+}

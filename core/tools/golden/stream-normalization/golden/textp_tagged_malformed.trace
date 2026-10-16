@@ -1,0 +1,5 @@
+name|textp_tagged_malformed
+mode|textParser
+update|text_tool_<uuid>||
+update|text_tool_<uuid>|calc|{broken}
+malformed|Tagged tool call was not valid complete JSON

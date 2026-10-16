@@ -1,4 +1,0 @@
-name|serialized_not_json
-kind|openai
-mode|serialized
-error|RequestFormatException|OpenAI request validation failed: serialized request is not a JSON object

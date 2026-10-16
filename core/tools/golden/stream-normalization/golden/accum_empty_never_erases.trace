@@ -1,0 +1,4 @@
+name|accum_empty_never_erases
+mode|accumulator
+value|{"a":1}
+empty|0

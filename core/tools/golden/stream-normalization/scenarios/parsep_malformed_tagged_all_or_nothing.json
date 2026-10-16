@@ -1,0 +1,5 @@
+{
+  "name": "parsep_malformed_tagged_all_or_nothing",
+  "mode": "toolParser",
+  "content": "<tool_call>{\"name\":\"calc\",\"arguments\":\"{}\"}</tool_call> <tool_call>{\"name\":\"broken\"}</tool_call>"
+}

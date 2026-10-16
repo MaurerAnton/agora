@@ -1,6 +1,0 @@
-name|validate_round_explicit_ids
-mode|validateTools
-msg|0|user_1|-|USER|SUCCESS|go||-|-|0|-|-|[]|-|[]
-msg|1|tool_1|-|MODEL|SUCCESS|||-|-|0|-|-|[{"type":"thought","content":"thinking","responseOutputItems":0},{"type":"tool","content":"","toolName":"calc","toolArgs":"{\\"a\\":2}","toolCallId":"call_a","responseOutputItems":0}]|-|[]
-msg|2|result_1|-|USER|SUCCESS|||-|-|0|-|-|[{"type":"tool","content":"","toolName":"calc","toolArgs":"{\\"a\\":2}","toolResult":"4","toolCallId":"call_a","responseOutputItems":0}]|-|[]
-msg|3|user_2|-|USER|SUCCESS|thanks||-|-|0|-|-|[]|-|[]

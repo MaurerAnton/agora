@@ -1,0 +1,5 @@
+{
+  "name": "parsep_missing_arguments",
+  "mode": "toolParser",
+  "content": "<tool_call>{\"name\":\"calc\"}</tool_call>"
+}

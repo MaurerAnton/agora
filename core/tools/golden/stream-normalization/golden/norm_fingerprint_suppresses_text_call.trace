@@ -1,0 +1,3 @@
+name|norm_fingerprint_suppresses_text_call
+mode|normalizer
+toolCall|call_a|calc|{"b":2,"a":1}|-|call_a|0

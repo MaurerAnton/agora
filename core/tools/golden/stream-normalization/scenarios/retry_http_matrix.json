@@ -1,0 +1,8 @@
+{
+  "name": "retry_http_matrix",
+  "mode": "retry",
+  "retryNumber": 1,
+  "statusCode": 429,
+  "body": null,
+  "streamErrorMessage": "unrelated"
+}

@@ -1,0 +1,18 @@
+{
+  "name": "norm_error_aborts_release",
+  "mode": "normalizer",
+  "tools": [
+    "calc",
+    "search"
+  ],
+  "releaseTextTools": false,
+  "events": [
+    {
+      "type": "text",
+      "text": "{\"name\":\"calc\",\"arguments\":\"{}\""
+    },
+    {
+      "type": "error"
+    }
+  ]
+}

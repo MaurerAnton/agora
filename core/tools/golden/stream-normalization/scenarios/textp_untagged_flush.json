@@ -1,0 +1,8 @@
+{
+  "name": "textp_untagged_flush",
+  "mode": "textParser",
+  "chunks": [
+    "just prose",
+    " continues"
+  ]
+}

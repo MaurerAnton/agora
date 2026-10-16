@@ -1,0 +1,3 @@
+L data: {"choices":[{"index":0,"delta":{"content":"first"}}],"choices":[{"index":0,"delta":{"content":"second"}}]}
+L data: {"choices":[{"index":0,"delta":{},"finish_reason":"stop"}]}
+L data: [DONE]

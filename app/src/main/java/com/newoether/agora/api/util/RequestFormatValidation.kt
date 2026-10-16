@@ -28,8 +28,6 @@ internal fun requireValidRequestFormat(
 }
 
 private val requestValidationJson = Json { ignoreUnknownKeys = true }
-internal val safeWireToolName = Regex("[A-Za-z0-9_-]{1,64}")
-internal val safeWireToolCallId = Regex("[A-Za-z0-9_-]{1,128}")
 
 /**
  * Final serialized-body gate. Object validators prove the typed request graph; this proves that

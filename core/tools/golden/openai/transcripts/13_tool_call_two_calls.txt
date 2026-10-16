@@ -1,0 +1,4 @@
+L data: {"choices":[{"index":0,"delta":{"tool_calls":[{"index":0,"id":"call_a","function":{"name":"fa","arguments":"{}"}}]}}]}
+L data: {"choices":[{"index":0,"delta":{"tool_calls":[{"index":1,"id":"call_b","function":{"name":"fb","arguments":"{}"}}]}}]}
+L data: {"choices":[{"index":0,"delta":{},"finish_reason":"tool_calls"}]}
+L data: [DONE]

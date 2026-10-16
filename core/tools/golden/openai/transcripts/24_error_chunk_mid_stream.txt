@@ -1,0 +1,2 @@
+L data: {"choices":[{"index":0,"delta":{"content":"half"}}]}
+L data: {"error":{"message":"boom","type":"server_error","code":"oops"}}

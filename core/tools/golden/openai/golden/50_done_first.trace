@@ -1,0 +1,4 @@
+term|sawTerminal=1|stop=-|produced=0|inFlight=0|timedOut=0|reported=0|retryable=0|truncCap=0
+streamError|none
+toError|none
+describe|stop_reason=null terminal_marker=true produced_content=false tool_in_flight=false timed_out=false stream_error=false reported_error=false retryable=false

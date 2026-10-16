@@ -1,0 +1,4 @@
+term|sawTerminal=0|stop=-|produced=0|inFlight=0|timedOut=0|reported=0|retryable=1|truncCap=0
+streamError|api|code=-|type=failed_to_generate|message=Failed to generate a response
+toError|api|code=-|type=failed_to_generate|message=Failed to generate a response
+describe|stop_reason=null terminal_marker=false produced_content=false tool_in_flight=false timed_out=false stream_error=true reported_error=false retryable=true

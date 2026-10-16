@@ -1,0 +1,3 @@
+L data: {"choices":[{"index":0,"delta":{"reasoning_details":[{"type":"reasoning.text","text":"hidden"}],"content":"visible"}}]}
+L data: {"choices":[{"index":0,"delta":{},"finish_reason":"stop"}]}
+L data: [DONE]

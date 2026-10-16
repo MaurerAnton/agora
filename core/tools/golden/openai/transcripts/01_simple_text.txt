@@ -1,0 +1,5 @@
+L data: {"id":"chunk-1","object":"chat.completion.chunk","choices":[{"index":0,"delta":{"role":"assistant","content":"Hel"}}]}
+L data: {"id":"chunk-2","choices":[{"index":0,"delta":{"content":"lo"}}]}
+L data: {"id":"chunk-3","choices":[{"index":0,"delta":{},"finish_reason":"stop"}]}
+L data: [DONE]
+E

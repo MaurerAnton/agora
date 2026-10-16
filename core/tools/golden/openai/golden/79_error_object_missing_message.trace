@@ -1,4 +1,5 @@
 text|x
+log|[agora] malformed stream payload exception=MissingFieldException
 term|sawTerminal=0|stop=-|produced=1|inFlight=0|timedOut=0|reported=0|retryable=0|truncCap=0
 streamError|sseParse|raw={"error":{"type":"oops"}}
 toError|sseParse|raw={"error":{"type":"oops"}}

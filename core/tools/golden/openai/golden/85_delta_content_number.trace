@@ -1,3 +1,4 @@
+log|[agora] malformed stream payload exception=JsonDecodingException
 term|sawTerminal=0|stop=-|produced=0|inFlight=0|timedOut=0|reported=0|retryable=1|truncCap=0
 streamError|sseParse|raw={"choices":[{"index":0,"delta":{"content":5}}]}
 toError|sseParse|raw={"choices":[{"index":0,"delta":{"content":5}}]}

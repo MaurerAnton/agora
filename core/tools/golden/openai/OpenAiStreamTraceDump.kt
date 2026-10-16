@@ -110,12 +110,17 @@ fun main(args: Array<String>) {
         .filter { it.isNotBlank() && !it.startsWith("#") }
 
     val json = Json { ignoreUnknownKeys = true; encodeDefaults = true; explicitNulls = false }
-    val consumer = OpenAiChatStreamConsumer(json = json, providerName = "agora")
-
     val out = StringBuilder()
     fun record(event: StreamEvent) {
         out.append(eventLine(event)).append('\n')
     }
+    val consumer = OpenAiChatStreamConsumer(
+        json = json,
+        providerName = "agora",
+        // The malformed-payload debug line is recorded too: the exception class name it carries
+        // is the only surviving shape of a decode failure, and the native port must reproduce it.
+        logMalformed = { message -> out.append("log|").append(esc(message)).append('\n') },
+    )
 
     var stopped = false
     var terminalActive = false

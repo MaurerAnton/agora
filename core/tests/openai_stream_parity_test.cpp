@@ -12,6 +12,7 @@
 #include <sstream>
 #include <string>
 #include <string_view>
+#include <utility>
 #include <vector>
 
 #include "agora/core/json.hpp"
@@ -205,8 +206,12 @@ std::string event_line(const Event& event) {
 }
 
 std::string replay_trace(std::string_view transcript) {
-    ChatStreamConsumer consumer;
     std::string out;
+    ChatStreamConsumer::Options options;
+    options.log_malformed = [&out](const std::string& message) {
+        out += "log|" + esc(message) + "\n";
+    };
+    ChatStreamConsumer consumer(std::move(options));
     bool stopped = false;
     bool terminal_active = false;
     for (const std::string& op : read_lines(transcript)) {

@@ -239,11 +239,21 @@ bool decode_numeric_literal(std::string_view source, std::size_t start, std::int
 // ---------------------------------------------------------------------------
 
 struct DecodeFailure : std::runtime_error {
-    using std::runtime_error::runtime_error;
+    DecodeFailure(const std::string& message, bool missing_field_value)
+        : std::runtime_error(message), missing_field(missing_field_value) {}
+
+    // kotlinx throws MissingFieldException when a required field never appeared and
+    // JsonDecodingException for every lexical or type-level rejection; the malformed-payload
+    // debug line carries the class name, so the distinction is pinned by the golden traces.
+    bool missing_field = false;
 };
 
 [[noreturn]] void fail(const std::string& message) {
-    throw DecodeFailure(message);
+    throw DecodeFailure(message, false);
+}
+
+[[noreturn]] void fail_missing(const std::string& message) {
+    throw DecodeFailure(message, true);
 }
 
 const json::Value& require_object(const json::Value& value, const char* what) {
@@ -451,7 +461,7 @@ Choice decode_choice(const json::Value& value, std::string_view source) {
             choice.finish_reason = decode_optional_string(member, "finish_reason");
         }
     }
-    if (!seen_index) fail("Choice is missing its index");
+    if (!seen_index) fail_missing("Choice is missing its index");
     return choice;
 }
 
@@ -471,7 +481,7 @@ ApiError decode_api_error(const json::Value& value) {
             error.code = decode_optional_string(member, "code");
         }
     }
-    if (!seen_message) fail("Error object is missing its message");
+    if (!seen_message) fail_missing("Error object is missing its message");
     return error;
 }
 
@@ -856,10 +866,14 @@ ChatStreamConsumer::LineOutcome ChatStreamConsumer::consume_line(std::string_vie
         return outcome;
     }
 
-    const auto report_sse_parse = [&](const std::string& message) {
+    const auto report_sse_parse = [&](const std::string& message, bool missing_field) {
         if (options_.log_malformed) {
-            options_.log_malformed("[" + options_.provider_name +
-                                   "] malformed stream payload exception=" + message);
+            // Exactly the reference debug line: the exception class name survives into the
+            // logs, the detail text does not (the golden traces pin the class name).
+            options_.log_malformed(std::string("[") + options_.provider_name +
+                                   "] malformed stream payload exception=" +
+                                   (missing_field ? "MissingFieldException"
+                                                  : "JsonDecodingException"));
         }
         Error error;
         error.kind = Error::Kind::SseParse;
@@ -871,14 +885,14 @@ ChatStreamConsumer::LineOutcome ChatStreamConsumer::consume_line(std::string_vie
 
     json::ParseResult parsed = json::parse(json_str);
     if (!parsed.value) {
-        report_sse_parse(parsed.error);
+        report_sse_parse(parsed.error, false);
         return outcome;
     }
     Response response;
     try {
         response = decode_response(*parsed.value, json_str);
     } catch (const DecodeFailure& failure) {
-        report_sse_parse(failure.what());
+        report_sse_parse(failure.what(), failure.missing_field);
         return outcome;
     }
 

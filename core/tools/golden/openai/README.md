@@ -30,9 +30,11 @@ One op per line; blank lines and `#` comments are ignored.
 ## Trace format
 
 One line per emitted event — `text|`, `thought|`, `toolCallUpdate|`, `toolCall|`, `toolCalls|`,
-`usage|`, `error|` — followed by `term|`, `streamError|`, `toError|` and `describe|`. Text is
-escaped as `\\`, `\p` (`|`), `\s` (`;`), `\n`, `\r`, `\t`; random UUIDs are normalized to
-`<uuid>` (dashed form first, then 32 hex chars).
+`usage|`, `error|` — followed by `term|`, `streamError|`, `toError|` and `describe|`. A malformed
+payload also records the consumer's debug line as `log|<message>`, which carries the exception
+class name the reference logs (`JsonDecodingException` / `MissingFieldException`). Text is escaped
+as `\\`, `\p` (`|`), `\s` (`;`), `\n`, `\r`, `\t`; random UUIDs are normalized to `<uuid>` (dashed
+form first, then 32 hex chars).
 
 ## Regenerate or verify
 

@@ -72,17 +72,31 @@ abstract class BaseOpenAiProvider : LlmProvider {
     }
 
     /**
-     * One stream consumer per attempt. A provider whose [parseDeltaContent] deviates from
-     * [defaultOpenAiDeltaContent] must keep the Kotlin reference implementation; the native
-     * consumer implements only the base semantics.
+     * True while [parseDeltaContent] is the base implementation, which is the only semantics the
+     * native consumer implements. A provider with its own [parseDeltaContent] overrides this to
+     * false and keeps the Kotlin reference consumer.
      */
-    internal open fun createChatStreamConsumer(config: ProviderConfig): OpenAiChatStreamConsumption =
-        OpenAiChatStreamConsumer(
+    protected open val usesDefaultDeltaParsing: Boolean get() = true
+
+    /**
+     * One stream consumer per attempt: the native port when it is available and valid, the Kotlin
+     * reference otherwise. Both decide per-line meaning identically, pinned by the golden traces
+     * under `core/tools/golden/openai`.
+     */
+    internal open fun createChatStreamConsumer(config: ProviderConfig): OpenAiChatStreamConsumption {
+        if (usesDefaultDeltaParsing) {
+            NativeOpenAiChatStreamConsumer.createOrNull(
+                providerName = name,
+                logMalformed = { DebugLog.e("AgoraAPI", it) },
+            )?.let { return it }
+        }
+        return OpenAiChatStreamConsumer(
             json = json,
             providerName = name,
             parseDelta = { delta, emit -> parseDeltaContent(delta, config, emit) },
             logMalformed = { DebugLog.e("AgoraAPI", it) },
         )
+    }
 
     protected open val retryableStatusCodes: Set<Int> = setOf(429, 502, 503, 504)
 
@@ -430,55 +444,61 @@ abstract class BaseOpenAiProvider : LlmProvider {
         emit: suspend (StreamEvent) -> Unit
     ): StreamTermination {
         val consumer = createChatStreamConsumer(config)
-        var terminalDeadlineNanos: Long? = null
+        // The native consumer holds a handle for the whole attempt; release it on every path,
+        // cancellation included. The Kotlin reference needs no cleanup.
+        try {
+            var terminalDeadlineNanos: Long? = null
 
-        // Read timeouts are tolerated for long thinking pauses (read timeout = 5 min), but a
-        // silently-dead connection (NAT drop with no RST) must not hang forever: give up after
-        // 3 consecutive timeouts (~15 min without a single byte).
-        while (currentCoroutineContext().isActive) {
-            terminalDeadlineNanos?.let { deadline ->
-                val remainingNanos = deadline - System.nanoTime()
-                if (remainingNanos <= 0L) break
-                val remainingMillis =
-                    java.util.concurrent.TimeUnit.NANOSECONDS.toMillis(remainingNanos)
-                        .coerceAtLeast(1L)
-                handle.setReadTimeoutMillis(remainingMillis)
+            // Read timeouts are tolerated for long thinking pauses (read timeout = 5 min), but a
+            // silently-dead connection (NAT drop with no RST) must not hang forever: give up after
+            // 3 consecutive timeouts (~15 min without a single byte).
+            while (currentCoroutineContext().isActive) {
+                terminalDeadlineNanos?.let { deadline ->
+                    val remainingNanos = deadline - System.nanoTime()
+                    if (remainingNanos <= 0L) break
+                    val remainingMillis =
+                        java.util.concurrent.TimeUnit.NANOSECONDS.toMillis(remainingNanos)
+                            .coerceAtLeast(1L)
+                    handle.setReadTimeoutMillis(remainingMillis)
+                }
+                val line = try {
+                    handle.readLine()
+                } catch (e: SocketTimeoutException) {
+                    if (!currentCoroutineContext().isActive) break
+                    // A semantic terminal event already completed the model response. This timeout
+                    // only closes its optional usage/[DONE] grace tail and is therefore success.
+                    if (!consumer.onReadTimeout(terminalDeadlineNanos != null)) break
+                    continue
+                } catch (e: Exception) {
+                    if (!currentCoroutineContext().isActive) break
+                    val mapped = e.asRetryableResponseBodyReadError() ?: throw e
+                    consumer.onReadError(mapped)
+                    break
+                } ?: break
+
+                if (!consumer.consumeLine(line, emit)) break
+
+                if (terminalDeadlineNanos == null && consumer.hasSemanticTerminal) {
+                    terminalDeadlineNanos =
+                        System.nanoTime() +
+                            java.util.concurrent.TimeUnit.MILLISECONDS.toNanos(
+                                terminalSseGraceMillis.coerceAtLeast(1L)
+                            )
+                }
             }
-            val line = try {
-                handle.readLine()
-            } catch (e: SocketTimeoutException) {
-                if (!currentCoroutineContext().isActive) break
-                // A semantic terminal event already completed the model response. This timeout
-                // only closes its optional usage/[DONE] grace tail and is therefore success.
-                if (!consumer.onReadTimeout(terminalDeadlineNanos != null)) break
-                continue
-            } catch (e: Exception) {
-                if (!currentCoroutineContext().isActive) break
-                val mapped = e.asRetryableResponseBodyReadError() ?: throw e
-                consumer.onReadError(mapped)
-                break
-            } ?: break
 
-            if (!consumer.consumeLine(line, emit)) break
+            // Do not promote an open structured call at transport EOF. Only [DONE] or finish_reason
+            // can prove that its metadata is complete; leaving it pending makes the termination
+            // error carry toolCallInFlight=true and prevents execution of a truncated invocation.
 
-            if (terminalDeadlineNanos == null && consumer.hasSemanticTerminal) {
-                terminalDeadlineNanos =
-                    System.nanoTime() +
-                        java.util.concurrent.TimeUnit.MILLISECONDS.toNanos(
-                            terminalSseGraceMillis.coerceAtLeast(1L)
-                        )
+            if (!currentCoroutineContext().isActive) {
+                throw CancellationException("Stream cancelled")
             }
+
+            return consumer.finish()
+        } finally {
+            (consumer as? AutoCloseable)?.close()
         }
-
-        // Do not promote an open structured call at transport EOF. Only [DONE] or finish_reason
-        // can prove that its metadata is complete; leaving it pending makes the termination error
-        // carry toolCallInFlight=true and prevents execution of a truncated invocation.
-
-        if (!currentCoroutineContext().isActive) {
-            throw CancellationException("Stream cancelled")
-        }
-
-        return consumer.finish()
     }
 
     private fun buildGenerationError(

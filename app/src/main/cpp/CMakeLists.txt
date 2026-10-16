@@ -107,7 +107,7 @@ set(AGORA_CORE_DIR "${CMAKE_CURRENT_SOURCE_DIR}/../../../../core" CACHE PATH "ag
 get_filename_component(AGORA_CORE_DIR "${AGORA_CORE_DIR}" REALPATH)
 add_subdirectory(${AGORA_CORE_DIR} ${CMAKE_CURRENT_BINARY_DIR}/agora_core)
 
-add_library(agora_core SHARED core_jni.cpp)
+add_library(agora_core SHARED core_jni.cpp openai_stream_jni.cpp)
 target_link_libraries(agora_core agora_core_lib log)
 # The core is C++20; override the project-wide -std=c++17 flag for this target.
 set_target_properties(agora_core PROPERTIES CXX_STANDARD 20 CXX_STANDARD_REQUIRED ON)

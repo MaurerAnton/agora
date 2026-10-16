@@ -180,7 +180,8 @@ class WebUiServerTest {
     @Test
     fun syncRefusesTheUpgradeWithoutASessionOrFromAnotherOrigin() {
         var served = 0
-        webUi(syncSession = { _, _, _ -> served++ }) { _ ->
+        val sessionStarted = CompletableDeferred<Unit>()
+        webUi(syncSession = { _, _, _ -> served++; sessionStarted.complete(Unit) }) { _ ->
             val sockets = createClient { install(ClientWebSockets) }
             val anonymous = runCatching { sockets.webSocket("/api/sync") {} }
             assertTrue(anonymous.isFailure)
@@ -194,12 +195,16 @@ class WebUiServerTest {
             }
             assertTrue(crossSite.isFailure)
             assertEquals(0, served)
-            // The same browser from its own origin is let through.
+            // The same browser from its own origin is let through. Hold the socket open until the
+            // server actually entered the session: the client handshake completes before the
+            // server-side handler runs, so asserting right after connect raced it.
             sockets.webSocket("/api/sync", request = {
                 header(HttpHeaders.Cookie, "${WebUiServer.SESSION_COOKIE}=$token")
                 header(HttpHeaders.Host, "192.168.1.5:8686")
                 header(HttpHeaders.Origin, "http://192.168.1.5:8686")
-            }) {}
+            }) {
+                withTimeout(10_000) { sessionStarted.await() }
+            }
         }
         assertEquals(1, served)
     }

@@ -18,6 +18,7 @@ add_library(agora_core_lib STATIC
     src/bpe_vocabulary.cpp
     src/json.cpp
     src/openai_stream.cpp
+    src/openai_stream_codec.cpp
     src/text_counter.cpp
     src/token_count.cpp
     src/unicode.cpp

@@ -7,6 +7,8 @@ add_executable(agora_core_tests
     openai_stream_codec_test.cpp
     openai_request_parity_test.cpp
     openai_request_test.cpp
+    message_preparation_parity_test.cpp
+    message_preparation_test.cpp
     parity_test.cpp
     fuzz_parity_test.cpp
 )
@@ -24,6 +26,8 @@ target_compile_definitions(agora_core_tests PRIVATE
     AGORA_FIXTURE_OPENAI_GOLDEN_DIR="${CMAKE_CURRENT_SOURCE_DIR}/../tools/golden/openai"
     AGORA_FIXTURE_OPENAI_CODEC_DIR="${CMAKE_CURRENT_SOURCE_DIR}/../../app/src/test/resources/openai_stream_codec"
     AGORA_FIXTURE_OPENAI_REQUEST_DIR="${CMAKE_CURRENT_SOURCE_DIR}/../tools/golden/openai-request"
+    AGORA_FIXTURE_MESSAGE_PREP_DIR="${CMAKE_CURRENT_SOURCE_DIR}/../tools/golden/message-preparation"
+    AGORA_FIXTURE_PREP_VOCAB="${CMAKE_CURRENT_SOURCE_DIR}/../../app/src/main/assets/tokenizers/o200k_base.tiktoken"
 )
 
 add_test(NAME agora_core_tests COMMAND agora_core_tests)

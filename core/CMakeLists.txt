@@ -17,6 +17,8 @@ option(AGORA_CORE_BUILD_TESTS "Build the agora core tests" ${AGORA_CORE_TESTS_DE
 add_library(agora_core_lib STATIC
     src/bpe_vocabulary.cpp
     src/json.cpp
+    src/message_preparation.cpp
+    src/message_preparation_tokens.cpp
     src/openai_request.cpp
     src/openai_request_json.cpp
     src/openai_stream.cpp

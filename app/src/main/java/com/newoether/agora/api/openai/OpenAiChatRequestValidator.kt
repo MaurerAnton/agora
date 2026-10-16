@@ -6,8 +6,6 @@ import com.newoether.agora.api.util.requireValidRequestFormat
 import com.newoether.agora.api.util.safeWireToolCallId
 import com.newoether.agora.api.util.safeWireToolName
 import com.newoether.agora.api.util.validateToolDefinitions
-import kotlinx.serialization.json.Json
-import kotlinx.serialization.json.JsonObject
 
 /**
  * The chat-completions wire-format gate, called before serialization so a request that cannot
@@ -148,12 +146,3 @@ private fun isSubstantivePart(part: OpenAiContentPart): Boolean = when (part.typ
     "image_url" -> !part.imageUrl?.url.isNullOrBlank()
     else -> false
 }
-
-/**
- * Shared with the Responses gate in OpenAiRequestValidator.kt: tool arguments and raw protocol
- * items are accepted only when they parse as exactly one JSON object.
- */
-internal val validationJson = Json { ignoreUnknownKeys = true }
-
-internal fun isJsonObject(raw: String): Boolean =
-    runCatching { validationJson.parseToJsonElement(raw) is JsonObject }.getOrDefault(false)

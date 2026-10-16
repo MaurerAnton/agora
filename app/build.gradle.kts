@@ -98,7 +98,7 @@ android {
             applicationIdSuffix = ".dev"
             // Dev lineage is offset +10000 so test builds always update over
             // each other; keep the offset when bumping release versionCode.
-            versionCode = 10031
+            versionCode = 10032
             versionNameSuffix = "-dev"
             resValue("string", "app_name", "Agora Dev")
         }

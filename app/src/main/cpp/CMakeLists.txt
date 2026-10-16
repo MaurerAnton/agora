@@ -100,6 +100,19 @@ target_link_options(agora_proot PRIVATE
     -Wl,--build-id=none -Wl,--hash-style=gnu -Wl,--icf=all
 )
 
+# ── C++ core: portable logic (see core/) ─────────────────
+# The core is a standalone CMake project, built here for Android and on the host for its tests.
+# libagora_core.so is the JNI surface; all logic lives in agora_core_lib.
+set(AGORA_CORE_DIR "${CMAKE_CURRENT_SOURCE_DIR}/../../../../core" CACHE PATH "agora core source directory")
+get_filename_component(AGORA_CORE_DIR "${AGORA_CORE_DIR}" REALPATH)
+add_subdirectory(${AGORA_CORE_DIR} ${CMAKE_CURRENT_BINARY_DIR}/agora_core)
+
+add_library(agora_core SHARED core_jni.cpp)
+target_link_libraries(agora_core agora_core_lib log)
+target_link_options(agora_core PRIVATE
+    -Wl,--build-id=none -Wl,--hash-style=gnu -Wl,--icf=all -Wl,--threads=1
+)
+
 # ── Reproducible: strip .comment ─────────────────────────
 if(DEFINED ENV{SOURCE_DATE_EPOCH})
     add_definitions(-DSOURCE_DATE_EPOCH=$ENV{SOURCE_DATE_EPOCH})
@@ -110,5 +123,8 @@ if(LLVM_OBJCOPY)
     )
     add_custom_command(TARGET agora_proot POST_BUILD
         COMMAND ${LLVM_OBJCOPY} --remove-section .comment $<TARGET_FILE:agora_proot>
+    )
+    add_custom_command(TARGET agora_core POST_BUILD
+        COMMAND ${LLVM_OBJCOPY} --remove-section .comment $<TARGET_FILE:agora_core>
     )
 endif()

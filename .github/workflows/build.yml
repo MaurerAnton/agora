@@ -42,6 +42,12 @@ jobs:
           ./gradlew -p build-logic test --stacktrace
           ./gradlew :app:testFdroidDebugUnitTest :app:testPlayDebugUnitTest verifyKotlinFileSize --no-daemon --max-workers=1 --stacktrace
 
+      - name: Build and run the C++ core tests
+        run: |
+          cmake -S core -B core-build -DCMAKE_BUILD_TYPE=Release
+          cmake --build core-build
+          ctest --test-dir core-build --output-on-failure
+
       - name: Upload test reports
         if: failure()
         uses: actions/upload-artifact@v4

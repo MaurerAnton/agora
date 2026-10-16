@@ -1,0 +1,5 @@
+# A second sign inside the exponent flips its direction instead of failing, and
+# an exponent magnitude whose Long accumulation wraps is used as accumulated.
+L data: {"choices":[{"index":0e2-3,"delta":{"content":"a"}}]}
+L data: {"choices":[{"index":1e-18446744073709551616,"delta":{"content":"b"}}]}
+L data: [DONE]

@@ -1,0 +1,10 @@
+# Non-standard relays stream arguments as bare primitives. kotlinx accepts any
+# unquoted TC_OTHER run as a raw non-string JsonPrimitive and null as JsonNull,
+# which the accumulator appends by content / toString respectively.
+L data: {"choices":[{"index":0,"delta":{"tool_calls":[{"index":0,"id":"c1","function":{"name":"f","arguments":abc}}]}}]}
+L data: {"choices":[{"index":0,"delta":{"tool_calls":[{"index":0,"function":{"arguments":true}}]}}]}
+L data: {"choices":[{"index":0,"delta":{"tool_calls":[{"index":0,"function":{"arguments":null}}]}}]}
+L data: {"choices":[{"index":0,"delta":{"tool_calls":[{"index":0,"function":{"arguments":1.5e3}}]}}]}
+L data: {"choices":[{"index":0,"delta":{"tool_calls":[{"index":0,"function":{"arguments":-}}]}}]}
+L data: {"choices":[{"index":0,"delta":{"tool_calls":[{"index":0,"function":{"arguments":+1}}]}}]}
+L data: [DONE]

@@ -1,0 +1,2 @@
+# index is a required Int: an explicit null cannot satisfy it.
+L data: {"choices":[{"index":null}]}

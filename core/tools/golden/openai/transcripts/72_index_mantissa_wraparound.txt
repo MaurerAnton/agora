@@ -1,0 +1,6 @@
+# The mantissa accumulates into a NEGATIVE Long and only a wrap to positive is
+# rejected, so 2^64 lands exactly on zero and 2^64+1 on one.
+L data: {"choices":[{"index":18446744073709551616,"delta":{"content":"a"}}]}
+L data: {"choices":[{"index":18446744073709551617,"delta":{"content":"b"}}]}
+L data: {"choices":[{"index":-18446744073709551617,"delta":{"content":"c"}}]}
+L data: [DONE]

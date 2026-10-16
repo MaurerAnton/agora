@@ -1,0 +1,6 @@
+# arguments may arrive as a real JSON object/array rather than a string; the
+# accumulator appends its kotlinx toString(), which re-normalizes the value:
+# member order is kept, strings are re-escaped, raw numbers/literals stay raw
+# and a null array element becomes JsonNull's "null".
+L data: {"choices":[{"index":0,"delta":{"tool_calls":[{"index":0,"id":"c1","function":{"name":"f","arguments":{"b":"x \" y","a":1e2,"c":abc,"d":[true,null],"e":{"f":-}} }}]}}]}
+L data: [DONE]

@@ -1,0 +1,8 @@
+# Lone surrogates are legal in a JSON string for kotlinx: each \uXXXX appends a
+# UTF-16 code unit with no pairing check. The trace writer prints through UTF-8,
+# which substitutes '?' for unpaired surrogates; a valid pair stays one emoji.
+L data: {"choices":[{"index":0,"delta":{"content":"a\ud800b"}}]}
+L data: {"choices":[{"index":0,"delta":{"content":"\udc00"}}]}
+L data: {"choices":[{"index":0,"delta":{"content":"x\ud800\ud800y"}}]}
+L data: {"choices":[{"index":0,"delta":{"content":"pair:\ud83d\ude00"}}]}
+L data: [DONE]

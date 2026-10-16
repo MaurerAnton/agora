@@ -1,0 +1,21 @@
+{
+  "name": "chat_thinking_openrouter_budget",
+  "kind": "openrouter",
+  "providerName": "OpenRouter",
+  "config": {
+    "modelId": "deepseek/deepseek-r1",
+    "thinkingLevel": "high",
+    "thinkingBudgetEnabled": true,
+    "thinkingBudgetTokens": 2048
+  },
+  "requestInput": {
+    "systemPrompt": null,
+    "messages": [
+      {
+        "id": "user_1",
+        "participant": "USER",
+        "text": "hi"
+      }
+    ]
+  }
+}

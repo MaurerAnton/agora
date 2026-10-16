@@ -1,0 +1,19 @@
+{
+  "name": "chat_thinking_openrouter_disabled",
+  "kind": "openrouter",
+  "providerName": "OpenRouter",
+  "config": {
+    "modelId": "deepseek/deepseek-r1",
+    "thinkingEnabled": false
+  },
+  "requestInput": {
+    "systemPrompt": null,
+    "messages": [
+      {
+        "id": "user_1",
+        "participant": "USER",
+        "text": "hi"
+      }
+    ]
+  }
+}

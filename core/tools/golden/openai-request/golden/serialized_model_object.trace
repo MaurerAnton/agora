@@ -1,0 +1,4 @@
+name|serialized_model_object
+kind|openai
+mode|serialized
+error|RequestFormatException|OpenAI request validation failed: serialized model is absent or blank

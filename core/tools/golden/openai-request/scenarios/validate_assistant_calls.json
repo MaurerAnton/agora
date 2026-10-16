@@ -1,0 +1,30 @@
+{
+  "name": "validate_assistant_calls",
+  "kind": "openai",
+  "providerName": "OpenAI",
+  "mode": "validate",
+  "request": {
+    "model": "gpt-4.1",
+    "messages": [
+      {
+        "role": "assistant",
+        "content": [
+          {
+            "type": "text",
+            "text": ""
+          }
+        ],
+        "tool_calls": [
+          {
+            "id": "x y",
+            "type": "text",
+            "function": {
+              "name": "",
+              "arguments": "[]"
+            }
+          }
+        ]
+      }
+    ]
+  }
+}

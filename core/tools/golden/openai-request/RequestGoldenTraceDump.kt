@@ -27,6 +27,7 @@ import com.newoether.agora.api.openai.withOpenRouterReasoning
 import com.newoether.agora.api.openai.withQwenThinking
 import com.newoether.agora.api.util.RequestFormatException
 import com.newoether.agora.api.util.StreamingJsonBody
+import com.newoether.agora.api.util.requireValidSerializedRequest
 import com.newoether.agora.api.util.resolvedThinking
 import com.newoether.agora.model.ChatMessage
 import com.newoether.agora.model.MessageSegment
@@ -142,6 +143,9 @@ private data class Scenario(
     val config: ScenarioConfig = ScenarioConfig(),
     val requestInput: ScenarioInput? = null,
     val request: JsonObject? = null,
+    val serializedBody: String? = null,
+    val serializedRequiredStringFields: List<String> = emptyList(),
+    val serializedRequiredArrayFields: List<String> = emptyList(),
 )
 
 @Serializable
@@ -238,6 +242,14 @@ private fun buildMessage(filesRoot: File, message: ScenarioMessage): ChatMessage
     },
 )
 
+/** Scenario floats may spell the values JSON cannot carry ("NaN", "Infinity", "-Infinity"). */
+private fun scenarioFloat(primitive: JsonPrimitive): Float = when (val text = primitive.content) {
+    "NaN" -> Float.NaN
+    "Infinity" -> Float.POSITIVE_INFINITY
+    "-Infinity" -> Float.NEGATIVE_INFINITY
+    else -> text.toFloat()
+}
+
 private fun buildConfig(config: ScenarioConfig): ProviderConfig = ProviderConfig(
     apiKey = "scenario-key",
     modelId = config.modelId,
@@ -249,11 +261,11 @@ private fun buildConfig(config: ScenarioConfig): ProviderConfig = ProviderConfig
     includeAssistantReasoning = config.includeAssistantReasoning,
     googleSearchEnabled = config.googleSearchEnabled,
     openAiServiceTier = config.openAiServiceTier,
-    temperature = config.temperature?.let { it.content.toFloat() },
+    temperature = config.temperature?.let { scenarioFloat(it) },
     maxTokens = config.maxTokens,
-    topP = config.topP?.let { it.content.toFloat() },
-    frequencyPenalty = config.frequencyPenalty?.let { it.content.toFloat() },
-    presencePenalty = config.presencePenalty?.let { it.content.toFloat() },
+    topP = config.topP?.let { scenarioFloat(it) },
+    frequencyPenalty = config.frequencyPenalty?.let { scenarioFloat(it) },
+    presencePenalty = config.presencePenalty?.let { scenarioFloat(it) },
     promptCacheKey = config.promptCacheKey,
     tools = buildTools(config.tools),
 )
@@ -312,7 +324,17 @@ fun main(args: Array<String>) {
     line("kind", esc(scenario.kind))
     line("mode", esc(scenario.mode))
     try {
-        if (scenario.mode == "validate") {
+        if (scenario.mode == "serialized") {
+            requireValidSerializedRequest(
+                provider = scenario.providerName,
+                body = requireNotNull(scenario.serializedBody) {
+                    "serialized mode requires serializedBody"
+                },
+                requiredStringFields = scenario.serializedRequiredStringFields.toSet(),
+                requiredArrayFields = scenario.serializedRequiredArrayFields.toSet(),
+            )
+            line("ok")
+        } else if (scenario.mode == "validate") {
             val requestJson = requireNotNull(scenario.request) { "validate mode requires request" }
             val request = Json { ignoreUnknownKeys = true }
                 .decodeFromJsonElement(OpenAiChatRequest.serializer(), requestJson)

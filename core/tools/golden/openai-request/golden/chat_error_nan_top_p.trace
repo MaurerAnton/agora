@@ -1,0 +1,4 @@
+name|chat_error_nan_top_p
+kind|openai
+mode|factory
+error|RequestFormatException|OpenAI request validation failed: top_p is outside 0..1

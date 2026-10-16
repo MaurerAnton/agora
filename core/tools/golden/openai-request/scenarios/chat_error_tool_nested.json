@@ -1,0 +1,66 @@
+{
+  "name": "chat_error_tool_nested",
+  "kind": "openai",
+  "providerName": "OpenAI",
+  "config": {
+    "tools": [
+      {
+        "type": "function",
+        "function": {
+          "name": "nest",
+          "description": "d",
+          "parameters": {
+            "type": "object",
+            "properties": {
+              "arr": {
+                "type": "array",
+                "description": "d",
+                "items": {
+                  "type": "object",
+                  "description": "d"
+                }
+              },
+              "deep": {
+                "type": "object",
+                "description": "d",
+                "properties": {
+                  "inner": {
+                    "type": "array",
+                    "description": "d",
+                    "items": {
+                      "type": "number",
+                      "description": "d"
+                    }
+                  }
+                }
+              },
+              "req": {
+                "type": "object",
+                "description": "d",
+                "properties": {
+                  "known": {
+                    "type": "string",
+                    "description": "d"
+                  }
+                },
+                "required": [
+                  "ghost"
+                ]
+              }
+            }
+          }
+        }
+      }
+    ]
+  },
+  "requestInput": {
+    "systemPrompt": null,
+    "messages": [
+      {
+        "id": "user_1",
+        "participant": "USER",
+        "text": "hi"
+      }
+    ]
+  }
+}

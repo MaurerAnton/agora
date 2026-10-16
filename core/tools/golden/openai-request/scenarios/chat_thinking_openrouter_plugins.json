@@ -1,0 +1,19 @@
+{
+  "name": "chat_thinking_openrouter_plugins",
+  "kind": "openrouter",
+  "providerName": "OpenRouter",
+  "config": {
+    "modelId": "openai/gpt-4.1",
+    "googleSearchEnabled": true
+  },
+  "requestInput": {
+    "systemPrompt": null,
+    "messages": [
+      {
+        "id": "user_1",
+        "participant": "USER",
+        "text": "hi"
+      }
+    ]
+  }
+}

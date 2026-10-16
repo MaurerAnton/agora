@@ -1,0 +1,16 @@
+{
+  "name": "chat_text_lone_surrogate",
+  "kind": "openai",
+  "providerName": "OpenAI",
+  "config": {},
+  "requestInput": {
+    "systemPrompt": null,
+    "messages": [
+      {
+        "id": "user_1",
+        "participant": "USER",
+        "text": "a\ud800b\udc00c"
+      }
+    ]
+  }
+}

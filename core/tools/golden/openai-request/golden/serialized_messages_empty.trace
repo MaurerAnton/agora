@@ -1,0 +1,4 @@
+name|serialized_messages_empty
+kind|openai
+mode|serialized
+error|RequestFormatException|OpenAI request validation failed: serialized messages is absent or empty

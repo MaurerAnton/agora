@@ -1,0 +1,21 @@
+{
+  "name": "chat_thinking_qwen38_budget",
+  "kind": "qwen",
+  "providerName": "Qwen",
+  "config": {
+    "modelId": "qwen3.8-max",
+    "thinkingLevel": "medium",
+    "thinkingBudgetEnabled": true,
+    "thinkingBudgetTokens": 4096
+  },
+  "requestInput": {
+    "systemPrompt": null,
+    "messages": [
+      {
+        "id": "user_1",
+        "participant": "USER",
+        "text": "hi"
+      }
+    ]
+  }
+}

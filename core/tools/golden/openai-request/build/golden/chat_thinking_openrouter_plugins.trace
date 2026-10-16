@@ -1,0 +1,5 @@
+name|chat_thinking_openrouter_plugins
+kind|openrouter
+mode|factory
+apiMessages|[{"role":"user","content":[{"type":"text","text":"hi"}]}]
+body|{"model":"openai/gpt-4.1","messages":[{"role":"user","content":[{"type":"text","text":"hi"}]}],"stream":true,"stream_options":{"include_usage":true},"reasoning":{"effort":"medium"},"plugins":[{"id":"web"}]}

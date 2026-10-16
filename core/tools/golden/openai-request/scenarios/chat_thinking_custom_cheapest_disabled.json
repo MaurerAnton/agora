@@ -1,0 +1,20 @@
+{
+  "name": "chat_thinking_custom_cheapest_disabled",
+  "kind": "custom",
+  "providerName": "Cheapest",
+  "providerBaseUrl": "https://API.CHEAPESTINFERENCE.COM/v2",
+  "config": {
+    "modelId": "deepseek-v4",
+    "thinkingEnabled": false
+  },
+  "requestInput": {
+    "systemPrompt": null,
+    "messages": [
+      {
+        "id": "user_1",
+        "participant": "USER",
+        "text": "hi"
+      }
+    ]
+  }
+}

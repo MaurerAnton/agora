@@ -1,0 +1,13 @@
+{
+  "name": "serialized_model_object",
+  "kind": "openai",
+  "providerName": "OpenAI",
+  "mode": "serialized",
+  "serializedBody": "{\"model\":{},\"messages\":[{\"role\":\"user\"}]}",
+  "serializedRequiredStringFields": [
+    "model"
+  ],
+  "serializedRequiredArrayFields": [
+    "messages"
+  ]
+}

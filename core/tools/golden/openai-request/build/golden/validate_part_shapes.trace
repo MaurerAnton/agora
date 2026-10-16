@@ -1,0 +1,4 @@
+name|validate_part_shapes
+kind|openai
+mode|validate
+error|RequestFormatException|OpenAI request validation failed: messages[0].content[0] is not a valid text part\s messages[0].content[1] is not a valid image_url part\s messages[0].content[2] has unsupported type input_audio

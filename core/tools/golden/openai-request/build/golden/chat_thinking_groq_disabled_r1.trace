@@ -1,0 +1,5 @@
+name|chat_thinking_groq_disabled_r1
+kind|groq
+mode|factory
+apiMessages|[{"role":"user","content":[{"type":"text","text":"hi"}]}]
+body|{"model":"deepseek-r1-distill-llama-70b","messages":[{"role":"user","content":[{"type":"text","text":"hi"}]}],"stream":true,"stream_options":{"include_usage":true},"reasoning_effort":"none"}

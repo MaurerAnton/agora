@@ -1,0 +1,16 @@
+{
+  "name": "chat_text_escapes",
+  "kind": "openai",
+  "providerName": "OpenAI",
+  "config": {},
+  "requestInput": {
+    "systemPrompt": null,
+    "messages": [
+      {
+        "id": "user_1",
+        "participant": "USER",
+        "text": "quote \" back \\ nl \n cr \r tab \t bs \b ff \f soh \u0001 us \u001f del \u007f cjk \u56fe\u50cf emoji \ud83d\ude42 sep \u2028 lsep \u2029 done"
+      }
+    ]
+  }
+}

@@ -1,0 +1,20 @@
+{
+  "name": "chat_thinking_qwen_budget_clamp_low",
+  "kind": "qwen",
+  "providerName": "Qwen",
+  "config": {
+    "modelId": "qwen3-30b-a3b",
+    "thinkingBudgetEnabled": true,
+    "thinkingBudgetTokens": 0
+  },
+  "requestInput": {
+    "systemPrompt": null,
+    "messages": [
+      {
+        "id": "user_1",
+        "participant": "USER",
+        "text": "hi"
+      }
+    ]
+  }
+}

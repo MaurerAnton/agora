@@ -1,0 +1,47 @@
+{
+  "name": "chat_error_tool_mcp_schema_skip",
+  "kind": "openai",
+  "providerName": "OpenAI",
+  "config": {
+    "tools": [
+      {
+        "type": "function",
+        "function": {
+          "name": "mcp",
+          "description": "d",
+          "parameters": {
+            "type": "object",
+            "properties": {
+              "bad": {
+                "type": "object",
+                "description": "d"
+              }
+            },
+            "required": [
+              "ghost"
+            ],
+            "schema": {
+              "type": "object",
+              "properties": {
+                "any": {
+                  "type": "string",
+                  "description": "d"
+                }
+              }
+            }
+          }
+        }
+      }
+    ]
+  },
+  "requestInput": {
+    "systemPrompt": null,
+    "messages": [
+      {
+        "id": "user_1",
+        "participant": "USER",
+        "text": "hi"
+      }
+    ]
+  }
+}

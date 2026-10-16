@@ -1,0 +1,13 @@
+{
+  "name": "serialized_json_array",
+  "kind": "openai",
+  "providerName": "OpenAI",
+  "mode": "serialized",
+  "serializedBody": "[1,2,3]",
+  "serializedRequiredStringFields": [
+    "model"
+  ],
+  "serializedRequiredArrayFields": [
+    "messages"
+  ]
+}

@@ -33,7 +33,7 @@ exactly (`core/tests/openai_request_parity_test.cpp`).
   "kind": "deepseek",                  // openai | deepseek | groq | qwen | openrouter | custom
   "providerName": "DeepSeek",          // provider identity used in errors and invalid-request text
   "providerBaseUrl": null,             // custom only: defaultBaseUrl for the cheapest-inference rule
-  "mode": "factory",                   // factory | validate
+  "mode": "factory",                   // factory | validate | serialized
   "config": {                          // ProviderConfig fields the pipeline reads
     "modelId": "deepseek-v4",
     "thinkingEnabled": true,
@@ -73,6 +73,17 @@ exactly (`core/tests/openai_request_parity_test.cpp`).
 `mode: "validate"` skips the factory and decodes `request` (a wire-form `OpenAiChatRequest`) with a
 plain `Json { ignoreUnknownKeys = true }`, then runs `requireValidWireFormat` only. It pins validator
 branches the converter can never produce (invalid roles, tool fields on system messages, ...).
+
+`mode: "serialized"` calls `requireValidSerializedRequest` with the raw `serializedBody` string and
+`serializedRequiredStringFields` / `serializedRequiredArrayFields`; it pins the serialized-body gate
+without a JSON decode of the request.
+
+## Boundary
+
+`openAiWebSearchEnabled` chat requests are rejected by the provider orchestration before the factory
+runs ("hosted web search requires Responses API transport"); headers, endpoint candidates and the
+retry loop belong to the transport slice, and the Responses-API branch stays in Kotlin. The factory
+slice never sees those paths.
 
 ## Trace format (`golden/*.trace`)
 

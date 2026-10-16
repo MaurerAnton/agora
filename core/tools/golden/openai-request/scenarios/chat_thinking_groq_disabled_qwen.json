@@ -1,0 +1,19 @@
+{
+  "name": "chat_thinking_groq_disabled_qwen",
+  "kind": "groq",
+  "providerName": "Groq",
+  "config": {
+    "modelId": "qwen/qwen3-32b",
+    "thinkingEnabled": false
+  },
+  "requestInput": {
+    "systemPrompt": null,
+    "messages": [
+      {
+        "id": "user_1",
+        "participant": "USER",
+        "text": "hi"
+      }
+    ]
+  }
+}

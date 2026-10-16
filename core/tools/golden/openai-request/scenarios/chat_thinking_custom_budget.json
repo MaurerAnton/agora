@@ -1,0 +1,22 @@
+{
+  "name": "chat_thinking_custom_budget",
+  "kind": "custom",
+  "providerName": "Custom",
+  "providerBaseUrl": "https://api.example.com/v1",
+  "config": {
+    "modelId": "deepseek-v4",
+    "thinkingLevel": "high",
+    "thinkingBudgetEnabled": true,
+    "thinkingBudgetTokens": 3072
+  },
+  "requestInput": {
+    "systemPrompt": null,
+    "messages": [
+      {
+        "id": "user_1",
+        "participant": "USER",
+        "text": "hi"
+      }
+    ]
+  }
+}

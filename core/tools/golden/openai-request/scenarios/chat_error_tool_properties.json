@@ -1,0 +1,60 @@
+{
+  "name": "chat_error_tool_properties",
+  "kind": "openai",
+  "providerName": "OpenAI",
+  "config": {
+    "tools": [
+      {
+        "type": "function",
+        "function": {
+          "name": "matrix",
+          "description": "d",
+          "parameters": {
+            "type": "object",
+            "properties": {
+              "": {
+                "type": "string",
+                "description": "d"
+              },
+              "b": {
+                "type": "",
+                "description": "d"
+              },
+              "c": {
+                "type": "array",
+                "description": "d"
+              },
+              "d": {
+                "type": "object",
+                "description": "d"
+              },
+              "e": {
+                "type": "object",
+                "description": "d",
+                "properties": {
+                  "present": {
+                    "type": "string",
+                    "description": "d"
+                  }
+                },
+                "required": [
+                  "absent"
+                ]
+              }
+            }
+          }
+        }
+      }
+    ]
+  },
+  "requestInput": {
+    "systemPrompt": null,
+    "messages": [
+      {
+        "id": "user_1",
+        "participant": "USER",
+        "text": "hi"
+      }
+    ]
+  }
+}

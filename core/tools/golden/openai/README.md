@@ -15,6 +15,7 @@ sources) and the canonical trace is frozen under `golden/`. The C++ port
 | `run_golden.sh` | Compiles the reference and regenerates or verifies the traces |
 | `stubs/` | Leaf stubs for Android-only types the reference sources touch |
 | `pow10/` | `Math.pow(10, e)` bit table and its generator (see below) |
+| `codec/` | Generator for the JNI wire-format fixtures (see below) |
 
 ## Transcript format
 
@@ -67,4 +68,21 @@ Regenerate the table:
 cd pow10
 kotlinc ProbePow10.kt -include-runtime -d probe.jar && java -jar probe.jar > pow10_jvm.txt
 python3 generate_table.py
+```
+
+## codec (the JNI wire format)
+
+The Kotlin wrapper calls into the core, never the other way around: `consumeLine` returns one
+self-contained payload (events, debug lines and the keep-reading flag) and `finish` returns the
+encoded termination. The format is documented in `core/include/agora/core/openai_stream_codec.hpp`.
+
+The fixtures under `app/src/test/resources/openai_stream_codec/` are the single source of truth for
+those bytes: `codec/generate_codec_fixtures.py` writes them,
+`core/tests/openai_stream_codec_test.cpp` byte-compares the native encoder against them, and
+`app/src/test/java/com/newoether/agora/api/openai/NativeStreamCodecTest.kt` decodes them back into
+events and a termination. The fixtures are committed; regenerate only when the format itself
+changes:
+
+```sh
+python3 codec/generate_codec_fixtures.py
 ```

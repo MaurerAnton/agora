@@ -15,7 +15,6 @@
 namespace agora::core::stream_normalization {
 
 namespace unicode = agora::core::unicode;
-namespace detail = stream_normalization::detail;
 
 // ---------------------------------------------------------------------------------------------
 // Marker tables.

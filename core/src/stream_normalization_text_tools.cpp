@@ -15,7 +15,6 @@
 namespace agora::core::stream_normalization {
 
 namespace json = agora::core::json;
-namespace detail = stream_normalization::detail;
 
 namespace {
 

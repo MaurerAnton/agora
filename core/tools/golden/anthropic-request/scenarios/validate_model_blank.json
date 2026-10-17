@@ -1,0 +1,19 @@
+{
+  "name": "validate_model_blank",
+  "providerName": "Anthropic",
+  "mode": "validate",
+  "request": {
+    "model": "  ",
+    "messages": [
+      {
+        "role": "user",
+        "content": [
+          {
+            "type": "text",
+            "text": "Hello"
+          }
+        ]
+      }
+    ]
+  }
+}

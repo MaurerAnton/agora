@@ -1,0 +1,22 @@
+{
+  "name": "validate_thinking_enabled_no_budget",
+  "providerName": "Anthropic",
+  "mode": "validate",
+  "request": {
+    "model": "claude-opus-4-6",
+    "thinking": {
+      "type": "enabled"
+    },
+    "messages": [
+      {
+        "role": "user",
+        "content": [
+          {
+            "type": "text",
+            "text": "Hello"
+          }
+        ]
+      }
+    ]
+  }
+}

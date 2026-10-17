@@ -1,0 +1,3 @@
+name|validate_thinking_unsigned
+mode|validate
+error|RequestFormatException|Anthropic request validation failed: messages[0].content[0] is not a valid signed thinking block\s history does not start with user\s history does not end with user input

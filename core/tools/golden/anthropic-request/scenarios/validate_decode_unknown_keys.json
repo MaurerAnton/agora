@@ -1,0 +1,23 @@
+{
+  "name": "validate_decode_unknown_keys",
+  "providerName": "Anthropic",
+  "mode": "validate",
+  "request": {
+    "model": "claude-3-5-sonnet",
+    "future_field": {
+      "nested": 1
+    },
+    "messages": [
+      {
+        "role": "user",
+        "content": [
+          {
+            "type": "text",
+            "text": "hi",
+            "future_part": true
+          }
+        ]
+      }
+    ]
+  }
+}

@@ -1,0 +1,4 @@
+name|factory_images_disabled
+mode|factory
+apiMessages|[{"role":"user","content":[{"type":"text","text":"look"}]}]
+body|{"model":"claude-3-5-sonnet","messages":[{"role":"user","content":[{"type":"text","text":"look"}]}],"max_tokens":8192,"stream":true,"cache_control":{"type":"ephemeral","ttl":"1h"}}

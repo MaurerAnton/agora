@@ -1,0 +1,25 @@
+{
+  "name": "factory_assistant_images_dropped",
+  "providerName": "Anthropic",
+  "mode": "factory",
+  "config": {
+    "modelId": "claude-3-5-sonnet"
+  },
+  "requestInput": {
+    "messages": [
+      {
+        "id": "user_1",
+        "participant": "USER",
+        "text": "draw"
+      },
+      {
+        "id": "model_1",
+        "participant": "MODEL",
+        "text": "done",
+        "images": [
+          "files/a.png"
+        ]
+      }
+    ]
+  }
+}

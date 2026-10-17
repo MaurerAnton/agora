@@ -1,0 +1,21 @@
+{
+  "name": "validate_tool_use_bad_identity",
+  "providerName": "Anthropic",
+  "mode": "validate",
+  "request": {
+    "model": "claude-3-5-sonnet",
+    "messages": [
+      {
+        "role": "assistant",
+        "content": [
+          {
+            "type": "tool_use",
+            "id": "bad id!",
+            "name": "bad name",
+            "input": {}
+          }
+        ]
+      }
+    ]
+  }
+}

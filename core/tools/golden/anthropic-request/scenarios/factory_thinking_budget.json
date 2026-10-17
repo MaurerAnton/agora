@@ -1,0 +1,20 @@
+{
+  "name": "factory_thinking_budget",
+  "providerName": "Anthropic",
+  "mode": "factory",
+  "config": {
+    "modelId": "claude-3-7-sonnet",
+    "thinkingBudgetEnabled": true,
+    "thinkingBudgetTokens": 8192,
+    "temperature": 0.7
+  },
+  "requestInput": {
+    "messages": [
+      {
+        "id": "user_1",
+        "participant": "USER",
+        "text": "Deep dive"
+      }
+    ]
+  }
+}

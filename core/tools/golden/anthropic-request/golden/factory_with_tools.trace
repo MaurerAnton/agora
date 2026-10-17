@@ -1,0 +1,4 @@
+name|factory_with_tools
+mode|factory
+apiMessages|[{"role":"user","content":[{"type":"text","text":"What's the weather in San Francisco?"}]}]
+body|{"model":"claude-3-5-sonnet","messages":[{"role":"user","content":[{"type":"text","text":"What's the weather in San Francisco?"}]}],"system":"You are helpful.","max_tokens":8192,"stream":true,"tools":[{"name":"get_weather","description":"Get current weather for a location","input_schema":{"type":"object","properties":{"location":{"type":"string","description":"City and state"}},"required":["location"]}}],"cache_control":{"type":"ephemeral","ttl":"1h"},"temperature":0.7}

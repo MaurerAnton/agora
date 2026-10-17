@@ -1,0 +1,42 @@
+{
+  "name": "validate_tools_matrix",
+  "providerName": "Anthropic",
+  "mode": "validate",
+  "request": {
+    "model": "claude-3-5-sonnet",
+    "tools": [
+      {
+        "name": "bad name",
+        "description": "x",
+        "input_schema": {
+          "type": "object"
+        }
+      },
+      {
+        "name": "lookup",
+        "description": "x",
+        "input_schema": {
+          "type": "array"
+        }
+      },
+      {
+        "name": "lookup",
+        "description": "x",
+        "input_schema": {
+          "type": "object"
+        }
+      }
+    ],
+    "messages": [
+      {
+        "role": "user",
+        "content": [
+          {
+            "type": "text",
+            "text": "Hello"
+          }
+        ]
+      }
+    ]
+  }
+}

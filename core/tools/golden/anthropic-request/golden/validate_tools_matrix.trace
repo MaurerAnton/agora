@@ -1,0 +1,3 @@
+name|validate_tools_matrix
+mode|validate
+error|RequestFormatException|Anthropic request validation failed: tools[0].name is not wire-safe\s tool lookup input_schema is not an object schema\s duplicate tool name lookup

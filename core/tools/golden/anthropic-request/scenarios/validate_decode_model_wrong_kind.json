@@ -1,0 +1,21 @@
+{
+  "name": "validate_decode_model_wrong_kind",
+  "providerName": "Anthropic",
+  "mode": "validate",
+  "request": {
+    "model": {
+      "name": "claude"
+    },
+    "messages": [
+      {
+        "role": "user",
+        "content": [
+          {
+            "type": "text",
+            "text": "Hello"
+          }
+        ]
+      }
+    ]
+  }
+}

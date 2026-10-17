@@ -1,0 +1,33 @@
+{
+  "name": "validate_tool_use_missing_thinking",
+  "providerName": "Anthropic",
+  "mode": "validate",
+  "request": {
+    "model": "claude-opus-4-6",
+    "thinking": {
+      "type": "adaptive"
+    },
+    "messages": [
+      {
+        "role": "user",
+        "content": [
+          {
+            "type": "text",
+            "text": "Hello"
+          }
+        ]
+      },
+      {
+        "role": "assistant",
+        "content": [
+          {
+            "type": "tool_use",
+            "id": "call_a",
+            "name": "lookup",
+            "input": {}
+          }
+        ]
+      }
+    ]
+  }
+}

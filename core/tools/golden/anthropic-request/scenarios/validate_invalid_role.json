@@ -1,0 +1,19 @@
+{
+  "name": "validate_invalid_role",
+  "providerName": "Anthropic",
+  "mode": "validate",
+  "request": {
+    "model": "claude-3-5-sonnet",
+    "messages": [
+      {
+        "role": "system",
+        "content": [
+          {
+            "type": "text",
+            "text": "Hello"
+          }
+        ]
+      }
+    ]
+  }
+}

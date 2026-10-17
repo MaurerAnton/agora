@@ -1,0 +1,58 @@
+{
+  "name": "factory_signed_round_replayed",
+  "providerName": "Anthropic",
+  "mode": "factory",
+  "config": {
+    "modelId": "claude-opus-4-6"
+  },
+  "requestInput": {
+    "messages": [
+      {
+        "id": "user_1",
+        "participant": "USER",
+        "text": "Weather?"
+      },
+      {
+        "id": "tool_1",
+        "participant": "MODEL",
+        "text": "",
+        "modelName": "Anthropic:claude-opus-4-6",
+        "segments": [
+          {
+            "type": "thought",
+            "content": "Let me check.",
+            "signature": "sig-abc",
+            "signatureProvider": "Anthropic"
+          },
+          {
+            "type": "tool",
+            "content": "",
+            "toolName": "get_weather",
+            "toolArgs": "{\"location\": \"Oslo\"}",
+            "toolCallId": "call_1"
+          }
+        ]
+      },
+      {
+        "id": "result_1",
+        "participant": "USER",
+        "text": "",
+        "segments": [
+          {
+            "type": "tool",
+            "content": "",
+            "toolName": "get_weather",
+            "toolArgs": "{\"location\": \"Oslo\"}",
+            "toolResult": "Sunny",
+            "toolCallId": "call_1"
+          }
+        ]
+      },
+      {
+        "id": "user_2",
+        "participant": "USER",
+        "text": "Thanks!"
+      }
+    ]
+  }
+}

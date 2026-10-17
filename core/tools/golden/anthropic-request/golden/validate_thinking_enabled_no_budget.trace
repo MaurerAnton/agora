@@ -1,0 +1,3 @@
+name|validate_thinking_enabled_no_budget
+mode|validate
+error|RequestFormatException|Anthropic request validation failed: enabled thinking requires budget_tokens >= 1024

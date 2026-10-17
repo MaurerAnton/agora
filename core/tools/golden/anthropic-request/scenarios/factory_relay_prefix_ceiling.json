@@ -1,0 +1,17 @@
+{
+  "name": "factory_relay_prefix_ceiling",
+  "providerName": "Anthropic",
+  "mode": "factory",
+  "config": {
+    "modelId": "anthropic/claude-3-opus"
+  },
+  "requestInput": {
+    "messages": [
+      {
+        "id": "user_1",
+        "participant": "USER",
+        "text": "Hi"
+      }
+    ]
+  }
+}

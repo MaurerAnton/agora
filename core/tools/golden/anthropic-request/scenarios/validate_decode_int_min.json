@@ -1,0 +1,20 @@
+{
+  "name": "validate_decode_int_min",
+  "providerName": "Anthropic",
+  "mode": "validate",
+  "request": {
+    "model": "claude-3-5-sonnet",
+    "max_tokens": -2147483648,
+    "messages": [
+      {
+        "role": "user",
+        "content": [
+          {
+            "type": "text",
+            "text": "Hello"
+          }
+        ]
+      }
+    ]
+  }
+}

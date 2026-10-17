@@ -1,0 +1,19 @@
+{
+  "name": "validate_decode_model_null",
+  "providerName": "Anthropic",
+  "mode": "validate",
+  "request": {
+    "model": null,
+    "messages": [
+      {
+        "role": "user",
+        "content": [
+          {
+            "type": "text",
+            "text": "Hello"
+          }
+        ]
+      }
+    ]
+  }
+}

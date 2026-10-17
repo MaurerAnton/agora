@@ -1,0 +1,33 @@
+{
+  "name": "factory_basic_text",
+  "providerName": "Anthropic",
+  "mode": "factory",
+  "config": {
+    "modelId": "claude-3-5-sonnet",
+    "thinkingEnabled": true,
+    "thinkingLevel": "medium",
+    "thinkingBudgetEnabled": false,
+    "thinkingBudgetTokens": 4096,
+    "includeImages": true,
+    "anthropicCacheEnabled": true,
+    "anthropicCacheTtl": "1h",
+    "temperature": 0.7,
+    "maxTokens": null,
+    "topP": null,
+    "tools": null
+  },
+  "requestInput": {
+    "systemPrompt": "You are helpful.",
+    "messages": [
+      {
+        "id": "user_1",
+        "participant": "USER",
+        "text": "Hello",
+        "images": [],
+        "modelName": null,
+        "segments": null,
+        "toolCall": null
+      }
+    ]
+  }
+}

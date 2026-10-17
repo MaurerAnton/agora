@@ -1,0 +1,4 @@
+name|factory_tool_external_schema_passthrough
+mode|factory
+apiMessages|[{"role":"user","content":[{"type":"text","text":"Go"}]}]
+body|{"model":"claude-3-5-sonnet","messages":[{"role":"user","content":[{"type":"text","text":"Go"}]}],"max_tokens":8192,"stream":true,"tools":[{"name":"mcp_tool","description":"External schema","input_schema":{"type":"object","additionalProperties":{"type":"string"},"x-external":true}}],"cache_control":{"type":"ephemeral","ttl":"1h"}}

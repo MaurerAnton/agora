@@ -1,0 +1,20 @@
+{
+  "name": "factory_missing_image_skipped",
+  "providerName": "Anthropic",
+  "mode": "factory",
+  "config": {
+    "modelId": "claude-3-5-sonnet"
+  },
+  "requestInput": {
+    "messages": [
+      {
+        "id": "user_1",
+        "participant": "USER",
+        "text": "look",
+        "images": [
+          "files/missing.png"
+        ]
+      }
+    ]
+  }
+}

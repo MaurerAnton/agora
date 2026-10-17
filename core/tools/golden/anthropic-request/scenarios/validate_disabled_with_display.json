@@ -1,0 +1,23 @@
+{
+  "name": "validate_disabled_with_display",
+  "providerName": "Anthropic",
+  "mode": "validate",
+  "request": {
+    "model": "claude-opus-4-6",
+    "thinking": {
+      "type": "disabled",
+      "display": "summarized"
+    },
+    "messages": [
+      {
+        "role": "user",
+        "content": [
+          {
+            "type": "text",
+            "text": "Hello"
+          }
+        ]
+      }
+    ]
+  }
+}

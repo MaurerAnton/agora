@@ -1,0 +1,55 @@
+{
+  "name": "validate_ok_tool_round",
+  "providerName": "Anthropic",
+  "mode": "validate",
+  "request": {
+    "model": "claude-opus-4-6",
+    "thinking": {
+      "type": "enabled",
+      "budget_tokens": 2048
+    },
+    "messages": [
+      {
+        "role": "user",
+        "content": [
+          {
+            "type": "text",
+            "text": "Hello"
+          }
+        ]
+      },
+      {
+        "role": "assistant",
+        "content": [
+          {
+            "type": "thinking",
+            "thinking": "hmm",
+            "signature": "sig"
+          },
+          {
+            "type": "tool_use",
+            "id": "call_a",
+            "name": "lookup",
+            "input": {
+              "q": 1
+            }
+          }
+        ]
+      },
+      {
+        "role": "user",
+        "content": [
+          {
+            "type": "tool_result",
+            "tool_use_id": "call_a",
+            "content": "done"
+          },
+          {
+            "type": "text",
+            "text": "next"
+          }
+        ]
+      }
+    ]
+  }
+}

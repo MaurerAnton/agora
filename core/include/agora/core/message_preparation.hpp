@@ -230,6 +230,12 @@ std::vector<ChatMessage> merge_consecutive_same_role(const std::vector<ChatMessa
 /** validateToolMessages: normalizes complete tool_ / result_ rounds, or replays them as context. */
 std::vector<ChatMessage> validate_tool_messages(const std::vector<ChatMessage>& messages);
 
+/** adaptToolRoundsForProvider: downgrades tool rounds whose opaque protocol metadata (thought
+ *  signatures) cannot be replayed on the target provider to inert archived user context. */
+std::vector<ChatMessage> adapt_tool_rounds_for_provider(
+    const std::vector<ChatMessage>& messages, const std::string& provider_name,
+    const std::function<bool(const ChatMessage&)>& is_compatible);
+
 /** applyNearestContextCompact: non-destructive Compact projection. */
 std::vector<ChatMessage> apply_nearest_context_compact(const std::vector<ChatMessage>& messages);
 

@@ -1,0 +1,27 @@
+{
+  "name": "validate_decode_tool_name_missing",
+  "providerName": "Anthropic",
+  "mode": "validate",
+  "request": {
+    "model": "claude-3-5-sonnet",
+    "tools": [
+      {
+        "description": "x",
+        "input_schema": {
+          "type": "object"
+        }
+      }
+    ],
+    "messages": [
+      {
+        "role": "user",
+        "content": [
+          {
+            "type": "text",
+            "text": "Hello"
+          }
+        ]
+      }
+    ]
+  }
+}

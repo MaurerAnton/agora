@@ -1,0 +1,3 @@
+name|validate_tool_result_blank_id
+mode|validate
+error|RequestFormatException|Anthropic request validation failed: messages[0] has orphan tool_result blocks\s messages[0].content[0] is not a valid tool_result block

@@ -1,0 +1,21 @@
+{
+  "name": "validate_decode_input_null",
+  "providerName": "Anthropic",
+  "mode": "validate",
+  "request": {
+    "model": "claude-3-5-sonnet",
+    "messages": [
+      {
+        "role": "assistant",
+        "content": [
+          {
+            "type": "tool_use",
+            "id": "call_a",
+            "name": "lookup",
+            "input": null
+          }
+        ]
+      }
+    ]
+  }
+}

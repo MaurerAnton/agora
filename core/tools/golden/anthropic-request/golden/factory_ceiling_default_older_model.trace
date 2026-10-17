@@ -1,0 +1,4 @@
+name|factory_ceiling_default_older_model
+mode|factory
+apiMessages|[{"role":"user","content":[{"type":"text","text":"Hi"}]}]
+body|{"model":"claude-3-opus","messages":[{"role":"user","content":[{"type":"text","text":"Hi"}]}],"max_tokens":4096,"stream":true,"cache_control":{"type":"ephemeral","ttl":"1h"},"temperature":0.5,"top_p":1.0}

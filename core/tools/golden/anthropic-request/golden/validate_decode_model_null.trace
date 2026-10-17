@@ -1,0 +1,3 @@
+name|validate_decode_model_null
+mode|validate
+error|JsonDecodingException|

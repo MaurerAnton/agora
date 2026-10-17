@@ -1,0 +1,33 @@
+{
+  "name": "validate_thinking_after_text",
+  "providerName": "Anthropic",
+  "mode": "validate",
+  "request": {
+    "model": "claude-opus-4-6",
+    "messages": [
+      {
+        "role": "user",
+        "content": [
+          {
+            "type": "text",
+            "text": "Hello"
+          }
+        ]
+      },
+      {
+        "role": "assistant",
+        "content": [
+          {
+            "type": "text",
+            "text": "hi"
+          },
+          {
+            "type": "thinking",
+            "thinking": "hmm",
+            "signature": "sig"
+          }
+        ]
+      }
+    ]
+  }
+}

@@ -1,0 +1,4 @@
+name|factory_tool_nested_schema
+mode|factory
+apiMessages|[{"role":"user","content":[{"type":"text","text":"Go"}]}]
+body|{"model":"claude-3-5-sonnet","messages":[{"role":"user","content":[{"type":"text","text":"Go"}]}],"max_tokens":8192,"stream":true,"tools":[{"name":"matrix","description":"Nested schema","input_schema":{"type":"object","properties":{"tags":{"type":"array","description":"tags","items":{"type":"string","description":"one tag"}},"point":{"type":"object","description":"a point","properties":{"x":{"type":"number","description":"x coordinate"}},"required":["x"]}},"required":["tags"]}}],"cache_control":{"type":"ephemeral","ttl":"1h"}}

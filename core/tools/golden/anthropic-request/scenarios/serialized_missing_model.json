@@ -1,0 +1,12 @@
+{
+  "name": "serialized_missing_model",
+  "providerName": "Anthropic",
+  "mode": "serialized",
+  "serializedBody": "{\"messages\":[{\"role\":\"user\"}]}",
+  "serializedRequiredStringFields": [
+    "model"
+  ],
+  "serializedRequiredArrayFields": [
+    "messages"
+  ]
+}

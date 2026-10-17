@@ -1,0 +1,27 @@
+{
+  "name": "factory_orphan_result_dropped",
+  "providerName": "Anthropic",
+  "mode": "factory",
+  "config": {
+    "modelId": "claude-3-5-sonnet"
+  },
+  "requestInput": {
+    "messages": [
+      {
+        "id": "user_1",
+        "participant": "USER",
+        "text": "Hello"
+      },
+      {
+        "id": "result_1",
+        "participant": "USER",
+        "text": "stray result"
+      },
+      {
+        "id": "user_2",
+        "participant": "USER",
+        "text": "More"
+      }
+    ]
+  }
+}

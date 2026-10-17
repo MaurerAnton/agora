@@ -1,0 +1,3 @@
+name|validate_top_p_out_of_range
+mode|validate
+error|RequestFormatException|Anthropic request validation failed: top_p is outside 0..1

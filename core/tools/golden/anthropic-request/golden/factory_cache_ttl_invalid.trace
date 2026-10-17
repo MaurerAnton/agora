@@ -1,0 +1,3 @@
+name|factory_cache_ttl_invalid
+mode|factory
+error|RequestFormatException|Anthropic request validation failed: Invalid Anthropic cache duration

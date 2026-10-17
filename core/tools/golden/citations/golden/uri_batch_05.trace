@@ -1,0 +1,304 @@
+name|uri_batch_05
+mode|uri
+case|0|"ftp://u:p:q@999.1.1.1:/a?-q=%zz"
+parse|throw|URISyntaxException
+case|1|"HtTpS:/%75@example.com:8a/a\pb?ä=1"
+parse|throw|URISyntaxException
+case|2|"/\s?ä=1#f"
+parse|scheme=null|userInfo=null|host=null|port=-1|path="/\s"|query="ä=1"|fragment="f"|authority=null|opaque=0|absolute=0
+ascii|"/\s?%C3%A4=1#f"
+normalized|"/\s?ä=1#f"
+normalizedAscii|"/\s?%C3%A4=1#f"
+case|3|"http:ü@EXAMP\pLE.com:00080/%zz?%20#f g"
+parse|throw|URISyntaxException
+case|4|"1http:/%75@é.example.com:65536/a/b?a=b&c=d"
+parse|throw|URISyntaxException
+case|5|"/a/b?"
+parse|scheme=null|userInfo=null|host=null|port=-1|path="/a/b"|query=""|fragment=null|authority=null|opaque=0|absolute=0
+ascii|"/a/b?"
+normalized|"/a/b?"
+normalizedAscii|"/a/b?"
+case|6|"//u:p@example.com:-1/%7e"
+parse|scheme=null|userInfo=null|host=null|port=-1|path="/~"|query=null|fragment=null|authority="u:p@example.com:-1"|opaque=0|absolute=0
+ascii|"//u:p@example.com:-1/%7e"
+normalized|"//u:p@example.com:-1/%7e"
+normalizedAscii|"//u:p@example.com:-1/%7e"
+case|7|"/a//b?a=b&c=d#a#b"
+parse|throw|URISyntaxException
+case|8|"ftp://0:/😀?ä=1#f"
+parse|scheme="ftp"|userInfo=null|host="0"|port=-1|path="/😀"|query="ä=1"|fragment="f"|authority="0:"|opaque=0|absolute=1
+ascii|"ftp://0:/%F0%9F%98%80?%C3%A4=1#f"
+normalized|"ftp://0:/😀?ä=1#f"
+normalizedAscii|"ftp://0:/%F0%9F%98%80?%C3%A4=1#f"
+case|9|"a1+-.:Za:%zz"
+parse|throw|URISyntaxException
+case|10|"HtTpS://ü@sub.example.com:9999999999/%7e?a=b c#a#b"
+parse|throw|URISyntaxException
+case|11|"/a?ä=1#f"
+parse|scheme=null|userInfo=null|host=null|port=-1|path="/a"|query="ä=1"|fragment="f"|authority=null|opaque=0|absolute=0
+ascii|"/a?%C3%A4=1#f"
+normalized|"/a?ä=1#f"
+normalizedAscii|"/a?%C3%A4=1#f"
+case|12|"a1+-.://u:p@:* 80/a\sb?a=b&c=d#f g"
+parse|throw|URISyntaxException
+case|13|"/a"
+parse|scheme=null|userInfo=null|host=null|port=-1|path="/a"|query=null|fragment=null|authority=null|opaque=0|absolute=0
+ascii|"/a"
+normalized|"/a"
+normalizedAscii|"/a"
+case|14|":/u:p@EXAMPLE.com:443/../a?q=1#a#b"
+parse|throw|URISyntaxException
+case|15|"ht tp:///u:p@999.1.1.1:8a/a/b?a=b&c=d"
+parse|throw|URISyntaxException
+case|16|"cite:mailto:a@b.com"
+parse|scheme="cite"|userInfo=null|host=null|port=-1|path=null|query=null|fragment=null|authority=null|opaque=1|absolute=1
+ascii|"cite:mailto:a@b.com"
+normalized|"cite:mailto:a@b.com"
+normalizedAscii|"cite:mailto:a@b.com"
+case|17|"//a:0/😀"
+parse|scheme=null|userInfo=null|host="a"|port=0|path="/😀"|query=null|fragment=null|authority="a:0"|opaque=0|absolute=0
+ascii|"//a:0/%F0%9F%98%80"
+normalized|"//a:0/😀"
+normalizedAscii|"//a:0/%F0%9F%98%80"
+case|18|"1http:///u@127.0.0.1: 80/%zz?q=%zz#f g"
+parse|throw|URISyntaxException
+case|19|"ftp://ü@:00080/😀?a=b c#\sf"
+parse|throw|URISyntaxException
+case|20|"/a^b"
+parse|throw|URISyntaxException
+case|21|"//@example.com.:443/a b"
+parse|throw|URISyntaxException
+case|22|"1http:/%75@example-.co{m:-1/%7e?a=b&c=d#ä"
+parse|throw|URISyntaxException
+case|23|"//@127.00.1.1:  80/😀"
+parse|throw|URISyntaxException
+case|24|"http://ü@a:00080/a\sb?#f g"
+parse|throw|URISyntaxException
+case|25|"HTTP::x"
+parse|scheme="HTTP"|userInfo=null|host=null|port=-1|path=null|query=null|fragment=null|authority=null|opaque=1|absolute=1
+ascii|"HTTP::x"
+normalized|"HTTP::x"
+normalizedAscii|"HTTP::x"
+case|26|"http:ä/example.com:-1/\s?a=b?c"
+parse|scheme="http"|userInfo=null|host=null|port=-1|path=null|query=null|fragment=null|authority=null|opaque=1|absolute=1
+ascii|"http:%C3%A4/example.com:-1/\s?a=b?c"
+normalized|"http:ä/example.com:-1/\s?a=b?c"
+normalizedAscii|"http:%C3%A4/example.com:-1/\s?a=b?c"
+case|27|"http:data:text/plain,hi"
+parse|scheme="http"|userInfo=null|host=null|port=-1|path=null|query=null|fragment=null|authority=null|opaque=1|absolute=1
+ascii|"http:data:text/plain,hi"
+normalized|"http:data:text/plain,hi"
+normalizedAscii|"http:data:text/plain,hi"
+case|28|"a1+-.:sub.example.com:9999999999/a"
+parse|scheme="a1+-."|userInfo=null|host=null|port=-1|path=null|query=null|fragment=null|authority=null|opaque=1|absolute=1
+ascii|"a1+-.:sub.example.com:9999999999/a"
+normalized|"a1+-.:sub.example.com:9999999999/a"
+normalizedAscii|"a1+-.:sub.example.com:9999999999/a"
+case|29|"HTTP://é.example.com:-1/a{b}"
+parse|throw|URISyntaxException
+case|30|"HTTP://u:p@example-.com:65536/a/..?ä=1#a#b"
+parse|throw|URISyntaxException
+case|31|"/a?q=%zz"
+parse|throw|URISyntaxException
+case|32|"://@example.com: 80/?%20#f g"
+parse|throw|URISyntaxException
+case|33|"HTTP1://u@exa_mple.com:0/@x#a#b"
+parse|throw|URISyntaxException
+case|34|"\sa1+-.:a:/x/./y"
+parse|throw|URISyntaxException
+case|35|"HTTP:example.com.:0/a b"
+parse|throw|URISyntaxException
+case|36|"/ä?ä=1#f"
+parse|scheme=null|userInfo=null|host=null|port=-1|path="/ä"|query="ä=1"|fragment="f"|authority=null|opaque=0|absolute=0
+ascii|"/%C3%A4?%C3%A4=1#f"
+normalized|"/ä?ä=1#f"
+normalizedAscii|"/%C3%A4?%C3%A4=1#f"
+case|37|"https:a:é"
+parse|scheme="https"|userInfo=null|host=null|port=-1|path=null|query=null|fragment=null|authority=null|opaque=1|absolute=1
+ascii|"https:a:%C3%A9"
+normalized|"https:a:é"
+normalizedAscii|"https:a:%C3%A9"
+case|38|"`1http://@example.com.:65535/a//b?#f"
+parse|throw|URISyntaxException
+case|39|"http:/ü@0:8a/a=%20b?a=b?c"
+parse|scheme="http"|userInfo=null|host=null|port=-1|path="/ü@0:8a/a= b"|query="a=b?c"|fragment=null|authority=null|opaque=0|absolute=1
+ascii|"http:/%C3%BC@0:8a/a=%20b?a=b?c"
+normalized|"http:/ü@0:8a/a=%20b?a=b?c"
+normalizedAscii|"http:/%C3%BC@0:8a/a=%20b?a=b?c"
+case|40|"https:a:é"
+parse|scheme="https"|userInfo=null|host=null|port=-1|path=null|query=null|fragment=null|authority=null|opaque=1|absolute=1
+ascii|"https:a:%C3%A9"
+normalized|"https:a:é"
+normalizedAscii|"https:a:%C3%A9"
+case|41|"HTTP://u:p:q@a:65535/./a?q=%zz"
+parse|throw|URISyntaxException
+case|42|":///example-.com:-1/../a?a=b?c"
+parse|throw|URISyntaxException
+case|43|"cite:/u:p@127.00.1.1:9999999999/a{b}?ä=1#"
+parse|throw|URISyntaxException
+case|44|"://u:p:q@example-.com/a^b?q=%zz"
+parse|throw|URISyntaxException
+case|45|"1htYtp:a:b:c"
+parse|throw|URISyntaxException
+case|46|"1http://%75@exba_mple.com: 80/./a?a=b&c=d#ä"
+parse|throw|URISyntaxException
+case|47|"cite://u:p@:00080/a #f"
+parse|throw|URISyntaxException
+case|48|"a1+-.:a:b:c"
+parse|scheme="a1+-."|userInfo=null|host=null|port=-1|path=null|query=null|fragment=null|authority=null|opaque=1|absolute=1
+ascii|"a1+-.:a:b:c"
+normalized|"a1+-.:a:b:c"
+normalizedAscii|"a1+-.:a:b:c"
+case|49|"://@999.1.1.1:9999999999/a/b?a=b?c#f g"
+parse|throw|URISyntaxException
+case|50|"ftp:cite:turn1a1"
+parse|scheme="ftp"|userInfo=null|host=null|port=-1|path=null|query=null|fragment=null|authority=null|opaque=1|absolute=1
+ascii|"ftp:cite:turn1a1"
+normalized|"ftp:cite:turn1a1"
+normalizedAscii|"ftp:cite:turn1a1"
+case|51|"https:a:é"
+parse|scheme="https"|userInfo=null|host=null|port=-1|path=null|query=null|fragment=null|authority=null|opaque=1|absolute=1
+ascii|"https:a:%C3%A9"
+normalized|"https:a:é"
+normalizedAscii|"https:a:%C3%A9"
+case|52|"ftp://@127.00.1.1:80/a/b?a=b c#ä"
+parse|throw|URISyntaxException
+case|53|"cite:a b>:c"
+parse|throw|URISyntaxException
+case|54|"ftp://@a:0/%2F?ä=1#f g"
+parse|throw|URISyntaxException
+case|55|"a1+-.:a:b:c"
+parse|scheme="a1+-."|userInfo=null|host=null|port=-1|path=null|query=null|fragment=null|authority=null|opaque=1|absolute=1
+ascii|"a1+-.:a:b:c"
+normalized|"a1+-.:a:b:c"
+normalizedAscii|"a1+-.:a:b:c"
+case|56|"HTTP://@EXAMPLE.com:0/a\pb"
+parse|throw|URISyntaxException
+case|57|"https:%75@:80/a\sb?q=1"
+parse|scheme="https"|userInfo=null|host=null|port=-1|path=null|query=null|fragment=null|authority=null|opaque=1|absolute=1
+ascii|"https:%75@:80/a\sb?q=1"
+normalized|"https:%75@:80/a\sb?q=1"
+normalizedAscii|"https:%75@:80/a\sb?q=1"
+case|58|"ftp:/u:p@999.1.1.1:80/a/./b/../c/?q=1"
+parse|scheme="ftp"|userInfo=null|host=null|port=-1|path="/u:p@999.1.1.1:80/a/./b/../c/"|query="q=1"|fragment=null|authority=null|opaque=0|absolute=1
+ascii|"ftp:/u:p@999.1.1.1:80/a/./b/../c/?q=1"
+normalized|"ftp:/u:p@999.1.1.1:80/a/c/?q=1"
+normalizedAscii|"ftp:/u:p@999.1.1.1:80/a/c/?q=1"
+case|59|"ftp://example.com.:0/a%20b"
+parse|scheme="ftp"|userInfo=null|host="example.com."|port=0|path="/a b"|query=null|fragment=null|authority="example.com.:0"|opaque=0|absolute=1
+ascii|"ftp://example.com.:0/a%20b"
+normalized|"ftp://example.com.:0/a%20b"
+normalizedAscii|"ftp://example.com.:0/a%20b"
+case|60|"ftp://u:p@example..com:-1/a\pb?q=1#f"
+parse|throw|URISyntaxException
+case|61|"/a//b?a=b c#"
+parse|throw|URISyntaxException
+case|62|"cite://u:p:q@127.0.0.1:80/%2F?q=1#"
+parse|scheme="cite"|userInfo="u:p:q"|host="127.0.0.1"|port=80|path="//"|query="q=1"|fragment=""|authority="u:p:q@127.0.0.1:80"|opaque=0|absolute=1
+ascii|"cite://u:p:q@127.0.0.1:80/%2F?q=1#"
+normalized|"cite://u:p:q@127.0.0.1:80/%2F?q=1#"
+normalizedAscii|"cite://u:p:q@127.0.0.1:80/%2F?q=1#"
+case|63|"HtTpS::x"
+parse|scheme="HtTpS"|userInfo=null|host=null|port=-1|path=null|query=null|fragment=null|authority=null|opaque=1|absolute=1
+ascii|"HtTpS::x"
+normalized|"HtTpS::x"
+normalizedAscii|"HtTpS::x"
+case|64|"/a//b?q=1#f g"
+parse|throw|URISyntaxException
+case|65|"a1+-.:exa_mple.com^:9999999999/%7e?q=1#"
+parse|throw|URISyntaxException
+case|66|"https:///%75@999.1.1.1:443/a/..?a=b?c"
+parse|scheme="https"|userInfo=null|host=null|port=-1|path="/u@999.1.1.1:443/a/.."|query="a=b?c"|fragment=null|authority=null|opaque=0|absolute=1
+ascii|"https:///%75@999.1.1.1:443/a/..?a=b?c"
+normalized|"https:/%75@999.1.1.1:443/?a=b?c"
+normalizedAscii|"https:/%75@999.1.1.1:443/?a=b?c"
+case|67|"htté:-example.com:8a/\s?ä=1#"
+parse|throw|URISyntaxException
+case|68|"https://u@999.1.1.1:0?#f"
+parse|scheme="https"|userInfo=null|host=null|port=-1|path=""|query=""|fragment="f"|authority="u@999.1.1.1:0"|opaque=0|absolute=1
+ascii|"https://u@999.1.1.1:0?#f"
+normalized|"https://u@999.1.1.1:0?#f"
+normalizedAscii|"https://u@999.1.1.1:0?#f"
+case|69|"1http://127.00.1.1:/%7e?q=%zz#ä"
+parse|throw|URISyntaxException
+case|70|"/@x?a=b&c=d#f g"
+parse|throw|URISyntaxException
+case|71|"ht tp:u:1p@0: 80/😀?"
+parse|throw|URISyntaxException
+case|72|"http://u@sub.example.com:9999999999/a%20b#ä "
+parse|throw|URISyntaxException
+case|73|"http:ex%ample..com:65536"
+parse|throw|URISyntaxException
+case|74|":cite:tur\\n1a1"
+parse|throw|URISyntaxException
+case|75|"://u:p:q@example..com:00080/a?ä=1#ä"
+parse|throw|URISyntaxException
+case|76|"//-example.com:00080/%7e"
+parse|scheme=null|userInfo=null|host=null|port=-1|path="/~"|query=null|fragment=null|authority="-example.com:00080"|opaque=0|absolute=0
+ascii|"//-example.com:00080/%7e"
+normalized|"//-example.com:00080/%7e"
+normalizedAscii|"//-example.com:00080/%7e"
+case|77|"://u@example.com: 80/a b'?#a#b"
+parse|throw|URISyntaxException
+case|78|"https://ü@exa_mple.com:443/a b?a=b?c#"
+parse|throw|URISyntaxException
+case|79|":///a:443%/%zz?q=1#f g"
+parse|throw|URISyntaxException
+case|80|"://sub.example.com:/a^b"
+parse|throw|URISyntaxException
+case|81|"http://@example-.com: 80/#ä"
+parse|throw|URISyntaxException
+case|82|"HTTP://u:p:q@EXAMPLE.com:65536/ä?q=1"
+parse|scheme="HTTP"|userInfo="u:p:q"|host="EXAMPLE.com"|port=65536|path="/ä"|query="q=1"|fragment=null|authority="u:p:q@EXAMPLE.com:65536"|opaque=0|absolute=1
+ascii|"HTTP://u:p:q@EXAMPLE.com:65536/%C3%A4?q=1"
+normalized|"HTTP://u:p:q@EXAMPLE.com:65536/ä?q=1"
+normalizedAscii|"HTTP://u:p:q@EXAMPLE.com:65536/%C3%A4?q=1"
+case|83|"1http::x"
+parse|throw|URISyntaxException
+case|84|"1http://example.com:65535/a"
+parse|throw|URISyntaxException
+case|85|"/./a?q=1#["
+parse|scheme=null|userInfo=null|host=null|port=-1|path="/./a"|query="q=1"|fragment="["|authority=null|opaque=0|absolute=0
+ascii|"/./a?q=1#["
+normalized|"/a?q=1#["
+normalizedAscii|"/a?q=1#["
+case|86|"/:"
+parse|scheme=null|userInfo=null|host=null|port=-1|path="/:"|query=null|fragment=null|authority=null|opaque=0|absolute=0
+ascii|"/:"
+normalized|"/:"
+normalizedAscii|"/:"
+case|87|"https:///@localh#ost:00080/%7e?a=b c#f"
+parse|throw|URISyntaxException
+case|88|"/%2F?#f g"
+parse|throw|URISyntaxException
+case|89|"http://@127.00.1.1:00 080/a{b}?q=1"
+parse|throw|URISyntaxException
+case|90|"/.$./a?a=b&c=d"
+parse|scheme=null|userInfo=null|host=null|port=-1|path="/.$./a"|query="a=b&c=d"|fragment=null|authority=null|opaque=0|absolute=0
+ascii|"/.$./a?a=b&c=d"
+normalized|"/.$./a?a=b&c=d"
+normalizedAscii|"/.$./a?a=b&c=d"
+case|91|"ht tp://999.1.1.1:65535/a\sb"
+parse|throw|URISyntaxException
+case|92|"citYe:///u:p:q@127.0.0.1:80/a/b?a=b c#"
+parse|throw|URISyntaxException
+case|93|"htté:%75@example-.com:/a#f"
+parse|throw|URISyntaxException
+case|94|"http:///u:p:q@0:?ä\\=1#ä"
+parse|throw|URISyntaxException
+case|95|"ht tp://u:p@1/27.0.0.1:8a/ä#a#b"
+parse|throw|URISyntaxException
+case|96|"HTTP:///ü@exa_mple.com:443/%2F?%20#"
+parse|scheme="HTTP"|userInfo=null|host=null|port=-1|path="/ü@exa_mple.com:443//"|query=" "|fragment=""|authority=null|opaque=0|absolute=1
+ascii|"HTTP:///%C3%BC@exa_mple.com:443/%2F?%20#"
+normalized|"HTTP:///ü@exa_mple.com:443/%2F?%20#"
+normalizedAscii|"HTTP:///%C3%BC@exa_mple.com:443/%2F?%20#"
+case|97|"a1+-.://@sub.example.com/a%20b?q=%zz#"
+parse|throw|URISyntaxException
+case|98|"ht tp://example.com.:8a/a:b#f"
+parse|throw|URISyntaxException
+case|99|"http://EXAMPLE.com:9999999999/./a"
+parse|scheme="http"|userInfo=null|host=null|port=-1|path="/./a"|query=null|fragment=null|authority="EXAMPLE.com:9999999999"|opaque=0|absolute=1
+ascii|"http://EXAMPLE.com:9999999999/./a"
+normalized|"http://EXAMPLE.com:9999999999/a"
+normalizedAscii|"http://EXAMPLE.com:9999999999/a"

@@ -1,0 +1,5 @@
+{
+  "name": "policy_strip_filecite_envelope",
+  "mode": "strip",
+  "text": "\ue200filecite\ue202f1\ue201text"
+}

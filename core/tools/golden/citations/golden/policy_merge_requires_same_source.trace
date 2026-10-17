@@ -1,0 +1,3 @@
+name|policy_merge_requires_same_source
+mode|merge
+error|IllegalArgumentException

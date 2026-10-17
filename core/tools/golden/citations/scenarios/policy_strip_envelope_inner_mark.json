@@ -1,0 +1,5 @@
+{
+  "name": "policy_strip_envelope_inner_mark",
+  "mode": "strip",
+  "text": "\ue200cite\ue202 a \ue200 b\ue201"
+}

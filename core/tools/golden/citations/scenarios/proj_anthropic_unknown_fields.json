@@ -1,0 +1,7 @@
+{
+  "name": "proj_anthropic_unknown_fields",
+  "mode": "anthropicCitation",
+  "citation": "{\"type\": \"char_location\", \"document_title\": \"Doc\", \"extra\": {\"deep\": [1, 2]}, \"start_char_index\": 0, \"end_char_index\": 2}",
+  "text": "hello world",
+  "answerStartIndex": 10
+}

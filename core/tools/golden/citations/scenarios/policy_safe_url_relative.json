@@ -1,0 +1,5 @@
+{
+  "name": "policy_safe_url_relative",
+  "mode": "safeUrl",
+  "url": "a/b"
+}

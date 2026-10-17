@@ -1,0 +1,20 @@
+{
+  "name": "policy_dedup_skips_invalid",
+  "mode": "deduplicate",
+  "records": [
+    {
+      "version": 1,
+      "sourceId": "citation_000000000000000000000000",
+      "provider": "web",
+      "kind": "url",
+      "title": "A"
+    },
+    {
+      "version": 2,
+      "sourceId": "citation_000000000000000000000000",
+      "provider": "web",
+      "kind": "url",
+      "title": "B"
+    }
+  ]
+}

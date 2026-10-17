@@ -1,0 +1,5 @@
+{
+  "name": "policy_strip_unclosed_envelope",
+  "mode": "strip",
+  "text": "\ue200cite\ue202doc without close"
+}

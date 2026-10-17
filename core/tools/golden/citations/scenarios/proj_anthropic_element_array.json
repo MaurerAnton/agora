@@ -1,0 +1,7 @@
+{
+  "name": "proj_anthropic_element_array",
+  "mode": "anthropicCitation",
+  "citation": "[1, 2]",
+  "text": "hello world",
+  "answerStartIndex": 10
+}

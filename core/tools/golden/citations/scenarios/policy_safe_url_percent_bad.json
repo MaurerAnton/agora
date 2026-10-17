@@ -1,0 +1,5 @@
+{
+  "name": "policy_safe_url_percent_bad",
+  "mode": "safeUrl",
+  "url": "https://example.com/%zz"
+}

@@ -1,0 +1,3 @@
+name|policy_encode_all_fields
+mode|encode
+encode|"{\qversion\q:2,\qsourceId\q:\qcitation_x\q,\qprovider\q:\qweb\q,\qkind\q:\qurl\q,\qtitle\q:\qT\q,\qurl\q:\qhttps://e/x\q,\qfileName\q:\qf.pdf\q,\qlocation\q:\qloc\q,\qproviderSourceId\q:\qps\q,\qexcerpt\q:\qex\q,\qanchors\q:[{\qstartIndex\q:0,\qendIndex\q:3,\qcitedText\q:\qabc\q}]}"

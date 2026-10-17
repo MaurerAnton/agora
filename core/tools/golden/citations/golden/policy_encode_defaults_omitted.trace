@@ -1,0 +1,3 @@
+name|policy_encode_defaults_omitted
+mode|encode
+encode|"{\qsourceId\q:\qcitation_x\q,\qprovider\q:\qweb\q,\qkind\q:\qurl\q,\qtitle\q:\qT\q}"

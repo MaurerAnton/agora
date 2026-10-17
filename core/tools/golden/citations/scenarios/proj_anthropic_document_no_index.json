@@ -1,0 +1,7 @@
+{
+  "name": "proj_anthropic_document_no_index",
+  "mode": "anthropicCitation",
+  "citation": "{\"type\": \"page_location\", \"document_title\": \"Doc\", \"start_page_number\": 1}",
+  "text": "hello world",
+  "answerStartIndex": 10
+}

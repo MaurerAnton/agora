@@ -1,0 +1,3 @@
+name|policy_safe_url_port_80
+mode|safeUrl
+safeUrl|"http://example.com/x"

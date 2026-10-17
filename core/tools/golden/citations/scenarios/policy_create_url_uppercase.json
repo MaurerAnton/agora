@@ -1,0 +1,7 @@
+{
+  "name": "policy_create_url_uppercase",
+  "mode": "create",
+  "provider": "web",
+  "kind": "url",
+  "url": "HTTPS://EXAMPLE.COM/Path"
+}

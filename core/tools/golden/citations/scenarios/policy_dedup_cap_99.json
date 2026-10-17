@@ -1,0 +1,706 @@
+{
+  "name": "policy_dedup_cap_99",
+  "mode": "deduplicate",
+  "records": [
+    {
+      "version": 1,
+      "sourceId": "citation_000000000000000000000000",
+      "provider": "web",
+      "kind": "url",
+      "title": "T000"
+    },
+    {
+      "version": 1,
+      "sourceId": "citation_000000000000000000000000",
+      "provider": "web",
+      "kind": "url",
+      "title": "T001"
+    },
+    {
+      "version": 1,
+      "sourceId": "citation_000000000000000000000000",
+      "provider": "web",
+      "kind": "url",
+      "title": "T002"
+    },
+    {
+      "version": 1,
+      "sourceId": "citation_000000000000000000000000",
+      "provider": "web",
+      "kind": "url",
+      "title": "T003"
+    },
+    {
+      "version": 1,
+      "sourceId": "citation_000000000000000000000000",
+      "provider": "web",
+      "kind": "url",
+      "title": "T004"
+    },
+    {
+      "version": 1,
+      "sourceId": "citation_000000000000000000000000",
+      "provider": "web",
+      "kind": "url",
+      "title": "T005"
+    },
+    {
+      "version": 1,
+      "sourceId": "citation_000000000000000000000000",
+      "provider": "web",
+      "kind": "url",
+      "title": "T006"
+    },
+    {
+      "version": 1,
+      "sourceId": "citation_000000000000000000000000",
+      "provider": "web",
+      "kind": "url",
+      "title": "T007"
+    },
+    {
+      "version": 1,
+      "sourceId": "citation_000000000000000000000000",
+      "provider": "web",
+      "kind": "url",
+      "title": "T008"
+    },
+    {
+      "version": 1,
+      "sourceId": "citation_000000000000000000000000",
+      "provider": "web",
+      "kind": "url",
+      "title": "T009"
+    },
+    {
+      "version": 1,
+      "sourceId": "citation_000000000000000000000000",
+      "provider": "web",
+      "kind": "url",
+      "title": "T010"
+    },
+    {
+      "version": 1,
+      "sourceId": "citation_000000000000000000000000",
+      "provider": "web",
+      "kind": "url",
+      "title": "T011"
+    },
+    {
+      "version": 1,
+      "sourceId": "citation_000000000000000000000000",
+      "provider": "web",
+      "kind": "url",
+      "title": "T012"
+    },
+    {
+      "version": 1,
+      "sourceId": "citation_000000000000000000000000",
+      "provider": "web",
+      "kind": "url",
+      "title": "T013"
+    },
+    {
+      "version": 1,
+      "sourceId": "citation_000000000000000000000000",
+      "provider": "web",
+      "kind": "url",
+      "title": "T014"
+    },
+    {
+      "version": 1,
+      "sourceId": "citation_000000000000000000000000",
+      "provider": "web",
+      "kind": "url",
+      "title": "T015"
+    },
+    {
+      "version": 1,
+      "sourceId": "citation_000000000000000000000000",
+      "provider": "web",
+      "kind": "url",
+      "title": "T016"
+    },
+    {
+      "version": 1,
+      "sourceId": "citation_000000000000000000000000",
+      "provider": "web",
+      "kind": "url",
+      "title": "T017"
+    },
+    {
+      "version": 1,
+      "sourceId": "citation_000000000000000000000000",
+      "provider": "web",
+      "kind": "url",
+      "title": "T018"
+    },
+    {
+      "version": 1,
+      "sourceId": "citation_000000000000000000000000",
+      "provider": "web",
+      "kind": "url",
+      "title": "T019"
+    },
+    {
+      "version": 1,
+      "sourceId": "citation_000000000000000000000000",
+      "provider": "web",
+      "kind": "url",
+      "title": "T020"
+    },
+    {
+      "version": 1,
+      "sourceId": "citation_000000000000000000000000",
+      "provider": "web",
+      "kind": "url",
+      "title": "T021"
+    },
+    {
+      "version": 1,
+      "sourceId": "citation_000000000000000000000000",
+      "provider": "web",
+      "kind": "url",
+      "title": "T022"
+    },
+    {
+      "version": 1,
+      "sourceId": "citation_000000000000000000000000",
+      "provider": "web",
+      "kind": "url",
+      "title": "T023"
+    },
+    {
+      "version": 1,
+      "sourceId": "citation_000000000000000000000000",
+      "provider": "web",
+      "kind": "url",
+      "title": "T024"
+    },
+    {
+      "version": 1,
+      "sourceId": "citation_000000000000000000000000",
+      "provider": "web",
+      "kind": "url",
+      "title": "T025"
+    },
+    {
+      "version": 1,
+      "sourceId": "citation_000000000000000000000000",
+      "provider": "web",
+      "kind": "url",
+      "title": "T026"
+    },
+    {
+      "version": 1,
+      "sourceId": "citation_000000000000000000000000",
+      "provider": "web",
+      "kind": "url",
+      "title": "T027"
+    },
+    {
+      "version": 1,
+      "sourceId": "citation_000000000000000000000000",
+      "provider": "web",
+      "kind": "url",
+      "title": "T028"
+    },
+    {
+      "version": 1,
+      "sourceId": "citation_000000000000000000000000",
+      "provider": "web",
+      "kind": "url",
+      "title": "T029"
+    },
+    {
+      "version": 1,
+      "sourceId": "citation_000000000000000000000000",
+      "provider": "web",
+      "kind": "url",
+      "title": "T030"
+    },
+    {
+      "version": 1,
+      "sourceId": "citation_000000000000000000000000",
+      "provider": "web",
+      "kind": "url",
+      "title": "T031"
+    },
+    {
+      "version": 1,
+      "sourceId": "citation_000000000000000000000000",
+      "provider": "web",
+      "kind": "url",
+      "title": "T032"
+    },
+    {
+      "version": 1,
+      "sourceId": "citation_000000000000000000000000",
+      "provider": "web",
+      "kind": "url",
+      "title": "T033"
+    },
+    {
+      "version": 1,
+      "sourceId": "citation_000000000000000000000000",
+      "provider": "web",
+      "kind": "url",
+      "title": "T034"
+    },
+    {
+      "version": 1,
+      "sourceId": "citation_000000000000000000000000",
+      "provider": "web",
+      "kind": "url",
+      "title": "T035"
+    },
+    {
+      "version": 1,
+      "sourceId": "citation_000000000000000000000000",
+      "provider": "web",
+      "kind": "url",
+      "title": "T036"
+    },
+    {
+      "version": 1,
+      "sourceId": "citation_000000000000000000000000",
+      "provider": "web",
+      "kind": "url",
+      "title": "T037"
+    },
+    {
+      "version": 1,
+      "sourceId": "citation_000000000000000000000000",
+      "provider": "web",
+      "kind": "url",
+      "title": "T038"
+    },
+    {
+      "version": 1,
+      "sourceId": "citation_000000000000000000000000",
+      "provider": "web",
+      "kind": "url",
+      "title": "T039"
+    },
+    {
+      "version": 1,
+      "sourceId": "citation_000000000000000000000000",
+      "provider": "web",
+      "kind": "url",
+      "title": "T040"
+    },
+    {
+      "version": 1,
+      "sourceId": "citation_000000000000000000000000",
+      "provider": "web",
+      "kind": "url",
+      "title": "T041"
+    },
+    {
+      "version": 1,
+      "sourceId": "citation_000000000000000000000000",
+      "provider": "web",
+      "kind": "url",
+      "title": "T042"
+    },
+    {
+      "version": 1,
+      "sourceId": "citation_000000000000000000000000",
+      "provider": "web",
+      "kind": "url",
+      "title": "T043"
+    },
+    {
+      "version": 1,
+      "sourceId": "citation_000000000000000000000000",
+      "provider": "web",
+      "kind": "url",
+      "title": "T044"
+    },
+    {
+      "version": 1,
+      "sourceId": "citation_000000000000000000000000",
+      "provider": "web",
+      "kind": "url",
+      "title": "T045"
+    },
+    {
+      "version": 1,
+      "sourceId": "citation_000000000000000000000000",
+      "provider": "web",
+      "kind": "url",
+      "title": "T046"
+    },
+    {
+      "version": 1,
+      "sourceId": "citation_000000000000000000000000",
+      "provider": "web",
+      "kind": "url",
+      "title": "T047"
+    },
+    {
+      "version": 1,
+      "sourceId": "citation_000000000000000000000000",
+      "provider": "web",
+      "kind": "url",
+      "title": "T048"
+    },
+    {
+      "version": 1,
+      "sourceId": "citation_000000000000000000000000",
+      "provider": "web",
+      "kind": "url",
+      "title": "T049"
+    },
+    {
+      "version": 1,
+      "sourceId": "citation_000000000000000000000000",
+      "provider": "web",
+      "kind": "url",
+      "title": "T050"
+    },
+    {
+      "version": 1,
+      "sourceId": "citation_000000000000000000000000",
+      "provider": "web",
+      "kind": "url",
+      "title": "T051"
+    },
+    {
+      "version": 1,
+      "sourceId": "citation_000000000000000000000000",
+      "provider": "web",
+      "kind": "url",
+      "title": "T052"
+    },
+    {
+      "version": 1,
+      "sourceId": "citation_000000000000000000000000",
+      "provider": "web",
+      "kind": "url",
+      "title": "T053"
+    },
+    {
+      "version": 1,
+      "sourceId": "citation_000000000000000000000000",
+      "provider": "web",
+      "kind": "url",
+      "title": "T054"
+    },
+    {
+      "version": 1,
+      "sourceId": "citation_000000000000000000000000",
+      "provider": "web",
+      "kind": "url",
+      "title": "T055"
+    },
+    {
+      "version": 1,
+      "sourceId": "citation_000000000000000000000000",
+      "provider": "web",
+      "kind": "url",
+      "title": "T056"
+    },
+    {
+      "version": 1,
+      "sourceId": "citation_000000000000000000000000",
+      "provider": "web",
+      "kind": "url",
+      "title": "T057"
+    },
+    {
+      "version": 1,
+      "sourceId": "citation_000000000000000000000000",
+      "provider": "web",
+      "kind": "url",
+      "title": "T058"
+    },
+    {
+      "version": 1,
+      "sourceId": "citation_000000000000000000000000",
+      "provider": "web",
+      "kind": "url",
+      "title": "T059"
+    },
+    {
+      "version": 1,
+      "sourceId": "citation_000000000000000000000000",
+      "provider": "web",
+      "kind": "url",
+      "title": "T060"
+    },
+    {
+      "version": 1,
+      "sourceId": "citation_000000000000000000000000",
+      "provider": "web",
+      "kind": "url",
+      "title": "T061"
+    },
+    {
+      "version": 1,
+      "sourceId": "citation_000000000000000000000000",
+      "provider": "web",
+      "kind": "url",
+      "title": "T062"
+    },
+    {
+      "version": 1,
+      "sourceId": "citation_000000000000000000000000",
+      "provider": "web",
+      "kind": "url",
+      "title": "T063"
+    },
+    {
+      "version": 1,
+      "sourceId": "citation_000000000000000000000000",
+      "provider": "web",
+      "kind": "url",
+      "title": "T064"
+    },
+    {
+      "version": 1,
+      "sourceId": "citation_000000000000000000000000",
+      "provider": "web",
+      "kind": "url",
+      "title": "T065"
+    },
+    {
+      "version": 1,
+      "sourceId": "citation_000000000000000000000000",
+      "provider": "web",
+      "kind": "url",
+      "title": "T066"
+    },
+    {
+      "version": 1,
+      "sourceId": "citation_000000000000000000000000",
+      "provider": "web",
+      "kind": "url",
+      "title": "T067"
+    },
+    {
+      "version": 1,
+      "sourceId": "citation_000000000000000000000000",
+      "provider": "web",
+      "kind": "url",
+      "title": "T068"
+    },
+    {
+      "version": 1,
+      "sourceId": "citation_000000000000000000000000",
+      "provider": "web",
+      "kind": "url",
+      "title": "T069"
+    },
+    {
+      "version": 1,
+      "sourceId": "citation_000000000000000000000000",
+      "provider": "web",
+      "kind": "url",
+      "title": "T070"
+    },
+    {
+      "version": 1,
+      "sourceId": "citation_000000000000000000000000",
+      "provider": "web",
+      "kind": "url",
+      "title": "T071"
+    },
+    {
+      "version": 1,
+      "sourceId": "citation_000000000000000000000000",
+      "provider": "web",
+      "kind": "url",
+      "title": "T072"
+    },
+    {
+      "version": 1,
+      "sourceId": "citation_000000000000000000000000",
+      "provider": "web",
+      "kind": "url",
+      "title": "T073"
+    },
+    {
+      "version": 1,
+      "sourceId": "citation_000000000000000000000000",
+      "provider": "web",
+      "kind": "url",
+      "title": "T074"
+    },
+    {
+      "version": 1,
+      "sourceId": "citation_000000000000000000000000",
+      "provider": "web",
+      "kind": "url",
+      "title": "T075"
+    },
+    {
+      "version": 1,
+      "sourceId": "citation_000000000000000000000000",
+      "provider": "web",
+      "kind": "url",
+      "title": "T076"
+    },
+    {
+      "version": 1,
+      "sourceId": "citation_000000000000000000000000",
+      "provider": "web",
+      "kind": "url",
+      "title": "T077"
+    },
+    {
+      "version": 1,
+      "sourceId": "citation_000000000000000000000000",
+      "provider": "web",
+      "kind": "url",
+      "title": "T078"
+    },
+    {
+      "version": 1,
+      "sourceId": "citation_000000000000000000000000",
+      "provider": "web",
+      "kind": "url",
+      "title": "T079"
+    },
+    {
+      "version": 1,
+      "sourceId": "citation_000000000000000000000000",
+      "provider": "web",
+      "kind": "url",
+      "title": "T080"
+    },
+    {
+      "version": 1,
+      "sourceId": "citation_000000000000000000000000",
+      "provider": "web",
+      "kind": "url",
+      "title": "T081"
+    },
+    {
+      "version": 1,
+      "sourceId": "citation_000000000000000000000000",
+      "provider": "web",
+      "kind": "url",
+      "title": "T082"
+    },
+    {
+      "version": 1,
+      "sourceId": "citation_000000000000000000000000",
+      "provider": "web",
+      "kind": "url",
+      "title": "T083"
+    },
+    {
+      "version": 1,
+      "sourceId": "citation_000000000000000000000000",
+      "provider": "web",
+      "kind": "url",
+      "title": "T084"
+    },
+    {
+      "version": 1,
+      "sourceId": "citation_000000000000000000000000",
+      "provider": "web",
+      "kind": "url",
+      "title": "T085"
+    },
+    {
+      "version": 1,
+      "sourceId": "citation_000000000000000000000000",
+      "provider": "web",
+      "kind": "url",
+      "title": "T086"
+    },
+    {
+      "version": 1,
+      "sourceId": "citation_000000000000000000000000",
+      "provider": "web",
+      "kind": "url",
+      "title": "T087"
+    },
+    {
+      "version": 1,
+      "sourceId": "citation_000000000000000000000000",
+      "provider": "web",
+      "kind": "url",
+      "title": "T088"
+    },
+    {
+      "version": 1,
+      "sourceId": "citation_000000000000000000000000",
+      "provider": "web",
+      "kind": "url",
+      "title": "T089"
+    },
+    {
+      "version": 1,
+      "sourceId": "citation_000000000000000000000000",
+      "provider": "web",
+      "kind": "url",
+      "title": "T090"
+    },
+    {
+      "version": 1,
+      "sourceId": "citation_000000000000000000000000",
+      "provider": "web",
+      "kind": "url",
+      "title": "T091"
+    },
+    {
+      "version": 1,
+      "sourceId": "citation_000000000000000000000000",
+      "provider": "web",
+      "kind": "url",
+      "title": "T092"
+    },
+    {
+      "version": 1,
+      "sourceId": "citation_000000000000000000000000",
+      "provider": "web",
+      "kind": "url",
+      "title": "T093"
+    },
+    {
+      "version": 1,
+      "sourceId": "citation_000000000000000000000000",
+      "provider": "web",
+      "kind": "url",
+      "title": "T094"
+    },
+    {
+      "version": 1,
+      "sourceId": "citation_000000000000000000000000",
+      "provider": "web",
+      "kind": "url",
+      "title": "T095"
+    },
+    {
+      "version": 1,
+      "sourceId": "citation_000000000000000000000000",
+      "provider": "web",
+      "kind": "url",
+      "title": "T096"
+    },
+    {
+      "version": 1,
+      "sourceId": "citation_000000000000000000000000",
+      "provider": "web",
+      "kind": "url",
+      "title": "T097"
+    },
+    {
+      "version": 1,
+      "sourceId": "citation_000000000000000000000000",
+      "provider": "web",
+      "kind": "url",
+      "title": "T098"
+    },
+    {
+      "version": 1,
+      "sourceId": "citation_000000000000000000000000",
+      "provider": "web",
+      "kind": "url",
+      "title": "T099"
+    }
+  ]
+}

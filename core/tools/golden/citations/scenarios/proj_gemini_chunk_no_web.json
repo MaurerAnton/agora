@@ -1,0 +1,6 @@
+{
+  "name": "proj_gemini_chunk_no_web",
+  "mode": "geminiCitations",
+  "metadata": "{\"groundingChunks\": [{\"other\": 1}], \"groundingSupports\": [{\"segment\": {\"startIndex\": 0, \"endIndex\": 5}, \"groundingChunkIndices\": [0]}]}",
+  "text": "hello world"
+}

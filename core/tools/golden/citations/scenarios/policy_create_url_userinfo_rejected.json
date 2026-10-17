@@ -1,0 +1,7 @@
+{
+  "name": "policy_create_url_userinfo_rejected",
+  "mode": "create",
+  "provider": "web",
+  "kind": "url",
+  "url": "https://user:pw@example.com/x"
+}

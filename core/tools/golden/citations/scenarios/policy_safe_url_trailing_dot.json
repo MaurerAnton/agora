@@ -1,0 +1,5 @@
+{
+  "name": "policy_safe_url_trailing_dot",
+  "mode": "safeUrl",
+  "url": "https://example.com./x"
+}

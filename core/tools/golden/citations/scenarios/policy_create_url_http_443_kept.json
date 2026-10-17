@@ -1,0 +1,7 @@
+{
+  "name": "policy_create_url_http_443_kept",
+  "mode": "create",
+  "provider": "web",
+  "kind": "url",
+  "url": "http://example.com:443/x"
+}

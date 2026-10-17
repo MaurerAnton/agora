@@ -1,0 +1,6 @@
+name|safeurl_batch_06
+mode|safeUrlFuzz
+case|0|"ftp::x"|null
+case|1|"htté:///u:p@999.1.1.1:8a'?#f"|null
+case|2|"https:example..com: 80/a/..?#a#b&"|null
+case|3|"cite:example-.com:65535"|null

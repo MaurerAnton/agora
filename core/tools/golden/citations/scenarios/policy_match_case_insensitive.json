@@ -1,0 +1,14 @@
+{
+  "name": "policy_match_case_insensitive",
+  "mode": "matchTitle",
+  "query": "alpha",
+  "records": [
+    {
+      "version": 1,
+      "sourceId": "citation_000000000000000000000000",
+      "provider": "web",
+      "kind": "url",
+      "title": "Alpha Beta"
+    }
+  ]
+}

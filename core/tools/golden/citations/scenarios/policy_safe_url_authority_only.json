@@ -1,0 +1,5 @@
+{
+  "name": "policy_safe_url_authority_only",
+  "mode": "safeUrl",
+  "url": "https://example.com"
+}

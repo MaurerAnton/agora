@@ -1,0 +1,7 @@
+{
+  "name": "proj_anthropic_web_full",
+  "mode": "anthropicCitation",
+  "citation": "{\"type\": \"web_search_result_location\", \"url\": \"https://example.com/x\", \"title\": \"Example\", \"encrypted_index\": \"enc123\", \"cited_text\": \"quote\"}",
+  "text": "hello world",
+  "answerStartIndex": 10
+}

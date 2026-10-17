@@ -11,6 +11,7 @@ add_executable(agora_core_tests
     message_preparation_test.cpp
     stream_normalization_parity_test.cpp
     stream_normalization_test.cpp
+    citations_parity_test.cpp
     parity_test.cpp
     fuzz_parity_test.cpp
 )
@@ -30,6 +31,7 @@ target_compile_definitions(agora_core_tests PRIVATE
     AGORA_FIXTURE_OPENAI_REQUEST_DIR="${CMAKE_CURRENT_SOURCE_DIR}/../tools/golden/openai-request"
     AGORA_FIXTURE_MESSAGE_PREP_DIR="${CMAKE_CURRENT_SOURCE_DIR}/../tools/golden/message-preparation"
     AGORA_FIXTURE_STREAM_NORMALIZATION_DIR="${CMAKE_CURRENT_SOURCE_DIR}/../tools/golden/stream-normalization"
+    AGORA_FIXTURE_CITATIONS_DIR="${CMAKE_CURRENT_SOURCE_DIR}/../tools/golden/citations"
     AGORA_FIXTURE_PREP_VOCAB="${CMAKE_CURRENT_SOURCE_DIR}/../../app/src/main/assets/tokenizers/o200k_base.tiktoken"
 )
 

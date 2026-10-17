@@ -1,0 +1,24 @@
+{
+  "name": "policy_copy_with_sources",
+  "mode": "copy",
+  "text": "answer",
+  "records": [
+    {
+      "version": 1,
+      "sourceId": "citation_000000000000000000000000",
+      "provider": "web",
+      "kind": "url",
+      "title": "A",
+      "url": "https://a.example/x",
+      "location": "Pages 1-2"
+    },
+    {
+      "version": 1,
+      "sourceId": "citation_000000000000000000000000",
+      "provider": "web",
+      "kind": "url",
+      "title": "B",
+      "fileName": "b.pdf"
+    }
+  ]
+}

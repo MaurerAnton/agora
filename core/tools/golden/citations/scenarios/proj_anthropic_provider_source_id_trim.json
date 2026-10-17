@@ -1,0 +1,7 @@
+{
+  "name": "proj_anthropic_provider_source_id_trim",
+  "mode": "anthropicCitation",
+  "citation": "{\"type\": \"web_search_result_location\", \"url\": \"https://e/x\", \"title\": \"T\", \"encrypted_index\": \"  e1  \"}",
+  "text": "hello world",
+  "answerStartIndex": 10
+}

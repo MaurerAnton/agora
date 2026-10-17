@@ -1,0 +1,4 @@
+name|proj_gemini_two_supports_same_chunk
+mode|geminiCitations
+count|1
+record|0|v=1;sourceId="citation_b5457532d042ac4488e97889";provider="gemini";kind="url";title="G";url="https://g.example/x";fileName=null;location=null;providerSourceId=null;excerpt=null;anchors=[{0,5,"hello"},{6,11,"world"}]

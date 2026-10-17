@@ -1,0 +1,15 @@
+{
+  "name": "policy_create_anchor_ambiguous",
+  "mode": "create",
+  "provider": "web",
+  "kind": "url",
+  "title": "T",
+  "answerText": "ab ab",
+  "anchors": [
+    {
+      "startIndex": 0,
+      "endIndex": 2,
+      "citedText": "ab"
+    }
+  ]
+}

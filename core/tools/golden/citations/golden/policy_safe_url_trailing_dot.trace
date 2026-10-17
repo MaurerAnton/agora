@@ -1,0 +1,3 @@
+name|policy_safe_url_trailing_dot
+mode|safeUrl
+safeUrl|"https://example.com./x"

@@ -1,0 +1,34 @@
+{
+  "name": "policy_merge_anchor_duplicate_skipped",
+  "mode": "merge",
+  "provider": "web",
+  "kind": "url",
+  "title": "T",
+  "sourceId": "citation_same",
+  "anchors": [
+    {
+      "startIndex": 0,
+      "endIndex": 3,
+      "citedText": "abc"
+    }
+  ],
+  "incoming": {
+    "version": 1,
+    "sourceId": "citation_same",
+    "provider": "web",
+    "kind": "url",
+    "title": "T",
+    "anchors": [
+      {
+        "startIndex": 9,
+        "endIndex": 12,
+        "citedText": "xyz"
+      },
+      {
+        "startIndex": 9,
+        "endIndex": 12,
+        "citedText": "xyz"
+      }
+    ]
+  }
+}

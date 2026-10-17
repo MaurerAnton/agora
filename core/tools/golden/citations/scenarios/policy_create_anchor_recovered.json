@@ -1,0 +1,15 @@
+{
+  "name": "policy_create_anchor_recovered",
+  "mode": "create",
+  "provider": "web",
+  "kind": "url",
+  "title": "T",
+  "answerText": "hello world",
+  "anchors": [
+    {
+      "startIndex": 0,
+      "endIndex": 5,
+      "citedText": "world"
+    }
+  ]
+}

@@ -1,0 +1,15 @@
+{
+  "name": "policy_create_anchor_exact_slice",
+  "mode": "create",
+  "provider": "web",
+  "kind": "url",
+  "title": "T",
+  "answerText": "hello world",
+  "anchors": [
+    {
+      "startIndex": 6,
+      "endIndex": 11,
+      "citedText": "world"
+    }
+  ]
+}

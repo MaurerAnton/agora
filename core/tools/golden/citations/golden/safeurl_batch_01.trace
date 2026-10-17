@@ -1,0 +1,102 @@
+name|safeurl_batch_01
+mode|safeUrlFuzz
+case|0|"."|null
+case|1|""|null
+case|2|"/"|null
+case|3|"/a/b"|null
+case|4|"?q=1"|null
+case|5|"#frag"|null
+case|6|"?"|null
+case|7|"#"|null
+case|8|"a b"|null
+case|9|"a\tb"|null
+case|10|"a\nb"|null
+case|11|" a "|null
+case|12|"http://example.com/a b"|null
+case|13|"http://example.com/a\pb"|null
+case|14|"http://example.com/a^b"|null
+case|15|"http://example.com/a{b}"|null
+case|16|"http://example.com/a\qb"|null
+case|17|"http://example.com/a<b>"|null
+case|18|"http://example.com/a\\b"|null
+case|19|"http://example.com/`a`"|null
+case|20|"http://example.com/x"|null
+case|21|"http://example.com/\tx"|null
+case|22|"http://example.com/x"|null
+case|23|"http://example.com/ x"|null
+case|24|"​x://example.com/"|null
+case|25|"http://example.com/⼀x"|"http://example.com/%E2%BC%80x"
+case|26|"http://example.com/￺x"|"http://example.com/%EF%BF%BAx"
+case|27|"http://example.com/ x"|null
+case|28|"￾"|null
+case|29|"﻿http://example.com/"|null
+case|30|"http://example.com/%c3%a9"|"http://example.com/%C3%A9"
+case|31|"http://example.com/%C3%A9"|"http://example.com/%C3%A9"
+case|32|"http://%65xample.com/"|null
+case|33|"http://example.com/\sp=1"|"http://example.com/\sp=1"
+case|34|"http://example.com/x\sy"|"http://example.com/x\sy"
+case|35|"http://\s@example.com/"|null
+case|36|"http://:80/"|null
+case|37|"://example.com/"|null
+case|38|"http://example.com:80:90/x"|null
+case|39|"http://foo.bar:80a/x"|null
+case|40|"http://example.com/a?b#c"|"http://example.com/a?b#c"
+case|41|"http://example.com/a#b?c"|"http://example.com/a#b?c"
+case|42|"http://example.com/a?b?c"|"http://example.com/a?b?c"
+case|43|"http://example.com/a#b#c"|null
+case|44|"1http://%75@127.0.0.1:/ä?a=b?c#"|null
+case|45|"cite:: 80/a b"|null
+case|46|"HTTP://u@example.com.:/a%20b?a=b&c=d#a#b"|null
+case|47|"HTTP://u:p:q@sub.example .com:65536/%zz?#"|null
+case|48|"ftp://u@é.example.com:65536/a\pb?%20#?f g"|null
+case|49|"/@x?ä=1#ä"|null
+case|50|"://u@999.1.1.a1:65535/a\pb?q=%zz"|null
+case|51|"1http://@sub.example.com:80/a b:?a=b&c=d#f g"|null
+case|52|"htté:/@EXAMPLE.com:-1/a?a=b?c"|null
+case|53|"a1+-.:127.0.0.1:0/\s?%20#"|null
+case|54|"http:///exa_mple.com:80?q=1#"|null
+case|55|"ftp://u:p:q@localhost:/%2F?"|null
+case|56|"a1+-}.:u@127.0.0.1/😀?q=%zz#a#b"|null
+case|57|"1http:a:bX:c"|null
+case|58|"htté:%75@0/%7e?q=%zz#ä"|null
+case|59|"//é.example.com:00080/😀"|null
+case|60|"/a%20b?a=b c#ä"|null
+case|61|"//u@localhost:-1/a^b"|null
+case|62|"1http:ü@:/\s?a=b&c=d#"|null
+case|63|"ht tp://u:p@example..com:00080/a#"|null
+case|64|"ftp://%75@localhost:/ä?#"|null
+case|65|"https://ü@exa_mple.com:65535/ä?q=1"|null
+case|66|"cite://u:p@-example.com:80/a^b?a=b?c#"|null
+case|67|"//u:p@é.example.com:-1/\s"|null
+case|68|"/a\pb?a=b&c=d#)ä"|null
+case|69|"ht tp:/%75@example-.com:0/a\pb?%20#f"|null
+case|70|"://u:p@localhost: 80/%zz?#f g"|null
+case|71|"/a^b?%20#"|null
+case|72|"HtTpS:/%75@EXAMPLE.com:/?"|null
+case|73|"//u:p:q@exam`ple-.com:00080"|null
+case|74|"/=a/b?#"|null
+case|75|"1http:cite:turn1a1"|null
+case|76|"cite:a:[é"|null
+case|77|"ftp:/%75@EXAMPLE.com: 80/?q=%zz#f g"|null
+case|78|":mailto:a@b.com"|null
+case|79|"https:///%75@localhost:-1/a/b?a=b&c=d#ä"|null
+case|80|"htté://u@example..com:443/:?%20"|null
+case|81|"a1+-.://@exa_mple.com:0/a\pb?#ä"|null
+case|82|"HTTP:///u:p@sub.example.com/a//b"|null
+case|83|"a1+-.:a:b:c"|null
+case|84|"/a%20b ?ä=1#"|null
+case|85|"HTTP://u:p@:80/a\pb?ä=1#f g"|null
+case|86|"HTTP:127.0.0.1:80/a b"|null
+case|87|"HtTpS://%75@example..com: 80/a//b?ä=1#a#b"|null
+case|88|"/:?a=b&c=d"|null
+case|89|"/%7e#f g"|null
+case|90|"HtTpS://%75@0:-1/a%20b?q=%zz#f"|null
+case|91|"http://@example.com.:80/\s?ä=1#a#b"|null
+case|92|"ht tp://127.00.1.1:00080/../a?q='1#f"|null
+case|93|"https:a:/x/./y"|null
+case|94|"cite:a:é"|null
+case|95|"1http://u:p@:/\s?a=b&c=d#ä"|null
+case|96|"1http:a:é"|null
+case|97|"?a1+-.://u:p@999.1.1.1:65535/a/./b/../c/?a=b?c#"|null
+case|98|"1http://exa_mple.com:8a/a\pb"|null
+case|99|"http:data:text/plain,hi["|null

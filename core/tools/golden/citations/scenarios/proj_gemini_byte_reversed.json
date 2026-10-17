@@ -1,0 +1,6 @@
+{
+  "name": "proj_gemini_byte_reversed",
+  "mode": "geminiCitations",
+  "metadata": "{\"groundingChunks\": [{\"web\": {\"uri\": \"https://g.example/x\", \"title\": \"G\"}}], \"groundingSupports\": [{\"segment\": {\"startIndex\": 5, \"endIndex\": 3}, \"groundingChunkIndices\": [0]}]}",
+  "text": "hello world"
+}

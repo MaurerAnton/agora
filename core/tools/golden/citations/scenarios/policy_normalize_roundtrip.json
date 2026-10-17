@@ -1,0 +1,8 @@
+{
+  "name": "policy_normalize_roundtrip",
+  "mode": "normalize",
+  "provider": "web",
+  "kind": "url",
+  "title": "T",
+  "sourceId": "citation_old"
+}

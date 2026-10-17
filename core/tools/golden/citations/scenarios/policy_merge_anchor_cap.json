@@ -1,0 +1,185 @@
+{
+  "name": "policy_merge_anchor_cap",
+  "mode": "merge",
+  "provider": "web",
+  "kind": "url",
+  "title": "T",
+  "sourceId": "citation_same",
+  "answerText": "xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx",
+  "anchors": [
+    {
+      "startIndex": 0,
+      "endIndex": 1,
+      "citedText": "x"
+    },
+    {
+      "startIndex": 1,
+      "endIndex": 2,
+      "citedText": "x"
+    },
+    {
+      "startIndex": 2,
+      "endIndex": 3,
+      "citedText": "x"
+    },
+    {
+      "startIndex": 3,
+      "endIndex": 4,
+      "citedText": "x"
+    },
+    {
+      "startIndex": 4,
+      "endIndex": 5,
+      "citedText": "x"
+    },
+    {
+      "startIndex": 5,
+      "endIndex": 6,
+      "citedText": "x"
+    },
+    {
+      "startIndex": 6,
+      "endIndex": 7,
+      "citedText": "x"
+    },
+    {
+      "startIndex": 7,
+      "endIndex": 8,
+      "citedText": "x"
+    },
+    {
+      "startIndex": 8,
+      "endIndex": 9,
+      "citedText": "x"
+    },
+    {
+      "startIndex": 9,
+      "endIndex": 10,
+      "citedText": "x"
+    },
+    {
+      "startIndex": 10,
+      "endIndex": 11,
+      "citedText": "x"
+    },
+    {
+      "startIndex": 11,
+      "endIndex": 12,
+      "citedText": "x"
+    },
+    {
+      "startIndex": 12,
+      "endIndex": 13,
+      "citedText": "x"
+    },
+    {
+      "startIndex": 13,
+      "endIndex": 14,
+      "citedText": "x"
+    },
+    {
+      "startIndex": 14,
+      "endIndex": 15,
+      "citedText": "x"
+    },
+    {
+      "startIndex": 15,
+      "endIndex": 16,
+      "citedText": "x"
+    },
+    {
+      "startIndex": 16,
+      "endIndex": 17,
+      "citedText": "x"
+    },
+    {
+      "startIndex": 17,
+      "endIndex": 18,
+      "citedText": "x"
+    },
+    {
+      "startIndex": 18,
+      "endIndex": 19,
+      "citedText": "x"
+    },
+    {
+      "startIndex": 19,
+      "endIndex": 20,
+      "citedText": "x"
+    },
+    {
+      "startIndex": 20,
+      "endIndex": 21,
+      "citedText": "x"
+    },
+    {
+      "startIndex": 21,
+      "endIndex": 22,
+      "citedText": "x"
+    },
+    {
+      "startIndex": 22,
+      "endIndex": 23,
+      "citedText": "x"
+    },
+    {
+      "startIndex": 23,
+      "endIndex": 24,
+      "citedText": "x"
+    },
+    {
+      "startIndex": 24,
+      "endIndex": 25,
+      "citedText": "x"
+    },
+    {
+      "startIndex": 25,
+      "endIndex": 26,
+      "citedText": "x"
+    },
+    {
+      "startIndex": 26,
+      "endIndex": 27,
+      "citedText": "x"
+    },
+    {
+      "startIndex": 27,
+      "endIndex": 28,
+      "citedText": "x"
+    },
+    {
+      "startIndex": 28,
+      "endIndex": 29,
+      "citedText": "x"
+    },
+    {
+      "startIndex": 29,
+      "endIndex": 30,
+      "citedText": "x"
+    },
+    {
+      "startIndex": 30,
+      "endIndex": 31,
+      "citedText": "x"
+    },
+    {
+      "startIndex": 31,
+      "endIndex": 32,
+      "citedText": "x"
+    }
+  ],
+  "incoming": {
+    "version": 1,
+    "sourceId": "citation_same",
+    "provider": "web",
+    "kind": "url",
+    "title": "T",
+    "anchors": [
+      {
+        "startIndex": 35,
+        "endIndex": 36,
+        "citedText": "x"
+      }
+    ]
+  }
+}

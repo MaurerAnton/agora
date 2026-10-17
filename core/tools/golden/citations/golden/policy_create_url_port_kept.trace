@@ -1,0 +1,3 @@
+name|policy_create_url_port_kept
+mode|create
+create|v=1;sourceId="citation_5727e85e6d85ea3fa134558a";provider="web";kind="url";title="example.com";url="https://example.com:8080/x";fileName=null;location=null;providerSourceId=null;excerpt=null;anchors=[]

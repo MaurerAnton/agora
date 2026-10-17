@@ -1,0 +1,8 @@
+{
+  "name": "policy_create_title_beats_url",
+  "mode": "create",
+  "provider": "web",
+  "kind": "url",
+  "title": "Given",
+  "url": "https://example.com/x"
+}

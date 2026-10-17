@@ -1,0 +1,15 @@
+{
+  "name": "policy_merge_requires_same_source",
+  "mode": "merge",
+  "provider": "web",
+  "kind": "url",
+  "title": "T",
+  "sourceId": "citation_one",
+  "incoming": {
+    "version": 1,
+    "sourceId": "citation_two",
+    "provider": "web",
+    "kind": "url",
+    "title": "T"
+  }
+}

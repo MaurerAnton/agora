@@ -1,0 +1,3 @@
+name|policy_safe_url_port_big
+mode|safeUrl
+safeUrl|"https://example.com:65536/x"

@@ -1,0 +1,14 @@
+{
+  "name": "policy_create_anchor_negative_start",
+  "mode": "create",
+  "provider": "web",
+  "kind": "url",
+  "title": "T",
+  "anchors": [
+    {
+      "startIndex": -1,
+      "endIndex": 2,
+      "citedText": "hi"
+    }
+  ]
+}

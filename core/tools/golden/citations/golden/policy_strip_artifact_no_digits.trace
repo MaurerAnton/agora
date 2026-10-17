@@ -1,0 +1,3 @@
+name|policy_strip_artifact_no_digits
+mode|strip
+strip|"go cite turna"

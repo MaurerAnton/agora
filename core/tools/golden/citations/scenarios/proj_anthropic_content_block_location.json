@@ -1,0 +1,7 @@
+{
+  "name": "proj_anthropic_content_block_location",
+  "mode": "anthropicCitation",
+  "citation": "{\"type\": \"content_block_location\", \"document_index\": 2, \"start_block_index\": 5, \"end_block_index\": 6}",
+  "text": "hello world",
+  "answerStartIndex": 10
+}

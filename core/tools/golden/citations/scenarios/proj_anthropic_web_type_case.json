@@ -1,0 +1,7 @@
+{
+  "name": "proj_anthropic_web_type_case",
+  "mode": "anthropicCitation",
+  "citation": "{\"type\": \"WEB_SEARCH_RESULT_LOCATION\", \"url\": \"https://example.com/x\", \"title\": \"T\"}",
+  "text": "hello world",
+  "answerStartIndex": 10
+}

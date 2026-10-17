@@ -1,0 +1,3 @@
+name|policy_safe_url_empty_path
+mode|safeUrl
+safeUrl|"https://example.com?q=1"

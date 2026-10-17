@@ -1,0 +1,7 @@
+{
+  "name": "proj_anthropic_search_blank_source",
+  "mode": "anthropicCitation",
+  "citation": "{\"type\": \"search_result_location\", \"source\": \"  \", \"search_result_index\": 1}",
+  "text": "hello world",
+  "answerStartIndex": 10
+}

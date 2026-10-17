@@ -1,0 +1,5 @@
+{
+  "name": "policy_safe_url_opaque",
+  "mode": "safeUrl",
+  "url": "mailto:a@b.com"
+}

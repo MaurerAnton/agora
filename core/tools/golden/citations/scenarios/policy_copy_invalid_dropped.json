@@ -1,0 +1,21 @@
+{
+  "name": "policy_copy_invalid_dropped",
+  "mode": "copy",
+  "text": "answer",
+  "records": [
+    {
+      "version": 2,
+      "sourceId": "citation_000000000000000000000000",
+      "provider": "web",
+      "kind": "url",
+      "title": "Gone"
+    },
+    {
+      "version": 1,
+      "sourceId": "citation_000000000000000000000000",
+      "provider": "web",
+      "kind": "url",
+      "title": "A"
+    }
+  ]
+}

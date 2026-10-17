@@ -1,0 +1,5 @@
+{
+  "name": "policy_safe_url_ftp",
+  "mode": "safeUrl",
+  "url": "ftp://example.com/x"
+}

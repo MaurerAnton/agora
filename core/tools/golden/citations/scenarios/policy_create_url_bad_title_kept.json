@@ -1,0 +1,8 @@
+{
+  "name": "policy_create_url_bad_title_kept",
+  "mode": "create",
+  "provider": "web",
+  "kind": "url",
+  "url": "not a url",
+  "title": "Kept"
+}

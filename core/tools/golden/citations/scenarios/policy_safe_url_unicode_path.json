@@ -1,0 +1,5 @@
+{
+  "name": "policy_safe_url_unicode_path",
+  "mode": "safeUrl",
+  "url": "https://example.com/\u00e9"
+}

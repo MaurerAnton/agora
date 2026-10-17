@@ -1,0 +1,5 @@
+{
+  "name": "policy_strip_nested_turns",
+  "mode": "strip",
+  "text": "n\ue200turn1a1\ue202turn2b2\ue202turn3c3\ue201n"
+}

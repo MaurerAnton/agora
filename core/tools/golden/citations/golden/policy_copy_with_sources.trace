@@ -1,0 +1,3 @@
+name|policy_copy_with_sources
+mode|copy
+copy|"answer\n\n## Sources\n1. [A](https://a.example/x) - Pages 1-2\n2. B"

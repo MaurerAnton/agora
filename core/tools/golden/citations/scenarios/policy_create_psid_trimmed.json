@@ -1,0 +1,8 @@
+{
+  "name": "policy_create_psid_trimmed",
+  "mode": "create",
+  "provider": "web",
+  "kind": "url",
+  "title": "T",
+  "providerSourceId": "  doc:7  "
+}

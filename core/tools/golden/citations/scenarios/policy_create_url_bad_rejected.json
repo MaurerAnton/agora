@@ -1,0 +1,7 @@
+{
+  "name": "policy_create_url_bad_rejected",
+  "mode": "create",
+  "provider": "web",
+  "kind": "url",
+  "url": "not a url"
+}

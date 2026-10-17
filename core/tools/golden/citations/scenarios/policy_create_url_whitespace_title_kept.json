@@ -1,0 +1,8 @@
+{
+  "name": "policy_create_url_whitespace_title_kept",
+  "mode": "create",
+  "provider": "web",
+  "kind": "url",
+  "url": "http://example.com/a b",
+  "title": "Kept"
+}

@@ -1,0 +1,7 @@
+{
+  "name": "policy_create_url_dot_segments",
+  "mode": "create",
+  "provider": "web",
+  "kind": "url",
+  "url": "http://h/a/./b/../c"
+}

@@ -1,0 +1,14 @@
+{
+  "name": "policy_copy_blank_answer",
+  "mode": "copy",
+  "text": "",
+  "records": [
+    {
+      "version": 1,
+      "sourceId": "citation_000000000000000000000000",
+      "provider": "web",
+      "kind": "url",
+      "title": "A"
+    }
+  ]
+}

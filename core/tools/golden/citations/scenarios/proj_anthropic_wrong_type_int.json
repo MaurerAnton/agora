@@ -1,0 +1,7 @@
+{
+  "name": "proj_anthropic_wrong_type_int",
+  "mode": "anthropicCitation",
+  "citation": "{\"type\": 5, \"url\": \"https://e/x\"}",
+  "text": "hello world",
+  "answerStartIndex": 10
+}

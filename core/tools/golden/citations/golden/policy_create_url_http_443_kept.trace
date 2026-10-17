@@ -1,0 +1,3 @@
+name|policy_create_url_http_443_kept
+mode|create
+create|v=1;sourceId="citation_45cb8dd7fb8e3dd461a71248";provider="web";kind="url";title="example.com";url="http://example.com:443/x";fileName=null;location=null;providerSourceId=null;excerpt=null;anchors=[]

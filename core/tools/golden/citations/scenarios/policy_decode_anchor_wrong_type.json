@@ -1,0 +1,5 @@
+{
+  "name": "policy_decode_anchor_wrong_type",
+  "mode": "decode",
+  "raw": "{\"sourceId\": \"s\", \"provider\": \"web\", \"kind\": \"url\", \"title\": \"T\", \"anchors\": [{\"startIndex\": \"0\", \"endIndex\": 2, \"citedText\": \"ab\"}]}"
+}

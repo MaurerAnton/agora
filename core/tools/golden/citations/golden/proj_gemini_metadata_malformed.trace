@@ -1,0 +1,3 @@
+name|proj_gemini_metadata_malformed
+mode|geminiCitations
+parse|throw|JsonDecodingException

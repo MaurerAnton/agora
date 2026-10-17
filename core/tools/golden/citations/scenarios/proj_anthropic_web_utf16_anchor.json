@@ -1,0 +1,7 @@
+{
+  "name": "proj_anthropic_web_utf16_anchor",
+  "mode": "anthropicCitation",
+  "citation": "{\"type\": \"web_search_result_location\", \"url\": \"https://e/x\", \"cited_text\": \"h\\u00e9llo\"}",
+  "text": "h\u00e9llo",
+  "answerStartIndex": 5
+}

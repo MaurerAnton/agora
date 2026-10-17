@@ -1,0 +1,21 @@
+{
+  "name": "policy_match_second_record",
+  "mode": "matchTitle",
+  "query": "bee",
+  "records": [
+    {
+      "version": 1,
+      "sourceId": "citation_000000000000000000000000",
+      "provider": "web",
+      "kind": "url",
+      "title": "Alpha"
+    },
+    {
+      "version": 1,
+      "sourceId": "citation_000000000000000000000000",
+      "provider": "web",
+      "kind": "url",
+      "title": "Bee"
+    }
+  ]
+}

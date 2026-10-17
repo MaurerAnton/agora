@@ -1,0 +1,6 @@
+{
+  "name": "proj_gemini_no_supports",
+  "mode": "geminiCitations",
+  "metadata": "{\"groundingChunks\": [{\"web\": {\"uri\": \"https://g.example/x\", \"title\": \"G\"}}]}",
+  "text": "hello world"
+}

@@ -1,0 +1,5 @@
+{
+  "name": "policy_strip_cjk_marker",
+  "mode": "strip",
+  "text": "x\u3010turn3c4\u3011y"
+}

@@ -1,0 +1,8 @@
+{
+  "name": "policy_create_location_trimmed",
+  "mode": "create",
+  "provider": "web",
+  "kind": "url",
+  "title": "T",
+  "location": "  Pages 3-4  "
+}

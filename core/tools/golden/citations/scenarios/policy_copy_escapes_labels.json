@@ -1,0 +1,15 @@
+{
+  "name": "policy_copy_escapes_labels",
+  "mode": "copy",
+  "text": "answer",
+  "records": [
+    {
+      "version": 1,
+      "sourceId": "citation_000000000000000000000000",
+      "provider": "web",
+      "kind": "url",
+      "title": "a[\\]b",
+      "providerSourceId": "p1"
+    }
+  ]
+}

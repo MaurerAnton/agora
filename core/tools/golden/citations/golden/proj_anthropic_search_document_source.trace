@@ -1,0 +1,3 @@
+name|proj_anthropic_search_document_source
+mode|anthropicCitation
+record|v=1;sourceId="citation_5cc58ae028a29b53008b7266";provider="anthropic";kind="document";title="D";url=null;fileName=null;location="Blocks 1-3";providerSourceId="doc:1";excerpt=null;anchors=[{10,21,"hello world"}]

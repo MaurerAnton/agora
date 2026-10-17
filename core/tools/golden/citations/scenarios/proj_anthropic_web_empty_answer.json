@@ -1,0 +1,7 @@
+{
+  "name": "proj_anthropic_web_empty_answer",
+  "mode": "anthropicCitation",
+  "citation": "{\"type\": \"web_search_result_location\", \"url\": \"https://example.com/x\", \"title\": \"T\"}",
+  "text": "",
+  "answerStartIndex": 10
+}

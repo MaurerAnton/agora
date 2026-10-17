@@ -1,0 +1,3 @@
+name|policy_strip_plain_artifact_case
+mode|strip
+strip|"x"

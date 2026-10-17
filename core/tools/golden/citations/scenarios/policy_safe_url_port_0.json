@@ -1,0 +1,5 @@
+{
+  "name": "policy_safe_url_port_0",
+  "mode": "safeUrl",
+  "url": "https://example.com:0/x"
+}

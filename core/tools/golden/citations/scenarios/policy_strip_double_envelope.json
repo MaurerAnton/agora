@@ -1,0 +1,5 @@
+{
+  "name": "policy_strip_double_envelope",
+  "mode": "strip",
+  "text": "\ue200cite\ue202a\ue201\ue200cite\ue202b\ue201"
+}

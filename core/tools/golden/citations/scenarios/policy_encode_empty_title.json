@@ -1,0 +1,8 @@
+{
+  "name": "policy_encode_empty_title",
+  "mode": "encode",
+  "provider": "web",
+  "kind": "url",
+  "title": "",
+  "sourceId": "s"
+}

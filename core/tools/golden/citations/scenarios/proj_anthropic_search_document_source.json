@@ -1,0 +1,7 @@
+{
+  "name": "proj_anthropic_search_document_source",
+  "mode": "anthropicCitation",
+  "citation": "{\"type\": \"search_result_location\", \"source\": \"doc:1\", \"title\": \"D\", \"start_block_index\": 1, \"end_block_index\": 3}",
+  "text": "hello world",
+  "answerStartIndex": 10
+}

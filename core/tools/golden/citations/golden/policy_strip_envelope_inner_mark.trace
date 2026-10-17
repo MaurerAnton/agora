@@ -1,0 +1,3 @@
+name|policy_strip_envelope_inner_mark
+mode|strip
+strip|"cite a  b"

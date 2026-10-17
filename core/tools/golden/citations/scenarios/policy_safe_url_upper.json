@@ -1,0 +1,5 @@
+{
+  "name": "policy_safe_url_upper",
+  "mode": "safeUrl",
+  "url": "HTTPS://EXAMPLE.COM/Path"
+}

@@ -1,0 +1,10 @@
+{
+  "name": "policy_create_identity_join",
+  "mode": "create",
+  "provider": "anthropic",
+  "kind": "document",
+  "title": "Doc",
+  "fileName": "d.pdf",
+  "location": "Pages 1-2",
+  "providerSourceId": "document:0"
+}

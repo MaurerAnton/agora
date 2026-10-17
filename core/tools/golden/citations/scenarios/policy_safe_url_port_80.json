@@ -1,0 +1,5 @@
+{
+  "name": "policy_safe_url_port_80",
+  "mode": "safeUrl",
+  "url": "http://example.com:80/x"
+}

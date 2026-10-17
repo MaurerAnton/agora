@@ -1,0 +1,5 @@
+name|http_quoted_null_string_message
+mode|httpError
+parse|parsed|structured=1|code=-|type=-|message=null
+http|api|code=500|type=-|message=null
+structured|null

@@ -1,0 +1,5 @@
+name|http_null_body
+mode|httpError
+parse|none
+http|api|code=-|type=-|message=HTTP 404
+structured|-

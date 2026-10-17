@@ -1,0 +1,6 @@
+{
+  "name": "http_object_nested_full",
+  "mode": "httpError",
+  "statusCode": 429,
+  "rawBody": "{\"error\": {\"code\": \"rate_limit\", \"type\": \"overloaded\", \"message\": \"slow down\"}}"
+}

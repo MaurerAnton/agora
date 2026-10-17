@@ -1,0 +1,5 @@
+name|defaults_openrouter_compact
+mode|defaults
+embedding|https://openrouter.ai/api/v1
+compatible|0
+openAiCompatible|https://api.openai.com/v1

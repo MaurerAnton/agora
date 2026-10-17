@@ -1,0 +1,5 @@
+name|http_primitive_blank_string
+mode|httpError
+parse|parsed|structured=0|code=-|type=-|message="   "
+http|api|code=500|type=-|message="   "
+structured|-

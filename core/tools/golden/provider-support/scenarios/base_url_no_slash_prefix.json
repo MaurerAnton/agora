@@ -1,0 +1,5 @@
+{
+  "name": "base_url_no_slash_prefix",
+  "mode": "baseUrl",
+  "url": "v1"
+}

@@ -1,0 +1,6 @@
+{
+  "name": "http_status_fallback_code",
+  "mode": "httpError",
+  "statusCode": 502,
+  "rawBody": "{\"error\": {\"message\": \"bad gateway\"}}"
+}

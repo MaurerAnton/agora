@@ -1,0 +1,5 @@
+name|base_url_no_slash_prefix
+mode|baseUrl
+hasVersion|0
+withV1|v1/v1
+withoutTrailing|-

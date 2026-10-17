@@ -1,0 +1,5 @@
+name|base_url_digit_run
+mode|baseUrl
+hasVersion|1
+withV1|https://api.example.com/v1x_9
+withoutTrailing|https://api.example.com

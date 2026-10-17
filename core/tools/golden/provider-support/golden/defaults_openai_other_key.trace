@@ -1,0 +1,5 @@
+name|defaults_openai_other_key
+mode|defaults
+embedding|https://api.openai.com/v1
+compatible|0
+openAiCompatible|https://api.openai.com/v1

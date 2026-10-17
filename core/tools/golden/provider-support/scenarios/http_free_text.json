@@ -1,0 +1,6 @@
+{
+  "name": "http_free_text",
+  "mode": "httpError",
+  "statusCode": 503,
+  "rawBody": "upstream exploded"
+}

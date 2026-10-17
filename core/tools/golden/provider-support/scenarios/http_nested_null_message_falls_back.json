@@ -1,0 +1,6 @@
+{
+  "name": "http_nested_null_message_falls_back",
+  "mode": "httpError",
+  "statusCode": 500,
+  "rawBody": "{\"error\": {\"message\": null, \"detail\": \"detail wins\"}}"
+}

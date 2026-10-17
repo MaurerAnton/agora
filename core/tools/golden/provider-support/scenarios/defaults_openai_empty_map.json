@@ -1,0 +1,7 @@
+{
+  "name": "defaults_openai_empty_map",
+  "mode": "defaults",
+  "embeddingProvider": "openai",
+  "compatibleName": "openai",
+  "openAiMap": {}
+}

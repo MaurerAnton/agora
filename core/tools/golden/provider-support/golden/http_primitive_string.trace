@@ -1,0 +1,5 @@
+name|http_primitive_string
+mode|httpError
+parse|parsed|structured=1|code=-|type=-|message=quota exceeded
+http|api|code=429|type=-|message=quota exceeded
+structured|quota exceeded

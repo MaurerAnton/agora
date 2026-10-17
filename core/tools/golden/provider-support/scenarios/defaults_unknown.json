@@ -1,0 +1,7 @@
+{
+  "name": "defaults_unknown",
+  "mode": "defaults",
+  "embeddingProvider": "deepseek",
+  "compatibleName": "",
+  "openAiMap": {}
+}

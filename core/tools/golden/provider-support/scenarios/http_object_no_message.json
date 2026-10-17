@@ -1,0 +1,6 @@
+{
+  "name": "http_object_no_message",
+  "mode": "httpError",
+  "statusCode": 500,
+  "rawBody": "{\"code\": 500}"
+}

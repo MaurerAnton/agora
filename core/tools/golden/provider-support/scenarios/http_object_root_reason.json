@@ -1,0 +1,6 @@
+{
+  "name": "http_object_root_reason",
+  "mode": "httpError",
+  "statusCode": 500,
+  "rawBody": "{\"reason\": \"root reason\"}"
+}

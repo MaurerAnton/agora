@@ -1,0 +1,5 @@
+name|defaults_siliconflow
+mode|defaults
+embedding|https://api.siliconflow.cn/v1
+compatible|0
+openAiCompatible|https://api.openai.com/v1

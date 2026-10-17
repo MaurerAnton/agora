@@ -1,0 +1,5 @@
+name|http_object_nested_status_detail
+mode|httpError
+parse|parsed|structured=1|code=-|type=InvalidApiKey|message=bad key
+http|api|code=401|type=InvalidApiKey|message=bad key
+structured|bad key

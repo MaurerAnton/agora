@@ -1,0 +1,6 @@
+{
+  "name": "http_object_root_message",
+  "mode": "httpError",
+  "statusCode": 500,
+  "rawBody": "{\"message\": \"root msg\"}"
+}

@@ -1,0 +1,6 @@
+{
+  "name": "http_object_root_error_description",
+  "mode": "httpError",
+  "statusCode": 500,
+  "rawBody": "{\"error_description\": \"oauth failed\"}"
+}

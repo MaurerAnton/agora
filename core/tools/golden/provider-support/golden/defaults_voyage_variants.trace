@@ -1,0 +1,5 @@
+name|defaults_voyage_variants
+mode|defaults
+embedding|https://api.voyageai.com/v1
+compatible|0
+openAiCompatible|https://api.openai.com/v1

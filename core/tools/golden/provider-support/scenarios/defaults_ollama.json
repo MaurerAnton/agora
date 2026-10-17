@@ -1,0 +1,7 @@
+{
+  "name": "defaults_ollama",
+  "mode": "defaults",
+  "embeddingProvider": "ollama",
+  "compatibleName": "",
+  "openAiMap": {}
+}

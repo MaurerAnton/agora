@@ -1,0 +1,5 @@
+name|http_json_null_literal
+mode|httpError
+parse|parsed|structured=0|code=-|type=-|message=null
+http|api|code=500|type=-|message=null
+structured|-

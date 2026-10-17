@@ -1,0 +1,5 @@
+name|defaults_ollama
+mode|defaults
+embedding|http://localhost:11434/v1
+compatible|0
+openAiCompatible|https://api.openai.com/v1

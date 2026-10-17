@@ -1,0 +1,6 @@
+{
+  "name": "http_null_body",
+  "mode": "httpError",
+  "statusCode": 404,
+  "rawBody": null
+}

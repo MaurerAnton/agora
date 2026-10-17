@@ -1,0 +1,9 @@
+{
+  "name": "defaults_openai",
+  "mode": "defaults",
+  "embeddingProvider": "OpenAI",
+  "compatibleName": "OpenAI",
+  "openAiMap": {
+    "OpenAI": "https://custom.openai/v1"
+  }
+}

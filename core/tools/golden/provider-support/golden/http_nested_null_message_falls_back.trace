@@ -1,0 +1,5 @@
+name|http_nested_null_message_falls_back
+mode|httpError
+parse|parsed|structured=1|code=-|type=-|message=detail wins
+http|api|code=500|type=-|message=detail wins
+structured|detail wins

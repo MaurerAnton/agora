@@ -1,0 +1,5 @@
+name|http_object_error_string
+mode|httpError
+parse|parsed|structured=1|code=-|type=-|message=quota hit
+http|api|code=500|type=-|message=quota hit
+structured|quota hit

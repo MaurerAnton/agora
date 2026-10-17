@@ -1,0 +1,6 @@
+{
+  "name": "http_primitive_number",
+  "mode": "httpError",
+  "statusCode": 502,
+  "rawBody": "42"
+}

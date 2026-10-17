@@ -1,0 +1,5 @@
+{
+  "name": "base_url_version",
+  "mode": "baseUrl",
+  "url": "https://api.example.com/v1"
+}

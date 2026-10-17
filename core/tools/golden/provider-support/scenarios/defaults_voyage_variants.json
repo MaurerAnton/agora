@@ -1,0 +1,7 @@
+{
+  "name": "defaults_voyage_variants",
+  "mode": "defaults",
+  "embeddingProvider": "voyage ai",
+  "compatibleName": "",
+  "openAiMap": {}
+}

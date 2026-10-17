@@ -845,3 +845,67 @@ OpenAiChatRequest decode_open_ai_chat_request(const json::Value& value) {
 }
 
 }  // namespace agora::core::openai
+
+namespace agora::core::openai {
+namespace {
+
+json::Value schema_string(std::string text) {
+    json::Value value;
+    value.kind = json::Kind::String;
+    value.text = std::move(text);
+    return value;
+}
+
+json::Value schema_object() {
+    json::Value value;
+    value.kind = json::Kind::Object;
+    return value;
+}
+
+json::Value schema_property_value(const ToolProperty& property) {
+    // buildMap order: type, description, [items], [properties], [required]
+    json::Value object = schema_object();
+    object.members.push_back({"type", schema_string(property.type)});
+    object.members.push_back({"description", schema_string(property.description)});
+    if (property.items) {
+        object.members.push_back({"items", schema_property_value(*property.items)});
+    }
+    if (property.properties) {
+        json::Value properties = schema_object();
+        for (const auto& [name, child] : *property.properties) {
+            properties.members.push_back({name, schema_property_value(child)});
+        }
+        object.members.push_back({"properties", std::move(properties)});
+    }
+    if (property.required) {
+        json::Value required;
+        required.kind = json::Kind::Array;
+        for (const std::string& name : *property.required) {
+            required.elements.push_back(schema_string(name));
+        }
+        object.members.push_back({"required", std::move(required)});
+    }
+    return object;
+}
+
+}  // namespace
+
+json::Value tool_schema_json_of(const ToolParameters& parameters) {
+    if (parameters.schema) return *parameters.schema;
+    json::Value object = schema_object();
+    object.members.push_back({"type", schema_string(parameters.type)});
+    json::Value properties = schema_object();
+    for (const auto& [name, child] : parameters.properties) {
+        properties.members.push_back({name, schema_property_value(child)});
+    }
+    object.members.push_back({"properties", std::move(properties)});
+    json::Value required;
+    required.kind = json::Kind::Array;
+    for (const std::string& name : parameters.required) {
+        required.elements.push_back(schema_string(name));
+    }
+    object.members.push_back({"required", std::move(required)});
+    return object;
+}
+
+}  // namespace agora::core::openai

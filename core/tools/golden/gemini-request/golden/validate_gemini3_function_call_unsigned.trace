@@ -1,0 +1,3 @@
+name|validate_gemini3_function_call_unsigned
+mode|validate
+error|RequestFormatException|Gemini request validation failed: contents[0].parts[0] Gemini 3 functionCall has no thoughtSignature\s history does not start with user

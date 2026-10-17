@@ -1,0 +1,16 @@
+{
+  "name": "gemini_system_prompt",
+  "providerName": "Google",
+  "mode": "factory",
+  "config": {},
+  "requestInput": {
+    "messages": [
+      {
+        "id": "user_1",
+        "participant": "USER",
+        "text": "Hello"
+      }
+    ],
+    "systemPrompt": "You are helpful."
+  }
+}

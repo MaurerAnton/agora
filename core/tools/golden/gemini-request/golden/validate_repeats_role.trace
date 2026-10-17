@@ -1,0 +1,3 @@
+name|validate_repeats_role
+mode|validate
+error|RequestFormatException|Gemini request validation failed: contents[1] repeats role user

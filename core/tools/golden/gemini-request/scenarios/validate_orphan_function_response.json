@@ -1,0 +1,22 @@
+{
+  "name": "validate_orphan_function_response",
+  "providerName": "Google",
+  "mode": "validate",
+  "request": {
+    "contents": [
+      {
+        "role": "user",
+        "parts": [
+          {
+            "type": "functionResponse",
+            "functionResponse": {
+              "id": "call_x",
+              "name": "x",
+              "response": {}
+            }
+          }
+        ]
+      }
+    ]
+  }
+}

@@ -1,0 +1,9 @@
+{
+  "name": "gemini_empty_contents_rejected",
+  "providerName": "Google",
+  "mode": "factory",
+  "config": {},
+  "requestInput": {
+    "messages": []
+  }
+}

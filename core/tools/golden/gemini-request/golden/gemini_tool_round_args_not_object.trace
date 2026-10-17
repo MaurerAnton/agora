@@ -1,0 +1,4 @@
+name|gemini_tool_round_args_not_object
+mode|factory
+contents|[{"role":"user","parts":[{"text":"Weather?"}]},{"role":"model","parts":[{"functionCall":{"id":"call_1","name":"get_weather","args":{}}}]},{"role":"user","parts":[{"functionResponse":{"id":"call_1","name":"get_weather","response":{"temp":12}}},{"text":"Thanks!"}]}]
+body|{"contents":[{"role":"user","parts":[{"text":"Weather?"}]},{"role":"model","parts":[{"functionCall":{"id":"call_1","name":"get_weather","args":{}}}]},{"role":"user","parts":[{"functionResponse":{"id":"call_1","name":"get_weather","response":{"temp":12}}},{"text":"Thanks!"}]}],"tools":[{"function_declarations":[{"name":"get_weather","description":"Get current weather for a location","parameters":{"type":"object","properties":{"location":{"type":"string","description":"City and state"}},"required":["location"]}}]}],"generationConfig":{"thinkingConfig":{"includeThoughts":true,"thinkingLevel":"MEDIUM"}}}

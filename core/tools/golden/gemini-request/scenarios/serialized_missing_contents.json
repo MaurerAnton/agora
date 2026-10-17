@@ -1,0 +1,10 @@
+{
+  "name": "serialized_missing_contents",
+  "providerName": "Google",
+  "mode": "serialized",
+  "serializedBody": "{\"other\": 1}",
+  "serializedRequiredStringFields": [],
+  "serializedRequiredArrayFields": [
+    "contents"
+  ]
+}

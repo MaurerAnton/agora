@@ -1,0 +1,3 @@
+name|validate_system_instruction_payload
+mode|validate
+error|RequestFormatException|Gemini request validation failed: system_instruction must contain only nonblank text

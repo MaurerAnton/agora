@@ -1,0 +1,4 @@
+name|gemini_code_execution_malformed_json
+mode|factory
+contents|[{"role":"user","parts":[{"text":"run it"}]},{"role":"model","parts":[{"text":"Running the check."}]},{"role":"user","parts":[{"text":"thanks"}]}]
+body|{"contents":[{"role":"user","parts":[{"text":"run it"}]},{"role":"model","parts":[{"text":"Running the check."}]},{"role":"user","parts":[{"text":"thanks"}]}],"generationConfig":{"thinkingConfig":{"includeThoughts":true,"thinkingLevel":"MEDIUM"}}}

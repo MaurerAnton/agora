@@ -1,0 +1,23 @@
+{
+  "name": "validate_two_payloads_in_part",
+  "providerName": "Google",
+  "mode": "validate",
+  "request": {
+    "contents": [
+      {
+        "role": "user",
+        "parts": [
+          {
+            "type": "text",
+            "text": "hi",
+            "functionCall": {
+              "id": "c",
+              "name": "n",
+              "args": {}
+            }
+          }
+        ]
+      }
+    ]
+  }
+}

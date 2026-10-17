@@ -1,0 +1,35 @@
+{
+  "name": "validate_tools_two_types",
+  "providerName": "Google",
+  "mode": "validate",
+  "request": {
+    "contents": [
+      {
+        "role": "user",
+        "parts": [
+          {
+            "type": "text",
+            "text": "Hello"
+          }
+        ]
+      }
+    ],
+    "tools": [
+      {
+        "code_execution": {},
+        "google_search": {}
+      },
+      {
+        "function_declarations": [
+          {
+            "name": "lookup",
+            "description": "x",
+            "parameters": {
+              "type": "object"
+            }
+          }
+        ]
+      }
+    ]
+  }
+}

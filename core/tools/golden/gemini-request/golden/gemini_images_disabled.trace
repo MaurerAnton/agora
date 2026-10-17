@@ -1,0 +1,4 @@
+name|gemini_images_disabled
+mode|factory
+contents|[{"role":"user","parts":[{"text":"look"}]}]
+body|{"contents":[{"role":"user","parts":[{"text":"look"}]}],"generationConfig":{"thinkingConfig":{"includeThoughts":true,"thinkingLevel":"MEDIUM"}}}

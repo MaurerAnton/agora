@@ -1,0 +1,21 @@
+{
+  "name": "validate_inline_data_on_model",
+  "providerName": "Google",
+  "mode": "validate",
+  "request": {
+    "contents": [
+      {
+        "role": "model",
+        "parts": [
+          {
+            "type": "inlineData",
+            "inlineData": {
+              "mimeType": "image/png",
+              "data": "AAAA"
+            }
+          }
+        ]
+      }
+    ]
+  }
+}

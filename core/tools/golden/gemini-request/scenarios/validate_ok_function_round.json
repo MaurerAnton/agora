@@ -1,0 +1,48 @@
+{
+  "name": "validate_ok_function_round",
+  "providerName": "Google",
+  "mode": "validate",
+  "request": {
+    "contents": [
+      {
+        "role": "user",
+        "parts": [
+          {
+            "type": "text",
+            "text": "Hello"
+          }
+        ]
+      },
+      {
+        "role": "model",
+        "parts": [
+          {
+            "type": "functionCall",
+            "functionCall": {
+              "id": "call_a",
+              "name": "lookup",
+              "args": {
+                "q": 1
+              }
+            }
+          }
+        ]
+      },
+      {
+        "role": "user",
+        "parts": [
+          {
+            "type": "functionResponse",
+            "functionResponse": {
+              "id": "call_a",
+              "name": "lookup",
+              "response": {
+                "ok": true
+              }
+            }
+          }
+        ]
+      }
+    ]
+  }
+}

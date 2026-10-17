@@ -1,0 +1,21 @@
+{
+  "name": "validate_decode_max_tokens_quoted",
+  "providerName": "Google",
+  "mode": "validate",
+  "request": {
+    "contents": [
+      {
+        "role": "user",
+        "parts": [
+          {
+            "type": "text",
+            "text": "Hello"
+          }
+        ]
+      }
+    ],
+    "generationConfig": {
+      "maxOutputTokens": "5000"
+    }
+  }
+}

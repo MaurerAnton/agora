@@ -1,0 +1,26 @@
+{
+  "name": "validate_system_instruction_blank",
+  "providerName": "Google",
+  "mode": "validate",
+  "request": {
+    "systemInstruction": {
+      "parts": [
+        {
+          "type": "text",
+          "text": "  "
+        }
+      ]
+    },
+    "contents": [
+      {
+        "role": "user",
+        "parts": [
+          {
+            "type": "text",
+            "text": "Hello"
+          }
+        ]
+      }
+    ]
+  }
+}

@@ -1,0 +1,3 @@
+name|validate_tools_both_schema_forms
+mode|validate
+error|RequestFormatException|Gemini request validation failed: function lookup declares both parameter schema forms

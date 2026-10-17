@@ -1,0 +1,3 @@
+name|validate_tools_unsafe_and_duplicate
+mode|validate
+error|RequestFormatException|Gemini request validation failed: tools[0].functions[0].name is not wire-safe\s duplicate function declaration lookup

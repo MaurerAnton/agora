@@ -1,0 +1,23 @@
+{
+  "name": "validate_decode_unknown_keys",
+  "providerName": "Google",
+  "mode": "validate",
+  "request": {
+    "contents": [
+      {
+        "role": "user",
+        "parts": [
+          {
+            "type": "text",
+            "text": "hi",
+            "future_part": true
+          }
+        ]
+      }
+    ],
+    "future_field": [
+      1,
+      2
+    ]
+  }
+}

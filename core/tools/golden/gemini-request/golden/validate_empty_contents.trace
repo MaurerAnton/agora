@@ -1,0 +1,3 @@
+name|validate_empty_contents
+mode|validate
+error|RequestFormatException|Gemini request validation failed: contents is empty\s history does not start with user\s history does not end with user input

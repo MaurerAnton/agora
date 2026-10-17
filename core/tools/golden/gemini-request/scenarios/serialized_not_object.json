@@ -1,0 +1,10 @@
+{
+  "name": "serialized_not_object",
+  "providerName": "Google",
+  "mode": "serialized",
+  "serializedBody": "[]",
+  "serializedRequiredStringFields": [],
+  "serializedRequiredArrayFields": [
+    "contents"
+  ]
+}

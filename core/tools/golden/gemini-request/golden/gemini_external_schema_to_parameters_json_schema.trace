@@ -1,0 +1,4 @@
+name|gemini_external_schema_to_parameters_json_schema
+mode|factory
+contents|[{"role":"user","parts":[{"text":"search it"}]}]
+body|{"contents":[{"role":"user","parts":[{"text":"search it"}]}],"tools":[{"function_declarations":[{"name":"mcp_tool","description":"External schema","parameters_json_schema":{"type":"object","additionalProperties":{"type":"string"},"x-external":true}}]}],"generationConfig":{"thinkingConfig":{"includeThoughts":true,"thinkingLevel":"MEDIUM"}}}

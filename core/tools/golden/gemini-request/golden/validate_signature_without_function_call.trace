@@ -1,0 +1,3 @@
+name|validate_signature_without_function_call
+mode|validate
+error|RequestFormatException|Gemini request validation failed: contents[0].parts[0] thoughtSignature is not attached to a functionCall\s history does not start with user\s history does not end with user input

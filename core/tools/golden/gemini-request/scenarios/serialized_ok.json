@@ -1,0 +1,10 @@
+{
+  "name": "serialized_ok",
+  "providerName": "Google",
+  "mode": "serialized",
+  "serializedBody": "{\"contents\":[{\"role\":\"user\",\"parts\":[{\"text\":\"hi\"}]}]}",
+  "serializedRequiredStringFields": [],
+  "serializedRequiredArrayFields": [
+    "contents"
+  ]
+}

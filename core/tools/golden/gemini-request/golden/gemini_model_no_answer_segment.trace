@@ -1,0 +1,4 @@
+name|gemini_model_no_answer_segment
+mode|factory
+contents|[{"role":"user","parts":[{"text":"run it"}]},{"role":"model","parts":[{"text":"plain answer"}]},{"role":"user","parts":[{"text":"thanks"}]}]
+body|{"contents":[{"role":"user","parts":[{"text":"run it"}]},{"role":"model","parts":[{"text":"plain answer"}]},{"role":"user","parts":[{"text":"thanks"}]}],"generationConfig":{"thinkingConfig":{"includeThoughts":true,"thinkingLevel":"MEDIUM"}}}

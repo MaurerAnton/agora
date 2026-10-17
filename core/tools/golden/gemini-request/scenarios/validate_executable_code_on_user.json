@@ -1,0 +1,21 @@
+{
+  "name": "validate_executable_code_on_user",
+  "providerName": "Google",
+  "mode": "validate",
+  "request": {
+    "contents": [
+      {
+        "role": "user",
+        "parts": [
+          {
+            "type": "executableCode",
+            "executableCode": {
+              "language": "python",
+              "code": "print(1)"
+            }
+          }
+        ]
+      }
+    ]
+  }
+}

@@ -1,0 +1,3 @@
+name|validate_generation_config_gates
+mode|validate
+error|RequestFormatException|Gemini request validation failed: maxOutputTokens must be positive\s topP is outside 0..1\s thinkingBudget is negative\s thinkingLevel is blank

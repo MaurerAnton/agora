@@ -1,0 +1,31 @@
+{
+  "name": "validate_missing_responses",
+  "providerName": "Google",
+  "mode": "validate",
+  "request": {
+    "contents": [
+      {
+        "role": "model",
+        "parts": [
+          {
+            "type": "functionCall",
+            "functionCall": {
+              "id": "call_a",
+              "name": "lookup",
+              "args": {}
+            }
+          }
+        ]
+      },
+      {
+        "role": "user",
+        "parts": [
+          {
+            "type": "text",
+            "text": "Hello"
+          }
+        ]
+      }
+    ]
+  }
+}

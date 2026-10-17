@@ -1,0 +1,4 @@
+name|gemini_model_name_only_affects_validation
+mode|factory
+contents|[{"role":"user","parts":[{"text":"Hi"}]}]
+body|{"contents":[{"role":"user","parts":[{"text":"Hi"}]}],"generationConfig":{"thinkingConfig":{"includeThoughts":true,"thinkingLevel":"LOW"}}}

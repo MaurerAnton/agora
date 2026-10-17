@@ -1,0 +1,26 @@
+{
+  "name": "validate_response_after_other_type",
+  "providerName": "Google",
+  "mode": "validate",
+  "request": {
+    "contents": [
+      {
+        "role": "user",
+        "parts": [
+          {
+            "type": "text",
+            "text": "hi"
+          },
+          {
+            "type": "functionResponse",
+            "functionResponse": {
+              "id": "call_a",
+              "name": "x",
+              "response": {}
+            }
+          }
+        ]
+      }
+    ]
+  }
+}

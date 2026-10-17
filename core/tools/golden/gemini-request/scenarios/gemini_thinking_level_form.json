@@ -1,0 +1,17 @@
+{
+  "name": "gemini_thinking_level_form",
+  "providerName": "Google",
+  "mode": "factory",
+  "config": {
+    "thinkingLevel": "low"
+  },
+  "requestInput": {
+    "messages": [
+      {
+        "id": "user_1",
+        "participant": "USER",
+        "text": "Hi"
+      }
+    ]
+  }
+}

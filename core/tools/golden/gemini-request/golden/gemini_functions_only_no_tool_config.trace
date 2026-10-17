@@ -1,0 +1,4 @@
+name|gemini_functions_only_no_tool_config
+mode|factory
+contents|[{"role":"user","parts":[{"text":"search it"}]}]
+body|{"contents":[{"role":"user","parts":[{"text":"search it"}]}],"tools":[{"function_declarations":[{"name":"get_weather","description":"Get current weather for a location","parameters":{"type":"object","properties":{"location":{"type":"string","description":"City and state"}},"required":["location"]}}]}],"generationConfig":{"thinkingConfig":{"includeThoughts":true,"thinkingLevel":"MEDIUM"}}}

@@ -1,0 +1,15 @@
+{
+  "name": "gemini_empty_user_attachment",
+  "providerName": "Google",
+  "mode": "factory",
+  "config": {},
+  "requestInput": {
+    "messages": [
+      {
+        "id": "user_1",
+        "participant": "USER",
+        "text": ""
+      }
+    ]
+  }
+}

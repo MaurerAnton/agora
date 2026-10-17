@@ -1,0 +1,4 @@
+name|gemini_system_blank_dropped
+mode|factory
+contents|[{"role":"user","parts":[{"text":"Hello"}]}]
+body|{"contents":[{"role":"user","parts":[{"text":"Hello"}]}],"generationConfig":{"thinkingConfig":{"includeThoughts":true,"thinkingLevel":"MEDIUM"}}}

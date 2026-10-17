@@ -1,0 +1,22 @@
+{
+  "name": "validate_function_call_bad_id",
+  "providerName": "Google",
+  "mode": "validate",
+  "request": {
+    "contents": [
+      {
+        "role": "model",
+        "parts": [
+          {
+            "type": "functionCall",
+            "functionCall": {
+              "id": "bad id!",
+              "name": "lookup",
+              "args": {}
+            }
+          }
+        ]
+      }
+    ]
+  }
+}

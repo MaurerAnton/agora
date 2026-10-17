@@ -1,0 +1,50 @@
+{
+  "name": "validate_ok_gemini3_signed",
+  "providerName": "Google",
+  "mode": "validate",
+  "request": {
+    "contents": [
+      {
+        "role": "user",
+        "parts": [
+          {
+            "type": "text",
+            "text": "Hello"
+          }
+        ]
+      },
+      {
+        "role": "model",
+        "parts": [
+          {
+            "type": "functionCall",
+            "thoughtSignature": "sig",
+            "functionCall": {
+              "id": "call_a",
+              "name": "lookup",
+              "args": {}
+            }
+          }
+        ]
+      },
+      {
+        "role": "user",
+        "parts": [
+          {
+            "type": "functionResponse",
+            "functionResponse": {
+              "id": "call_a",
+              "name": "lookup",
+              "response": {
+                "ok": true
+              }
+            }
+          }
+        ]
+      }
+    ]
+  },
+  "config": {
+    "modelId": "gemini-3-pro"
+  }
+}

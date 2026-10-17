@@ -1,0 +1,19 @@
+{
+  "name": "validate_signature_without_function_call",
+  "providerName": "Google",
+  "mode": "validate",
+  "request": {
+    "contents": [
+      {
+        "role": "model",
+        "parts": [
+          {
+            "type": "text",
+            "text": "hi",
+            "thoughtSignature": "sig"
+          }
+        ]
+      }
+    ]
+  }
+}

@@ -1,0 +1,5 @@
+{
+  "name": "single_embedding_wrong_kind",
+  "mode": "single",
+  "response": "{\"data\": [{\"embedding\": {}}]}"
+}

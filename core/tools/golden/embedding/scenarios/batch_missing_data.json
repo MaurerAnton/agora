@@ -1,0 +1,9 @@
+{
+  "name": "batch_missing_data",
+  "mode": "batch",
+  "texts": [
+    "a",
+    "b"
+  ],
+  "response": "{\"ok\": true}"
+}

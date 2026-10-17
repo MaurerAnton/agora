@@ -1,0 +1,6 @@
+{
+  "name": "request_batch_empty_input",
+  "mode": "requestBatch",
+  "texts": [],
+  "model": "m"
+}

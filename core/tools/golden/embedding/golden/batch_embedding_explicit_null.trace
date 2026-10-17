@@ -1,0 +1,4 @@
+name|batch_embedding_explicit_null
+mode|batch
+embedding|0|none
+embedding|1|none

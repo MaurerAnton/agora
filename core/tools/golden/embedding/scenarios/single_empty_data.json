@@ -1,0 +1,5 @@
+{
+  "name": "single_empty_data",
+  "mode": "single",
+  "response": "{\"data\": []}"
+}

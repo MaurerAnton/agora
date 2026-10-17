@@ -1,0 +1,3 @@
+name|request_single_custom_model
+mode|requestSingle
+body|{"input":"hi","model":"voyage-3"}

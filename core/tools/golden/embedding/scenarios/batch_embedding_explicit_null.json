@@ -1,0 +1,9 @@
+{
+  "name": "batch_embedding_explicit_null",
+  "mode": "batch",
+  "texts": [
+    "a",
+    "b"
+  ],
+  "response": "{\"data\":[{\"embedding\":[1.0]},{\"embedding\":null}]}"
+}

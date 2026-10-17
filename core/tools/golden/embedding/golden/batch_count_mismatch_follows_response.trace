@@ -1,0 +1,4 @@
+name|batch_count_mismatch_follows_response
+mode|batch
+embedding|0|1.0
+embedding|1|2.0

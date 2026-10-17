@@ -1,0 +1,3 @@
+name|request_batch_empty_input
+mode|requestBatch
+body|{"input":[],"model":"m"}

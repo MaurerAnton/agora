@@ -1,0 +1,6 @@
+{
+  "name": "request_single_custom_model",
+  "mode": "requestSingle",
+  "text": "hi",
+  "model": "voyage-3"
+}

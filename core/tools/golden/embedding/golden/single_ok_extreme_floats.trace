@@ -1,0 +1,3 @@
+name|single_ok_extreme_floats
+mode|single
+embedding|0|0.1,-2.5,1000000.0,1.0E-8,-0.0,Infinity

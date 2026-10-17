@@ -1,0 +1,5 @@
+{
+  "name": "single_non_numeric_element",
+  "mode": "single",
+  "response": "{\"data\": [{\"embedding\": [\"abc\"]}]}"
+}

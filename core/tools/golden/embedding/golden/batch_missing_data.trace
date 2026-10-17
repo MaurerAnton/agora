@@ -1,0 +1,4 @@
+name|batch_missing_data
+mode|batch
+embedding|0|none
+embedding|1|none

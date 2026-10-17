@@ -1,0 +1,5 @@
+{
+  "name": "single_element_not_primitive",
+  "mode": "single",
+  "response": "{\"data\": [{\"embedding\": [{}, 1]}]}"
+}

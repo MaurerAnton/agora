@@ -1,0 +1,9 @@
+{
+  "name": "batch_item_not_object",
+  "mode": "batch",
+  "texts": [
+    "a",
+    "b"
+  ],
+  "response": "{\"data\":[\"x\"]}"
+}

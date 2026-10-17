@@ -1,0 +1,3 @@
+name|request_single_special_chars
+mode|requestSingle
+body|{"input":"Quote \\" newline \\n backslash \\\\ euro €","model":"text-embedding-3-small"}

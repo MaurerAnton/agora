@@ -1,0 +1,5 @@
+{
+  "name": "single_ok_extreme_floats",
+  "mode": "single",
+  "response": "{\"data\":[{\"embedding\":[0.1, -2.5, 1000000.0, 1e-8, -0.0, 1e999]}]}"
+}

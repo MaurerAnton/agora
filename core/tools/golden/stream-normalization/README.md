@@ -112,3 +112,11 @@ Generated ids are nondeterministic, so the driver normalizes before writing:
 - **`GenerationError` exception mapping** in `StreamTermination`'s file (the `throwable →
   GenerationError` helpers) is transport-coupled (Java exception types) and stays Kotlin;
   `StreamTermination`'s own predicates and `toError` are pinned here.
+- **Case-insensitive marker matching** in the C++ port folds ASCII only. Kotlin's
+  `Char.equalsIgnoreCase` additionally equates a few exotic characters to ASCII letters
+  (U+0131 `ı`≈`i`, U+212A `K`≈`k`, U+017F `ſ`≈`s`); those equivalences are not reproduced —
+  every pinned scenario and every plausible model-emitted marker is ASCII.
+- **UTF-16 vs UTF-8**: the port operates on UTF-8 bytes, which is output-equivalent for this
+  module's ASCII markers, per-code-point iteration, ASCII case folding and byte-slicing at
+  ASCII boundaries. Kotlin's UTF-16-unit `.take(200/2000)` in `MalformedToolCall` is mirrored
+  with `json::take_utf16_units`.

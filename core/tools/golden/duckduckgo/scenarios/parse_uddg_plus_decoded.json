@@ -1,0 +1,6 @@
+{
+  "name": "parse_uddg_plus_decoded",
+  "mode": "parse",
+  "html": "<html><table><a \"class=\"result-link\" href=\"//duckduckgo.com/l/?uddg=https%3A%2F%2Fx.example%2Fa+b\">Plus</a></table>",
+  "maxResults": 5
+}

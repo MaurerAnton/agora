@@ -1,0 +1,6 @@
+{
+  "name": "parse_missing_href",
+  "mode": "parse",
+  "html": "<a class=\"result-link\">No href here</a>",
+  "maxResults": 5
+}

@@ -1,0 +1,13 @@
+{
+  "name": "search_captcha_partial",
+  "mode": "search",
+  "maxResults": 5,
+  "pages": [
+    {
+      "html": "<html><table><a \"class=\"result-link\" href=\"http://x/1\">One</a><td \"class=\"result-snippet\">s1</td><a \"class=\"result-link\" href=\"http://x/2\">Two</a><td \"class=\"result-snippet\">s2</td></table><form><input name=\"vqd\" value=\"tok\"></form><form><input name=\"s\" value=\"10\"></form>"
+    },
+    {
+      "html": "<html><table><a \"class=\"result-link\" href=\"http://x/9\">Nine</a></table><div class=\"anomaly-modal\">challenge-form</div>"
+    }
+  ]
+}

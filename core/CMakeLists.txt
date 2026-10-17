@@ -19,6 +19,7 @@ add_library(agora_core_lib STATIC
     src/anthropic_stream.cpp
     src/bpe_vocabulary.cpp
     src/citations.cpp
+    src/duckduckgo.cpp
     src/gemini_request.cpp
     src/gemini_stream.cpp
     src/java_uri.cpp

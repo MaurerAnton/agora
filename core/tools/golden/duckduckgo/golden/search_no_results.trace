@@ -1,0 +1,3 @@
+name|search_no_results
+mode|search
+response|error|NO_RESULTS|DuckDuckGo returned no results for this query.

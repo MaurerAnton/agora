@@ -1,0 +1,16 @@
+{
+  "name": "search_vqd_only_from_first_page",
+  "mode": "search",
+  "maxResults": 20,
+  "pages": [
+    {
+      "html": "<html><table><a \"class=\"result-link\" href=\"http://x/1\">One</a></table><form><input name=\"vqd\" value=\"first-token\"></form><form><input name=\"s\" value=\"10\"></form>"
+    },
+    {
+      "html": "<html><table><a \"class=\"result-link\" href=\"http://x/2\">Two</a></table><form><input name=\"s\" value=\"20\"></form>"
+    },
+    {
+      "html": "<html><table><a \"class=\"result-link\" href=\"http://x/3\">Three</a></table><form><input name=\"s\" value=\"30\"></form>"
+    }
+  ]
+}

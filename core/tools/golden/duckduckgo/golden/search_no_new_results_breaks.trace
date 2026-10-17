@@ -1,0 +1,5 @@
+name|search_no_new_results_breaks
+mode|search
+result|One|http://x/1|
+result|Two|http://x/2|
+response|success

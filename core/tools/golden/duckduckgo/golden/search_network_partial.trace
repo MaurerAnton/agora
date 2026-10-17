@@ -1,0 +1,4 @@
+name|search_network_partial
+mode|search
+result|One|http://x/1|s1
+response|success

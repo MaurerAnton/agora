@@ -1,0 +1,6 @@
+{
+  "name": "parse_nested_anchor_text",
+  "mode": "parse",
+  "html": "<html><table><a \"class=\"result-link\" href=\"http://x/\">A<span>B</span></a></table>",
+  "maxResults": 5
+}

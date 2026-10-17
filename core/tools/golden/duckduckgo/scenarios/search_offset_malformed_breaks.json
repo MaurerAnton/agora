@@ -1,0 +1,10 @@
+{
+  "name": "search_offset_malformed_breaks",
+  "mode": "search",
+  "maxResults": 5,
+  "pages": [
+    {
+      "html": "<html><table><a \"class=\"result-link\" href=\"http://x/1\">One</a></table><form><input name=\"vqd\" value=\"tok\"></form><form><input name=\"s\" value=\"not-a-number\"></form>"
+    }
+  ]
+}

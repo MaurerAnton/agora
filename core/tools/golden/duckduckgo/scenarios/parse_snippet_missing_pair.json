@@ -1,0 +1,6 @@
+{
+  "name": "parse_snippet_missing_pair",
+  "mode": "parse",
+  "html": "<a \"class=\"result-link\" href=\"http://x/1\">One</a><td \"class=\"result-snippet\">Snip one</td><a \"class=\"result-link\" href=\"http://x/2\">Two</a>",
+  "maxResults": 5
+}

@@ -1,0 +1,3 @@
+name|parse_protocol_relative
+mode|parse
+result|Proto|https://example.org/path|

@@ -1,0 +1,6 @@
+name|search_dedup_overlap_and_missing_offset
+mode|search
+result|One|http://x/1|
+result|Two|http://x/2|
+result|Three|http://x/3|
+response|success

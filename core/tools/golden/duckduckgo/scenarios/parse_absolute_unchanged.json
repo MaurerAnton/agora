@@ -1,0 +1,6 @@
+{
+  "name": "parse_absolute_unchanged",
+  "mode": "parse",
+  "html": "<html><table><a \"class=\"result-link\" href=\"https://keep.example/path?q=1\">Kept</a></table>",
+  "maxResults": 5
+}

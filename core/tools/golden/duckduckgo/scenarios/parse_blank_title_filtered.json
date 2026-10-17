@@ -1,0 +1,6 @@
+{
+  "name": "parse_blank_title_filtered",
+  "mode": "parse",
+  "html": "<a class=\"result-link\" href=\"http://x/\">&nbsp;   </a>",
+  "maxResults": 5
+}

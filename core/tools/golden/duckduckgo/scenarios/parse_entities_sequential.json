@@ -1,0 +1,6 @@
+{
+  "name": "parse_entities_sequential",
+  "mode": "parse",
+  "html": "<html><table><a \"class=\"result-link\" href=\"http://x/\">Fish &amp; Chips &lt;hot&gt; &quot;q&quot; &#x27;s&#39;&nbsp;x</a><td \"class=\"result-snippet\">A &amp;lt; B &amp;amp; C &gt; D</td></table>",
+  "maxResults": 5
+}

@@ -1,0 +1,6 @@
+{
+  "name": "parse_single_result",
+  "mode": "parse",
+  "html": "<html><table><a \"class=\"result-link\" href=\"https://example.com/a\">Alpha</a><td \"class=\"result-snippet\">First snippet.</td></table>",
+  "maxResults": 5
+}

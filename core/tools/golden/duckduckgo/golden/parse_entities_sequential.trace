@@ -1,0 +1,3 @@
+name|parse_entities_sequential
+mode|parse
+result|Fish & Chips <hot> "q" 's' x|http://x/|A < B &amp\s C > D

@@ -1,0 +1,3 @@
+name|search_network_explicit
+mode|search
+response|error|NETWORK_ERROR|DuckDuckGo returned HTTP 503.

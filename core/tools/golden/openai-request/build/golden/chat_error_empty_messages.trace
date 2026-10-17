@@ -1,4 +1,0 @@
-name|chat_error_empty_messages
-kind|openai
-mode|factory
-error|RequestFormatException|OpenAI request validation failed: messages is empty\s history does not end in user/tool input

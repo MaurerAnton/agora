@@ -1,0 +1,7 @@
+{
+  "name": "textp_tagged_complete",
+  "mode": "textParser",
+  "chunks": [
+    "I will call. <tool_call>{\"name\":\"calc\",\"arguments\":\"{\\\"a\\\": 1}\"}</tool_call> Done."
+  ]
+}

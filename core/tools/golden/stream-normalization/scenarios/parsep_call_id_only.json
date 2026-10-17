@@ -1,0 +1,5 @@
+{
+  "name": "parsep_call_id_only",
+  "mode": "toolParser",
+  "content": "<tool_call>{\"call_id\":\"call_c\",\"name\":\"calc\",\"arguments\":\"{}\"}</tool_call>"
+}

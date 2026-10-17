@@ -1,0 +1,6 @@
+name|textp_prose_then_tagged
+mode|textParser
+text|Some prose first. Then 
+update|text_tool_<uuid>||
+update|text_tool_<uuid>|calc|
+malformed|Provider ended before the tagged tool call was complete

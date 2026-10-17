@@ -1,4 +1,0 @@
-name|validate_unknown_role
-kind|openai
-mode|validate
-error|RequestFormatException|OpenAI request validation failed: messages[0] has invalid role developer\s history does not end in user/tool input

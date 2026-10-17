@@ -1,0 +1,8 @@
+{
+  "name": "retry_upstream_negative",
+  "mode": "retry",
+  "retryNumber": 1,
+  "statusCode": 200,
+  "body": "something else",
+  "streamErrorMessage": "unrelated"
+}

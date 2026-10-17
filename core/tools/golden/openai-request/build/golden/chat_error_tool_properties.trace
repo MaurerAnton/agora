@@ -1,4 +1,0 @@
-name|chat_error_tool_properties
-kind|openai
-mode|factory
-error|RequestFormatException|OpenAI request validation failed: tool matrix has a blank property name\s tool matrix property b has no type\s tool matrix array c has no items schema\s tool matrix object d has no property schema\s tool matrix object e requires undefined properties

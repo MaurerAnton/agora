@@ -1,0 +1,8 @@
+{
+  "name": "retry_stream_policy",
+  "mode": "retry",
+  "retryNumber": 1,
+  "statusCode": 200,
+  "body": null,
+  "streamErrorMessage": "Failed To Generate upstream"
+}

@@ -1,0 +1,7 @@
+{
+  "name": "textp_prose_then_tagged",
+  "mode": "textParser",
+  "chunks": [
+    "Some prose first. Then <tool_call>{\"name\":\"calc\",\"arguments\":\""
+  ]
+}

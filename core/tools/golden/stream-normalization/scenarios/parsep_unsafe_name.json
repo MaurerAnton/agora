@@ -1,0 +1,5 @@
+{
+  "name": "parsep_unsafe_name",
+  "mode": "toolParser",
+  "content": "<tool_call>{\"name\":\"bad name\",\"arguments\":\"{}\"}</tool_call>"
+}

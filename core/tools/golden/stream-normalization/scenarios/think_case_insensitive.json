@@ -1,0 +1,8 @@
+{
+  "name": "think_case_insensitive",
+  "mode": "thinkingParser",
+  "chunks": [
+    "<THINKING>caps",
+    "</ThInKiNg>after"
+  ]
+}

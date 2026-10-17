@@ -1,0 +1,5 @@
+name|textp_antml_tagged
+mode|textParser
+update|text_tool_<uuid>||
+update|text_tool_<uuid>|search|{"q":"cats"}
+complete|text_tool_<uuid>|-|search|{"q":"cats"}

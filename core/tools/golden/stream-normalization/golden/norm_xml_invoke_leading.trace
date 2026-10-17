@@ -1,0 +1,3 @@
+name|norm_xml_invoke_leading
+mode|normalizer
+toolCall|call_text_<uuid>|calc|{"a":"1"}|-|text_tool_<uuid>|0

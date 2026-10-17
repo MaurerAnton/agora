@@ -1,0 +1,4 @@
+name|norm_empty_thought_metadata
+mode|normalizer
+thought||Only title|-
+text|ok

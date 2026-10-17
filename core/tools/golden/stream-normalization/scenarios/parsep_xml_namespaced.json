@@ -1,0 +1,5 @@
+{
+  "name": "parsep_xml_namespaced",
+  "mode": "toolParser",
+  "content": "<antml:invoke name=\"calc\"><antml:parameter name=\"a\">1</antml:parameter></antml:invoke>"
+}

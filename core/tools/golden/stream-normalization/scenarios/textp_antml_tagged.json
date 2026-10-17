@@ -1,0 +1,7 @@
+{
+  "name": "textp_antml_tagged",
+  "mode": "textParser",
+  "chunks": [
+    "<antml:invoke name=\"search\"><antml:parameter name=\"q\">cats</antml:parameter></antml:invoke>"
+  ]
+}

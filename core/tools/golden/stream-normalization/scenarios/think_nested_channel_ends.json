@@ -1,0 +1,7 @@
+{
+  "name": "think_nested_channel_ends",
+  "mode": "thinkingParser",
+  "chunks": [
+    "<|channel|>analysis<|message|>first<|end|>after"
+  ]
+}

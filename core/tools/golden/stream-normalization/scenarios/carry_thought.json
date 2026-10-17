@@ -1,0 +1,10 @@
+{
+  "name": "carry_thought",
+  "mode": "carriesOutput",
+  "events": [
+    {
+      "type": "thought",
+      "thought": "t"
+    }
+  ]
+}

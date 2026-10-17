@@ -1,0 +1,5 @@
+{
+  "name": "parsep_xml_id_attribute",
+  "mode": "toolParser",
+  "content": "<invoke id=\"call_x\" name=\"calc\"><parameter name=\"a\">1</parameter></invoke>"
+}

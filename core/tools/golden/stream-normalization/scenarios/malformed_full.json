@@ -1,0 +1,8 @@
+{
+  "name": "malformed_full",
+  "mode": "malformed",
+  "cause": "arguments were cut off",
+  "originalName": "calc",
+  "originalArguments": "{\"a\":1}",
+  "signature": "sig"
+}

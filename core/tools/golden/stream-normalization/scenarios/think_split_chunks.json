@@ -1,0 +1,10 @@
+{
+  "name": "think_split_chunks",
+  "mode": "thinkingParser",
+  "chunks": [
+    "<think",
+    "ing>secret",
+    "</think",
+    "ing>tail"
+  ]
+}

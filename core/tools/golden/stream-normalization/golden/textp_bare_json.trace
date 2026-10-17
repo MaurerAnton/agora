@@ -1,0 +1,6 @@
+name|textp_bare_json
+mode|textParser
+update|text_tool_<uuid>||
+update|text_tool_<uuid>|calc|{}"}
+update|text_tool_<uuid>|calc|{}
+complete|text_tool_<uuid>|-|calc|{}

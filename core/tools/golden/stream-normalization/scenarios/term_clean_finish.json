@@ -1,0 +1,6 @@
+{
+  "name": "term_clean_finish",
+  "mode": "termination",
+  "sawTerminalMarker": true,
+  "stopReason": "stop"
+}

@@ -1,0 +1,5 @@
+{
+  "name": "parsep_array_damaged",
+  "mode": "toolParser",
+  "content": "[{\"name\":\"calc\",\"arguments\":\"{}\"},{\"name\":\"bad name\",\"arguments\":\"{}\"}]"
+}

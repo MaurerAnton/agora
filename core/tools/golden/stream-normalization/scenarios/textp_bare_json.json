@@ -1,0 +1,8 @@
+{
+  "name": "textp_bare_json",
+  "mode": "textParser",
+  "chunks": [
+    "{\"name\":\"calc\",",
+    "\"arguments\":\"{}\"}"
+  ]
+}

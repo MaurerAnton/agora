@@ -1,0 +1,26 @@
+{
+  "name": "norm_inline_thinking",
+  "mode": "normalizer",
+  "tools": [
+    "calc",
+    "search"
+  ],
+  "events": [
+    {
+      "type": "text",
+      "text": "Before "
+    },
+    {
+      "type": "text",
+      "text": "<thinking> reasoning </thinking>"
+    },
+    {
+      "type": "text",
+      "text": " after."
+    },
+    {
+      "type": "text",
+      "text": "<|end|>done"
+    }
+  ]
+}

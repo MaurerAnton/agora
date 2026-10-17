@@ -1,0 +1,4 @@
+name|accum_snapshot_growing
+mode|accumulator
+value|{"a":1}{"a":12}
+empty|0

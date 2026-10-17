@@ -1,0 +1,5 @@
+name|norm_tagged_residual_text
+mode|normalizer
+toolCalls|2
+toolCall|call_text_<uuid>|calc|{}|-|text_tool_<uuid>|0
+toolCall|call_malformed_<uuid>|agora_malformed_tool_call|{"error":"Tagged tool payload contained ordinary text","original_arguments":"leftover text"}|-|malformed_tool_<uuid>|0

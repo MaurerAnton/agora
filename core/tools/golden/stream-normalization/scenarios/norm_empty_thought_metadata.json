@@ -1,0 +1,18 @@
+{
+  "name": "norm_empty_thought_metadata",
+  "mode": "normalizer",
+  "tools": [
+    "calc",
+    "search"
+  ],
+  "events": [
+    {
+      "type": "thought",
+      "title": "Only title"
+    },
+    {
+      "type": "text",
+      "text": "ok"
+    }
+  ]
+}

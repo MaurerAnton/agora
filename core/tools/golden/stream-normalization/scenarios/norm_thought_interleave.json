@@ -1,0 +1,22 @@
+{
+  "name": "norm_thought_interleave",
+  "mode": "normalizer",
+  "tools": [
+    "calc",
+    "search"
+  ],
+  "events": [
+    {
+      "type": "text",
+      "text": "<thinking>shared reasoning</thinking> tail"
+    },
+    {
+      "type": "thought",
+      "thought": "shared reasoning"
+    },
+    {
+      "type": "text",
+      "text": " after"
+    }
+  ]
+}

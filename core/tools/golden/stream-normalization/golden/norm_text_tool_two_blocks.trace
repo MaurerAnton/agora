@@ -1,0 +1,6 @@
+name|norm_text_tool_two_blocks
+mode|normalizer
+toolCalls|3
+toolCall|call_text_<uuid>|calc|{}|-|text_tool_<uuid>|0
+toolCall|call_text_<uuid>|search|{"q":"x"}|-|text_tool_<uuid>|0
+toolCall|call_malformed_<uuid>|agora_malformed_tool_call|{"error":"Tagged tool payload contained ordinary text","original_arguments":" then "}|-|malformed_tool_<uuid>|0

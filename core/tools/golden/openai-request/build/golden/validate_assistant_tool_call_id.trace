@@ -1,4 +1,0 @@
-name|validate_assistant_tool_call_id
-kind|openai
-mode|validate
-error|RequestFormatException|OpenAI request validation failed: messages[1] assistant message has tool_call_id

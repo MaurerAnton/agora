@@ -1,0 +1,11 @@
+{
+  "name": "norm_no_tools_passthrough",
+  "mode": "normalizer",
+  "tools": [],
+  "events": [
+    {
+      "type": "text",
+      "text": "<tool_call>{\"name\":\"calc\",\"arguments\":\"{}\"}</tool_call>"
+    }
+  ]
+}

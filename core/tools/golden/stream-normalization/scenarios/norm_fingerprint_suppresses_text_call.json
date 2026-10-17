@@ -1,0 +1,20 @@
+{
+  "name": "norm_fingerprint_suppresses_text_call",
+  "mode": "normalizer",
+  "tools": [
+    "calc",
+    "search"
+  ],
+  "events": [
+    {
+      "type": "toolCall",
+      "id": "call_a",
+      "name": "calc",
+      "arguments": "{\"b\":2,\"a\":1}"
+    },
+    {
+      "type": "text",
+      "text": "<tool_call>{\"name\":\"calc\",\"arguments\":\"{\\\"a\\\": 1, \\\"b\\\": 2}\"}</tool_call>"
+    }
+  ]
+}

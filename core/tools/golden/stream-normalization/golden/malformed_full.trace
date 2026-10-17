@@ -1,0 +1,4 @@
+name|malformed_full
+mode|malformed
+event|call_malformed_<uuid>|agora_malformed_tool_call|{"error":"arguments were cut off","original_name":"calc","original_arguments":"{\\"a\\":1}"}|sig|malformed_tool_<uuid>
+result|Error: the previous tool call was malformed and was not executed. Cause: arguments were cut off. Tool name as sent: calc. Arguments as sent: {"a":1}. Re-issue the call with one of the offered tool names and a complete JSON object as arguments. If the arguments were cut off, send a smaller payload.

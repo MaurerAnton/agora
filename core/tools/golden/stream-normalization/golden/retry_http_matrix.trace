@@ -1,0 +1,6 @@
+name|retry_http_matrix
+mode|retry
+delay|5000
+upstreamFailure|0
+retryHttp|1
+streamRetry|0

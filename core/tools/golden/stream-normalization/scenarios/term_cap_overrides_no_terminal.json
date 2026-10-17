@@ -1,0 +1,6 @@
+{
+  "name": "term_cap_overrides_no_terminal",
+  "mode": "termination",
+  "sawTerminalMarker": false,
+  "stopReason": "length"
+}

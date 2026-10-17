@@ -1,0 +1,8 @@
+{
+  "name": "retry_http_body",
+  "mode": "retry",
+  "retryNumber": 1,
+  "statusCode": 401,
+  "body": "failed to generate: upstream",
+  "streamErrorMessage": "unrelated"
+}

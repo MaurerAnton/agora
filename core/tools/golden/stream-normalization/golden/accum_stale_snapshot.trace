@@ -1,0 +1,4 @@
+name|accum_stale_snapshot
+mode|accumulator
+value|{"key_aaaaaaaaaaaaaaaaaaaaaa":1}
+empty|0

@@ -1,0 +1,5 @@
+name|norm_passthrough_events
+mode|normalizer
+usage|42|-
+retrying|1|5
+text|end

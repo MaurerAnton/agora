@@ -1,0 +1,4 @@
+name|norm_native_call_passthrough
+mode|normalizer
+toolCall|call_a|calc|{"a":1}|-|call_a|0
+text|done

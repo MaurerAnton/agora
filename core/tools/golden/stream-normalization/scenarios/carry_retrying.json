@@ -1,0 +1,11 @@
+{
+  "name": "carry_retrying",
+  "mode": "carriesOutput",
+  "events": [
+    {
+      "type": "retrying",
+      "attempt": 1,
+      "maxAttempts": 5
+    }
+  ]
+}

@@ -1,0 +1,5 @@
+{
+  "name": "malformed_bare",
+  "mode": "malformed",
+  "cause": "unparsable payload"
+}

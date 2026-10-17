@@ -1,0 +1,6 @@
+{
+  "name": "term_stream_error_retryable",
+  "mode": "termination",
+  "hasStreamError": true,
+  "streamErrorMessage": "The server response could not be read"
+}

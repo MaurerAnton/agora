@@ -1,0 +1,3 @@
+name|parsep_xml_namespaced
+mode|toolParser
+call|-|calc|{"a":"1"}

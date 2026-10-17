@@ -1,0 +1,10 @@
+{
+  "name": "think_disabled_feed",
+  "mode": "thinkingParser",
+  "thinkingEnabled": false,
+  "chunks": [
+    "<think",
+    "ing>hidden",
+    "</thinking>shown"
+  ]
+}

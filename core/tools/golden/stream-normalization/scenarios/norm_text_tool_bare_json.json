@@ -1,0 +1,18 @@
+{
+  "name": "norm_text_tool_bare_json",
+  "mode": "normalizer",
+  "tools": [
+    "calc",
+    "search"
+  ],
+  "events": [
+    {
+      "type": "text",
+      "text": "{\"name\":\"calc\","
+    },
+    {
+      "type": "text",
+      "text": "\"arguments\":\"{}\"}"
+    }
+  ]
+}

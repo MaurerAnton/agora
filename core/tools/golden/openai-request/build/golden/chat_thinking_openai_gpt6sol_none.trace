@@ -1,5 +1,0 @@
-name|chat_thinking_openai_gpt6sol_none
-kind|openai
-mode|factory
-apiMessages|[{"role":"user","content":[{"type":"text","text":"hi"}]}]
-body|{"model":"gpt-6-sol","messages":[{"role":"user","content":[{"type":"text","text":"hi"}]}],"stream":true,"stream_options":{"include_usage":true},"reasoning_effort":"none"}

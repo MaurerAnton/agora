@@ -1,0 +1,5 @@
+{
+  "name": "parsep_parameters_key",
+  "mode": "toolParser",
+  "content": "<tool_call>{\"name\":\"calc\",\"parameters\":\"{}\"}</tool_call>"
+}

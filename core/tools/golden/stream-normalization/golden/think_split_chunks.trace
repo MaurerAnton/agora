@@ -1,0 +1,15 @@
+name|think_split_chunks
+mode|thinkingParser
+chunk|0
+pending|<think
+chunk|1
+thought|secret
+pending|
+chunk|2
+pending|</think
+chunk|3
+text|tail
+pending|
+flush
+pending|
+inThinking|0

@@ -1,0 +1,6 @@
+{
+  "name": "term_reported_error",
+  "mode": "termination",
+  "sawTerminalMarker": false,
+  "alreadyReportedError": true
+}

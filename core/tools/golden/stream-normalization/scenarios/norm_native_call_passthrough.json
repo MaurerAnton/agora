@@ -1,0 +1,20 @@
+{
+  "name": "norm_native_call_passthrough",
+  "mode": "normalizer",
+  "tools": [
+    "calc",
+    "search"
+  ],
+  "events": [
+    {
+      "type": "toolCall",
+      "id": "call_a",
+      "name": "calc",
+      "arguments": "{\"a\":1}"
+    },
+    {
+      "type": "text",
+      "text": "done"
+    }
+  ]
+}

@@ -1,5 +1,0 @@
-name|prepare_appends_compact_continuation
-mode|prepare
-msg|0|context_summary_compact_ok|-|USER|SUCCESS|<context_summary>\nthe compacted summary\n</context_summary>\n\nPlease continue.||-|-|0|-|-|[]|-|[]
-msg|1|model_1|-|MODEL|SUCCESS|continuing||-|-|0|-|-|[]|-|[]
-msg|2|user_2|-|USER|SUCCESS|and now||-|-|0|-|-|[]|-|[]

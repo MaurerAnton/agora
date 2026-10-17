@@ -1,0 +1,12 @@
+{
+  "name": "carry_tool_call",
+  "mode": "carriesOutput",
+  "events": [
+    {
+      "type": "toolCall",
+      "id": "call_a",
+      "name": "calc",
+      "arguments": "{}"
+    }
+  ]
+}

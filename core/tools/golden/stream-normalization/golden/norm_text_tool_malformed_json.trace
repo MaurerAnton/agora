@@ -1,0 +1,3 @@
+name|norm_text_tool_malformed_json
+mode|normalizer
+toolCall|call_malformed_<uuid>|agora_malformed_tool_call|{"error":"Whole-content tool payload was malformed","original_arguments":"{\\"name\\":\\"calc\\",\\"arguments\\":{broken}"}|-|malformed_tool_<uuid>|0

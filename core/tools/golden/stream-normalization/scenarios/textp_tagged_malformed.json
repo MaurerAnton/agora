@@ -1,0 +1,7 @@
+{
+  "name": "textp_tagged_malformed",
+  "mode": "textParser",
+  "chunks": [
+    "<tool_call>{\"name\":\"calc\",\"arguments\":{broken}</tool_call>"
+  ]
+}

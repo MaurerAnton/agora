@@ -1,5 +1,0 @@
-name|compact_projection_raw
-mode|compactProjection
-msg|0|context_summary_compact_ok|-|USER|SUCCESS|  the summary  ||-|-|0|-|-|[]|-|[]
-msg|1|model_1|-|MODEL|SUCCESS|after||-|-|0|-|-|[]|-|[]
-msg|2|user_2|-|USER|SUCCESS|tail||-|-|0|-|-|[]|-|[]

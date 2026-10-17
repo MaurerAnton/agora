@@ -1,0 +1,5 @@
+name|term_timeout
+mode|termination
+truncated|0
+retryable|1
+error|Timeout

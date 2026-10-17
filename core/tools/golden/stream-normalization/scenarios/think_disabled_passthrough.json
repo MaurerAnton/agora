@@ -1,0 +1,9 @@
+{
+  "name": "think_disabled_passthrough",
+  "mode": "thinkingParser",
+  "chunks": [
+    "plain ",
+    "thinking ",
+    "</thinking> tail"
+  ]
+}

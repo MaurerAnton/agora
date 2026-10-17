@@ -1,0 +1,5 @@
+name|term_stream_error_retryable_terminal
+mode|termination
+truncated|0
+retryable|1
+error|api|-|relay|some relay failure

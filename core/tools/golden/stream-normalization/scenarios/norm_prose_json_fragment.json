@@ -1,0 +1,14 @@
+{
+  "name": "norm_prose_json_fragment",
+  "mode": "normalizer",
+  "tools": [
+    "calc",
+    "search"
+  ],
+  "events": [
+    {
+      "type": "text",
+      "text": "The result {\"name\":\"not a tool\"} stays prose."
+    }
+  ]
+}

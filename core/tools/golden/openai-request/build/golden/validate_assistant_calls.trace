@@ -1,4 +1,0 @@
-name|validate_assistant_calls
-kind|openai
-mode|validate
-error|RequestFormatException|OpenAI request validation failed: messages[0].tool_calls[0] id is not wire-safe\s messages[0].tool_calls[0] type is not function\s messages[0].tool_calls[0] name is not wire-safe\s messages[0].tool_calls[0] arguments are not a JSON object\s messages[0] tool-call content must be null or substantive\s tool calls are missing results\s history does not end in user/tool input

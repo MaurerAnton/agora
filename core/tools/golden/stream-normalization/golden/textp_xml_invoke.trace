@@ -1,0 +1,5 @@
+name|textp_xml_invoke
+mode|textParser
+update|text_tool_<uuid>||
+update|text_tool_<uuid>|calc|{"a":"1"}
+complete|text_tool_<uuid>|-|calc|{"a":"1"}

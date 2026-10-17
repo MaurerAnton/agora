@@ -1,0 +1,5 @@
+{
+  "name": "closeb_channel_marker",
+  "mode": "closeBoundary",
+  "text": "reasoning <|channel|>final<|message|> tail"
+}

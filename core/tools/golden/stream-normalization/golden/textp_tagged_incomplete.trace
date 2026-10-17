@@ -1,0 +1,4 @@
+name|textp_tagged_incomplete
+mode|textParser
+update|text_tool_<uuid>||
+malformed|Provider ended before the tagged tool call was complete

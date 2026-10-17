@@ -1,0 +1,5 @@
+{
+  "name": "parsep_xml_unsafe_id",
+  "mode": "toolParser",
+  "content": "<invoke id=\"bad id\" name=\"calc\"><parameter name=\"a\">1</parameter></invoke>"
+}

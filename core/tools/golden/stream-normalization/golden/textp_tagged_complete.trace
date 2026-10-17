@@ -1,0 +1,7 @@
+name|textp_tagged_complete
+mode|textParser
+text|I will call. 
+update|text_tool_<uuid>||
+update|text_tool_<uuid>|calc|{"a":1}
+complete|text_tool_<uuid>|-|calc|{"a":1}
+text| Done.

@@ -1,4 +1,0 @@
-name|chat_error_whitespace_text
-kind|openai
-mode|factory
-error|RequestFormatException|OpenAI request validation failed: messages[0] user content is empty

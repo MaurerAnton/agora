@@ -24,6 +24,10 @@ add_library(agora_core_lib STATIC
     src/openai_stream.cpp
     src/openai_stream_codec.cpp
     src/sha256.cpp
+    src/stream_normalization.cpp
+    src/stream_normalization_normalizer.cpp
+    src/stream_normalization_text_tools.cpp
+    src/stream_normalization_thinking.cpp
     src/text_counter.cpp
     src/token_count.cpp
     src/unicode.cpp

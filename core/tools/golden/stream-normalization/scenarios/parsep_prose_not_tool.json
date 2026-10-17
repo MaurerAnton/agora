@@ -1,0 +1,5 @@
+{
+  "name": "parsep_prose_not_tool",
+  "mode": "toolParser",
+  "content": "plain prose with \"name\" inside"
+}

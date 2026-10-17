@@ -1,9 +1,0 @@
-name|units_atomic_rounds
-mode|units
-unit|user_1
-unit|model_1
-unit|tool_1,result_1
-unit|user_2
-unit|model_2
-unit|tool_2,result_2a,result_2b
-unit|user_3

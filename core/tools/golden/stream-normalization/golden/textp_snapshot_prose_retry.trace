@@ -1,0 +1,4 @@
+name|textp_snapshot_prose_retry
+mode|textParser
+update|text_tool_<uuid>||
+malformed|Provider ended before the JSON tool call was complete

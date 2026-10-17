@@ -1,0 +1,4 @@
+name|parsep_array_atomic
+mode|toolParser
+call|-|calc|{}
+call|-|search|{}

@@ -1,5 +1,0 @@
-name|chat_thinking_qwen_default
-kind|qwen
-mode|factory
-apiMessages|[{"role":"user","content":[{"type":"text","text":"hi"}]}]
-body|{"model":"qwen3-30b-a3b","messages":[{"role":"user","content":[{"type":"text","text":"hi"}]}],"stream":true,"stream_options":{"include_usage":true},"enable_thinking":true}

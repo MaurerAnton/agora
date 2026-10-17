@@ -1,0 +1,5 @@
+{
+  "name": "parsep_xml_entities",
+  "mode": "toolParser",
+  "content": "<invoke name=\"calc\"><parameter name=\"a\">&lt;b&gt;&amp;c</parameter></invoke>"
+}

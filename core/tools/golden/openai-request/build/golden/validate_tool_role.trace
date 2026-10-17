@@ -1,4 +1,0 @@
-name|validate_tool_role
-kind|openai
-mode|validate
-error|RequestFormatException|OpenAI request validation failed: messages[3] tool content is absent\s messages[4] tool_call_id is blank\s messages[5] does not match a pending tool call\s messages[5] tool message carries tool_calls

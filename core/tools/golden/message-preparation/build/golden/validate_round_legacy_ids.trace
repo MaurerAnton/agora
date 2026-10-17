@@ -1,5 +1,0 @@
-name|validate_round_legacy_ids
-mode|validateTools
-msg|0|user_1|-|USER|SUCCESS|go||-|-|0|-|-|[]|-|[]
-msg|1|tool_1|-|MODEL|SUCCESS|||-|-|0|-|-|[{"type":"tool","content":"","toolName":"search","toolArgs":"{\\"q\\":\\"x\\"}","toolCallId":"call_search_tool_1_0_db5dcfd34b05c4ac","responseOutputItems":0}]|-|[]
-msg|2|result_1|-|USER|SUCCESS|||-|-|0|-|-|[{"type":"tool","content":"","toolName":"search","toolArgs":"{\\"q\\":\\"x\\"}","toolResult":"found","toolCallId":"call_search_tool_1_0_db5dcfd34b05c4ac","responseOutputItems":0}]|-|[]

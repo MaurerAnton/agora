@@ -1,0 +1,7 @@
+{
+  "name": "think_fence_protection",
+  "mode": "thinkingParser",
+  "chunks": [
+    "```\n<thinking>\n```\nreal "
+  ]
+}

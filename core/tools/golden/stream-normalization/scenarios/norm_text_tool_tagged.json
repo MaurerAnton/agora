@@ -1,0 +1,22 @@
+{
+  "name": "norm_text_tool_tagged",
+  "mode": "normalizer",
+  "tools": [
+    "calc",
+    "search"
+  ],
+  "events": [
+    {
+      "type": "text",
+      "text": "Let me check."
+    },
+    {
+      "type": "text",
+      "text": "<tool_call>{\"name\":\"calc\",\"arguments\":\"{\\\"a\\\": 2}\"}</tool_call>"
+    },
+    {
+      "type": "text",
+      "text": "Done."
+    }
+  ]
+}

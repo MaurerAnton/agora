@@ -41,3 +41,7 @@ AGENTS.md
 
 # Golden harness scratch builds (classes, transcripts output)
 core/tools/golden/openai/build/
+core/tools/golden/openai-request/build/
+core/tools/golden/message-preparation/build/
+core/tools/golden/stream-normalization/build/
+core/tools/golden/*/__pycache__/

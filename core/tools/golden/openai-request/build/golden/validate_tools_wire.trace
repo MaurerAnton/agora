@@ -1,4 +1,0 @@
-name|validate_tools_wire
-kind|openai
-mode|validate
-error|RequestFormatException|OpenAI request validation failed: duplicate tool name dup\s tools[2].type must be function

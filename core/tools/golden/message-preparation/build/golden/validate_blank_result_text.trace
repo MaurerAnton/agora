@@ -1,4 +1,0 @@
-name|validate_blank_result_text
-mode|validateTools
-msg|0|tool_1|-|MODEL|SUCCESS|||-|-|0|-|-|[{"type":"tool","content":"","toolName":"calc","toolArgs":"{}","toolCallId":"call_a","responseOutputItems":0}]|-|[]
-msg|1|result_1|-|USER|SUCCESS|ignored||-|-|0|-|-|[{"type":"tool","content":"","toolName":"calc","toolArgs":"{}","toolResult":"[Tool returned no textual output]","toolCallId":"call_a","responseOutputItems":0}]|-|[]

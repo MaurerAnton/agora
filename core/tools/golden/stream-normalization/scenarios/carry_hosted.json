@@ -1,0 +1,11 @@
+{
+  "name": "carry_hosted",
+  "mode": "carriesOutput",
+  "events": [
+    {
+      "type": "hosted",
+      "streamKey": "k",
+      "name": "web"
+    }
+  ]
+}

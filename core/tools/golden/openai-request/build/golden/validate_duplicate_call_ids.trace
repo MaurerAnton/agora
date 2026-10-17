@@ -1,4 +1,0 @@
-name|validate_duplicate_call_ids
-kind|openai
-mode|validate
-error|RequestFormatException|OpenAI request validation failed: messages[0].tool_calls[1] reuses tool call id call_1\s messages[0].tool_calls[1] duplicates tool call id call_1\s messages[1] interrupts pending tool results\s tool calls are missing results

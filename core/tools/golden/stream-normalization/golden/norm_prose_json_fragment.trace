@@ -1,0 +1,3 @@
+name|norm_prose_json_fragment
+mode|normalizer
+text|The result {"name":"not a tool"} stays prose.

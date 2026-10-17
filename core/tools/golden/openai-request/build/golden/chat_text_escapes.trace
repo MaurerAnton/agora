@@ -1,5 +1,0 @@
-name|chat_text_escapes
-kind|openai
-mode|factory
-apiMessages|[{"role":"user","content":[{"type":"text","text":"quote \\" back \\\\ nl \\n cr \\r tab \\t bs \\b ff \\f soh \\u0001 us \\u001f del  cjk 图像 emoji 🙂 sep   lsep   done"}]}]
-body|{"model":"gpt-4.1","messages":[{"role":"user","content":[{"type":"text","text":"quote \\" back \\\\ nl \\n cr \\r tab \\t bs \\b ff \\f soh \\u0001 us \\u001f del  cjk 图像 emoji 🙂 sep   lsep   done"}]}],"stream":true,"stream_options":{"include_usage":true},"reasoning_effort":"medium"}

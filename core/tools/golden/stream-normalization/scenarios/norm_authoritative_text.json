@@ -1,0 +1,15 @@
+{
+  "name": "norm_authoritative_text",
+  "mode": "normalizer",
+  "tools": [
+    "calc",
+    "search"
+  ],
+  "nativeTextParsingAuthoritative": true,
+  "events": [
+    {
+      "type": "text",
+      "text": "<tool_call>{\"name\":\"calc\",\"arguments\":\"{}\"}</tool_call>"
+    }
+  ]
+}

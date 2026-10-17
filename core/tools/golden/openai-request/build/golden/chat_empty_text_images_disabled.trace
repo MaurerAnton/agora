@@ -1,5 +1,0 @@
-name|chat_empty_text_images_disabled
-kind|openai
-mode|factory
-apiMessages|[{"role":"user","content":[{"type":"text","text":"[Attachment unavailable]"}]}]
-body|{"model":"gpt-4.1","messages":[{"role":"user","content":[{"type":"text","text":"[Attachment unavailable]"}]}],"stream":true,"stream_options":{"include_usage":true},"reasoning_effort":"medium"}

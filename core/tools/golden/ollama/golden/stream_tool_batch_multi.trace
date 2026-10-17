@@ -1,0 +1,8 @@
+name|stream_tool_batch_multi
+mode|stream
+toolCallUpdate|streamKey=call_stream_<uuid>|id=call_1|name=one|args={"a":1}|signature=-
+toolCallUpdate|streamKey=call_stream_<uuid>|id=call_2|name=two|args={"b":2}|signature=-
+toolCalls|calls=id=call_1~name=one~args={"a":1}~streamKey=call_stream_<uuid>;id=call_2~name=two~args={"b":2}~streamKey=call_stream_<uuid>
+usage|total=0|input=-|cached=-|cacheWrite=-|uncached=-|output=-|reasoning=-
+term|sawDone=1|stop=stop|produced=1|inFlight=0
+streamError|none

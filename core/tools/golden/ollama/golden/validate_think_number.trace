@@ -1,0 +1,3 @@
+name|validate_think_number
+mode|validate
+error|RequestFormatException|Ollama request validation failed: think must be a Boolean or low/medium/high

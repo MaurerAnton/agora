@@ -1,0 +1,3 @@
+name|ollama_empty_messages_rejected
+mode|factory
+error|RequestFormatException|Ollama request validation failed: messages is empty\s history does not start with user\s history does not end in user/tool input

@@ -13,6 +13,7 @@
 #include "agora/core/gemini_request.hpp"
 #include "agora/core/json.hpp"
 #include "agora/core/stream_normalization.hpp"
+#include "agora/core/token_usage.hpp"
 
 namespace agora::core::gemini_stream {
 
@@ -29,17 +30,11 @@ struct DecodeFailure {
 };
 
 // ---------------------------------------------------------------------------------------------
-// TokenUsage — model/TokenUsage.kt, the shape ApiUsageMetadata.toTokenUsage() produces.
+// TokenUsage — model/TokenUsage.kt, the shape ApiUsageMetadata.toTokenUsage() produces (shared
+// across the stream router modules; see token_usage.hpp).
 // ---------------------------------------------------------------------------------------------
 
-struct TokenUsage {
-    std::int32_t total_token_count = 0;
-    std::optional<std::int32_t> input_token_count;
-    std::optional<std::int32_t> cached_input_token_count;
-    std::optional<std::int32_t> uncached_input_token_count;
-    std::optional<std::int32_t> output_token_count;
-    std::optional<std::int32_t> reasoning_token_count;
-};
+using TokenUsage = agora::core::TokenUsage;
 
 // ---------------------------------------------------------------------------------------------
 // Response-side wire models — GeminiWireModels.kt (the response half of the stand compiles the

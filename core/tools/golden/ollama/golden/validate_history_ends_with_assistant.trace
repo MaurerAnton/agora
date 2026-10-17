@@ -1,0 +1,3 @@
+name|validate_history_ends_with_assistant
+mode|validate
+error|RequestFormatException|Ollama request validation failed: history does not end in user/tool input

@@ -1,0 +1,8 @@
+name|stream_tool_duplicate_id_in_batch
+mode|stream
+toolCallUpdate|streamKey=call_stream_<uuid>|id=call_1|name=one|args={}|signature=-
+toolCallUpdate|streamKey=call_stream_<uuid>|id=call_1|name=two|args={}|signature=-
+toolCalls|calls=id=call_1~name=one~args={}~streamKey=call_stream_<uuid>;id=call_malformed_<uuid>~name=agora_malformed_tool_call~args={"error":"Ollama returned incomplete or duplicate tool metadata","original_name":"two","original_arguments":"{}"}~streamKey=call_stream_<uuid>
+usage|total=0|input=-|cached=-|cacheWrite=-|uncached=-|output=-|reasoning=-
+term|sawDone=1|stop=stop|produced=1|inFlight=0
+streamError|none

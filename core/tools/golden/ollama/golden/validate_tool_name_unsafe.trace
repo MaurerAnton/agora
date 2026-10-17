@@ -1,0 +1,3 @@
+name|validate_tool_name_unsafe
+mode|validate
+error|RequestFormatException|Ollama request validation failed: messages[0] tool_name is not wire-safe\s history does not start with user

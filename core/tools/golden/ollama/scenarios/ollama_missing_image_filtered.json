@@ -1,0 +1,17 @@
+{
+  "name": "ollama_missing_image_filtered",
+  "mode": "factory",
+  "config": {},
+  "requestInput": {
+    "messages": [
+      {
+        "id": "user_1",
+        "participant": "USER",
+        "text": "look",
+        "images": [
+          "files/missing.png"
+        ]
+      }
+    ]
+  }
+}

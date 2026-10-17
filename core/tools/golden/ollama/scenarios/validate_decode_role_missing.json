@@ -1,0 +1,12 @@
+{
+  "name": "validate_decode_role_missing",
+  "mode": "validate",
+  "request": {
+    "model": "llama3.2:3b",
+    "messages": [
+      {
+        "content": "hi"
+      }
+    ]
+  }
+}

@@ -1,0 +1,4 @@
+name|ollama_tools_wire
+mode|factory
+apiMessages|[{"role":"user","content":"Go"}]
+body|{"model":"llama3.2:3b","messages":[{"role":"user","content":"Go"}],"stream":true,"tools":[{"type":"function","function":{"name":"get_weather","description":"Get current weather for a location","parameters":{"type":"object","properties":{"location":{"type":"string","description":"City and state"}},"required":["location"]}}}],"think":true}

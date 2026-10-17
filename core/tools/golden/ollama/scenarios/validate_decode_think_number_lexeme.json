@@ -1,0 +1,14 @@
+{
+  "name": "validate_decode_think_number_lexeme",
+  "mode": "validate",
+  "request": {
+    "model": "llama3.2:3b",
+    "think": 1.5,
+    "messages": [
+      {
+        "role": "user",
+        "content": "hi"
+      }
+    ]
+  }
+}

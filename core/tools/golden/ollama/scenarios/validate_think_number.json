@@ -1,0 +1,14 @@
+{
+  "name": "validate_think_number",
+  "mode": "validate",
+  "request": {
+    "model": "llama3.2:3b",
+    "think": 42,
+    "messages": [
+      {
+        "role": "user",
+        "content": "hi"
+      }
+    ]
+  }
+}

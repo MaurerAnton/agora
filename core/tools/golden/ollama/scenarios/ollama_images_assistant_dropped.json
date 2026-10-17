@@ -1,0 +1,22 @@
+{
+  "name": "ollama_images_assistant_dropped",
+  "mode": "factory",
+  "config": {},
+  "requestInput": {
+    "messages": [
+      {
+        "id": "user_1",
+        "participant": "USER",
+        "text": "draw"
+      },
+      {
+        "id": "model_1",
+        "participant": "MODEL",
+        "text": "done",
+        "images": [
+          "files/a.png"
+        ]
+      }
+    ]
+  }
+}

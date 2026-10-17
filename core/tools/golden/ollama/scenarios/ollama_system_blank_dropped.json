@@ -1,0 +1,15 @@
+{
+  "name": "ollama_system_blank_dropped",
+  "mode": "factory",
+  "config": {},
+  "requestInput": {
+    "messages": [
+      {
+        "id": "user_1",
+        "participant": "USER",
+        "text": "Hello"
+      }
+    ],
+    "systemPrompt": "   "
+  }
+}

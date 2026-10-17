@@ -1,0 +1,8 @@
+name|stream_tool_batch_single
+mode|stream
+toolCallUpdate|streamKey=call_stream_<uuid>|id=call_1|name=get_weather|args={"location":"Oslo"}|signature=-
+toolCall|id=call_1|name=get_weather|args={"location":"Oslo"}|streamKey=call_stream_<uuid>|signature=-
+text|checking
+usage|total=0|input=-|cached=-|cacheWrite=-|uncached=-|output=-|reasoning=-
+term|sawDone=1|stop=stop|produced=1|inFlight=0
+streamError|none

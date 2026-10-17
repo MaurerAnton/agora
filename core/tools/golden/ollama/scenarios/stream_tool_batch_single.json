@@ -1,0 +1,9 @@
+{
+  "name": "stream_tool_batch_single",
+  "mode": "stream",
+  "ops": [
+    "L {\"message\":{\"role\":\"assistant\",\"content\":\"\",\"tool_calls\":[{\"id\":\"call_1\",\"type\":\"function\",\"function\":{\"name\":\"get_weather\",\"arguments\":{\"location\":\"Oslo\"}}}]}}",
+    "L {\"message\":{\"role\":\"assistant\",\"content\":\"checking\"},\"done\":true,\"done_reason\":\"stop\"}",
+    "E"
+  ]
+}

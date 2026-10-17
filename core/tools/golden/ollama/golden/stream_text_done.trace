@@ -1,0 +1,7 @@
+name|stream_text_done
+mode|stream
+text|Hel
+text|lo
+usage|total=15|input=10|cached=-|cacheWrite=-|uncached=-|output=5|reasoning=-
+term|sawDone=1|stop=stop|produced=1|inFlight=0
+streamError|none

@@ -1,0 +1,4 @@
+name|ollama_tool_round_legacy
+mode|factory
+apiMessages|[{"role":"user","content":"Weather?"},{"role":"assistant","content":"","tool_calls":[{"id":"call_l","type":"function","function":{"name":"get_weather","arguments":{"location":"Oslo"}}}]},{"role":"tool","content":"Sunny","tool_name":"get_weather"},{"role":"user","content":"Thanks!"}]
+body|{"model":"llama3.2:3b","messages":[{"role":"user","content":"Weather?"},{"role":"assistant","content":"","tool_calls":[{"id":"call_l","type":"function","function":{"name":"get_weather","arguments":{"location":"Oslo"}}}]},{"role":"tool","content":"Sunny","tool_name":"get_weather"},{"role":"user","content":"Thanks!"}],"stream":true,"tools":[{"type":"function","function":{"name":"get_weather","description":"Get current weather for a location","parameters":{"type":"object","properties":{"location":{"type":"string","description":"City and state"}},"required":["location"]}}}],"think":true}

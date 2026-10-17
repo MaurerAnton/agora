@@ -1,0 +1,3 @@
+name|validate_system_with_tool_fields
+mode|validate
+error|RequestFormatException|Ollama request validation failed: messages[0] system message carries tool fields\s history does not start with user\s history does not end in user/tool input

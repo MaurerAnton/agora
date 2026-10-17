@@ -1,0 +1,6 @@
+name|stream_done_reason_normalized
+mode|stream
+text|hi
+usage|total=0|input=-|cached=-|cacheWrite=-|uncached=-|output=-|reasoning=-
+term|sawDone=1|stop=custom stop|produced=1|inFlight=0
+streamError|none

@@ -1,0 +1,9 @@
+{
+  "name": "stream_tool_batch_damaged",
+  "mode": "stream",
+  "ops": [
+    "L {\"message\":{\"role\":\"assistant\",\"content\":\"\",\"tool_calls\":[{\"id\":\"call_1\",\"type\":\"function\",\"function\":{\"name\":\"good\",\"arguments\":{\"a\":1}}},{\"id\":\"call_2\",\"type\":\"function\",\"function\":{\"name\":\"bad name\",\"arguments\":{}}},{\"id\":\"call_3\",\"type\":\"function\",\"function\":{\"name\":\"weird\",\"arguments\":\"not json\"}}]}}",
+    "L {\"done\":true,\"done_reason\":\"stop\"}",
+    "E"
+  ]
+}

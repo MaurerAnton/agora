@@ -1,0 +1,23 @@
+{
+  "name": "validate_user_carries_tool_fields",
+  "mode": "validate",
+  "request": {
+    "model": "llama3.2:3b",
+    "messages": [
+      {
+        "role": "user",
+        "content": "hi",
+        "tool_calls": [
+          {
+            "id": "call_1",
+            "type": "function",
+            "function": {
+              "name": "x",
+              "arguments": {}
+            }
+          }
+        ]
+      }
+    ]
+  }
+}

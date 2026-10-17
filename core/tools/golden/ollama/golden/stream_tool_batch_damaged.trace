@@ -1,0 +1,9 @@
+name|stream_tool_batch_damaged
+mode|stream
+toolCallUpdate|streamKey=call_stream_<uuid>|id=call_1|name=good|args={"a":1}|signature=-
+toolCallUpdate|streamKey=call_stream_<uuid>|id=call_2|name=bad name|args={}|signature=-
+toolCallUpdate|streamKey=call_stream_<uuid>|id=call_3|name=weird|args=not json|signature=-
+toolCalls|calls=id=call_1~name=good~args={"a":1}~streamKey=call_stream_<uuid>;id=call_malformed_<uuid>~name=agora_malformed_tool_call~args={"error":"Ollama returned incomplete or duplicate tool metadata","original_name":"bad name","original_arguments":"{}"}~streamKey=call_stream_<uuid>;id=call_malformed_<uuid>~name=agora_malformed_tool_call~args={"error":"Ollama returned incomplete or duplicate tool metadata","original_name":"weird","original_arguments":"not json"}~streamKey=call_stream_<uuid>
+usage|total=0|input=-|cached=-|cacheWrite=-|uncached=-|output=-|reasoning=-
+term|sawDone=1|stop=stop|produced=1|inFlight=0
+streamError|none

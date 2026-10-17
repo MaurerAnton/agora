@@ -1,0 +1,3 @@
+name|serialized_empty_messages
+mode|serialized
+error|RequestFormatException|Ollama request validation failed: serialized messages is absent or empty

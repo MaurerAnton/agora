@@ -1,0 +1,3 @@
+name|ollama_whitespace_user_rejected
+mode|factory
+error|RequestFormatException|Ollama request validation failed: messages[0] user content is empty

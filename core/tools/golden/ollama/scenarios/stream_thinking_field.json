@@ -1,0 +1,9 @@
+{
+  "name": "stream_thinking_field",
+  "mode": "stream",
+  "ops": [
+    "L {\"message\":{\"role\":\"assistant\",\"thinking\":\"Let me think.\"}}",
+    "L {\"message\":{\"role\":\"assistant\",\"content\":\"answer\"},\"done\":true,\"done_reason\":\"stop\",\"prompt_eval_count\":3,\"eval_count\":4}",
+    "E"
+  ]
+}

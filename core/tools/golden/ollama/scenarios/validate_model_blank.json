@@ -1,0 +1,13 @@
+{
+  "name": "validate_model_blank",
+  "mode": "validate",
+  "request": {
+    "model": "   ",
+    "messages": [
+      {
+        "role": "user",
+        "content": "hi"
+      }
+    ]
+  }
+}

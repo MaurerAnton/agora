@@ -1,0 +1,27 @@
+{
+  "name": "validate_user_interrupts_pending",
+  "mode": "validate",
+  "request": {
+    "model": "llama3.2:3b",
+    "messages": [
+      {
+        "role": "assistant",
+        "content": "",
+        "tool_calls": [
+          {
+            "id": "call_1",
+            "type": "function",
+            "function": {
+              "name": "get_weather",
+              "arguments": {}
+            }
+          }
+        ]
+      },
+      {
+        "role": "user",
+        "content": "interrupt"
+      }
+    ]
+  }
+}

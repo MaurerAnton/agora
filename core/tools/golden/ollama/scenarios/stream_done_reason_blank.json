@@ -1,0 +1,8 @@
+{
+  "name": "stream_done_reason_blank",
+  "mode": "stream",
+  "ops": [
+    "L {\"done\":true,\"done_reason\":\"   \"}",
+    "E"
+  ]
+}

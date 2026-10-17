@@ -1,0 +1,62 @@
+{
+  "name": "ollama_tool_round_legacy",
+  "mode": "factory",
+  "config": {
+    "tools": [
+      {
+        "type": "function",
+        "function": {
+          "name": "get_weather",
+          "description": "Get current weather for a location",
+          "parameters": {
+            "type": "object",
+            "properties": {
+              "location": {
+                "type": "string",
+                "description": "City and state"
+              }
+            },
+            "required": [
+              "location"
+            ]
+          }
+        }
+      }
+    ]
+  },
+  "requestInput": {
+    "messages": [
+      {
+        "id": "user_1",
+        "participant": "USER",
+        "text": "Weather?"
+      },
+      {
+        "id": "tool_1",
+        "participant": "MODEL",
+        "text": "",
+        "toolCall": {
+          "toolName": "get_weather",
+          "arguments": "{\"location\": \"Oslo\"}",
+          "result": "",
+          "toolCallId": "call_l"
+        }
+      },
+      {
+        "id": "result_1",
+        "participant": "USER",
+        "text": "",
+        "toolCall": {
+          "toolName": "get_weather",
+          "arguments": "{\"location\": \"Oslo\"}",
+          "result": "Sunny"
+        }
+      },
+      {
+        "id": "user_2",
+        "participant": "USER",
+        "text": "Thanks!"
+      }
+    ]
+  }
+}

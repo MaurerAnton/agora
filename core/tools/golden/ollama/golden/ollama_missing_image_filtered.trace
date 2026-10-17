@@ -1,0 +1,4 @@
+name|ollama_missing_image_filtered
+mode|factory
+apiMessages|[{"role":"user","content":"look"}]
+body|{"model":"llama3.2:3b","messages":[{"role":"user","content":"look"}],"stream":true,"think":true}

@@ -1,0 +1,9 @@
+{
+  "name": "stream_error_blank_ignored",
+  "mode": "stream",
+  "ops": [
+    "L {\"error\":\"   \"}",
+    "L {\"message\":{\"role\":\"assistant\",\"content\":\"kept\"},\"done\":true,\"done_reason\":\"STOP\"}",
+    "E"
+  ]
+}

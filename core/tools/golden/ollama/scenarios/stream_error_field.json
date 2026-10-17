@@ -1,0 +1,9 @@
+{
+  "name": "stream_error_field",
+  "mode": "stream",
+  "ops": [
+    "L {\"error\":\"model not loaded\"}",
+    "L {\"message\":{\"role\":\"assistant\",\"content\":\"late\"}}",
+    "E"
+  ]
+}

@@ -1,0 +1,16 @@
+{
+  "name": "ollama_think_default_true",
+  "mode": "factory",
+  "config": {
+    "modelId": "llama3.2:3b"
+  },
+  "requestInput": {
+    "messages": [
+      {
+        "id": "user_1",
+        "participant": "USER",
+        "text": "Hi"
+      }
+    ]
+  }
+}

@@ -1,0 +1,6 @@
+name|stream_error_blank_ignored
+mode|stream
+text|kept
+usage|total=0|input=-|cached=-|cacheWrite=-|uncached=-|output=-|reasoning=-
+term|sawDone=1|stop=stop|produced=1|inFlight=0
+streamError|none

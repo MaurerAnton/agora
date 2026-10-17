@@ -1,0 +1,5 @@
+name|stream_done_reason_blank
+mode|stream
+usage|total=0|input=-|cached=-|cacheWrite=-|uncached=-|output=-|reasoning=-
+term|sawDone=1|stop=-|produced=0|inFlight=0
+streamError|none

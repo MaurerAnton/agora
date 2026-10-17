@@ -1,0 +1,6 @@
+{
+  "name": "parse_single_quotes_everywhere",
+  "mode": "parse",
+  "html": "<a class='result-link' href='http://sq.example/'>Single</a><td class='result-snippet'>Snip sq</td>",
+  "maxResults": 5
+}

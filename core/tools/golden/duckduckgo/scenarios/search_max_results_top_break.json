@@ -1,0 +1,13 @@
+{
+  "name": "search_max_results_top_break",
+  "mode": "search",
+  "maxResults": 1,
+  "pages": [
+    {
+      "html": "<html><table><a \"class=\"result-link\" href=\"http://x/1\">One</a><a \"class=\"result-link\" href=\"http://x/2\">Two</a><a \"class=\"result-link\" href=\"http://x/3\">Three</a></table><form><input name=\"vqd\" value=\"tok\"></form><form><input name=\"s\" value=\"10\"></form>"
+    },
+    {
+      "html": "<html><table><a \"class=\"result-link\" href=\"http://x/4\">Four</a></table>"
+    }
+  ]
+}

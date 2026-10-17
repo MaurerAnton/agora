@@ -1,0 +1,6 @@
+{
+  "name": "parse_double_unescape",
+  "mode": "parse",
+  "html": "<html><table><a \"class=\"result-link\" href=\"http://x/\">A &amp;lt; B</a></table>",
+  "maxResults": 5
+}

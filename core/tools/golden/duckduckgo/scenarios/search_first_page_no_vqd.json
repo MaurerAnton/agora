@@ -1,0 +1,10 @@
+{
+  "name": "search_first_page_no_vqd",
+  "mode": "search",
+  "maxResults": 5,
+  "pages": [
+    {
+      "html": "<html><table><a \"class=\"result-link\" href=\"http://x/1\">One</a></table>"
+    }
+  ]
+}

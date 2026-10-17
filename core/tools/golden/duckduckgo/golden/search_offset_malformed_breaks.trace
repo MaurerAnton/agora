@@ -1,0 +1,4 @@
+name|search_offset_malformed_breaks
+mode|search
+result|One|http://x/1|
+response|success

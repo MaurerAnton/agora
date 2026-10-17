@@ -1,0 +1,7 @@
+name|search_pagination_two_pages
+mode|search
+result|One|http://x/1|
+result|Two|http://x/2|
+result|Three|http://x/3|
+result|Four|http://x/4|
+response|success

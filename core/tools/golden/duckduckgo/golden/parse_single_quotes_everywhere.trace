@@ -1,0 +1,3 @@
+name|parse_single_quotes_everywhere
+mode|parse
+result|Single|http://sq.example/|Snip sq

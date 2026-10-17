@@ -1,0 +1,3 @@
+name|parse_nested_anchor_text
+mode|parse
+result|AB|http://x/|

@@ -1,0 +1,6 @@
+{
+  "name": "parse_tags_stripped",
+  "mode": "parse",
+  "html": "<html><table><a \"class=\"result-link\" href=\"http://x/\"><b>Bold</b> plain <i>it</i></a><td \"class=\"result-snippet\"><span>snip</span> tail</td></table>",
+  "maxResults": 5
+}

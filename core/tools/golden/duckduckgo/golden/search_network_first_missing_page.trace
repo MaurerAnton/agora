@@ -1,0 +1,3 @@
+name|search_network_first_missing_page
+mode|search
+response|error|NETWORK_ERROR|Empty response body from DuckDuckGo.

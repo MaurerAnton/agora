@@ -1,0 +1,6 @@
+{
+  "name": "parse_mismatched_class_quotes",
+  "mode": "parse",
+  "html": "<a class='result-link\" href=\"http://odd.example/\">Odd</a>",
+  "maxResults": 5
+}

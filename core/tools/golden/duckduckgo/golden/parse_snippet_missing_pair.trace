@@ -1,0 +1,4 @@
+name|parse_snippet_missing_pair
+mode|parse
+result|One|http://x/1|Snip one
+result|Two|http://x/2|

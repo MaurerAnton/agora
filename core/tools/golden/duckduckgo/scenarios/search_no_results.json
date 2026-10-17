@@ -1,0 +1,10 @@
+{
+  "name": "search_no_results",
+  "mode": "search",
+  "maxResults": 5,
+  "pages": [
+    {
+      "html": "<html><table><p>nothing here</p></table>"
+    }
+  ]
+}

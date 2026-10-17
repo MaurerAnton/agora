@@ -1,0 +1,10 @@
+{
+  "name": "search_network_explicit",
+  "mode": "search",
+  "maxResults": 5,
+  "pages": [
+    {
+      "error": "DuckDuckGo returned HTTP 503."
+    }
+  ]
+}

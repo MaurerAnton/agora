@@ -1,0 +1,3 @@
+name|parse_absolute_unchanged
+mode|parse
+result|Kept|https://keep.example/path?q=1|

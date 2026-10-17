@@ -1,0 +1,5 @@
+name|search_success_single_page
+mode|search
+result|One|http://x/1|s1
+result|Two|http://x/2|s2
+response|success

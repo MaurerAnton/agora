@@ -1,0 +1,6 @@
+{
+  "name": "parse_protocol_relative",
+  "mode": "parse",
+  "html": "<html><table><a \"class=\"result-link\" href=\"//example.org/path\">Proto</a></table>",
+  "maxResults": 5
+}

@@ -1,0 +1,6 @@
+{
+  "name": "parse_max_results_cap",
+  "mode": "parse",
+  "html": "<html><table><a \"class=\"result-link\" href=\"http://x/1\">One</a><a \"class=\"result-link\" href=\"http://x/2\">Two</a><a \"class=\"result-link\" href=\"http://x/3\">Three</a></table>",
+  "maxResults": 1
+}

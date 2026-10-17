@@ -1,0 +1,3 @@
+name|policy_create_url_host_www
+mode|create
+create|v=1;sourceId="citation_84dd444237c11728f07a1f5a";provider="web";kind="url";title="example.com";url="https://www.example.com/x";fileName=null;location=null;providerSourceId=null;excerpt=null;anchors=[]

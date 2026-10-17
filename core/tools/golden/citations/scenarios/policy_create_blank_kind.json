@@ -1,0 +1,7 @@
+{
+  "name": "policy_create_blank_kind",
+  "mode": "create",
+  "provider": "web",
+  "kind": " \t ",
+  "title": "T"
+}

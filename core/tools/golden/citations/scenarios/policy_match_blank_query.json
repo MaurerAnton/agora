@@ -1,0 +1,14 @@
+{
+  "name": "policy_match_blank_query",
+  "mode": "matchTitle",
+  "query": "   ",
+  "records": [
+    {
+      "version": 1,
+      "sourceId": "citation_000000000000000000000000",
+      "provider": "web",
+      "kind": "url",
+      "title": "Alpha"
+    }
+  ]
+}

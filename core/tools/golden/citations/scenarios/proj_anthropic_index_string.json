@@ -1,0 +1,7 @@
+{
+  "name": "proj_anthropic_index_string",
+  "mode": "anthropicCitation",
+  "citation": "{\"type\": \"char_location\", \"document_index\": \"3\", \"document_title\": \"Doc\"}",
+  "text": "hello world",
+  "answerStartIndex": 10
+}

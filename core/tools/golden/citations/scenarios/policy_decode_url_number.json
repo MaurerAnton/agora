@@ -1,0 +1,5 @@
+{
+  "name": "policy_decode_url_number",
+  "mode": "decode",
+  "raw": "{\"sourceId\": \"s\", \"provider\": \"web\", \"kind\": \"url\", \"title\": \"T\", \"url\": 5}"
+}

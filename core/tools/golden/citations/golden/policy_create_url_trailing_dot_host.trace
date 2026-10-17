@@ -1,0 +1,3 @@
+name|policy_create_url_trailing_dot_host
+mode|create
+create|v=1;sourceId="citation_f2efcbf8b7e85cd6dfb25dce";provider="web";kind="url";title="example.com.";url="https://example.com./x";fileName=null;location=null;providerSourceId=null;excerpt=null;anchors=[]

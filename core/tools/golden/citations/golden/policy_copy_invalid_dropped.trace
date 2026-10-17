@@ -1,0 +1,3 @@
+name|policy_copy_invalid_dropped
+mode|copy
+copy|"answer\n\n## Sources\n1. A"

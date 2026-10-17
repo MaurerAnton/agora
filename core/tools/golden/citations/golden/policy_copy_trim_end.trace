@@ -1,0 +1,3 @@
+name|policy_copy_trim_end
+mode|copy
+copy|"answer\n\n## Sources\n1. A"

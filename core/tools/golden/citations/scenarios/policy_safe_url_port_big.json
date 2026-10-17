@@ -1,0 +1,5 @@
+{
+  "name": "policy_safe_url_port_big",
+  "mode": "safeUrl",
+  "url": "https://example.com:65536/x"
+}

@@ -1,0 +1,6 @@
+{
+  "name": "policy_create_title_from_provider",
+  "mode": "create",
+  "provider": "web",
+  "kind": "url"
+}

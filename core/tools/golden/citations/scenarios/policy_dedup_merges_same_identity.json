@@ -1,0 +1,21 @@
+{
+  "name": "policy_dedup_merges_same_identity",
+  "mode": "deduplicate",
+  "records": [
+    {
+      "version": 1,
+      "sourceId": "citation_000000000000000000000000",
+      "provider": "web",
+      "kind": "url",
+      "title": "A"
+    },
+    {
+      "version": 1,
+      "sourceId": "citation_000000000000000000000000",
+      "provider": "web",
+      "kind": "url",
+      "title": "A",
+      "excerpt": "e"
+    }
+  ]
+}

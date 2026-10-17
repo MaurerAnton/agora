@@ -1,0 +1,5 @@
+{
+  "name": "policy_safe_url_fragment_space",
+  "mode": "safeUrl",
+  "url": "https://example.com/x#f g"
+}

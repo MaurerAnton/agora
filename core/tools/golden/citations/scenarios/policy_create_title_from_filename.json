@@ -1,0 +1,7 @@
+{
+  "name": "policy_create_title_from_filename",
+  "mode": "create",
+  "provider": "web",
+  "kind": "url",
+  "fileName": "f.pdf"
+}

@@ -1,0 +1,3 @@
+name|policy_strip_bare_envelope_single
+mode|strip
+strip|"ab"

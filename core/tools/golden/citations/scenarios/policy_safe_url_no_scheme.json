@@ -1,0 +1,5 @@
+{
+  "name": "policy_safe_url_no_scheme",
+  "mode": "safeUrl",
+  "url": "example.com/x"
+}

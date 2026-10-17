@@ -1,0 +1,3 @@
+name|policy_safe_url_unicode_path
+mode|safeUrl
+safeUrl|"https://example.com/%C3%A9"

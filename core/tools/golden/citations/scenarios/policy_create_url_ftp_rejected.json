@@ -1,0 +1,7 @@
+{
+  "name": "policy_create_url_ftp_rejected",
+  "mode": "create",
+  "provider": "web",
+  "kind": "url",
+  "url": "ftp://example.com/x"
+}

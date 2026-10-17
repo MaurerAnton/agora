@@ -1,0 +1,3 @@
+name|policy_strip_artifact_digits_only
+mode|strip
+strip|"go cite turn12"

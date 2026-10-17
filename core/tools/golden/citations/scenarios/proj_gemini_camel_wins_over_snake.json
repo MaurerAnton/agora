@@ -1,0 +1,6 @@
+{
+  "name": "proj_gemini_camel_wins_over_snake",
+  "mode": "geminiCitations",
+  "metadata": "{\"groundingChunks\": [{\"web\": {\"uri\": \"https://camel.example/x\", \"title\": \"C\"}}], \"grounding_chunks\": [{\"web\": {\"uri\": \"https://snake.example/x\", \"title\": \"S\"}}], \"groundingSupports\": [{\"segment\": {\"startIndex\": 0, \"endIndex\": 5}, \"groundingChunkIndices\": [0]}]}",
+  "text": "hello world"
+}

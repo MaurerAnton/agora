@@ -1,0 +1,7 @@
+{
+  "name": "proj_anthropic_wrong_cited_text",
+  "mode": "anthropicCitation",
+  "citation": "{\"type\": \"char_location\", \"cited_text\": 123}",
+  "text": "hello world",
+  "answerStartIndex": 10
+}

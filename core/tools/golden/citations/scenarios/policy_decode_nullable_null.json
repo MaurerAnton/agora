@@ -1,0 +1,5 @@
+{
+  "name": "policy_decode_nullable_null",
+  "mode": "decode",
+  "raw": "{\"sourceId\": \"s\", \"provider\": \"web\", \"kind\": \"url\", \"title\": \"T\", \"url\": null}"
+}

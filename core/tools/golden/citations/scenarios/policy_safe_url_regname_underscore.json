@@ -1,0 +1,5 @@
+{
+  "name": "policy_safe_url_regname_underscore",
+  "mode": "safeUrl",
+  "url": "https://exa_mple.com/"
+}

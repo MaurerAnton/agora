@@ -1,0 +1,5 @@
+{
+  "name": "policy_strip_private_envelope",
+  "mode": "strip",
+  "text": "before \ue200cite\ue202doc12\ue201 after"
+}

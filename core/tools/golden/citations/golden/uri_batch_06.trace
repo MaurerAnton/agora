@@ -1,0 +1,16 @@
+name|uri_batch_06
+mode|uri
+case|0|"ftp::x"
+parse|scheme="ftp"|userInfo=null|host=null|port=-1|path=null|query=null|fragment=null|authority=null|opaque=1|absolute=1
+ascii|"ftp::x"
+normalized|"ftp::x"
+normalizedAscii|"ftp::x"
+case|1|"htté:///u:p@999.1.1.1:8a'?#f"
+parse|throw|URISyntaxException
+case|2|"https:example..com: 80/a/..?#a#b&"
+parse|throw|URISyntaxException
+case|3|"cite:example-.com:65535"
+parse|scheme="cite"|userInfo=null|host=null|port=-1|path=null|query=null|fragment=null|authority=null|opaque=1|absolute=1
+ascii|"cite:example-.com:65535"
+normalized|"cite:example-.com:65535"
+normalizedAscii|"cite:example-.com:65535"

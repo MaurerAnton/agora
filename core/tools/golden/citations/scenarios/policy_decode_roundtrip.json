@@ -1,0 +1,5 @@
+{
+  "name": "policy_decode_roundtrip",
+  "mode": "decode",
+  "raw": "{\"version\": 1, \"sourceId\": \"citation_000000000000000000000000\", \"provider\": \"web\", \"kind\": \"url\", \"title\": \"A\", \"anchors\": [{\"startIndex\": 0, \"endIndex\": 2, \"citedText\": \"ab\"}]}"
+}

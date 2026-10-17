@@ -1,0 +1,6 @@
+{
+  "name": "proj_gemini_utf8_multibyte",
+  "mode": "geminiCitations",
+  "metadata": "{\"groundingChunks\": [{\"web\": {\"uri\": \"https://g.example/x\", \"title\": \"G\"}}], \"groundingSupports\": [{\"segment\": {\"startIndex\": 1, \"endIndex\": 3}, \"groundingChunkIndices\": [0]}]}",
+  "text": "h\u00e9llo"
+}

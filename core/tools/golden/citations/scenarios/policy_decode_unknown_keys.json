@@ -1,0 +1,5 @@
+{
+  "name": "policy_decode_unknown_keys",
+  "mode": "decode",
+  "raw": "{\"version\": 1, \"sourceId\": \"citation_000000000000000000000000\", \"provider\": \"web\", \"kind\": \"url\", \"title\": \"A\", \"extra\": \"ignored\"}"
+}

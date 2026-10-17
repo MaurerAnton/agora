@@ -1,0 +1,15 @@
+{
+  "name": "policy_copy_url_paren_replaced",
+  "mode": "copy",
+  "text": "answer",
+  "records": [
+    {
+      "version": 1,
+      "sourceId": "citation_000000000000000000000000",
+      "provider": "web",
+      "kind": "url",
+      "title": "A",
+      "url": "https://a.example/x_(y)"
+    }
+  ]
+}

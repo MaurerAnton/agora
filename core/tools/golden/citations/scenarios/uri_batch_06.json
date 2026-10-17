@@ -1,0 +1,10 @@
+{
+  "name": "uri_batch_06",
+  "mode": "uri",
+  "cases": [
+    "ftp::x",
+    "htt\u00e9:///u:p@999.1.1.1:8a'?#f",
+    "https:example..com: 80/a/..?#a#b&",
+    "cite:example-.com:65535"
+  ]
+}

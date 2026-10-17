@@ -1,0 +1,5 @@
+{
+  "name": "policy_strip_trailing_partial_turn",
+  "mode": "strip",
+  "text": "answer cite turn"
+}

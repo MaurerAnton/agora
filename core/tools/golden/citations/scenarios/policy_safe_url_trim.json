@@ -1,0 +1,5 @@
+{
+  "name": "policy_safe_url_trim",
+  "mode": "safeUrl",
+  "url": "  https://example.com/x  "
+}

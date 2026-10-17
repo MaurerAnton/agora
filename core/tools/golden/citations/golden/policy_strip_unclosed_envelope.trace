@@ -1,0 +1,3 @@
+name|policy_strip_unclosed_envelope
+mode|strip
+strip|"citedoc without close"

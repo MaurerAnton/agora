@@ -1,0 +1,3 @@
+name|policy_strip_trailing_artifact
+mode|strip
+strip|"answer text cite turn9z9"

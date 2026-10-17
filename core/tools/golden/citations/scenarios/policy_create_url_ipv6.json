@@ -1,0 +1,7 @@
+{
+  "name": "policy_create_url_ipv6",
+  "mode": "create",
+  "provider": "web",
+  "kind": "url",
+  "url": "https://[::1]:8080/x"
+}

@@ -1,0 +1,7 @@
+{
+  "name": "policy_create_url_query_fragment",
+  "mode": "create",
+  "provider": "web",
+  "kind": "url",
+  "url": "http://h/p?q=1#frag"
+}

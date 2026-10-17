@@ -1,0 +1,21 @@
+{
+  "name": "policy_encode_all_fields",
+  "mode": "encode",
+  "version": 2,
+  "sourceId": "citation_x",
+  "provider": "web",
+  "kind": "url",
+  "title": "T",
+  "url": "https://e/x",
+  "fileName": "f.pdf",
+  "location": "loc",
+  "providerSourceId": "ps",
+  "excerpt": "ex",
+  "anchors": [
+    {
+      "startIndex": 0,
+      "endIndex": 3,
+      "citedText": "abc"
+    }
+  ]
+}

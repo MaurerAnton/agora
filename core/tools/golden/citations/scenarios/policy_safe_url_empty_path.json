@@ -1,0 +1,5 @@
+{
+  "name": "policy_safe_url_empty_path",
+  "mode": "safeUrl",
+  "url": "https://example.com?q=1"
+}

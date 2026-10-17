@@ -1,0 +1,7 @@
+{
+  "name": "proj_anthropic_web_bad_url_with_title",
+  "mode": "anthropicCitation",
+  "citation": "{\"type\": \"web_search_result_location\", \"url\": \"not a url\", \"title\": \"T\"}",
+  "text": "hello world",
+  "answerStartIndex": 10
+}

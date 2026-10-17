@@ -1,0 +1,22 @@
+{
+  "name": "policy_copy_dedup_applied",
+  "mode": "copy",
+  "text": "answer",
+  "records": [
+    {
+      "version": 1,
+      "sourceId": "citation_000000000000000000000000",
+      "provider": "web",
+      "kind": "url",
+      "title": "A"
+    },
+    {
+      "version": 1,
+      "sourceId": "citation_000000000000000000000000",
+      "provider": "web",
+      "kind": "url",
+      "title": "A",
+      "excerpt": "e"
+    }
+  ]
+}

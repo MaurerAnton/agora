@@ -1,0 +1,14 @@
+{
+  "name": "policy_create_anchor_empty_cited",
+  "mode": "create",
+  "provider": "web",
+  "kind": "url",
+  "title": "T",
+  "anchors": [
+    {
+      "startIndex": 0,
+      "endIndex": 0,
+      "citedText": ""
+    }
+  ]
+}

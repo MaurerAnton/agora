@@ -1,0 +1,5 @@
+{
+  "name": "policy_strip_trailing_crlf",
+  "mode": "strip",
+  "text": "answer text cite turn9z9\r\n"
+}

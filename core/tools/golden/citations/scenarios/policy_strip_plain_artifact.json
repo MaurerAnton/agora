@@ -1,0 +1,5 @@
+{
+  "name": "policy_strip_plain_artifact",
+  "mode": "strip",
+  "text": "before cite turn1a1turn2b2 after"
+}

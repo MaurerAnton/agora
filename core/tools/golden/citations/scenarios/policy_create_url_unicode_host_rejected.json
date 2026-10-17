@@ -1,0 +1,8 @@
+{
+  "name": "policy_create_url_unicode_host_rejected",
+  "mode": "create",
+  "provider": "web",
+  "kind": "url",
+  "url": "http://\u00e9.example.com/",
+  "title": "Kept"
+}

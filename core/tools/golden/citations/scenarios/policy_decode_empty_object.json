@@ -1,0 +1,5 @@
+{
+  "name": "policy_decode_empty_object",
+  "mode": "decode",
+  "raw": "{}"
+}

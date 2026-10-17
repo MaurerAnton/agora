@@ -1,0 +1,15 @@
+{
+  "name": "policy_create_anchor_beyond_answer",
+  "mode": "create",
+  "provider": "web",
+  "kind": "url",
+  "title": "T",
+  "answerText": "hi",
+  "anchors": [
+    {
+      "startIndex": 0,
+      "endIndex": 5,
+      "citedText": "hi"
+    }
+  ]
+}

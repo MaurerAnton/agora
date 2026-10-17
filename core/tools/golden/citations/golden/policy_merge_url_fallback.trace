@@ -1,0 +1,3 @@
+name|policy_merge_url_fallback
+mode|merge
+merge|v=1;sourceId="citation_same";provider="web";kind="url";title="T";url="https://example.com/x";fileName="f";location=null;providerSourceId="ps";excerpt=null;anchors=[]

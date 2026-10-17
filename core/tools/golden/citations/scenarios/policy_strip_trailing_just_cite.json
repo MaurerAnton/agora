@@ -1,0 +1,5 @@
+{
+  "name": "policy_strip_trailing_just_cite",
+  "mode": "strip",
+  "text": "answer cite"
+}

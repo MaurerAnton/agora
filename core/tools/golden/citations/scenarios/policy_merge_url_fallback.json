@@ -1,0 +1,18 @@
+{
+  "name": "policy_merge_url_fallback",
+  "mode": "merge",
+  "provider": "web",
+  "kind": "url",
+  "title": "T",
+  "sourceId": "citation_same",
+  "incoming": {
+    "version": 1,
+    "sourceId": "citation_same",
+    "provider": "web",
+    "kind": "url",
+    "title": "T",
+    "url": "https://example.com/x",
+    "fileName": "f",
+    "providerSourceId": "ps"
+  }
+}

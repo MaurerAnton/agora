@@ -1,0 +1,5 @@
+{
+  "name": "policy_decode_missing_required",
+  "mode": "decode",
+  "raw": "{\"sourceId\": \"s\", \"provider\": \"web\"}"
+}

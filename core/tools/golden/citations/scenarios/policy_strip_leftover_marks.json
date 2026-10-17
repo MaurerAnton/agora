@@ -1,0 +1,5 @@
+{
+  "name": "policy_strip_leftover_marks",
+  "mode": "strip",
+  "text": "a\ue200b\ue201c\ue202d"
+}

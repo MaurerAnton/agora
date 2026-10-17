@@ -1,0 +1,5 @@
+{
+  "name": "policy_strip_trailing_newline",
+  "mode": "strip",
+  "text": "answer text cite\n"
+}

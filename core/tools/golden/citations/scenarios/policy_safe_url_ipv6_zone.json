@@ -1,0 +1,5 @@
+{
+  "name": "policy_safe_url_ipv6_zone",
+  "mode": "safeUrl",
+  "url": "https://[fe80::1%25eth0]/x"
+}

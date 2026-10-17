@@ -1,0 +1,17 @@
+{
+  "name": "policy_merge_title_fallback",
+  "mode": "merge",
+  "provider": "web",
+  "kind": "url",
+  "title": "   ",
+  "sourceId": "citation_same",
+  "incoming": {
+    "version": 1,
+    "sourceId": "citation_same",
+    "provider": "web",
+    "kind": "url",
+    "title": "FromIncoming",
+    "excerpt": "e",
+    "location": "loc"
+  }
+}

@@ -1,0 +1,29 @@
+{
+  "name": "policy_merge_anchor_shorter_ignored",
+  "mode": "merge",
+  "provider": "web",
+  "kind": "url",
+  "title": "T",
+  "sourceId": "citation_same",
+  "anchors": [
+    {
+      "startIndex": 0,
+      "endIndex": 5,
+      "citedText": "abcde"
+    }
+  ],
+  "incoming": {
+    "version": 1,
+    "sourceId": "citation_same",
+    "provider": "web",
+    "kind": "url",
+    "title": "T",
+    "anchors": [
+      {
+        "startIndex": 0,
+        "endIndex": 3,
+        "citedText": "abc"
+      }
+    ]
+  }
+}

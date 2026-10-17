@@ -1,0 +1,5 @@
+{
+  "name": "policy_safe_url_userinfo",
+  "mode": "safeUrl",
+  "url": "https://u@example.com/x"
+}

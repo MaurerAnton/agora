@@ -1,0 +1,5 @@
+{
+  "name": "policy_strip_bare_envelope",
+  "mode": "strip",
+  "text": "\ue200turn1a1\ue202turn2b2\ue201"
+}

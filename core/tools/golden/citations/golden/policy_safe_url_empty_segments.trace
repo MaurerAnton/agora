@@ -1,0 +1,3 @@
+name|policy_safe_url_empty_segments
+mode|safeUrl
+safeUrl|"https://example.com/a/b"

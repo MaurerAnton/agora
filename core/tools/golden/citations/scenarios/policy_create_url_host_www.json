@@ -1,0 +1,7 @@
+{
+  "name": "policy_create_url_host_www",
+  "mode": "create",
+  "provider": "web",
+  "kind": "url",
+  "url": "https://www.example.com/x"
+}

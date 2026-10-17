@@ -1,0 +1,14 @@
+{
+  "name": "policy_copy_trim_end",
+  "mode": "copy",
+  "text": "answer \t\n\n",
+  "records": [
+    {
+      "version": 1,
+      "sourceId": "citation_000000000000000000000000",
+      "provider": "web",
+      "kind": "url",
+      "title": "A"
+    }
+  ]
+}

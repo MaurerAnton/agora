@@ -1,0 +1,5 @@
+name|policy_dedup_distinct
+mode|deduplicate
+count|2
+record|0|v=1;sourceId="citation_2a373aa525498cb18d477f01";provider="web";kind="url";title="A";url=null;fileName=null;location=null;providerSourceId="p1";excerpt=null;anchors=[]
+record|1|v=1;sourceId="citation_95fc7d41cb6f7fe86404c339";provider="web";kind="url";title="A";url=null;fileName=null;location=null;providerSourceId="p2";excerpt=null;anchors=[]

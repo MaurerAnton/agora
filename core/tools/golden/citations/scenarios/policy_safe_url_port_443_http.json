@@ -1,0 +1,5 @@
+{
+  "name": "policy_safe_url_port_443_http",
+  "mode": "safeUrl",
+  "url": "http://example.com:443/x"
+}

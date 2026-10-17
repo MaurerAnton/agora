@@ -1,0 +1,38 @@
+{
+  "name": "validate_tool_result_carries_calls",
+  "mode": "validate",
+  "request": {
+    "model": "llama3.2:3b",
+    "messages": [
+      {
+        "role": "assistant",
+        "content": "",
+        "tool_calls": [
+          {
+            "id": "call_1",
+            "type": "function",
+            "function": {
+              "name": "get_weather",
+              "arguments": {}
+            }
+          }
+        ]
+      },
+      {
+        "role": "tool",
+        "content": "Sunny",
+        "tool_name": "get_weather",
+        "tool_calls": [
+          {
+            "id": "call_1",
+            "type": "function",
+            "function": {
+              "name": "get_weather",
+              "arguments": {}
+            }
+          }
+        ]
+      }
+    ]
+  }
+}

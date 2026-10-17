@@ -1,0 +1,24 @@
+{
+  "name": "ollama_empty_tool_row_contributes_nothing",
+  "mode": "factory",
+  "config": {},
+  "requestInput": {
+    "messages": [
+      {
+        "id": "user_1",
+        "participant": "USER",
+        "text": "Hi"
+      },
+      {
+        "id": "tool_1",
+        "participant": "MODEL",
+        "text": ""
+      },
+      {
+        "id": "user_2",
+        "participant": "USER",
+        "text": "Thanks!"
+      }
+    ]
+  }
+}

@@ -1,0 +1,36 @@
+{
+  "name": "ollama_tools_wire",
+  "mode": "factory",
+  "config": {
+    "tools": [
+      {
+        "type": "function",
+        "function": {
+          "name": "get_weather",
+          "description": "Get current weather for a location",
+          "parameters": {
+            "type": "object",
+            "properties": {
+              "location": {
+                "type": "string",
+                "description": "City and state"
+              }
+            },
+            "required": [
+              "location"
+            ]
+          }
+        }
+      }
+    ]
+  },
+  "requestInput": {
+    "messages": [
+      {
+        "id": "user_1",
+        "participant": "USER",
+        "text": "Go"
+      }
+    ]
+  }
+}

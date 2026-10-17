@@ -1,0 +1,8 @@
+name|ollama_images_registered
+mode|factory
+apiMessages|[{"role":"user","content":"look","images":["__AGORA_BASE64_<uuid>__"]}]
+body|{"model":"llama3.2:3b","messages":[{"role":"user","content":"look","images":["__AGORA_BASE64_<uuid>__"]}],"stream":true,"think":true}
+diagnostic|{"model":"llama3.2:3b","messages":[{"role":"user","content":"look","images":["[STREAMED_BASE64:4_BYTES]"]}],"stream":true,"think":true}
+contentLength|118
+file|0|files/a.png|4|0f4636c78f65d3639ece5a064b5ae753e3408614a14fb18ab4d7540d2c248543
+resolvedBody|{"model":"llama3.2:3b","messages":[{"role":"user","content":"look","images":["iVBORw=="]}],"stream":true,"think":true}

@@ -1,0 +1,4 @@
+name|ollama_system_blank_dropped
+mode|factory
+apiMessages|[{"role":"user","content":"Hello"}]
+body|{"model":"llama3.2:3b","messages":[{"role":"user","content":"Hello"}],"stream":true,"think":true}

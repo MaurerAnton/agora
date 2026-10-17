@@ -1,0 +1,17 @@
+{
+  "name": "ollama_think_effort_level",
+  "mode": "factory",
+  "config": {
+    "modelId": "gpt-oss:8b",
+    "thinkingLevel": "high"
+  },
+  "requestInput": {
+    "messages": [
+      {
+        "id": "user_1",
+        "participant": "USER",
+        "text": "Hi"
+      }
+    ]
+  }
+}

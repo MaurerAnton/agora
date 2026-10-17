@@ -1,0 +1,8 @@
+{
+  "name": "stream_usage_coercion",
+  "mode": "stream",
+  "ops": [
+    "L {\"message\":{\"role\":\"assistant\",\"content\":\"hi\"},\"done\":true,\"prompt_eval_count\":-3,\"eval_count\":7}",
+    "E"
+  ]
+}

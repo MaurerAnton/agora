@@ -1,0 +1,3 @@
+name|validate_model_blank
+mode|validate
+error|RequestFormatException|Ollama request validation failed: model is blank

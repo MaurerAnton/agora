@@ -1,0 +1,19 @@
+{
+  "name": "ollama_images_disabled",
+  "mode": "factory",
+  "config": {
+    "includeImages": false
+  },
+  "requestInput": {
+    "messages": [
+      {
+        "id": "user_1",
+        "participant": "USER",
+        "text": "look",
+        "images": [
+          "files/a.png"
+        ]
+      }
+    ]
+  }
+}

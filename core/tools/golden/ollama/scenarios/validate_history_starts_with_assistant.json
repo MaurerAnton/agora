@@ -1,0 +1,13 @@
+{
+  "name": "validate_history_starts_with_assistant",
+  "mode": "validate",
+  "request": {
+    "model": "llama3.2:3b",
+    "messages": [
+      {
+        "role": "assistant",
+        "content": "I start"
+      }
+    ]
+  }
+}

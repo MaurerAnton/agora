@@ -1,0 +1,4 @@
+name|ollama_empty_tool_row_contributes_nothing
+mode|factory
+apiMessages|[{"role":"user","content":"Hi"},{"role":"user","content":"Thanks!"}]
+body|{"model":"llama3.2:3b","messages":[{"role":"user","content":"Hi"},{"role":"user","content":"Thanks!"}],"stream":true,"think":true}

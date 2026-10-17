@@ -1,0 +1,9 @@
+{
+  "name": "stream_break_on_done",
+  "mode": "stream",
+  "ops": [
+    "L {\"message\":{\"role\":\"assistant\",\"content\":\"a\"},\"done\":true,\"done_reason\":\"stop\"}",
+    "L {\"message\":{\"role\":\"assistant\",\"content\":\"after\"}}",
+    "E"
+  ]
+}

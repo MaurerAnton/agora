@@ -1,0 +1,11 @@
+{
+  "name": "serialized_empty_messages",
+  "mode": "serialized",
+  "serializedBody": "{\"model\":\"llama3.2:3b\",\"messages\":[]}",
+  "serializedRequiredStringFields": [
+    "model"
+  ],
+  "serializedRequiredArrayFields": [
+    "messages"
+  ]
+}

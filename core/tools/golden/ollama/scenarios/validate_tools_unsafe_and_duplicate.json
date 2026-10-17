@@ -1,0 +1,48 @@
+{
+  "name": "validate_tools_unsafe_and_duplicate",
+  "mode": "validate",
+  "request": {
+    "model": "llama3.2:3b",
+    "messages": [
+      {
+        "role": "user",
+        "content": "hi"
+      }
+    ],
+    "tools": [
+      {
+        "type": "function",
+        "function": {
+          "name": "bad name",
+          "description": "x",
+          "parameters": {
+            "type": "object",
+            "properties": {}
+          }
+        }
+      },
+      {
+        "type": "function",
+        "function": {
+          "name": "lookup",
+          "description": "x",
+          "parameters": {
+            "type": "object",
+            "properties": {}
+          }
+        }
+      },
+      {
+        "type": "function",
+        "function": {
+          "name": "lookup",
+          "description": "x",
+          "parameters": {
+            "type": "object",
+            "properties": {}
+          }
+        }
+      }
+    ]
+  }
+}

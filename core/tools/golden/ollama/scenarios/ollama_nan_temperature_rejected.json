@@ -1,0 +1,16 @@
+{
+  "name": "ollama_nan_temperature_rejected",
+  "mode": "factory",
+  "config": {
+    "temperature": "NaN"
+  },
+  "requestInput": {
+    "messages": [
+      {
+        "id": "user_1",
+        "participant": "USER",
+        "text": "Hi"
+      }
+    ]
+  }
+}

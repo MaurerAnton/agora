@@ -412,6 +412,18 @@ std::vector<OpenAiMessage> convert_to_open_ai_messages(
 
 void require_valid_wire_format(const OpenAiChatRequest& request, const std::string& provider);
 
+/** The shared ToolDefinition grammar — RequestFormatValidation.validateToolDefinitions (Ollama
+ *  reuses it through the same requireValidRequestFormat gate). */
+std::vector<std::string> validate_tool_definitions(
+    const std::optional<std::vector<ToolDefinition>>& tools);
+
+/** The standard tool wire shape ({type, function{name, description, parameters}}), written for
+ *  every provider that carries ToolDefinition (OpenAI, Ollama). */
+void write_tool_definition(std::string& out, const ToolDefinition& tool);
+
+/** Decode one ToolDefinition wire object (validate-mode harnesses). */
+ToolDefinition decode_tool_definition(const json::Value& value);
+
 /** Field lists mirror Kotlin `Set` arguments: insertion-ordered, duplicate-free. */
 void require_valid_serialized_request(const std::string& provider, std::string_view body,
                                       const std::vector<std::string>& required_string_fields,

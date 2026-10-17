@@ -1,0 +1,13 @@
+name|stream_tool_args_variants
+mode|stream
+toolCallUpdate|streamKey=call_stream_<uuid>|id=call_1|name=from_string|args={"q":1}|signature=-
+toolCall|id=call_1|name=from_string|args={"q":1}|streamKey=call_stream_<uuid>|signature=-
+toolCallUpdate|streamKey=call_stream_<uuid>|id=call_2|name=from_number|args=42|signature=-
+toolCall|id=call_malformed_<uuid>|name=agora_malformed_tool_call|args={"error":"Ollama returned incomplete or duplicate tool metadata","original_name":"from_number","original_arguments":"42"}|streamKey=call_stream_<uuid>|signature=-
+toolCallUpdate|streamKey=call_stream_<uuid>|id=call_3|name=no_function_args|args={}|signature=-
+toolCall|id=call_3|name=no_function_args|args={}|streamKey=call_stream_<uuid>|signature=-
+toolCallUpdate|streamKey=call_stream_<uuid>|id=call_<uuid>|name=blank_id|args={}|signature=-
+toolCall|id=call_<uuid>|name=blank_id|args={}|streamKey=call_stream_<uuid>|signature=-
+usage|total=0|input=-|cached=-|cacheWrite=-|uncached=-|output=-|reasoning=-
+term|sawDone=1|stop=stop|produced=1|inFlight=0
+streamError|none

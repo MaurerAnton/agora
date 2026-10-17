@@ -1,0 +1,8 @@
+{
+  "name": "stream_done_reason_normalized",
+  "mode": "stream",
+  "ops": [
+    "L {\"message\":{\"role\":\"assistant\",\"content\":\"hi\"},\"done\":true,\"done_reason\":\"  Custom Stop  \"}",
+    "E"
+  ]
+}

@@ -1,0 +1,8 @@
+{
+  "name": "ollama_empty_messages_rejected",
+  "mode": "factory",
+  "config": {},
+  "requestInput": {
+    "messages": []
+  }
+}

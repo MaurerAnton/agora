@@ -1,0 +1,4 @@
+name|stream_error_field
+mode|stream
+term|sawDone=0|stop=-|produced=0|inFlight=0
+streamError|api|code=-|type=ollama_stream_error|message=model not loaded

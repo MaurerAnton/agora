@@ -1,0 +1,4 @@
+name|ollama_think_disabled
+mode|factory
+apiMessages|[{"role":"user","content":"Hi"}]
+body|{"model":"gpt-oss:8b","messages":[{"role":"user","content":"Hi"}],"stream":true,"think":false}

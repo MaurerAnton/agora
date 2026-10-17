@@ -1,0 +1,14 @@
+{
+  "name": "validate_tool_name_unsafe",
+  "mode": "validate",
+  "request": {
+    "model": "llama3.2:3b",
+    "messages": [
+      {
+        "role": "tool",
+        "content": "Sunny",
+        "tool_name": "bad name"
+      }
+    ]
+  }
+}

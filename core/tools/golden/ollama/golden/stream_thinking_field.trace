@@ -1,0 +1,7 @@
+name|stream_thinking_field
+mode|stream
+thought|Let me think.|title=-|signature=-
+text|answer
+usage|total=7|input=3|cached=-|cacheWrite=-|uncached=-|output=4|reasoning=-
+term|sawDone=1|stop=stop|produced=1|inFlight=0
+streamError|none

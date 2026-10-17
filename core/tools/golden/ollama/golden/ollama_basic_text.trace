@@ -1,0 +1,4 @@
+name|ollama_basic_text
+mode|factory
+apiMessages|[{"role":"system","content":"You are helpful."},{"role":"user","content":"Hello"}]
+body|{"model":"llama3.2:3b","messages":[{"role":"system","content":"You are helpful."},{"role":"user","content":"Hello"}],"stream":true,"think":true}

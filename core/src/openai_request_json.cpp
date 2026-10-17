@@ -154,23 +154,6 @@ void write_tool_parameters(std::string& out, const ToolParameters& parameters) {
     out += member.finish();
 }
 
-void write_tool_definition(std::string& out, const ToolDefinition& tool) {
-    MemberList member;
-    member.begin_member("type");
-    append_quoted(member.out, tool.type);
-    member.begin_member("function");
-    MemberList function;
-    function.begin_member("name");
-    append_quoted(function.out, tool.function.name);
-    function.begin_member("description");
-    append_quoted(function.out, tool.function.description);
-    function.begin_member("parameters");
-    write_tool_parameters(function.out, tool.function.parameters);
-    function.out.push_back('}');
-    member.out += function.out;
-    out += member.finish();
-}
-
 void write_content_parts(std::string& out, const std::vector<OpenAiContentPart>& parts) {
     out.push_back('[');
     bool first_part = true;
@@ -437,6 +420,10 @@ ToolParameters decode_tool_parameters(const json::Value& value) {
     return parameters;
 }
 
+}  // namespace
+
+// Exported for the Ollama request decoder (the same ToolDefinition wire shape); its recursive
+// helpers stay file-local above.
 ToolDefinition decode_tool_definition(const json::Value& value) {
     if (value.kind != json::Kind::Object) throw_decode("tool must be an object");
     ToolDefinition tool;
@@ -455,7 +442,24 @@ ToolDefinition decode_tool_definition(const json::Value& value) {
     return tool;
 }
 
-}  // namespace
+// Exported for the Ollama request writer (the same ToolDefinition wire shape); its recursive
+// helpers stay file-local above.
+void write_tool_definition(std::string& out, const ToolDefinition& tool) {
+    MemberList member;
+    member.begin_member("type");
+    append_quoted(member.out, tool.type);
+    member.begin_member("function");
+    MemberList function;
+    function.begin_member("name");
+    append_quoted(function.out, tool.function.name);
+    function.begin_member("description");
+    append_quoted(function.out, tool.function.description);
+    function.begin_member("parameters");
+    write_tool_parameters(function.out, tool.function.parameters);
+    function.out.push_back('}');
+    member.out += function.out;
+    out += member.finish();
+}
 
 /** JVM subnormal spelling: the closest decimal of k significant digits where k is the smallest
  *  round-trip count floored at two ("7.0E-45", "1.401E-42"); normals stay on the shortest form. */

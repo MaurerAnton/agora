@@ -1,0 +1,9 @@
+{
+  "name": "stream_tool_duplicate_id_in_batch",
+  "mode": "stream",
+  "ops": [
+    "L {\"message\":{\"role\":\"assistant\",\"content\":\"\",\"tool_calls\":[{\"id\":\"call_1\",\"function\":{\"name\":\"one\",\"arguments\":{}}},{\"id\":\"call_1\",\"function\":{\"name\":\"two\",\"arguments\":{}}}]}}",
+    "L {\"done\":true,\"done_reason\":\"stop\"}",
+    "E"
+  ]
+}

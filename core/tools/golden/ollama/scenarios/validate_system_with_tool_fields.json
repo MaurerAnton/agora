@@ -1,0 +1,14 @@
+{
+  "name": "validate_system_with_tool_fields",
+  "mode": "validate",
+  "request": {
+    "model": "llama3.2:3b",
+    "messages": [
+      {
+        "role": "system",
+        "content": "sys",
+        "tool_name": "get_weather"
+      }
+    ]
+  }
+}

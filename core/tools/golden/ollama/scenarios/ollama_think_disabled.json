@@ -1,0 +1,17 @@
+{
+  "name": "ollama_think_disabled",
+  "mode": "factory",
+  "config": {
+    "modelId": "gpt-oss:8b",
+    "thinkingEnabled": false
+  },
+  "requestInput": {
+    "messages": [
+      {
+        "id": "user_1",
+        "participant": "USER",
+        "text": "Hi"
+      }
+    ]
+  }
+}

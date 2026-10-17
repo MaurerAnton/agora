@@ -1,0 +1,10 @@
+{
+  "name": "stream_text_done",
+  "mode": "stream",
+  "ops": [
+    "L {\"message\":{\"role\":\"assistant\",\"content\":\"Hel\"},\"done\":false}",
+    "L {\"message\":{\"role\":\"assistant\",\"content\":\"lo\"},\"done\":true,\"done_reason\":\"stop\",\"prompt_eval_count\":10,\"eval_count\":5}",
+    "L {\"message\":{\"role\":\"assistant\",\"content\":\"late\"}}",
+    "E"
+  ]
+}

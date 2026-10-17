@@ -1,0 +1,32 @@
+{
+  "name": "validate_assistant_starts_before_results",
+  "mode": "validate",
+  "request": {
+    "model": "llama3.2:3b",
+    "messages": [
+      {
+        "role": "assistant",
+        "content": "",
+        "tool_calls": [
+          {
+            "id": "call_1",
+            "type": "function",
+            "function": {
+              "name": "one",
+              "arguments": {}
+            }
+          }
+        ]
+      },
+      {
+        "role": "assistant",
+        "content": "more"
+      },
+      {
+        "role": "tool",
+        "content": "result",
+        "tool_name": "one"
+      }
+    ]
+  }
+}

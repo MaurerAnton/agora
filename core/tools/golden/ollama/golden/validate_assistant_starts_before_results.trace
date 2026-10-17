@@ -1,0 +1,3 @@
+name|validate_assistant_starts_before_results
+mode|validate
+error|RequestFormatException|Ollama request validation failed: messages[1] starts before prior tool results are complete\s messages[2] does not match the pending tool call\s history does not start with user

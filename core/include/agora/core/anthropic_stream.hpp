@@ -28,6 +28,7 @@
 
 #include "agora/core/citations.hpp"
 #include "agora/core/json.hpp"
+#include "agora/core/token_usage.hpp"
 #include "agora/core/stream_normalization.hpp"
 
 namespace agora::core::anthropic_stream {
@@ -101,15 +102,8 @@ std::optional<AnthropicStreamEvent> decode_stream_event(
 // ---------------------------------------------------------------------------------------------
 // The StreamEvent kinds the router emits (the provider's StreamEvent subclasses).
 
-struct TokenUsage {
-    std::int32_t total_token_count = 0;
-    std::optional<std::int32_t> input_token_count;
-    std::optional<std::int32_t> cached_input_token_count;
-    std::optional<std::int32_t> cache_write_input_token_count;
-    std::optional<std::int32_t> uncached_input_token_count;
-    std::optional<std::int32_t> output_token_count;
-    std::optional<std::int32_t> reasoning_token_count;
-};
+/** model/TokenUsage.kt — shared across the stream router modules (see token_usage.hpp). */
+using TokenUsage = agora::core::TokenUsage;
 
 struct TextChunk {
     std::string text;

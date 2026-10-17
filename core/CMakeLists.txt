@@ -25,6 +25,7 @@ add_library(agora_core_lib STATIC
     src/json.cpp
     src/message_preparation.cpp
     src/message_preparation_tokens.cpp
+    src/ollama.cpp
     src/openai_request.cpp
     src/openai_request_json.cpp
     src/openai_stream.cpp

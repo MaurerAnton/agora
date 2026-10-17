@@ -1,0 +1,4 @@
+name|ollama_think_default_true
+mode|factory
+apiMessages|[{"role":"user","content":"Hi"}]
+body|{"model":"llama3.2:3b","messages":[{"role":"user","content":"Hi"}],"stream":true,"think":true}

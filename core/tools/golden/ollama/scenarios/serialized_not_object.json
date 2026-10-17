@@ -1,0 +1,11 @@
+{
+  "name": "serialized_not_object",
+  "mode": "serialized",
+  "serializedBody": "[]",
+  "serializedRequiredStringFields": [
+    "model"
+  ],
+  "serializedRequiredArrayFields": [
+    "messages"
+  ]
+}

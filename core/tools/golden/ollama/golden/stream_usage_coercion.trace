@@ -1,0 +1,6 @@
+name|stream_usage_coercion
+mode|stream
+text|hi
+usage|total=7|input=0|cached=-|cacheWrite=-|uncached=-|output=7|reasoning=-
+term|sawDone=1|stop=-|produced=1|inFlight=0
+streamError|none

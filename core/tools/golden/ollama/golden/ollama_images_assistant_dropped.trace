@@ -1,0 +1,3 @@
+name|ollama_images_assistant_dropped
+mode|factory
+error|RequestFormatException|Ollama request validation failed: history does not end in user/tool input

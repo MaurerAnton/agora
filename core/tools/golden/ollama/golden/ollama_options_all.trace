@@ -1,0 +1,4 @@
+name|ollama_options_all
+mode|factory
+apiMessages|[{"role":"user","content":"Hi"}]
+body|{"model":"llama3.2:3b","messages":[{"role":"user","content":"Hi"}],"stream":true,"options":{"temperature":0.7,"top_p":0.9,"num_predict":1024},"think":true}

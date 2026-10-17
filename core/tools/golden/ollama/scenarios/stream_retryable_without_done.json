@@ -1,0 +1,8 @@
+{
+  "name": "stream_retryable_without_done",
+  "mode": "stream",
+  "ops": [
+    "L {\"message\":{\"role\":\"assistant\",\"content\":\"partial\"}}",
+    "E"
+  ]
+}

@@ -1295,6 +1295,35 @@ std::vector<std::string> property_violations(const std::string& tool_name,
     return violations;
 }
 
+std::vector<std::string> distinct(const std::vector<std::string>& values) {
+    std::vector<std::string> out;
+    for (const std::string& value : values) {
+        if (!contains_duplicate(out, value)) out.push_back(value);
+    }
+    return out;
+}
+
+std::string join_violations(const std::vector<std::string>& violations) {
+    std::string out;
+    for (std::size_t index = 0; index < violations.size(); ++index) {
+        if (index > 0) out += "; ";
+        out += violations[index];
+    }
+    return out;
+}
+
+[[noreturn]] void throw_request_format(const std::string& provider,
+                                       const std::vector<std::string>& violations) {
+    throw ProviderRequestError{
+        "RequestFormatException",
+        provider + " request validation failed: " + join_violations(distinct(violations))};
+}
+
+}  // namespace
+
+// Exported for the shared ToolDefinition grammar (Ollama reuses it through
+// requireValidRequestFormat); its helpers (property_violations, wire-safe matchers) stay
+// file-local above.
 std::vector<std::string> validate_tool_definitions(
     const std::optional<std::vector<ToolDefinition>>& tools) {
     std::vector<std::string> violations;
@@ -1346,32 +1375,6 @@ std::vector<std::string> validate_tool_definitions(
     }
     return violations;
 }
-
-std::vector<std::string> distinct(const std::vector<std::string>& values) {
-    std::vector<std::string> out;
-    for (const std::string& value : values) {
-        if (!contains_duplicate(out, value)) out.push_back(value);
-    }
-    return out;
-}
-
-std::string join_violations(const std::vector<std::string>& violations) {
-    std::string out;
-    for (std::size_t index = 0; index < violations.size(); ++index) {
-        if (index > 0) out += "; ";
-        out += violations[index];
-    }
-    return out;
-}
-
-[[noreturn]] void throw_request_format(const std::string& provider,
-                                       const std::vector<std::string>& violations) {
-    throw ProviderRequestError{
-        "RequestFormatException",
-        provider + " request validation failed: " + join_violations(distinct(violations))};
-}
-
-}  // namespace
 
 void require_valid_wire_format(const OpenAiChatRequest& request, const std::string& provider) {
     std::vector<std::string> violations;

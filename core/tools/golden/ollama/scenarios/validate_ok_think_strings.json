@@ -1,0 +1,14 @@
+{
+  "name": "validate_ok_think_strings",
+  "mode": "validate",
+  "request": {
+    "model": "gpt-oss:8b",
+    "think": "low",
+    "messages": [
+      {
+        "role": "user",
+        "content": "hi"
+      }
+    ]
+  }
+}

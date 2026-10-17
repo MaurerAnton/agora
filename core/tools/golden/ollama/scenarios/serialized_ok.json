@@ -1,0 +1,11 @@
+{
+  "name": "serialized_ok",
+  "mode": "serialized",
+  "serializedBody": "{\"model\":\"llama3.2:3b\",\"messages\":[{\"role\":\"user\"}]}",
+  "serializedRequiredStringFields": [
+    "model"
+  ],
+  "serializedRequiredArrayFields": [
+    "messages"
+  ]
+}

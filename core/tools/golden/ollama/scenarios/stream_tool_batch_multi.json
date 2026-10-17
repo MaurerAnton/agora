@@ -1,0 +1,9 @@
+{
+  "name": "stream_tool_batch_multi",
+  "mode": "stream",
+  "ops": [
+    "L {\"message\":{\"role\":\"assistant\",\"content\":\"\",\"tool_calls\":[{\"id\":\"call_1\",\"type\":\"function\",\"function\":{\"name\":\"one\",\"arguments\":{\"a\":1}}},{\"id\":\"call_2\",\"type\":\"function\",\"function\":{\"name\":\"two\",\"arguments\":{\"b\":2}}}]}}",
+    "L {\"done\":true,\"done_reason\":\"stop\"}",
+    "E"
+  ]
+}

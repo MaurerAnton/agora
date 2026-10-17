@@ -1,0 +1,28 @@
+{
+  "name": "validate_call_type_not_function",
+  "mode": "validate",
+  "request": {
+    "model": "llama3.2:3b",
+    "messages": [
+      {
+        "role": "assistant",
+        "content": "",
+        "tool_calls": [
+          {
+            "id": "call_1",
+            "type": "tool",
+            "function": {
+              "name": "get_weather",
+              "arguments": {}
+            }
+          }
+        ]
+      },
+      {
+        "role": "tool",
+        "content": "Sunny",
+        "tool_name": "get_weather"
+      }
+    ]
+  }
+}

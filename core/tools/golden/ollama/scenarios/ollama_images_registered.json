@@ -1,0 +1,17 @@
+{
+  "name": "ollama_images_registered",
+  "mode": "factory",
+  "config": {},
+  "requestInput": {
+    "messages": [
+      {
+        "id": "user_1",
+        "participant": "USER",
+        "text": "look",
+        "images": [
+          "files/a.png"
+        ]
+      }
+    ]
+  }
+}

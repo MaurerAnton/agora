@@ -1,0 +1,38 @@
+{
+  "name": "validate_ok_tool_round",
+  "mode": "validate",
+  "request": {
+    "model": "llama3.2:3b",
+    "messages": [
+      {
+        "role": "user",
+        "content": "Weather?"
+      },
+      {
+        "role": "assistant",
+        "content": "",
+        "tool_calls": [
+          {
+            "id": "call_1",
+            "type": "function",
+            "function": {
+              "name": "get_weather",
+              "arguments": {
+                "location": "Oslo"
+              }
+            }
+          }
+        ]
+      },
+      {
+        "role": "tool",
+        "content": "Sunny",
+        "tool_name": "get_weather"
+      },
+      {
+        "role": "user",
+        "content": "Thanks"
+      }
+    ]
+  }
+}

@@ -1,0 +1,3 @@
+name|serialized_not_object
+mode|serialized
+error|RequestFormatException|Ollama request validation failed: serialized request is not a JSON object

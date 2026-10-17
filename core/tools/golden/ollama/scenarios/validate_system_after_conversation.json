@@ -1,0 +1,17 @@
+{
+  "name": "validate_system_after_conversation",
+  "mode": "validate",
+  "request": {
+    "model": "llama3.2:3b",
+    "messages": [
+      {
+        "role": "user",
+        "content": "hi"
+      },
+      {
+        "role": "system",
+        "content": "late system"
+      }
+    ]
+  }
+}

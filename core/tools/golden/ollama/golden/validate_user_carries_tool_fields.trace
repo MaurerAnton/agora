@@ -1,0 +1,3 @@
+name|validate_user_carries_tool_fields
+mode|validate
+error|RequestFormatException|Ollama request validation failed: messages[0] user message carries tool fields

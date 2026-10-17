@@ -1,0 +1,4 @@
+text|a
+citation|v=1;sourceId="citation_6de022403a863e75c1075475";provider="anthropic";kind="document";title="D";url=null;fileName=null;location=null;providerSourceId="document:0";excerpt=null;anchors=[{0,1,"a"}]
+term|messageStop=0|stop=-|toolUseStarts=0|sawTerminal=0|inFlight=0|reported=0|produced=1|driverReported=0
+streamError|none

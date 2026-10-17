@@ -1,0 +1,2 @@
+L data: {"type":"message_delta","delta":{"stop_reason":"  "}}
+L data: {"type":"message_stop"}

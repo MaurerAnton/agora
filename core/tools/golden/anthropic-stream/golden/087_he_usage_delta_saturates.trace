@@ -1,0 +1,3 @@
+usage|total=2147483647|input=2147483647|cached=1|cacheWrite=1|uncached=2147483647|output=2147483647|reasoning=-
+term|messageStop=0|stop=-|toolUseStarts=0|sawTerminal=0|inFlight=0|reported=0|produced=0|driverReported=0
+streamError|none

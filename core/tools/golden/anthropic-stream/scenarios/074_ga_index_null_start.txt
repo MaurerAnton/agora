@@ -1,0 +1,2 @@
+L data: {"type":"content_block_start","index":null,"content_block":{"type":"text","text":"a"}}
+L data: {"type":"content_block_delta","index":null,"delta":{"type":"text_delta","text":"b"}}

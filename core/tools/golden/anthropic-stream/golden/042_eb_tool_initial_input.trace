@@ -1,0 +1,4 @@
+toolCallUpdate|streamKey=toolu_1|id=toolu_1|name=calc|args={\qa\q:1}
+toolCall|id=toolu_1|name=calc|args={\qa\q:1}|streamKey=toolu_1
+term|messageStop=0|stop=-|toolUseStarts=1|sawTerminal=0|inFlight=0|reported=0|produced=1|driverReported=0
+streamError|none

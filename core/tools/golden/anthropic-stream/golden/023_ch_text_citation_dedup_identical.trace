@@ -1,0 +1,5 @@
+text|a
+citation|v=1;sourceId="citation_bcc0040594fd44c8a6bd3d2c";provider="anthropic";kind="document";title="Doc";url=null;fileName=null;location="Characters 0-1";providerSourceId="document:0";excerpt="x";anchors=[{0,1,"a"}]
+citation|v=1;sourceId="citation_bcc0040594fd44c8a6bd3d2c";provider="anthropic";kind="document";title="Doc";url=null;fileName=null;location="Characters 0-1";providerSourceId="document:0";excerpt="x";anchors=[{0,1,"a"}]
+term|messageStop=0|stop=-|toolUseStarts=0|sawTerminal=0|inFlight=0|reported=0|produced=1|driverReported=0
+streamError|none

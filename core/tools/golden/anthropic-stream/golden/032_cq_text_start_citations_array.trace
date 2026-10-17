@@ -1,0 +1,7 @@
+text|ab
+citation|v=1;sourceId="citation_04eb124138012504ac9b90b7";provider="anthropic";kind="url";title="Anthropic";url="https://example.com/a";fileName=null;location=null;providerSourceId="enc1";excerpt="quote";anchors=[{0,2,"ab"}]
+citation|v=1;sourceId="citation_bcc0040594fd44c8a6bd3d2c";provider="anthropic";kind="document";title="Doc";url=null;fileName=null;location="Characters 0-1";providerSourceId="document:0";excerpt="x";anchors=[{0,2,"ab"}]
+citation|v=1;sourceId="citation_04eb124138012504ac9b90b7";provider="anthropic";kind="url";title="Anthropic";url="https://example.com/a";fileName=null;location=null;providerSourceId="enc1";excerpt="quote";anchors=[{0,2,"ab"}]
+citation|v=1;sourceId="citation_bcc0040594fd44c8a6bd3d2c";provider="anthropic";kind="document";title="Doc";url=null;fileName=null;location="Characters 0-1";providerSourceId="document:0";excerpt="x";anchors=[{0,2,"ab"}]
+term|messageStop=0|stop=-|toolUseStarts=0|sawTerminal=0|inFlight=0|reported=0|produced=1|driverReported=0
+streamError|none

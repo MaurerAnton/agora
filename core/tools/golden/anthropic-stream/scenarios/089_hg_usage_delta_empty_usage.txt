@@ -1,0 +1,2 @@
+L data: {"type":"message_start","message":{"usage":{"input_tokens":10}}}
+L data: {"type":"message_delta","usage":{}}

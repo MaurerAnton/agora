@@ -1,0 +1,4 @@
+L data: {"type":"content_block_start","index":0,"content_block":{"type":"tool_use","id":"call_same","name":"fa"}}
+L data: {"type":"content_block_stop","index":0}
+L data: {"type":"content_block_start","index":1,"content_block":{"type":"tool_use","id":"call_same","name":"fb"}}
+L data: {"type":"content_block_stop","index":1}

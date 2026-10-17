@@ -1,0 +1,1 @@
+L data: {"type":"content_block_delta","delta":"x"}

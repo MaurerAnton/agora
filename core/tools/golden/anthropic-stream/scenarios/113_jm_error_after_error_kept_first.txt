@@ -1,0 +1,2 @@
+L data: {"type":"error","error":{"type":"first","message":"1"}}
+L data: {"type":"weird_event","error":{"type":"second","message":"2"}}

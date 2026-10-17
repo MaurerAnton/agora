@@ -1,0 +1,4 @@
+toolCallUpdate|streamKey=call_1|id=call_1|name=|args=
+error|sseParse|raw=stream_end
+term|messageStop=0|stop=-|toolUseStarts=1|sawTerminal=0|inFlight=1|reported=1|produced=1|driverReported=1
+streamError|none

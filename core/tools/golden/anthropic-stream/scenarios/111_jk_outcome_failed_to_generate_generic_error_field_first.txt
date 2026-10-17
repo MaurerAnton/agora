@@ -1,0 +1,1 @@
+L data: {"type":"ping","outcome":"failed to generate","error":{"type":"t","message":"m"}}

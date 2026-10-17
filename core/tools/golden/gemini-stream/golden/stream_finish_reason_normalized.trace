@@ -1,0 +1,5 @@
+name|stream_finish_reason_normalized
+mode|stream
+text|a
+term|sawDone=1|finish=max_output_tokens|produced=1|inFlight=0
+streamError|none

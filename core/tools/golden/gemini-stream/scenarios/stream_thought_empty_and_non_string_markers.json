@@ -1,0 +1,10 @@
+{
+  "name": "stream_thought_empty_and_non_string_markers",
+  "providerName": "Google",
+  "ops": [
+    "L data: {\"candidates\":[{\"content\":{\"role\":\"model\",\"parts\":[{\"thought\":\"\"},{\"thought\":5},{\"text\":\"plain answer\"}]}}]}",
+    "L data: {\"candidates\":[{\"content\":{\"role\":\"model\",\"parts\":[{\"thought\":true},{\"text\":\"in thought\"},{\"text\":\"after thought\"}]}}]}",
+    "L data: {\"candidates\":[{\"content\":{\"role\":\"model\",\"parts\":[{\"text\":\"final\"}]},\"finishReason\":\"STOP\"}]}",
+    "E"
+  ]
+}

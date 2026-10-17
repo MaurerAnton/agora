@@ -1,0 +1,11 @@
+{
+  "name": "stream_non_data_lines_ignored",
+  "providerName": "Google",
+  "ops": [
+    "L event: message",
+    "L : keep-alive comment",
+    "L ",
+    "L data: {\"candidates\":[{\"content\":{\"role\":\"model\",\"parts\":[{\"text\":\"hi\"}]},\"finishReason\":\"STOP\"}]}",
+    "E"
+  ]
+}

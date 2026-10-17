@@ -1,0 +1,8 @@
+{
+  "name": "stream_pending_code_execution_in_flight",
+  "providerName": "Google",
+  "ops": [
+    "L data: {\"candidates\":[{\"content\":{\"role\":\"model\",\"parts\":[{\"executableCode\":{\"language\":\"python\",\"code\":\"a\"}}]}}]}",
+    "E"
+  ]
+}

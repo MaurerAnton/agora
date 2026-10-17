@@ -1,0 +1,12 @@
+{
+  "name": "stream_function_call_signature_chain",
+  "providerName": "Google",
+  "ops": [
+    "L data: {\"candidates\":[{\"content\":{\"role\":\"model\",\"parts\":[{\"thoughtSignature\":\"s1\",\"functionCall\":{\"id\":\"c1\",\"name\":\"one\",\"args\":{}}}]}}]}",
+    "L data: {\"candidates\":[{\"content\":{\"role\":\"model\",\"parts\":[{\"functionCall\":{\"id\":\"c2\",\"name\":\"two\",\"args\":{},\"thought_signature\":\"s2\"}}]}}]}",
+    "L data: {\"candidates\":[{\"content\":{\"role\":\"model\",\"parts\":[{\"thoughtSignature\":\"s3\"},{\"functionCall\":{\"id\":\"c3\",\"name\":\"three\"}}]}}]}",
+    "L data: {\"candidates\":[{\"content\":{\"role\":\"model\",\"parts\":[{\"functionCall\":{\"id\":\"c4\",\"name\":\"four\"}}]}}]}",
+    "L data: {\"candidates\":[{\"content\":{\"role\":\"model\",\"parts\":[]},\"finishReason\":\"STOP\"}]}",
+    "E"
+  ]
+}

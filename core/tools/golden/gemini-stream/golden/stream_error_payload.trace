@@ -1,0 +1,4 @@
+name|stream_error_payload
+mode|stream
+term|sawDone=0|finish=-|produced=0|inFlight=0
+streamError|api|code=429|type=RESOURCE_EXHAUSTED|message=quota exceeded

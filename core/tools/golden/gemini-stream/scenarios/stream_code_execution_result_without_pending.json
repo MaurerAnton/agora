@@ -1,0 +1,10 @@
+{
+  "name": "stream_code_execution_result_without_pending",
+  "providerName": "Google",
+  "ops": [
+    "L data: {\"candidates\":[{\"content\":{\"role\":\"model\",\"parts\":[{\"codeExecutionResult\":{\"outcome\":\"OK\",\"output\":\"0\"}}]}}]}",
+    "L data: {\"candidates\":[{\"content\":{\"role\":\"model\",\"parts\":[{\"codeExecutionResult\":{\"outcome\":\"failed\",\"output\":\"x\"}}]}}]}",
+    "L data: {\"candidates\":[{\"content\":{\"role\":\"model\",\"parts\":[]},\"finishReason\":\"STOP\"}]}",
+    "E"
+  ]
+}

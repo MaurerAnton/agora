@@ -1,0 +1,6 @@
+name|stream_usage_total_wins_and_coercion
+mode|stream
+usage|total=99|input=0|cached=-|cacheWrite=-|uncached=-|output=0|reasoning=0
+text|done
+term|sawDone=1|finish=stop|produced=1|inFlight=0
+streamError|none

@@ -1,0 +1,5 @@
+name|stream_pending_code_execution_in_flight
+mode|stream
+hosted|streamKey=gemini_code_execution_<uuid>|name=code_execution|arguments={"language":"python","code":"a"}|result=-|error=0
+term|sawDone=0|finish=-|produced=1|inFlight=1
+streamError|none

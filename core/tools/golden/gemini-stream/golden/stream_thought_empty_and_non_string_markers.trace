@@ -1,0 +1,8 @@
+name|stream_thought_empty_and_non_string_markers
+mode|stream
+text|plain answer
+thought|in thought|title=-|signature=-
+text|after thought
+text|final
+term|sawDone=1|finish=stop|produced=1|inFlight=0
+streamError|none

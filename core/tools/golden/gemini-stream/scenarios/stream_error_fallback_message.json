@@ -1,0 +1,8 @@
+{
+  "name": "stream_error_fallback_message",
+  "providerName": "Relay",
+  "ops": [
+    "L data: {\"error\":{\"status\":\"INTERNAL\"}}",
+    "E"
+  ]
+}

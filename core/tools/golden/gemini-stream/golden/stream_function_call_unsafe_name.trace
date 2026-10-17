@@ -1,0 +1,5 @@
+name|stream_function_call_unsafe_name
+mode|stream
+toolCall|id=call_malformed_<uuid>|name=agora_malformed_tool_call|args={"error":"Gemini returned invalid or duplicate tool metadata","original_name":"bad name","original_arguments":"{}"}|streamKey=call_stream_<uuid>|signature=-
+term|sawDone=1|finish=stop|produced=1|inFlight=0
+streamError|none

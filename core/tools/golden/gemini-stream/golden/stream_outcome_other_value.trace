@@ -1,0 +1,5 @@
+name|stream_outcome_other_value
+mode|stream
+text|kept
+term|sawDone=1|finish=stop|produced=1|inFlight=0
+streamError|none

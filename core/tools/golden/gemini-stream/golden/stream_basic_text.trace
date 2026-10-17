@@ -1,0 +1,7 @@
+name|stream_basic_text
+mode|stream
+text|Hel
+text|lo
+text| world
+term|sawDone=1|finish=stop|produced=1|inFlight=0
+streamError|none

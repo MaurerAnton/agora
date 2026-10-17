@@ -1,0 +1,6 @@
+name|stream_code_execution_result_without_pending
+mode|stream
+hosted|streamKey=gemini_code_execution_<uuid>|name=code_execution|arguments={}|result={"type":"code_execution","outcome":"OK","output":"0"}|error=0
+hosted|streamKey=gemini_code_execution_<uuid>|name=code_execution|arguments={}|result={"type":"code_execution","outcome":"failed","output":"x"}|error=1
+term|sawDone=1|finish=stop|produced=1|inFlight=0
+streamError|none

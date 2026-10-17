@@ -1,0 +1,9 @@
+{
+  "name": "stream_usage_derived_total",
+  "providerName": "Google",
+  "ops": [
+    "L data: {\"usageMetadata\":{\"promptTokenCount\":10,\"candidatesTokenCount\":5,\"thoughtsTokenCount\":3}}",
+    "L data: {\"candidates\":[{\"content\":{\"role\":\"model\",\"parts\":[{\"text\":\"done\"}]},\"finishReason\":\"STOP\"}]}",
+    "E"
+  ]
+}

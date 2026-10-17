@@ -1,0 +1,5 @@
+name|stream_break_on_finish_reason
+mode|stream
+text|before
+term|sawDone=1|finish=stop|produced=1|inFlight=0
+streamError|none

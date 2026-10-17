@@ -1,0 +1,5 @@
+name|stream_done_marker_stops_loop
+mode|stream
+text|a
+term|sawDone=1|finish=-|produced=1|inFlight=0
+streamError|none

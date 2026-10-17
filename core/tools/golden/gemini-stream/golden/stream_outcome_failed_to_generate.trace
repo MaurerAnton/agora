@@ -1,0 +1,4 @@
+name|stream_outcome_failed_to_generate
+mode|stream
+term|sawDone=0|finish=-|produced=0|inFlight=0
+streamError|api|code=-|type=failed_to_generate|message=upstream failed to generate the response

@@ -1,0 +1,6 @@
+name|stream_usage_only_line
+mode|stream
+usage|total=7|input=7|cached=-|cacheWrite=-|uncached=-|output=-|reasoning=-
+text|hi
+term|sawDone=1|finish=stop|produced=1|inFlight=0
+streamError|none

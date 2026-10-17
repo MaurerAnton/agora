@@ -1,0 +1,7 @@
+name|stream_function_call_valid
+mode|stream
+toolCallUpdate|streamKey=call_stream_<uuid>|id=call_1|name=lookup|args={"q":"agora"}|signature=-
+toolCall|id=call_1|name=lookup|args={"q":"agora"}|streamKey=call_stream_<uuid>|signature=-
+text|checking
+term|sawDone=1|finish=stop|produced=1|inFlight=0
+streamError|none

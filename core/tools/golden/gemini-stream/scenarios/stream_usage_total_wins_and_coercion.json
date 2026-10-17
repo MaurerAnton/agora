@@ -1,0 +1,9 @@
+{
+  "name": "stream_usage_total_wins_and_coercion",
+  "providerName": "Google",
+  "ops": [
+    "L data: {\"usageMetadata\":{\"promptTokenCount\":-3,\"candidatesTokenCount\":-1,\"thoughtsTokenCount\":0,\"totalTokenCount\":99}}",
+    "L data: {\"candidates\":[{\"content\":{\"role\":\"model\",\"parts\":[{\"text\":\"done\"}]},\"finishReason\":\"STOP\"}]}",
+    "E"
+  ]
+}

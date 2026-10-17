@@ -1,0 +1,9 @@
+{
+  "name": "stream_empty_data_is_parse_error",
+  "providerName": "Google",
+  "ops": [
+    "L data: ",
+    "L data: {\"candidates\":[{\"content\":{\"role\":\"model\",\"parts\":[{\"text\":\"late\"}]}}]}",
+    "E"
+  ]
+}

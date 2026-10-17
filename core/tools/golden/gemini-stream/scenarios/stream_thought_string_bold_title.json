@@ -1,0 +1,9 @@
+{
+  "name": "stream_thought_string_bold_title",
+  "providerName": "Google",
+  "ops": [
+    "L data: {\"candidates\":[{\"content\":{\"role\":\"model\",\"parts\":[{\"thought\":\"**Summary** of the reasoning steps.\"}]}}]}",
+    "L data: {\"candidates\":[{\"content\":{\"role\":\"model\",\"parts\":[{\"text\":\"done\"}]},\"finishReason\":\"STOP\"}]}",
+    "E"
+  ]
+}

@@ -1,0 +1,9 @@
+{
+  "name": "stream_usage_only_line",
+  "providerName": "Google",
+  "ops": [
+    "L data: {\"usageMetadata\":{\"promptTokenCount\":7}}",
+    "L data: {\"candidates\":[{\"content\":{\"role\":\"model\",\"parts\":[{\"text\":\"hi\"}]},\"finishReason\":\"STOP\"}]}",
+    "E"
+  ]
+}

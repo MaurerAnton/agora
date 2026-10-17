@@ -1,0 +1,9 @@
+{
+  "name": "stream_error_payload",
+  "providerName": "Google",
+  "ops": [
+    "L data: {\"error\":{\"code\":429,\"status\":\"RESOURCE_EXHAUSTED\",\"message\":\"quota exceeded\"}}",
+    "L data: {\"candidates\":[{\"content\":{\"role\":\"model\",\"parts\":[{\"text\":\"late\"}]}}]}",
+    "E"
+  ]
+}

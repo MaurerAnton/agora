@@ -20,6 +20,7 @@ add_library(agora_core_lib STATIC
     src/bpe_vocabulary.cpp
     src/citations.cpp
     src/gemini_request.cpp
+    src/gemini_stream.cpp
     src/java_uri.cpp
     src/json.cpp
     src/message_preparation.cpp

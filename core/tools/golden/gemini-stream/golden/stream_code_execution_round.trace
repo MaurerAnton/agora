@@ -1,0 +1,7 @@
+name|stream_code_execution_round
+mode|stream
+hosted|streamKey=gemini_code_execution_<uuid>|name=code_execution|arguments={"language":"python","code":"print(1)"}|result=-|error=0
+hosted|streamKey=gemini_code_execution_<uuid>|name=code_execution|arguments={"language":"python","code":"print(1)"}|result={"type":"code_execution","outcome":"OUTCOME_OK","output":"1"}|error=0
+text|done
+term|sawDone=1|finish=stop|produced=1|inFlight=0
+streamError|none

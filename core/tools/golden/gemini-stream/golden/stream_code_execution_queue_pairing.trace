@@ -1,0 +1,8 @@
+name|stream_code_execution_queue_pairing
+mode|stream
+hosted|streamKey=gemini_code_execution_<uuid>|name=code_execution|arguments={"language":"python","code":"a"}|result=-|error=0
+hosted|streamKey=gemini_code_execution_<uuid>|name=code_execution|arguments={"language":"python","code":"b"}|result=-|error=0
+hosted|streamKey=gemini_code_execution_<uuid>|name=code_execution|arguments={"language":"python","code":"a"}|result={"type":"code_execution","outcome":"OUTCOME_OK","output":"1"}|error=0
+hosted|streamKey=gemini_code_execution_<uuid>|name=code_execution|arguments={"language":"python","code":"b"}|result={"type":"code_execution","outcome":"FAILED","output":"boom"}|error=1
+term|sawDone=1|finish=stop|produced=1|inFlight=0
+streamError|none

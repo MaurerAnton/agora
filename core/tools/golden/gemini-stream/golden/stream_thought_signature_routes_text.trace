@@ -1,0 +1,7 @@
+name|stream_thought_signature_routes_text
+mode|stream
+thought|thinking aloud|title=-|signature=sig-1
+text|still thinking
+text|answered
+term|sawDone=1|finish=stop|produced=1|inFlight=0
+streamError|none

@@ -1,0 +1,6 @@
+name|stream_tool_call_counts_as_produced
+mode|stream
+toolCallUpdate|streamKey=call_stream_<uuid>|id=c1|name=lookup|args={}|signature=-
+toolCall|id=c1|name=lookup|args={}|streamKey=call_stream_<uuid>|signature=-
+term|sawDone=0|finish=-|produced=1|inFlight=0
+streamError|none

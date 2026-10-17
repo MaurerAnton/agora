@@ -1,0 +1,5 @@
+name|stream_finish_reason_lowercase_passthrough
+mode|stream
+text|a
+term|sawDone=1|finish=stop|produced=1|inFlight=0
+streamError|none

@@ -1,0 +1,7 @@
+{
+  "name": "defaults_siliconflow",
+  "mode": "defaults",
+  "embeddingProvider": "siliconflow",
+  "compatibleName": "",
+  "openAiMap": {}
+}

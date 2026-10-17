@@ -17,6 +17,7 @@ add_executable(agora_core_tests
     gemini_request_parity_test.cpp
     gemini_stream_parity_test.cpp
     ollama_parity_test.cpp
+    provider_support_parity_test.cpp
     parity_test.cpp
     fuzz_parity_test.cpp
 )
@@ -42,6 +43,7 @@ target_compile_definitions(agora_core_tests PRIVATE
     AGORA_FIXTURE_GEMINI_REQUEST_DIR="${CMAKE_CURRENT_SOURCE_DIR}/../tools/golden/gemini-request"
     AGORA_FIXTURE_GEMINI_STREAM_DIR="${CMAKE_CURRENT_SOURCE_DIR}/../tools/golden/gemini-stream"
     AGORA_FIXTURE_OLLAMA_DIR="${CMAKE_CURRENT_SOURCE_DIR}/../tools/golden/ollama"
+    AGORA_FIXTURE_PROVIDER_SUPPORT_DIR="${CMAKE_CURRENT_SOURCE_DIR}/../tools/golden/provider-support"
     AGORA_FIXTURE_PREP_VOCAB="${CMAKE_CURRENT_SOURCE_DIR}/../../app/src/main/assets/tokenizers/o200k_base.tiktoken"
 )
 

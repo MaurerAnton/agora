@@ -1,0 +1,5 @@
+name|http_status_fallback_code
+mode|httpError
+parse|parsed|structured=1|code=-|type=-|message=bad gateway
+http|api|code=502|type=-|message=bad gateway
+structured|bad gateway

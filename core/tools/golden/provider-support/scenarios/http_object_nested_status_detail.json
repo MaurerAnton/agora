@@ -1,0 +1,6 @@
+{
+  "name": "http_object_nested_status_detail",
+  "mode": "httpError",
+  "statusCode": 401,
+  "rawBody": "{\"error\": {\"status\": \"InvalidApiKey\", \"detail\": \"bad key\"}}"
+}

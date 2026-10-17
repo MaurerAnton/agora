@@ -1,0 +1,5 @@
+name|base_url_only_version
+mode|baseUrl
+hasVersion|1
+withV1|/v1
+withoutTrailing|-

@@ -1,0 +1,6 @@
+{
+  "name": "http_quoted_null_string_message",
+  "mode": "httpError",
+  "statusCode": 500,
+  "rawBody": "{\"error\": \"null\"}"
+}

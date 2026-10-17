@@ -1,0 +1,5 @@
+name|http_nested_number_code
+mode|httpError
+parse|parsed|structured=1|code=429|type=-|message=rl
+http|api|code=429|type=-|message=rl
+structured|rl

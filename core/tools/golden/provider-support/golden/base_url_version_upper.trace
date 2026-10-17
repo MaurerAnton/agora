@@ -1,0 +1,5 @@
+name|base_url_version_upper
+mode|baseUrl
+hasVersion|0
+withV1|https://api.example.com/V1BETA/v1
+withoutTrailing|https://api.example.com

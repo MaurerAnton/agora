@@ -1,0 +1,6 @@
+{
+  "name": "http_nested_number_code",
+  "mode": "httpError",
+  "statusCode": 429,
+  "rawBody": "{\"error\": {\"code\": 429, \"message\": \"rl\"}}"
+}

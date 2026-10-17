@@ -1,0 +1,5 @@
+name|http_array_root
+mode|httpError
+parse|parsed|structured=0|code=-|type=-|message=[1, 2]
+http|api|code=500|type=-|message=[1, 2]
+structured|-

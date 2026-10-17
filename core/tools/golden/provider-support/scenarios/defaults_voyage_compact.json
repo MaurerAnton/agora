@@ -1,0 +1,7 @@
+{
+  "name": "defaults_voyage_compact",
+  "mode": "defaults",
+  "embeddingProvider": "VOYAGE",
+  "compatibleName": "",
+  "openAiMap": {}
+}

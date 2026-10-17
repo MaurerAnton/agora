@@ -1,0 +1,5 @@
+name|defaults_open_router
+mode|defaults
+embedding|https://openrouter.ai/api/v1
+compatible|1
+openAiCompatible|https://api.openai.com/v1

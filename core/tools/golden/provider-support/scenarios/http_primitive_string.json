@@ -1,0 +1,6 @@
+{
+  "name": "http_primitive_string",
+  "mode": "httpError",
+  "statusCode": 429,
+  "rawBody": "\"quota exceeded\""
+}

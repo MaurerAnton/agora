@@ -1,0 +1,5 @@
+name|base_url_version_midpath
+mode|baseUrl
+hasVersion|1
+withV1|https://api.example.com/v1/proxy
+withoutTrailing|-

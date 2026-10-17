@@ -1,0 +1,7 @@
+{
+  "name": "defaults_mistral_upper",
+  "mode": "defaults",
+  "embeddingProvider": "MISTRAL",
+  "compatibleName": "",
+  "openAiMap": {}
+}

@@ -1,0 +1,7 @@
+{
+  "name": "defaults_openrouter_compact",
+  "mode": "defaults",
+  "embeddingProvider": "OpenRouter",
+  "compatibleName": "",
+  "openAiMap": {}
+}

@@ -1,0 +1,6 @@
+{
+  "name": "http_blank_body",
+  "mode": "httpError",
+  "statusCode": 404,
+  "rawBody": "   "
+}

@@ -1,0 +1,9 @@
+{
+  "name": "defaults_openai_other_key",
+  "mode": "defaults",
+  "embeddingProvider": "",
+  "compatibleName": "Google",
+  "openAiMap": {
+    "Google": "https://elsewhere/v1"
+  }
+}

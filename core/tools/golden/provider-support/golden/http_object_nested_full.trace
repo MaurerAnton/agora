@@ -1,0 +1,5 @@
+name|http_object_nested_full
+mode|httpError
+parse|parsed|structured=1|code=rate_limit|type=overloaded|message=slow down
+http|api|code=rate_limit|type=overloaded|message=slow down
+structured|slow down

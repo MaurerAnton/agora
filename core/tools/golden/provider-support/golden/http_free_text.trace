@@ -1,0 +1,5 @@
+name|http_free_text
+mode|httpError
+parse|parsed|structured=0|code=-|type=-|message=upstream exploded
+http|api|code=503|type=-|message=upstream exploded
+structured|-

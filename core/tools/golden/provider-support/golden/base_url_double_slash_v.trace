@@ -1,0 +1,5 @@
+name|base_url_double_slash_v
+mode|baseUrl
+hasVersion|1
+withV1|https://v1.example.com/x
+withoutTrailing|-

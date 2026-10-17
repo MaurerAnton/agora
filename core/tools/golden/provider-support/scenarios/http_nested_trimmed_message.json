@@ -1,0 +1,6 @@
+{
+  "name": "http_nested_trimmed_message",
+  "mode": "httpError",
+  "statusCode": 500,
+  "rawBody": "{\"error\": {\"message\": \"  padded  \"}}"
+}

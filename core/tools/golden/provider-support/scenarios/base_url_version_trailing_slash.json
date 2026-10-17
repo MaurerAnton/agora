@@ -1,0 +1,5 @@
+{
+  "name": "base_url_version_trailing_slash",
+  "mode": "baseUrl",
+  "url": "https://api.example.com/v1/"
+}

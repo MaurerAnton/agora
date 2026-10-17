@@ -1,0 +1,5 @@
+name|http_nested_trimmed_message
+mode|httpError
+parse|parsed|structured=1|code=-|type=-|message=padded
+http|api|code=500|type=-|message=padded
+structured|padded

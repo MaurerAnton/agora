@@ -1,0 +1,5 @@
+{
+  "name": "base_url_only_version",
+  "mode": "baseUrl",
+  "url": "/v1"
+}

@@ -1,0 +1,5 @@
+name|http_primitive_true
+mode|httpError
+parse|parsed|structured=1|code=-|type=-|message=true
+http|api|code=500|type=-|message=true
+structured|true

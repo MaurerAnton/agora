@@ -1,0 +1,5 @@
+name|http_object_root_detail
+mode|httpError
+parse|parsed|structured=1|code=-|type=-|message=root detail
+http|api|code=500|type=-|message=root detail
+structured|root detail

@@ -1,0 +1,2 @@
+L data: {"type":"ping","outcome":"Failed To Generate a response"}
+L data: {"type":"content_block_start","index":0,"content_block":{"type":"text","text":"ignored"}}

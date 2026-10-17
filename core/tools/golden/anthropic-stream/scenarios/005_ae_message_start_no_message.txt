@@ -1,0 +1,2 @@
+L data: {"type":"message_start"}
+L data: {"type":"message_delta","usage":{}}

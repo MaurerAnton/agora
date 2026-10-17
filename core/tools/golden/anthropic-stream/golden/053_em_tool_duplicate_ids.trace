@@ -1,0 +1,6 @@
+toolCallUpdate|streamKey=call_same|id=call_same|name=fa|args=
+toolCall|id=call_same|name=fa|args={}|streamKey=call_same
+toolCallUpdate|streamKey=call_same|id=call_same|name=fb|args=
+toolCall|id=call_malformed_<uuid>|name=agora_malformed_tool_call|args={\qerror\q:\qProvider returned a duplicate tool call id\q,\qoriginal_name\q:\qfb\q}|streamKey=call_same
+term|messageStop=0|stop=-|toolUseStarts=2|sawTerminal=0|inFlight=0|reported=0|produced=1|driverReported=0
+streamError|none

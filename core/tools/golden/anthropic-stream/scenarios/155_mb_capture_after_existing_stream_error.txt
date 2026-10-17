@@ -1,0 +1,2 @@
+L data: {"type":"error","error":{"type":"t","message":"m"}}
+C never stored

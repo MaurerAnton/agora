@@ -1,0 +1,4 @@
+L data: {"type":"content_block_start","index":0,"content_block":{"type":"text","text":"a"}}
+L data: {"type":"content_block_delta","index":0,"delta":{"type":"citations_delta","citation":{"type":"char_location","cited_text":"x","document_index":0,"document_title":"Doc","start_char_index":0,"end_char_index":1}}}
+L data: {"type":"content_block_delta","index":0,"delta":{"type":"citations_delta","citation":{"type":"char_location","cited_text":"x","document_index":0,"document_title":"Doc","start_char_index":0,"end_char_index":1}}}
+L data: {"type":"content_block_stop","index":0}

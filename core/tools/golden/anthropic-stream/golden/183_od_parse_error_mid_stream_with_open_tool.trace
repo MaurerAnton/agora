@@ -1,0 +1,3 @@
+toolCallUpdate|streamKey=toolu_1|id=toolu_1|name=calc|args=
+term|messageStop=0|stop=-|toolUseStarts=1|sawTerminal=0|inFlight=1|reported=0|produced=1|driverReported=0
+streamError|sseParse|raw=not json

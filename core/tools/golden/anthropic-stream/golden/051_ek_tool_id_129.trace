@@ -1,0 +1,4 @@
+toolCallUpdate|streamKey=<uuid><uuid><uuid><uuid>a|id=<uuid><uuid><uuid><uuid>a|name=calc|args=
+toolCall|id=call_malformed_<uuid>|name=agora_malformed_tool_call|args={\qerror\q:\qProvider returned an invalid tool call id\q,\qoriginal_name\q:\qcalc\q}|streamKey=<uuid><uuid><uuid><uuid>a
+term|messageStop=0|stop=-|toolUseStarts=1|sawTerminal=0|inFlight=0|reported=0|produced=1|driverReported=0
+streamError|none

@@ -1,0 +1,3 @@
+L data: {"type":"message_start","message":{"usage":{"input_tokens":4,"cache_read_input_tokens":1}}}
+L data: {"type":"message_start","message":{"usage":{"input_tokens":null,"cache_read_input_tokens":9}}}
+L data: {"type":"message_delta","usage":{}}

@@ -1,0 +1,2 @@
+L data: {"type":"content_block_start","index":0,"content_block":{"type":"tool_use","id":"c1","name":"n","input":null}}
+L data: {"type":"content_block_stop","index":0}

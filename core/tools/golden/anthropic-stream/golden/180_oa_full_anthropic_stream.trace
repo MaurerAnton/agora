@@ -1,0 +1,14 @@
+text|According to 
+citation|v=1;sourceId="citation_04eb124138012504ac9b90b7";provider="anthropic";kind="url";title="Anthropic";url="https://example.com/a";fileName=null;location=null;providerSourceId="enc1";excerpt="quote";anchors=[{0,13,"According to "}]
+text|the docs
+citation|v=1;sourceId="citation_04eb124138012504ac9b90b7";provider="anthropic";kind="url";title="Anthropic";url="https://example.com/a";fileName=null;location=null;providerSourceId="enc1";excerpt="quote";anchors=[{0,21,"According to the docs"}]
+citation|v=1;sourceId="citation_04eb124138012504ac9b90b7";provider="anthropic";kind="url";title="Anthropic";url="https://example.com/a";fileName=null;location=null;providerSourceId="enc1";excerpt="quote";anchors=[{0,21,"According to the docs"}]
+thought|Reasoning|title=-|signature=sig
+thought| more|title=-|signature=sig
+thought||title=-|signature=final
+toolCallUpdate|streamKey=toolu_9|id=toolu_9|name=search|args={\qq\q:\qdocs\q}
+toolCallUpdate|streamKey=toolu_9|id=toolu_9|name=search|args={\qq\q:\qdocs\q},\qlimit\q:3}
+toolCall|id=call_malformed_<uuid>|name=agora_malformed_tool_call|args={\qerror\q:\qProvider ended before the tool arguments formed a complete JSON object\q,\qoriginal_name\q:\qsearch\q,\qoriginal_arguments\q:\q{\\\qq\\\q:\\\qdocs\\\q},\\\qlimit\\\q:3}\q}|streamKey=toolu_9
+usage|total=172|input=130|cached=20|cacheWrite=10|uncached=110|output=42|reasoning=-
+term|messageStop=1|stop=tool_use|toolUseStarts=1|sawTerminal=1|inFlight=0|reported=0|produced=1|driverReported=0
+streamError|none

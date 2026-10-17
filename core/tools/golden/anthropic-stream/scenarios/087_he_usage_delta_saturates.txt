@@ -1,0 +1,1 @@
+L data: {"type":"message_delta","usage":{"input_tokens":2147483647,"output_tokens":2147483647,"cache_creation_input_tokens":1,"cache_read_input_tokens":1}}

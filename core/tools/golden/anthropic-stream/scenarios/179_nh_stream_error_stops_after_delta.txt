@@ -1,0 +1,3 @@
+L data: {"type":"message_start","message":{"usage":{"input_tokens":1}}}
+L data: {"type":"weird_event","error":{"type":"t","message":"m"}}
+L data: {"type":"message_delta","usage":{}}

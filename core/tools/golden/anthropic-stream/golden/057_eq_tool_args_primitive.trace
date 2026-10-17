@@ -1,0 +1,5 @@
+toolCallUpdate|streamKey=toolu_1|id=toolu_1|name=calc|args=
+toolCallUpdate|streamKey=toolu_1|id=toolu_1|name=calc|args=42
+toolCall|id=call_malformed_<uuid>|name=agora_malformed_tool_call|args={\qerror\q:\qProvider ended before the tool arguments formed a complete JSON object\q,\qoriginal_name\q:\qcalc\q,\qoriginal_arguments\q:\q42\q}|streamKey=toolu_1
+term|messageStop=0|stop=-|toolUseStarts=1|sawTerminal=0|inFlight=0|reported=0|produced=1|driverReported=0
+streamError|none

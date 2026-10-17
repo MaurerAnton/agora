@@ -1,0 +1,2 @@
+L data: {"type":"error","error":{"type":"t","message":"m"}}
+L data: {"type":"content_block_start","index":0,"content_block":{"type":"text","text":"x"}}

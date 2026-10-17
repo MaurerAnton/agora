@@ -1,0 +1,5 @@
+L data: {"type":"content_block_start","index":0,"content_block":{"type":"thinking","thinking":"Let me ","signature":"sig1"}}
+L data: {"type":"content_block_delta","index":0,"delta":{"type":"thinking_delta","thinking":"think"}}
+L data: {"type":"content_block_delta","index":0,"delta":{"type":"signature_delta","signature":"sig2"}}
+L data: {"type":"content_block_delta","index":0,"delta":{"type":"thinking_delta","thinking":"more"}}
+L data: {"type":"content_block_stop","index":0}

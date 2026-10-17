@@ -1,0 +1,4 @@
+toolCallUpdate|streamKey=_call-1|id=_call-1|name=do_it-now|args=
+toolCall|id=_call-1|name=do_it-now|args={}|streamKey=_call-1
+term|messageStop=0|stop=-|toolUseStarts=1|sawTerminal=0|inFlight=0|reported=0|produced=1|driverReported=0
+streamError|none

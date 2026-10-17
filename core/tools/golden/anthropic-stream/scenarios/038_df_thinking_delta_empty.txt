@@ -1,0 +1,2 @@
+L data: {"type":"content_block_delta","index":0,"delta":{"type":"thinking_delta","thinking":""}}
+L data: {"type":"content_block_delta","index":0,"delta":{"type":"thinking_delta","thinking":null}}

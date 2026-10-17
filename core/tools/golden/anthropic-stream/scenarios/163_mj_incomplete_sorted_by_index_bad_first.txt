@@ -1,0 +1,2 @@
+L data: {"type":"content_block_start","index":1,"content_block":{"type":"tool_use","id":"call_1","name":"calc"}}
+L data: {"type":"content_block_start","index":0,"content_block":{"type":"tool_use","id":"call_2","name":"bad name"}}

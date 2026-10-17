@@ -1,0 +1,3 @@
+name|validate_image_on_assistant
+mode|validate
+error|RequestFormatException|Anthropic request validation failed: messages[0].content[0] is not a valid user image block\s history does not start with user\s history does not end with user input

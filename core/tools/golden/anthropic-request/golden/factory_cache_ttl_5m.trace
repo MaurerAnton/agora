@@ -1,0 +1,4 @@
+name|factory_cache_ttl_5m
+mode|factory
+apiMessages|[{"role":"user","content":[{"type":"text","text":"Hi"}]}]
+body|{"model":"claude-3-5-sonnet","messages":[{"role":"user","content":[{"type":"text","text":"Hi"}]}],"max_tokens":8192,"stream":true,"cache_control":{"type":"ephemeral","ttl":"5m"}}

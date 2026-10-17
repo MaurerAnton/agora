@@ -1,0 +1,3 @@
+name|validate_decode_model_wrong_kind
+mode|validate
+error|JsonDecodingException|

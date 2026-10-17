@@ -1,0 +1,19 @@
+{
+  "name": "factory_thinking_adaptive",
+  "providerName": "Anthropic",
+  "mode": "factory",
+  "config": {
+    "modelId": "claude-opus-4-6",
+    "temperature": 0.7,
+    "topP": 0.97
+  },
+  "requestInput": {
+    "messages": [
+      {
+        "id": "user_1",
+        "participant": "USER",
+        "text": "Think about this."
+      }
+    ]
+  }
+}

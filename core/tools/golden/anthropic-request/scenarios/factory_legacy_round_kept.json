@@ -1,0 +1,42 @@
+{
+  "name": "factory_legacy_round_kept",
+  "providerName": "Anthropic",
+  "mode": "factory",
+  "config": {
+    "modelId": "claude-3-5-haiku"
+  },
+  "requestInput": {
+    "messages": [
+      {
+        "id": "user_1",
+        "participant": "USER",
+        "text": "Weather?"
+      },
+      {
+        "id": "tool_1",
+        "participant": "MODEL",
+        "text": "",
+        "toolCall": {
+          "toolName": "get_weather",
+          "arguments": "{\"location\": \"Oslo\"}",
+          "result": ""
+        }
+      },
+      {
+        "id": "result_1",
+        "participant": "USER",
+        "text": "",
+        "toolCall": {
+          "toolName": "get_weather",
+          "arguments": "{\"location\": \"Oslo\"}",
+          "result": "Sunny"
+        }
+      },
+      {
+        "id": "user_2",
+        "participant": "USER",
+        "text": "Thanks!"
+      }
+    ]
+  }
+}

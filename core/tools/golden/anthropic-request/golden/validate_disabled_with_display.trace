@@ -1,0 +1,3 @@
+name|validate_disabled_with_display
+mode|validate
+error|RequestFormatException|Anthropic request validation failed: disabled thinking cannot carry budget_tokens or display

@@ -202,6 +202,9 @@ struct ProviderConfig {
     bool google_search_enabled = false;
     /** Custom-relay endpoint as the provider resolves it (config.baseUrl ?? defaultBaseUrl). */
     std::optional<std::string> base_url;
+    /** Anthropic prompt-cache controls (AnthropicProvider reads them in buildRequestBody). */
+    bool anthropic_cache_enabled = true;
+    std::string anthropic_cache_ttl = "1h";
 };
 
 // ---------------------------------------------------------------------------------------------

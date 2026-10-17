@@ -1,0 +1,3 @@
+name|factory_system_blank_rejected
+mode|factory
+error|RequestFormatException|Anthropic request validation failed: system is blank

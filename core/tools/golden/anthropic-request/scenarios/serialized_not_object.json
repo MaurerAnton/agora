@@ -1,0 +1,12 @@
+{
+  "name": "serialized_not_object",
+  "providerName": "Anthropic",
+  "mode": "serialized",
+  "serializedBody": "[]",
+  "serializedRequiredStringFields": [
+    "model"
+  ],
+  "serializedRequiredArrayFields": [
+    "messages"
+  ]
+}

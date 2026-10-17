@@ -1,0 +1,11 @@
+{
+  "name": "factory_empty_messages_rejected",
+  "providerName": "Anthropic",
+  "mode": "factory",
+  "config": {
+    "modelId": "claude-3-5-sonnet"
+  },
+  "requestInput": {
+    "messages": []
+  }
+}

@@ -1,0 +1,18 @@
+{
+  "name": "factory_top_p_thinking_below_range",
+  "providerName": "Anthropic",
+  "mode": "factory",
+  "config": {
+    "modelId": "claude-opus-4-6",
+    "topP": 0.9
+  },
+  "requestInput": {
+    "messages": [
+      {
+        "id": "user_1",
+        "participant": "USER",
+        "text": "Hi"
+      }
+    ]
+  }
+}

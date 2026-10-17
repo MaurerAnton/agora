@@ -13,6 +13,7 @@ add_executable(agora_core_tests
     stream_normalization_test.cpp
     citations_parity_test.cpp
     anthropic_stream_parity_test.cpp
+    anthropic_request_parity_test.cpp
     parity_test.cpp
     fuzz_parity_test.cpp
 )
@@ -34,6 +35,7 @@ target_compile_definitions(agora_core_tests PRIVATE
     AGORA_FIXTURE_STREAM_NORMALIZATION_DIR="${CMAKE_CURRENT_SOURCE_DIR}/../tools/golden/stream-normalization"
     AGORA_FIXTURE_CITATIONS_DIR="${CMAKE_CURRENT_SOURCE_DIR}/../tools/golden/citations"
     AGORA_FIXTURE_ANTHROPIC_STREAM_DIR="${CMAKE_CURRENT_SOURCE_DIR}/../tools/golden/anthropic-stream"
+    AGORA_FIXTURE_ANTHROPIC_REQUEST_DIR="${CMAKE_CURRENT_SOURCE_DIR}/../tools/golden/anthropic-request"
     AGORA_FIXTURE_PREP_VOCAB="${CMAKE_CURRENT_SOURCE_DIR}/../../app/src/main/assets/tokenizers/o200k_base.tiktoken"
 )
 

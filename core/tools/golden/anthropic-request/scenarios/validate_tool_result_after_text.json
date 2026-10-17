@@ -1,0 +1,24 @@
+{
+  "name": "validate_tool_result_after_text",
+  "providerName": "Anthropic",
+  "mode": "validate",
+  "request": {
+    "model": "claude-3-5-sonnet",
+    "messages": [
+      {
+        "role": "user",
+        "content": [
+          {
+            "type": "text",
+            "text": "hi"
+          },
+          {
+            "type": "tool_result",
+            "tool_use_id": "call_a",
+            "content": "x"
+          }
+        ]
+      }
+    ]
+  }
+}

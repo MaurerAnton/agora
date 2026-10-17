@@ -1,0 +1,19 @@
+{
+  "name": "factory_ceiling_default_older_model",
+  "providerName": "Anthropic",
+  "mode": "factory",
+  "config": {
+    "modelId": "claude-3-opus",
+    "temperature": 0.5,
+    "topP": 1.0
+  },
+  "requestInput": {
+    "messages": [
+      {
+        "id": "user_1",
+        "participant": "USER",
+        "text": "Hi"
+      }
+    ]
+  }
+}

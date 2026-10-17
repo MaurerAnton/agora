@@ -15,6 +15,7 @@ endif()
 option(AGORA_CORE_BUILD_TESTS "Build the agora core tests" ${AGORA_CORE_TESTS_DEFAULT})
 
 add_library(agora_core_lib STATIC
+    src/anthropic_request.cpp
     src/anthropic_stream.cpp
     src/bpe_vocabulary.cpp
     src/citations.cpp

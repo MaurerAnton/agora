@@ -1,0 +1,19 @@
+{
+  "name": "validate_thinking_unsigned",
+  "providerName": "Anthropic",
+  "mode": "validate",
+  "request": {
+    "model": "claude-opus-4-6",
+    "messages": [
+      {
+        "role": "assistant",
+        "content": [
+          {
+            "type": "thinking",
+            "thinking": "hmm"
+          }
+        ]
+      }
+    ]
+  }
+}

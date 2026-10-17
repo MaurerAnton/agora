@@ -1,0 +1,12 @@
+{
+  "name": "serialized_ok",
+  "providerName": "Anthropic",
+  "mode": "serialized",
+  "serializedBody": "{\"model\":\"claude-3-5-sonnet\",\"messages\":[{\"role\":\"user\",\"content\":[]}]}",
+  "serializedRequiredStringFields": [
+    "model"
+  ],
+  "serializedRequiredArrayFields": [
+    "messages"
+  ]
+}

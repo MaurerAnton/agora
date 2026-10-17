@@ -1,0 +1,21 @@
+{
+  "name": "factory_images_disabled",
+  "providerName": "Anthropic",
+  "mode": "factory",
+  "config": {
+    "modelId": "claude-3-5-sonnet",
+    "includeImages": false
+  },
+  "requestInput": {
+    "messages": [
+      {
+        "id": "user_1",
+        "participant": "USER",
+        "text": "look",
+        "images": [
+          "files/a.png"
+        ]
+      }
+    ]
+  }
+}

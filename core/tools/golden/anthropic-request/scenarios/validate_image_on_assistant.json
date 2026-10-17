@@ -1,0 +1,23 @@
+{
+  "name": "validate_image_on_assistant",
+  "providerName": "Anthropic",
+  "mode": "validate",
+  "request": {
+    "model": "claude-3-5-sonnet",
+    "messages": [
+      {
+        "role": "assistant",
+        "content": [
+          {
+            "type": "image",
+            "source": {
+              "type": "base64",
+              "media_type": "image/png",
+              "data": "AAAA"
+            }
+          }
+        ]
+      }
+    ]
+  }
+}

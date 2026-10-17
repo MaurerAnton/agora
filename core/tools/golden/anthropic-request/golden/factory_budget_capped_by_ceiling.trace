@@ -1,0 +1,4 @@
+name|factory_budget_capped_by_ceiling
+mode|factory
+apiMessages|[{"role":"user","content":[{"type":"text","text":"Deep dive"}]}]
+body|{"model":"claude-3-7-sonnet","messages":[{"role":"user","content":[{"type":"text","text":"Deep dive"}]}],"max_tokens":64000,"stream":true,"thinking":{"type":"enabled","budget_tokens":60000,"display":"summarized"},"cache_control":{"type":"ephemeral","ttl":"1h"}}

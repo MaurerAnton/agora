@@ -1,0 +1,4 @@
+name|factory_relay_prefix_ceiling
+mode|factory
+apiMessages|[{"role":"user","content":[{"type":"text","text":"Hi"}]}]
+body|{"model":"anthropic/claude-3-opus","messages":[{"role":"user","content":[{"type":"text","text":"Hi"}]}],"max_tokens":4096,"stream":true,"thinking":{"type":"adaptive","display":"summarized"},"output_config":{"effort":"medium"},"cache_control":{"type":"ephemeral","ttl":"1h"}}

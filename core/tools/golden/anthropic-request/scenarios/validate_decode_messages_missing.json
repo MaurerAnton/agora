@@ -1,0 +1,8 @@
+{
+  "name": "validate_decode_messages_missing",
+  "providerName": "Anthropic",
+  "mode": "validate",
+  "request": {
+    "model": "claude-3-5-sonnet"
+  }
+}

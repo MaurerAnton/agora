@@ -1,0 +1,27 @@
+{
+  "name": "factory_empty_tool_row_continue",
+  "providerName": "Anthropic",
+  "mode": "factory",
+  "config": {
+    "modelId": "claude-3-5-haiku"
+  },
+  "requestInput": {
+    "messages": [
+      {
+        "id": "user_1",
+        "participant": "USER",
+        "text": "Hi"
+      },
+      {
+        "id": "tool_1",
+        "participant": "MODEL",
+        "text": ""
+      },
+      {
+        "id": "user_2",
+        "participant": "USER",
+        "text": "Thanks!"
+      }
+    ]
+  }
+}

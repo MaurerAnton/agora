@@ -1,0 +1,19 @@
+{
+  "name": "validate_unsupported_type",
+  "providerName": "Anthropic",
+  "mode": "validate",
+  "request": {
+    "model": "claude-3-5-sonnet",
+    "messages": [
+      {
+        "role": "user",
+        "content": [
+          {
+            "type": "audio",
+            "text": "x"
+          }
+        ]
+      }
+    ]
+  }
+}

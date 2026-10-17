@@ -1,0 +1,11 @@
+{
+  "name": "validate_decode_duplicate_max_tokens",
+  "providerName": "Anthropic",
+  "mode": "validate",
+  "request": {
+    "model": "claude-3-5-sonnet",
+    "max_tokens": 1,
+    "max_tokens": 0,
+    "messages": [{"role": "user", "content": [{"type": "text", "text": "Hello"}]}]
+  }
+}

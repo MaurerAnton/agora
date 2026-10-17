@@ -570,6 +570,46 @@ std::vector<ChatMessage> validate_tool_messages(const std::vector<ChatMessage>& 
     return result;
 }
 
+std::vector<ChatMessage> adapt_tool_rounds_for_provider(
+    const std::vector<ChatMessage>& messages, const std::string& provider_name,
+    const std::function<bool(const ChatMessage&)>& is_compatible) {
+    bool has_protocol = false;
+    for (const ChatMessage& message : messages) {
+        if (message.is_tool_protocol_message()) {
+            has_protocol = true;
+            break;
+        }
+    }
+    if (!has_protocol) return messages;
+    std::vector<ChatMessage> result;
+    std::size_t index = 0;
+    while (index < messages.size()) {
+        const ChatMessage& message = messages[index];
+        if (!starts_with(message.id, kToolMsgPrefix)) {
+            // A lone result_ row is dropped: nothing here replays it as context.
+            if (!starts_with(message.id, kResultMsgPrefix)) result.push_back(message);
+            ++index;
+            continue;
+        }
+        std::vector<ChatMessage> result_messages;
+        std::size_t end = index + 1;
+        while (end < messages.size() && starts_with(messages[end].id, kResultMsgPrefix)) {
+            result_messages.push_back(messages[end]);
+            ++end;
+        }
+        if (is_compatible(message)) {
+            result.push_back(message);
+            result.insert(result.end(), result_messages.begin(), result_messages.end());
+        } else {
+            result.push_back(tool_round_as_plain_context(
+                &message, result_messages,
+                "its opaque protocol metadata is not compatible with " + provider_name));
+        }
+        index = end;
+    }
+    return strip_empty_turns(merge_consecutive_same_role(result));
+}
+
 // ---------------------------------------------------------------------------------------------
 // ApiMessagePreparation.kt — Compact projection, canonicalization, prepareMessages
 // ---------------------------------------------------------------------------------------------

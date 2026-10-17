@@ -1,0 +1,18 @@
+{
+  "name": "factory_cache_ttl_invalid",
+  "providerName": "Anthropic",
+  "mode": "factory",
+  "config": {
+    "modelId": "claude-3-5-sonnet",
+    "anthropicCacheTtl": "2h"
+  },
+  "requestInput": {
+    "messages": [
+      {
+        "id": "user_1",
+        "participant": "USER",
+        "text": "Hi"
+      }
+    ]
+  }
+}

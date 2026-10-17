@@ -1,0 +1,4 @@
+name|factory_tool_args_not_json
+mode|factory
+apiMessages|[{"role":"user","content":[{"type":"text","text":"Weather?"}]},{"role":"assistant","content":[{"type":"tool_use","id":"call_1","name":"get_weather","input":{}}]},{"role":"user","content":[{"type":"tool_result","tool_use_id":"call_1","content":"Sunny"},{"type":"text","text":"Thanks!"}]}]
+body|{"model":"claude-3-5-haiku","messages":[{"role":"user","content":[{"type":"text","text":"Weather?"}]},{"role":"assistant","content":[{"type":"tool_use","id":"call_1","name":"get_weather","input":{}}]},{"role":"user","content":[{"type":"tool_result","tool_use_id":"call_1","content":"Sunny"},{"type":"text","text":"Thanks!"}]}],"max_tokens":8192,"stream":true,"cache_control":{"type":"ephemeral","ttl":"1h"}}

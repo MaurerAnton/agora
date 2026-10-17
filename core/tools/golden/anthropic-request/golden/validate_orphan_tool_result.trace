@@ -1,0 +1,3 @@
+name|validate_orphan_tool_result
+mode|validate
+error|RequestFormatException|Anthropic request validation failed: messages[0] has orphan tool_result blocks

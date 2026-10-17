@@ -1,0 +1,42 @@
+{
+  "name": "validate_duplicate_tool_use_id",
+  "providerName": "Anthropic",
+  "mode": "validate",
+  "request": {
+    "model": "claude-3-5-sonnet",
+    "messages": [
+      {
+        "role": "assistant",
+        "content": [
+          {
+            "type": "tool_use",
+            "id": "call_a",
+            "name": "lookup",
+            "input": {}
+          }
+        ]
+      },
+      {
+        "role": "user",
+        "content": [
+          {
+            "type": "tool_result",
+            "tool_use_id": "call_a",
+            "content": "x"
+          }
+        ]
+      },
+      {
+        "role": "assistant",
+        "content": [
+          {
+            "type": "tool_use",
+            "id": "call_a",
+            "name": "lookup",
+            "input": {}
+          }
+        ]
+      }
+    ]
+  }
+}

@@ -1,0 +1,19 @@
+{
+  "name": "factory_max_tokens_explicit",
+  "providerName": "Anthropic",
+  "mode": "factory",
+  "config": {
+    "modelId": "claude-3-5-sonnet",
+    "maxTokens": 1000,
+    "temperature": 0.3
+  },
+  "requestInput": {
+    "messages": [
+      {
+        "id": "user_1",
+        "participant": "USER",
+        "text": "Short"
+      }
+    ]
+  }
+}

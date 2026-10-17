@@ -1,0 +1,18 @@
+{
+  "name": "factory_system_blank_rejected",
+  "providerName": "Anthropic",
+  "mode": "factory",
+  "config": {
+    "modelId": "claude-3-5-sonnet"
+  },
+  "requestInput": {
+    "messages": [
+      {
+        "id": "user_1",
+        "participant": "USER",
+        "text": "Hi"
+      }
+    ],
+    "systemPrompt": "   "
+  }
+}

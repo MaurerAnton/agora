@@ -1,0 +1,3 @@
+name|validate_decode_output_config_missing_effort
+mode|validate
+error|MissingFieldException|

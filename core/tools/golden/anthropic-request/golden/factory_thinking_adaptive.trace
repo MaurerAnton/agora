@@ -1,0 +1,4 @@
+name|factory_thinking_adaptive
+mode|factory
+apiMessages|[{"role":"user","content":[{"type":"text","text":"Think about this."}]}]
+body|{"model":"claude-opus-4-6","messages":[{"role":"user","content":[{"type":"text","text":"Think about this."}]}],"max_tokens":32768,"stream":true,"thinking":{"type":"adaptive","display":"summarized"},"output_config":{"effort":"medium"},"cache_control":{"type":"ephemeral","ttl":"1h"},"top_p":0.97}

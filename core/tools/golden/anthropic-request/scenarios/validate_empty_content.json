@@ -1,0 +1,14 @@
+{
+  "name": "validate_empty_content",
+  "providerName": "Anthropic",
+  "mode": "validate",
+  "request": {
+    "model": "claude-3-5-sonnet",
+    "messages": [
+      {
+        "role": "user",
+        "content": []
+      }
+    ]
+  }
+}

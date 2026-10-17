@@ -56,10 +56,21 @@ tests — that is the reviewable definition of "the port still agrees".
 
 ## Module status
 
+Every **done** row is pinned by golden traces under `core/tools/golden/` and replayed by the
+parity tests in `core/tests/` — a drifting port is a failing build, not a surprise on a phone.
+
 | Module | State | Notes |
 | --- | --- | --- |
 | `tokens/` (BPE tokenizer, counter, memo) | **done** | `O200kBase` prefers `NativeBpeTextTokenCounter` when the library is up; the Kotlin implementation stays as the fallback |
-| provider protocols, HTTP/SSE streaming | pending | next; needs a JSON and stream layer first |
+| OpenAI chat pipeline (request factory, SSE consumer, binary codec) | **done** | stands `openai`, `openai-request`; consumed through `NativeOpenAiStream` |
+| message preparation (context window, tool rounds, compaction) | **done** | stand `message-preparation` |
+| stream normalization (think parsers, termination, retry policy) | **done** | stand `stream-normalization` |
+| citations (anchors, dedupe, Anthropic/Gemini projections, JDK `URI`) | **done** | stand `citations` |
+| Anthropic provider (stream router + request pipeline) | **done** | stands `anthropic-stream`, `anthropic-request` |
+| Gemini provider (stream loop + request pipeline) | **done** | stands `gemini-stream`, `gemini-request` |
+| Ollama provider (request pipeline + NDJSON loop) | **done** | stand `ollama` |
+| provider support (HTTP error mapping, base-URL versioning, defaults) | **done** | stand `provider-support` |
+| web-search scraper + embedding client (parse/encode halves) | **done** | stands `duckduckgo`, `embedding`; transport stays in Kotlin |
 | data layer (memory, stored files) | pending | |
 | tool execution, MCP client | pending | |
 

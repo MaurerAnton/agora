@@ -1,0 +1,23 @@
+{
+  "name": "gemini_assistant_images_skipped",
+  "providerName": "Google",
+  "mode": "factory",
+  "config": {},
+  "requestInput": {
+    "messages": [
+      {
+        "id": "user_1",
+        "participant": "USER",
+        "text": "draw"
+      },
+      {
+        "id": "model_1",
+        "participant": "MODEL",
+        "text": "done",
+        "images": [
+          "files/a.png"
+        ]
+      }
+    ]
+  }
+}

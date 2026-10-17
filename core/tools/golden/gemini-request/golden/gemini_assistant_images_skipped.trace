@@ -1,0 +1,3 @@
+name|gemini_assistant_images_skipped
+mode|factory
+error|RequestFormatException|Gemini request validation failed: history does not end with user input

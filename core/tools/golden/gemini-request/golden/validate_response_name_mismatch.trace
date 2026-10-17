@@ -1,0 +1,3 @@
+name|validate_response_name_mismatch
+mode|validate
+error|RequestFormatException|Gemini request validation failed: contents[1] response name does not match call call_a\s history does not start with user

@@ -1,0 +1,13 @@
+{
+  "name": "validate_empty_parts",
+  "providerName": "Google",
+  "mode": "validate",
+  "request": {
+    "contents": [
+      {
+        "role": "user",
+        "parts": []
+      }
+    ]
+  }
+}

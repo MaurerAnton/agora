@@ -1,0 +1,4 @@
+name|gemini_thinking_disabled
+mode|factory
+contents|[{"role":"user","parts":[{"text":"Hi"}]}]
+body|{"contents":[{"role":"user","parts":[{"text":"Hi"}]}],"generationConfig":{"thinkingConfig":{"includeThoughts":false,"thinkingBudget":0}}}

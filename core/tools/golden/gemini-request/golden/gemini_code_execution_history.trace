@@ -1,0 +1,4 @@
+name|gemini_code_execution_history
+mode|factory
+contents|[{"role":"user","parts":[{"text":"run it"}]},{"role":"model","parts":[{"text":"Running the check."},{"executableCode":{"language":"python","code":"print(1)"}},{"codeExecutionResult":{"outcome":"OUTCOME_OK","output":"1"}}]},{"role":"user","parts":[{"text":"thanks"}]}]
+body|{"contents":[{"role":"user","parts":[{"text":"run it"}]},{"role":"model","parts":[{"text":"Running the check."},{"executableCode":{"language":"python","code":"print(1)"}},{"codeExecutionResult":{"outcome":"OUTCOME_OK","output":"1"}}]},{"role":"user","parts":[{"text":"thanks"}]}],"generationConfig":{"thinkingConfig":{"includeThoughts":true,"thinkingLevel":"MEDIUM"}}}

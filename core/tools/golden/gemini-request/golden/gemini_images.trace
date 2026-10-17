@@ -1,0 +1,8 @@
+name|gemini_images
+mode|factory
+contents|[{"role":"user","parts":[{"text":"look"},{"inlineData":{"mimeType":"image/png","data":"__AGORA_BASE64_<uuid>__"}}]}]
+body|{"contents":[{"role":"user","parts":[{"text":"look"},{"inlineData":{"mimeType":"image/png","data":"__AGORA_BASE64_<uuid>__"}}]}],"generationConfig":{"thinkingConfig":{"includeThoughts":true,"thinkingLevel":"MEDIUM"}}}
+diagnostic|{"contents":[{"role":"user","parts":[{"text":"look"},{"inlineData":{"mimeType":"image/png","data":"[STREAMED_BASE64:4_BYTES]"}}]}],"generationConfig":{"thinkingConfig":{"includeThoughts":true,"thinkingLevel":"MEDIUM"}}}
+contentLength|202
+file|0|files/a.png|4|0f4636c78f65d3639ece5a064b5ae753e3408614a14fb18ab4d7540d2c248543
+resolvedBody|{"contents":[{"role":"user","parts":[{"text":"look"},{"inlineData":{"mimeType":"image/png","data":"iVBORw=="}}]}],"generationConfig":{"thinkingConfig":{"includeThoughts":true,"thinkingLevel":"MEDIUM"}}}

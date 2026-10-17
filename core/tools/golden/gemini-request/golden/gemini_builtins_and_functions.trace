@@ -1,0 +1,4 @@
+name|gemini_builtins_and_functions
+mode|factory
+contents|[{"role":"user","parts":[{"text":"search it"}]}]
+body|{"contents":[{"role":"user","parts":[{"text":"search it"}]}],"tools":[{"code_execution":{}},{"google_search":{}},{"function_declarations":[{"name":"get_weather","description":"Get current weather for a location","parameters":{"type":"object","properties":{"location":{"type":"string","description":"City and state"}},"required":["location"]}}]}],"toolConfig":{"includeServerSideToolInvocations":true},"generationConfig":{"thinkingConfig":{"includeThoughts":true,"thinkingLevel":"MEDIUM"}}}

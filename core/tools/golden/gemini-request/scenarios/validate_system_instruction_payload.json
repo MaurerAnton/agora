@@ -1,0 +1,27 @@
+{
+  "name": "validate_system_instruction_payload",
+  "providerName": "Google",
+  "mode": "validate",
+  "request": {
+    "systemInstruction": {
+      "parts": [
+        {
+          "type": "text",
+          "text": "ok",
+          "thoughtSignature": "sig"
+        }
+      ]
+    },
+    "contents": [
+      {
+        "role": "user",
+        "parts": [
+          {
+            "type": "text",
+            "text": "Hello"
+          }
+        ]
+      }
+    ]
+  }
+}

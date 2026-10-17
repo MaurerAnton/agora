@@ -1,0 +1,4 @@
+name|gemini_system_prompt
+mode|factory
+contents|[{"role":"user","parts":[{"text":"Hello"}]}]
+body|{"contents":[{"role":"user","parts":[{"text":"Hello"}]}],"systemInstruction":{"parts":[{"text":"You are helpful."}]},"generationConfig":{"thinkingConfig":{"includeThoughts":true,"thinkingLevel":"MEDIUM"}}}

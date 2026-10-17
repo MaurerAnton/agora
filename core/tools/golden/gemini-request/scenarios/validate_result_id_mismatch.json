@@ -1,0 +1,35 @@
+{
+  "name": "validate_result_id_mismatch",
+  "providerName": "Google",
+  "mode": "validate",
+  "request": {
+    "contents": [
+      {
+        "role": "model",
+        "parts": [
+          {
+            "type": "functionCall",
+            "functionCall": {
+              "id": "call_a",
+              "name": "lookup",
+              "args": {}
+            }
+          }
+        ]
+      },
+      {
+        "role": "user",
+        "parts": [
+          {
+            "type": "functionResponse",
+            "functionResponse": {
+              "id": "call_b",
+              "name": "lookup",
+              "response": {}
+            }
+          }
+        ]
+      }
+    ]
+  }
+}

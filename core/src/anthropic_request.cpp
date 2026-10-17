@@ -165,15 +165,11 @@ bool is_null(const json::Value* value) {
     return value != nullptr && value->kind == json::Kind::Literal && value->text == "null";
 }
 
-/** JsonPrimitive.content for a String property: decoded text or the raw literal lexeme. */
+/** kotlinx String decode: only a JSON string primitive reaches content (numbers, booleans and
+ *  null are decode errors — pinned by the golden traces). */
 std::string decode_string(const json::Value& value) {
-    if (value.kind == json::Kind::Literal && value.text == "null") {
-        throw_decoding("unexpected null");
-    }
-    if (value.kind == json::Kind::String || value.kind == json::Kind::Literal) {
-        return value.text;
-    }
-    throw_decoding("expected a JSON string");
+    if (value.kind != json::Kind::String) throw_decoding("expected a JSON string");
+    return value.text;
 }
 
 std::optional<std::string> decode_optional_string(const json::Value& object,
@@ -300,66 +296,6 @@ const json::Value& require_object(const json::Value* value, std::string_view wha
     if (value == nullptr || is_null(value)) throw_decoding(std::string(what) + ": unexpected null");
     if (value->kind != json::Kind::Object) throw_decoding(std::string(what) + ": expected an object");
     return *value;
-}
-
-// ---------------------------------------------------------------------------------------------
-// ToolSchemaJson.of — the plain schema Anthropic/Gemini send, built from the typed parameters;
-// an external (MCP) schema is returned unchanged.
-// ---------------------------------------------------------------------------------------------
-
-json::Value json_string(std::string text) {
-    json::Value value;
-    value.kind = json::Kind::String;
-    value.text = std::move(text);
-    return value;
-}
-
-json::Value tool_schema_json_of_property(const openai::ToolProperty& property) {
-    // buildMap order: type, description, [items], [properties], [required]
-    json::Value object;
-    object.kind = json::Kind::Object;
-    object.members.push_back({"type", json_string(property.type)});
-    object.members.push_back({"description", json_string(property.description)});
-    if (property.items) {
-        object.members.push_back({"items", tool_schema_json_of_property(*property.items)});
-    }
-    if (property.properties) {
-        json::Value properties;
-        properties.kind = json::Kind::Object;
-        for (const auto& [name, child] : *property.properties) {
-            properties.members.push_back({name, tool_schema_json_of_property(child)});
-        }
-        object.members.push_back({"properties", std::move(properties)});
-    }
-    if (property.required) {
-        json::Value required;
-        required.kind = json::Kind::Array;
-        for (const std::string& name : *property.required) {
-            required.elements.push_back(json_string(name));
-        }
-        object.members.push_back({"required", std::move(required)});
-    }
-    return object;
-}
-
-json::Value tool_schema_json_of(const openai::ToolParameters& parameters) {
-    if (parameters.schema) return *parameters.schema;
-    json::Value object;
-    object.kind = json::Kind::Object;
-    object.members.push_back({"type", json_string(parameters.type)});
-    json::Value properties;
-    properties.kind = json::Kind::Object;
-    for (const auto& [name, child] : parameters.properties) {
-        properties.members.push_back({name, tool_schema_json_of_property(child)});
-    }
-    object.members.push_back({"properties", std::move(properties)});
-    json::Value required;
-    required.kind = json::Kind::Array;
-    for (const std::string& name : parameters.required) {
-        required.elements.push_back(json_string(name));
-    }
-    object.members.push_back({"required", std::move(required)});
-    return object;
 }
 
 // ---------------------------------------------------------------------------------------------
@@ -1081,7 +1017,8 @@ BuiltAnthropicRequest build_anthropic_request(const std::string& provider_name,
         tools.reserve(config.tools->size());
         for (const openai::ToolDefinition& definition : *config.tools) {
             tools.push_back(AnthropicTool{definition.function.name, definition.function.description,
-                                          tool_schema_json_of(definition.function.parameters)});
+                                          openai::tool_schema_json_of(
+                                              definition.function.parameters)});
         }
         anthropic_tools = std::move(tools);
     }

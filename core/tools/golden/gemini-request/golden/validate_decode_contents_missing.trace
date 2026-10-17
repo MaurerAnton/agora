@@ -1,0 +1,3 @@
+name|validate_decode_contents_missing
+mode|validate
+error|MissingFieldException|

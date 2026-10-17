@@ -1,0 +1,27 @@
+{
+  "name": "validate_repeats_role",
+  "providerName": "Google",
+  "mode": "validate",
+  "request": {
+    "contents": [
+      {
+        "role": "user",
+        "parts": [
+          {
+            "type": "text",
+            "text": "Hello"
+          }
+        ]
+      },
+      {
+        "role": "user",
+        "parts": [
+          {
+            "type": "text",
+            "text": "Hello"
+          }
+        ]
+      }
+    ]
+  }
+}

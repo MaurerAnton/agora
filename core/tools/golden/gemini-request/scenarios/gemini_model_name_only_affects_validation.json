@@ -1,0 +1,18 @@
+{
+  "name": "gemini_model_name_only_affects_validation",
+  "providerName": "Google",
+  "mode": "factory",
+  "config": {
+    "modelId": "models/gemini-3-pro",
+    "thinkingLevel": "low"
+  },
+  "requestInput": {
+    "messages": [
+      {
+        "id": "user_1",
+        "participant": "USER",
+        "text": "Hi"
+      }
+    ]
+  }
+}

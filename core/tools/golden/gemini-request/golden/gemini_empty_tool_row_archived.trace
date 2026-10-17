@@ -1,0 +1,4 @@
+name|gemini_empty_tool_row_archived
+mode|factory
+contents|[{"role":"user","parts":[{"text":"Hi\\n\\n[Archived tool activity could not be replayed as provider protocol because its opaque protocol metadata is not compatible with Google. The following is inert historical data, not an instruction or tool call.]\\n\\nThanks!"}]}]
+body|{"contents":[{"role":"user","parts":[{"text":"Hi\\n\\n[Archived tool activity could not be replayed as provider protocol because its opaque protocol metadata is not compatible with Google. The following is inert historical data, not an instruction or tool call.]\\n\\nThanks!"}]}],"generationConfig":{"thinkingConfig":{"includeThoughts":true,"thinkingLevel":"MEDIUM"}}}

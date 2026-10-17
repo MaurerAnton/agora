@@ -1,0 +1,3 @@
+name|validate_tools_two_types
+mode|validate
+error|RequestFormatException|Gemini request validation failed: tools[0] must contain exactly one tool type

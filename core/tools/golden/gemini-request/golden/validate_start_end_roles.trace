@@ -1,0 +1,3 @@
+name|validate_start_end_roles
+mode|validate
+error|RequestFormatException|Gemini request validation failed: history does not start with user\s history does not end with user input

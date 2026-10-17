@@ -1,0 +1,8 @@
+{
+  "name": "validate_decode_contents_missing",
+  "providerName": "Google",
+  "mode": "validate",
+  "request": {
+    "role": "user"
+  }
+}

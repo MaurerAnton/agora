@@ -1,0 +1,8 @@
+{
+  "name": "validate_decode_contents_null",
+  "providerName": "Google",
+  "mode": "validate",
+  "request": {
+    "contents": null
+  }
+}

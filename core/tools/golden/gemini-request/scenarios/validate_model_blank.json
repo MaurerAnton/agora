@@ -1,0 +1,21 @@
+{
+  "name": "validate_model_blank",
+  "providerName": "Google",
+  "mode": "validate",
+  "request": {
+    "contents": [
+      {
+        "role": "user",
+        "parts": [
+          {
+            "type": "text",
+            "text": "Hello"
+          }
+        ]
+      }
+    ]
+  },
+  "config": {
+    "modelId": "models/"
+  }
+}

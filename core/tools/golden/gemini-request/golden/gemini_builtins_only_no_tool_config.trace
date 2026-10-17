@@ -1,0 +1,4 @@
+name|gemini_builtins_only_no_tool_config
+mode|factory
+contents|[{"role":"user","parts":[{"text":"search it"}]}]
+body|{"contents":[{"role":"user","parts":[{"text":"search it"}]}],"tools":[{"google_search":{}}],"generationConfig":{"thinkingConfig":{"includeThoughts":true,"thinkingLevel":"MEDIUM"}}}

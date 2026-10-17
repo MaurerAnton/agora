@@ -1,0 +1,73 @@
+{
+  "name": "gemini_signed_round_foreign_provider_archived",
+  "providerName": "Google",
+  "mode": "factory",
+  "config": {
+    "tools": [
+      {
+        "type": "function",
+        "function": {
+          "name": "get_weather",
+          "description": "Get current weather for a location",
+          "parameters": {
+            "type": "object",
+            "properties": {
+              "location": {
+                "type": "string",
+                "description": "City and state"
+              }
+            },
+            "required": [
+              "location"
+            ]
+          }
+        }
+      }
+    ]
+  },
+  "requestInput": {
+    "messages": [
+      {
+        "id": "user_1",
+        "participant": "USER",
+        "text": "Weather?"
+      },
+      {
+        "id": "tool_1",
+        "participant": "MODEL",
+        "text": "",
+        "modelName": "Google:gemini-2.5-pro",
+        "segments": [
+          {
+            "type": "tool",
+            "content": "",
+            "toolName": "get_weather",
+            "toolArgs": "{\"location\": \"Oslo\"}",
+            "toolCallId": "call_1",
+            "signature": "sig-abc",
+            "signatureProvider": "Vertex"
+          }
+        ]
+      },
+      {
+        "id": "result_1",
+        "participant": "USER",
+        "text": "",
+        "segments": [
+          {
+            "type": "tool",
+            "content": "",
+            "toolName": "get_weather",
+            "toolResult": "{\"temp\": 12}",
+            "toolCallId": "call_1"
+          }
+        ]
+      },
+      {
+        "id": "user_2",
+        "participant": "USER",
+        "text": "Thanks!"
+      }
+    ]
+  }
+}

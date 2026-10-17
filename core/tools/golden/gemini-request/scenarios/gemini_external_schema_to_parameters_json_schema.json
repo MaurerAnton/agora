@@ -1,0 +1,36 @@
+{
+  "name": "gemini_external_schema_to_parameters_json_schema",
+  "providerName": "Google",
+  "mode": "factory",
+  "config": {
+    "tools": [
+      {
+        "type": "function",
+        "function": {
+          "name": "mcp_tool",
+          "description": "External schema",
+          "parameters": {
+            "type": "object",
+            "properties": {},
+            "schema": {
+              "type": "object",
+              "additionalProperties": {
+                "type": "string"
+              },
+              "x-external": true
+            }
+          }
+        }
+      }
+    ]
+  },
+  "requestInput": {
+    "messages": [
+      {
+        "id": "user_1",
+        "participant": "USER",
+        "text": "search it"
+      }
+    ]
+  }
+}

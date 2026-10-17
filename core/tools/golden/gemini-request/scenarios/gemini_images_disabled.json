@@ -1,0 +1,20 @@
+{
+  "name": "gemini_images_disabled",
+  "providerName": "Google",
+  "mode": "factory",
+  "config": {
+    "includeImages": false
+  },
+  "requestInput": {
+    "messages": [
+      {
+        "id": "user_1",
+        "participant": "USER",
+        "text": "look",
+        "images": [
+          "files/a.png"
+        ]
+      }
+    ]
+  }
+}

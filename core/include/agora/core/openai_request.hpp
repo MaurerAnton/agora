@@ -199,6 +199,8 @@ struct ProviderConfig {
     std::optional<float> presence_penalty;
     std::optional<std::string> prompt_cache_key;
     std::optional<std::string> open_ai_service_tier;
+    /** Gemini built-in tools (GeminiProvider reads them in buildRequestBody). */
+    bool code_execution_enabled = false;
     bool google_search_enabled = false;
     /** Custom-relay endpoint as the provider resolves it (config.baseUrl ?? defaultBaseUrl). */
     std::optional<std::string> base_url;
@@ -338,6 +340,10 @@ std::string write_open_ai_chat_request(const OpenAiChatRequest& request);
 
 /** `Json { ignoreUnknownKeys = true }.decodeFromJsonElement` for wire-form (validate mode). */
 OpenAiChatRequest decode_open_ai_chat_request(const json::Value& value);
+
+/** ToolSchemaJson.of: the plain JSON Schema object Anthropic and Gemini send (an external MCP
+ *  schema is returned unchanged). */
+json::Value tool_schema_json_of(const ToolParameters& parameters);
 
 // ---------------------------------------------------------------------------------------------
 // Base64 attachment projection — util/Base64FileRegistry.kt + util/StreamingJsonRequestBody.kt.

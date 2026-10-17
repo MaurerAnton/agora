@@ -1,0 +1,18 @@
+{
+  "name": "validate_start_end_roles",
+  "providerName": "Google",
+  "mode": "validate",
+  "request": {
+    "contents": [
+      {
+        "role": "model",
+        "parts": [
+          {
+            "type": "text",
+            "text": "Hello"
+          }
+        ]
+      }
+    ]
+  }
+}

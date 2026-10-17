@@ -1,0 +1,27 @@
+{
+  "name": "validate_generation_config_gates",
+  "providerName": "Google",
+  "mode": "validate",
+  "request": {
+    "contents": [
+      {
+        "role": "user",
+        "parts": [
+          {
+            "type": "text",
+            "text": "Hello"
+          }
+        ]
+      }
+    ],
+    "generationConfig": {
+      "maxOutputTokens": -5,
+      "topP": 1.5,
+      "thinkingConfig": {
+        "includeThoughts": true,
+        "thinkingBudget": -1,
+        "thinkingLevel": "  "
+      }
+    }
+  }
+}

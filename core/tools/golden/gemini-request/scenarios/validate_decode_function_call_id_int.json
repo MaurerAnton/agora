@@ -1,0 +1,22 @@
+{
+  "name": "validate_decode_function_call_id_int",
+  "providerName": "Google",
+  "mode": "validate",
+  "request": {
+    "contents": [
+      {
+        "role": "model",
+        "parts": [
+          {
+            "type": "functionCall",
+            "functionCall": {
+              "id": 7,
+              "name": "lookup",
+              "args": {}
+            }
+          }
+        ]
+      }
+    ]
+  }
+}

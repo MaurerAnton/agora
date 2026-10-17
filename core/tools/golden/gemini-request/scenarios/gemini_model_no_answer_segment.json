@@ -1,0 +1,25 @@
+{
+  "name": "gemini_model_no_answer_segment",
+  "providerName": "Google",
+  "mode": "factory",
+  "config": {},
+  "requestInput": {
+    "messages": [
+      {
+        "id": "user_1",
+        "participant": "USER",
+        "text": "run it"
+      },
+      {
+        "id": "model_1",
+        "participant": "MODEL",
+        "text": "plain answer"
+      },
+      {
+        "id": "user_2",
+        "participant": "USER",
+        "text": "thanks"
+      }
+    ]
+  }
+}

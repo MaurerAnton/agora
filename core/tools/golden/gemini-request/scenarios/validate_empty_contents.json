@@ -1,0 +1,8 @@
+{
+  "name": "validate_empty_contents",
+  "providerName": "Google",
+  "mode": "validate",
+  "request": {
+    "contents": []
+  }
+}

@@ -1,0 +1,3 @@
+name|validate_tools_not_object_schema
+mode|validate
+error|RequestFormatException|Gemini request validation failed: function lookup parameters are not an object schema

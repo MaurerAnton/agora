@@ -1,0 +1,3 @@
+name|gemini_tool_round_legacy
+mode|factory
+error|RequestFormatException|Gemini request validation failed: contents[2] does not answer every pending function call exactly once\s contents[2].parts[0] functionResponse id is not wire-safe

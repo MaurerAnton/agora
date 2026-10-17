@@ -1,0 +1,7 @@
+name|stream_function_call_duplicate_id
+mode|stream
+toolCallUpdate|streamKey=call_stream_<uuid>|id=call_1|name=lookup|args={"a":1}|signature=-
+toolCall|id=call_1|name=lookup|args={"a":1}|streamKey=call_stream_<uuid>|signature=-
+toolCall|id=call_malformed_<uuid>|name=agora_malformed_tool_call|args={"error":"Gemini returned invalid or duplicate tool metadata","original_name":"lookup","original_arguments":"{\\"a\\":2}"}|streamKey=call_stream_<uuid>|signature=-
+term|sawDone=1|finish=stop|produced=1|inFlight=0
+streamError|none

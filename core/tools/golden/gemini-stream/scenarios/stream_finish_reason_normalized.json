@@ -1,0 +1,8 @@
+{
+  "name": "stream_finish_reason_normalized",
+  "providerName": "Google",
+  "ops": [
+    "L data: {\"candidates\":[{\"content\":{\"role\":\"model\",\"parts\":[{\"text\":\"a\"}]},\"finishReason\":\"MAX_TOKENS\"}]}",
+    "E"
+  ]
+}

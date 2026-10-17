@@ -1,0 +1,9 @@
+{
+  "name": "stream_outcome_other_value",
+  "providerName": "Google",
+  "ops": [
+    "L data: {\"outcome\":\"some other outcome\"}",
+    "L data: {\"candidates\":[{\"content\":{\"role\":\"model\",\"parts\":[{\"text\":\"kept\"}]},\"finishReason\":\"STOP\"}]}",
+    "E"
+  ]
+}

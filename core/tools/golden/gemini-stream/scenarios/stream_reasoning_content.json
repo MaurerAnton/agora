@@ -1,0 +1,9 @@
+{
+  "name": "stream_reasoning_content",
+  "providerName": "Google",
+  "ops": [
+    "L data: {\"candidates\":[{\"content\":{\"role\":\"model\",\"parts\":[{\"reasoning_content\":\"**Derived** the answer.\"}]}}]}",
+    "L data: {\"candidates\":[{\"content\":{\"role\":\"model\",\"parts\":[{\"text\":\"answer\"}]},\"finishReason\":\"STOP\"}]}",
+    "E"
+  ]
+}

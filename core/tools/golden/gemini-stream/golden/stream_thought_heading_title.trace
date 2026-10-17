@@ -1,0 +1,6 @@
+name|stream_thought_heading_title
+mode|stream
+thought|## Headline\nBody of the thought.|title=Headline|signature=-
+text|done
+term|sawDone=1|finish=stop|produced=1|inFlight=0
+streamError|none

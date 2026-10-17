@@ -1,0 +1,10 @@
+{
+  "name": "stream_function_call_duplicate_id",
+  "providerName": "Google",
+  "ops": [
+    "L data: {\"candidates\":[{\"content\":{\"role\":\"model\",\"parts\":[{\"functionCall\":{\"id\":\"call_1\",\"name\":\"lookup\",\"args\":{\"a\":1}}}]}}]}",
+    "L data: {\"candidates\":[{\"content\":{\"role\":\"model\",\"parts\":[{\"functionCall\":{\"id\":\"call_1\",\"name\":\"lookup\",\"args\":{\"a\":2}}}]}}]}",
+    "L data: {\"candidates\":[{\"content\":{\"role\":\"model\",\"parts\":[]},\"finishReason\":\"STOP\"}]}",
+    "E"
+  ]
+}

@@ -1,0 +1,10 @@
+{
+  "name": "stream_done_marker_stops_loop",
+  "providerName": "Google",
+  "ops": [
+    "L data: {\"candidates\":[{\"content\":{\"role\":\"model\",\"parts\":[{\"text\":\"a\"}]}}]}",
+    "L data: [DONE]",
+    "L data: {\"candidates\":[{\"content\":{\"role\":\"model\",\"parts\":[{\"text\":\"after done\"}]}}]}",
+    "E"
+  ]
+}

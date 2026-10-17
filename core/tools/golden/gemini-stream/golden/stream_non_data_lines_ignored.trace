@@ -1,0 +1,5 @@
+name|stream_non_data_lines_ignored
+mode|stream
+text|hi
+term|sawDone=1|finish=stop|produced=1|inFlight=0
+streamError|none

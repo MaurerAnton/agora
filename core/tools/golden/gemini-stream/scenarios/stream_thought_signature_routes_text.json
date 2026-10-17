@@ -1,0 +1,9 @@
+{
+  "name": "stream_thought_signature_routes_text",
+  "providerName": "Google",
+  "ops": [
+    "L data: {\"candidates\":[{\"content\":{\"role\":\"model\",\"parts\":[{\"thoughtSignature\":\"sig-1\"},{\"text\":\"thinking aloud\"},{\"text\":\"still thinking\"}]}}]}",
+    "L data: {\"candidates\":[{\"content\":{\"role\":\"model\",\"parts\":[{\"text\":\"answered\"}]},\"finishReason\":\"STOP\"}]}",
+    "E"
+  ]
+}

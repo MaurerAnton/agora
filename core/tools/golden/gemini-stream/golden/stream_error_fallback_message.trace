@@ -1,0 +1,4 @@
+name|stream_error_fallback_message
+mode|stream
+term|sawDone=0|finish=-|produced=0|inFlight=0
+streamError|api|code=-|type=INTERNAL|message=Relay reported an error in the response stream

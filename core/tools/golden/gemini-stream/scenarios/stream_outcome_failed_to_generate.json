@@ -1,0 +1,9 @@
+{
+  "name": "stream_outcome_failed_to_generate",
+  "providerName": "Google",
+  "ops": [
+    "L data: {\"candidates\":null,\"outcome\":\"upstream failed to generate the response\"}",
+    "L data: {\"candidates\":[{\"content\":{\"role\":\"model\",\"parts\":[{\"text\":\"late\"}]}}]}",
+    "E"
+  ]
+}

@@ -1,0 +1,12 @@
+name|stream_function_call_signature_chain
+mode|stream
+toolCallUpdate|streamKey=call_stream_<uuid>|id=c1|name=one|args={}|signature=s1
+toolCall|id=c1|name=one|args={}|streamKey=call_stream_<uuid>|signature=s1
+toolCallUpdate|streamKey=call_stream_<uuid>|id=c2|name=two|args={}|signature=s2
+toolCall|id=c2|name=two|args={}|streamKey=call_stream_<uuid>|signature=s2
+toolCallUpdate|streamKey=call_stream_<uuid>|id=c3|name=three|args={}|signature=s3
+toolCall|id=c3|name=three|args={}|streamKey=call_stream_<uuid>|signature=s3
+toolCallUpdate|streamKey=call_stream_<uuid>|id=c4|name=four|args={}|signature=-
+toolCall|id=c4|name=four|args={}|streamKey=call_stream_<uuid>|signature=-
+term|sawDone=1|finish=stop|produced=1|inFlight=0
+streamError|none

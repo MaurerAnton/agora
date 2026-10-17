@@ -1,0 +1,9 @@
+{
+  "name": "stream_grounding_metadata_changed",
+  "providerName": "Google",
+  "ops": [
+    "L data: {\"candidates\":[{\"content\":{\"role\":\"model\",\"parts\":[{\"text\":\"first\"}]},\"groundingMetadata\":{\"groundingChunks\":[{\"web\":{\"uri\":\"https://a.example/x\",\"title\":\"Alpha\"}},{\"web\":{\"uri\":\"https://a.example/x\",\"title\":\"Duplicate\"}},{\"web\":{\"uri\":\"https://b.example/y\"}}],\"groundingSupports\":[{\"segment\":{\"startIndex\":0,\"endIndex\":5,\"text\":\"first\"},\"groundingChunkIndices\":[0,2]},{\"segment\":{\"startIndex\":6,\"endIndex\":11,\"text\":\"second\"},\"groundingChunkIndices\":[1]}],\"webSearchQueries\":[\"agora stream\",\"gemini citations\"]}}]}",
+    "L data: {\"candidates\":[{\"content\":{\"role\":\"model\",\"parts\":[{\"text\":\"second\"}]},\"finishReason\":\"STOP\",\"groundingMetadata\":{\"groundingChunks\":[{\"web\":{\"uri\":\"https://c.example/z\"}}],\"groundingSupports\":[],\"webSearchQueries\":[\"changed\"]}}]}",
+    "E"
+  ]
+}

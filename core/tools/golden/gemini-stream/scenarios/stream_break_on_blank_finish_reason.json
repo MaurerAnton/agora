@@ -1,0 +1,9 @@
+{
+  "name": "stream_break_on_blank_finish_reason",
+  "providerName": "Google",
+  "ops": [
+    "L data: {\"candidates\":[{\"content\":{\"role\":\"model\",\"parts\":[{\"text\":\"a\"}]},\"finishReason\":\"   \"}]}",
+    "L data: {\"candidates\":[{\"content\":{\"role\":\"model\",\"parts\":[{\"text\":\"b\"}]},\"finishReason\":\"STOP\"}]}",
+    "E"
+  ]
+}

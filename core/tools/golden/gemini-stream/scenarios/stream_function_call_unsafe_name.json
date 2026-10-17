@@ -1,0 +1,9 @@
+{
+  "name": "stream_function_call_unsafe_name",
+  "providerName": "Google",
+  "ops": [
+    "L data: {\"candidates\":[{\"content\":{\"role\":\"model\",\"parts\":[{\"functionCall\":{\"id\":\"call_1\",\"name\":\"bad name\",\"args\":{}}}]}}]}",
+    "L data: {\"candidates\":[{\"content\":{\"role\":\"model\",\"parts\":[]},\"finishReason\":\"STOP\"}]}",
+    "E"
+  ]
+}

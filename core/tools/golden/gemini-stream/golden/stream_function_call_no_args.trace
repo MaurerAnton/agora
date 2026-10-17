@@ -1,0 +1,8 @@
+name|stream_function_call_no_args
+mode|stream
+toolCallUpdate|streamKey=call_stream_<uuid>|id=call_1|name=lookup|args={}|signature=-
+toolCall|id=call_1|name=lookup|args={}|streamKey=call_stream_<uuid>|signature=-
+toolCallUpdate|streamKey=call_stream_<uuid>|id=call_2|name=bare|args={}|signature=-
+toolCall|id=call_2|name=bare|args={}|streamKey=call_stream_<uuid>|signature=-
+term|sawDone=1|finish=stop|produced=1|inFlight=0
+streamError|none

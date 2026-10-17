@@ -1,0 +1,6 @@
+name|stream_thought_string_bold_title
+mode|stream
+thought|**Summary** of the reasoning steps.|title=Summary|signature=-
+text|done
+term|sawDone=1|finish=stop|produced=1|inFlight=0
+streamError|none

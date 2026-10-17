@@ -1,0 +1,9 @@
+{
+  "name": "stream_thought_heading_title",
+  "providerName": "Google",
+  "ops": [
+    "L data: {\"candidates\":[{\"content\":{\"role\":\"model\",\"parts\":[{\"thought\":\"## Headline\\nBody of the thought.\"}]}}]}",
+    "L data: {\"candidates\":[{\"content\":{\"role\":\"model\",\"parts\":[{\"text\":\"done\"}]},\"finishReason\":\"STOP\"}]}",
+    "E"
+  ]
+}

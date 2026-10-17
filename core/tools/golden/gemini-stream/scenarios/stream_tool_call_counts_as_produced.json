@@ -1,0 +1,8 @@
+{
+  "name": "stream_tool_call_counts_as_produced",
+  "providerName": "Google",
+  "ops": [
+    "L data: {\"candidates\":[{\"content\":{\"role\":\"model\",\"parts\":[{\"functionCall\":{\"id\":\"c1\",\"name\":\"lookup\",\"args\":{}}}]}}]}",
+    "E"
+  ]
+}

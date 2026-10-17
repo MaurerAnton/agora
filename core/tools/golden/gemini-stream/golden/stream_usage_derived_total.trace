@@ -1,0 +1,6 @@
+name|stream_usage_derived_total
+mode|stream
+usage|total=18|input=10|cached=-|cacheWrite=-|uncached=-|output=8|reasoning=3
+text|done
+term|sawDone=1|finish=stop|produced=1|inFlight=0
+streamError|none

@@ -1,0 +1,6 @@
+name|stream_reasoning_content
+mode|stream
+thought|**Derived** the answer.|title=Derived|signature=-
+text|answer
+term|sawDone=1|finish=stop|produced=1|inFlight=0
+streamError|none

@@ -1,0 +1,16 @@
+name|stream_grounding_hosted_once_per_change
+mode|stream
+hosted|streamKey=gemini_google_search_<uuid>|name=google_search|arguments={"query":"agora stream · gemini citations"}|result={"type":"web_search","provider":"Google","query":"agora stream · gemini citations","results":[{"title":"Alpha","url":"https://a.example/x"},{"title":"https://b.example/y","url":"https://b.example/y"}],"grounding_metadata":{"groundingChunks":[{"web":{"uri":"https://a.example/x","title":"Alpha"}},{"web":{"uri":"https://a.example/x","title":"Duplicate"}},{"web":{"uri":"https://b.example/y"}}],"groundingSupports":[{"segment":{"startIndex":0,"endIndex":5,"text":"first"},"groundingChunkIndices":[0,2]},{"segment":{"startIndex":6,"endIndex":11,"text":"second"},"groundingChunkIndices":[1]}],"webSearchQueries":["agora stream","gemini citations"]}}|error=0
+text|first
+citation|v=1;sourceId=citation_ba1403cc7aa601c0d07ca412;provider=gemini;kind=url;title=Alpha;url=https://a.example/x;fileName=null;location=null;providerSourceId=null;excerpt=null;anchors=[{0,5,first}]
+citation|v=1;sourceId=citation_57b3b5eac725703f4dd33b94;provider=gemini;kind=url;title=b.example;url=https://b.example/y;fileName=null;location=null;providerSourceId=null;excerpt=null;anchors=[{0,5,first}]
+text| second
+citation|v=1;sourceId=citation_ba1403cc7aa601c0d07ca412;provider=gemini;kind=url;title=Alpha;url=https://a.example/x;fileName=null;location=null;providerSourceId=null;excerpt=null;anchors=[{0,5,first}]
+citation|v=1;sourceId=citation_57b3b5eac725703f4dd33b94;provider=gemini;kind=url;title=b.example;url=https://b.example/y;fileName=null;location=null;providerSourceId=null;excerpt=null;anchors=[{0,5,first}]
+text| third
+citation|v=1;sourceId=citation_ba1403cc7aa601c0d07ca412;provider=gemini;kind=url;title=Alpha;url=https://a.example/x;fileName=null;location=null;providerSourceId=null;excerpt=null;anchors=[{0,5,first}]
+citation|v=1;sourceId=citation_57b3b5eac725703f4dd33b94;provider=gemini;kind=url;title=b.example;url=https://b.example/y;fileName=null;location=null;providerSourceId=null;excerpt=null;anchors=[{0,5,first}]
+citation|v=1;sourceId=citation_ba1403cc7aa601c0d07ca412;provider=gemini;kind=url;title=Alpha;url=https://a.example/x;fileName=null;location=null;providerSourceId=null;excerpt=null;anchors=[{0,5,first}]
+citation|v=1;sourceId=citation_57b3b5eac725703f4dd33b94;provider=gemini;kind=url;title=b.example;url=https://b.example/y;fileName=null;location=null;providerSourceId=null;excerpt=null;anchors=[{0,5,first}]
+term|sawDone=1|finish=stop|produced=1|inFlight=0
+streamError|none

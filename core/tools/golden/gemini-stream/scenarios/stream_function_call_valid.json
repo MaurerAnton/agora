@@ -1,0 +1,9 @@
+{
+  "name": "stream_function_call_valid",
+  "providerName": "Google",
+  "ops": [
+    "L data: {\"candidates\":[{\"content\":{\"role\":\"model\",\"parts\":[{\"functionCall\":{\"id\":\"call_1\",\"name\":\"lookup\",\"args\":{\"q\":\"agora\"}}}]}}]}",
+    "L data: {\"candidates\":[{\"content\":{\"role\":\"model\",\"parts\":[{\"text\":\"checking\"}]},\"finishReason\":\"STOP\"}]}",
+    "E"
+  ]
+}

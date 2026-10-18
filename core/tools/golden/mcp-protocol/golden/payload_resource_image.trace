@@ -1,0 +1,5 @@
+name|payload_resource_image
+mode|callPayload
+image|0|ZZ|image/gif
+structured|-
+isError|0

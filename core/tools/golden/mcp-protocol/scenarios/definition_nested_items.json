@@ -1,0 +1,43 @@
+{
+  "name": "definition_nested_items",
+  "mode": "toolDefinition",
+  "remoteName": "t",
+  "inputSchema": {
+    "type": "object",
+    "properties": {
+      "list": {
+        "type": "array",
+        "items": {
+          "type": "integer",
+          "description": "n"
+        }
+      },
+      "obj": {
+        "properties": {
+          "inner": {
+            "type": "string"
+          }
+        }
+      },
+      "deep": {
+        "items": {
+          "items": {
+            "type": "boolean"
+          }
+        }
+      },
+      "none": null,
+      "arr_prop": {
+        "type": "string",
+        "properties": {
+          "p": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "p"
+        ]
+      }
+    }
+  }
+}

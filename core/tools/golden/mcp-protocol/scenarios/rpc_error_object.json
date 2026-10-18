@@ -1,0 +1,13 @@
+{
+  "name": "rpc_error_object",
+  "mode": "rpcResponse",
+  "method": "tools/call",
+  "id": 2,
+  "response": {
+    "id": "2",
+    "error": {
+      "message": "boom",
+      "code": -32000
+    }
+  }
+}

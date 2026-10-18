@@ -1,0 +1,19 @@
+{
+  "name": "page_basic",
+  "mode": "toolsPage",
+  "result": {
+    "tools": [
+      {
+        "name": "a",
+        "description": "A",
+        "inputSchema": {
+          "type": "object"
+        }
+      },
+      {
+        "name": "b"
+      }
+    ],
+    "nextCursor": "c2"
+  }
+}

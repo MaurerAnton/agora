@@ -1,0 +1,9 @@
+{
+  "name": "rpc_id_missing",
+  "mode": "rpcResponse",
+  "method": "tools/list",
+  "id": 3,
+  "response": {
+    "result": {}
+  }
+}

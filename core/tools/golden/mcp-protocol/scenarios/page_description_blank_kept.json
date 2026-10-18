@@ -1,0 +1,12 @@
+{
+  "name": "page_description_blank_kept",
+  "mode": "toolsPage",
+  "result": {
+    "tools": [
+      {
+        "name": "a",
+        "description": null
+      }
+    ]
+  }
+}

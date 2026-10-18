@@ -1,0 +1,6 @@
+name|payload_text_only
+mode|callPayload
+text|0|hello
+text|1| world
+structured|-
+isError|0

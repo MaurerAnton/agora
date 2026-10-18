@@ -1,0 +1,5 @@
+{
+  "name": "payload_empty",
+  "mode": "callPayload",
+  "result": {}
+}

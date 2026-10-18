@@ -1,0 +1,7 @@
+{
+  "name": "payload_is_error_strict",
+  "mode": "callPayload",
+  "result": {
+    "isError": "TRUE"
+  }
+}

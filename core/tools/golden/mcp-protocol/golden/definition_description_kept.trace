@@ -1,0 +1,4 @@
+name|definition_description_kept
+mode|toolDefinition
+definition|{"type":"function","function":{"name":"mcp_srv1_t_e3b98a","description":"Does a thing.\\n\\nProvided by MCP server: Server One","parameters":{"type":"object","properties":{"a":{"type":"string","description":"An a."}},"required":["a"]}}}
+schema|{"type":"object","properties":{"a":{"type":"string","description":"An a."}},"required":["a"]}

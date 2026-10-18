@@ -1,0 +1,4 @@
+name|definition_properties_not_object
+mode|toolDefinition
+definition|{"type":"function","function":{"name":"mcp_srv1_t_e3b98a","description":"MCP tool t\\n\\nProvided by MCP server: Server One","parameters":{"type":"object","properties":{},"required":[]}}}
+schema|{"type":"object","properties":{},"required":[]}

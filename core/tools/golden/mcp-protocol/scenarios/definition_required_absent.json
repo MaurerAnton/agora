@@ -1,0 +1,14 @@
+{
+  "name": "definition_required_absent",
+  "mode": "toolDefinition",
+  "remoteName": "t",
+  "inputSchema": {
+    "type": "object",
+    "required": "a",
+    "properties": {
+      "a": {
+        "type": "string"
+      }
+    }
+  }
+}

@@ -1,0 +1,13 @@
+{
+  "name": "rpc_error_null_ignored",
+  "mode": "rpcResponse",
+  "method": "tools/call",
+  "id": 2,
+  "response": {
+    "id": "2",
+    "error": null,
+    "result": {
+      "a": 1
+    }
+  }
+}

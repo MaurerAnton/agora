@@ -1,0 +1,3 @@
+name|rpc_success
+mode|rpcResponse
+result|{"ok":true}

@@ -1,0 +1,19 @@
+{
+  "name": "payload_unknown_types",
+  "mode": "callPayload",
+  "result": {
+    "content": [
+      {
+        "type": "video"
+      },
+      {
+        "type": null
+      },
+      "x",
+      5,
+      {
+        "text": "no type"
+      }
+    ]
+  }
+}

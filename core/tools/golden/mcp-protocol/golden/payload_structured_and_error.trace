@@ -1,0 +1,4 @@
+name|payload_structured_and_error
+mode|callPayload
+structured|{"a":1}
+isError|1

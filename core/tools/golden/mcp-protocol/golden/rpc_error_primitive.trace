@@ -1,0 +1,3 @@
+name|rpc_error_primitive
+mode|rpcResponse
+error|IOException|MCP tools/call failed: "plain failure"

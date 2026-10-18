@@ -1,0 +1,13 @@
+{
+  "name": "rpc_success",
+  "mode": "rpcResponse",
+  "method": "tools/call",
+  "id": 7,
+  "response": {
+    "jsonrpc": "2.0",
+    "id": "7",
+    "result": {
+      "ok": true
+    }
+  }
+}

@@ -1,0 +1,18 @@
+{
+  "name": "page_skips_invalid",
+  "mode": "toolsPage",
+  "result": {
+    "tools": [
+      "x",
+      5,
+      {
+        "name": "  "
+      },
+      {
+        "name": "ok"
+      },
+      {}
+    ],
+    "nextCursor": "   "
+  }
+}

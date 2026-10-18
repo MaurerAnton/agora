@@ -1,0 +1,5 @@
+name|page_default_schema
+mode|toolsPage
+tool|0|a||{"type":"object","properties":{}}
+tool|1|b||{"type":"object","properties":{}}
+cursor|-

@@ -1,0 +1,22 @@
+{
+  "name": "payload_image_incomplete",
+  "mode": "callPayload",
+  "result": {
+    "content": [
+      {
+        "type": "image",
+        "data": "",
+        "mimeType": "image/png"
+      },
+      {
+        "type": "image",
+        "data": "BBBB",
+        "mimeType": "  "
+      },
+      {
+        "type": "image",
+        "data": "CCCC"
+      }
+    ]
+  }
+}

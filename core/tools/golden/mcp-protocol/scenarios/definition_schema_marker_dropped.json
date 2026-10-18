@@ -1,0 +1,19 @@
+{
+  "name": "definition_schema_marker_dropped",
+  "mode": "toolDefinition",
+  "remoteName": "t",
+  "inputSchema": {
+    "$schema": "https://json-schema.org/draft/2020-12/schema",
+    "title": "T",
+    "type": "object",
+    "properties": {
+      "a": {
+        "type": "string"
+      }
+    },
+    "required": [
+      "a",
+      "ghost"
+    ]
+  }
+}

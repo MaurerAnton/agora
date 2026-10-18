@@ -1,0 +1,7 @@
+{
+  "name": "unsupported_single",
+  "mode": "unsupportedVersion",
+  "messages": [
+    "Unsupported MCP protocol version: 1.0"
+  ]
+}

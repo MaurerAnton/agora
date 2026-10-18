@@ -1,0 +1,8 @@
+{
+  "name": "unsupported_causal_chain",
+  "mode": "unsupportedVersion",
+  "messages": [
+    "outer io failure",
+    "protocol version is not supported"
+  ]
+}

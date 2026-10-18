@@ -1,0 +1,3 @@
+name|init_missing_version
+mode|initialize
+error|IOException|MCP initialize returned no protocolVersion

@@ -1,0 +1,3 @@
+name|rpc_empty_response
+mode|rpcResponse
+error|IOException|MCP tools/call returned an empty response

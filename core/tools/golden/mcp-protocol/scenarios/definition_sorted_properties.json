@@ -1,0 +1,24 @@
+{
+  "name": "definition_sorted_properties",
+  "mode": "toolDefinition",
+  "remoteName": "t",
+  "inputSchema": {
+    "type": "object",
+    "properties": {
+      "zeta": {
+        "type": "string"
+      },
+      "alpha": {
+        "type": "number"
+      },
+      "mid": {
+        "type": "boolean"
+      }
+    },
+    "required": [
+      "zeta",
+      "alpha",
+      "missing"
+    ]
+  }
+}

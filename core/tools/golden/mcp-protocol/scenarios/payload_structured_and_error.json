@@ -1,0 +1,11 @@
+{
+  "name": "payload_structured_and_error",
+  "mode": "callPayload",
+  "result": {
+    "content": [],
+    "structuredContent": {
+      "a": 1
+    },
+    "isError": true
+  }
+}

@@ -1,0 +1,7 @@
+{
+  "name": "init_version_not_primitive",
+  "mode": "initialize",
+  "result": {
+    "protocolVersion": 20250618
+  }
+}

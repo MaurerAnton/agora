@@ -1,0 +1,6 @@
+{
+  "name": "rpc_empty_response",
+  "mode": "rpcResponse",
+  "method": "tools/call",
+  "id": 7
+}

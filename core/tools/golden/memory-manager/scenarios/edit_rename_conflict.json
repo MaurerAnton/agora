@@ -1,0 +1,9 @@
+{
+  "name": "edit_rename_conflict",
+  "mode": "edit",
+  "file_name": "test.md",
+  "setup_content": "Original",
+  "new_name": "existing.md",
+  "setup_target_name": "existing.md",
+  "setup_target_content": "Target"
+}

@@ -1,0 +1,6 @@
+{
+  "name": "create_basic",
+  "mode": "create",
+  "file_name": "new.md",
+  "content_param": "# Hello"
+}

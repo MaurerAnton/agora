@@ -74,7 +74,11 @@ parity tests in `core/tests/` — a drifting port is a failing build, not a surp
 | shell tool JSON + bounded file reads | **done** | stand `shell-tools`; UTF-16 unit accounting and the surrogate-safe slice pinned |
 | MCP protocol core (tool model, payload parsing, JSON-RPC decisions) | **done** | stand `mcp-protocol`; transport, sessions and the registry stay in Kotlin |
 | portable path-glob matcher | **done** | stand `glob-matcher`; mirrors the regex the Kotlin compiles to |
-| data layer (memory, stored files) | pending | |
+| custom provider name policy (sanitize, dedupe, reserved names) | **done** | stand `provider-names` |
+| model alias inference (Claude/Gemini/Nova display aliases) | **done** | stand `model-aliases` |
+| custom provider identity (stable ids, legacyId, remap) | **done** | stand `provider-identity` |
+| memory catalog (active memory, per-file descriptions, metadata store) | **done** | stand `memory-manager`; only `Context`/`StateFlow` are substituted, the store's `.tmp`/`.bak` recovery is pinned |
+| data layer (export/import, backups) | pending | |
 | tool execution (remaining providers, shell engines) | pending | |
 
 ## Rules for this directory

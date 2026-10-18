@@ -25,6 +25,7 @@ add_library(agora_core_lib STATIC
     src/gemini_stream.cpp
     src/java_uri.cpp
     src/mcp_protocol.cpp
+    src/memory_manager.cpp
     src/json.cpp
     src/message_preparation.cpp
     src/model_aliases.cpp

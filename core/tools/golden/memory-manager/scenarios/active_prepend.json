@@ -1,0 +1,7 @@
+{
+  "name": "active_prepend",
+  "mode": "active",
+  "active_seed": "Last line",
+  "content_param": "First line",
+  "mode_param": "prepend"
+}

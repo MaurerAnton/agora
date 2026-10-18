@@ -1,0 +1,3 @@
+name|edit_rename_conflict
+mode|edit
+error|Target file already exists: existing.md

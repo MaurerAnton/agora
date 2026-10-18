@@ -1,0 +1,7 @@
+{
+  "name": "description_set_blank_removes",
+  "mode": "description_set",
+  "file_name": "test.md",
+  "setup_content": "Original",
+  "description": ""
+}

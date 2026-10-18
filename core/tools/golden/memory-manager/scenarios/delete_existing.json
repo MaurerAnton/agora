@@ -1,0 +1,6 @@
+{
+  "name": "delete_existing",
+  "mode": "delete",
+  "file_name": "test.md",
+  "setup_content": "Content to delete"
+}

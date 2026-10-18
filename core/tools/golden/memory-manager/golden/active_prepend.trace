@@ -1,0 +1,4 @@
+name|active_prepend
+mode|active
+result|Prepended to active memory.
+active|First line\nLast line

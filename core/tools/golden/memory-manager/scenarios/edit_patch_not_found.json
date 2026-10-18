@@ -1,0 +1,8 @@
+{
+  "name": "edit_patch_not_found",
+  "mode": "edit",
+  "file_name": "test.md",
+  "setup_content": "Hello world",
+  "old_string": "missing",
+  "new_string": "found"
+}

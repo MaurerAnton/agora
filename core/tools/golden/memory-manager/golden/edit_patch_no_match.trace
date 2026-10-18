@@ -1,0 +1,3 @@
+name|edit_patch_no_match
+mode|edit
+error|old_string must not be empty

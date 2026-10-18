@@ -1,0 +1,3 @@
+name|create_existing
+mode|create
+error|File already exists: existing.md

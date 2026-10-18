@@ -1,0 +1,3 @@
+name|meta_save_restore
+mode|meta_save
+json|{\n    "file1.md": "desc1",\n    "file2.md": "desc2"\n}

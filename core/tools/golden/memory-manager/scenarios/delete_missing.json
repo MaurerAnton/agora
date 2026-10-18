@@ -1,0 +1,5 @@
+{
+  "name": "delete_missing",
+  "mode": "delete",
+  "file_name": "missing.md"
+}

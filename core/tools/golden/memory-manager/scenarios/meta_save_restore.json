@@ -1,0 +1,5 @@
+{
+  "name": "meta_save_restore",
+  "mode": "meta_save",
+  "meta_json": "{\"file1.md\": \"desc1\", \"file2.md\": \"desc2\"}"
+}

@@ -1,0 +1,7 @@
+{
+  "name": "active_append",
+  "mode": "active",
+  "active_seed": "First line",
+  "content_param": "Second line",
+  "mode_param": "append"
+}

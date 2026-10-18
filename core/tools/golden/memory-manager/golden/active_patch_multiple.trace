@@ -1,0 +1,3 @@
+name|active_patch_multiple
+mode|active
+error|old_string matches 2 times in active memory\s it must be unique

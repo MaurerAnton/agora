@@ -1,0 +1,7 @@
+{
+  "name": "create_with_description",
+  "mode": "create",
+  "file_name": "test.md",
+  "content_param": "Content",
+  "description": "A test file"
+}

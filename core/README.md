@@ -71,8 +71,11 @@ parity tests in `core/tests/` — a drifting port is a failing build, not a surp
 | Ollama provider (request pipeline + NDJSON loop) | **done** | stand `ollama` |
 | provider support (HTTP error mapping, base-URL versioning, defaults) | **done** | stand `provider-support` |
 | web-search scraper + embedding client (parse/encode halves) | **done** | stands `duckduckgo`, `embedding`; transport stays in Kotlin |
+| shell tool JSON + bounded file reads | **done** | stand `shell-tools`; UTF-16 unit accounting and the surrogate-safe slice pinned |
+| MCP protocol core (tool model, payload parsing, JSON-RPC decisions) | **done** | stand `mcp-protocol`; transport, sessions and the registry stay in Kotlin |
+| portable path-glob matcher | **done** | stand `glob-matcher`; mirrors the regex the Kotlin compiles to |
 | data layer (memory, stored files) | pending | |
-| tool execution, MCP client | pending | |
+| tool execution (remaining providers, shell engines) | pending | |
 
 ## Rules for this directory
 

@@ -1,0 +1,13 @@
+{
+  "name": "definitions_quoted_name_with_comma",
+  "mode": "definitions",
+  "shellEnabled": true,
+  "sandboxEnabled": false,
+  "toolTimeoutMs": 60000,
+  "devices": [
+    {
+      "name": "a,b \"c\"",
+      "type": "conch"
+    }
+  ]
+}

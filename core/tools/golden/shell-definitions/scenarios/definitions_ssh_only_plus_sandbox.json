@@ -1,0 +1,13 @@
+{
+  "name": "definitions_ssh_only_plus_sandbox",
+  "mode": "definitions",
+  "shellEnabled": true,
+  "sandboxEnabled": true,
+  "toolTimeoutMs": 60000,
+  "devices": [
+    {
+      "name": "edge",
+      "type": "ssh"
+    }
+  ]
+}

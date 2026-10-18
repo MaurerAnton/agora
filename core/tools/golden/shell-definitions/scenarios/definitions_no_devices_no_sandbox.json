@@ -1,0 +1,8 @@
+{
+  "name": "definitions_no_devices_no_sandbox",
+  "mode": "definitions",
+  "shellEnabled": true,
+  "sandboxEnabled": false,
+  "toolTimeoutMs": 60000,
+  "devices": []
+}

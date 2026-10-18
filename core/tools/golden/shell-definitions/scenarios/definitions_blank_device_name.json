@@ -1,0 +1,13 @@
+{
+  "name": "definitions_blank_device_name",
+  "mode": "definitions",
+  "shellEnabled": true,
+  "sandboxEnabled": false,
+  "toolTimeoutMs": 60000,
+  "devices": [
+    {
+      "name": "   ",
+      "type": "conch"
+    }
+  ]
+}

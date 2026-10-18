@@ -1,0 +1,13 @@
+{
+  "name": "definitions_sandbox_plus_device",
+  "mode": "definitions",
+  "shellEnabled": true,
+  "sandboxEnabled": true,
+  "toolTimeoutMs": 60000,
+  "devices": [
+    {
+      "name": "box",
+      "type": "conch"
+    }
+  ]
+}

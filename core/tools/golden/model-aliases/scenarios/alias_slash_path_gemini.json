@@ -1,0 +1,5 @@
+{
+  "name": "alias_slash_path_gemini",
+  "mode": "alias",
+  "modelName": "google/gemini-2.0-flash-preview"
+}

@@ -1,0 +1,5 @@
+{
+  "name": "alias_qwen3_numeric",
+  "mode": "alias",
+  "modelName": "qwen3-235b"
+}

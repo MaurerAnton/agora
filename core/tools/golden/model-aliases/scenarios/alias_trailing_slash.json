@@ -1,0 +1,5 @@
+{
+  "name": "alias_trailing_slash",
+  "mode": "alias",
+  "modelName": "openai/gpt-4o/"
+}

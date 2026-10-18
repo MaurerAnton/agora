@@ -27,6 +27,7 @@ add_library(agora_core_lib STATIC
     src/mcp_protocol.cpp
     src/json.cpp
     src/message_preparation.cpp
+    src/model_aliases.cpp
     src/message_preparation_tokens.cpp
     src/ollama.cpp
     src/openai_request.cpp

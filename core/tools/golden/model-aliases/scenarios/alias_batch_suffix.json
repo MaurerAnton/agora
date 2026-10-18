@@ -1,0 +1,5 @@
+{
+  "name": "alias_batch_suffix",
+  "mode": "alias",
+  "modelName": "gpt-4:batch"
+}

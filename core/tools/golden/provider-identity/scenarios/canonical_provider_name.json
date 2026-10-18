@@ -1,0 +1,12 @@
+{
+  "name": "canonical_provider_name",
+  "mode": "canonical",
+  "modelId": "providerA:model",
+  "providers": [
+    {
+      "name": "providerA",
+      "id": "id-A",
+      "legacyNames": []
+    }
+  ]
+}

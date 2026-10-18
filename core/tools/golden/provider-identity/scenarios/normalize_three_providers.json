@@ -1,0 +1,24 @@
+{
+  "name": "normalize_three_providers",
+  "mode": "normalize",
+  "providers": [
+    {
+      "name": "A",
+      "type": "conch"
+    },
+    {
+      "name": "B",
+      "type": "ssh"
+    },
+    {
+      "name": "C",
+      "type": "conch"
+    }
+  ],
+  "occupiedIds": [],
+  "newIds": [
+    "custom-provider-aaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa",
+    "custom-provider-bbbb-bbbb-bbbb-bbbb-bbbbbbbbbbbb",
+    "custom-provider-cccc-cccc-cccc-cccc-cccccccccccc"
+  ]
+}

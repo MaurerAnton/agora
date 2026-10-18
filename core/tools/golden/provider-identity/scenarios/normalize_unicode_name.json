@@ -1,0 +1,14 @@
+{
+  "name": "normalize_unicode_name",
+  "mode": "normalize",
+  "providers": [
+    {
+      "name": "Провайдер",
+      "type": "conch"
+    }
+  ],
+  "occupiedIds": [],
+  "newIds": [
+    "custom-provider-aaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa"
+  ]
+}

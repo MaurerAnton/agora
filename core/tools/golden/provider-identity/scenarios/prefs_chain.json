@@ -1,0 +1,11 @@
+{
+  "name": "prefs_chain",
+  "mode": "preferenceKeys",
+  "aliases": {
+    "custom-provider-old:model": "a"
+  },
+  "migrations": {
+    "custom-provider-old": "mid",
+    "mid": "new"
+  }
+}

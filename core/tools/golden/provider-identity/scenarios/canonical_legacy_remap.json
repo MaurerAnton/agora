@@ -1,0 +1,14 @@
+{
+  "name": "canonical_legacy_remap",
+  "mode": "canonical",
+  "modelId": "custom-provider-old:model",
+  "providers": [
+    {
+      "name": "A",
+      "id": "custom-provider-new",
+      "legacyNames": [
+        "custom-provider-old"
+      ]
+    }
+  ]
+}

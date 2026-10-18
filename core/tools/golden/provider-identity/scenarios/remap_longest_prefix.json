@@ -1,0 +1,9 @@
+{
+  "name": "remap_longest_prefix",
+  "mode": "remap",
+  "modelId": "custom-provider-abc123:model",
+  "migrations": {
+    "custom-provider-abc": "x",
+    "custom-provider-abc123": "y"
+  }
+}

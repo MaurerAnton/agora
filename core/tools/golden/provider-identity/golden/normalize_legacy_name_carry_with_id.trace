@@ -1,0 +1,7 @@
+name|normalize_legacy_name_carry_with_id
+mode|normalize
+providers|1
+provider|0|A|custom-provider-00000000-0000-4000-8000-000000000000|old-a\sA
+migrations|2
+migration|0|old-a|custom-provider-00000000-0000-4000-8000-000000000000
+migration|1|A|custom-provider-00000000-0000-4000-8000-000000000000

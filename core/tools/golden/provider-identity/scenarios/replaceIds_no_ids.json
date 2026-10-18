@@ -1,0 +1,6 @@
+{
+  "name": "replaceIds_no_ids",
+  "mode": "replaceIds",
+  "text": "no ids here",
+  "replacement": "X"
+}

@@ -1,0 +1,12 @@
+{
+  "name": "normalize_no_change",
+  "mode": "normalize",
+  "providers": [
+    {
+      "name": "A",
+      "id": "stable-id-123"
+    }
+  ],
+  "occupiedIds": [],
+  "newIds": []
+}

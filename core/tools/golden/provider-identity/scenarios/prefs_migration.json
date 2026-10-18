@@ -1,0 +1,10 @@
+{
+  "name": "prefs_migration",
+  "mode": "preferenceKeys",
+  "aliases": {
+    "custom-provider-a:model1": "a"
+  },
+  "migrations": {
+    "custom-provider-a": "new-id"
+  }
+}

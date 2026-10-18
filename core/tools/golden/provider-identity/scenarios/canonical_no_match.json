@@ -1,0 +1,14 @@
+{
+  "name": "canonical_no_match",
+  "mode": "canonical",
+  "modelId": "custom-provider-x:model",
+  "providers": [
+    {
+      "name": "A",
+      "id": "custom-provider-abc",
+      "legacyNames": [
+        "old-a"
+      ]
+    }
+  ]
+}

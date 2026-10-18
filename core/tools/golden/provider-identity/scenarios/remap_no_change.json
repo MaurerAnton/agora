@@ -1,0 +1,6 @@
+{
+  "name": "remap_no_change",
+  "mode": "remap",
+  "modelId": "custom-provider-abc123:model",
+  "migrations": {}
+}

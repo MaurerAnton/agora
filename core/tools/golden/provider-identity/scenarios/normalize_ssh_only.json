@@ -1,0 +1,12 @@
+{
+  "name": "normalize_ssh_only",
+  "mode": "normalize",
+  "providers": [
+    {
+      "name": "SSH",
+      "type": "ssh"
+    }
+  ],
+  "occupiedIds": [],
+  "newIds": []
+}

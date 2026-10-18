@@ -1,0 +1,8 @@
+{
+  "name": "remap_provider_prefix_only",
+  "mode": "remap",
+  "modelId": "custom-provider-abc123",
+  "migrations": {
+    "custom-provider-abc123": "new"
+  }
+}

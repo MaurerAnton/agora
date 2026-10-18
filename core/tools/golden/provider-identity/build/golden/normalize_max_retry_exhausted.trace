@@ -1,0 +1,6 @@
+name|normalize_max_retry_exhausted
+mode|normalize
+providers|1
+provider|0|A|custom-provider-5cb4ad3e-2faa-4b08-aed1-366dda676156|A
+migrations|1
+migration|0|A|custom-provider-5cb4ad3e-2faa-4b08-aed1-366dda676156

@@ -1,0 +1,6 @@
+name|normalize_name_with_special_chars
+mode|normalize
+providers|1
+provider|0|a,b c\sd|custom-provider-882c6cd7-a905-4327-a8c0-681088d559a8|a,b c\sd
+migrations|1
+migration|0|a,b c\sd|custom-provider-882c6cd7-a905-4327-a8c0-681088d559a8

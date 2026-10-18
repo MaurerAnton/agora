@@ -1,0 +1,11 @@
+{
+  "name": "prefs_partial_overlap",
+  "mode": "preferenceKeys",
+  "aliases": {
+    "custom-provider-a:model1": "a",
+    "custom-provider-b:model2": "b"
+  },
+  "migrations": {
+    "custom-provider-a": "new-a"
+  }
+}

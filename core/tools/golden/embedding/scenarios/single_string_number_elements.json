@@ -1,0 +1,5 @@
+{
+  "name": "single_string_number_elements",
+  "mode": "single",
+  "response": "{\"data\": [{\"embedding\": [\"1.5\", \"2\"]}]}"
+}

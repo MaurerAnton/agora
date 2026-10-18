@@ -1,0 +1,8 @@
+{
+  "name": "batch_element_not_primitive",
+  "mode": "batch",
+  "texts": [
+    "a"
+  ],
+  "response": "{\"data\":[{\"embedding\":[{\"nested\":1}]}]}"
+}

@@ -1,0 +1,5 @@
+{
+  "name": "single_item_not_object",
+  "mode": "single",
+  "response": "{\"data\": [\"x\"]}"
+}

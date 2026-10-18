@@ -1,0 +1,5 @@
+{
+  "name": "single_data_wrong_kind",
+  "mode": "single",
+  "response": "{\"data\": {\"0\": 1}}"
+}

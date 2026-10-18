@@ -1,0 +1,6 @@
+{
+  "name": "batch_empty_texts_skips_response",
+  "mode": "batch",
+  "texts": [],
+  "response": null
+}

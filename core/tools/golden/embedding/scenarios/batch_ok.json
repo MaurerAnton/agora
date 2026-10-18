@@ -1,0 +1,9 @@
+{
+  "name": "batch_ok",
+  "mode": "batch",
+  "texts": [
+    "a",
+    "b"
+  ],
+  "response": "{\"data\":[{\"embedding\":[1.0,2.0]},{\"embedding\":[-3.5,4e2]}]}"
+}

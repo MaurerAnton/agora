@@ -1,0 +1,10 @@
+{
+  "name": "batch_count_mismatch_follows_response",
+  "mode": "batch",
+  "texts": [
+    "a",
+    "b",
+    "c"
+  ],
+  "response": "{\"data\":[{\"embedding\":[1.0]},{\"embedding\":[2.0]}]}"
+}

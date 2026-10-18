@@ -1,0 +1,4 @@
+name|batch_item_missing_embedding
+mode|batch
+embedding|0|1.0
+embedding|1|none

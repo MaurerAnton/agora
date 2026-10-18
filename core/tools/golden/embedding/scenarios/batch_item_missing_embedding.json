@@ -1,0 +1,9 @@
+{
+  "name": "batch_item_missing_embedding",
+  "mode": "batch",
+  "texts": [
+    "a",
+    "b"
+  ],
+  "response": "{\"data\":[{\"embedding\":[1.0]},{}]}"
+}

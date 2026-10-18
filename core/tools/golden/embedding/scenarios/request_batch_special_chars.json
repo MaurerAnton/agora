@@ -1,0 +1,10 @@
+{
+  "name": "request_batch_special_chars",
+  "mode": "requestBatch",
+  "texts": [
+    "first \"quoted\"",
+    "line\nbreak",
+    "tab\there"
+  ],
+  "model": "text-embedding-3-small"
+}

@@ -1,0 +1,8 @@
+{
+  "name": "batch_bad_json",
+  "mode": "batch",
+  "texts": [
+    "a"
+  ],
+  "response": "<html>error</html>"
+}

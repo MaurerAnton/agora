@@ -1,0 +1,9 @@
+{
+  "name": "batch_null_response",
+  "mode": "batch",
+  "texts": [
+    "a",
+    "b"
+  ],
+  "response": null
+}

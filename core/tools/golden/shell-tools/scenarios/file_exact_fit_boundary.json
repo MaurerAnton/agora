@@ -1,0 +1,14 @@
+{
+  "name": "file_exact_fit_boundary",
+  "mode": "fileRead",
+  "fileServer": "srv",
+  "filePath": "/tmp/f.txt",
+  "fileContent": "xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx",
+  "fileLines": 0,
+  "totalLines": 10,
+  "totalBytes": 100,
+  "offset": 0,
+  "limit": 0,
+  "fileTruncated": false,
+  "maxLength": 373
+}

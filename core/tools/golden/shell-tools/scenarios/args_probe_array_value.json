@@ -1,0 +1,6 @@
+{
+  "name": "args_probe_array_value",
+  "mode": "toolArgs",
+  "arguments": "{\"a\":[1,2]}",
+  "probeKey": "a"
+}

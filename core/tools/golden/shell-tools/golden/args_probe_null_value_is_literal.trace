@@ -1,0 +1,5 @@
+name|args_probe_null_value_is_literal
+mode|toolArgs
+arg|z|null
+probe|null
+bool|0

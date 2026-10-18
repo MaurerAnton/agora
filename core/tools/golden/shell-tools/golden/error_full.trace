@@ -1,0 +1,3 @@
+name|error_full
+mode|jsonError
+json|{"type":"net","error":"error","message":"boom","server":"srv","command":"ls"}

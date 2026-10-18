@@ -1,0 +1,13 @@
+{
+  "name": "file_multiline_lines_counted",
+  "mode": "fileRead",
+  "fileServer": "srv",
+  "filePath": "/tmp/f.txt",
+  "fileContent": "one\ntwo\nthree",
+  "fileLines": 0,
+  "totalLines": 10,
+  "totalBytes": 100,
+  "offset": 0,
+  "limit": 0,
+  "fileTruncated": false
+}

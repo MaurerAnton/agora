@@ -1,0 +1,14 @@
+{
+  "name": "file_big_unicode_truncation",
+  "mode": "fileRead",
+  "fileServer": "srv",
+  "filePath": "/tmp/f.txt",
+  "fileContent": "€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€",
+  "fileLines": 0,
+  "totalLines": 10,
+  "totalBytes": 100,
+  "offset": 0,
+  "limit": 0,
+  "fileTruncated": false,
+  "maxLength": 260
+}

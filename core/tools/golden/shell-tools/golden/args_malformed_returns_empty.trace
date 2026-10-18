@@ -1,0 +1,4 @@
+name|args_malformed_returns_empty
+mode|toolArgs
+probe|
+bool|0

@@ -1,0 +1,14 @@
+{
+  "name": "file_surrogate_pair_exact_boundary",
+  "mode": "fileRead",
+  "fileServer": "srv",
+  "filePath": "/tmp/f.txt",
+  "fileContent": "AB😀CD😀EF",
+  "fileLines": 0,
+  "totalLines": 10,
+  "totalBytes": 100,
+  "offset": 0,
+  "limit": 0,
+  "fileTruncated": false,
+  "maxLength": 176
+}

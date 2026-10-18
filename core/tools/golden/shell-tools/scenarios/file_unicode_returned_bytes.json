@@ -1,0 +1,13 @@
+{
+  "name": "file_unicode_returned_bytes",
+  "mode": "fileRead",
+  "fileServer": "srv",
+  "filePath": "/tmp/f.txt",
+  "fileContent": "héllo €",
+  "fileLines": 0,
+  "totalLines": 10,
+  "totalBytes": 100,
+  "offset": 0,
+  "limit": 0,
+  "fileTruncated": false
+}

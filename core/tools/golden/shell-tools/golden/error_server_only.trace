@@ -1,0 +1,3 @@
+name|error_server_only
+mode|jsonError
+json|{"type":"t","error":"error","message":"m","server":"box"}

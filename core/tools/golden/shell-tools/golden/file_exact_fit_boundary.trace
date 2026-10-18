@@ -1,0 +1,3 @@
+name|file_exact_fit_boundary
+mode|fileRead
+json|{"type":"file_read","server":"srv","path":"/tmp/f.txt","content":"xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx","lines":1,"total_lines":10,"total_bytes":100,"returned_bytes":200,"offset":0,"limit":0,"truncated":false}

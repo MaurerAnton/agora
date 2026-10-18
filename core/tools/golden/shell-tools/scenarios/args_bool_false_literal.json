@@ -1,0 +1,6 @@
+{
+  "name": "args_bool_false_literal",
+  "mode": "toolArgs",
+  "arguments": "{\"b\":false}",
+  "probeKey": "b"
+}

@@ -1,0 +1,8 @@
+{
+  "name": "error_special_chars",
+  "mode": "jsonError",
+  "type": "t",
+  "message": "quo\"te\nline\\slash",
+  "server": null,
+  "command": null
+}

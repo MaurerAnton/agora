@@ -1,0 +1,6 @@
+{
+  "name": "args_probe_null_value_is_literal",
+  "mode": "toolArgs",
+  "arguments": "{\"z\":null}",
+  "probeKey": "z"
+}

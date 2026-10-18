@@ -1,0 +1,6 @@
+{
+  "name": "args_mixed_values",
+  "mode": "toolArgs",
+  "arguments": "{\"s\":\"x\",\"n\":1,\"b\":true,\"o\":{\"a\":1},\"arr\":[1,2]}",
+  "probeKey": "s"
+}

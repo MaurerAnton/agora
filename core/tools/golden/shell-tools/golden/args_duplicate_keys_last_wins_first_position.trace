@@ -1,0 +1,6 @@
+name|args_duplicate_keys_last_wins_first_position
+mode|toolArgs
+arg|a|3
+arg|b|2
+probe|3
+bool|0

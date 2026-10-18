@@ -1,0 +1,7 @@
+{
+  "name": "error_server_only",
+  "mode": "jsonError",
+  "type": "t",
+  "message": "m",
+  "server": "box"
+}

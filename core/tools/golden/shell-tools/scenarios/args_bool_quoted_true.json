@@ -1,0 +1,6 @@
+{
+  "name": "args_bool_quoted_true",
+  "mode": "toolArgs",
+  "arguments": "{\"b\":\"true\"}",
+  "probeKey": "b"
+}

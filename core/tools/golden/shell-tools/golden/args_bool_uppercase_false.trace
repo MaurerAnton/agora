@@ -1,0 +1,5 @@
+name|args_bool_uppercase_false
+mode|toolArgs
+arg|b|"TRUE"
+probe|TRUE
+bool|0

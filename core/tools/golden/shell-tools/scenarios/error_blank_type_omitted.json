@@ -1,0 +1,6 @@
+{
+  "name": "error_blank_type_omitted",
+  "mode": "jsonError",
+  "type": "   ",
+  "message": "boom"
+}

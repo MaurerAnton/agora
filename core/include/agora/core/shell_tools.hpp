@@ -59,4 +59,29 @@ std::string bounded_file_read_json(const std::string& server, const std::string&
                                    const ShellFileReadResult& result,
                                    std::int32_t max_length = 100000);
 
+// ---------------------------------------------------------------------------------------------
+// ShellToolDefinitions.kt — the tool-schema builder. The two stand-only leaf inputs become a
+// plain config struct (the Kotlin reads GenerationContext.shellEnabled / shellDevices[].name,
+// .type / sandboxEnabled and toolTimeoutMs).
+// ---------------------------------------------------------------------------------------------
+
+struct ShellDeviceConfig {
+    std::string name;
+    std::string type;  // "conch" | "ssh"
+};
+
+struct ShellDefinitionsConfig {
+    bool shell_enabled = false;
+    bool sandbox_enabled = false;
+    std::vector<ShellDeviceConfig> devices;
+    std::int32_t tool_timeout_ms = 60000;
+};
+
+/** ShellDurableJobExecutor.maxWaitMs: the timeout minus the outer margin, floored at 1s. */
+std::int32_t max_wait_ms(const ShellDefinitionsConfig& config);
+
+/** The advertised tool set (list_shells/execute_shell_command + job/file/image tools). */
+std::vector<openai::ToolDefinition> build_shell_tool_definitions(
+    const ShellDefinitionsConfig& config);
+
 }  // namespace agora::core::shell_tools

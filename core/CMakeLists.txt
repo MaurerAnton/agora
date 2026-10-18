@@ -36,6 +36,7 @@ add_library(agora_core_lib STATIC
     src/portable_glob.cpp
     src/provider_support.cpp
     src/sha256.cpp
+    src/shell_tool_definitions.cpp
     src/shell_tools.cpp
     src/stream_normalization.cpp
     src/stream_normalization_normalizer.cpp

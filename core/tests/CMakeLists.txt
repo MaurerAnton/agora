@@ -22,6 +22,7 @@ add_executable(agora_core_tests
     duckduckgo_parity_test.cpp
     embedding_parity_test.cpp
     mcp_protocol_parity_test.cpp
+    shell_definitions_parity_test.cpp
     shell_tools_parity_test.cpp
     parity_test.cpp
     fuzz_parity_test.cpp
@@ -53,6 +54,7 @@ target_compile_definitions(agora_core_tests PRIVATE
     AGORA_FIXTURE_DUCKDUCKGO_DIR="${CMAKE_CURRENT_SOURCE_DIR}/../tools/golden/duckduckgo"
     AGORA_FIXTURE_MCP_PROTOCOL_DIR="${CMAKE_CURRENT_SOURCE_DIR}/../tools/golden/mcp-protocol"
     AGORA_FIXTURE_EMBEDDING_DIR="${CMAKE_CURRENT_SOURCE_DIR}/../tools/golden/embedding"
+    AGORA_FIXTURE_SHELL_DEFINITIONS_DIR="${CMAKE_CURRENT_SOURCE_DIR}/../tools/golden/shell-definitions"
     AGORA_FIXTURE_SHELL_TOOLS_DIR="${CMAKE_CURRENT_SOURCE_DIR}/../tools/golden/shell-tools"
     AGORA_FIXTURE_PREP_VOCAB="${CMAKE_CURRENT_SOURCE_DIR}/../../app/src/main/assets/tokenizers/o200k_base.tiktoken"
 )

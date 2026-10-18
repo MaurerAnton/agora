@@ -1,0 +1,13 @@
+{
+  "name": "definitions_timeout_default",
+  "mode": "definitions",
+  "shellEnabled": true,
+  "sandboxEnabled": false,
+  "toolTimeoutMs": 60000,
+  "devices": [
+    {
+      "name": "box",
+      "type": "conch"
+    }
+  ]
+}

@@ -1,0 +1,17 @@
+{
+  "name": "definitions_multi_conch",
+  "mode": "definitions",
+  "shellEnabled": true,
+  "sandboxEnabled": false,
+  "toolTimeoutMs": 60000,
+  "devices": [
+    {
+      "name": "box",
+      "type": "conch"
+    },
+    {
+      "name": "farm",
+      "type": "conch"
+    }
+  ]
+}

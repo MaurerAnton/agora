@@ -1,0 +1,13 @@
+{
+  "name": "definitions_unknown_device_type",
+  "mode": "definitions",
+  "shellEnabled": true,
+  "sandboxEnabled": false,
+  "toolTimeoutMs": 60000,
+  "devices": [
+    {
+      "name": "mystery",
+      "type": "telepathy"
+    }
+  ]
+}

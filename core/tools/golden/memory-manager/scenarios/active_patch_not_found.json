@@ -1,0 +1,8 @@
+{
+  "name": "active_patch_not_found",
+  "mode": "active",
+  "active_seed": "Hello world",
+  "mode_param": "patch",
+  "old_string": "missing",
+  "new_string": "found"
+}

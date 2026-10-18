@@ -1,0 +1,7 @@
+{
+  "name": "create_existing",
+  "mode": "create",
+  "file_name": "existing.md",
+  "setup_content": "Original",
+  "content_param": "Duplicate"
+}

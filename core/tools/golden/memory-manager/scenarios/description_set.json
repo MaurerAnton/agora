@@ -1,0 +1,7 @@
+{
+  "name": "description_set",
+  "mode": "description_set",
+  "file_name": "test.md",
+  "setup_content": "Original",
+  "description": "A test file"
+}

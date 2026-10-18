@@ -1,0 +1,8 @@
+{
+  "name": "active_patch",
+  "mode": "active",
+  "active_seed": "Hello world",
+  "mode_param": "patch",
+  "old_string": "world",
+  "new_string": "universe"
+}

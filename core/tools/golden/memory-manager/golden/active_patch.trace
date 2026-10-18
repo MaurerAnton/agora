@@ -1,0 +1,4 @@
+name|active_patch
+mode|active
+result|Active memory patched.
+active|Hello universe

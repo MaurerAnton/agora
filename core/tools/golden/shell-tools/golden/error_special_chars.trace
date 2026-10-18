@@ -1,0 +1,3 @@
+name|error_special_chars
+mode|jsonError
+json|{"type":"t","error":"error","message":"quo\\"te\\nline\\\\slash"}

@@ -1,0 +1,6 @@
+{
+  "name": "args_malformed_returns_empty",
+  "mode": "toolArgs",
+  "arguments": "{oops",
+  "probeKey": "k"
+}

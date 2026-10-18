@@ -1,0 +1,5 @@
+name|args_probe_array_value
+mode|toolArgs
+arg|a|[1,2]
+probe|
+bool|0

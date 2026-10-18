@@ -1,0 +1,9 @@
+name|args_mixed_values
+mode|toolArgs
+arg|s|"x"
+arg|n|1
+arg|b|true
+arg|o|{"a":1}
+arg|arr|[1,2]
+probe|x
+bool|0

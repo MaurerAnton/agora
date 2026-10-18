@@ -1,0 +1,6 @@
+{
+  "name": "args_probe_object_value",
+  "mode": "toolArgs",
+  "arguments": "{\"o\":{\"a\":1}}",
+  "probeKey": "o"
+}

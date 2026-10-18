@@ -1,0 +1,8 @@
+{
+  "name": "error_full",
+  "mode": "jsonError",
+  "type": "net",
+  "message": "boom",
+  "server": "srv",
+  "command": "ls"
+}

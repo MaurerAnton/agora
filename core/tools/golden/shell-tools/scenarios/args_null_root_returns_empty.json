@@ -1,0 +1,6 @@
+{
+  "name": "args_null_root_returns_empty",
+  "mode": "toolArgs",
+  "arguments": "null",
+  "probeKey": "k"
+}

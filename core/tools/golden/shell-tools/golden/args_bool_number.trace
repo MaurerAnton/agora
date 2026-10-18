@@ -1,0 +1,5 @@
+name|args_bool_number
+mode|toolArgs
+arg|b|1
+probe|1
+bool|0

@@ -1,0 +1,3 @@
+name|error_empty_message
+mode|jsonError
+json|{"error":"error","message":""}

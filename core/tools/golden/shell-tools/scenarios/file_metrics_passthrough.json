@@ -1,0 +1,13 @@
+{
+  "name": "file_metrics_passthrough",
+  "mode": "fileRead",
+  "fileServer": "srv",
+  "filePath": "/tmp/f.txt",
+  "fileContent": "abc",
+  "fileLines": 0,
+  "totalLines": 42,
+  "totalBytes": 999,
+  "offset": 5,
+  "limit": 77,
+  "fileTruncated": true
+}

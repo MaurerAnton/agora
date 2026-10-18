@@ -1,0 +1,3 @@
+name|error_blank_type_omitted
+mode|jsonError
+json|{"error":"error","message":"boom"}

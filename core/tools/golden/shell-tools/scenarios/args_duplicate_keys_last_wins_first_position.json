@@ -1,0 +1,6 @@
+{
+  "name": "args_duplicate_keys_last_wins_first_position",
+  "mode": "toolArgs",
+  "arguments": "{\"a\":1,\"b\":2,\"a\":3}",
+  "probeKey": "a"
+}

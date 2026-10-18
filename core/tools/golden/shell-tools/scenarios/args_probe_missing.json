@@ -1,0 +1,6 @@
+{
+  "name": "args_probe_missing",
+  "mode": "toolArgs",
+  "arguments": "{\"a\":1}",
+  "probeKey": "nope"
+}

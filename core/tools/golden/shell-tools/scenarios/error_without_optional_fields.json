@@ -1,0 +1,6 @@
+{
+  "name": "error_without_optional_fields",
+  "mode": "jsonError",
+  "type": "net",
+  "message": "boom"
+}

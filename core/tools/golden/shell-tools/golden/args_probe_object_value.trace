@@ -1,0 +1,5 @@
+name|args_probe_object_value
+mode|toolArgs
+arg|o|{"a":1}
+probe|
+bool|0

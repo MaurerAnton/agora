@@ -34,6 +34,7 @@ add_library(agora_core_lib STATIC
     src/openai_stream_codec.cpp
     src/provider_support.cpp
     src/sha256.cpp
+    src/shell_tools.cpp
     src/stream_normalization.cpp
     src/stream_normalization_normalizer.cpp
     src/stream_normalization_text_tools.cpp

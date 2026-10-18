@@ -1,0 +1,7 @@
+name|sanitize_all_rejected
+mode|sanitize
+accepted|0
+rejected|3
+reject|0|Google
+reject|1|Local
+reject|2|

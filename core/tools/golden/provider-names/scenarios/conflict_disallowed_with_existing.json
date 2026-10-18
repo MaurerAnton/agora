@@ -1,0 +1,8 @@
+{
+  "name": "conflict_disallowed_with_existing",
+  "mode": "conflict",
+  "providerName": "Google",
+  "existingNames": [
+    "Google Custom"
+  ]
+}

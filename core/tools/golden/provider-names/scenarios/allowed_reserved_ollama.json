@@ -1,0 +1,5 @@
+{
+  "name": "allowed_reserved_ollama",
+  "mode": "allowed",
+  "providerName": "Ollama"
+}

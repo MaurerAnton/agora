@@ -1,0 +1,11 @@
+{
+  "name": "sanitize_first_wins",
+  "mode": "sanitize",
+  "configs": [
+    "Box",
+    "box",
+    " Google",
+    "Local",
+    "Foo"
+  ]
+}

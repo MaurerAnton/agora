@@ -1,0 +1,5 @@
+{
+  "name": "allowed_reserved_lowercase",
+  "mode": "allowed",
+  "providerName": "google"
+}

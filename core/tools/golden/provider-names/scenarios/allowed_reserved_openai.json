@@ -1,0 +1,5 @@
+{
+  "name": "allowed_reserved_openai",
+  "mode": "allowed",
+  "providerName": "OpenAI"
+}

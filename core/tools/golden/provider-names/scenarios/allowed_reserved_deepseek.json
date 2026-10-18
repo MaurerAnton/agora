@@ -1,0 +1,5 @@
+{
+  "name": "allowed_reserved_deepseek",
+  "mode": "allowed",
+  "providerName": "DeepSeek"
+}

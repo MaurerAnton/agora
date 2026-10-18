@@ -1,0 +1,5 @@
+{
+  "name": "allowed_reserved_local",
+  "mode": "allowed",
+  "providerName": "Local"
+}

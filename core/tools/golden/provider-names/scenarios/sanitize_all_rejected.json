@@ -1,0 +1,9 @@
+{
+  "name": "sanitize_all_rejected",
+  "mode": "sanitize",
+  "configs": [
+    "Google",
+    "Local",
+    ""
+  ]
+}

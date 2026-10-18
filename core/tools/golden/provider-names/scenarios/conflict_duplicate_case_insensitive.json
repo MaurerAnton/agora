@@ -1,0 +1,8 @@
+{
+  "name": "conflict_duplicate_case_insensitive",
+  "mode": "conflict",
+  "providerName": "Box",
+  "existingNames": [
+    "box"
+  ]
+}

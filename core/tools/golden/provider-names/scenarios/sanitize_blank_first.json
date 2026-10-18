@@ -1,0 +1,8 @@
+{
+  "name": "sanitize_blank_first",
+  "mode": "sanitize",
+  "configs": [
+    "   ",
+    "Box"
+  ]
+}

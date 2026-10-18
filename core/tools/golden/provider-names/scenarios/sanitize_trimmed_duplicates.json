@@ -1,0 +1,9 @@
+{
+  "name": "sanitize_trimmed_duplicates",
+  "mode": "sanitize",
+  "configs": [
+    "Box",
+    "  Box  ",
+    "\tBox\n"
+  ]
+}

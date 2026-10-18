@@ -1,0 +1,6 @@
+{
+  "name": "normalize_path_backslash",
+  "mode": "match",
+  "pattern": "src/main",
+  "path": "src\\main"
+}

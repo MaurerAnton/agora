@@ -1,0 +1,6 @@
+{
+  "name": "question_matches_newline",
+  "mode": "match",
+  "pattern": "a?c",
+  "path": "a\nc"
+}

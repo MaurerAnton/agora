@@ -1,0 +1,6 @@
+{
+  "name": "class_caret_inside",
+  "mode": "match",
+  "pattern": "[a^]",
+  "path": "^"
+}

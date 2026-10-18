@@ -1,0 +1,6 @@
+{
+  "name": "question_requires_char",
+  "mode": "match",
+  "pattern": "a?c",
+  "path": "ac"
+}

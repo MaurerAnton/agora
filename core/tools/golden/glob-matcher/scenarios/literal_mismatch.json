@@ -1,0 +1,6 @@
+{
+  "name": "literal_mismatch",
+  "mode": "match",
+  "pattern": "a/b.txt",
+  "path": "a/c.txt"
+}

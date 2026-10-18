@@ -1,0 +1,6 @@
+{
+  "name": "class_range_miss",
+  "mode": "match",
+  "pattern": "[a-c]",
+  "path": "d"
+}

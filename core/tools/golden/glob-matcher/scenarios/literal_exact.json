@@ -1,0 +1,6 @@
+{
+  "name": "literal_exact",
+  "mode": "match",
+  "pattern": "a/b.txt",
+  "path": "a/b.txt"
+}

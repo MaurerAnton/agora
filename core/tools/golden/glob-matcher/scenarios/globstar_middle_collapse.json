@@ -1,0 +1,6 @@
+{
+  "name": "globstar_middle_collapse",
+  "mode": "match",
+  "pattern": "a/**/foo",
+  "path": "a/foo"
+}

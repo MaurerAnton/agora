@@ -1,0 +1,6 @@
+{
+  "name": "star_crosses_separator",
+  "mode": "match",
+  "pattern": "a*b",
+  "path": "a/b"
+}

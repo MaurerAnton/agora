@@ -1,0 +1,6 @@
+{
+  "name": "globstar_star_mix_no_dir",
+  "mode": "match",
+  "pattern": "**/*.kt",
+  "path": "c.kt"
+}

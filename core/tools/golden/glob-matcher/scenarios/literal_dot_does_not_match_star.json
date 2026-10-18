@@ -1,0 +1,6 @@
+{
+  "name": "literal_dot_does_not_match_star",
+  "mode": "match",
+  "pattern": "a.b",
+  "path": "axb"
+}

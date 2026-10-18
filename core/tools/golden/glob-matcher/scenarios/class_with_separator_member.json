@@ -1,0 +1,6 @@
+{
+  "name": "class_with_separator_member",
+  "mode": "match",
+  "pattern": "[/a]",
+  "path": "/"
+}

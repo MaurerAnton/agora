@@ -1,0 +1,6 @@
+{
+  "name": "class_empty_is_invalid_pattern",
+  "mode": "match",
+  "pattern": "[]",
+  "path": "]"
+}

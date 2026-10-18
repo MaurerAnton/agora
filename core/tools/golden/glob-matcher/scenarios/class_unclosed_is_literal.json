@@ -1,0 +1,6 @@
+{
+  "name": "class_unclosed_is_literal",
+  "mode": "match",
+  "pattern": "[abc",
+  "path": "[abc"
+}

@@ -1,0 +1,6 @@
+{
+  "name": "pattern_empty_path",
+  "mode": "match",
+  "pattern": "a",
+  "path": ""
+}

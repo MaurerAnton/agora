@@ -1,0 +1,6 @@
+{
+  "name": "globstar_star_mix",
+  "mode": "match",
+  "pattern": "**/*.kt",
+  "path": "a/b/c.kt"
+}

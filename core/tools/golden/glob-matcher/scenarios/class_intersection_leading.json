@@ -1,0 +1,6 @@
+{
+  "name": "class_intersection_leading",
+  "mode": "match",
+  "pattern": "[&&a]",
+  "path": "a"
+}

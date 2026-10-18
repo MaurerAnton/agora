@@ -1,0 +1,6 @@
+{
+  "name": "star_suffix",
+  "mode": "match",
+  "pattern": "*.txt",
+  "path": "a.txt"
+}

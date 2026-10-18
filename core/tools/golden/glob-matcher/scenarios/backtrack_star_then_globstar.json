@@ -1,0 +1,6 @@
+{
+  "name": "backtrack_star_then_globstar",
+  "mode": "match",
+  "pattern": "*/**/x",
+  "path": "a/b/x"
+}

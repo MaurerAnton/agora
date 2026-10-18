@@ -33,6 +33,7 @@ add_library(agora_core_lib STATIC
     src/openai_request_json.cpp
     src/openai_stream.cpp
     src/openai_stream_codec.cpp
+    src/portable_glob.cpp
     src/provider_support.cpp
     src/sha256.cpp
     src/shell_tools.cpp

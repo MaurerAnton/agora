@@ -1,0 +1,6 @@
+{
+  "name": "star_repeated",
+  "mode": "match",
+  "pattern": "a*b*c",
+  "path": "abc"
+}

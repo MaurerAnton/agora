@@ -1,0 +1,6 @@
+{
+  "name": "class_miss",
+  "mode": "match",
+  "pattern": "[abc]",
+  "path": "d"
+}

@@ -1,0 +1,6 @@
+{
+  "name": "class_intersection_empty_operand",
+  "mode": "match",
+  "pattern": "[a&&]",
+  "path": "a"
+}

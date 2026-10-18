@@ -1,0 +1,6 @@
+{
+  "name": "class_range",
+  "mode": "match",
+  "pattern": "[a-c]",
+  "path": "b"
+}

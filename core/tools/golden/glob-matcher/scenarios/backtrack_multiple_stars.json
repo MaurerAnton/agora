@@ -1,0 +1,6 @@
+{
+  "name": "backtrack_multiple_stars",
+  "mode": "match",
+  "pattern": "a*a*a*a*b",
+  "path": "aa/a/a/b"
+}

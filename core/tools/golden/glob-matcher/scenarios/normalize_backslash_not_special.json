@@ -1,0 +1,6 @@
+{
+  "name": "normalize_backslash_not_special",
+  "mode": "match",
+  "pattern": "\\*",
+  "path": "*"
+}

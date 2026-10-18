@@ -1,0 +1,6 @@
+{
+  "name": "star_newline_is_in_class",
+  "mode": "match",
+  "pattern": "a*b",
+  "path": "a\nb"
+}

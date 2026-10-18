@@ -1,0 +1,10 @@
+name|normalize_three_providers
+mode|normalize
+providers|3
+provider|0|A|custom-provider-c28fa637-987f-4269-b101-2fb48cc1948f|A
+provider|1|B|custom-provider-12822ba5-fbc8-4310-98c6-9f4073fe03d2|B
+provider|2|C|custom-provider-a029dab7-f22c-4e0c-94e1-e29e72b7e7cb|C
+migrations|3
+migration|0|A|custom-provider-c28fa637-987f-4269-b101-2fb48cc1948f
+migration|1|B|custom-provider-12822ba5-fbc8-4310-98c6-9f4073fe03d2
+migration|2|C|custom-provider-a029dab7-f22c-4e0c-94e1-e29e72b7e7cb

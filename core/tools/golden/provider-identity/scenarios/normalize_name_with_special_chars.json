@@ -1,0 +1,14 @@
+{
+  "name": "normalize_name_with_special_chars",
+  "mode": "normalize",
+  "providers": [
+    {
+      "name": "a,b c;d",
+      "type": "conch"
+    }
+  ],
+  "occupiedIds": [],
+  "newIds": [
+    "custom-provider-aaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa"
+  ]
+}

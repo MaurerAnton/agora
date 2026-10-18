@@ -1,0 +1,16 @@
+{
+  "name": "normalize_new_id_in_occupied",
+  "mode": "normalize",
+  "providers": [
+    {
+      "name": "A",
+      "type": "conch"
+    }
+  ],
+  "occupiedIds": [
+    "custom-provider-aaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa"
+  ],
+  "newIds": [
+    "custom-provider-bbbb-bbbb-bbbb-bbbb-bbbbbbbbbbbb"
+  ]
+}

@@ -1,0 +1,17 @@
+{
+  "name": "normalize_occupied_skips",
+  "mode": "normalize",
+  "providers": [
+    {
+      "name": "A",
+      "type": "conch",
+      "id": "id-in-use"
+    }
+  ],
+  "occupiedIds": [
+    "id-in-use"
+  ],
+  "newIds": [
+    "custom-provider-aaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa"
+  ]
+}

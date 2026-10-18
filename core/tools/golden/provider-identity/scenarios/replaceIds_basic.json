@@ -1,0 +1,6 @@
+{
+  "name": "replaceIds_basic",
+  "mode": "replaceIds",
+  "text": "custom-provider-abc123-def456 called",
+  "replacement": "PROV"
+}

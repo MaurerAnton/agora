@@ -1,0 +1,5 @@
+name|prefs_partial_overlap
+mode|preferenceKeys
+count|2
+key|custom-provider-b:model2|b
+key|new-a:model1|a

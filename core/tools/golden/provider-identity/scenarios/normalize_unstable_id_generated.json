@@ -1,0 +1,15 @@
+{
+  "name": "normalize_unstable_id_generated",
+  "mode": "normalize",
+  "providers": [
+    {
+      "name": "A",
+      "type": "conch",
+      "id": "unstable"
+    }
+  ],
+  "occupiedIds": [],
+  "newIds": [
+    "custom-provider-bbbb-bbbb-bbbb-bbbb-bbbbbbbbbbbb"
+  ]
+}

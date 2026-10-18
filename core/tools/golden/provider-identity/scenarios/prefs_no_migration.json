@@ -1,0 +1,8 @@
+{
+  "name": "prefs_no_migration",
+  "mode": "preferenceKeys",
+  "aliases": {
+    "model1": "a"
+  },
+  "migrations": {}
+}

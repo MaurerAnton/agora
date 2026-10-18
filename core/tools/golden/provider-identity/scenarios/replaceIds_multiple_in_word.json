@@ -1,0 +1,6 @@
+{
+  "name": "replaceIds_multiple_in_word",
+  "mode": "replaceIds",
+  "text": "idcustom-provider-abc123id",
+  "replacement": "X"
+}

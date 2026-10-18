@@ -1,0 +1,8 @@
+{
+  "name": "remap_exact",
+  "mode": "remap",
+  "modelId": "custom-provider-abc123:model",
+  "migrations": {
+    "custom-provider-abc123": "new-id"
+  }
+}

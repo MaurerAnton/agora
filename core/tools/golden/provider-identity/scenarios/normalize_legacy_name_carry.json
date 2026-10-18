@@ -1,0 +1,15 @@
+{
+  "name": "normalize_legacy_name_carry",
+  "mode": "normalize",
+  "providers": [
+    {
+      "name": "A",
+      "type": "conch",
+      "legacyNames": [
+        "old-a"
+      ]
+    }
+  ],
+  "occupiedIds": [],
+  "newIds": []
+}

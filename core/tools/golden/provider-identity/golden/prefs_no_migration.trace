@@ -1,0 +1,4 @@
+name|prefs_no_migration
+mode|preferenceKeys
+count|1
+key|model1|a

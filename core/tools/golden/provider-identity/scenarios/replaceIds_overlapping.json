@@ -1,0 +1,6 @@
+{
+  "name": "replaceIds_overlapping",
+  "mode": "replaceIds",
+  "text": "custom-provider-abc123custom-provider-def456",
+  "replacement": "PROV"
+}

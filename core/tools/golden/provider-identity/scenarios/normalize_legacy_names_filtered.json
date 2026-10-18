@@ -1,0 +1,17 @@
+{
+  "name": "normalize_legacy_names_filtered",
+  "mode": "normalize",
+  "providers": [
+    {
+      "name": "A",
+      "type": "conch",
+      "id": "stable-id",
+      "legacyNames": [
+        "old-a",
+        "stable-id"
+      ]
+    }
+  ],
+  "occupiedIds": [],
+  "newIds": []
+}

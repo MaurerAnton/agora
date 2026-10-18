@@ -1,0 +1,8 @@
+name|normalize_legacy_names_filtered
+mode|normalize
+providers|1
+provider|0|A|custom-provider-00000000-0000-4000-8000-000000000000|old-a\sstable-id\sA
+migrations|3
+migration|0|old-a|custom-provider-00000000-0000-4000-8000-000000000000
+migration|1|stable-id|custom-provider-00000000-0000-4000-8000-000000000000
+migration|2|A|custom-provider-00000000-0000-4000-8000-000000000000

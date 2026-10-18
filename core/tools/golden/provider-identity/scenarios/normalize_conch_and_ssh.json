@@ -1,0 +1,19 @@
+{
+  "name": "normalize_conch_and_ssh",
+  "mode": "normalize",
+  "providers": [
+    {
+      "name": "Conch",
+      "type": "conch"
+    },
+    {
+      "name": "SSH",
+      "type": "ssh"
+    }
+  ],
+  "occupiedIds": [],
+  "newIds": [
+    "custom-provider-aaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa",
+    "custom-provider-bbbb-bbbb-bbbb-bbbb-bbbbbbbbbbbb"
+  ]
+}

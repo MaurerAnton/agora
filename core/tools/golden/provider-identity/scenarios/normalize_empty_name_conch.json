@@ -1,0 +1,12 @@
+{
+  "name": "normalize_empty_name_conch",
+  "mode": "normalize",
+  "providers": [
+    {
+      "name": "",
+      "type": "conch"
+    }
+  ],
+  "occupiedIds": [],
+  "newIds": []
+}

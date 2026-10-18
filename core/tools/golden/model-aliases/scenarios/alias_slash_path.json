@@ -1,0 +1,5 @@
+{
+  "name": "alias_slash_path",
+  "mode": "alias",
+  "modelName": "openai/gpt-4o-mini"
+}

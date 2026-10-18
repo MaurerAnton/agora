@@ -1,0 +1,5 @@
+{
+  "name": "alias_llama3_1_70b",
+  "mode": "alias",
+  "modelName": "llama-3.1-70b"
+}

@@ -1,0 +1,5 @@
+{
+  "name": "alias_claude_fast_suffix",
+  "mode": "alias",
+  "modelName": "claude-sonnet-4-5-fast"
+}

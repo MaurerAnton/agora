@@ -1,0 +1,5 @@
+{
+  "name": "alias_claude_version_first",
+  "mode": "alias",
+  "modelName": "claude-3-5-sonnet-20241022"
+}

@@ -1,0 +1,5 @@
+{
+  "name": "alias_mistral_large",
+  "mode": "alias",
+  "modelName": "mistral-large-2407"
+}

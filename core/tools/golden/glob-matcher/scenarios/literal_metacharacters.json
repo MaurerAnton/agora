@@ -1,0 +1,6 @@
+{
+  "name": "literal_metacharacters",
+  "mode": "match",
+  "pattern": "a.b+c(d)",
+  "path": "a.b+c(d)"
+}

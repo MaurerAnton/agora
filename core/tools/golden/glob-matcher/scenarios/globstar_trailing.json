@@ -1,0 +1,6 @@
+{
+  "name": "globstar_trailing",
+  "mode": "match",
+  "pattern": "a/**",
+  "path": "a/"
+}

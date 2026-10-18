@@ -1,0 +1,6 @@
+{
+  "name": "normalize_both_backslashes",
+  "mode": "match",
+  "pattern": "a\\b\\**\\c",
+  "path": "a/b/x/c"
+}

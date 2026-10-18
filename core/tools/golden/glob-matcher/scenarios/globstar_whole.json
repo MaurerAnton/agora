@@ -1,0 +1,6 @@
+{
+  "name": "globstar_whole",
+  "mode": "match",
+  "pattern": "**",
+  "path": "a/b/c"
+}

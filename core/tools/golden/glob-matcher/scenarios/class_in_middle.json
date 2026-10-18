@@ -1,0 +1,6 @@
+{
+  "name": "class_in_middle",
+  "mode": "match",
+  "pattern": "a[0-9]z",
+  "path": "a5z"
+}

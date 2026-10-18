@@ -1,0 +1,6 @@
+{
+  "name": "globstar_middle_deep",
+  "mode": "match",
+  "pattern": "a/**/foo",
+  "path": "a/x/y/foo"
+}

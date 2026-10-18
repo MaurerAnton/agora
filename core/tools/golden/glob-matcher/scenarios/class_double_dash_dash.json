@@ -1,0 +1,6 @@
+{
+  "name": "class_double_dash_dash",
+  "mode": "match",
+  "pattern": "[--a]",
+  "path": "-"
+}

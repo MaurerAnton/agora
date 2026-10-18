@@ -1,0 +1,6 @@
+{
+  "name": "class_trailing_dash",
+  "mode": "match",
+  "pattern": "[a-]",
+  "path": "-"
+}

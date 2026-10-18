@@ -1,0 +1,6 @@
+{
+  "name": "deep_path",
+  "mode": "match",
+  "pattern": "**/node_modules/**/package.json",
+  "path": "a/node_modules/b/node_modules/package.json"
+}

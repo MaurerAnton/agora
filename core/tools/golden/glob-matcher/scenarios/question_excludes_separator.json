@@ -1,0 +1,6 @@
+{
+  "name": "question_excludes_separator",
+  "mode": "match",
+  "pattern": "a?c",
+  "path": "a/c"
+}

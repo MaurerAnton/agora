@@ -1,0 +1,6 @@
+{
+  "name": "class_simple",
+  "mode": "match",
+  "pattern": "[abc]",
+  "path": "b"
+}

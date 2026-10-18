@@ -1,0 +1,6 @@
+{
+  "name": "star_suffix_empty_stem",
+  "mode": "match",
+  "pattern": "*.txt",
+  "path": ".txt"
+}

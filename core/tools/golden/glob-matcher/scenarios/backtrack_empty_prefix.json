@@ -1,0 +1,6 @@
+{
+  "name": "backtrack_empty_prefix",
+  "mode": "match",
+  "pattern": "*a",
+  "path": "a"
+}

@@ -1,0 +1,6 @@
+{
+  "name": "class_bang_inside",
+  "mode": "match",
+  "pattern": "[a!b]",
+  "path": "!"
+}

@@ -1,0 +1,6 @@
+{
+  "name": "globstar_adjacent_newline_blocked",
+  "mode": "match",
+  "pattern": "a**b",
+  "path": "a\nb"
+}

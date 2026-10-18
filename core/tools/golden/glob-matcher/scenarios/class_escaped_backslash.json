@@ -1,0 +1,6 @@
+{
+  "name": "class_escaped_backslash",
+  "mode": "match",
+  "pattern": "[\\\\]",
+  "path": "\\"
+}

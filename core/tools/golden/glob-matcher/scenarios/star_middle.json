@@ -1,0 +1,6 @@
+{
+  "name": "star_middle",
+  "mode": "match",
+  "pattern": "a*c",
+  "path": "abc"
+}

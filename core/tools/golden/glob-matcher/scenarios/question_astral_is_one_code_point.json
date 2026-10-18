@@ -1,0 +1,6 @@
+{
+  "name": "question_astral_is_one_code_point",
+  "mode": "match",
+  "pattern": "a?c",
+  "path": "a😀c"
+}

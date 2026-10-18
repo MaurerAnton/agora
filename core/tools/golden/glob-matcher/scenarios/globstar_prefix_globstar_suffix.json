@@ -1,0 +1,6 @@
+{
+  "name": "globstar_prefix_globstar_suffix",
+  "mode": "match",
+  "pattern": "src/**/build",
+  "path": "src/main/build"
+}

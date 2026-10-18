@@ -1,0 +1,6 @@
+{
+  "name": "backtrack_no_match",
+  "mode": "match",
+  "pattern": "a*a*a*a*b",
+  "path": "aa/a/a/c"
+}

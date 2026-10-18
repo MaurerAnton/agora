@@ -1,0 +1,6 @@
+{
+  "name": "class_leading_dash",
+  "mode": "match",
+  "pattern": "[-a]",
+  "path": "-"
+}

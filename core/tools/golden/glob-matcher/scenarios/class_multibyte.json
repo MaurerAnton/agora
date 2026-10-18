@@ -1,0 +1,6 @@
+{
+  "name": "class_multibyte",
+  "mode": "match",
+  "pattern": "[éü]",
+  "path": "é"
+}

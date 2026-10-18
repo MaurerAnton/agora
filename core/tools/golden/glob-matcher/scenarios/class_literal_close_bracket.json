@@ -1,0 +1,6 @@
+{
+  "name": "class_literal_close_bracket",
+  "mode": "match",
+  "pattern": "[]a]",
+  "path": "]"
+}

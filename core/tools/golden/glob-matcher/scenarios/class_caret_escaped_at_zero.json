@@ -1,0 +1,6 @@
+{
+  "name": "class_caret_escaped_at_zero",
+  "mode": "match",
+  "pattern": "[^]",
+  "path": "^"
+}

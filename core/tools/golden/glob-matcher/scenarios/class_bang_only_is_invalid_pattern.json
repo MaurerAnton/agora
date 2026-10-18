@@ -1,0 +1,6 @@
+{
+  "name": "class_bang_only_is_invalid_pattern",
+  "mode": "match",
+  "pattern": "[!]",
+  "path": "x"
+}

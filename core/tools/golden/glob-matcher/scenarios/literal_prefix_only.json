@@ -1,0 +1,6 @@
+{
+  "name": "literal_prefix_only",
+  "mode": "match",
+  "pattern": "a",
+  "path": "ab"
+}

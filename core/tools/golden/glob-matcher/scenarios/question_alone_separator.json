@@ -1,0 +1,6 @@
+{
+  "name": "question_alone_separator",
+  "mode": "match",
+  "pattern": "?",
+  "path": "/"
+}

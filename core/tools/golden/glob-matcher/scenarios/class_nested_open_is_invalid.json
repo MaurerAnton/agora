@@ -1,0 +1,6 @@
+{
+  "name": "class_nested_open_is_invalid",
+  "mode": "match",
+  "pattern": "[a[b]",
+  "path": "a"
+}

@@ -1,0 +1,6 @@
+{
+  "name": "globstar_empty",
+  "mode": "match",
+  "pattern": "**",
+  "path": ""
+}

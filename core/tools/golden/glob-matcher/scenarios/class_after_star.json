@@ -1,0 +1,6 @@
+{
+  "name": "class_after_star",
+  "mode": "match",
+  "pattern": "*[0-9]",
+  "path": "abc7"
+}

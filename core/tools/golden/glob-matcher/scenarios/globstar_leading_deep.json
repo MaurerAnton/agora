@@ -1,0 +1,6 @@
+{
+  "name": "globstar_leading_deep",
+  "mode": "match",
+  "pattern": "**/foo",
+  "path": "a/b/foo"
+}

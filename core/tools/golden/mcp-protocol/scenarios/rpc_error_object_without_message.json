@@ -1,0 +1,12 @@
+{
+  "name": "rpc_error_object_without_message",
+  "mode": "rpcResponse",
+  "method": "tools/call",
+  "id": 2,
+  "response": {
+    "id": "2",
+    "error": {
+      "code": -1
+    }
+  }
+}

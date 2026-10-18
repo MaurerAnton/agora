@@ -1,0 +1,10 @@
+{
+  "name": "rpc_id_number_mismatch",
+  "mode": "rpcResponse",
+  "method": "tools/list",
+  "id": 3,
+  "response": {
+    "id": "4",
+    "result": {}
+  }
+}

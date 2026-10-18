@@ -1,0 +1,10 @@
+{
+  "name": "rpc_error_primitive",
+  "mode": "rpcResponse",
+  "method": "tools/call",
+  "id": 2,
+  "response": {
+    "id": "2",
+    "error": "plain failure"
+  }
+}

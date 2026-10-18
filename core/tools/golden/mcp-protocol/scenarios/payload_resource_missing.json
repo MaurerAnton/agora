@@ -1,0 +1,15 @@
+{
+  "name": "payload_resource_missing",
+  "mode": "callPayload",
+  "result": {
+    "content": [
+      {
+        "type": "resource"
+      },
+      {
+        "type": "resource",
+        "resource": 5
+      }
+    ]
+  }
+}

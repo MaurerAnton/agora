@@ -1,0 +1,5 @@
+name|payload_image
+mode|callPayload
+image|0|AAAA|image/png
+structured|-
+isError|0

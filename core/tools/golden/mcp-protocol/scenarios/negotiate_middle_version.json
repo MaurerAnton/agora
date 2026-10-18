@@ -1,0 +1,6 @@
+{
+  "name": "negotiate_middle_version",
+  "mode": "negotiation",
+  "transportType": "STREAMABLE_HTTP",
+  "currentVersion": "2025-03-26"
+}

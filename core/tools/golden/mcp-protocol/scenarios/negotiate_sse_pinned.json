@@ -1,0 +1,6 @@
+{
+  "name": "negotiate_sse_pinned",
+  "mode": "negotiation",
+  "transportType": "SSE",
+  "currentVersion": "2025-11-25"
+}

@@ -1,0 +1,8 @@
+{
+  "name": "unsupported_unrelated",
+  "mode": "unsupportedVersion",
+  "messages": [
+    "timeout",
+    "connection reset"
+  ]
+}

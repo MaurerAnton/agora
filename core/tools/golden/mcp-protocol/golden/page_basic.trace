@@ -1,0 +1,5 @@
+name|page_basic
+mode|toolsPage
+tool|0|a|A|{"type":"object"}
+tool|1|b||{"type":"object","properties":{}}
+cursor|c2

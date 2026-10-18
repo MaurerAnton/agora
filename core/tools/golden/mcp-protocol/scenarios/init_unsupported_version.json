@@ -1,0 +1,7 @@
+{
+  "name": "init_unsupported_version",
+  "mode": "initialize",
+  "result": {
+    "protocolVersion": "1999-01-01"
+  }
+}

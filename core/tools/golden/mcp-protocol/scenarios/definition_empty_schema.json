@@ -1,0 +1,10 @@
+{
+  "name": "definition_empty_schema",
+  "mode": "toolDefinition",
+  "remoteName": "noop",
+  "description": "",
+  "inputSchema": {
+    "type": "object",
+    "properties": {}
+  }
+}

@@ -1,0 +1,11 @@
+{
+  "name": "definition_blank_description_default",
+  "mode": "toolDefinition",
+  "remoteName": "noop",
+  "description": "   ",
+  "serverName": "Box",
+  "inputSchema": {
+    "type": "object",
+    "properties": {}
+  }
+}

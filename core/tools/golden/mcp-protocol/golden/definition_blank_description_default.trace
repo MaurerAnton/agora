@@ -1,0 +1,4 @@
+name|definition_blank_description_default
+mode|toolDefinition
+definition|{"type":"function","function":{"name":"mcp_srv1_noop_f4d960","description":"MCP tool noop\\n\\nProvided by MCP server: Box","parameters":{"type":"object","properties":{}}}}
+schema|{"type":"object","properties":{}}

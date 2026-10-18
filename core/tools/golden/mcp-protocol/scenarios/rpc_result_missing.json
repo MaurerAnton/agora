@@ -1,0 +1,9 @@
+{
+  "name": "rpc_result_missing",
+  "mode": "rpcResponse",
+  "method": "initialize",
+  "id": 1,
+  "response": {
+    "id": "1"
+  }
+}

@@ -1,0 +1,3 @@
+name|init_version_not_primitive
+mode|initialize
+error|IOException|Unsupported MCP protocol version: 20250618

@@ -1,0 +1,13 @@
+{
+  "name": "rpc_result_not_object",
+  "mode": "rpcResponse",
+  "method": "initialize",
+  "id": 1,
+  "response": {
+    "id": "1",
+    "result": [
+      1,
+      2
+    ]
+  }
+}

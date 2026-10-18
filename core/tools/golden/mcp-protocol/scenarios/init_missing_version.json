@@ -1,0 +1,7 @@
+{
+  "name": "init_missing_version",
+  "mode": "initialize",
+  "result": {
+    "capabilities": {}
+  }
+}

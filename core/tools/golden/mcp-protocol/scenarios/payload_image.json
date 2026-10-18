@@ -1,0 +1,13 @@
+{
+  "name": "payload_image",
+  "mode": "callPayload",
+  "result": {
+    "content": [
+      {
+        "type": "image",
+        "data": "AAAA",
+        "mimeType": "image/png"
+      }
+    ]
+  }
+}

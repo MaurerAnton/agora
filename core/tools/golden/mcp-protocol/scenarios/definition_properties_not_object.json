@@ -1,0 +1,15 @@
+{
+  "name": "definition_properties_not_object",
+  "mode": "toolDefinition",
+  "remoteName": "t",
+  "inputSchema": {
+    "type": "object",
+    "properties": [
+      1,
+      2
+    ],
+    "required": [
+      "a"
+    ]
+  }
+}

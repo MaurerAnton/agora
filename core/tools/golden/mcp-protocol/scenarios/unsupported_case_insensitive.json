@@ -1,0 +1,7 @@
+{
+  "name": "unsupported_case_insensitive",
+  "mode": "unsupportedVersion",
+  "messages": [
+    "UNSUPPORTED PROTOCOL VERSION"
+  ]
+}

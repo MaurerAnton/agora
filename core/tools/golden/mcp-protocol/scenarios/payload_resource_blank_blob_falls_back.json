@@ -1,0 +1,16 @@
+{
+  "name": "payload_resource_blank_blob_falls_back",
+  "mode": "callPayload",
+  "result": {
+    "content": [
+      {
+        "type": "resource",
+        "resource": {
+          "mimeType": "image/png",
+          "blob": " ",
+          "text": "T"
+        }
+      }
+    ]
+  }
+}

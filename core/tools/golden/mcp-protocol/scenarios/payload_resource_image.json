@@ -1,0 +1,15 @@
+{
+  "name": "payload_resource_image",
+  "mode": "callPayload",
+  "result": {
+    "content": [
+      {
+        "type": "resource",
+        "resource": {
+          "mimeType": "image/gif",
+          "blob": "ZZ"
+        }
+      }
+    ]
+  }
+}

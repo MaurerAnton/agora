@@ -1,0 +1,3 @@
+name|page_missing_tools_array
+mode|toolsPage
+error|IOException|MCP tools/list returned no tools array

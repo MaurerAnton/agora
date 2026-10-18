@@ -1,0 +1,29 @@
+{
+  "name": "definition_type_array_union",
+  "mode": "toolDefinition",
+  "remoteName": "t",
+  "inputSchema": {
+    "type": [
+      "null",
+      "string"
+    ],
+    "properties": {
+      "a": {
+        "type": [
+          "null",
+          "integer"
+        ],
+        "description": "A"
+      },
+      "b": {
+        "type": [
+          "string"
+        ]
+      },
+      "c": {},
+      "d": {
+        "type": 5
+      }
+    }
+  }
+}

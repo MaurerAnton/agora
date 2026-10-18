@@ -1,0 +1,6 @@
+{
+  "name": "negotiate_unknown_version_wraps",
+  "mode": "negotiation",
+  "transportType": "STREAMABLE_HTTP",
+  "currentVersion": "1999-01-01"
+}

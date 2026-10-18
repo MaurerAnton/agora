@@ -1,0 +1,12 @@
+{
+  "name": "definition_type_missing_defaults_object",
+  "mode": "toolDefinition",
+  "remoteName": "t",
+  "inputSchema": {
+    "properties": {
+      "a": {
+        "type": "string"
+      }
+    }
+  }
+}

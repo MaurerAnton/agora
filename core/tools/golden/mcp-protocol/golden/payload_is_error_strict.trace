@@ -1,0 +1,4 @@
+name|payload_is_error_strict
+mode|callPayload
+structured|-
+isError|0

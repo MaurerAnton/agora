@@ -1,0 +1,9 @@
+{
+  "name": "payload_content_not_array",
+  "mode": "callPayload",
+  "result": {
+    "content": {
+      "type": "text"
+    }
+  }
+}

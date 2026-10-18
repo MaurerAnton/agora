@@ -1,0 +1,16 @@
+{
+  "name": "payload_text_only",
+  "mode": "callPayload",
+  "result": {
+    "content": [
+      {
+        "type": "text",
+        "text": "hello"
+      },
+      {
+        "type": "text",
+        "text": " world"
+      }
+    ]
+  }
+}

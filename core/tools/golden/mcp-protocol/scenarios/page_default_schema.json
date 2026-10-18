@@ -1,0 +1,16 @@
+{
+  "name": "page_default_schema",
+  "mode": "toolsPage",
+  "result": {
+    "tools": [
+      {
+        "name": "a",
+        "inputSchema": null
+      },
+      {
+        "name": "b",
+        "inputSchema": 7
+      }
+    ]
+  }
+}

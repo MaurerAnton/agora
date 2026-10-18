@@ -1,0 +1,8 @@
+{
+  "name": "init_supported",
+  "mode": "initialize",
+  "currentVersion": "2025-11-25",
+  "result": {
+    "protocolVersion": "2025-06-18"
+  }
+}

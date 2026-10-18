@@ -1,0 +1,4 @@
+name|definition_nested_items
+mode|toolDefinition
+definition|{"type":"function","function":{"name":"mcp_srv1_t_e3b98a","description":"MCP tool t\\n\\nProvided by MCP server: Server One","parameters":{"type":"object","properties":{"list":{"type":"array","items":{"type":"integer","description":"n"}},"obj":{"properties":{"inner":{"type":"string"}}},"deep":{"items":{"items":{"type":"boolean"}}},"none":null,"arr_prop":{"type":"string","properties":{"p":{"type":"string"}},"required":["p"]}}}}}
+schema|{"type":"object","properties":{"list":{"type":"array","items":{"type":"integer","description":"n"}},"obj":{"properties":{"inner":{"type":"string"}}},"deep":{"items":{"items":{"type":"boolean"}}},"none":null,"arr_prop":{"type":"string","properties":{"p":{"type":"string"}},"required":["p"]}}}

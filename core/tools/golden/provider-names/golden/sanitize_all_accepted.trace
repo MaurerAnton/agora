@@ -1,0 +1,7 @@
+name|sanitize_all_accepted
+mode|sanitize
+accepted|3
+accept|0|Alpha
+accept|1|Beta
+accept|2|Gamma
+rejected|0

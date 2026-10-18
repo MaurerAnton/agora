@@ -1,0 +1,9 @@
+{
+  "name": "conflict_current_entry_exempt",
+  "mode": "conflict",
+  "providerName": "Box",
+  "existingNames": [
+    "Box"
+  ],
+  "currentName": "Box"
+}

@@ -1,0 +1,5 @@
+name|sanitize_single
+mode|sanitize
+accepted|1
+accept|0|Box
+rejected|0

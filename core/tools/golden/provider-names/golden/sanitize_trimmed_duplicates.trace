@@ -1,0 +1,7 @@
+name|sanitize_trimmed_duplicates
+mode|sanitize
+accepted|1
+accept|0|Box
+rejected|2
+reject|0|  Box  
+reject|1|\tBox\n

@@ -1,0 +1,5 @@
+{
+  "name": "allowed_reserved_qwen",
+  "mode": "allowed",
+  "providerName": "Qwen"
+}

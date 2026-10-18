@@ -239,4 +239,64 @@ std::string embedding_base_url(std::string_view provider) {
     return std::string(kOpenAiBaseUrl);
 }
 
+// ---------------------------------------------------------------------------------------------
+// CustomProviderNamePolicy.kt
+// ---------------------------------------------------------------------------------------------
+
+const std::vector<std::string>& reserved_provider_names() {
+    static const std::vector<std::string> names = {
+        "Google",       // Constants.PROVIDER_GOOGLE
+        "OpenAI",       // Constants.PROVIDER_OPENAI
+        "Anthropic",    // Constants.PROVIDER_ANTHROPIC
+        "DeepSeek",     // Constants.PROVIDER_DEEPSEEK
+        "Qwen",         // Constants.PROVIDER_QWEN
+        "Groq",         // Constants.PROVIDER_GROQ
+        "Ollama",       // Constants.PROVIDER_OLLAMA
+        "Open Router",  // Constants.PROVIDER_OPEN_ROUTER
+        "OpenCode Go",  // Constants.PROVIDER_OPENCODE_GO
+        "Local",        // Constants.PROVIDER_LOCAL
+    };
+    return names;
+}
+
+bool is_allowed_custom_provider_name(std::string_view name) {
+    const std::string candidate = json::trim(name);
+    if (candidate.empty()) return false;
+    for (const std::string& reserved : reserved_provider_names()) {
+        if (lower_ascii(reserved) == lower_ascii(candidate)) return false;  // ignoreCase
+    }
+    return true;
+}
+
+bool has_custom_provider_name_conflict(std::string_view name,
+                                       const std::vector<std::string>& existing_names,
+                                       const std::optional<std::string>& current_name) {
+    const std::string candidate = json::trim(name);
+    if (!is_allowed_custom_provider_name(candidate)) return true;
+
+    const std::string folded = lower_ascii(candidate);
+    for (const std::string& existing : existing_names) {
+        const bool is_current_entry = current_name.has_value() && existing == *current_name;
+        if (is_current_entry) continue;
+        if (lower_ascii(json::trim(existing)) == folded) return true;
+    }
+    return false;
+}
+
+CustomProviderSanitizationResult sanitize_custom_provider_names(
+    const std::vector<std::string>& names) {
+    CustomProviderSanitizationResult result;
+    std::vector<std::string> accepted_names;
+    for (const std::string& name : names) {
+        // The original (untrimmed) name is what gets carried into the result.
+        if (has_custom_provider_name_conflict(name, accepted_names)) {
+            result.rejected.push_back(name);
+        } else {
+            result.accepted.push_back(name);
+            accepted_names.push_back(name);  // the raw name, exactly like the Kotlin list
+        }
+    }
+    return result;
+}
+
 }  // namespace agora::core::provider_support

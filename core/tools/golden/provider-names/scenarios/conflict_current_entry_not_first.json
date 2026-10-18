@@ -1,0 +1,10 @@
+{
+  "name": "conflict_current_entry_not_first",
+  "mode": "conflict",
+  "providerName": "Box",
+  "existingNames": [
+    "Other",
+    "Box"
+  ],
+  "currentName": "Box"
+}

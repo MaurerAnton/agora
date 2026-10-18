@@ -4,6 +4,7 @@
 #include <optional>
 #include <string>
 #include <string_view>
+#include <vector>
 
 #include "agora/core/stream_normalization.hpp"
 
@@ -60,5 +61,33 @@ std::string open_ai_compatible_base_url(const std::map<std::string, std::string>
 
 /** embeddingBaseUrl: provider display name (ASCII case-insensitive) → default endpoint. */
 std::string embedding_base_url(std::string_view provider);
+
+// ---------------------------------------------------------------------------------------------
+// CustomProviderNamePolicy.kt — the namespace invariant for custom providers: a display name must
+// not shadow a built-in provider (case-insensitive, trimmed), and duplicates are quarantined
+// first-wins without rewriting the name-keyed settings.
+// ---------------------------------------------------------------------------------------------
+
+/** The built-in display names a custom provider may not shadow. */
+const std::vector<std::string>& reserved_provider_names();
+
+/** isAllowed: non-blank after trim and not a reserved name (case-insensitive). */
+bool is_allowed_custom_provider_name(std::string_view name);
+
+/** hasConflict: a disallowed name always conflicts; otherwise a trimmed, case-insensitive
+ *  duplicate does — except the entry identified by current_name (exact match). */
+bool has_custom_provider_name_conflict(std::string_view name,
+                                       const std::vector<std::string>& existing_names,
+                                       const std::optional<std::string>& current_name =
+                                           std::nullopt);
+
+/** The sanitize result: accepted keeps the first of each name, rejected collects the rest. */
+struct CustomProviderSanitizationResult {
+    std::vector<std::string> accepted;
+    std::vector<std::string> rejected;
+};
+
+CustomProviderSanitizationResult sanitize_custom_provider_names(
+    const std::vector<std::string>& names);
 
 }  // namespace agora::core::provider_support

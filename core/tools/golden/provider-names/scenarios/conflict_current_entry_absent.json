@@ -1,0 +1,8 @@
+{
+  "name": "conflict_current_entry_absent",
+  "mode": "conflict",
+  "providerName": "Box",
+  "existingNames": [
+    "Box"
+  ]
+}

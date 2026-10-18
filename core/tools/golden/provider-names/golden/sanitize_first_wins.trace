@@ -1,0 +1,9 @@
+name|sanitize_first_wins
+mode|sanitize
+accepted|2
+accept|0|Box
+accept|1|Foo
+rejected|3
+reject|0|box
+reject|1| Google
+reject|2|Local

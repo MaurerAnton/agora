@@ -1,0 +1,6 @@
+name|sanitize_blank_first
+mode|sanitize
+accepted|1
+accept|0|Box
+rejected|1
+reject|0|   

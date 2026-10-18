@@ -1,0 +1,6 @@
+{
+  "name": "conflict_no_existing",
+  "mode": "conflict",
+  "providerName": "Box",
+  "existingNames": []
+}

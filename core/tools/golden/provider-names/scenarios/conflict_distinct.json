@@ -1,0 +1,8 @@
+{
+  "name": "conflict_distinct",
+  "mode": "conflict",
+  "providerName": "Box",
+  "existingNames": [
+    "Bax"
+  ]
+}

@@ -1,0 +1,9 @@
+{
+  "name": "sanitize_all_accepted",
+  "mode": "sanitize",
+  "configs": [
+    "Alpha",
+    "Beta",
+    "Gamma"
+  ]
+}

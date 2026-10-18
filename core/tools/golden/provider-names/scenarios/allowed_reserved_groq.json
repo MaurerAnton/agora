@@ -1,0 +1,5 @@
+{
+  "name": "allowed_reserved_groq",
+  "mode": "allowed",
+  "providerName": "Groq"
+}

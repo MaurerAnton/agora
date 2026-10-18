@@ -1,0 +1,8 @@
+{
+  "name": "conflict_duplicate_trimmed",
+  "mode": "conflict",
+  "providerName": " Box ",
+  "existingNames": [
+    "Box"
+  ]
+}

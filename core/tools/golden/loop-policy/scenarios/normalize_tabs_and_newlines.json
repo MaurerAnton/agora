@@ -1,0 +1,5 @@
+{
+  "name": "normalize_tabs_and_newlines",
+  "op": "normalizePrompt",
+  "prompt": "\t\n\r "
+}

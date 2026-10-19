@@ -1,0 +1,5 @@
+{
+  "name": "normalize_keeps_inner_spaces",
+  "op": "normalizePrompt",
+  "prompt": " a  b "
+}

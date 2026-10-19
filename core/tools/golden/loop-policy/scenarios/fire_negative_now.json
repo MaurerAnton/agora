@@ -1,0 +1,6 @@
+{
+  "name": "fire_negative_now",
+  "op": "nextFireAt",
+  "now": -5,
+  "intervalMs": 10
+}

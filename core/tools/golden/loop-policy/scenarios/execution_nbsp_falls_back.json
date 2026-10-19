@@ -1,0 +1,5 @@
+{
+  "name": "execution_nbsp_falls_back",
+  "op": "promptForExecution",
+  "prompt": " "
+}

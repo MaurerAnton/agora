@@ -1,0 +1,6 @@
+{
+  "name": "fire_max_now_zero_interval",
+  "op": "nextFireAt",
+  "now": 9223372036854775807,
+  "intervalMs": 0
+}

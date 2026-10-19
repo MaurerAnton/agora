@@ -1,0 +1,6 @@
+{
+  "name": "validate_rejects_zero_interval",
+  "op": "validate",
+  "intervalMs": 0,
+  "maxCycles": 10
+}

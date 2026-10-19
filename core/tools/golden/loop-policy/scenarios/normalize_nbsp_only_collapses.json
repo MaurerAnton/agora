@@ -1,0 +1,5 @@
+{
+  "name": "normalize_nbsp_only_collapses",
+  "op": "normalizePrompt",
+  "prompt": " "
+}

@@ -1,0 +1,5 @@
+{
+  "name": "normalize_empty",
+  "op": "normalizePrompt",
+  "prompt": ""
+}

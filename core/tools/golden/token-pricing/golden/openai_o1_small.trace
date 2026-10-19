@@ -1,0 +1,4 @@
+name|openai_o1_small
+op|openaiImage
+args|o1-preview|ImageDescriptor(byteSize=null, pixelWidth=100, pixelHeight=100)
+result|225

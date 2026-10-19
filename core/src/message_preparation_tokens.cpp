@@ -51,15 +51,37 @@ bool starts_with(std::string_view value, std::string_view prefix) {
 
 bool is_ascii_digit(char c) { return c >= '0' && c <= '9'; }
 
+
+/** AnthropicEnvelopeCosts: the published tool-use system prompt tokens by tier and version. */
+std::int64_t anthropic_tool_use_system_prompt(const AnthropicModelId& id) {
+    struct Entry {
+        AnthropicModelId::Tier tier;
+        std::int32_t version;  // scaled by ten: 4.5 is 45
+        std::int64_t tokens;
+    };
+    static const Entry kTable[] = {
+        {AnthropicModelId::Tier::Opus, 55, 286},  {AnthropicModelId::Tier::Opus, 50, 286},
+        {AnthropicModelId::Tier::Opus, 48, 290},  {AnthropicModelId::Tier::Opus, 47, 675},
+        {AnthropicModelId::Tier::Opus, 46, 497},  {AnthropicModelId::Tier::Opus, 45, 496},
+        {AnthropicModelId::Tier::Opus, 41, 313},  {AnthropicModelId::Tier::Opus, 40, 313},
+        {AnthropicModelId::Tier::Sonnet, 50, 354}, {AnthropicModelId::Tier::Sonnet, 46, 497},
+        {AnthropicModelId::Tier::Sonnet, 45, 496}, {AnthropicModelId::Tier::Sonnet, 40, 313},
+        {AnthropicModelId::Tier::Haiku, 45, 496}, {AnthropicModelId::Tier::Haiku, 35, 264},
+    };
+    static const std::int64_t kLargestPublished = 675;  // max of the table, over-estimating is safe
+
+    if (!id.tier || !id.major) return kLargestPublished;
+    const std::int32_t version = *id.major * 10 + id.minor;
+    for (const Entry& entry : kTable) {
+        if (entry.tier == *id.tier && entry.version == version) return entry.tokens;
+    }
+    return kLargestPublished;
+}
+
+}  // namespace
+
 // -- AnthropicModelId.kt ---------------------------------------------------------------------------
 // VERSION_PAIR = (?<!\d)(\d{1,2})[-.](\d{1,2})(?!\d); MAJOR_ONLY = (?<![\d.])(\d{1,2})(?![\d.])
-
-struct AnthropicModelId {
-    enum class Tier { Opus, Sonnet, Haiku };
-    std::optional<Tier> tier;
-    std::optional<std::int32_t> major;
-    std::int32_t minor = 0;
-};
 
 AnthropicModelId parse_anthropic_model_id(const std::string& model_name) {
     const std::size_t slash = model_name.rfind('/');
@@ -129,30 +151,8 @@ bool anthropic_version_at_least(const AnthropicModelId& id, std::int32_t major, 
     return *id.major > major || (*id.major == major && id.minor >= minor);
 }
 
-/** AnthropicEnvelopeCosts: the published tool-use system prompt tokens by tier and version. */
-std::int64_t anthropic_tool_use_system_prompt(const AnthropicModelId& id) {
-    struct Entry {
-        AnthropicModelId::Tier tier;
-        std::int32_t version;  // scaled by ten: 4.5 is 45
-        std::int64_t tokens;
-    };
-    static const Entry kTable[] = {
-        {AnthropicModelId::Tier::Opus, 55, 286},  {AnthropicModelId::Tier::Opus, 50, 286},
-        {AnthropicModelId::Tier::Opus, 48, 290},  {AnthropicModelId::Tier::Opus, 47, 675},
-        {AnthropicModelId::Tier::Opus, 46, 497},  {AnthropicModelId::Tier::Opus, 45, 496},
-        {AnthropicModelId::Tier::Opus, 41, 313},  {AnthropicModelId::Tier::Opus, 40, 313},
-        {AnthropicModelId::Tier::Sonnet, 50, 354}, {AnthropicModelId::Tier::Sonnet, 46, 497},
-        {AnthropicModelId::Tier::Sonnet, 45, 496}, {AnthropicModelId::Tier::Sonnet, 40, 313},
-        {AnthropicModelId::Tier::Haiku, 45, 496}, {AnthropicModelId::Tier::Haiku, 35, 264},
-    };
-    static const std::int64_t kLargestPublished = 675;  // max of the table, over-estimating is safe
-
-    if (!id.tier || !id.major) return kLargestPublished;
-    const std::int32_t version = *id.major * 10 + id.minor;
-    for (const Entry& entry : kTable) {
-        if (entry.tier == *id.tier && entry.version == version) return entry.tokens;
-    }
-    return kLargestPublished;
+bool anthropic_high_resolution_for_model(const std::string& model_name) {
+    return anthropic_version_at_least(parse_anthropic_model_id(model_name), 4, 7);
 }
 
 /** OpenAiImageCosts.forModelName: the published family table, conservative default. */
@@ -185,8 +185,6 @@ std::int64_t openai_image_tokens_for_model(const ImageDescriptor& image,
     // PATCH_DEFAULT: no shrink budget, the shared 1.2 multiplier.
     return openai_patch_image_tokens(width, height, 65535, std::nullopt, 1.2);
 }
-
-}  // namespace
 
 // -- EnvelopeCost / SafetyMargin / ContextCostModel -------------------------------------------------
 
@@ -442,8 +440,7 @@ ContextCostModel cost_model_for(const std::optional<PrefixedModelId>& model_id,
         case ContextCostFamily::Anthropic: {
             const std::string model_name = model_id->model_name;
             model.image = [model_name](const ImageDescriptor& image) {
-                const bool high_resolution = anthropic_version_at_least(
-                    parse_anthropic_model_id(model_name), 4, 7);
+                const bool high_resolution = anthropic_high_resolution_for_model(model_name);
                 return anthropic_image_tokens(image, high_resolution);
             };
             break;

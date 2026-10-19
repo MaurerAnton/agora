@@ -1,0 +1,4 @@
+name|heuristic_eight_run
+op|heuristic
+args|abcdefgh
+result|2

@@ -1,0 +1,4 @@
+name|tier_47_dated_high
+op|anthropicTier
+args|claude-sonnet-4-7-20260101
+result|HIGH_RESOLUTION

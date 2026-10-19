@@ -1,0 +1,4 @@
+name|default_model_margin_clamp
+op|defaultModel
+args|abcdefgh|ImageDescriptor(byteSize=195840, pixelWidth=null, pixelHeight=null)|195000000
+result|2|256|EnvelopeCost(perMessage=8, perToolDefinition=16, perToolCall=16, requestOverhead=0, toolSetOverhead=0)|214500000

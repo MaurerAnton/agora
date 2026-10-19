@@ -1,0 +1,4 @@
+name|anthropic_square_100
+op|anthropicImage
+args|claude-opus-4-6|ImageDescriptor(byteSize=null, pixelWidth=100, pixelHeight=100)
+result|16

@@ -1,0 +1,4 @@
+name|gemini_over_height
+op|geminiImage
+args|ImageDescriptor(byteSize=null, pixelWidth=384, pixelHeight=385)
+result|1032

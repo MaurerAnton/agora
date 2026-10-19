@@ -1,0 +1,4 @@
+name|model_id_upper
+op|anthropicModelId
+args|CLAUDE-OPUS-4-7
+result|AnthropicModelId(tier=OPUS, major=4, minor=7)

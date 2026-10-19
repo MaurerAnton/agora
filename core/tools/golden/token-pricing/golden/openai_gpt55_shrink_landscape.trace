@@ -1,0 +1,4 @@
+name|openai_gpt55_shrink_landscape
+op|openaiImage
+args|gpt-5.5|ImageDescriptor(byteSize=null, pixelWidth=10000, pixelHeight=7000)
+result|11853

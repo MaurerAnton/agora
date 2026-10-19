@@ -1,0 +1,4 @@
+name|tier_two_digit_major
+op|anthropicTier
+args|claude-opus-14-7
+result|HIGH_RESOLUTION

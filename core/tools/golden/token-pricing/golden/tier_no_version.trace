@@ -1,0 +1,4 @@
+name|tier_no_version
+op|anthropicTier
+args|claude
+result|STANDARD

@@ -1,0 +1,4 @@
+name|model_id_trailing_dot_version
+op|anthropicModelId
+args|claude-opus-4.5.1
+result|AnthropicModelId(tier=OPUS, major=4, minor=5)

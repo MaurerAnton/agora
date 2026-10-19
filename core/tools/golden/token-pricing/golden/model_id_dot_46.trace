@@ -1,0 +1,4 @@
+name|model_id_dot_46
+op|anthropicModelId
+args|claude-opus-4.6
+result|AnthropicModelId(tier=OPUS, major=4, minor=6)

@@ -1,0 +1,4 @@
+name|local_exact_negative
+op|local
+args|abcd|-1|false
+result|1

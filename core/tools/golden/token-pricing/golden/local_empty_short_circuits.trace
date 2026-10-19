@@ -1,0 +1,4 @@
+name|local_empty_short_circuits
+op|local
+args||-|true
+result|0

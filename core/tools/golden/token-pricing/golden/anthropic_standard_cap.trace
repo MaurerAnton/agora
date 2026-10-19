@@ -1,0 +1,4 @@
+name|anthropic_standard_cap
+op|anthropicImage
+args|claude-opus-4-6|ImageDescriptor(byteSize=null, pixelWidth=1568, pixelHeight=1568)
+result|1521

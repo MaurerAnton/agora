@@ -1,0 +1,4 @@
+name|openai_gpt54_shrink_2048
+op|openaiImage
+args|gpt-5.4|ImageDescriptor(byteSize=null, pixelWidth=2048, pixelHeight=2048)
+result|3000

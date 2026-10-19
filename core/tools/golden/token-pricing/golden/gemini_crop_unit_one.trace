@@ -1,0 +1,4 @@
+name|gemini_crop_unit_one
+op|geminiImage
+args|ImageDescriptor(byteSize=null, pixelWidth=1000, pixelHeight=1)
+result|258000

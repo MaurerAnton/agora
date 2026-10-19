@@ -1,0 +1,4 @@
+name|tier_haiku_45
+op|anthropicTier
+args|claude-haiku-4-5
+result|STANDARD

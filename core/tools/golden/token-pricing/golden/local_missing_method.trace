@@ -1,0 +1,4 @@
+name|local_missing_method
+op|local
+args|abcd|-|true
+result|1

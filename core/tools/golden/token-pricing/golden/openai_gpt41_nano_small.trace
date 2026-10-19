@@ -1,0 +1,4 @@
+name|openai_gpt41_nano_small
+op|openaiImage
+args|gpt-4.1-nano|ImageDescriptor(byteSize=null, pixelWidth=100, pixelHeight=100)
+result|40

@@ -165,6 +165,26 @@ std::int64_t anthropic_image_tokens(const ImageDescriptor& image, bool high_reso
 /** GeminiImageCost. */
 std::int64_t gemini_image_tokens(const ImageDescriptor& image);
 
+// -- AnthropicModelId.kt ---------------------------------------------------------------------------
+// VERSION_PAIR = (?<!\d)(\d{1,2})[-.](\d{1,2})(?!\d); MAJOR_ONLY = (?<![\d.])(\d{1,2})(?![\d.])
+// Parsing happens once here so the image tier and the envelope cost cannot disagree about a model.
+struct AnthropicModelId {
+    enum class Tier { Opus, Sonnet, Haiku };
+    std::optional<Tier> tier;
+    std::optional<std::int32_t> major;
+    std::int32_t minor = 0;
+};
+
+AnthropicModelId parse_anthropic_model_id(const std::string& model_name);
+bool anthropic_version_at_least(const AnthropicModelId& id, std::int32_t major, std::int32_t minor);
+
+/** AnthropicImageCost.tierForModelName: the high-resolution tier starts at Claude 4.7. */
+bool anthropic_high_resolution_for_model(const std::string& model_name);
+
+/** OpenAiImageCosts.forModelName applied to one descriptor (conservative default for unknown ids). */
+std::int64_t openai_image_tokens_for_model(const ImageDescriptor& image,
+                                           const std::string& model_name);
+
 /** ModelThinkingCapability-style family selection for token costs (ContextCostModels). */
 enum class ContextCostFamily { Anthropic, OpenAi, Gemini, Local, Generic };
 

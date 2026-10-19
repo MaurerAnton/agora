@@ -1,0 +1,4 @@
+name|tier_major_only_4
+op|anthropicTier
+args|claude-opus-4
+result|STANDARD

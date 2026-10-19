@@ -1,0 +1,4 @@
+name|openai_gpt41_mini_square
+op|openaiImage
+args|gpt-4.1-mini|ImageDescriptor(byteSize=null, pixelWidth=10000, pixelHeight=10000)
+result|6636

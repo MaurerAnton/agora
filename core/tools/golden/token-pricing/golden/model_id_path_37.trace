@@ -1,0 +1,4 @@
+name|model_id_path_37
+op|anthropicModelId
+args|anthropic/claude-3-7-sonnet-20250219
+result|AnthropicModelId(tier=SONNET, major=3, minor=7)

@@ -1,0 +1,4 @@
+name|anthropic_landscape
+op|anthropicImage
+args|claude-opus-4-6|ImageDescriptor(byteSize=null, pixelWidth=1000, pixelHeight=500)
+result|648

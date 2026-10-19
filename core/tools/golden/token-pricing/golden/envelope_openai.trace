@@ -1,0 +1,4 @@
+name|envelope_openai
+op|envelopeOpenAi
+args|
+result|EnvelopeCost(perMessage=3, perToolDefinition=16, perToolCall=16, requestOverhead=3, toolSetOverhead=0)

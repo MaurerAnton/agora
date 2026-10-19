@@ -1,0 +1,4 @@
+name|model_id_long_major_run
+op|anthropicModelId
+args|claude-opus-123-4
+result|AnthropicModelId(tier=OPUS, major=4, minor=0)

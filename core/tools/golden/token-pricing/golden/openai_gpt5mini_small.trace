@@ -1,0 +1,4 @@
+name|openai_gpt5mini_small
+op|openaiImage
+args|gpt-5-mini|ImageDescriptor(byteSize=null, pixelWidth=100, pixelHeight=100)
+result|20

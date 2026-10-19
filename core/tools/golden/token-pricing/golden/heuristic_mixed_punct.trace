@@ -1,0 +1,4 @@
+name|heuristic_mixed_punct
+op|heuristic
+args|hi!there
+result|4

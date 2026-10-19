@@ -1,0 +1,4 @@
+name|gemini_large
+op|geminiImage
+args|ImageDescriptor(byteSize=null, pixelWidth=1920, pixelHeight=1080)
+result|1548

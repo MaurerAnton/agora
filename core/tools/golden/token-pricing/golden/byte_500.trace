@@ -1,0 +1,4 @@
+name|byte_500
+op|byteImage
+args|384000|-|-
+result|500

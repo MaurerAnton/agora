@@ -1,0 +1,4 @@
+name|tier_47_high
+op|anthropicTier
+args|claude-opus-4-7
+result|HIGH_RESOLUTION

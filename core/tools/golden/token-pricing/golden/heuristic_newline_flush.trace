@@ -1,0 +1,4 @@
+name|heuristic_newline_flush
+op|heuristic
+args|abc\ndef
+result|2

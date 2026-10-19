@@ -1,0 +1,4 @@
+name|heuristic_three_runs
+op|heuristic
+args|ab cd ef
+result|3

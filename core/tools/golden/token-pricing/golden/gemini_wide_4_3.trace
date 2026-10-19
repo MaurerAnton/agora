@@ -1,0 +1,4 @@
+name|gemini_wide_4_3
+op|geminiImage
+args|ImageDescriptor(byteSize=null, pixelWidth=800, pixelHeight=600)
+result|1032

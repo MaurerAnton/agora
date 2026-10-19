@@ -1,0 +1,4 @@
+name|openai_unknown_huge
+op|openaiImage
+args|mystery-vision|ImageDescriptor(byteSize=null, pixelWidth=70000, pixelHeight=70000)
+result|5033165

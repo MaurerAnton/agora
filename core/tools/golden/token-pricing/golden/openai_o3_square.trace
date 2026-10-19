@@ -1,0 +1,4 @@
+name|openai_o3_square
+op|openaiImage
+args|o3-mini|ImageDescriptor(byteSize=null, pixelWidth=5000, pixelHeight=5000)
+result|675

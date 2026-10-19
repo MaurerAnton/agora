@@ -1,0 +1,4 @@
+name|local_heuristic_fallback
+op|local
+args|日本語|-|false
+result|3

@@ -1,0 +1,4 @@
+name|anthropic_byte_fallback
+op|anthropicImage
+args|claude-opus-4-6|ImageDescriptor(byteSize=384000, pixelWidth=null, pixelHeight=null)
+result|500

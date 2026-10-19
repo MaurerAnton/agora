@@ -1,0 +1,4 @@
+name|gemini_guide_960x540
+op|geminiImage
+args|ImageDescriptor(byteSize=null, pixelWidth=960, pixelHeight=540)
+result|1548

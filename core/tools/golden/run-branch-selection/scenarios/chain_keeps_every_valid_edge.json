@@ -1,0 +1,1 @@
+{"name": "chain_keeps_every_valid_edge", "op": "retainValidEdges", "selections": [[null, "root"], ["root", "a"], ["a", "b"]], "runs": [{"id": "root", "parentRunId": null}, {"id": "a", "parentRunId": "root"}, {"id": "b", "parentRunId": "a"}]}

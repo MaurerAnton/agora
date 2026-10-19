@@ -1,0 +1,5 @@
+name|duplicate_selection_key_last_value_wins
+op|retainValidEdges
+selections|s:p1=>s:c2
+runs|s:p1=>n|s:c1=>s:p1|s:c2=>s:p1
+out|map|s:p1=>s:c2

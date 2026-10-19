@@ -1,0 +1,5 @@
+name|chain_keeps_every_valid_edge
+op|retainValidEdges
+selections|n=>s:root|s:root=>s:a|s:a=>s:b
+runs|s:root=>n|s:a=>s:root|s:b=>s:a
+out|map|n=>s:root|s:root=>s:a|s:a=>s:b

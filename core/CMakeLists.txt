@@ -44,6 +44,7 @@ add_library(agora_core_lib STATIC
     src/openai_stream.cpp
     src/openai_stream_codec.cpp
     src/portable_glob.cpp
+    src/run_branch_selection.cpp
     src/provider_identity.cpp
     src/provider_support.cpp
     src/sha256.cpp

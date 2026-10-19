@@ -1,0 +1,5 @@
+name|duplicate_run_ids_last_wins
+op|retainValidEdges
+selections|s:p1=>s:c|s:p2=>s:c
+runs|s:p1=>n|s:p2=>n|s:c=>s:p1|s:c=>s:p2
+out|map|s:p2=>s:c

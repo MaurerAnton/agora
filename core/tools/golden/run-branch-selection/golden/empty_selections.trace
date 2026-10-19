@@ -1,0 +1,5 @@
+name|empty_selections
+op|retainValidEdges
+selections|
+runs|s:a=>n
+out|map|

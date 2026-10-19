@@ -1,0 +1,1 @@
+{"name": "keeps_valid_and_drops_invalid_in_order", "op": "retainValidEdges", "selections": [[null, "root"], ["p", "c"], ["q", "c"], [null, "missing"]], "runs": [{"id": "root", "parentRunId": null}, {"id": "p", "parentRunId": null}, {"id": "q", "parentRunId": null}, {"id": "c", "parentRunId": "p"}]}

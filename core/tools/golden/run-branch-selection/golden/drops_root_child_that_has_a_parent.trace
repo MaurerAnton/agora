@@ -1,0 +1,5 @@
+name|drops_root_child_that_has_a_parent
+op|retainValidEdges
+selections|n=>s:c
+runs|s:c=>s:p
+out|map|

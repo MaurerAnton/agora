@@ -1,0 +1,7 @@
+name|parse_weekly_single_day
+op|parse
+tz|UTC
+locale|en-US
+schedule|-
+args|0 8 * * 3|-
+out|schedule|WEEKLY,8,0,3,1,1,0

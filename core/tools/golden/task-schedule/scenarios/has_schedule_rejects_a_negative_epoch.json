@@ -1,0 +1,8 @@
+{
+  "cronExpr": "",
+  "locale": "en-US",
+  "name": "has_schedule_rejects_a_negative_epoch",
+  "op": "hasSchedule",
+  "runAt": -1,
+  "tz": "UTC"
+}

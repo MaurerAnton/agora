@@ -1,0 +1,16 @@
+{
+  "locale": "en-US",
+  "name": "with_time_on_a_one_shot_keeps_its_date",
+  "newHour": 9,
+  "newMinute": 0,
+  "op": "withTime",
+  "schedule": {
+    "dayOfMonth": 10,
+    "hour": 14,
+    "minute": 30,
+    "month": 6,
+    "onceAtMillis": 1780000000000,
+    "type": "ONCE"
+  },
+  "tz": "UTC"
+}

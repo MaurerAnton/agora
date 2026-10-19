@@ -1,0 +1,7 @@
+name|once_at_dec_31
+op|withOnceAt
+tz|UTC
+locale|en-US
+schedule|ONCE,23,59,,1,1,0
+args|2027|12|31
+out|schedule|ONCE,23,59,,31,12,1830297540000

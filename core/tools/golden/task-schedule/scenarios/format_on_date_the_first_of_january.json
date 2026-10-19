@@ -1,0 +1,14 @@
+{
+  "locale": "en-US",
+  "name": "format_on_date_the_first_of_january",
+  "op": "formatOnDate",
+  "schedule": {
+    "dayOfMonth": 1,
+    "hour": 9,
+    "minute": 0,
+    "month": 1,
+    "onceAtMillis": 0,
+    "type": "MONTHLY"
+  },
+  "tz": "UTC"
+}

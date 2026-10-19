@@ -40,13 +40,5 @@ signing.properties
 AGENTS.md
 
 # Golden harness scratch builds (classes, transcripts output)
-core/tools/golden/openai/build/
-core/tools/golden/openai-request/build/
-core/tools/golden/message-preparation/build/
-core/tools/golden/stream-normalization/build/
-core/tools/golden/memory-manager/build/
-core/tools/golden/embedding-selector/build/
-core/tools/golden/conch-sse/build/
-core/tools/golden/cron-expression/build/
-core/tools/golden/backup-media-policy/build/
+core/tools/golden/*/build/
 core/tools/golden/*/__pycache__/

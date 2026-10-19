@@ -1,0 +1,7 @@
+name|parse_rejects_a_step_expression
+op|parse
+tz|UTC
+locale|en-US
+schedule|-
+args|*/15 * * * *|-
+out|schedule|-

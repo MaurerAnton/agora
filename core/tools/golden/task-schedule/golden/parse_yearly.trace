@@ -1,0 +1,7 @@
+name|parse_yearly
+op|parse
+tz|UTC
+locale|en-US
+schedule|-
+args|0 0 29 2 *|-
+out|schedule|YEARLY,0,0,,29,2,0

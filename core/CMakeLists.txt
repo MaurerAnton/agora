@@ -19,6 +19,7 @@ add_library(agora_core_lib STATIC
     src/anthropic_stream.cpp
     src/bpe_vocabulary.cpp
     src/citations.cpp
+    src/task_schedule.cpp
     src/cron_expression.cpp
     src/backup_media_policy.cpp
     src/conch_sse.cpp

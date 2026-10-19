@@ -1,0 +1,6 @@
+name|format_on_date_in_french
+op|formatOnDate
+tz|UTC
+locale|fr-FR
+schedule|YEARLY,9,0,,14,3,0
+out|string|mars 14

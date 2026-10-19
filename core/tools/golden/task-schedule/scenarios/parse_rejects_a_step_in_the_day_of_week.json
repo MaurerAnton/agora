@@ -1,0 +1,7 @@
+{
+  "cronExpr": "0 6 * * */2",
+  "locale": "en-US",
+  "name": "parse_rejects_a_step_in_the_day_of_week",
+  "op": "parse",
+  "tz": "UTC"
+}

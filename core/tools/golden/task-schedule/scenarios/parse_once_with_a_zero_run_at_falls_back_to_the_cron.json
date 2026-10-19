@@ -1,0 +1,8 @@
+{
+  "cronExpr": "30 9 * * *",
+  "locale": "en-US",
+  "name": "parse_once_with_a_zero_run_at_falls_back_to_the_cron",
+  "op": "parse",
+  "runAt": 0,
+  "tz": "UTC"
+}

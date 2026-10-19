@@ -1,0 +1,14 @@
+{
+  "locale": "en-US",
+  "name": "run_at_none_for_a_zero_epoch",
+  "op": "toRunAt",
+  "schedule": {
+    "dayOfMonth": 10,
+    "hour": 14,
+    "minute": 30,
+    "month": 6,
+    "onceAtMillis": 0,
+    "type": "ONCE"
+  },
+  "tz": "UTC"
+}

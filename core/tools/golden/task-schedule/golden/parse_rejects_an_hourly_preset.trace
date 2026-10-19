@@ -1,0 +1,7 @@
+name|parse_rejects_an_hourly_preset
+op|parse
+tz|UTC
+locale|en-US
+schedule|-
+args|0 * * * *|-
+out|schedule|-

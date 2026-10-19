@@ -1,0 +1,15 @@
+{
+  "locale": "en-US",
+  "name": "switched_to_the_same_type_is_a_no_op",
+  "newType": "MONTHLY",
+  "op": "switchedTo",
+  "schedule": {
+    "dayOfMonth": 23,
+    "hour": 3,
+    "minute": 15,
+    "month": 1,
+    "onceAtMillis": 0,
+    "type": "MONTHLY"
+  },
+  "tz": "UTC"
+}

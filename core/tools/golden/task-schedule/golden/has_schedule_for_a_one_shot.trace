@@ -1,0 +1,7 @@
+name|has_schedule_for_a_one_shot
+op|hasSchedule
+tz|UTC
+locale|en-US
+schedule|-
+args||1780000000000
+out|bool|1

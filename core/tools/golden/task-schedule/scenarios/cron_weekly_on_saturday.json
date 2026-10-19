@@ -1,0 +1,17 @@
+{
+  "locale": "en-US",
+  "name": "cron_weekly_on_saturday",
+  "op": "toCron",
+  "schedule": {
+    "dayOfMonth": 1,
+    "daysOfWeek": [
+      6
+    ],
+    "hour": 6,
+    "minute": 0,
+    "month": 1,
+    "onceAtMillis": 0,
+    "type": "WEEKLY"
+  },
+  "tz": "UTC"
+}

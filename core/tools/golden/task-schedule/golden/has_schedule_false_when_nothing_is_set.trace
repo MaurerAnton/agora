@@ -1,0 +1,7 @@
+name|has_schedule_false_when_nothing_is_set
+op|hasSchedule
+tz|UTC
+locale|en-US
+schedule|-
+args|   |-
+out|bool|0

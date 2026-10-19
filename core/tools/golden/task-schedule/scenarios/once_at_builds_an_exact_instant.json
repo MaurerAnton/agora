@@ -1,0 +1,17 @@
+{
+  "day": 10,
+  "locale": "en-US",
+  "month": 5,
+  "name": "once_at_builds_an_exact_instant",
+  "op": "withOnceAt",
+  "schedule": {
+    "dayOfMonth": 1,
+    "hour": 9,
+    "minute": 30,
+    "month": 1,
+    "onceAtMillis": 0,
+    "type": "ONCE"
+  },
+  "tz": "UTC",
+  "year": 2027
+}

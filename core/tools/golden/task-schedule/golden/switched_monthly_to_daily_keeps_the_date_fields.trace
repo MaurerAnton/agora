@@ -1,0 +1,7 @@
+name|switched_monthly_to_daily_keeps_the_date_fields
+op|switchedTo
+tz|UTC
+locale|en-US
+schedule|MONTHLY,3,15,2,4,23,11,0
+args|DAILY
+out|schedule|DAILY,3,15,2,4,23,11,0

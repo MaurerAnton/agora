@@ -1,0 +1,7 @@
+name|parse_once_with_a_zero_run_at_falls_back_to_the_cron
+op|parse
+tz|UTC
+locale|en-US
+schedule|-
+args|30 9 * * *|0
+out|schedule|DAILY,9,30,,1,1,0

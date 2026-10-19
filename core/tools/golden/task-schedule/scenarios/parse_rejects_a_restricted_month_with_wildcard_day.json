@@ -1,0 +1,7 @@
+{
+  "cronExpr": "0 0 * 3 *",
+  "locale": "en-US",
+  "name": "parse_rejects_a_restricted_month_with_wildcard_day",
+  "op": "parse",
+  "tz": "UTC"
+}

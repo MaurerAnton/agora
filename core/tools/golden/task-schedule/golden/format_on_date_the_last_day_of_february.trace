@@ -1,0 +1,6 @@
+name|format_on_date_the_last_day_of_february
+op|formatOnDate
+tz|UTC
+locale|en-US
+schedule|MONTHLY,9,0,,28,2,0
+out|string|Feb 28

@@ -1,0 +1,14 @@
+{
+  "locale": "en-US",
+  "name": "cron_once_is_empty",
+  "op": "toCron",
+  "schedule": {
+    "dayOfMonth": 1,
+    "hour": 14,
+    "minute": 30,
+    "month": 1,
+    "onceAtMillis": 0,
+    "type": "ONCE"
+  },
+  "tz": "UTC"
+}

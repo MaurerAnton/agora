@@ -1,0 +1,17 @@
+{
+  "day": 10,
+  "locale": "en-US",
+  "month": 7,
+  "name": "once_at_in_a_half_hour_zone",
+  "op": "withOnceAt",
+  "schedule": {
+    "dayOfMonth": 1,
+    "hour": 9,
+    "minute": 30,
+    "month": 1,
+    "onceAtMillis": 0,
+    "type": "ONCE"
+  },
+  "tz": "Asia/Kolkata",
+  "year": 2027
+}

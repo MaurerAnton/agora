@@ -1,0 +1,6 @@
+name|format_on_date_in_german
+op|formatOnDate
+tz|UTC
+locale|de-DE
+schedule|MONTHLY,9,0,,14,3,0
+out|string|März 14

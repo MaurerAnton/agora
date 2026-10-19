@@ -1,0 +1,7 @@
+{
+  "cronExpr": "0,30 * * * *",
+  "locale": "en-US",
+  "name": "parse_rejects_a_list_of_minutes",
+  "op": "parse",
+  "tz": "UTC"
+}

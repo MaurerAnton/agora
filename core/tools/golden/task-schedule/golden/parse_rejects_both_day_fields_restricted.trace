@@ -1,0 +1,7 @@
+name|parse_rejects_both_day_fields_restricted
+op|parse
+tz|UTC
+locale|en-US
+schedule|-
+args|0 0 13 * 5|-
+out|schedule|-

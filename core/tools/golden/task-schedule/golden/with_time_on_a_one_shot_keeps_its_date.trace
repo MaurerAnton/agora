@@ -1,0 +1,7 @@
+name|with_time_on_a_one_shot_keeps_its_date
+op|withTime
+tz|UTC
+locale|en-US
+schedule|ONCE,14,30,,10,6,1780000000000
+args|9|0
+out|schedule|ONCE,9,0,,28,5,1779958800000

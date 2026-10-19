@@ -1,0 +1,7 @@
+{
+  "cronExpr": "60 9 * * *",
+  "locale": "en-US",
+  "name": "parse_rejects_a_minute_above_max",
+  "op": "parse",
+  "tz": "UTC"
+}

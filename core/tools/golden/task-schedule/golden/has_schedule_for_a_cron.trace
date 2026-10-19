@@ -1,0 +1,7 @@
+name|has_schedule_for_a_cron
+op|hasSchedule
+tz|UTC
+locale|en-US
+schedule|-
+args|30 9 * * *|-
+out|bool|1

@@ -1,0 +1,6 @@
+name|cron_weekly_with_no_days_falls_back_to_daily
+op|toCron
+tz|UTC
+locale|en-US
+schedule|WEEKLY,8,45,,1,1,0
+out|string|45 8 * * *

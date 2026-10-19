@@ -1,0 +1,7 @@
+name|once_at_in_a_half_hour_zone
+op|withOnceAt
+tz|Asia/Kolkata
+locale|en-US
+schedule|ONCE,9,30,,1,1,0
+args|2027|7|10
+out|schedule|ONCE,9,30,,10,7,1815192000000

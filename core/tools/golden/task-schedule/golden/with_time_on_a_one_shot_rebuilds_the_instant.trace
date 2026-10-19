@@ -1,0 +1,7 @@
+name|with_time_on_a_one_shot_rebuilds_the_instant
+op|withTime
+tz|UTC
+locale|en-US
+schedule|ONCE,14,30,,10,6,1780000000000
+args|7|5
+out|schedule|ONCE,7,5,,28,5,1779951900000

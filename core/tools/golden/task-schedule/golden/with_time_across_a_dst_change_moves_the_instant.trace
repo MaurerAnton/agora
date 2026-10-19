@@ -1,0 +1,7 @@
+name|with_time_across_a_dst_change_moves_the_instant
+op|withTime
+tz|Europe/Berlin
+locale|en-US
+schedule|ONCE,14,30,,28,3,1775000000000
+args|3|0
+out|schedule|ONCE,3,0,,1,4,1775005200000

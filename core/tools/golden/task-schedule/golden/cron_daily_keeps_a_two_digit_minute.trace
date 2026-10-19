@@ -1,0 +1,6 @@
+name|cron_daily_keeps_a_two_digit_minute
+op|toCron
+tz|UTC
+locale|en-US
+schedule|DAILY,13,45,,1,1,0
+out|string|45 13 * * *

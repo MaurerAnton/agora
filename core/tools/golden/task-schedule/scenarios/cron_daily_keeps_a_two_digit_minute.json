@@ -1,0 +1,14 @@
+{
+  "locale": "en-US",
+  "name": "cron_daily_keeps_a_two_digit_minute",
+  "op": "toCron",
+  "schedule": {
+    "dayOfMonth": 1,
+    "hour": 13,
+    "minute": 45,
+    "month": 1,
+    "onceAtMillis": 0,
+    "type": "DAILY"
+  },
+  "tz": "UTC"
+}

@@ -1,0 +1,6 @@
+name|format_on_date_april_31_still_normalizes
+op|formatOnDate
+tz|UTC
+locale|en-US
+schedule|MONTHLY,9,0,,31,4,0
+out|string|May 1

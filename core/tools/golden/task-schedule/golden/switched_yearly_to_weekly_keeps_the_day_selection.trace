@@ -1,0 +1,7 @@
+name|switched_yearly_to_weekly_keeps_the_day_selection
+op|switchedTo
+tz|UTC
+locale|en-US
+schedule|YEARLY,0,0,1,29,2,0
+args|WEEKLY
+out|schedule|WEEKLY,0,0,1,29,2,0

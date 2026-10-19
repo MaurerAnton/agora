@@ -1,0 +1,7 @@
+name|with_time_on_a_daily_schedule
+op|withTime
+tz|UTC
+locale|en-US
+schedule|DAILY,9,0,,1,1,0
+args|23|59
+out|schedule|DAILY,23,59,,1,1,0

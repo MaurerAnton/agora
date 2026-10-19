@@ -1,0 +1,7 @@
+name|once_at_a_day_past_the_end_of_the_month_normalizes
+op|withOnceAt
+tz|UTC
+locale|en-US
+schedule|ONCE,0,0,,1,1,0
+args|2027|4|31
+out|schedule|ONCE,0,0,,31,4,1809129600000

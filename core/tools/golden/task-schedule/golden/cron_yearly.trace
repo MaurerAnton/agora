@@ -1,0 +1,6 @@
+name|cron_yearly
+op|toCron
+tz|UTC
+locale|en-US
+schedule|YEARLY,0,0,,29,2,0
+out|string|0 0 29 2 *

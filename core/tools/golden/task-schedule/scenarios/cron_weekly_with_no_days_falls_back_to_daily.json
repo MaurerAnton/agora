@@ -1,0 +1,14 @@
+{
+  "locale": "en-US",
+  "name": "cron_weekly_with_no_days_falls_back_to_daily",
+  "op": "toCron",
+  "schedule": {
+    "dayOfMonth": 1,
+    "hour": 8,
+    "minute": 45,
+    "month": 1,
+    "onceAtMillis": 0,
+    "type": "WEEKLY"
+  },
+  "tz": "UTC"
+}

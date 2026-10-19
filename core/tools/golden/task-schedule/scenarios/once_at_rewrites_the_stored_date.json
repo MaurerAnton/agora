@@ -1,0 +1,17 @@
+{
+  "day": 21,
+  "locale": "en-US",
+  "month": 8,
+  "name": "once_at_rewrites_the_stored_date",
+  "op": "withOnceAt",
+  "schedule": {
+    "dayOfMonth": 2,
+    "hour": 9,
+    "minute": 30,
+    "month": 2,
+    "onceAtMillis": 0,
+    "type": "MONTHLY"
+  },
+  "tz": "UTC",
+  "year": 2030
+}

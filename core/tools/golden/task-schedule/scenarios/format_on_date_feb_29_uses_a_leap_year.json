@@ -1,0 +1,14 @@
+{
+  "locale": "en-US",
+  "name": "format_on_date_feb_29_uses_a_leap_year",
+  "op": "formatOnDate",
+  "schedule": {
+    "dayOfMonth": 29,
+    "hour": 9,
+    "minute": 0,
+    "month": 2,
+    "onceAtMillis": 0,
+    "type": "MONTHLY"
+  },
+  "tz": "UTC"
+}

@@ -1,0 +1,5 @@
+{
+  "name": "execution_trims",
+  "op": "promptForExecution",
+  "prompt": "  keep going  "
+}

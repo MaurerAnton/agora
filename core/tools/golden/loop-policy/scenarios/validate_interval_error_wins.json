@@ -1,0 +1,6 @@
+{
+  "name": "validate_interval_error_wins",
+  "op": "validate",
+  "intervalMs": 0,
+  "maxCycles": 0
+}

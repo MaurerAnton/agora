@@ -1,0 +1,5 @@
+name|validate_interval_error_wins
+op|validate
+constants|10|604800|10000|604800000|10|1|100|Continue.
+args|0|0
+out|string?|interval must be between 10 and 604800 seconds

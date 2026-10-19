@@ -1,0 +1,6 @@
+{
+  "name": "validate_accepts_min_cycles",
+  "op": "validate",
+  "intervalMs": 60000,
+  "maxCycles": 1
+}

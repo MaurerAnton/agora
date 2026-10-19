@@ -1,0 +1,6 @@
+{
+  "name": "fire_clamps_on_overflow",
+  "op": "nextFireAt",
+  "now": 9223372036854715808,
+  "intervalMs": 60000
+}

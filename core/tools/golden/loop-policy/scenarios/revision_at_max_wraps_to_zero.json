@@ -1,0 +1,5 @@
+{
+  "name": "revision_at_max_wraps_to_zero",
+  "op": "nextRevision",
+  "current": 9223372036854775807
+}

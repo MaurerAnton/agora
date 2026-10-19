@@ -1,0 +1,5 @@
+name|fire_negative_now
+op|nextFireAt
+constants|10|604800|10000|604800000|10|1|100|Continue.
+args|-5|10
+out|long|5

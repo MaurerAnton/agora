@@ -1,0 +1,5 @@
+name|revision_from_max_minus_one
+op|nextRevision
+constants|10|604800|10000|604800000|10|1|100|Continue.
+args|9223372036854775806
+out|long|9223372036854775807

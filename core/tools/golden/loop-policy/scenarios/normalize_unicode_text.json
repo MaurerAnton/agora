@@ -1,0 +1,5 @@
+{
+  "name": "normalize_unicode_text",
+  "op": "normalizePrompt",
+  "prompt": "  Привет  "
+}

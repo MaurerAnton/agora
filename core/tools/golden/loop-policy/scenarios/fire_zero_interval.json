@@ -1,0 +1,6 @@
+{
+  "name": "fire_zero_interval",
+  "op": "nextFireAt",
+  "now": 123,
+  "intervalMs": 0
+}

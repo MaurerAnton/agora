@@ -1,6 +1,0 @@
-name|normalize_name_with_special_chars
-mode|normalize
-providers|1
-provider|0|a,b c\sd|custom-provider-134c451b-6ac7-4716-bbf4-bb89a33b52da|a,b c\sd
-migrations|1
-migration|0|a,b c\sd|custom-provider-134c451b-6ac7-4716-bbf4-bb89a33b52da

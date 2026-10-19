@@ -1,0 +1,11 @@
+name|best_score_counts_sub_threshold_rows
+page_size|256
+threshold|0.99
+limit|5
+query|1.0,0.0
+candidates|1
+candidate|2|exact|1.0
+scanned|2
+skipped|0
+best_score|1.0
+max_retained|1

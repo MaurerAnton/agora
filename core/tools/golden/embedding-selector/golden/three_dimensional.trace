@@ -1,0 +1,12 @@
+name|three_dimensional
+page_size|256
+threshold|0.5
+limit|5
+query|1.0,1.0,0.0
+candidates|2
+candidate|1|same|1.0000001
+candidate|2|half|0.70710677
+scanned|2
+skipped|0
+best_score|1.0000001
+max_retained|2

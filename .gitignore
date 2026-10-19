@@ -45,4 +45,5 @@ core/tools/golden/openai-request/build/
 core/tools/golden/message-preparation/build/
 core/tools/golden/stream-normalization/build/
 core/tools/golden/memory-manager/build/
+core/tools/golden/embedding-selector/build/
 core/tools/golden/*/__pycache__/

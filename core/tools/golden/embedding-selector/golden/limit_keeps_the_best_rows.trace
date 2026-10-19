@@ -1,0 +1,12 @@
+name|limit_keeps_the_best_rows
+page_size|256
+threshold|-1.0
+limit|2
+query|1.0,0.0
+candidates|2
+candidate|1|best|1.0
+candidate|2|mid|0.70710677
+scanned|3
+skipped|0
+best_score|1.0
+max_retained|2

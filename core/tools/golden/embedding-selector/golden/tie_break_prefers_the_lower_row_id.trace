@@ -1,0 +1,11 @@
+name|tie_break_prefers_the_lower_row_id
+page_size|256
+threshold|-1.0
+limit|1
+query|1.0,0.0
+candidates|1
+candidate|2|earlier|1.0
+scanned|2
+skipped|0
+best_score|1.0
+max_retained|1

@@ -1,0 +1,10 @@
+name|empty_rows
+page_size|256
+threshold|0.0
+limit|5
+query|1.0,0.0
+candidates|0
+scanned|0
+skipped|0
+best_score|0.0
+max_retained|0

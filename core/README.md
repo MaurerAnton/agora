@@ -78,6 +78,7 @@ parity tests in `core/tests/` — a drifting port is a failing build, not a surp
 | model alias inference (Claude/Gemini/Nova display aliases) | **done** | stand `model-aliases` |
 | custom provider identity (stable ids, legacyId, remap) | **done** | stand `provider-identity` |
 | memory catalog (active memory, per-file descriptions, metadata store) | **done** | stand `memory-manager`; only `Context`/`StateFlow` are substituted, the store's `.tmp`/`.bak` recovery is pinned |
+| bounded semantic embedding selection (keyset scoring, retention heap) | **done** | stand `embedding-selector`; ties break on row id, malformed rows and non-finite scores are counted not fatal |
 | data layer (export/import, backups) | pending | |
 | tool execution (remaining providers, shell engines) | pending | |
 

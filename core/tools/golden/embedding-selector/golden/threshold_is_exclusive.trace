@@ -1,0 +1,10 @@
+name|threshold_is_exclusive
+page_size|256
+threshold|0.70710677
+limit|5
+query|1.0,0.0
+candidates|0
+scanned|1
+skipped|0
+best_score|0.70710677
+max_retained|0

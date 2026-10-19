@@ -1,0 +1,39 @@
+{
+  "name": "pages_are_followed_until_one_is_short",
+  "query": [
+    1.0,
+    0.0
+  ],
+  "threshold": -1.0,
+  "limit": 10,
+  "page_size": 2,
+  "rows": [
+    {
+      "id": 1,
+      "message_id": "a",
+      "embedding": [
+        1.0,
+        0.0
+      ],
+      "dimension": -1
+    },
+    {
+      "id": 2,
+      "message_id": "b",
+      "embedding": [
+        1.0,
+        0.0
+      ],
+      "dimension": -1
+    },
+    {
+      "id": 3,
+      "message_id": "c",
+      "embedding": [
+        1.0,
+        0.0
+      ],
+      "dimension": -1
+    }
+  ]
+}

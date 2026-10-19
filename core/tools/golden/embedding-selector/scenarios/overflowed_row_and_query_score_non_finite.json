@@ -1,0 +1,29 @@
+{
+  "name": "overflowed_row_and_query_score_non_finite",
+  "query": [
+    3.4028235e+38,
+    0.0
+  ],
+  "threshold": -1.0,
+  "limit": 5,
+  "rows": [
+    {
+      "id": 1,
+      "message_id": "huge",
+      "embedding": [
+        3.4028235e+38,
+        0.0
+      ],
+      "dimension": -1
+    },
+    {
+      "id": 2,
+      "message_id": "normal",
+      "embedding": [
+        1.0,
+        0.0
+      ],
+      "dimension": -1
+    }
+  ]
+}

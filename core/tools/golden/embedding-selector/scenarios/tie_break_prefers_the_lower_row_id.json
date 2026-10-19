@@ -1,0 +1,29 @@
+{
+  "name": "tie_break_prefers_the_lower_row_id",
+  "query": [
+    1.0,
+    0.0
+  ],
+  "threshold": -1.0,
+  "limit": 1,
+  "rows": [
+    {
+      "id": 2,
+      "message_id": "earlier",
+      "embedding": [
+        1.0,
+        0.0
+      ],
+      "dimension": -1
+    },
+    {
+      "id": 5,
+      "message_id": "later",
+      "embedding": [
+        1.0,
+        0.0
+      ],
+      "dimension": -1
+    }
+  ]
+}

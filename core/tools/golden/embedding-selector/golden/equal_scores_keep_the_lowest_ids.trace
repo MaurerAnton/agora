@@ -1,0 +1,12 @@
+name|equal_scores_keep_the_lowest_ids
+page_size|256
+threshold|-1.0
+limit|2
+query|1.0,0.0
+candidates|2
+candidate|7|seven|1.0
+candidate|8|eight|1.0
+scanned|3
+skipped|0
+best_score|1.0
+max_retained|2

@@ -1,0 +1,40 @@
+{
+  "name": "oversized_page_is_rejected",
+  "query": [
+    1.0,
+    0.0
+  ],
+  "threshold": -1.0,
+  "limit": 5,
+  "page_size": 2,
+  "loader": "oversized",
+  "rows": [
+    {
+      "id": 1,
+      "message_id": "a",
+      "embedding": [
+        1.0,
+        0.0
+      ],
+      "dimension": -1
+    },
+    {
+      "id": 2,
+      "message_id": "b",
+      "embedding": [
+        1.0,
+        0.0
+      ],
+      "dimension": -1
+    },
+    {
+      "id": 3,
+      "message_id": "c",
+      "embedding": [
+        1.0,
+        0.0
+      ],
+      "dimension": -1
+    }
+  ]
+}

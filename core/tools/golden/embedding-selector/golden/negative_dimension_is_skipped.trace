@@ -1,0 +1,12 @@
+name|negative_dimension_is_skipped
+page_size|256
+threshold|-1.0
+limit|5
+query|1.0,0.0
+candidates|2
+candidate|1|negative|1.0
+candidate|2|good|1.0
+scanned|2
+skipped|0
+best_score|1.0
+max_retained|2

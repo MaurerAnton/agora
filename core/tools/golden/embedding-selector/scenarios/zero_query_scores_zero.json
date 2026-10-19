@@ -1,0 +1,20 @@
+{
+  "name": "zero_query_scores_zero",
+  "query": [
+    0.0,
+    0.0
+  ],
+  "threshold": -1.0,
+  "limit": 5,
+  "rows": [
+    {
+      "id": 1,
+      "message_id": "any",
+      "embedding": [
+        1.0,
+        0.0
+      ],
+      "dimension": -1
+    }
+  ]
+}

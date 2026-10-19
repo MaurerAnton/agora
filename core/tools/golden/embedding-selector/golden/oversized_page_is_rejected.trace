@@ -1,0 +1,6 @@
+name|oversized_page_is_rejected
+page_size|2
+threshold|-1.0
+limit|5
+query|1.0,0.0
+error|Embedding page exceeded the requested bound

@@ -1,0 +1,32 @@
+{
+  "name": "three_dimensional",
+  "query": [
+    1.0,
+    1.0,
+    0.0
+  ],
+  "threshold": 0.5,
+  "limit": 5,
+  "rows": [
+    {
+      "id": 1,
+      "message_id": "same",
+      "embedding": [
+        1.0,
+        1.0,
+        0.0
+      ],
+      "dimension": -1
+    },
+    {
+      "id": 2,
+      "message_id": "half",
+      "embedding": [
+        1.0,
+        0.0,
+        0.0
+      ],
+      "dimension": -1
+    }
+  ]
+}

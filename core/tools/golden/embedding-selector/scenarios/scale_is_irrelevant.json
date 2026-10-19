@@ -1,0 +1,20 @@
+{
+  "name": "scale_is_irrelevant",
+  "query": [
+    2.0,
+    0.0
+  ],
+  "threshold": 0.99,
+  "limit": 5,
+  "rows": [
+    {
+      "id": 1,
+      "message_id": "scaled",
+      "embedding": [
+        50.0,
+        0.0
+      ],
+      "dimension": -1
+    }
+  ]
+}

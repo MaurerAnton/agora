@@ -1,0 +1,19 @@
+{
+  "name": "non_positive_limit",
+  "query": [
+    1.0,
+    0.0
+  ],
+  "limit": 0,
+  "rows": [
+    {
+      "id": 1,
+      "message_id": "m",
+      "embedding": [
+        1.0,
+        0.0
+      ],
+      "dimension": -1
+    }
+  ]
+}

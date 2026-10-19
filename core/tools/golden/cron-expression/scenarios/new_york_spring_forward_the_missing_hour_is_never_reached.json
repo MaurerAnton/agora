@@ -1,0 +1,7 @@
+{
+  "after_millis": 1772884800000,
+  "expr": "30 2 * * *",
+  "name": "new_york_spring_forward_the_missing_hour_is_never_reached",
+  "next": true,
+  "zone": "America/New_York"
+}

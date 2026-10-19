@@ -1,0 +1,4 @@
+{
+  "expr": "0-30/10 * * * *",
+  "name": "range_with_a_step"
+}

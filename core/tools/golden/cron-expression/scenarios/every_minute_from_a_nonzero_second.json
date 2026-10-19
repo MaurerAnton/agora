@@ -1,0 +1,7 @@
+{
+  "after_millis": 1773489630000,
+  "expr": "* * * * *",
+  "name": "every_minute_from_a_nonzero_second",
+  "next": true,
+  "zone": "UTC"
+}

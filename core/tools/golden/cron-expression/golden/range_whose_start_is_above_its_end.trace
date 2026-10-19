@@ -1,0 +1,3 @@
+name|range_whose_start_is_above_its_end
+expr|10-5 * * * *
+valid|0

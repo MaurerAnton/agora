@@ -1,0 +1,7 @@
+{
+  "after_millis": 1792843200000,
+  "expr": "30 2 * * *",
+  "name": "berlin_fall_back_resolves_the_repeated_hour_to_standard_time",
+  "next": true,
+  "zone": "Europe/Berlin"
+}

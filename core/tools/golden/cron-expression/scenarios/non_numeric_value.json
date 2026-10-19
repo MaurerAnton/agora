@@ -1,0 +1,4 @@
+{
+  "expr": "x * * * *",
+  "name": "non_numeric_value"
+}

@@ -1,0 +1,7 @@
+{
+  "after_millis": 1775304000000,
+  "expr": "0 2 * * *",
+  "name": "sydney_southern_autumn",
+  "next": true,
+  "zone": "Australia/Sydney"
+}

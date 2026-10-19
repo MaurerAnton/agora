@@ -1,0 +1,7 @@
+{
+  "after_millis": 1792889970000,
+  "expr": "* * * * *",
+  "name": "berlin_fall_back_every_minute",
+  "next": true,
+  "zone": "Europe/Berlin"
+}

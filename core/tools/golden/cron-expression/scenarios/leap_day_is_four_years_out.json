@@ -1,0 +1,7 @@
+{
+  "after_millis": 1767225600000,
+  "expr": "0 0 29 2 *",
+  "name": "leap_day_is_four_years_out",
+  "next": true,
+  "zone": "UTC"
+}

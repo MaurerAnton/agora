@@ -1,0 +1,7 @@
+{
+  "after_millis": 1835395200000,
+  "expr": "0 0 29 2 *",
+  "name": "leap_day_exactly_now_moves_on",
+  "next": true,
+  "zone": "UTC"
+}

@@ -1,0 +1,4 @@
+{
+  "expr": "0\t12\n*\r*\u000b*",
+  "name": "newlines_and_tabs_are_whitespace"
+}

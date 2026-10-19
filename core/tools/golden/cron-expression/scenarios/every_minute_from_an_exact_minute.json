@@ -1,0 +1,7 @@
+{
+  "after_millis": 1773489600000,
+  "expr": "* * * * *",
+  "name": "every_minute_from_an_exact_minute",
+  "next": true,
+  "zone": "UTC"
+}

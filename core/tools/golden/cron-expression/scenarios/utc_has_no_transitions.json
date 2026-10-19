@@ -1,0 +1,7 @@
+{
+  "after_millis": 1774742400000,
+  "expr": "30 2 * * *",
+  "name": "utc_has_no_transitions",
+  "next": true,
+  "zone": "UTC"
+}

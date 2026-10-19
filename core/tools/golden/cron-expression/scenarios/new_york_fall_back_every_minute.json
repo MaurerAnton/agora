@@ -1,0 +1,7 @@
+{
+  "after_millis": 1793512770000,
+  "expr": "* * * * *",
+  "name": "new_york_fall_back_every_minute",
+  "next": true,
+  "zone": "America/New_York"
+}

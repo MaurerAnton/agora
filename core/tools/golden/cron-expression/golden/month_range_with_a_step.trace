@@ -1,0 +1,10 @@
+name|month_range_with_a_step
+expr|0 0 1 1-12/11 *
+valid|1
+minutes|0
+hours|0
+daysOfMonth|1
+months|1,12
+daysOfWeek|0,1,2,3,4,5,6
+domRestricted|1
+dowRestricted|0

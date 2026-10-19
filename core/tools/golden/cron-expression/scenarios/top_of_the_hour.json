@@ -1,0 +1,7 @@
+{
+  "after_millis": 1773491400000,
+  "expr": "0 * * * *",
+  "name": "top_of_the_hour",
+  "next": true,
+  "zone": "UTC"
+}

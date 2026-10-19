@@ -1,0 +1,4 @@
+{
+  "expr": "0 0 * * 1-5/2",
+  "name": "weekday_range_with_a_wide_step"
+}

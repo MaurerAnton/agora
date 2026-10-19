@@ -1,0 +1,4 @@
+{
+  "expr": "* * * * *",
+  "name": "wildcards_expand_to_every_value"
+}

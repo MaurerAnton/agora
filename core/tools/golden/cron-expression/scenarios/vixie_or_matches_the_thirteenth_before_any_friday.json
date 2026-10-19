@@ -1,0 +1,7 @@
+{
+  "after_millis": 1775001600000,
+  "expr": "0 0 13 * 5",
+  "name": "vixie_or_matches_the_thirteenth_before_any_friday",
+  "next": true,
+  "zone": "UTC"
+}

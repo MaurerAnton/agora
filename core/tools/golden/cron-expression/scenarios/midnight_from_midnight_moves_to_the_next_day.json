@@ -1,0 +1,7 @@
+{
+  "after_millis": 1773446400000,
+  "expr": "0 0 * * *",
+  "name": "midnight_from_midnight_moves_to_the_next_day",
+  "next": true,
+  "zone": "UTC"
+}

@@ -1,0 +1,4 @@
+{
+  "expr": "0 0 * * 6/2",
+  "name": "weekday_step_from_six"
+}

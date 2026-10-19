@@ -1,0 +1,7 @@
+{
+  "after_millis": 1780272000000,
+  "expr": "0 0 1 1 *",
+  "name": "year_end_wrap",
+  "next": true,
+  "zone": "UTC"
+}

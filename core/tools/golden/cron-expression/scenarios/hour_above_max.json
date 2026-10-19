@@ -1,0 +1,4 @@
+{
+  "expr": "0 24 * * *",
+  "name": "hour_above_max"
+}

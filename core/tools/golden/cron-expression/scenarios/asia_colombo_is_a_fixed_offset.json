@@ -1,0 +1,7 @@
+{
+  "after_millis": 1773446400000,
+  "expr": "0 12 * * *",
+  "name": "asia_colombo_is_a_fixed_offset",
+  "next": true,
+  "zone": "Asia/Colombo"
+}

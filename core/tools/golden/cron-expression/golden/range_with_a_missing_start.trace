@@ -1,0 +1,3 @@
+name|range_with_a_missing_start
+expr|-5 * * * *
+valid|0

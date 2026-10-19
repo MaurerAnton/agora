@@ -1,0 +1,4 @@
+{
+  "expr": "0 0 * * 5",
+  "name": "restricted_dow_only"
+}

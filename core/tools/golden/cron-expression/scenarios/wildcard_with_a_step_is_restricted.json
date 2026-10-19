@@ -1,0 +1,4 @@
+{
+  "expr": "0 0 */2 * */2",
+  "name": "wildcard_with_a_step_is_restricted"
+}

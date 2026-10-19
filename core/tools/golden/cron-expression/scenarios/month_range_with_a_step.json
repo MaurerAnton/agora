@@ -1,0 +1,4 @@
+{
+  "expr": "0 0 1 1-12/11 *",
+  "name": "month_range_with_a_step"
+}

@@ -1,0 +1,7 @@
+{
+  "after_millis": 1774745970000,
+  "expr": "* * * * *",
+  "name": "berlin_spring_forward_every_minute",
+  "next": true,
+  "zone": "Europe/Berlin"
+}

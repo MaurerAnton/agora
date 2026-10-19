@@ -1,0 +1,7 @@
+{
+  "after_millis": 1773489600000,
+  "expr": "0 0 * * 0",
+  "name": "sunday_matches_zero",
+  "next": true,
+  "zone": "UTC"
+}

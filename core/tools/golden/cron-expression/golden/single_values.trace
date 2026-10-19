@@ -1,0 +1,10 @@
+name|single_values
+expr|0 12 1 6 *
+valid|1
+minutes|0
+hours|12
+daysOfMonth|1
+months|6
+daysOfWeek|0,1,2,3,4,5,6
+domRestricted|1
+dowRestricted|0

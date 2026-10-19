@@ -1,0 +1,3 @@
+name|hour_above_max
+expr|0 24 * * *
+valid|0

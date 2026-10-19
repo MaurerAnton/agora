@@ -1,0 +1,4 @@
+{
+  "expr": "  \t 0   12  *  *  * \n ",
+  "name": "extra_internal_whitespace_collapses"
+}

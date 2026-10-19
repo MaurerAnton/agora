@@ -1,0 +1,4 @@
+{
+  "expr": "0 0 * * 8",
+  "name": "dow_above_max"
+}

@@ -1,0 +1,4 @@
+{
+  "expr": "10/2 * * * *",
+  "name": "stepped_value_whose_start_is_above_its_end"
+}

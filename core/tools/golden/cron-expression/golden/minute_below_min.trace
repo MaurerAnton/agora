@@ -1,0 +1,3 @@
+name|minute_below_min
+expr|-1 * * * *
+valid|0

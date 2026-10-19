@@ -1,0 +1,10 @@
+name|dom_range_that_ends_on_the_max
+expr|0 0 28-31 * *
+valid|1
+minutes|0
+hours|0
+daysOfMonth|28,29,30,31
+months|1,2,3,4,5,6,7,8,9,10,11,12
+daysOfWeek|0,1,2,3,4,5,6
+domRestricted|1
+dowRestricted|0

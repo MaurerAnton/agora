@@ -1,0 +1,7 @@
+{
+  "after_millis": 1772409600000,
+  "expr": "0 3 * * 1",
+  "name": "a_weekday_schedule_crosses_a_transition",
+  "next": true,
+  "zone": "Europe/Berlin"
+}

@@ -1,0 +1,7 @@
+{
+  "after_millis": 1768435200000,
+  "expr": "0 12 * * *",
+  "name": "berlin_a_normal_day_in_standard_time",
+  "next": true,
+  "zone": "Europe/Berlin"
+}

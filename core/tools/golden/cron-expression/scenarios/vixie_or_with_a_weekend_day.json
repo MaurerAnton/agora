@@ -1,0 +1,7 @@
+{
+  "after_millis": 1772409600000,
+  "expr": "0 0 1 * 0",
+  "name": "vixie_or_with_a_weekend_day",
+  "next": true,
+  "zone": "UTC"
+}

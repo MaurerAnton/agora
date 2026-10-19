@@ -1,0 +1,4 @@
+name|tool_images_restore_keeps_segments_without_images
+fn|restoreToolImagePaths
+result|string|[{"type":"answer","content":"plain"},{"type":"tool"}]
+missing|0

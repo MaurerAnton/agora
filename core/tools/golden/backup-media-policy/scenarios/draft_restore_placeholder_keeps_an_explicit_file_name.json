@@ -1,0 +1,13 @@
+{
+  "attachments": [
+    {
+      "fileName": "kept.png",
+      "localId": "a1",
+      "type": "image",
+      "uri": "file:///other.png"
+    }
+  ],
+  "fn": "restoreDraftAttachments",
+  "name": "draft_restore_placeholder_keeps_an_explicit_file_name",
+  "table": {}
+}

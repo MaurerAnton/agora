@@ -1,0 +1,5 @@
+name|tool_images_export_escapes_control_characters_and_keeps_unicode
+fn|rewriteToolImagePathsForExport
+call|archiveEntryForSource|/data/a.png|media/a.png
+result|string|[{"type":"answer","content":"tab\\there\\nnewline\\rreturn\\bback\\fformfeed \\u0001bell \\u001bescape-done \\"quoted\\" \\\\slash\\\\ €100 — emoji 😀 and a lone  nbsp","toolImages":[{"path":"media/a.png","mimeType":"image/png","sizeBytes":1,"sha256":"aa"}]}]
+missing|0

@@ -1,0 +1,18 @@
+{
+  "fn": "rewriteAttachmentMetaForExport",
+  "name": "meta_export_video_without_an_archive_entry_is_unavailable",
+  "oldToNewImageIndex": {},
+  "raw_json": {
+    "items": [
+      {
+        "originalUri": "file:///device/movies/clip.mp4",
+        "type": "video"
+      }
+    ]
+  },
+  "table": {
+    "archiveEntryForSource": {
+      "file:///device/movies/clip.mp4": null
+    }
+  }
+}

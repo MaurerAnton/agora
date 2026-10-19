@@ -1,0 +1,25 @@
+{
+  "fn": "rewriteAttachmentMetaForExport",
+  "name": "meta_export_claimed_indices_suppress_the_legacy_items",
+  "oldToNewImageIndex": {
+    "0": 0,
+    "1": 1,
+    "2": 2,
+    "3": 3
+  },
+  "originalImageSources": [
+    "/orig/one.png",
+    "/orig/two.png",
+    "/orig/three.png"
+  ],
+  "raw_json": {
+    "items": [
+      {
+        "image_index": 1,
+        "originalUri": "/orig/two.png",
+        "page_count": 2,
+        "type": "image"
+      }
+    ]
+  }
+}

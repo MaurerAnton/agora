@@ -1,0 +1,23 @@
+{
+  "archiveVersion": 3,
+  "fn": "restoreAttachmentMeta",
+  "legacyVideoUris": {},
+  "name": "meta_restore_below_v4_drops_the_original_uri_of_a_non_video",
+  "oldToNewImageIndex": {
+    "0": 0
+  },
+  "raw_json": {
+    "items": [
+      {
+        "image_index": 0,
+        "originalUri": "media/photo.jpg",
+        "type": "image"
+      }
+    ]
+  },
+  "table": {
+    "restoredUriForArchiveEntry": {
+      "media/photo.jpg": "file:///data/photo.jpg"
+    }
+  }
+}

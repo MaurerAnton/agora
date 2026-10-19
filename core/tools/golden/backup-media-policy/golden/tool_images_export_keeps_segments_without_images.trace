@@ -1,0 +1,4 @@
+name|tool_images_export_keeps_segments_without_images
+fn|rewriteToolImagePathsForExport
+result|string|[{"type":"answer","content":"plain"},{"type":"tool"}]
+missing|0

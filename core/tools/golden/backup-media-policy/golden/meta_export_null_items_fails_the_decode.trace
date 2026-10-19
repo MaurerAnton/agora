@@ -1,0 +1,4 @@
+name|meta_export_null_items_fails_the_decode
+fn|rewriteAttachmentMetaForExport
+result|string|{"items":[{"type":"image","file_name":"one.png","image_index":2}]}
+missing|0

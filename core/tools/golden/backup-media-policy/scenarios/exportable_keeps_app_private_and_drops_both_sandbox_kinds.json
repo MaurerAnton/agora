@@ -1,0 +1,28 @@
+{
+  "attachments": [
+    {
+      "localId": "a1",
+      "type": "image",
+      "uri": "file:///one.png"
+    },
+    {
+      "localId": "a2",
+      "storage": "local_sandbox_pending",
+      "type": "image",
+      "uri": "content://sandbox/two.png"
+    },
+    {
+      "localId": "a3",
+      "storage": "local_sandbox_runtime",
+      "type": "image",
+      "uri": "content://sandbox/three.png"
+    },
+    {
+      "localId": "a4",
+      "type": "pdf",
+      "uri": "file:///four.pdf"
+    }
+  ],
+  "fn": "exportableDraftAttachments",
+  "name": "exportable_keeps_app_private_and_drops_both_sandbox_kinds"
+}

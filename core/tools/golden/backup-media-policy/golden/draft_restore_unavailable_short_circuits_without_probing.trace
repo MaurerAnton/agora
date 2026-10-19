@@ -1,0 +1,4 @@
+name|draft_restore_unavailable_short_circuits_without_probing
+fn|restoreDraftAttachments
+result|attachments|[{"localId":"a1","uri":"","type":"image","fileName":"x.png","unavailable":true}]
+missing|0

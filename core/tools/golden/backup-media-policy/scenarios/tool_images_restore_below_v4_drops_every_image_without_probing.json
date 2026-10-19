@@ -1,0 +1,23 @@
+{
+  "archiveVersion": 3,
+  "fn": "restoreToolImagePaths",
+  "name": "tool_images_restore_below_v4_drops_every_image_without_probing",
+  "raw_json": [
+    {
+      "toolImages": [
+        {
+          "mimeType": "image/png",
+          "path": "media/a.png",
+          "sha256": "aa",
+          "sizeBytes": 1
+        }
+      ],
+      "type": "answer"
+    }
+  ],
+  "table": {
+    "restoredPathForArchiveEntry": {
+      "media/a.png": "/data/a.png"
+    }
+  }
+}

@@ -1,0 +1,4 @@
+name|meta_export_sandbox_items_alone_return_null
+fn|rewriteAttachmentMetaForExport
+result|string|{}
+missing|0

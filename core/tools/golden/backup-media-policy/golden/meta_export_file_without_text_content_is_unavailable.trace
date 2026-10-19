@@ -1,0 +1,4 @@
+name|meta_export_file_without_text_content_is_unavailable
+fn|rewriteAttachmentMetaForExport
+result|string|{"items":[{"type":"file","file_name":"doc.txt","unavailable":true},{"type":"file","file_name":"doc2.txt","text_content":"hello"}]}
+missing|1

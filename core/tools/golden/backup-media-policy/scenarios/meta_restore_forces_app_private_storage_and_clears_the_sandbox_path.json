@@ -1,0 +1,19 @@
+{
+  "archiveVersion": 4,
+  "fn": "restoreAttachmentMeta",
+  "legacyVideoUris": {},
+  "name": "meta_restore_forces_app_private_storage_and_clears_the_sandbox_path",
+  "oldToNewImageIndex": {
+    "0": 0
+  },
+  "raw_json": {
+    "items": [
+      {
+        "image_index": 0,
+        "sandbox_path": "/sandbox/a.png",
+        "storage": "local_sandbox_runtime",
+        "type": "image"
+      }
+    ]
+  }
+}

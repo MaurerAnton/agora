@@ -1,0 +1,10 @@
+name|draft_export_maps_frames_and_drops_unresolved_ones
+fn|rewriteDraftAttachmentsForExport
+call|archiveEntryForSource|/tmp/live.png|media/live.png
+call|archiveEntryForSource|/frames/f0.jpg|media/f0.jpg
+call|archiveEntryForSource|/frames/f1.jpg|-
+call|archiveEntryForSource|/frames/f2.jpg|media/f2.jpg
+call|archiveEntryForSource|/pre/p0.jpg|media/p0.jpg
+call|archiveEntryForSource|/pre/gone.jpg|-
+result|attachments|[{"localId":"a1","uri":"media/live.png","type":"image","fileName":"live.png","processedFrames":["media/f0.jpg","media/f2.jpg"],"preRenderedPaths":["media/p0.jpg"],"localPath":"media/live.png"}]
+missing|0

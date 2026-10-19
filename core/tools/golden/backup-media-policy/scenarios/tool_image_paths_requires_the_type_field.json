@@ -1,0 +1,9 @@
+{
+  "fn": "toolImagePaths",
+  "name": "tool_image_paths_requires_the_type_field",
+  "raw_json": [
+    {
+      "content": "no type here"
+    }
+  ]
+}

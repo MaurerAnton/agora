@@ -1,0 +1,28 @@
+{
+  "fn": "rewriteToolImagePathsForExport",
+  "name": "tool_images_export_drops_unresolved_images",
+  "raw_json": [
+    {
+      "toolImages": [
+        {
+          "mimeType": "image/png",
+          "path": "/data/a.png",
+          "sha256": "aa",
+          "sizeBytes": 1
+        },
+        {
+          "mimeType": "image/png",
+          "path": "/data/gone.png",
+          "sha256": "bb",
+          "sizeBytes": 2
+        }
+      ],
+      "type": "answer"
+    }
+  ],
+  "table": {
+    "archiveEntryForSource": {
+      "/data/a.png": "media/a.png"
+    }
+  }
+}

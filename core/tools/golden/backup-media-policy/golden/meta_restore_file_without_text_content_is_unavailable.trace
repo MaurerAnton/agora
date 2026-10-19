@@ -1,0 +1,5 @@
+name|meta_restore_file_without_text_content_is_unavailable
+fn|restoreAttachmentMeta
+call|restoredUriForArchiveEntry|media/doc.txt|-
+result|string|{"items":[{"type":"file","unavailable":true}]}
+missing|0

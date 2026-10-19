@@ -1,0 +1,29 @@
+{
+  "attachments": [
+    {
+      "localId": "a1",
+      "localPath": "/tmp/live.png",
+      "preRenderedPaths": [
+        "/pre/p0.jpg",
+        "/pre/gone.jpg"
+      ],
+      "processedFrames": [
+        "/frames/f0.jpg",
+        "/frames/f1.jpg",
+        "/frames/f2.jpg"
+      ],
+      "type": "image",
+      "uri": "file:///tmp/thing.png"
+    }
+  ],
+  "fn": "rewriteDraftAttachmentsForExport",
+  "name": "draft_export_maps_frames_and_drops_unresolved_ones",
+  "table": {
+    "archiveEntryForSource": {
+      "/frames/f0.jpg": "media/f0.jpg",
+      "/frames/f2.jpg": "media/f2.jpg",
+      "/pre/p0.jpg": "media/p0.jpg",
+      "/tmp/live.png": "media/live.png"
+    }
+  }
+}

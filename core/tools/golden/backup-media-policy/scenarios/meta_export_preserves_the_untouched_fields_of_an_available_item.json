@@ -1,0 +1,21 @@
+{
+  "fn": "rewriteAttachmentMetaForExport",
+  "name": "meta_export_preserves_the_untouched_fields_of_an_available_item",
+  "oldToNewImageIndex": {
+    "0": 0
+  },
+  "raw_json": {
+    "items": [
+      {
+        "file_size": 4242,
+        "image_index": 0,
+        "mime_type": "image/jpeg",
+        "pixel_height": 1080,
+        "pixel_width": 1920,
+        "transcription": "a cat",
+        "type": "image",
+        "warning": "downscaled"
+      }
+    ]
+  }
+}

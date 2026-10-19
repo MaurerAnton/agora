@@ -1,0 +1,22 @@
+{
+  "archiveVersion": 4,
+  "fn": "restoreAttachmentMeta",
+  "legacyVideoUris": {
+    "0": "/device/legacy.mp4"
+  },
+  "name": "meta_restore_unavailable_item_is_never_probed",
+  "raw_json": {
+    "items": [
+      {
+        "originalUri": "media/clip.mp4",
+        "type": "video",
+        "unavailable": true
+      }
+    ]
+  },
+  "table": {
+    "restoredUriForArchiveEntry": {
+      "media/clip.mp4": "file:///data/clip.mp4"
+    }
+  }
+}

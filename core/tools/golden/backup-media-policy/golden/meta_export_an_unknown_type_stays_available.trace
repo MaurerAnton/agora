@@ -1,0 +1,4 @@
+name|meta_export_an_unknown_type_stays_available
+fn|rewriteAttachmentMetaForExport
+result|string|{"items":[{"type":"audio","file_name":"track.mp3"}]}
+missing|0

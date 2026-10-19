@@ -1,0 +1,6 @@
+name|draft_export_missing_archive_entry_becomes_a_placeholder
+fn|rewriteDraftAttachmentsForExport
+call|archiveEntryForSource|/gone.png|-
+call|archiveEntryForSource|file:///tmp/thing.png|-
+result|attachments|[{"localId":"a1","uri":"","type":"image","fileName":"gone.png","unavailable":true}]
+missing|1

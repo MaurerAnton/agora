@@ -1,0 +1,4 @@
+name|meta_restore_below_v4_without_an_index_falls_back_to_zero
+fn|restoreAttachmentMeta
+result|string|{"items":[{"originalUri":"/device/first.mp4","type":"video"}]}
+missing|0

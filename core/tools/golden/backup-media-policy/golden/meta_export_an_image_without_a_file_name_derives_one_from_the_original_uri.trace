@@ -1,0 +1,4 @@
+name|meta_export_an_image_without_a_file_name_derives_one_from_the_original_uri
+fn|rewriteAttachmentMetaForExport
+result|string|{"items":[{"type":"image","file_name":"photo.jpg","image_index":0}]}
+missing|0

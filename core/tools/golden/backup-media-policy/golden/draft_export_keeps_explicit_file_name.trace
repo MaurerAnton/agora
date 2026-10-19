@@ -1,0 +1,5 @@
+name|draft_export_keeps_explicit_file_name
+fn|rewriteDraftAttachmentsForExport
+call|archiveEntryForSource|/tmp/live.bin|media/live.bin
+result|attachments|[{"localId":"a1","uri":"media/live.bin","type":"image","fileName":"chosen.txt","localPath":"media/live.bin"}]
+missing|0

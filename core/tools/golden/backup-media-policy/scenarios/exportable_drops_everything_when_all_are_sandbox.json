@@ -1,0 +1,18 @@
+{
+  "attachments": [
+    {
+      "localId": "a1",
+      "storage": "local_sandbox_pending",
+      "type": "image",
+      "uri": "content://sandbox/one"
+    },
+    {
+      "localId": "a2",
+      "storage": "local_sandbox_runtime",
+      "type": "image",
+      "uri": "content://sandbox/two"
+    }
+  ],
+  "fn": "exportableDraftAttachments",
+  "name": "exportable_drops_everything_when_all_are_sandbox"
+}

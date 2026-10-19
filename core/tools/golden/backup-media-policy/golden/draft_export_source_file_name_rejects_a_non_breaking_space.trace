@@ -1,0 +1,5 @@
+name|draft_export_source_file_name_rejects_a_non_breaking_space
+fn|rewriteDraftAttachmentsForExport
+call|archiveEntryForSource|/tmp/ |media/nbsp.bin
+result|attachments|[{"localId":"a1","uri":"media/nbsp.bin","type":"image","fileName":"one","localPath":"media/nbsp.bin"}]
+missing|0

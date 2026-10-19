@@ -1,0 +1,5 @@
+name|meta_restore_image_without_surviving_indices_is_unavailable
+fn|restoreAttachmentMeta
+call|restoredUriForArchiveEntry|media/photo.jpg|-
+result|string|{"items":[{"type":"image","image_index":1,"page_count":1}]}
+missing|0

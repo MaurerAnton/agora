@@ -1,0 +1,4 @@
+name|tool_image_paths_flattens_every_segment
+fn|toolImagePaths
+result|strings|["/data/a.png","/data/b.png","/data/c.png"]
+missing|0

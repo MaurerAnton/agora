@@ -1,0 +1,17 @@
+{
+  "archiveVersion": 4,
+  "fn": "restoreAttachmentMeta",
+  "legacyVideoUris": {},
+  "name": "meta_restore_an_unknown_type_stays_available_and_keeps_its_file_name",
+  "raw_json": {
+    "items": [
+      {
+        "originalUri": "media/track.mp3",
+        "type": "audio"
+      }
+    ]
+  },
+  "table": {
+    "restoredUriForArchiveEntry": {}
+  }
+}

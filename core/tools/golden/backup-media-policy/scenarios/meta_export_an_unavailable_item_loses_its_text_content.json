@@ -1,0 +1,18 @@
+{
+  "fn": "rewriteAttachmentMetaForExport",
+  "name": "meta_export_an_unavailable_item_loses_its_text_content",
+  "oldToNewImageIndex": {},
+  "raw_json": {
+    "items": [
+      {
+        "originalUri": "/orig/doc.txt",
+        "text_content": "body",
+        "type": "file",
+        "unavailable": true
+      }
+    ]
+  },
+  "table": {
+    "archiveEntryForSource": {}
+  }
+}

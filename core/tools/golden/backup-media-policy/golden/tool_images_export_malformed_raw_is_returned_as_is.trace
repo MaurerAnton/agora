@@ -1,0 +1,4 @@
+name|tool_images_export_malformed_raw_is_returned_as_is
+fn|rewriteToolImagePathsForExport
+result|string|[{"type":
+missing|0

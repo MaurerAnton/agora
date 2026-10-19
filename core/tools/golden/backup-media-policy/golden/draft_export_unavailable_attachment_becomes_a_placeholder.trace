@@ -1,0 +1,4 @@
+name|draft_export_unavailable_attachment_becomes_a_placeholder
+fn|rewriteDraftAttachmentsForExport
+result|attachments|[{"localId":"a1","uri":"","type":"image","fileName":"live.png","unavailable":true}]
+missing|1

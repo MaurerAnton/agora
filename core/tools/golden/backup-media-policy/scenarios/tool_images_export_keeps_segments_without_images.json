@@ -1,0 +1,14 @@
+{
+  "fn": "rewriteToolImagePathsForExport",
+  "name": "tool_images_export_keeps_segments_without_images",
+  "raw_json": [
+    {
+      "content": "plain",
+      "type": "answer"
+    },
+    {
+      "toolImages": [],
+      "type": "tool"
+    }
+  ]
+}

@@ -1,0 +1,4 @@
+name|exportable_keeps_app_private_and_drops_both_sandbox_kinds
+fn|exportableDraftAttachments
+result|attachments|[{"localId":"a1","uri":"file:///one.png","type":"image"},{"localId":"a4","uri":"file:///four.pdf","type":"pdf"}]
+missing|0

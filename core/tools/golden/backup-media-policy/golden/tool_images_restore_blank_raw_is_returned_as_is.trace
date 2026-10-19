@@ -1,0 +1,4 @@
+name|tool_images_restore_blank_raw_is_returned_as_is
+fn|restoreToolImagePaths
+result|string| \t
+missing|0

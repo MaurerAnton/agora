@@ -1,0 +1,5 @@
+name|meta_export_counts_one_missing_resource_per_unavailable_item
+fn|rewriteAttachmentMetaForExport
+call|archiveEntryForSource|/device/movies/clip.mp4|-
+result|string|{"items":[{"type":"image","image_index":0,"page_count":1},{"type":"video","file_name":"clip.mp4","unavailable":true},{"type":"file","text_content":"body"}]}
+missing|1

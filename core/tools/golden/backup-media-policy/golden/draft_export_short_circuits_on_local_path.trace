@@ -1,0 +1,5 @@
+name|draft_export_short_circuits_on_local_path
+fn|rewriteDraftAttachmentsForExport
+call|archiveEntryForSource|/tmp/live.png|media/live.png
+result|attachments|[{"localId":"a1","uri":"media/live.png","type":"image","fileName":"live.png","localPath":"media/live.png"}]
+missing|0

@@ -1,0 +1,16 @@
+{
+  "fn": "toolImagePaths",
+  "name": "tool_image_paths_malformed_image_entry_yields_nothing",
+  "raw_json": [
+    {
+      "toolImages": [
+        {
+          "mimeType": "image/png",
+          "path": "/data/a.png",
+          "sizeBytes": 1
+        }
+      ],
+      "type": "answer"
+    }
+  ]
+}

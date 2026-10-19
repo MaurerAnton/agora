@@ -1,0 +1,5 @@
+name|meta_restore_v4_ignores_the_legacy_video_uris
+fn|restoreAttachmentMeta
+call|restoredUriForArchiveEntry|media/clip.mp4|-
+result|string|{"items":[{"type":"video","unavailable":true}]}
+missing|0

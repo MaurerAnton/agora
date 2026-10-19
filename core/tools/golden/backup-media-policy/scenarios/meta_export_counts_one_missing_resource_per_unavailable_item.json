@@ -1,0 +1,29 @@
+{
+  "fn": "rewriteAttachmentMetaForExport",
+  "name": "meta_export_counts_one_missing_resource_per_unavailable_item",
+  "oldToNewImageIndex": {
+    "0": 0
+  },
+  "raw_json": {
+    "items": [
+      {
+        "image_index": 0,
+        "page_count": 2,
+        "type": "image"
+      },
+      {
+        "originalUri": "/device/movies/clip.mp4",
+        "type": "video"
+      },
+      {
+        "text_content": "body",
+        "type": "file"
+      }
+    ]
+  },
+  "table": {
+    "archiveEntryForSource": {
+      "/device/movies/clip.mp4": null
+    }
+  }
+}

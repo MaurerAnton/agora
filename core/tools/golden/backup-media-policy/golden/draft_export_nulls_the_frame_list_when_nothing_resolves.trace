@@ -1,0 +1,6 @@
+name|draft_export_nulls_the_frame_list_when_nothing_resolves
+fn|rewriteDraftAttachmentsForExport
+call|archiveEntryForSource|/tmp/live.png|media/live.png
+call|archiveEntryForSource|/frames/f0.jpg|-
+result|attachments|[{"localId":"a1","uri":"media/live.png","type":"image","fileName":"live.png","localPath":"media/live.png"}]
+missing|0

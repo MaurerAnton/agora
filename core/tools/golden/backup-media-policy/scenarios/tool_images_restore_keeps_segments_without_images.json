@@ -1,0 +1,15 @@
+{
+  "archiveVersion": 4,
+  "fn": "restoreToolImagePaths",
+  "name": "tool_images_restore_keeps_segments_without_images",
+  "raw_json": [
+    {
+      "content": "plain",
+      "type": "answer"
+    },
+    {
+      "toolImages": [],
+      "type": "tool"
+    }
+  ]
+}

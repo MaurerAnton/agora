@@ -1,0 +1,5 @@
+name|draft_restore_falls_back_to_the_uri
+fn|restoreDraftAttachments
+call|restoredPrimaryForArchiveEntry|file:///other.png|/data/other.png\pfile:///data/other.png
+result|attachments|[{"localId":"a1","uri":"file:///data/other.png","type":"image","localPath":"/data/other.png"}]
+missing|0

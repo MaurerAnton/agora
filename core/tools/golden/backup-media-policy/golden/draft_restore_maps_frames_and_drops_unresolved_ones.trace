@@ -1,0 +1,9 @@
+name|draft_restore_maps_frames_and_drops_unresolved_ones
+fn|restoreDraftAttachments
+call|restoredPrimaryForArchiveEntry|/archive/x.png|/data/x.png\pfile:///data/x.png
+call|restoredPathForArchiveEntry|/archive/f0.jpg|/data/f0.jpg
+call|restoredPathForArchiveEntry|/archive/f1.jpg|-
+call|restoredPathForArchiveEntry|/archive/p0.jpg|/data/p0.jpg
+call|restoredPathForArchiveEntry|/archive/gone.jpg|-
+result|attachments|[{"localId":"a1","uri":"file:///data/x.png","type":"image","processedFrames":["/data/f0.jpg"],"preRenderedPaths":["/data/p0.jpg"],"localPath":"/data/x.png"}]
+missing|0

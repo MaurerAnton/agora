@@ -1,0 +1,4 @@
+name|exportable_empty_list
+fn|exportableDraftAttachments
+result|attachments|[]
+missing|0

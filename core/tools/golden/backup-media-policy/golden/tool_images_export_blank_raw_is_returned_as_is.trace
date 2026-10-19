@@ -1,0 +1,4 @@
+name|tool_images_export_blank_raw_is_returned_as_is
+fn|rewriteToolImagePathsForExport
+result|string|  \t 
+missing|0

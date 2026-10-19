@@ -1,0 +1,30 @@
+{
+  "attachments": [
+    {
+      "localId": "a1",
+      "localPath": "/gone-a.png",
+      "type": "image",
+      "uri": "file:///a"
+    },
+    {
+      "localId": "a2",
+      "localPath": "/gone-b.png",
+      "type": "image",
+      "unavailable": true,
+      "uri": "file:///b"
+    },
+    {
+      "localId": "a3",
+      "localPath": "/live-c.png",
+      "type": "image",
+      "uri": "file:///c"
+    }
+  ],
+  "fn": "rewriteDraftAttachmentsForExport",
+  "name": "draft_export_reports_one_missing_resource_per_unavailable_attachment",
+  "table": {
+    "archiveEntryForSource": {
+      "/live-c.png": "media/c.png"
+    }
+  }
+}

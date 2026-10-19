@@ -1,0 +1,13 @@
+{
+  "fn": "rewriteAttachmentMetaForExport",
+  "name": "meta_export_null_items_fails_the_decode",
+  "oldToNewImageIndex": {
+    "0": 2
+  },
+  "originalImageSources": [
+    "/orig/one.png"
+  ],
+  "raw_json": {
+    "items": null
+  }
+}

@@ -11,6 +11,7 @@ add_executable(agora_core_tests
     message_preparation_test.cpp
     stream_normalization_parity_test.cpp
     stream_normalization_test.cpp
+    backup_media_policy_parity_test.cpp
     citations_parity_test.cpp
     conch_sse_parity_test.cpp
     anthropic_stream_parity_test.cpp
@@ -66,6 +67,7 @@ target_compile_definitions(agora_core_tests PRIVATE
     AGORA_FIXTURE_MEMORY_MANAGER_DIR="${CMAKE_CURRENT_SOURCE_DIR}/../tools/golden/memory-manager"
     AGORA_FIXTURE_EMBEDDING_SELECTOR_DIR="${CMAKE_CURRENT_SOURCE_DIR}/../tools/golden/embedding-selector"
     AGORA_FIXTURE_CONCH_SSE_DIR="${CMAKE_CURRENT_SOURCE_DIR}/../tools/golden/conch-sse"
+    AGORA_FIXTURE_BACKUP_MEDIA_POLICY_DIR="${CMAKE_CURRENT_SOURCE_DIR}/../tools/golden/backup-media-policy"
     AGORA_FIXTURE_PREP_VOCAB="${CMAKE_CURRENT_SOURCE_DIR}/../../app/src/main/assets/tokenizers/o200k_base.tiktoken"
 )
 

@@ -1,0 +1,13 @@
+{
+  "fn": "rewriteAttachmentMetaForExport",
+  "name": "meta_export_wrong_shape_raw_falls_back_to_the_legacy_sources",
+  "oldToNewImageIndex": {
+    "0": 0
+  },
+  "originalImageSources": [
+    "/orig/one.png"
+  ],
+  "raw_json": {
+    "items": "not a list"
+  }
+}

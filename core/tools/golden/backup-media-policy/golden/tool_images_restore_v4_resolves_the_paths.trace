@@ -1,0 +1,6 @@
+name|tool_images_restore_v4_resolves_the_paths
+fn|restoreToolImagePaths
+call|restoredPathForArchiveEntry|media/a.png|/data/a.png
+call|restoredPathForArchiveEntry|media/gone.png|-
+result|string|[{"type":"answer","toolImages":[{"path":"/data/a.png","mimeType":"image/png","sizeBytes":1,"sha256":"aa"}]}]
+missing|0

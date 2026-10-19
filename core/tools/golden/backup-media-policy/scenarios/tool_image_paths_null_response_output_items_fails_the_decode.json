@@ -1,0 +1,10 @@
+{
+  "fn": "toolImagePaths",
+  "name": "tool_image_paths_null_response_output_items_fails_the_decode",
+  "raw_json": [
+    {
+      "responseOutputItems": null,
+      "type": "answer"
+    }
+  ]
+}

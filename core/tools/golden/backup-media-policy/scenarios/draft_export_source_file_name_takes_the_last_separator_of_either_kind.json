@@ -1,0 +1,17 @@
+{
+  "attachments": [
+    {
+      "localId": "a1",
+      "localPath": "a/b\\c",
+      "type": "image",
+      "uri": "content://media/one"
+    }
+  ],
+  "fn": "rewriteDraftAttachmentsForExport",
+  "name": "draft_export_source_file_name_takes_the_last_separator_of_either_kind",
+  "table": {
+    "archiveEntryForSource": {
+      "a/b\\c": "media/c.bin"
+    }
+  }
+}

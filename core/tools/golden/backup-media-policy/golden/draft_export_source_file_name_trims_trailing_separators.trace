@@ -1,0 +1,5 @@
+name|draft_export_source_file_name_trims_trailing_separators
+fn|rewriteDraftAttachmentsForExport
+call|archiveEntryForSource|/cache/dir///|media/dir.png
+result|attachments|[{"localId":"a1","uri":"media/dir.png","type":"image","fileName":"dir","localPath":"media/dir.png"}]
+missing|0

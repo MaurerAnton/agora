@@ -1,0 +1,29 @@
+{
+  "archiveVersion": 4,
+  "fn": "restoreToolImagePaths",
+  "name": "tool_images_restore_v4_resolves_the_paths",
+  "raw_json": [
+    {
+      "toolImages": [
+        {
+          "mimeType": "image/png",
+          "path": "media/a.png",
+          "sha256": "aa",
+          "sizeBytes": 1
+        },
+        {
+          "mimeType": "image/png",
+          "path": "media/gone.png",
+          "sha256": "bb",
+          "sizeBytes": 2
+        }
+      ],
+      "type": "answer"
+    }
+  ],
+  "table": {
+    "restoredPathForArchiveEntry": {
+      "media/a.png": "/data/a.png"
+    }
+  }
+}

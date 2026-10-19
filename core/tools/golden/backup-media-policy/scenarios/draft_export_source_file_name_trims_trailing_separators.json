@@ -1,0 +1,17 @@
+{
+  "attachments": [
+    {
+      "localId": "a1",
+      "localPath": "/cache/dir///",
+      "type": "image",
+      "uri": "content://media/one"
+    }
+  ],
+  "fn": "rewriteDraftAttachmentsForExport",
+  "name": "draft_export_source_file_name_trims_trailing_separators",
+  "table": {
+    "archiveEntryForSource": {
+      "/cache/dir///": "media/dir.png"
+    }
+  }
+}

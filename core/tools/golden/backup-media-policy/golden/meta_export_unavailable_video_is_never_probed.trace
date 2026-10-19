@@ -1,0 +1,4 @@
+name|meta_export_unavailable_video_is_never_probed
+fn|rewriteAttachmentMetaForExport
+result|string|{"items":[{"type":"video","file_name":"clip.mp4","unavailable":true}]}
+missing|1

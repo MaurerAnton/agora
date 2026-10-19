@@ -1,0 +1,4 @@
+name|tool_images_restore_null_raw
+fn|restoreToolImagePaths
+result|string|-
+missing|0

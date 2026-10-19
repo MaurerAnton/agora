@@ -1,0 +1,10 @@
+{
+  "fn": "rewriteToolImagePathsForExport",
+  "name": "tool_image_paths_an_empty_response_output_list_is_omitted",
+  "raw_json": [
+    {
+      "responseOutputItems": [],
+      "type": "answer"
+    }
+  ]
+}

@@ -1,0 +1,4 @@
+name|meta_restore_page_count_shrinks_to_the_surviving_indices
+fn|restoreAttachmentMeta
+result|string|{"items":[{"type":"image","image_index":0,"page_count":2}]}
+missing|0

@@ -1,0 +1,15 @@
+{
+  "fn": "rewriteAttachmentMetaForExport",
+  "name": "meta_export_an_image_index_without_a_page_count_keeps_no_page_count",
+  "oldToNewImageIndex": {
+    "0": 3
+  },
+  "raw_json": {
+    "items": [
+      {
+        "image_index": 0,
+        "type": "image"
+      }
+    ]
+  }
+}

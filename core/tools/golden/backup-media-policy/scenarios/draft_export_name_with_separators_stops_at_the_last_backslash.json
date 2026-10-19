@@ -1,0 +1,16 @@
+{
+  "attachments": [
+    {
+      "localId": "a1",
+      "type": "image",
+      "uri": "content://media/a|b;c\\d.png"
+    }
+  ],
+  "fn": "rewriteDraftAttachmentsForExport",
+  "name": "draft_export_name_with_separators_stops_at_the_last_backslash",
+  "table": {
+    "archiveEntryForSource": {
+      "content://media/a|b;c\\d.png": "media/a-b-c-d.png"
+    }
+  }
+}

@@ -1,0 +1,17 @@
+{
+  "attachments": [
+    {
+      "localId": "a1",
+      "localPath": " ",
+      "type": "image",
+      "uri": "file:///tmp/thing.png"
+    }
+  ],
+  "fn": "rewriteDraftAttachmentsForExport",
+  "name": "draft_export_probes_blank_local_path_before_the_uri",
+  "table": {
+    "archiveEntryForSource": {
+      "file:///tmp/thing.png": "media/thing.png"
+    }
+  }
+}

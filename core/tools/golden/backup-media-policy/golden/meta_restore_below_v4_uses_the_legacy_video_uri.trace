@@ -1,0 +1,4 @@
+name|meta_restore_below_v4_uses_the_legacy_video_uri
+fn|restoreAttachmentMeta
+result|string|{"items":[{"originalUri":"/device/legacy-clip.mp4","type":"video","image_index":1}]}
+missing|0

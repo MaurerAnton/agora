@@ -1,0 +1,16 @@
+{
+  "attachments": [
+    {
+      "localId": "a1",
+      "type": "image",
+      "uri": "content://media/external/images/report%20final.pdf"
+    }
+  ],
+  "fn": "rewriteDraftAttachmentsForExport",
+  "name": "draft_export_derives_file_name_from_uri_when_no_local_path",
+  "table": {
+    "archiveEntryForSource": {
+      "content://media/external/images/report%20final.pdf": "media/report.pdf"
+    }
+  }
+}

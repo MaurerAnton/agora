@@ -1,0 +1,19 @@
+{
+  "fn": "rewriteAttachmentMetaForExport",
+  "name": "meta_export_a_video_with_an_unmapped_index_loses_the_index",
+  "oldToNewImageIndex": {},
+  "raw_json": {
+    "items": [
+      {
+        "image_index": 5,
+        "originalUri": "/device/movies/clip.mp4",
+        "type": "video"
+      }
+    ]
+  },
+  "table": {
+    "archiveEntryForSource": {
+      "/device/movies/clip.mp4": "media/clip.mp4"
+    }
+  }
+}

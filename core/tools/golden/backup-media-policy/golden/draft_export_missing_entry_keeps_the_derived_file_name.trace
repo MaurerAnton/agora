@@ -1,0 +1,6 @@
+name|draft_export_missing_entry_keeps_the_derived_file_name
+fn|rewriteDraftAttachmentsForExport
+call|archiveEntryForSource|/gone/named.png|-
+call|archiveEntryForSource|content://media|-
+result|attachments|[{"localId":"a1","uri":"","type":"image","fileName":"named.png","unavailable":true}]
+missing|1

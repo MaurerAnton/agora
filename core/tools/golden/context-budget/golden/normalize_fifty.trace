@@ -1,0 +1,4 @@
+name|normalize_fifty
+op|normalize
+args|50
+result|51200

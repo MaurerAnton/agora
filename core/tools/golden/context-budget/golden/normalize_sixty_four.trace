@@ -1,0 +1,4 @@
+name|normalize_sixty_four
+op|normalize
+args|64
+result|65536

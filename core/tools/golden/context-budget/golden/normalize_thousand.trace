@@ -1,0 +1,4 @@
+name|normalize_thousand
+op|normalize
+args|1000
+result|4096

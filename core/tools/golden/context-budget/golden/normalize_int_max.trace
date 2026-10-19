@@ -1,0 +1,4 @@
+name|normalize_int_max
+op|normalize
+args|2147483647
+result|1048576

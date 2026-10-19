@@ -1,0 +1,4 @@
+name|normalize_hundred
+op|normalize
+args|100
+result|102400

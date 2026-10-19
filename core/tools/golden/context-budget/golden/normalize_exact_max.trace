@@ -1,0 +1,4 @@
+name|normalize_exact_max
+op|normalize
+args|1048576
+result|1048576

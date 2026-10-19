@@ -92,6 +92,7 @@ parity tests in `core/tests/` — a drifting port is a failing build, not a surp
 | token pricing (heuristic/local counting, image rules per family, envelope costs, safety margin) | **done** | stand `token-pricing`; 154 traces drive the shipped pricing rules (no duplicate copy — the rules live in `message_preparation_tokens.cpp`, whose API this stand forced open), `LocalModelTextCounter` ported as the one genuinely missing piece |
 | streaming tool arguments (prefix JSON parser, compact tool-card hints, subject normalization) | **done** | stand `streaming-json-document`; both sources compile verbatim (zero imports), `ToolKind` lifted by script; 133 traces pin UTF-16 error offsets, open leaves, every hint branch and the 4096-unit prefix boundary |
 | OpenAI service tiers (normalize/aliases, per-model availability, fallback mapping, settings/request value) | **done** | stand `openai-service-tiers`; source compiles verbatim (zero imports); 92 traces pin the model tables, the flex/fast/ultrafast fallbacks and the enabled×responses gate |
+| context budget (legacy-window migration, min/max clamp, compact occupancy labels) | **done** | stand `context-budget`; source compiles verbatim (zero imports); 45 traces pin the PRESETS array, the ≤100 migration edge, the clamp and the 1000/1024 label boundaries with Long rounding |
 | data layer (export/import, backups) | pending | |
 | tool execution (remaining providers, shell engines) | pending | |
 

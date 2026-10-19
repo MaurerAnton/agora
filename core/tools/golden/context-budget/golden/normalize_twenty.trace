@@ -1,0 +1,4 @@
+name|normalize_twenty
+op|normalize
+args|20
+result|20480

@@ -1,0 +1,4 @@
+name|normalize_one
+op|normalize
+args|1
+result|4096

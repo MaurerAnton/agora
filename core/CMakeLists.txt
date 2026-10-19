@@ -51,6 +51,7 @@ add_library(agora_core_lib STATIC
     src/token_pricing.cpp
     src/streaming_json.cpp
     src/openai_service_tiers.cpp
+    src/context_budget.cpp
     src/provider_identity.cpp
     src/provider_support.cpp
     src/sha256.cpp

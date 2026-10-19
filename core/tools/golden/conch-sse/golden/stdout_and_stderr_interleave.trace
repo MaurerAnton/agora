@@ -1,0 +1,9 @@
+name|stdout_and_stderr_interleave
+encrypted|0
+emit|out\n
+emit|err\n
+output|out\nerr
+exit_code|3
+error_message|-
+timed_out|0
+warning|-

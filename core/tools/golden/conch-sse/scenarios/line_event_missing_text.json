@@ -1,0 +1,8 @@
+{
+  "name": "line_event_missing_text",
+  "encrypted": false,
+  "lines": [
+    "event: line",
+    "data: {\"stream\": \"stdout\"}"
+  ]
+}

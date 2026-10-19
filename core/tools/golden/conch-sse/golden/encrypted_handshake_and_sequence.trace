@@ -1,0 +1,8 @@
+name|encrypted_handshake_and_sequence
+encrypted|1
+emit|secure\n
+output|secure
+exit_code|0
+error_message|-
+timed_out|0
+warning|-

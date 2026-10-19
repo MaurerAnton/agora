@@ -1,0 +1,8 @@
+{
+  "name": "unsupported_event",
+  "encrypted": false,
+  "lines": [
+    "event: meta",
+    "{}"
+  ]
+}

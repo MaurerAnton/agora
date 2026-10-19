@@ -1,0 +1,3 @@
+name|encrypted_sequence_mismatch
+encrypted|1
+error|Invalid Conch SSE stream: event authentication or sequence mismatch

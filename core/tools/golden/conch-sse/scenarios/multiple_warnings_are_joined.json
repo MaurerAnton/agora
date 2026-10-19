@@ -1,0 +1,12 @@
+{
+  "name": "multiple_warnings_are_joined",
+  "encrypted": false,
+  "lines": [
+    "event: warning",
+    "data: {\"message\": \"first\"}",
+    "event: warning",
+    "data: {\"message\": \"second\"}",
+    "event: result",
+    "data: {\"exit_code\": 0}"
+  ]
+}

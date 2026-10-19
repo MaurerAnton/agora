@@ -1,0 +1,7 @@
+name|multiple_warnings_are_joined
+encrypted|0
+output|
+exit_code|0
+error_message|-
+timed_out|0
+warning|first\nsecond

@@ -1,0 +1,8 @@
+name|embedded_newlines_are_preserved
+encrypted|0
+emit|one\ntwo\n
+output|one\ntwo
+exit_code|0
+error_message|-
+timed_out|0
+warning|-

@@ -1,0 +1,12 @@
+{
+  "name": "stdout_and_stderr_interleave",
+  "encrypted": false,
+  "lines": [
+    "event: line",
+    "data: {\"line\": \"out\", \"stream\": \"stdout\"}",
+    "event: line",
+    "data: {\"line\": \"err\", \"stream\": \"stderr\"}",
+    "event: result",
+    "data: {\"exit_code\": 3}"
+  ]
+}

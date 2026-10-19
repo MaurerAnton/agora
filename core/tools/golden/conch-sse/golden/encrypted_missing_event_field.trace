@@ -1,0 +1,3 @@
+name|encrypted_missing_event_field
+encrypted|1
+error|Invalid Conch SSE stream: event line requires string _conch_event

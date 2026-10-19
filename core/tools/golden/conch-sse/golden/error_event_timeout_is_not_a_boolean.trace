@@ -1,0 +1,3 @@
+name|error_event_timeout_is_not_a_boolean
+encrypted|0
+error|Invalid Conch SSE stream: event error requires boolean timed_out

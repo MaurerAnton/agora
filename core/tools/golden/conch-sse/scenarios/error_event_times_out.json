@@ -1,0 +1,8 @@
+{
+  "name": "error_event_times_out",
+  "encrypted": false,
+  "lines": [
+    "event: error",
+    "data: {\"message\": \"killed\", \"timed_out\": true}"
+  ]
+}

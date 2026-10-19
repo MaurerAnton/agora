@@ -1,0 +1,8 @@
+{
+  "name": "result_event_missing_exit_code",
+  "encrypted": false,
+  "lines": [
+    "event: result",
+    "data: {}"
+  ]
+}

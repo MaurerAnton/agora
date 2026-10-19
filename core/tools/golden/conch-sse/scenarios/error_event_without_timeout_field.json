@@ -1,0 +1,8 @@
+{
+  "name": "error_event_without_timeout_field",
+  "encrypted": false,
+  "lines": [
+    "event: error",
+    "data: {\"message\": \"refused\"}"
+  ]
+}

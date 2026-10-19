@@ -1,0 +1,4 @@
+name|no_terminal_frame_keeps_the_streamed_output
+encrypted|0
+emit|partial\n
+error|Invalid Conch SSE stream: stream ended without a terminal result or error

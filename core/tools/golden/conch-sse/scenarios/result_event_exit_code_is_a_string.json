@@ -1,0 +1,8 @@
+{
+  "name": "result_event_exit_code_is_a_string",
+  "encrypted": false,
+  "lines": [
+    "event: result",
+    "data: {\"exit_code\": \"0\"}"
+  ]
+}

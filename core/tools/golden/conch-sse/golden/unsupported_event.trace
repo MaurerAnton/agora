@@ -1,0 +1,3 @@
+name|unsupported_event
+encrypted|0
+error|Invalid Conch SSE stream: unsupported event meta

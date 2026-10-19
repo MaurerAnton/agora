@@ -1,0 +1,8 @@
+{
+  "name": "encrypted_event_field_mismatch",
+  "encrypted": true,
+  "lines": [
+    "event: line",
+    "data: {\"line\": \"x\", \"stream\": \"stdout\", \"_conch_event\": \"result\", \"_conch_sequence\": 0}"
+  ]
+}

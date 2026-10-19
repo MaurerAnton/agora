@@ -1,0 +1,3 @@
+name|event_after_terminal_frame
+encrypted|0
+error|Invalid Conch SSE stream: event received after terminal frame

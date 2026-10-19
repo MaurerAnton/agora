@@ -1,0 +1,8 @@
+{
+  "name": "warning_event_missing_message",
+  "encrypted": false,
+  "lines": [
+    "event: warning",
+    "data: {}"
+  ]
+}

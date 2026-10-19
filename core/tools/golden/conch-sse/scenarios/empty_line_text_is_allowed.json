@@ -1,0 +1,10 @@
+{
+  "name": "empty_line_text_is_allowed",
+  "encrypted": false,
+  "lines": [
+    "event: line",
+    "data: {\"line\": \"\", \"stream\": \"stdout\"}",
+    "event: result",
+    "data: {\"exit_code\": 0}"
+  ]
+}

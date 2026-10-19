@@ -1,0 +1,8 @@
+{
+  "name": "error_event_timeout_is_not_a_boolean",
+  "encrypted": false,
+  "lines": [
+    "event: error",
+    "data: {\"message\": \"slow\", \"timed_out\": \"yes\"}"
+  ]
+}

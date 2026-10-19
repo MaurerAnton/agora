@@ -1,0 +1,10 @@
+{
+  "name": "lone_surrogate_in_line",
+  "encrypted": false,
+  "lines": [
+    "event: line",
+    "data: {\"line\": \"pre\\ud800post\", \"stream\": \"stdout\"}",
+    "event: result",
+    "data: {\"exit_code\": 0}"
+  ]
+}

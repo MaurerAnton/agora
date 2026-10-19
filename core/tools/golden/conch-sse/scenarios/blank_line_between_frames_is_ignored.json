@@ -1,0 +1,11 @@
+{
+  "name": "blank_line_between_frames_is_ignored",
+  "encrypted": false,
+  "lines": [
+    "event: line",
+    "data: {\"line\": \"hi\", \"stream\": \"stdout\"}",
+    "",
+    "event: result",
+    "data: {\"exit_code\": 0}"
+  ]
+}

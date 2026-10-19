@@ -1,0 +1,3 @@
+name|error_event_missing_message
+encrypted|0
+error|Invalid Conch SSE stream: event error requires string message

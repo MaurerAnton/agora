@@ -1,0 +1,8 @@
+{
+  "name": "line_event_blank_stream",
+  "encrypted": false,
+  "lines": [
+    "event: line",
+    "data: {\"line\": \"x\", \"stream\": \"\"}"
+  ]
+}

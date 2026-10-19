@@ -1,8 +1,0 @@
-name|normalize_conch_and_ssh
-mode|normalize
-providers|2
-provider|0|Conch|custom-provider-e4e8cbad-7fcd-4b9a-b7a2-665c81054633|Conch
-provider|1|SSH|custom-provider-be8ba887-0e6a-4376-b257-703da8377958|SSH
-migrations|2
-migration|0|Conch|custom-provider-e4e8cbad-7fcd-4b9a-b7a2-665c81054633
-migration|1|SSH|custom-provider-be8ba887-0e6a-4376-b257-703da8377958

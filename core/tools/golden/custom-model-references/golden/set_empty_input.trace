@@ -1,0 +1,4 @@
+name|set_empty_input
+op|set
+args|a|b|
+out|set|

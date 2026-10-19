@@ -1,0 +1,1 @@
+{"name": "set_new_is_empty_string", "op": "set", "oldModelId": "a", "newModelId": "", "items": ["a", "b"]}

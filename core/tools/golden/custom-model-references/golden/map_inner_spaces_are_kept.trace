@@ -1,0 +1,4 @@
+name|map_inner_spaces_are_kept
+op|map
+args|a|b|  x  y  |a=>1
+out|map|b=>x  y

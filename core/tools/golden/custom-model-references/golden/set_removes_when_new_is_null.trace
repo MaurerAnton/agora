@@ -1,0 +1,4 @@
+name|set_removes_when_new_is_null
+op|set
+args|a|-|a|b
+out|set|b

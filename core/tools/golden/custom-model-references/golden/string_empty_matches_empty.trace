@@ -1,0 +1,4 @@
+name|string_empty_matches_empty
+op|string
+args|||x
+out|string?|x

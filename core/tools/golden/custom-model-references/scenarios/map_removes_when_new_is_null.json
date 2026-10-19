@@ -1,0 +1,1 @@
+{"name": "map_removes_when_new_is_null", "op": "map", "oldModelId": "a", "newModelId": null, "alias": "x", "entries": [["a", "1"], ["b", "2"]]}

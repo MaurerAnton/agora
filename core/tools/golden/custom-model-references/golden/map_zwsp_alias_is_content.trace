@@ -1,0 +1,4 @@
+name|map_zwsp_alias_is_content
+op|map
+args|a|b|​|a=>1
+out|map|b=>​

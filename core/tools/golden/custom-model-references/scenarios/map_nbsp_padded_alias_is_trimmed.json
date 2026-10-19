@@ -1,0 +1,1 @@
+{"name": "map_nbsp_padded_alias_is_trimmed", "op": "map", "oldModelId": "a", "newModelId": "b", "alias": " x ", "entries": [["a", "1"]]}

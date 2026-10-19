@@ -1,0 +1,4 @@
+name|map_newline_alias_is_escaped
+op|map
+args|a|b|x\ny|a=>1
+out|map|b=>x\ny

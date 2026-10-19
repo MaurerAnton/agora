@@ -1,0 +1,4 @@
+name|map_old_equals_new_blank_alias_removes
+op|map
+args|a|a||a=>1|b=>2
+out|map|b=>2

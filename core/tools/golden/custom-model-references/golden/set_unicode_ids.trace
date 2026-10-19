@@ -1,0 +1,4 @@
+name|set_unicode_ids
+op|set
+args|модель|модель2|модель|b
+out|set|модель2|b

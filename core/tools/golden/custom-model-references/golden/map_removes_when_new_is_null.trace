@@ -1,0 +1,4 @@
+name|map_removes_when_new_is_null
+op|map
+args|a|-|x|a=>1|b=>2
+out|map|b=>2

@@ -76,6 +76,7 @@ parity tests in `core/tests/` — a drifting port is a failing build, not a surp
 | portable path-glob matcher | **done** | stand `glob-matcher`; mirrors the regex the Kotlin compiles to |
 | custom provider name policy (sanitize, dedupe, reserved names) | **done** | stand `provider-names` |
 | model alias inference (Claude/Gemini/Nova display aliases) | **done** | stand `model-aliases` |
+| custom model references (rename/delete rewriting of id sets, selections, aliases) | **done** | stand `custom-model-references`; compiles verbatim with no stubs, pins `LinkedHashSet`/`LinkedHashMap` order and Kotlin `isBlank`/`trim` |
 | custom provider identity (stable ids, legacyId, remap) | **done** | stand `provider-identity`; UUID v3 legacy ids (MD5), retry path unit-pinned because it reads entropy |
 | memory catalog (active memory, per-file descriptions, metadata store) | **done** | stand `memory-manager`; only `Context`/`StateFlow` are substituted, the store's `.tmp`/`.bak` recovery is pinned |
 | bounded semantic embedding selection (keyset scoring, retention heap) | **done** | stand `embedding-selector`; ties break on row id, malformed rows and non-finite scores are counted not fatal |

@@ -1,0 +1,4 @@
+name|map_blank_alias_removes_only
+op|map
+args|a|b||a=>1
+out|map|

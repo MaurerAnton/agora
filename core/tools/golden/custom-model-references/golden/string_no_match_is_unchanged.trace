@@ -1,0 +1,4 @@
+name|string_no_match_is_unchanged
+op|string
+args|b|a|c
+out|string?|b

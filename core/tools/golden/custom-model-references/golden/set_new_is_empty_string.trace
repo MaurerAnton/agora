@@ -1,0 +1,4 @@
+name|set_new_is_empty_string
+op|set
+args|a||a|b
+out|set||b

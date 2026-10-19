@@ -1,0 +1,4 @@
+name|map_nbsp_padded_alias_is_trimmed
+op|map
+args|a|b| x |a=>1
+out|map|b=>x

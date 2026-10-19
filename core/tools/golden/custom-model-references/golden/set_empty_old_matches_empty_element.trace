@@ -1,0 +1,4 @@
+name|set_empty_old_matches_empty_element
+op|set
+args||x||a
+out|set|x|a

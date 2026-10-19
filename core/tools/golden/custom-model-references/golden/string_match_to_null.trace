@@ -1,0 +1,4 @@
+name|string_match_to_null
+op|string
+args|a|a|-
+out|string?|-

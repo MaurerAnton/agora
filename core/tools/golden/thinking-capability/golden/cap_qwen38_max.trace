@@ -1,0 +1,4 @@
+name|cap_qwen38_max
+op|capability
+args|QWEN|qwen3.8-max
+result|ModelThinkingCapability(canDisableThinking=true, supportedEfforts=[low, medium, xhigh], supportsThinkingBudget=true, minBudgetTokens=1, maxBudgetTokens=32768, supportsEffortWithBudget=false, supportsSamplingParams=true)

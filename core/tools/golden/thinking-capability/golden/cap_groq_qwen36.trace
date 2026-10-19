@@ -1,0 +1,4 @@
+name|cap_groq_qwen36
+op|capability
+args|GROQ|qwen/qwen3.6-27b
+result|ModelThinkingCapability(canDisableThinking=true, supportedEfforts=[default], supportsThinkingBudget=false, minBudgetTokens=1, maxBudgetTokens=null, supportsEffortWithBudget=true, supportsSamplingParams=true)

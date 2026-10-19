@@ -1,0 +1,4 @@
+name|cap_glm53_zhipu
+op|capability
+args|QWEN|zhipu/glm-5.3-air
+result|ModelThinkingCapability(canDisableThinking=false, supportedEfforts=[low, high, max], supportsThinkingBudget=false, minBudgetTokens=1, maxBudgetTokens=null, supportsEffortWithBudget=true, supportsSamplingParams=true)

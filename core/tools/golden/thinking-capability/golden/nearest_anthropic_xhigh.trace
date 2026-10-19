@@ -1,0 +1,4 @@
+name|nearest_anthropic_xhigh
+op|nearest
+args|ANTHROPIC|claude-opus-4-6|xhigh
+result|xhigh

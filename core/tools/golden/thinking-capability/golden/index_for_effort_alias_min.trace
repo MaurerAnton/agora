@@ -1,0 +1,4 @@
+name|index_for_effort_alias_min
+op|indexForEffort
+args|MIN
+result|0

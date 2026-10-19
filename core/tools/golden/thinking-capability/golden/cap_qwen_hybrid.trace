@@ -1,0 +1,4 @@
+name|cap_qwen_hybrid
+op|capability
+args|QWEN|qwen-plus
+result|ModelThinkingCapability(canDisableThinking=true, supportedEfforts=[], supportsThinkingBudget=true, minBudgetTokens=1, maxBudgetTokens=32768, supportsEffortWithBudget=true, supportsSamplingParams=true)

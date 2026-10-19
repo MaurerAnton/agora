@@ -1,0 +1,4 @@
+name|legacy_budget_inner_space
+op|legacyBudget
+args|budget: 2048
+result|null

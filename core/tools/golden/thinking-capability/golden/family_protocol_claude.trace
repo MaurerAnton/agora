@@ -1,0 +1,4 @@
+name|family_protocol_claude
+op|family
+args|openai| claude 
+result|ANTHROPIC

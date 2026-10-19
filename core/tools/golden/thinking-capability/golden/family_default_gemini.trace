@@ -1,0 +1,4 @@
+name|family_default_gemini
+op|familyDefault
+args|GEMINI
+result|ModelThinkingCapability(canDisableThinking=true, supportedEfforts=[minimal, low, medium, high], supportsThinkingBudget=true, minBudgetTokens=1, maxBudgetTokens=null, supportsEffortWithBudget=false, supportsSamplingParams=true)

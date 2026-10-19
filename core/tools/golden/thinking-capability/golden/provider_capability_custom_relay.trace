@@ -1,0 +1,4 @@
+name|provider_capability_custom_relay
+op|providerCapability
+args|My Relay|anthropic|claude-opus-4-6
+result|ModelThinkingCapability(canDisableThinking=true, supportedEfforts=[low, medium, high, xhigh, max], supportsThinkingBudget=true, minBudgetTokens=1024, maxBudgetTokens=null, supportsEffortWithBudget=false, supportsSamplingParams=true)

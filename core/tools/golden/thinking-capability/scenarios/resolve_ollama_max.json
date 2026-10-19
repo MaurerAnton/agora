@@ -1,0 +1,1 @@
+{"name":"resolve_ollama_max","op":"resolve","family":"OLLAMA","modelId":"gpt-oss","enabled":true,"effort":"max","budgetEnabled":false,"budgetTokens":0}

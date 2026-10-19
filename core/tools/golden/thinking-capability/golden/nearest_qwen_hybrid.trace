@@ -1,0 +1,4 @@
+name|nearest_qwen_hybrid
+op|nearest
+args|QWEN|qwen-plus|high
+result|-

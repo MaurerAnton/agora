@@ -1,0 +1,4 @@
+name|cap_deepseek_family
+op|capability
+args|DEEPSEEK|deepseek-chat
+result|ModelThinkingCapability(canDisableThinking=true, supportedEfforts=[low, high, max], supportsThinkingBudget=false, minBudgetTokens=1, maxBudgetTokens=null, supportsEffortWithBudget=true, supportsSamplingParams=true)

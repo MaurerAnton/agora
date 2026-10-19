@@ -1,0 +1,4 @@
+name|provider_capability_protocol_wins
+op|providerCapability
+args|anthropic|google|gemini-2.5-pro
+result|ModelThinkingCapability(canDisableThinking=true, supportedEfforts=[minimal, low, medium, high], supportsThinkingBudget=true, minBudgetTokens=1, maxBudgetTokens=null, supportsEffortWithBudget=false, supportsSamplingParams=true)

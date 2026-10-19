@@ -1,0 +1,1 @@
+{"name":"resolve_budget_openrouter","op":"resolve","family":"OPENROUTER","modelId":"anything","enabled":true,"effort":"high","budgetEnabled":true,"budgetTokens":5000}

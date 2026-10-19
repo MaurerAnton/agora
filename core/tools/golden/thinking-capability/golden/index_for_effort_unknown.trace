@@ -1,0 +1,4 @@
+name|index_for_effort_unknown
+op|indexForEffort
+args|bogus
+result|2

@@ -1,0 +1,4 @@
+name|cap_local
+op|capability
+args|LOCAL|local-model
+result|ModelThinkingCapability(canDisableThinking=true, supportedEfforts=[], supportsThinkingBudget=false, minBudgetTokens=1, maxBudgetTokens=null, supportsEffortWithBudget=true, supportsSamplingParams=true)

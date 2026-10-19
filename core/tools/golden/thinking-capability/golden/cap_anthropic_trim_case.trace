@@ -1,0 +1,4 @@
+name|cap_anthropic_trim_case
+op|capability
+args|ANTHROPIC|  CLAUDE-OPUS-4-6  
+result|ModelThinkingCapability(canDisableThinking=true, supportedEfforts=[low, medium, high, xhigh, max], supportsThinkingBudget=true, minBudgetTokens=1024, maxBudgetTokens=null, supportsEffortWithBudget=false, supportsSamplingParams=true)

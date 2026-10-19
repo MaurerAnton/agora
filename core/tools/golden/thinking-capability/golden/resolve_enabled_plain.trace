@@ -1,0 +1,4 @@
+name|resolve_enabled_plain
+op|resolve
+args|OPENAI|gpt-9|true|high|false|0
+result|ResolvedThinking(enabled=true, effort=high, budgetTokens=null, capability=ModelThinkingCapability(canDisableThinking=true, supportedEfforts=[minimal, low, medium, high, xhigh, max], supportsThinkingBudget=false, minBudgetTokens=1, maxBudgetTokens=null, supportsEffortWithBudget=true, supportsSamplingParams=true))

@@ -1,0 +1,4 @@
+name|cap_qwen_third_party
+op|capability
+args|QWEN|some-third-party
+result|ModelThinkingCapability(canDisableThinking=true, supportedEfforts=[minimal, low, medium, high, xhigh, max], supportsThinkingBudget=true, minBudgetTokens=1, maxBudgetTokens=null, supportsEffortWithBudget=true, supportsSamplingParams=true)

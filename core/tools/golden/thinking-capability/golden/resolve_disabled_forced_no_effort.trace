@@ -1,0 +1,4 @@
+name|resolve_disabled_forced_no_effort
+op|resolve
+args|QWEN|qwq-plus|false|high|false|0
+result|ResolvedThinking(enabled=true, effort=null, budgetTokens=null, capability=ModelThinkingCapability(canDisableThinking=false, supportedEfforts=[], supportsThinkingBudget=true, minBudgetTokens=1, maxBudgetTokens=32768, supportsEffortWithBudget=true, supportsSamplingParams=true))

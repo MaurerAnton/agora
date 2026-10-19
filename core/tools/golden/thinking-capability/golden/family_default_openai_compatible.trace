@@ -1,0 +1,4 @@
+name|family_default_openai_compatible
+op|familyDefault
+args|OPENAI_COMPATIBLE
+result|ModelThinkingCapability(canDisableThinking=true, supportedEfforts=[minimal, low, medium, high, xhigh, max], supportsThinkingBudget=true, minBudgetTokens=1, maxBudgetTokens=null, supportsEffortWithBudget=true, supportsSamplingParams=true)

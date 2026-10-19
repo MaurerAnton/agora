@@ -1,0 +1,4 @@
+name|index_for_effort_alias_maximum
+op|indexForEffort
+args|maximum
+result|5

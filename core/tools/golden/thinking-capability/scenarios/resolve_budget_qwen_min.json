@@ -1,0 +1,1 @@
+{"name":"resolve_budget_qwen_min","op":"resolve","family":"QWEN","modelId":"qwen-plus","enabled":true,"effort":"high","budgetEnabled":true,"budgetTokens":0}

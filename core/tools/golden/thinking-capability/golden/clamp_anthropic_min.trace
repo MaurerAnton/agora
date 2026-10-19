@@ -1,0 +1,4 @@
+name|clamp_anthropic_min
+op|clamp
+args|ANTHROPIC|claude-opus-4-6|1024
+result|1024

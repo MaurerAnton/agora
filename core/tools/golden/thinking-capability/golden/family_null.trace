@@ -1,0 +1,4 @@
+name|family_null
+op|family
+args|-|-
+result|OPENAI_COMPATIBLE

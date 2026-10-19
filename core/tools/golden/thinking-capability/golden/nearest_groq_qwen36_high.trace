@@ -1,0 +1,4 @@
+name|nearest_groq_qwen36_high
+op|nearest
+args|GROQ|qwen/qwen3.6-27b|high
+result|default

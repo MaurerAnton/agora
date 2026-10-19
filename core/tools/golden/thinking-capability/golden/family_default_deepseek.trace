@@ -1,0 +1,4 @@
+name|family_default_deepseek
+op|familyDefault
+args|DEEPSEEK
+result|ModelThinkingCapability(canDisableThinking=true, supportedEfforts=[low, high, max], supportsThinkingBudget=false, minBudgetTokens=1, maxBudgetTokens=null, supportsEffortWithBudget=true, supportsSamplingParams=true)

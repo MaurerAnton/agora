@@ -1,0 +1,4 @@
+name|normalize_budget_dynamic
+op|normalize
+args|budget:dynamic
+result|medium

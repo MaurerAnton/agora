@@ -1,6 +1,6 @@
 name|normalize_new_id_in_occupied
 mode|normalize
 providers|1
-provider|0|A|custom-provider-b21ddee6-9248-4c73-be47-299c7832aabb|A
+provider|0|A|custom-provider-00000002-0002-4002-8002-000000000002|A
 migrations|1
-migration|0|A|custom-provider-b21ddee6-9248-4c73-be47-299c7832aabb
+migration|0|A|custom-provider-00000002-0002-4002-8002-000000000002

@@ -1,0 +1,15 @@
+{
+  "name": "normalize_wrong_variant_regenerated",
+  "mode": "normalize",
+  "providers": [
+    {
+      "name": "A",
+      "type": "conch",
+      "id": "custom-provider-00000001-0001-4000-c000-000000000001"
+    }
+  ],
+  "occupiedIds": [],
+  "newIds": [
+    "custom-provider-00000007-0007-4007-8007-000000000007"
+  ]
+}

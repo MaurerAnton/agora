@@ -1,0 +1,3 @@
+name|remap_requires_separator
+mode|remap
+remap|custom-provider-abc123extra:model

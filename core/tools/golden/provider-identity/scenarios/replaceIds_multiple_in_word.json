@@ -1,6 +1,6 @@
 {
   "name": "replaceIds_multiple_in_word",
   "mode": "replaceIds",
-  "text": "idcustom-provider-abc123id",
+  "text": "idcustom-provider-00000001-0001-4001-8001-000000000001id",
   "replacement": "X"
 }

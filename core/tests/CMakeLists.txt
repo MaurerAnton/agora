@@ -23,6 +23,7 @@ add_executable(agora_core_tests
     ollama_parity_test.cpp
     portable_glob_parity_test.cpp
     model_aliases_parity_test.cpp
+    provider_identity_parity_test.cpp
     provider_names_parity_test.cpp
     provider_support_parity_test.cpp
     duckduckgo_parity_test.cpp
@@ -60,6 +61,7 @@ target_compile_definitions(agora_core_tests PRIVATE
     AGORA_FIXTURE_GLOB_MATCHER_DIR="${CMAKE_CURRENT_SOURCE_DIR}/../tools/golden/glob-matcher"
     AGORA_FIXTURE_MODEL_ALIASES_DIR="${CMAKE_CURRENT_SOURCE_DIR}/../tools/golden/model-aliases"
     AGORA_FIXTURE_PROVIDER_NAMES_DIR="${CMAKE_CURRENT_SOURCE_DIR}/../tools/golden/provider-names"
+    AGORA_FIXTURE_PROVIDER_IDENTITY_DIR="${CMAKE_CURRENT_SOURCE_DIR}/../tools/golden/provider-identity"
     AGORA_FIXTURE_PROVIDER_SUPPORT_DIR="${CMAKE_CURRENT_SOURCE_DIR}/../tools/golden/provider-support"
     AGORA_FIXTURE_DUCKDUCKGO_DIR="${CMAKE_CURRENT_SOURCE_DIR}/../tools/golden/duckduckgo"
     AGORA_FIXTURE_MCP_PROTOCOL_DIR="${CMAKE_CURRENT_SOURCE_DIR}/../tools/golden/mcp-protocol"

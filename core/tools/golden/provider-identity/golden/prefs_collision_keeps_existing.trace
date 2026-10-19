@@ -1,0 +1,4 @@
+name|prefs_collision_keeps_existing
+mode|preferenceKeys
+count|1
+key|new-a:model1|b

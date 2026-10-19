@@ -1,0 +1,13 @@
+{
+  "name": "normalize_uppercase_stable_id_retained",
+  "mode": "normalize",
+  "providers": [
+    {
+      "name": "A",
+      "type": "conch",
+      "id": "CUSTOM-PROVIDER-00000004-0004-4004-8004-000000000004"
+    }
+  ],
+  "occupiedIds": [],
+  "newIds": []
+}

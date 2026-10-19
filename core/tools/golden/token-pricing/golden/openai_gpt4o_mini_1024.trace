@@ -1,0 +1,4 @@
+name|openai_gpt4o_mini_1024
+op|openaiImage
+args|gpt-4o-mini|ImageDescriptor(byteSize=null, pixelWidth=1024, pixelHeight=1024)
+result|25501

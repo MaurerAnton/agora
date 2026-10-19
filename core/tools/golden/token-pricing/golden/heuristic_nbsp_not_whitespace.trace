@@ -1,0 +1,4 @@
+name|heuristic_nbsp_not_whitespace
+op|heuristic
+args|a b
+result|3

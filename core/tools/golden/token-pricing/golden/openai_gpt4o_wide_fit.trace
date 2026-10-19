@@ -1,0 +1,4 @@
+name|openai_gpt4o_wide_fit
+op|openaiImage
+args|gpt-4o|ImageDescriptor(byteSize=null, pixelWidth=3000, pixelHeight=1000)
+result|1445

@@ -1,0 +1,4 @@
+name|margin_over_int_max
+op|margin
+args|2000000000
+result|2147483647

@@ -1,0 +1,4 @@
+name|byte_one_block
+op|byteImage
+args|768|-|-
+result|256

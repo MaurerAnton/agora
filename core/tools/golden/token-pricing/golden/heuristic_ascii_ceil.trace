@@ -1,0 +1,4 @@
+name|heuristic_ascii_ceil
+op|heuristic
+args|abcde
+result|2

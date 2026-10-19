@@ -1,0 +1,4 @@
+name|local_long_run
+op|local
+args|abcdefghij|-|false
+result|3

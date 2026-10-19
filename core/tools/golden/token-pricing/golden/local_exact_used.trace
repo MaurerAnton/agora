@@ -1,0 +1,4 @@
+name|local_exact_used
+op|local
+args|abcd|5|false
+result|5

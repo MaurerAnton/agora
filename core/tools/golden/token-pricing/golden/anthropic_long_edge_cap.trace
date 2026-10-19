@@ -1,0 +1,4 @@
+name|anthropic_long_edge_cap
+op|anthropicImage
+args|claude-opus-4-6|ImageDescriptor(byteSize=null, pixelWidth=5000, pixelHeight=1000)
+result|672

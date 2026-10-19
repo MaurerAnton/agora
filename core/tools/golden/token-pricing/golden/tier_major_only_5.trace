@@ -1,0 +1,4 @@
+name|tier_major_only_5
+op|anthropicTier
+args|claude-5
+result|HIGH_RESOLUTION

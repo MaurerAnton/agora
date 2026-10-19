@@ -1,0 +1,4 @@
+name|anthropic_zero_dimension
+op|anthropicImage
+args|claude-opus-4-6|ImageDescriptor(byteSize=786432, pixelWidth=0, pixelHeight=100)
+result|1024

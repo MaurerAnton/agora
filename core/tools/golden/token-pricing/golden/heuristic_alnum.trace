@@ -1,0 +1,4 @@
+name|heuristic_alnum
+op|heuristic
+args|abc123
+result|2

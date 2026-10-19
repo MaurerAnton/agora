@@ -1,0 +1,4 @@
+name|gemini_tall
+op|geminiImage
+args|ImageDescriptor(byteSize=null, pixelWidth=540, pixelHeight=960)
+result|1548

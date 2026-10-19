@@ -1,0 +1,4 @@
+name|heuristic_digit_run
+op|heuristic
+args|1234567
+result|2

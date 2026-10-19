@@ -1,0 +1,4 @@
+name|default_model_empty
+op|defaultModel
+args||ImageDescriptor(byteSize=384000, pixelWidth=null, pixelHeight=null)|0
+result|0|500|EnvelopeCost(perMessage=8, perToolDefinition=16, perToolCall=16, requestOverhead=0, toolSetOverhead=0)|0

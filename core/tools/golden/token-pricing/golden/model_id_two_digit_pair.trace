@@ -1,0 +1,4 @@
+name|model_id_two_digit_pair
+op|anthropicModelId
+args|claude-opus-14.11
+result|AnthropicModelId(tier=OPUS, major=14, minor=11)

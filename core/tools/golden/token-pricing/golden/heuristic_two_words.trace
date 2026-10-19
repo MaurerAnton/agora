@@ -1,0 +1,4 @@
+name|heuristic_two_words
+op|heuristic
+args|hello world
+result|4

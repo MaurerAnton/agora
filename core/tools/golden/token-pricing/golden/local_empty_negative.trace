@@ -1,0 +1,4 @@
+name|local_empty_negative
+op|local
+args||-3|false
+result|0

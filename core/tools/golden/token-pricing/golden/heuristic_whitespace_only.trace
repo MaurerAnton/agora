@@ -1,0 +1,4 @@
+name|heuristic_whitespace_only
+op|heuristic
+args|  \t\n
+result|0

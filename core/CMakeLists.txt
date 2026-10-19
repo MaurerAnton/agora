@@ -48,6 +48,7 @@ add_library(agora_core_lib STATIC
     src/run_branch_selection.cpp
     src/conversation_runtime.cpp
     src/thinking_capability.cpp
+    src/token_pricing.cpp
     src/provider_identity.cpp
     src/provider_support.cpp
     src/sha256.cpp

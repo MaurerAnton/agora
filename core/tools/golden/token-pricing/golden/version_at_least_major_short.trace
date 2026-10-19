@@ -1,0 +1,4 @@
+name|version_at_least_major_short
+op|versionAtLeast
+args|claude-opus-4-7|5|0
+result|false

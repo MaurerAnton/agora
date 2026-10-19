@@ -1,0 +1,4 @@
+name|tier_46_standard
+op|anthropicTier
+args|claude-opus-4-6
+result|STANDARD

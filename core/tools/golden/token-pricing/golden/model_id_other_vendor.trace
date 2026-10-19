@@ -1,0 +1,4 @@
+name|model_id_other_vendor
+op|anthropicModelId
+args|gpt-4-5
+result|AnthropicModelId(tier=null, major=4, minor=5)

@@ -1,0 +1,4 @@
+name|margin_negative_one
+op|margin
+args|-1
+result|0

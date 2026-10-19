@@ -1,0 +1,4 @@
+name|gemini_one_px
+op|geminiImage
+args|ImageDescriptor(byteSize=null, pixelWidth=1, pixelHeight=1)
+result|258

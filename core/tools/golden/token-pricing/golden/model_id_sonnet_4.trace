@@ -1,0 +1,4 @@
+name|model_id_sonnet_4
+op|anthropicModelId
+args|claude-sonnet-4
+result|AnthropicModelId(tier=SONNET, major=4, minor=0)

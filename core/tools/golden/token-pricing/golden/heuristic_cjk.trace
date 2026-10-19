@@ -1,0 +1,4 @@
+name|heuristic_cjk
+op|heuristic
+args|日本語
+result|3

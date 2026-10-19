@@ -1,0 +1,4 @@
+name|heuristic_ascii_short
+op|heuristic
+args|abcd
+result|1

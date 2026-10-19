@@ -1,0 +1,4 @@
+name|envelope_opus_55
+op|envelopeAnthropic
+args|claude-opus-5-5
+result|EnvelopeCost(perMessage=8, perToolDefinition=16, perToolCall=16, requestOverhead=0, toolSetOverhead=286)

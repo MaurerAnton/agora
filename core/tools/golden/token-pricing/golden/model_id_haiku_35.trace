@@ -1,0 +1,4 @@
+name|model_id_haiku_35
+op|anthropicModelId
+args|claude-haiku-3.5
+result|AnthropicModelId(tier=HAIKU, major=3, minor=5)

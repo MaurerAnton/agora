@@ -1,0 +1,4 @@
+name|gemini_byte_fallback
+op|geminiImage
+args|ImageDescriptor(byteSize=786432, pixelWidth=null, pixelHeight=null)
+result|1024

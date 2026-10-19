@@ -1,0 +1,4 @@
+name|byte_1024
+op|byteImage
+args|786432|-|-
+result|1024

@@ -1,16 +1,18 @@
-// Golden parity test for the native token-pricing cluster.
+// Golden parity test for the token-pricing cluster.
 //
-// Replays every scenario under core/tools/golden/token-pricing/scenarios through
-// agora::core::token_pricing and requires the produced trace to equal the frozen Kotlin trace byte
-// for byte. The trace format mirrors the reference driver
+// Replays every scenario under core/tools/golden/token-pricing/scenarios against the shipped
+// implementation and requires the produced trace to equal the frozen Kotlin trace byte for byte.
+// The trace format mirrors the reference driver
 // (core/tools/golden/token-pricing/TokenPricingTraceDump.kt).
 //
-// The pins that matter: the heuristic's ASCII-run ceiling and JVM whitespace boundary (NBSP is a
-// token), the local counter's empty/negative/exception fallbacks, the byte fallback bounds, the
-// Anthropic downscale bisection and tier threshold, Gemini's crop-unit truncation, the OpenAI
-// patch/tile table including the shrink correction, the model-id regexes (release dates are not
-// versions), the envelope table's largest-published fallback, and the safety margin's
-// round-up-then-clamp.
+// The pricing rules themselves live in the message-preparation port
+// (agora::core::prep, src/message_preparation_tokens.cpp) — a second implementation here would
+// only be a place for the two to drift. This stand is the *wider* net over that code: 154 traces
+// against the message-preparation stand's own subset, covering the boundaries that module's
+// golden does not reach (NBSP classification, id-regex edges, envelope fallbacks, clamp edges,
+// shrink correction on non-square inputs). The genuinely missing piece,
+// LocalModelTextCounter.kt, is ported in agora::core::token_pricing and pinned by the `local`
+// scenarios here.
 #include <algorithm>
 #include <cstddef>
 #include <cstdint>
@@ -22,15 +24,15 @@
 #include <string_view>
 #include <vector>
 
-#include "agora/core/json.hpp"
+#include "agora/core/message_preparation.hpp"
 #include "agora/core/token_pricing.hpp"
 #include "check.hpp"
 
 namespace {
 
-namespace json = agora::core::json;
+namespace prep = agora::core::prep;
 namespace tp = agora::core::token_pricing;
-using json::Kind;
+namespace json = agora::core::json;
 
 std::string read_file(const std::filesystem::path& path) {
     std::ifstream stream(path, std::ios::binary);
@@ -67,14 +69,51 @@ std::string opt(const std::optional<std::int64_t>& value) {
     return value.has_value() ? std::to_string(*value) : "-";
 }
 
+/** Kotlin prints `null`, not the driver's `-` placeholder: data-class fields use this. */
+std::string null_text(const std::optional<std::int64_t>& value) {
+    return value.has_value() ? std::to_string(*value) : "null";
+}
+
+std::string null_text(const std::optional<int>& value) {
+    return value.has_value() ? std::to_string(*value) : "null";
+}
+
 std::string bool_text(bool value) { return value ? "true" : "false"; }
+
+/** Kotlin data-class toString() for the types this cluster prints. */
+std::string describe(const prep::ImageDescriptor& image) {
+    return "ImageDescriptor(byteSize=" + null_text(image.byte_size) +
+           ", pixelWidth=" + null_text(image.pixel_width) +
+           ", pixelHeight=" + null_text(image.pixel_height) + ")";
+}
+
+std::string describe(const prep::AnthropicModelId& model) {
+    const char* tier = "null";
+    if (model.tier.has_value()) {
+        switch (*model.tier) {
+            case prep::AnthropicModelId::Tier::Opus: tier = "OPUS"; break;
+            case prep::AnthropicModelId::Tier::Sonnet: tier = "SONNET"; break;
+            case prep::AnthropicModelId::Tier::Haiku: tier = "HAIKU"; break;
+        }
+    }
+    return "AnthropicModelId(tier=" + std::string(tier) +
+           ", major=" + null_text(model.major) + ", minor=" + std::to_string(model.minor) + ")";
+}
+
+std::string describe(const prep::EnvelopeCost& envelope) {
+    return "EnvelopeCost(perMessage=" + std::to_string(envelope.per_message) +
+           ", perToolDefinition=" + std::to_string(envelope.per_tool_definition) +
+           ", perToolCall=" + std::to_string(envelope.per_tool_call) +
+           ", requestOverhead=" + std::to_string(envelope.request_overhead) +
+           ", toolSetOverhead=" + std::to_string(envelope.tool_set_overhead) + ")";
+}
 
 [[noreturn]] void scenario_fail(const std::string& what) {
     throw agora::core::test::Failure(what);
 }
 
 const json::Value* field(const json::Value& object, std::string_view name) {
-    if (object.kind != Kind::Object) return nullptr;
+    if (object.kind != json::Kind::Object) return nullptr;
     const json::Value* found = nullptr;
     for (const json::Member& entry : object.members) {
         if (entry.key == name) found = &entry.value;
@@ -83,13 +122,14 @@ const json::Value* field(const json::Value& object, std::string_view name) {
 }
 
 bool is_null(const json::Value* value) {
-    return value == nullptr || (value->kind == Kind::Literal && value->text == "null");
+    return value == nullptr ||
+           (value->kind == json::Kind::Literal && value->text == "null");
 }
 
 std::optional<std::string> optional_text(const json::Value& object, std::string_view name) {
     const json::Value* value = field(object, name);
     if (is_null(value)) return std::nullopt;
-    if (value->kind != Kind::String) scenario_fail(std::string(name) + " must be a string");
+    if (value->kind != json::Kind::String) scenario_fail(std::string(name) + " must be a string");
     return value->text;
 }
 
@@ -101,7 +141,7 @@ std::string required_text(const json::Value& object, std::string_view name) {
 
 std::optional<std::int64_t> number(const json::Value& object, std::string_view name) {
     const json::Value* value = field(object, name);
-    if (is_null(value) || value->kind == Kind::Array || value->kind == Kind::Object) {
+    if (is_null(value) || value->kind == json::Kind::Array || value->kind == json::Kind::Object) {
         return std::nullopt;
     }
     try {
@@ -117,29 +157,39 @@ std::optional<std::int64_t> number(const json::Value& object, std::string_view n
 bool flag(const json::Value& object, std::string_view name) {
     const json::Value* value = field(object, name);
     if (is_null(value)) return false;
-    return value->kind == Kind::Literal && value->text == "true";
+    return value->kind == json::Kind::Literal && value->text == "true";
 }
 
-tp::ImageDescriptor read_image(const json::Value& root) {
+prep::ImageDescriptor read_image(const json::Value& root) {
     const json::Value* image = field(root, "image");
-    if (image == nullptr || image->kind != Kind::Object) {
+    if (image == nullptr || image->kind != json::Kind::Object) {
         scenario_fail("image must be an object");
     }
-    tp::ImageDescriptor descriptor;
+    prep::ImageDescriptor descriptor;
     if (const auto bytes = number(*image, "byteSize")) descriptor.byte_size = *bytes;
     if (const auto width = number(*image, "pixelWidth")) {
-        descriptor.pixel_width = static_cast<int>(*width);
+        descriptor.pixel_width = static_cast<std::int32_t>(*width);
     }
     if (const auto height = number(*image, "pixelHeight")) {
-        descriptor.pixel_height = static_cast<int>(*height);
+        descriptor.pixel_height = static_cast<std::int32_t>(*height);
     }
     return descriptor;
+}
+
+/** The family branch of cost_model_for without depending on a tokenizer: pricing only. */
+prep::EnvelopeCost family_envelope(std::string provider, std::string model) {
+    const prep::ContextCostModel costs = prep::cost_model_for(
+        prep::PrefixedModelId{std::move(provider), std::move(model)},
+        [](std::string_view) { return std::int64_t{0}; });
+    return costs.envelope;
 }
 
 std::string run_scenario(const std::filesystem::path& path) {
     const std::string stem = path.stem().string();
     const json::ParseResult parsed = json::parse(read_file(path));
-    if (!parsed.value || parsed.value->kind != Kind::Object) scenario_fail(stem + ": not an object");
+    if (!parsed.value || parsed.value->kind != json::Kind::Object) {
+        scenario_fail(stem + ": not an object");
+    }
     const json::Value& root = *parsed.value;
 
     const std::string name = optional_text(root, "name").value_or(stem);
@@ -151,7 +201,7 @@ std::string run_scenario(const std::filesystem::path& path) {
     if (op == "heuristic") {
         const std::string text = required_text(root, "text");
         trace += "args|" + esc(text) + "\n";
-        trace += "result|" + std::to_string(tp::heuristic_text_tokens(text)) + "\n";
+        trace += "result|" + std::to_string(prep::heuristic_count(text)) + "\n";
     } else if (op == "local") {
         const std::string text = required_text(root, "text");
         std::optional<int> exact;
@@ -161,67 +211,74 @@ std::string run_scenario(const std::filesystem::path& path) {
         trace += "result|" + std::to_string(tp::local_model_text_tokens(text, exact, throws)) +
                  "\n";
     } else if (op == "byteImage") {
-        const tp::ImageDescriptor image = read_image(root);
+        const prep::ImageDescriptor image = read_image(root);
         trace += "args|" + opt(image.byte_size) + "|" + opt(image.pixel_width) + "|" +
                  opt(image.pixel_height) + "\n";
-        trace += "result|" + std::to_string(tp::byte_proportional_tokens(image)) + "\n";
+        trace += "result|" + std::to_string(prep::byte_proportional_image_tokens(image)) + "\n";
     } else if (op == "anthropicTier") {
         const std::string model = required_text(root, "model");
         trace += "args|" + esc(model) + "\n";
-        trace += "result|" + tp::describe(tp::anthropic_tier_for_model_name(model)) + "\n";
+        trace += "result|";
+        trace += prep::anthropic_high_resolution_for_model(model) ? "HIGH_RESOLUTION" : "STANDARD";
+        trace += "\n";
     } else if (op == "anthropicImage") {
         const std::string model = required_text(root, "model");
-        const tp::ImageDescriptor image = read_image(root);
-        trace += "args|" + esc(model) + "|" + esc(tp::describe(image)) + "\n";
+        const prep::ImageDescriptor image = read_image(root);
+        trace += "args|" + esc(model) + "|" + esc(describe(image)) + "\n";
         trace += "result|" +
-                 std::to_string(tp::anthropic_image_tokens(
-                     tp::anthropic_tier_for_model_name(model), image)) +
+                 std::to_string(prep::anthropic_image_tokens(
+                     image, prep::anthropic_high_resolution_for_model(model))) +
                  "\n";
     } else if (op == "geminiImage") {
-        const tp::ImageDescriptor image = read_image(root);
-        trace += "args|" + esc(tp::describe(image)) + "\n";
-        trace += "result|" + std::to_string(tp::gemini_image_tokens(image)) + "\n";
+        const prep::ImageDescriptor image = read_image(root);
+        trace += "args|" + esc(describe(image)) + "\n";
+        trace += "result|" + std::to_string(prep::gemini_image_tokens(image)) + "\n";
     } else if (op == "openaiImage") {
         const std::string model = required_text(root, "model");
-        const tp::ImageDescriptor image = read_image(root);
-        trace += "args|" + esc(model) + "|" + esc(tp::describe(image)) + "\n";
-        trace += "result|" + std::to_string(tp::openai_image_tokens(model, image)) + "\n";
+        const prep::ImageDescriptor image = read_image(root);
+        trace += "args|" + esc(model) + "|" + esc(describe(image)) + "\n";
+        trace += "result|" +
+                 std::to_string(prep::openai_image_tokens_for_model(image, model)) + "\n";
     } else if (op == "anthropicModelId") {
         const std::string model = required_text(root, "model");
         trace += "args|" + esc(model) + "\n";
-        trace += "result|" + esc(tp::describe(tp::AnthropicModelId::parse(model))) + "\n";
+        trace += "result|" + esc(describe(prep::parse_anthropic_model_id(model))) + "\n";
     } else if (op == "versionAtLeast") {
         const std::string model = required_text(root, "model");
         const int major = static_cast<int>(number(root, "major").value_or(0));
         const int minor = static_cast<int>(number(root, "minor").value_or(0));
-        trace += "args|" + esc(model) + "|" + std::to_string(major) + "|" + std::to_string(minor) +
-                 "\n";
+        trace += "args|" + esc(model) + "|" + std::to_string(major) + "|" +
+                 std::to_string(minor) + "\n";
         trace += "result|" +
-                 bool_text(tp::AnthropicModelId::parse(model).version_at_least(major, minor)) + "\n";
+                 bool_text(prep::anthropic_version_at_least(
+                     prep::parse_anthropic_model_id(model), major, minor)) +
+                 "\n";
     } else if (op == "envelopeDefault") {
         trace += "args|\n";
-        trace += "result|" + esc(tp::describe(tp::default_envelope())) + "\n";
+        trace += "result|" + esc(describe(prep::ContextCostModel::default_model().envelope)) +
+                 "\n";
     } else if (op == "envelopeOpenAi") {
         trace += "args|\n";
-        trace += "result|" + esc(tp::describe(tp::openai_envelope())) + "\n";
+        trace += "result|" + esc(describe(family_envelope("openai", "gpt-4o"))) + "\n";
     } else if (op == "envelopeAnthropic") {
         const std::string model = required_text(root, "model");
         trace += "args|" + esc(model) + "\n";
-        trace += "result|" + esc(tp::describe(tp::anthropic_envelope(model))) + "\n";
+        trace += "result|" + esc(describe(family_envelope("anthropic", model))) + "\n";
     } else if (op == "margin") {
         const std::int64_t raw = number(root, "raw").value_or(0);
         trace += "args|" + std::to_string(raw) + "\n";
-        trace += "result|" + std::to_string(tp::default_safety_margin().apply(raw)) + "\n";
+        trace += "result|" +
+                 std::to_string(prep::ContextCostModel::default_model().safety_margin.apply(raw)) +
+                 "\n";
     } else if (op == "defaultModel") {
         const std::string text = required_text(root, "text");
-        const tp::ImageDescriptor image = read_image(root);
+        const prep::ImageDescriptor image = read_image(root);
         const std::int64_t raw = number(root, "raw").value_or(0);
-        trace += "args|" + esc(text) + "|" + esc(tp::describe(image)) + "|" +
+        trace += "args|" + esc(text) + "|" + esc(describe(image)) + "|" +
                  std::to_string(raw) + "\n";
-        const tp::ContextCostModel model = tp::default_context_cost_model();
+        const prep::ContextCostModel model = prep::ContextCostModel::default_model();
         trace += "result|" + std::to_string(model.text(text)) + "|" +
-                 std::to_string(model.image(image)) + "|" +
-                 esc(tp::describe(model.envelope)) + "|" +
+                 std::to_string(model.image(image)) + "|" + esc(describe(model.envelope)) + "|" +
                  std::to_string(model.safety_margin.apply(raw)) + "\n";
     } else {
         scenario_fail(stem + ": unknown op " + op);

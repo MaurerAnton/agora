@@ -1,10 +1,36 @@
 # token-pricing golden stand
 
-Parity pin for the native port of the token-pricing cluster. Every scenario under `scenarios/`
+Parity pin for the token-pricing cluster (`api/util/tokens/*`). Every scenario under `scenarios/`
 runs through the **real Kotlin sources compiled verbatim from the app tree** and the canonical
-trace is frozen under `golden/`; the C++ port (`agora::core::token_pricing`, header
-`core/include/agora/core/token_pricing.hpp`, implementation `core/src/token_pricing.cpp`, test
-`core/tests/token_pricing_parity_test.cpp`) must reproduce every trace byte for byte.
+trace is frozen under `golden/`; the shipped implementation must reproduce every trace byte for
+byte (`core/tests/token_pricing_parity_test.cpp`).
+
+## Where the implementation lives
+
+The pricing rules are **not re-ported here**. They already ship inside the message-preparation
+port (`agora::core::prep`, `core/src/message_preparation_tokens.cpp`) — a second copy would only
+be a place for the two to drift. This stand is the *wider* net over that code (154 traces against
+the message-preparation stand's own subset) plus the one piece that was genuinely missing:
+
+| Kotlin | C++ under test |
+| --- | --- |
+| `HeuristicTextTokenCounter` | `prep::heuristic_count` |
+| `LocalModelTextCounter` | `agora::core::token_pricing::local_model_text_tokens` (ported by this module) |
+| `ByteProportionalImageCost` | `prep::byte_proportional_image_tokens` |
+| `PixelImageTokenCost` fallback | inside each `prep::*_image_tokens` |
+| `AnthropicModelId` | `prep::AnthropicModelId`, `prep::parse_anthropic_model_id`, `prep::anthropic_version_at_least` |
+| `AnthropicImageCost` | `prep::anthropic_image_tokens` + `prep::anthropic_high_resolution_for_model` |
+| `GeminiImageCost` | `prep::gemini_image_tokens` |
+| `OpenAiImageCosts` | `prep::openai_image_tokens_for_model` |
+| `EnvelopeCost` / `AnthropicEnvelopeCosts` / `OpenAiEnvelopeCost` | `prep::EnvelopeCost::default_cost` and the family branch of `prep::cost_model_for` |
+| `SafetyMargin` | `prep::SafetyMargin::apply` |
+| `ContextCostModel.Default` | `prep::ContextCostModel::default_model` |
+
+Driving the test required publishing four things that stayed file-local in the message-preparation
+port: `AnthropicModelId` + its two functions, `anthropic_high_resolution_for_model` (the 4.7 tier
+decision, previously inlined) and `openai_image_tokens_for_model` (the model table). They are now
+declared in `core/include/agora/core/message_preparation.hpp`; behaviour is unchanged and the
+message-preparation golden stays green.
 
 ## What the stand compiles, and why
 
@@ -17,14 +43,14 @@ trace is frozen under `golden/`; the C++ port (`agora::core::token_pricing`, hea
 | `api/util/tokens/GeminiImageCost.kt` | fixed 258-token crops and the crop-unit formula |
 | `api/util/tokens/OpenAiImageCost.kt` | patch/tile pricing and the published model table |
 | `api/util/tokens/FamilyEnvelopeCosts.kt` | `EnvelopeCost`, `SafetyMargin`, Anthropic/OpenAI framing |
-| `api/util/tokens/TextTokenCounter.kt` | `HeuristicTextTokenCounter` |
+| `api/util/tokens/TextTokenCounter.kt` | heuristic counter |
 | `api/util/tokens/LocalModelTextCounter.kt` | exact-with-fallback counter |
 | `api/util/tokens/ContextCostModel.kt` | `ContextCostModel.Default` wiring |
 
 All ten files are host-compilable; the only imports are `kotlin.math` in three of them (stdlib),
 so the stand needs no stubs and no source extraction. The estimator and family mapping above this
-cluster (`ContextCostModels.kt`, `CostModelContextEstimator.kt`) and the BPE counters are out of
-scope here.
+cluster (`ContextCostModels.kt`, `CostModelContextEstimator.kt`) are covered by the
+message-preparation stand.
 
 ## What is pinned
 
@@ -61,10 +87,21 @@ scope here.
 * **envelope costs** — the shared default and OpenAI framing as `toString()`, and the Anthropic
   tool-use table by (tier, major*10+minor), including the largest-published fallback for
   unrecognised ids, unknown vendors and missing tiers.
-* **safety margin** — round up at 11/10 (so small counts never lose the margin), clamp to
+* **safety margin** — round up at 11/10 (so small counts never lose the margin) and clamp to
   `[0, Int.MAX_VALUE]` from below (negative raw counts) and above (2e9).
 * **default bundle** — `ContextCostModel.Default` is exercised as a whole: heuristic text, byte
   images, default envelope, ten percent margin.
+
+### Why this stand exists next to `message-preparation`
+
+The message-preparation golden pins the estimator walk and a subset of pricing numbers; this stand
+adds the boundaries that subset does not reach (NBSP classification, id-regex edges, envelope
+fallbacks, clamp edges, shrink correction on non-square inputs, the crop divisor) and drives them
+against the shipped implementation. Negative controls — mutating the implementation and requiring
+this test to fail — were fired for: NBSP classified as run whitespace, a negative exact count used
+as a cost, the byte-fallback floor dropped, the tier threshold moved to 4.8, the Gemini divisor
+changed to 1.6, `gpt-4o-mini` never selected, release dates parsed as major-only, the envelope
+fallback zeroed, the shrink correction dropped, and the margin's round-up removed.
 
 ## Boundary note
 
@@ -113,7 +150,8 @@ result|<operation result>
 ```
 
 Escaping: `\` `|` `;` `\n` `\r` `\t` → `\\` `\p` `\s` `\n` `\r` `\t`. A null argument prints `-`
-and an empty string is escaped as itself (so `heuristic_empty` has an empty `args|` payload).
+and an empty string is escaped as itself (so `heuristic_empty` has an empty `args|` payload);
+inside a printed data class Kotlin prints `null`, which the describes reproduce.
 
 ## Regenerating
 

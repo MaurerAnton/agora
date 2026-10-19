@@ -1,0 +1,4 @@
+name|doc_array_empty
+op|parse
+args|[]
+result|StreamingJsonDocument(root=StreamingJsonArray(values=[], complete=true), status=COMPLETE, errorOffset=null, roots=[StreamingJsonArray(values=[], complete=true)])

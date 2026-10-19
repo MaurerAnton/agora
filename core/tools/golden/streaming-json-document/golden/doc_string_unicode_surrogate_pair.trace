@@ -1,0 +1,4 @@
+name|doc_string_unicode_surrogate_pair
+op|parse
+args|"\\ud83d\\ude42"
+result|StreamingJsonDocument(root=StreamingJsonScalar(content=🙂, kind=STRING, complete=true), status=COMPLETE, errorOffset=null, roots=[StreamingJsonScalar(content=🙂, kind=STRING, complete=true)])

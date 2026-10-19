@@ -1,0 +1,4 @@
+name|hints_file_glob
+op|hints
+args|FILE_GLOB|{"pattern":"**/*.kt"}
+result|StreamingToolArgumentHints(subject=**/*.kt, server=null, count=null, operation=null, destination=null)

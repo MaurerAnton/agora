@@ -1,0 +1,4 @@
+name|doc_array_complete
+op|parse
+args|[1,2,3]
+result|StreamingJsonDocument(root=StreamingJsonArray(values=[StreamingJsonScalar(content=1, kind=NUMBER, complete=true), StreamingJsonScalar(content=2, kind=NUMBER, complete=true), StreamingJsonScalar(content=3, kind=NUMBER, complete=true)], complete=true), status=COMPLETE, errorOffset=null, roots=[StreamingJsonArray(values=[StreamingJsonScalar(content=1, kind=NUMBER, complete=true), StreamingJsonScalar(content=2, kind=NUMBER, complete=true), StreamingJsonScalar(content=3, kind=NUMBER, complete=true)], complete=true)])

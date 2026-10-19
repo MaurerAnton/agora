@@ -1,0 +1,4 @@
+name|doc_keyword_null
+op|parse
+args|null
+result|StreamingJsonDocument(root=StreamingJsonScalar(content=null, kind=NULL, complete=true), status=COMPLETE, errorOffset=null, roots=[StreamingJsonScalar(content=null, kind=NULL, complete=true)])

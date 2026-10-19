@@ -1,0 +1,4 @@
+name|normalize_vertical_tab_form_feed
+op|normalize
+args|abc|120
+result|a b c

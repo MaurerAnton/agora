@@ -1,0 +1,4 @@
+name|hints_file_edit
+op|hints
+args|FILE_EDIT|{"path":"a/b.kt"}
+result|StreamingToolArgumentHints(subject=a/b.kt, server=null, count=null, operation=null, destination=null)

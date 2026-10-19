@@ -49,6 +49,7 @@ add_library(agora_core_lib STATIC
     src/conversation_runtime.cpp
     src/thinking_capability.cpp
     src/token_pricing.cpp
+    src/streaming_json.cpp
     src/provider_identity.cpp
     src/provider_support.cpp
     src/sha256.cpp

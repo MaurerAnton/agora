@@ -1,0 +1,4 @@
+name|doc_ws_only_multichar
+op|parse
+args|\t\n 
+result|StreamingJsonDocument(root=null, status=INCOMPLETE, errorOffset=null, roots=[])

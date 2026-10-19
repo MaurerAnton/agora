@@ -1,0 +1,4 @@
+name|hints_memory_create
+op|hints
+args|MEMORY_CREATE|{"name":"x.md","content":"hi"}
+result|StreamingToolArgumentHints(subject=x.md, server=null, count=null, operation=null, destination=null)

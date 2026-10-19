@@ -1,0 +1,4 @@
+name|doc_string_bad_escape
+op|parse
+args|"\\q"
+result|StreamingJsonDocument(root=StreamingJsonScalar(content=, kind=STRING, complete=false), status=INVALID, errorOffset=2, roots=[StreamingJsonScalar(content=, kind=STRING, complete=false)])

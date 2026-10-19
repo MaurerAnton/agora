@@ -1,0 +1,4 @@
+name|hints_unknown_kind
+op|hints
+args|UNKNOWN|{"name":"x"}
+result|StreamingToolArgumentHints(subject=null, server=null, count=null, operation=null, destination=null)

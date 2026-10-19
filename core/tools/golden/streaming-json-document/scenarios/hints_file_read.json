@@ -1,0 +1,1 @@
+{"name":"hints_file_read","op":"hints","kind":"FILE_READ","rawArguments":"{\"path\":\"/etc/hosts\"}"}

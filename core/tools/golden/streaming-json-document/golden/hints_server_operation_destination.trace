@@ -1,0 +1,4 @@
+name|hints_server_operation_destination
+op|hints
+args|MEMORY_CREATE|{"name":"a","server":"srv","operation":"PUT","new_name":"b"}
+result|StreamingToolArgumentHints(subject=a, server=srv, count=null, operation=PUT, destination=b)

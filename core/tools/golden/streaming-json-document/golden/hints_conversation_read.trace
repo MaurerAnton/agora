@@ -1,0 +1,4 @@
+name|hints_conversation_read
+op|hints
+args|CONVERSATION_READ|{"conversation_id":"c7"}
+result|StreamingToolArgumentHints(subject=c7, server=null, count=null, operation=null, destination=null)

@@ -1,0 +1,4 @@
+name|hints_web_fetch
+op|hints
+args|WEB_FETCH|{"url":"https://example.com"}
+result|StreamingToolArgumentHints(subject=https://example.com, server=null, count=null, operation=null, destination=null)

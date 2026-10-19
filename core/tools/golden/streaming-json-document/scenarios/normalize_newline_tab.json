@@ -1,0 +1,1 @@
+{"name":"normalize_newline_tab","op":"normalize","value":"a\n\tb   c","max":120}

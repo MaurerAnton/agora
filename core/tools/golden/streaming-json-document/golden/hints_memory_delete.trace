@@ -1,0 +1,4 @@
+name|hints_memory_delete
+op|hints
+args|MEMORY_DELETE|{"name":"z.md"}
+result|StreamingToolArgumentHints(subject=z.md, server=null, count=null, operation=null, destination=null)

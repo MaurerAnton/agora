@@ -1,0 +1,4 @@
+name|doc_error_offset_after_emoji
+op|parse
+args|"🙂\\q"
+result|StreamingJsonDocument(root=StreamingJsonScalar(content=🙂, kind=STRING, complete=false), status=INVALID, errorOffset=4, roots=[StreamingJsonScalar(content=🙂, kind=STRING, complete=false)])

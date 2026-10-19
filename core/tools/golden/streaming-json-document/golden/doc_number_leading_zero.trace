@@ -1,0 +1,4 @@
+name|doc_number_leading_zero
+op|parse
+args|01
+result|StreamingJsonDocument(root=StreamingJsonScalar(content=0, kind=NUMBER, complete=true), status=INVALID, errorOffset=1, roots=[StreamingJsonScalar(content=0, kind=NUMBER, complete=true)])

@@ -1,0 +1,4 @@
+name|hints_raw_not_json
+op|hints
+args|FILE_READ|hello world
+result|StreamingToolArgumentHints(subject=null, server=null, count=null, operation=null, destination=null)

@@ -1,0 +1,4 @@
+name|hints_skill_read_single
+op|hints
+args|SKILL_READ|{"names":["skill.md"]}
+result|StreamingToolArgumentHints(subject=skill.md, server=null, count=1, operation=null, destination=null)

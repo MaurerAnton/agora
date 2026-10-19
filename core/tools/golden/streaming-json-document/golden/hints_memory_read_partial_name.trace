@@ -1,0 +1,4 @@
+name|hints_memory_read_partial_name
+op|hints
+args|MEMORY_READ|{"names":["no
+result|StreamingToolArgumentHints(subject=null, server=null, count=null, operation=null, destination=null)

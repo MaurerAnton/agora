@@ -1,0 +1,4 @@
+name|doc_number_fraction
+op|parse
+args|4.25
+result|StreamingJsonDocument(root=StreamingJsonScalar(content=4.25, kind=NUMBER, complete=true), status=COMPLETE, errorOffset=null, roots=[StreamingJsonScalar(content=4.25, kind=NUMBER, complete=true)])

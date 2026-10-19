@@ -1,0 +1,4 @@
+name|normalize_single_char_max
+op|normalize
+args|ab|1
+result|…

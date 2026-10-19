@@ -1,0 +1,4 @@
+name|hints_task_delete_id
+op|hints
+args|TASK_DELETE|{"id_or_name":"t1"}
+result|StreamingToolArgumentHints(subject=t1, server=null, count=null, operation=null, destination=null)

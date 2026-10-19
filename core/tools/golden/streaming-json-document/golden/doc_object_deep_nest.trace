@@ -1,0 +1,4 @@
+name|doc_object_deep_nest
+op|parse
+args|[1,{"b":[2,{"c":
+result|StreamingJsonDocument(root=StreamingJsonArray(values=[StreamingJsonScalar(content=1, kind=NUMBER, complete=true), StreamingJsonObject(entries=[StreamingJsonEntry(key=b, keyComplete=true, value=StreamingJsonArray(values=[StreamingJsonScalar(content=2, kind=NUMBER, complete=true), StreamingJsonObject(entries=[StreamingJsonEntry(key=c, keyComplete=true, value=null)], complete=false)], complete=false))], complete=false)], complete=false), status=INCOMPLETE, errorOffset=null, roots=[StreamingJsonArray(values=[StreamingJsonScalar(content=1, kind=NUMBER, complete=true), StreamingJsonObject(entries=[StreamingJsonEntry(key=b, keyComplete=true, value=StreamingJsonArray(values=[StreamingJsonScalar(content=2, kind=NUMBER, complete=true), StreamingJsonObject(entries=[StreamingJsonEntry(key=c, keyComplete=true, value=null)], complete=false)], complete=false))], complete=false)], complete=false)])

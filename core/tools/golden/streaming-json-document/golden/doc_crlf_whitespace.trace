@@ -1,0 +1,4 @@
+name|doc_crlf_whitespace
+op|parse
+args|{\r\n"a":\r\n1\r\n}
+result|StreamingJsonDocument(root=StreamingJsonObject(entries=[StreamingJsonEntry(key=a, keyComplete=true, value=StreamingJsonScalar(content=1, kind=NUMBER, complete=true))], complete=true), status=COMPLETE, errorOffset=null, roots=[StreamingJsonObject(entries=[StreamingJsonEntry(key=a, keyComplete=true, value=StreamingJsonScalar(content=1, kind=NUMBER, complete=true))], complete=true)])

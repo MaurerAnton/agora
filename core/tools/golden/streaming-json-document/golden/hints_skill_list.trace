@@ -1,0 +1,4 @@
+name|hints_skill_list
+op|hints
+args|SKILL_LIST|{"names":["s1"]}
+result|StreamingToolArgumentHints(subject=null, server=null, count=null, operation=null, destination=null)

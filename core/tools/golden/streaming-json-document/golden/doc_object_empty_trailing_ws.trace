@@ -1,0 +1,4 @@
+name|doc_object_empty_trailing_ws
+op|parse
+args|{} 
+result|StreamingJsonDocument(root=StreamingJsonObject(entries=[], complete=true), status=COMPLETE, errorOffset=null, roots=[StreamingJsonObject(entries=[], complete=true)])

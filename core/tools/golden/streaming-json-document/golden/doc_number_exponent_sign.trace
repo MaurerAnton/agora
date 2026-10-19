@@ -1,0 +1,4 @@
+name|doc_number_exponent_sign
+op|parse
+args|-0.5e-10
+result|StreamingJsonDocument(root=StreamingJsonScalar(content=-0.5e-10, kind=NUMBER, complete=true), status=COMPLETE, errorOffset=null, roots=[StreamingJsonScalar(content=-0.5e-10, kind=NUMBER, complete=true)])

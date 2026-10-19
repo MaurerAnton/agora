@@ -1,0 +1,4 @@
+name|hints_skill_create
+op|hints
+args|SKILL_CREATE|{"name":"s.md"}
+result|StreamingToolArgumentHints(subject=s.md, server=null, count=null, operation=null, destination=null)

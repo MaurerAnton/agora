@@ -1,0 +1,4 @@
+name|hints_task_list
+op|hints
+args|TASK_LIST|{"names":["a"]}
+result|StreamingToolArgumentHints(subject=null, server=null, count=null, operation=null, destination=null)

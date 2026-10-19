@@ -1,0 +1,4 @@
+name|doc_bom_not_whitespace
+op|parse
+args|﻿{}
+result|StreamingJsonDocument(root=null, status=INVALID, errorOffset=0, roots=[])

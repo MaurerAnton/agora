@@ -1,0 +1,4 @@
+name|doc_object_key_with_escape
+op|parse
+args|{"a\\"b":1}
+result|StreamingJsonDocument(root=StreamingJsonObject(entries=[StreamingJsonEntry(key=a"b, keyComplete=true, value=StreamingJsonScalar(content=1, kind=NUMBER, complete=true))], complete=true), status=COMPLETE, errorOffset=null, roots=[StreamingJsonObject(entries=[StreamingJsonEntry(key=a"b, keyComplete=true, value=StreamingJsonScalar(content=1, kind=NUMBER, complete=true))], complete=true)])

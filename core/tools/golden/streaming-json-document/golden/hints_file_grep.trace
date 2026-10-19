@@ -1,0 +1,4 @@
+name|hints_file_grep
+op|hints
+args|FILE_GREP|{"pattern":"TODO"}
+result|StreamingToolArgumentHints(subject=TODO, server=null, count=null, operation=null, destination=null)

@@ -1,0 +1,4 @@
+name|doc_object_complete
+op|parse
+args|{"a":1}
+result|StreamingJsonDocument(root=StreamingJsonObject(entries=[StreamingJsonEntry(key=a, keyComplete=true, value=StreamingJsonScalar(content=1, kind=NUMBER, complete=true))], complete=true), status=COMPLETE, errorOffset=null, roots=[StreamingJsonObject(entries=[StreamingJsonEntry(key=a, keyComplete=true, value=StreamingJsonScalar(content=1, kind=NUMBER, complete=true))], complete=true)])

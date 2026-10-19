@@ -1,3 +1,3 @@
 name|replaceIds_multiple
 mode|replaceIds
-text|a->custom-provider-abc123 b->custom-provider-def456
+text|a->PROV b->PROV

@@ -1,0 +1,8 @@
+{
+  "name": "remap_requires_separator",
+  "mode": "remap",
+  "modelId": "custom-provider-abc123extra:model",
+  "migrations": {
+    "custom-provider-abc123": "new"
+  }
+}

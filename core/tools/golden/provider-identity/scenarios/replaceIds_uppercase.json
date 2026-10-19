@@ -1,0 +1,6 @@
+{
+  "name": "replaceIds_uppercase",
+  "mode": "replaceIds",
+  "text": "CUSTOM-PROVIDER-00000003-0003-4003-8003-000000000003 tail",
+  "replacement": "PROV"
+}

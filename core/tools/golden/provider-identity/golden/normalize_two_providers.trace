@@ -1,8 +1,8 @@
 name|normalize_two_providers
 mode|normalize
 providers|2
-provider|0|A|custom-provider-579db30a-3bbe-4bf6-99fd-f839c197bcf0|A
-provider|1|B|custom-provider-c86999b2-baa9-41bc-b7a3-0b7caa7f4f1d|B
+provider|0|A|custom-provider-00000001-0001-4001-8001-000000000001|A
+provider|1|B|custom-provider-00000002-0002-4002-8002-000000000002|B
 migrations|2
-migration|0|A|custom-provider-579db30a-3bbe-4bf6-99fd-f839c197bcf0
-migration|1|B|custom-provider-c86999b2-baa9-41bc-b7a3-0b7caa7f4f1d
+migration|0|A|custom-provider-00000001-0001-4001-8001-000000000001
+migration|1|B|custom-provider-00000002-0002-4002-8002-000000000002

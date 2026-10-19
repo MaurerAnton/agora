@@ -1,6 +1,6 @@
 name|normalize_blank_id_generated
 mode|normalize
 providers|1
-provider|0|A|custom-provider-9e550f25-da14-4b02-b96c-a41026c9beb3|A
+provider|0|A|custom-provider-00000001-0001-4001-8001-000000000001|A
 migrations|1
-migration|0|A|custom-provider-9e550f25-da14-4b02-b96c-a41026c9beb3
+migration|0|A|custom-provider-00000001-0001-4001-8001-000000000001

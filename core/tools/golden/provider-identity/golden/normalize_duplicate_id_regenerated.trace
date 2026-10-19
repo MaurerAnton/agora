@@ -1,0 +1,7 @@
+name|normalize_duplicate_id_regenerated
+mode|normalize
+providers|2
+provider|0|A|custom-provider-00000009-0009-4009-8009-000000000009|
+provider|1|B|custom-provider-0000000a-000a-400a-800a-00000000000a|B
+migrations|1
+migration|0|B|custom-provider-0000000a-000a-400a-800a-00000000000a

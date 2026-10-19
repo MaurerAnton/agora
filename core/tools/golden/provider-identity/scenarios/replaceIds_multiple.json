@@ -1,6 +1,6 @@
 {
   "name": "replaceIds_multiple",
   "mode": "replaceIds",
-  "text": "a->custom-provider-abc123 b->custom-provider-def456",
+  "text": "a->custom-provider-00000001-0001-4001-8001-000000000001 b->custom-provider-00000002-0002-4002-8002-000000000002",
   "replacement": "PROV"
 }

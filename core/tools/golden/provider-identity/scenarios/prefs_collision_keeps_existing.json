@@ -1,0 +1,11 @@
+{
+  "name": "prefs_collision_keeps_existing",
+  "mode": "preferenceKeys",
+  "aliases": {
+    "custom-provider-old:model1": "a",
+    "new-a:model1": "b"
+  },
+  "migrations": {
+    "custom-provider-old": "new-a"
+  }
+}

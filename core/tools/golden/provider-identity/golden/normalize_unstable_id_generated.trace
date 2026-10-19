@@ -1,6 +1,6 @@
 name|normalize_unstable_id_generated
 mode|normalize
 providers|1
-provider|0|A|custom-provider-2285d64e-fb20-47b1-a6e4-ddfeae1555f7|A
+provider|0|A|custom-provider-00000002-0002-4002-8002-000000000002|A
 migrations|1
-migration|0|A|custom-provider-2285d64e-fb20-47b1-a6e4-ddfeae1555f7
+migration|0|A|custom-provider-00000002-0002-4002-8002-000000000002

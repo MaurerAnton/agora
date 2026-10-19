@@ -1,0 +1,5 @@
+name|normalize_stable_id_is_trimmed
+mode|normalize
+providers|1
+provider|0|A|custom-provider-00000005-0005-4005-8005-000000000005|
+migrations|0

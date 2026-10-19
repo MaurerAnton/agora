@@ -1,0 +1,16 @@
+{
+  "name": "normalize_malformed_occupied_is_ignored",
+  "mode": "normalize",
+  "providers": [
+    {
+      "name": "A",
+      "type": "conch"
+    }
+  ],
+  "occupiedIds": [
+    "custom-provider-abc123"
+  ],
+  "newIds": [
+    "custom-provider-00000008-0008-4008-8008-000000000008"
+  ]
+}

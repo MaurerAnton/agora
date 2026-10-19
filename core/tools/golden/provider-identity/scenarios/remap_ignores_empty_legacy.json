@@ -1,0 +1,8 @@
+{
+  "name": "remap_ignores_empty_legacy",
+  "mode": "remap",
+  "modelId": ":model",
+  "migrations": {
+    "": "new"
+  }
+}

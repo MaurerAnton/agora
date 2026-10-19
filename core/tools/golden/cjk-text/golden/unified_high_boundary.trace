@@ -1,0 +1,5 @@
+name|unified_high_boundary
+op|containsCjk
+constants|Important: do not use any Chinese (CJK) characters anywhere in your answer.
+args|鿿
+out|bool|true

@@ -1,0 +1,5 @@
+name|ascii
+op|containsCjk
+constants|Important: do not use any Chinese (CJK) characters anywhere in your answer.
+args|hello world
+out|bool|false

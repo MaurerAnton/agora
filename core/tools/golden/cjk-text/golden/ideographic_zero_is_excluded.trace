@@ -1,0 +1,5 @@
+name|ideographic_zero_is_excluded
+op|containsCjk
+constants|Important: do not use any Chinese (CJK) characters anywhere in your answer.
+args|〇
+out|bool|false

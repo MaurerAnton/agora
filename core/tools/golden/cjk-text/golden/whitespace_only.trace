@@ -1,0 +1,5 @@
+name|whitespace_only
+op|containsCjk
+constants|Important: do not use any Chinese (CJK) characters anywhere in your answer.
+args| \t\n 
+out|bool|false

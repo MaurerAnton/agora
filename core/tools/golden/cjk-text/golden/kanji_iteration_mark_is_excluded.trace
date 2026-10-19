@@ -1,0 +1,5 @@
+name|kanji_iteration_mark_is_excluded
+op|containsCjk
+constants|Important: do not use any Chinese (CJK) characters anywhere in your answer.
+args|々
+out|bool|false

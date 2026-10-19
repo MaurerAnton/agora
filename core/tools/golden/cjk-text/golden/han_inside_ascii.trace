@@ -1,0 +1,5 @@
+name|han_inside_ascii
+op|containsCjk
+constants|Important: do not use any Chinese (CJK) characters anywhere in your answer.
+args|abc中文def
+out|bool|true

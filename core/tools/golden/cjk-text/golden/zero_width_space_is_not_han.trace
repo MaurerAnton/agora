@@ -1,0 +1,5 @@
+name|zero_width_space_is_not_han
+op|containsCjk
+constants|Important: do not use any Chinese (CJK) characters anywhere in your answer.
+args|​
+out|bool|false

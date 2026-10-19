@@ -1,0 +1,5 @@
+name|supplementary_compat_is_ignored
+op|containsCjk
+constants|Important: do not use any Chinese (CJK) characters anywhere in your answer.
+args|丽
+out|bool|false

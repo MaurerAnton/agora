@@ -1,0 +1,13 @@
+name|candidates_are_ordered_by_score_then_id
+page_size|256
+threshold|-1.0
+limit|10
+query|1.0,0.0
+candidates|3
+candidate|1|one|1.0
+candidate|2|half|0.70710677
+candidate|4|zero|0.0
+scanned|4
+skipped|0
+best_score|1.0
+max_retained|3

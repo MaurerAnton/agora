@@ -1,0 +1,6 @@
+name|non_positive_page_size_is_rejected
+page_size|0
+threshold|0.0
+limit|5
+query|1.0,0.0
+error|Failed requirement.

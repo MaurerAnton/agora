@@ -1,0 +1,31 @@
+{
+  "name": "dimension_mismatch_is_skipped",
+  "query": [
+    1.0,
+    0.0,
+    0.0
+  ],
+  "threshold": -1.0,
+  "limit": 5,
+  "rows": [
+    {
+      "id": 1,
+      "message_id": "short",
+      "embedding": [
+        1.0,
+        0.0
+      ],
+      "dimension": 2
+    },
+    {
+      "id": 2,
+      "message_id": "good",
+      "embedding": [
+        1.0,
+        0.0,
+        0.0
+      ],
+      "dimension": -1
+    }
+  ]
+}

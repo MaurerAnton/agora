@@ -1,0 +1,32 @@
+{
+  "name": "repeated_id_is_rejected",
+  "query": [
+    1.0,
+    0.0
+  ],
+  "threshold": -1.0,
+  "limit": 5,
+  "loader": "raw",
+  "raw_pages": [
+    [
+      {
+        "id": 4,
+        "message_id": "a",
+        "embedding": [
+          1.0,
+          0.0
+        ],
+        "dimension": -1
+      },
+      {
+        "id": 4,
+        "message_id": "b",
+        "embedding": [
+          1.0,
+          0.0
+        ],
+        "dimension": -1
+      }
+    ]
+  ]
+}

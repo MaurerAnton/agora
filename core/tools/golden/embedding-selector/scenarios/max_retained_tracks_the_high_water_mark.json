@@ -1,0 +1,47 @@
+{
+  "name": "max_retained_tracks_the_high_water_mark",
+  "query": [
+    1.0,
+    0.0
+  ],
+  "threshold": -1.0,
+  "limit": 3,
+  "rows": [
+    {
+      "id": 1,
+      "message_id": "a",
+      "embedding": [
+        1.0,
+        0.0
+      ],
+      "dimension": -1
+    },
+    {
+      "id": 2,
+      "message_id": "b",
+      "embedding": [
+        1.0,
+        0.0
+      ],
+      "dimension": -1
+    },
+    {
+      "id": 3,
+      "message_id": "c",
+      "embedding": [
+        1.0,
+        0.0
+      ],
+      "dimension": -1
+    },
+    {
+      "id": 4,
+      "message_id": "d",
+      "embedding": [
+        1.0,
+        0.0
+      ],
+      "dimension": -1
+    }
+  ]
+}

@@ -1,0 +1,47 @@
+{
+  "name": "candidates_are_ordered_by_score_then_id",
+  "query": [
+    1.0,
+    0.0
+  ],
+  "threshold": -1.0,
+  "limit": 10,
+  "rows": [
+    {
+      "id": 1,
+      "message_id": "one",
+      "embedding": [
+        1.0,
+        0.0
+      ],
+      "dimension": -1
+    },
+    {
+      "id": 2,
+      "message_id": "half",
+      "embedding": [
+        1.0,
+        1.0
+      ],
+      "dimension": -1
+    },
+    {
+      "id": 3,
+      "message_id": "minus",
+      "embedding": [
+        -1.0,
+        0.0
+      ],
+      "dimension": -1
+    },
+    {
+      "id": 4,
+      "message_id": "zero",
+      "embedding": [
+        0.0,
+        1.0
+      ],
+      "dimension": -1
+    }
+  ]
+}

@@ -1,0 +1,27 @@
+{
+  "name": "all_rows_invalid",
+  "query": [
+    1.0,
+    0.0
+  ],
+  "threshold": -1.0,
+  "limit": 5,
+  "rows": [
+    {
+      "id": 1,
+      "message_id": "a",
+      "embedding": [
+        1.0
+      ],
+      "dimension": 2
+    },
+    {
+      "id": 2,
+      "message_id": "b",
+      "embedding": [
+        1.0
+      ],
+      "dimension": 2
+    }
+  ]
+}

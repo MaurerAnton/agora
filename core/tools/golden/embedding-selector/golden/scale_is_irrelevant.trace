@@ -1,0 +1,11 @@
+name|scale_is_irrelevant
+page_size|256
+threshold|0.99
+limit|5
+query|2.0,0.0
+candidates|1
+candidate|1|scaled|1.0
+scanned|1
+skipped|0
+best_score|1.0
+max_retained|1

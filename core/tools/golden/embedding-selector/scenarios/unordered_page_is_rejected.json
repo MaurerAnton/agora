@@ -1,0 +1,32 @@
+{
+  "name": "unordered_page_is_rejected",
+  "query": [
+    1.0,
+    0.0
+  ],
+  "threshold": -1.0,
+  "limit": 5,
+  "loader": "raw",
+  "raw_pages": [
+    [
+      {
+        "id": 5,
+        "message_id": "five",
+        "embedding": [
+          1.0,
+          0.0
+        ],
+        "dimension": -1
+      },
+      {
+        "id": 3,
+        "message_id": "three",
+        "embedding": [
+          1.0,
+          0.0
+        ],
+        "dimension": -1
+      }
+    ]
+  ]
+}

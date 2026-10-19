@@ -1,0 +1,19 @@
+{
+  "name": "non_positive_page_size_is_rejected",
+  "page_size": 0,
+  "query": [
+    1.0,
+    0.0
+  ],
+  "rows": [
+    {
+      "id": 1,
+      "message_id": "m",
+      "embedding": [
+        1.0,
+        0.0
+      ],
+      "dimension": -1
+    }
+  ]
+}

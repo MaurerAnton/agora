@@ -1,0 +1,38 @@
+{
+  "name": "limit_keeps_the_best_rows",
+  "query": [
+    1.0,
+    0.0
+  ],
+  "threshold": -1.0,
+  "limit": 2,
+  "rows": [
+    {
+      "id": 1,
+      "message_id": "best",
+      "embedding": [
+        1.0,
+        0.0
+      ],
+      "dimension": -1
+    },
+    {
+      "id": 2,
+      "message_id": "mid",
+      "embedding": [
+        1.0,
+        1.0
+      ],
+      "dimension": -1
+    },
+    {
+      "id": 3,
+      "message_id": "worst",
+      "embedding": [
+        -1.0,
+        0.0
+      ],
+      "dimension": -1
+    }
+  ]
+}

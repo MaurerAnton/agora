@@ -1,0 +1,35 @@
+{
+  "name": "page_moving_backwards_is_rejected",
+  "query": [
+    1.0,
+    0.0
+  ],
+  "threshold": -1.0,
+  "limit": 5,
+  "page_size": 1,
+  "loader": "raw",
+  "raw_pages": [
+    [
+      {
+        "id": 7,
+        "message_id": "seven",
+        "embedding": [
+          1.0,
+          0.0
+        ],
+        "dimension": -1
+      }
+    ],
+    [
+      {
+        "id": 2,
+        "message_id": "two",
+        "embedding": [
+          1.0,
+          0.0
+        ],
+        "dimension": -1
+      }
+    ]
+  ]
+}

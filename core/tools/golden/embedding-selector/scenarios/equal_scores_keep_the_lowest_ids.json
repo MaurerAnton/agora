@@ -1,0 +1,38 @@
+{
+  "name": "equal_scores_keep_the_lowest_ids",
+  "query": [
+    1.0,
+    0.0
+  ],
+  "threshold": -1.0,
+  "limit": 2,
+  "rows": [
+    {
+      "id": 7,
+      "message_id": "seven",
+      "embedding": [
+        1.0,
+        0.0
+      ],
+      "dimension": -1
+    },
+    {
+      "id": 8,
+      "message_id": "eight",
+      "embedding": [
+        1.0,
+        0.0
+      ],
+      "dimension": -1
+    },
+    {
+      "id": 9,
+      "message_id": "nine",
+      "embedding": [
+        1.0,
+        0.0
+      ],
+      "dimension": -1
+    }
+  ]
+}

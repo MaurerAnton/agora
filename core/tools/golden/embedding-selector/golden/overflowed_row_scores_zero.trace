@@ -1,0 +1,11 @@
+name|overflowed_row_scores_zero
+page_size|256
+threshold|-1.0
+limit|5
+query|1.0,0.0
+candidates|1
+candidate|1|huge|0.0
+scanned|1
+skipped|0
+best_score|0.0
+max_retained|1

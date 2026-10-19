@@ -1,0 +1,13 @@
+name|pages_are_followed_until_one_is_short
+page_size|2
+threshold|-1.0
+limit|10
+query|1.0,0.0
+candidates|3
+candidate|1|a|1.0
+candidate|2|b|1.0
+candidate|3|c|1.0
+scanned|3
+skipped|0
+best_score|1.0
+max_retained|3

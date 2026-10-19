@@ -1,0 +1,29 @@
+{
+  "name": "best_score_counts_sub_threshold_rows",
+  "query": [
+    1.0,
+    0.0
+  ],
+  "threshold": 0.99,
+  "limit": 5,
+  "rows": [
+    {
+      "id": 1,
+      "message_id": "below",
+      "embedding": [
+        1.0,
+        1.0
+      ],
+      "dimension": -1
+    },
+    {
+      "id": 2,
+      "message_id": "exact",
+      "embedding": [
+        1.0,
+        0.0
+      ],
+      "dimension": -1
+    }
+  ]
+}

@@ -1,0 +1,6 @@
+name|unordered_page_is_rejected
+page_size|256
+threshold|-1.0
+limit|5
+query|1.0,0.0
+error|Embedding keyset page must be strictly ordered after id 0

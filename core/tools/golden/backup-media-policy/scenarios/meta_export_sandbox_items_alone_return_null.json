@@ -1,0 +1,15 @@
+{
+  "fn": "rewriteAttachmentMetaForExport",
+  "name": "meta_export_sandbox_items_alone_return_null",
+  "oldToNewImageIndex": {
+    "0": 0
+  },
+  "raw_json": {
+    "items": [
+      {
+        "storage": "local_sandbox_runtime",
+        "type": "image"
+      }
+    ]
+  }
+}

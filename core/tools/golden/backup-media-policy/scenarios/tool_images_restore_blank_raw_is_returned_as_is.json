@@ -1,0 +1,6 @@
+{
+  "archiveVersion": 4,
+  "fn": "restoreToolImagePaths",
+  "name": "tool_images_restore_blank_raw_is_returned_as_is",
+  "raw": " \t"
+}

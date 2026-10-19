@@ -1,0 +1,19 @@
+{
+  "archiveVersion": 4,
+  "fn": "restoreAttachmentMeta",
+  "legacyVideoUris": {},
+  "name": "meta_restore_image_without_surviving_indices_is_unavailable",
+  "oldToNewImageIndex": {
+    "1": 1
+  },
+  "raw_json": {
+    "items": [
+      {
+        "image_index": 0,
+        "originalUri": "media/photo.jpg",
+        "page_count": 2,
+        "type": "image"
+      }
+    ]
+  }
+}

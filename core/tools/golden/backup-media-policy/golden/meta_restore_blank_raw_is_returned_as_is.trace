@@ -1,0 +1,4 @@
+name|meta_restore_blank_raw_is_returned_as_is
+fn|restoreAttachmentMeta
+result|string|
+missing|0

@@ -1,0 +1,24 @@
+{
+  "attachments": [
+    {
+      "localId": "a1",
+      "localPath": "/archive/x.png",
+      "type": "image",
+      "uri": "file:///other.png"
+    }
+  ],
+  "fn": "restoreDraftAttachments",
+  "name": "draft_restore_prefers_the_local_path",
+  "table": {
+    "restoredPrimaryForArchiveEntry": {
+      "/archive/x.png": [
+        "/data/x.png",
+        "file:///data/x.png"
+      ],
+      "file:///other.png": [
+        "/data/other.png",
+        "file:///data/other.png"
+      ]
+    }
+  }
+}

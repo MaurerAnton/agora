@@ -1,0 +1,4 @@
+name|draft_export_clears_sandbox_storage_and_path
+fn|rewriteDraftAttachmentsForExport
+result|attachments|[]
+missing|0

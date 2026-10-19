@@ -1,0 +1,17 @@
+{
+  "fn": "rewriteAttachmentMetaForExport",
+  "name": "meta_export_page_count_shrinks_to_the_surviving_indices",
+  "oldToNewImageIndex": {
+    "0": 10,
+    "2": 12
+  },
+  "raw_json": {
+    "items": [
+      {
+        "image_index": 0,
+        "page_count": 4,
+        "type": "image"
+      }
+    ]
+  }
+}

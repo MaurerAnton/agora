@@ -1,0 +1,48 @@
+{
+  "archiveVersion": 4,
+  "fn": "restoreToolImagePaths",
+  "name": "tool_images_restore_round_trips_a_fully_populated_segment",
+  "raw_json": [
+    {
+      "content": "looked at a file",
+      "durationMs": 1234,
+      "errorCode": "rate_limited",
+      "responseOutputItemProvider": "anthropic",
+      "responseOutputItems": [
+        {
+          "id": "m1",
+          "type": "message"
+        }
+      ],
+      "signature": "sig",
+      "signatureProvider": "openai",
+      "toolArgs": "{\"path\":\"/data/a.png\"}",
+      "toolCallId": "call-1",
+      "toolDisplayName": "View image",
+      "toolImages": [
+        {
+          "height": 20,
+          "mimeType": "image/png",
+          "path": "media/a.png",
+          "sha256": "aa",
+          "sizeBytes": 1,
+          "width": 10
+        }
+      ],
+      "toolName": "view_image",
+      "toolProgress": "50%",
+      "toolResult": "ok",
+      "toolResultText": "a picture",
+      "toolState": "succeeded",
+      "toolStructuredResult": "{\"n\":1}",
+      "toolTarget": "/data/a.png",
+      "toolTranscription": "a cat on a mat",
+      "type": "tool"
+    }
+  ],
+  "table": {
+    "restoredPathForArchiveEntry": {
+      "media/a.png": "/data/a.png"
+    }
+  }
+}

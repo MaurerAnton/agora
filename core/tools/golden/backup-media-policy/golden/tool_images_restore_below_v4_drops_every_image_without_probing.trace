@@ -1,0 +1,4 @@
+name|tool_images_restore_below_v4_drops_every_image_without_probing
+fn|restoreToolImagePaths
+result|string|[{"type":"answer"}]
+missing|0

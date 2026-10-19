@@ -1,0 +1,22 @@
+{
+  "fn": "rewriteAttachmentMetaForExport",
+  "name": "meta_export_drops_sandbox_items",
+  "oldToNewImageIndex": {
+    "0": 0,
+    "1": 1
+  },
+  "raw_json": {
+    "items": [
+      {
+        "image_index": 0,
+        "storage": "local_sandbox_pending",
+        "type": "image"
+      },
+      {
+        "image_index": 1,
+        "originalUri": "/orig/two.png",
+        "type": "image"
+      }
+    ]
+  }
+}

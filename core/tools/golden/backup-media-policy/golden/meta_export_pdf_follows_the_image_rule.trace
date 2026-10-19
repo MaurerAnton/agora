@@ -1,0 +1,4 @@
+name|meta_export_pdf_follows_the_image_rule
+fn|rewriteAttachmentMetaForExport
+result|string|{"items":[{"type":"pdf","unavailable":true},{"type":"pdf","image_index":1}]}
+missing|1

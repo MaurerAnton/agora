@@ -1,0 +1,17 @@
+{
+  "attachments": [
+    {
+      "localId": "a1",
+      "localPath": "/cache/pic.png?v=2#frag",
+      "type": "image",
+      "uri": "content://media/one"
+    }
+  ],
+  "fn": "rewriteDraftAttachmentsForExport",
+  "name": "draft_export_source_file_name_strips_query_and_fragment",
+  "table": {
+    "archiveEntryForSource": {
+      "/cache/pic.png?v=2#frag": "media/pic.png"
+    }
+  }
+}

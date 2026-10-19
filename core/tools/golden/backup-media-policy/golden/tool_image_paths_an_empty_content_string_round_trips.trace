@@ -1,0 +1,4 @@
+name|tool_image_paths_an_empty_content_string_round_trips
+fn|rewriteToolImagePathsForExport
+result|string|[{"type":"answer"}]
+missing|0

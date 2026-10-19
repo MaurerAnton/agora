@@ -1,0 +1,18 @@
+{
+  "attachments": [
+    {
+      "localId": "a1",
+      "localPath": "/tmp/live.png",
+      "selectedPages": [],
+      "type": "image",
+      "uri": "file:///tmp/thing.png"
+    }
+  ],
+  "fn": "rewriteDraftAttachmentsForExport",
+  "name": "draft_export_an_empty_selected_page_set_is_encoded_as_an_array",
+  "table": {
+    "archiveEntryForSource": {
+      "/tmp/live.png": "media/live.png"
+    }
+  }
+}

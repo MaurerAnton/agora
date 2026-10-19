@@ -1,0 +1,5 @@
+name|meta_restore_an_image_never_regains_its_file_name_from_the_original_uri
+fn|restoreAttachmentMeta
+call|restoredUriForArchiveEntry|media/photo.jpg|file:///data/photo.jpg
+result|string|{"items":[{"originalUri":"file:///data/photo.jpg","type":"image","image_index":0}]}
+missing|0

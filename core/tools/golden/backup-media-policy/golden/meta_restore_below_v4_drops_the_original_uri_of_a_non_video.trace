@@ -1,0 +1,4 @@
+name|meta_restore_below_v4_drops_the_original_uri_of_a_non_video
+fn|restoreAttachmentMeta
+result|string|{"items":[{"type":"image","image_index":0}]}
+missing|0

@@ -1,0 +1,17 @@
+{
+  "attachments": [
+    {
+      "localId": "a1",
+      "localPath": "/gone/named.png",
+      "type": "image",
+      "uri": "content://media"
+    }
+  ],
+  "fn": "rewriteDraftAttachmentsForExport",
+  "name": "draft_export_missing_entry_keeps_the_derived_file_name",
+  "table": {
+    "archiveEntryForSource": {
+      "/gone/named.png": null
+    }
+  }
+}

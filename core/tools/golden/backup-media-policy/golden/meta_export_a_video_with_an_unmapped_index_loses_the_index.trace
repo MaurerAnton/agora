@@ -1,0 +1,5 @@
+name|meta_export_a_video_with_an_unmapped_index_loses_the_index
+fn|rewriteAttachmentMetaForExport
+call|archiveEntryForSource|/device/movies/clip.mp4|media/clip.mp4
+result|string|{"items":[{"originalUri":"media/clip.mp4","type":"video","file_name":"clip.mp4"}]}
+missing|0

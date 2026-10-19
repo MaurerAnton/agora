@@ -1,0 +1,6 @@
+name|draft_export_probes_blank_local_path_before_the_uri
+fn|rewriteDraftAttachmentsForExport
+call|archiveEntryForSource| |-
+call|archiveEntryForSource|file:///tmp/thing.png|media/thing.png
+result|attachments|[{"localId":"a1","uri":"media/thing.png","type":"image","fileName":"thing.png","localPath":"media/thing.png"}]
+missing|0

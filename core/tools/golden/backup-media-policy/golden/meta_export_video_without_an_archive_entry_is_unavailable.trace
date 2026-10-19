@@ -1,0 +1,5 @@
+name|meta_export_video_without_an_archive_entry_is_unavailable
+fn|rewriteAttachmentMetaForExport
+call|archiveEntryForSource|file:///device/movies/clip.mp4|-
+result|string|{"items":[{"type":"video","file_name":"clip.mp4","unavailable":true}]}
+missing|1

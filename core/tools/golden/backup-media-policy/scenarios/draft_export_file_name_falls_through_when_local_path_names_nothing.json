@@ -1,0 +1,17 @@
+{
+  "attachments": [
+    {
+      "localId": "a1",
+      "localPath": "/",
+      "type": "pdf",
+      "uri": "file:///tmp/report.pdf"
+    }
+  ],
+  "fn": "rewriteDraftAttachmentsForExport",
+  "name": "draft_export_file_name_falls_through_when_local_path_names_nothing",
+  "table": {
+    "archiveEntryForSource": {
+      "file:///tmp/report.pdf": "media/report.pdf"
+    }
+  }
+}

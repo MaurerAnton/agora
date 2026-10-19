@@ -1,0 +1,4 @@
+name|tool_image_paths_ignores_unknown_keys
+fn|toolImagePaths
+result|strings|["/data/a.png"]
+missing|0

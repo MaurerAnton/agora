@@ -1,0 +1,4 @@
+name|meta_export_preserves_the_untouched_fields_of_an_available_item
+fn|rewriteAttachmentMetaForExport
+result|string|{"items":[{"type":"image","mime_type":"image/jpeg","image_index":0,"pixel_width":1920,"pixel_height":1080,"warning":"downscaled","transcription":"a cat","file_size":4242}]}
+missing|0

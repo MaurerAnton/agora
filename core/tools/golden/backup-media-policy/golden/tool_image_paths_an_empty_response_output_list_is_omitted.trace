@@ -1,0 +1,4 @@
+name|tool_image_paths_an_empty_response_output_list_is_omitted
+fn|rewriteToolImagePathsForExport
+result|string|[{"type":"answer"}]
+missing|0

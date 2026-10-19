@@ -1,0 +1,4 @@
+name|meta_restore_empty_items_stays_empty
+fn|restoreAttachmentMeta
+result|string|{}
+missing|0

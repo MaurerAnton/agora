@@ -1,0 +1,13 @@
+{
+  "fn": "rewriteAttachmentMetaForExport",
+  "name": "meta_export_an_unknown_type_stays_available",
+  "oldToNewImageIndex": {},
+  "raw_json": {
+    "items": [
+      {
+        "originalUri": "/orig/track.mp3",
+        "type": "audio"
+      }
+    ]
+  }
+}

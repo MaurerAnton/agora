@@ -1,0 +1,19 @@
+{
+  "archiveVersion": 4,
+  "fn": "restoreAttachmentMeta",
+  "legacyVideoUris": {},
+  "name": "meta_restore_page_count_shrinks_to_the_surviving_indices",
+  "oldToNewImageIndex": {
+    "0": 0,
+    "2": 2
+  },
+  "raw_json": {
+    "items": [
+      {
+        "image_index": 0,
+        "page_count": 3,
+        "type": "image"
+      }
+    ]
+  }
+}

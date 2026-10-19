@@ -1,0 +1,5 @@
+name|draft_export_an_empty_selected_page_set_is_encoded_as_an_array
+fn|rewriteDraftAttachmentsForExport
+call|archiveEntryForSource|/tmp/live.png|media/live.png
+result|attachments|[{"localId":"a1","uri":"media/live.png","type":"image","fileName":"live.png","selectedPages":[],"localPath":"media/live.png"}]
+missing|0

@@ -1,0 +1,19 @@
+{
+  "fn": "rewriteAttachmentMetaForExport",
+  "name": "meta_export_pdf_follows_the_image_rule",
+  "oldToNewImageIndex": {
+    "1": 1
+  },
+  "raw_json": {
+    "items": [
+      {
+        "image_index": 0,
+        "type": "pdf"
+      },
+      {
+        "image_index": 1,
+        "type": "pdf"
+      }
+    ]
+  }
+}

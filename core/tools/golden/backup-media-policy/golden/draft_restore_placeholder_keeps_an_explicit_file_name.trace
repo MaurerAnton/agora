@@ -1,0 +1,5 @@
+name|draft_restore_placeholder_keeps_an_explicit_file_name
+fn|restoreDraftAttachments
+call|restoredPrimaryForArchiveEntry|file:///other.png|-
+result|attachments|[{"localId":"a1","uri":"","type":"image","fileName":"kept.png","unavailable":true}]
+missing|0

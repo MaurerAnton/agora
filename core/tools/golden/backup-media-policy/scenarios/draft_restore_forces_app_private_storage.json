@@ -1,0 +1,23 @@
+{
+  "attachments": [
+    {
+      "importState": "failed",
+      "localId": "a1",
+      "localPath": "/archive/x.png",
+      "sandboxPath": "/sandbox/x.png",
+      "storage": "local_sandbox_runtime",
+      "type": "image",
+      "uri": "file:///data/x.png"
+    }
+  ],
+  "fn": "restoreDraftAttachments",
+  "name": "draft_restore_forces_app_private_storage",
+  "table": {
+    "restoredPrimaryForArchiveEntry": {
+      "/archive/x.png": [
+        "/data/x.png",
+        "file:///data/x.png"
+      ]
+    }
+  }
+}

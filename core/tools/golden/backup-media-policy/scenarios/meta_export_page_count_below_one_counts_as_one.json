@@ -1,0 +1,30 @@
+{
+  "fn": "rewriteAttachmentMetaForExport",
+  "name": "meta_export_page_count_below_one_counts_as_one",
+  "oldToNewImageIndex": {
+    "0": 0,
+    "1": 1,
+    "2": 2
+  },
+  "originalImageSources": [
+    "/orig/one.png",
+    "/orig/two.png",
+    "/orig/three.png"
+  ],
+  "raw_json": {
+    "items": [
+      {
+        "image_index": 0,
+        "originalUri": "/orig/one.png",
+        "page_count": 0,
+        "type": "image"
+      },
+      {
+        "image_index": 2,
+        "originalUri": "/orig/three.png",
+        "page_count": -4,
+        "type": "image"
+      }
+    ]
+  }
+}

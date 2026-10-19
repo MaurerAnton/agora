@@ -1,0 +1,4 @@
+name|meta_export_items_without_an_index_claim_nothing
+fn|rewriteAttachmentMetaForExport
+result|string|{"items":[{"type":"image","file_name":"two.png","unavailable":true},{"type":"image","file_name":"one.png","image_index":0},{"type":"image","file_name":"two.png","image_index":1}]}
+missing|1

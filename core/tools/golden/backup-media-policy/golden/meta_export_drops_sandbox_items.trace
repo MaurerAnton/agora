@@ -1,0 +1,4 @@
+name|meta_export_drops_sandbox_items
+fn|rewriteAttachmentMetaForExport
+result|string|{"items":[{"type":"image","file_name":"two.png","image_index":1}]}
+missing|0

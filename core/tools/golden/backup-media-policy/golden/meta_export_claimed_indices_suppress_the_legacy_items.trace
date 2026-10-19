@@ -1,0 +1,4 @@
+name|meta_export_claimed_indices_suppress_the_legacy_items
+fn|rewriteAttachmentMetaForExport
+result|string|{"items":[{"type":"image","file_name":"two.png","image_index":1,"page_count":2},{"type":"image","file_name":"one.png","image_index":0}]}
+missing|0

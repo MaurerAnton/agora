@@ -1,0 +1,31 @@
+{
+  "attachments": [
+    {
+      "fileSize": 98765,
+      "frameCount": 24,
+      "importState": "processing",
+      "localId": "a1",
+      "localPath": "/tmp/live.mp4",
+      "mimeType": "video/mp4",
+      "pixelHeight": 1080,
+      "pixelWidth": 1920,
+      "preparedText": "transcribed",
+      "selectedPages": [
+        3,
+        1,
+        2
+      ],
+      "sliceIntervalMs": 500,
+      "type": "video",
+      "uri": "file:///tmp/thing.png",
+      "videoDurationMs": 12345
+    }
+  ],
+  "fn": "rewriteDraftAttachmentsForExport",
+  "name": "draft_export_preserves_unrelated_attachment_fields",
+  "table": {
+    "archiveEntryForSource": {
+      "/tmp/live.mp4": "media/live.mp4"
+    }
+  }
+}

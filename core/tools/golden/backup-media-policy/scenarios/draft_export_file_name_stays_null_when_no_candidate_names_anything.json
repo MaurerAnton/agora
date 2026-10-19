@@ -1,0 +1,12 @@
+{
+  "attachments": [
+    {
+      "localId": "a1",
+      "type": "image",
+      "uri": "content://"
+    }
+  ],
+  "fn": "rewriteDraftAttachmentsForExport",
+  "name": "draft_export_file_name_stays_null_when_no_candidate_names_anything",
+  "table": {}
+}

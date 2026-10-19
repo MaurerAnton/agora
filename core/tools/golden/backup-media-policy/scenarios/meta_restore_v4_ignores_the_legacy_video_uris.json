@@ -1,0 +1,25 @@
+{
+  "archiveVersion": 5,
+  "fn": "restoreAttachmentMeta",
+  "legacyVideoUris": {
+    "1": "/device/legacy.mp4"
+  },
+  "name": "meta_restore_v4_ignores_the_legacy_video_uris",
+  "oldToNewImageIndex": {
+    "1": 1
+  },
+  "raw_json": {
+    "items": [
+      {
+        "image_index": 1,
+        "originalUri": "media/clip.mp4",
+        "type": "video"
+      }
+    ]
+  },
+  "table": {
+    "restoredUriForArchiveEntry": {
+      "media/clip.mp4": null
+    }
+  }
+}

@@ -1,0 +1,6 @@
+{
+  "fn": "restoreAttachmentMeta",
+  "legacyVideoUris": {},
+  "name": "meta_restore_blank_raw_is_returned_as_is",
+  "raw": ""
+}

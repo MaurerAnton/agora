@@ -1,0 +1,14 @@
+{
+  "archiveVersion": 4,
+  "fn": "restoreAttachmentMeta",
+  "legacyVideoUris": {},
+  "name": "meta_restore_file_without_text_content_is_unavailable",
+  "raw_json": {
+    "items": [
+      {
+        "originalUri": "media/doc.txt",
+        "type": "file"
+      }
+    ]
+  }
+}

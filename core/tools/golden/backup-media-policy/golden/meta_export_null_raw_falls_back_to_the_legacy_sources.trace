@@ -1,0 +1,4 @@
+name|meta_export_null_raw_falls_back_to_the_legacy_sources
+fn|rewriteAttachmentMetaForExport
+result|string|{"items":[{"type":"image","file_name":"one.png","image_index":0},{"type":"image","file_name":"two.png","image_index":1}]}
+missing|0

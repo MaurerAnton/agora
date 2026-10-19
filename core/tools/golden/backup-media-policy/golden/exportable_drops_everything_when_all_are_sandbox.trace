@@ -1,0 +1,4 @@
+name|exportable_drops_everything_when_all_are_sandbox
+fn|exportableDraftAttachments
+result|attachments|[]
+missing|0

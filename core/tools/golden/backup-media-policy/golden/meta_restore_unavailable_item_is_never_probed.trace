@@ -1,0 +1,4 @@
+name|meta_restore_unavailable_item_is_never_probed
+fn|restoreAttachmentMeta
+result|string|{"items":[{"type":"video","unavailable":true}]}
+missing|0

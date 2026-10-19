@@ -1,0 +1,4 @@
+name|tool_image_paths_requires_the_type_field
+fn|toolImagePaths
+result|strings|[]
+missing|0

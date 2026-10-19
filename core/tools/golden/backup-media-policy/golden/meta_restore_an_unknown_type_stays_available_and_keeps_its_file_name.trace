@@ -1,0 +1,5 @@
+name|meta_restore_an_unknown_type_stays_available_and_keeps_its_file_name
+fn|restoreAttachmentMeta
+call|restoredUriForArchiveEntry|media/track.mp3|-
+result|string|{"items":[{"type":"audio"}]}
+missing|0

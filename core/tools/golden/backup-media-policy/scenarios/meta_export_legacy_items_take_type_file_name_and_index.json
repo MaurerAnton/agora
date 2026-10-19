@@ -1,0 +1,14 @@
+{
+  "fn": "rewriteAttachmentMetaForExport",
+  "name": "meta_export_legacy_items_take_type_file_name_and_index",
+  "oldToNewImageIndex": {
+    "0": 5,
+    "1": 6
+  },
+  "originalImageSources": [
+    "/orig/one.png",
+    "content://media/two",
+    "/orig/nothing"
+  ],
+  "raw_json": null
+}

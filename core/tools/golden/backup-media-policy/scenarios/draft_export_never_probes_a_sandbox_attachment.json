@@ -1,0 +1,24 @@
+{
+  "attachments": [
+    {
+      "localId": "a1",
+      "localPath": "/sandbox/one",
+      "storage": "local_sandbox_pending",
+      "type": "image",
+      "uri": "content://sandbox/one"
+    },
+    {
+      "localId": "a2",
+      "localPath": "/tmp/live.png",
+      "type": "image",
+      "uri": "file:///tmp/thing.png"
+    }
+  ],
+  "fn": "rewriteDraftAttachmentsForExport",
+  "name": "draft_export_never_probes_a_sandbox_attachment",
+  "table": {
+    "archiveEntryForSource": {
+      "/tmp/live.png": "media/live.png"
+    }
+  }
+}

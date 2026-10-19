@@ -1,0 +1,17 @@
+{
+  "attachments": [
+    {
+      "localId": "a1",
+      "localPath": "/tmp/live.bin",
+      "type": "image",
+      "uri": "file:///tmp/abc.bin"
+    }
+  ],
+  "fn": "rewriteDraftAttachmentsForExport",
+  "name": "draft_export_derives_file_name_from_local_path",
+  "table": {
+    "archiveEntryForSource": {
+      "/tmp/live.bin": "media/live.bin"
+    }
+  }
+}

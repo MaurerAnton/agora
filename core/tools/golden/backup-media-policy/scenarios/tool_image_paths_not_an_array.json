@@ -1,0 +1,7 @@
+{
+  "fn": "toolImagePaths",
+  "name": "tool_image_paths_not_an_array",
+  "raw_json": {
+    "type": "answer"
+  }
+}

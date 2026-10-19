@@ -1,0 +1,4 @@
+name|meta_export_an_unavailable_item_loses_its_text_content
+fn|rewriteAttachmentMetaForExport
+result|string|{"items":[{"type":"file","file_name":"doc.txt","unavailable":true}]}
+missing|1

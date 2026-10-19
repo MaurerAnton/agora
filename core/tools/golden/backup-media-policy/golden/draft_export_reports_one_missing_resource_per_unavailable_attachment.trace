@@ -1,0 +1,7 @@
+name|draft_export_reports_one_missing_resource_per_unavailable_attachment
+fn|rewriteDraftAttachmentsForExport
+call|archiveEntryForSource|/gone-a.png|-
+call|archiveEntryForSource|file:///a|-
+call|archiveEntryForSource|/live-c.png|media/c.png
+result|attachments|[{"localId":"a1","uri":"","type":"image","fileName":"gone-a.png","unavailable":true},{"localId":"a2","uri":"","type":"image","fileName":"gone-b.png","unavailable":true},{"localId":"a3","uri":"media/c.png","type":"image","fileName":"live-c.png","localPath":"media/c.png"}]
+missing|2

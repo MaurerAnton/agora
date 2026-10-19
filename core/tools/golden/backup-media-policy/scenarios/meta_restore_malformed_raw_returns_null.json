@@ -1,0 +1,6 @@
+{
+  "fn": "restoreAttachmentMeta",
+  "legacyVideoUris": {},
+  "name": "meta_restore_malformed_raw_returns_null",
+  "raw": "not json at all"
+}

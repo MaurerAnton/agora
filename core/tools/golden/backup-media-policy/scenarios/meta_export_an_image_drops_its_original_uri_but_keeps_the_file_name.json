@@ -1,0 +1,16 @@
+{
+  "fn": "rewriteAttachmentMetaForExport",
+  "name": "meta_export_an_image_drops_its_original_uri_but_keeps_the_file_name",
+  "oldToNewImageIndex": {
+    "0": 4
+  },
+  "raw_json": {
+    "items": [
+      {
+        "image_index": 0,
+        "originalUri": "/device/DCIM/photo.jpg",
+        "type": "image"
+      }
+    ]
+  }
+}

@@ -1,0 +1,5 @@
+name|draft_export_source_file_name_takes_the_last_separator_of_either_kind
+fn|rewriteDraftAttachmentsForExport
+call|archiveEntryForSource|a/b\\c|media/c.bin
+result|attachments|[{"localId":"a1","uri":"media/c.bin","type":"image","fileName":"c","localPath":"media/c.bin"}]
+missing|0

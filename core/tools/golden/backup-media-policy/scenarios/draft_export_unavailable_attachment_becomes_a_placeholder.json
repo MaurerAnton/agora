@@ -1,0 +1,19 @@
+{
+  "attachments": [
+    {
+      "fileName": "live.png",
+      "localId": "a1",
+      "localPath": "/tmp/live.png",
+      "type": "image",
+      "unavailable": true,
+      "uri": "file:///tmp/thing.png"
+    }
+  ],
+  "fn": "rewriteDraftAttachmentsForExport",
+  "name": "draft_export_unavailable_attachment_becomes_a_placeholder",
+  "table": {
+    "archiveEntryForSource": {
+      "/tmp/live.png": "media/live.png"
+    }
+  }
+}

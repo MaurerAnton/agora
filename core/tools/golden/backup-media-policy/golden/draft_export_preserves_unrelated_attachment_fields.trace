@@ -1,0 +1,5 @@
+name|draft_export_preserves_unrelated_attachment_fields
+fn|rewriteDraftAttachmentsForExport
+call|archiveEntryForSource|/tmp/live.mp4|media/live.mp4
+result|attachments|[{"localId":"a1","uri":"media/live.mp4","type":"video","frameCount":24,"sliceIntervalMs":500,"videoDurationMs":12345,"fileName":"live.mp4","mimeType":"video/mp4","fileSize":98765,"pixelWidth":1920,"pixelHeight":1080,"selectedPages":[3,1,2],"localPath":"media/live.mp4","importState":"processing","preparedText":"transcribed"}]
+missing|0

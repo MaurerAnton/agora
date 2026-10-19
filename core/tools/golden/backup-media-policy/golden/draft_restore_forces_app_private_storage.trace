@@ -1,0 +1,5 @@
+name|draft_restore_forces_app_private_storage
+fn|restoreDraftAttachments
+call|restoredPrimaryForArchiveEntry|/archive/x.png|/data/x.png\pfile:///data/x.png
+result|attachments|[{"localId":"a1","uri":"file:///data/x.png","type":"image","localPath":"/data/x.png","importState":"failed"}]
+missing|0

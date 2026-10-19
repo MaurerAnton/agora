@@ -1,0 +1,23 @@
+{
+  "fn": "toolImagePaths",
+  "name": "tool_image_paths_ignores_unknown_keys",
+  "raw_json": [
+    {
+      "somethingRemovedInAnUpgrade": [
+        1,
+        2,
+        3
+      ],
+      "toolImages": [
+        {
+          "extra": true,
+          "mimeType": "image/png",
+          "path": "/data/a.png",
+          "sha256": "aa",
+          "sizeBytes": 1
+        }
+      ],
+      "type": "answer"
+    }
+  ]
+}

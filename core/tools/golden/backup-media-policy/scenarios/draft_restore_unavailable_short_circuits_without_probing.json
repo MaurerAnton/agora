@@ -1,0 +1,22 @@
+{
+  "attachments": [
+    {
+      "fileName": "x.png",
+      "localId": "a1",
+      "localPath": "/archive/x.png",
+      "type": "image",
+      "unavailable": true,
+      "uri": "file:///tmp/x.png"
+    }
+  ],
+  "fn": "restoreDraftAttachments",
+  "name": "draft_restore_unavailable_short_circuits_without_probing",
+  "table": {
+    "restoredPrimaryForArchiveEntry": {
+      "/archive/x.png": [
+        "/data/x.png",
+        "file:///data/x.png"
+      ]
+    }
+  }
+}

@@ -1,0 +1,37 @@
+{
+  "fn": "toolImagePaths",
+  "name": "tool_image_paths_flattens_every_segment",
+  "raw_json": [
+    {
+      "toolImages": [
+        {
+          "mimeType": "image/png",
+          "path": "/data/a.png",
+          "sha256": "aa",
+          "sizeBytes": 10
+        },
+        {
+          "mimeType": "image/png",
+          "path": "/data/b.png",
+          "sha256": "bb",
+          "sizeBytes": 20
+        }
+      ],
+      "type": "answer"
+    },
+    {
+      "type": "thought"
+    },
+    {
+      "toolImages": [
+        {
+          "mimeType": "image/png",
+          "path": "/data/c.png",
+          "sha256": "cc",
+          "sizeBytes": 30
+        }
+      ],
+      "type": "tool"
+    }
+  ]
+}

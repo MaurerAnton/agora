@@ -1,0 +1,4 @@
+name|meta_export_nothing_to_export_returns_null
+fn|rewriteAttachmentMetaForExport
+result|string|-
+missing|0

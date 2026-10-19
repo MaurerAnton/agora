@@ -1,0 +1,5 @@
+name|draft_export_never_probes_a_sandbox_attachment
+fn|rewriteDraftAttachmentsForExport
+call|archiveEntryForSource|/tmp/live.png|media/live.png
+result|attachments|[{"localId":"a2","uri":"media/live.png","type":"image","fileName":"live.png","localPath":"media/live.png"}]
+missing|0

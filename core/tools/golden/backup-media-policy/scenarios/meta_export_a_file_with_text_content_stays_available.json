@@ -1,0 +1,17 @@
+{
+  "fn": "rewriteAttachmentMetaForExport",
+  "name": "meta_export_a_file_with_text_content_stays_available",
+  "oldToNewImageIndex": {},
+  "raw_json": {
+    "items": [
+      {
+        "originalUri": "/orig/doc.txt",
+        "text_content": "body",
+        "type": "file"
+      }
+    ]
+  },
+  "table": {
+    "archiveEntryForSource": {}
+  }
+}

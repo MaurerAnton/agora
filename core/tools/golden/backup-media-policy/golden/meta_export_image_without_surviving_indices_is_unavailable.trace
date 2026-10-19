@@ -1,0 +1,4 @@
+name|meta_export_image_without_surviving_indices_is_unavailable
+fn|rewriteAttachmentMetaForExport
+result|string|{"items":[{"type":"image","image_index":7,"page_count":1}]}
+missing|0

@@ -1,0 +1,16 @@
+{
+  "attachments": [
+    {
+      "localId": "a1",
+      "type": "image",
+      "uri": "content://media/a|b;c.png"
+    }
+  ],
+  "fn": "rewriteDraftAttachmentsForExport",
+  "name": "draft_export_file_name_containing_trace_separators",
+  "table": {
+    "archiveEntryForSource": {
+      "content://media/a|b;c.png": "media/archived.png"
+    }
+  }
+}

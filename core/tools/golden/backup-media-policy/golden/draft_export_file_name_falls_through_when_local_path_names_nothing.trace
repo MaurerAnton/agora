@@ -1,0 +1,6 @@
+name|draft_export_file_name_falls_through_when_local_path_names_nothing
+fn|rewriteDraftAttachmentsForExport
+call|archiveEntryForSource|/|-
+call|archiveEntryForSource|file:///tmp/report.pdf|media/report.pdf
+result|attachments|[{"localId":"a1","uri":"media/report.pdf","type":"pdf","fileName":"report.pdf","localPath":"media/report.pdf"}]
+missing|0

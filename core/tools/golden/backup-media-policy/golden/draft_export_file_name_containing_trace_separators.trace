@@ -1,0 +1,5 @@
+name|draft_export_file_name_containing_trace_separators
+fn|rewriteDraftAttachmentsForExport
+call|archiveEntryForSource|content://media/a\pb\sc.png|media/archived.png
+result|attachments|[{"localId":"a1","uri":"media/archived.png","type":"image","fileName":"a\pb\sc.png","localPath":"media/archived.png"}]
+missing|0

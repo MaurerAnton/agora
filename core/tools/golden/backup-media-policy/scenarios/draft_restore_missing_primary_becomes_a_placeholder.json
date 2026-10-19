@@ -1,0 +1,17 @@
+{
+  "attachments": [
+    {
+      "localId": "a1",
+      "localPath": "/archive/missing.png",
+      "type": "image",
+      "uri": "file:///other.png"
+    }
+  ],
+  "fn": "restoreDraftAttachments",
+  "name": "draft_restore_missing_primary_becomes_a_placeholder",
+  "table": {
+    "restoredPrimaryForArchiveEntry": {
+      "/archive/missing.png": null
+    }
+  }
+}

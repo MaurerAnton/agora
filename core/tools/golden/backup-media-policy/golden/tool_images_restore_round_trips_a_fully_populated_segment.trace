@@ -1,0 +1,5 @@
+name|tool_images_restore_round_trips_a_fully_populated_segment
+fn|restoreToolImagePaths
+call|restoredPathForArchiveEntry|media/a.png|/data/a.png
+result|string|[{"type":"tool","content":"looked at a file","toolName":"view_image","toolArgs":"{\\"path\\":\\"/data/a.png\\"}","toolResult":"ok","toolCallId":"call-1","signature":"sig","signatureProvider":"openai","durationMs":1234,"toolState":"succeeded","toolProgress":"50%","toolTarget":"/data/a.png","toolDisplayName":"View image","toolResultText":"a picture","toolStructuredResult":"{\\"n\\":1}","toolImages":[{"path":"/data/a.png","mimeType":"image/png","sizeBytes":1,"width":10,"height":20,"sha256":"aa"}],"toolTranscription":"a cat on a mat","responseOutputItems":[{"id":"m1","type":"message"}],"responseOutputItemProvider":"anthropic","errorCode":"rate_limited"}]
+missing|0

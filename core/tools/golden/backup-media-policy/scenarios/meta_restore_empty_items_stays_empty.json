@@ -1,0 +1,8 @@
+{
+  "fn": "restoreAttachmentMeta",
+  "legacyVideoUris": {},
+  "name": "meta_restore_empty_items_stays_empty",
+  "raw_json": {
+    "items": []
+  }
+}

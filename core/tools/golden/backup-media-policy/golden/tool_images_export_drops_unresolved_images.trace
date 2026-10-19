@@ -1,0 +1,6 @@
+name|tool_images_export_drops_unresolved_images
+fn|rewriteToolImagePathsForExport
+call|archiveEntryForSource|/data/a.png|media/a.png
+call|archiveEntryForSource|/data/gone.png|-
+result|string|[{"type":"answer","toolImages":[{"path":"media/a.png","mimeType":"image/png","sizeBytes":1,"sha256":"aa"}]}]
+missing|0

@@ -1,0 +1,11 @@
+{
+  "fn": "rewriteAttachmentMetaForExport",
+  "name": "meta_export_malformed_raw_falls_back_to_the_legacy_sources",
+  "oldToNewImageIndex": {
+    "0": 3
+  },
+  "originalImageSources": [
+    "/orig/one.png"
+  ],
+  "raw": "{\"items\":[{\"type\":\"image\""
+}

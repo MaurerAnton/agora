@@ -1,0 +1,5 @@
+name|meta_restore_v4_resolves_the_original_uri
+fn|restoreAttachmentMeta
+call|restoredUriForArchiveEntry|media/clip.mp4|file:///data/clip.mp4
+result|string|{"items":[{"originalUri":"file:///data/clip.mp4","type":"video","image_index":0}]}
+missing|0

@@ -1,0 +1,17 @@
+{
+  "archiveVersion": 1,
+  "fn": "restoreAttachmentMeta",
+  "legacyVideoUris": {
+    "0": "/device/first.mp4",
+    "1": "/device/second.mp4"
+  },
+  "name": "meta_restore_below_v4_without_an_index_falls_back_to_zero",
+  "raw_json": {
+    "items": [
+      {
+        "originalUri": "media/clip.mp4",
+        "type": "video"
+      }
+    ]
+  }
+}

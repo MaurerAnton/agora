@@ -1,0 +1,22 @@
+name|finalization_happy
+initial|Idle(conversationId=c)
+cmd|0|AcquireSlot(identity=RuntimeRunIdentity(conversationId=c, ownerToken=1, runId=null, pass=0))
+state|0|Active(identity=RuntimeRunIdentity(conversationId=c, ownerToken=1, runId=null, pass=0), coroutineSettled=false, providerPhase=None, toolPhase=None)
+effects|0|[SlotActivated(identity=RuntimeRunIdentity(conversationId=c, ownerToken=1, runId=null, pass=0))]
+reject|0|-
+cmd|1|BindRun(identity=RuntimeRunIdentity(conversationId=c, ownerToken=1, runId=run1, pass=0))
+state|1|Active(identity=RuntimeRunIdentity(conversationId=c, ownerToken=1, runId=run1, pass=0), coroutineSettled=false, providerPhase=None, toolPhase=None)
+effects|1|[]
+reject|1|-
+cmd|2|FinalizationRequested(identity=RunEffectIdentity(conversationId=c, ownerToken=1, runId=run1, pass=0, effectId=fin), status=COMPLETED, reason=MODEL_COMPLETED, markConversationUnread=true)
+state|2|Finalizing(identity=RuntimeRunIdentity(conversationId=c, ownerToken=1, runId=run1, pass=0), effectIdentity=RunEffectIdentity(conversationId=c, ownerToken=1, runId=run1, pass=0, effectId=fin), status=COMPLETED, reason=MODEL_COMPLETED, markConversationUnread=true, coroutineSettled=false, persistenceSettled=false, persistenceFailureReported=false)
+effects|2|[FinalizeRun(identity=RunEffectIdentity(conversationId=c, ownerToken=1, runId=run1, pass=0, effectId=fin), status=COMPLETED, reason=MODEL_COMPLETED, markConversationUnread=true)]
+reject|2|-
+cmd|3|FinalizationCompleted(identity=RunEffectIdentity(conversationId=c, ownerToken=1, runId=run1, pass=0, effectId=fin), success=true)
+state|3|Finalizing(identity=RuntimeRunIdentity(conversationId=c, ownerToken=1, runId=run1, pass=0), effectIdentity=RunEffectIdentity(conversationId=c, ownerToken=1, runId=run1, pass=0, effectId=fin), status=COMPLETED, reason=MODEL_COMPLETED, markConversationUnread=true, coroutineSettled=false, persistenceSettled=true, persistenceFailureReported=false)
+effects|3|[]
+reject|3|-
+cmd|4|CoroutineSettled(identity=RuntimeRunIdentity(conversationId=c, ownerToken=1, runId=run1, pass=0))
+state|4|Idle(conversationId=c)
+effects|4|[ReleaseSlot(identity=RuntimeRunIdentity(conversationId=c, ownerToken=1, runId=run1, pass=0), reason=NORMAL_FINALIZATION_SETTLED)]
+reject|4|-

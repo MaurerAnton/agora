@@ -1,0 +1,1 @@
+{"name": "bind_run_rejects_another_owner", "conversationId": "c", "commands": [{"kind": "AcquireSlot", "identity": {"conversationId": "c", "ownerToken": 1, "pass": 0}}, {"kind": "BindRun", "identity": {"conversationId": "c", "ownerToken": 2, "pass": 0, "runId": "run1"}}]}

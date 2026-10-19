@@ -1,0 +1,26 @@
+name|stop_duplicate_and_stale
+initial|Idle(conversationId=c)
+cmd|0|AcquireSlot(identity=RuntimeRunIdentity(conversationId=c, ownerToken=1, runId=null, pass=0))
+state|0|Active(identity=RuntimeRunIdentity(conversationId=c, ownerToken=1, runId=null, pass=0), coroutineSettled=false, providerPhase=None, toolPhase=None)
+effects|0|[SlotActivated(identity=RuntimeRunIdentity(conversationId=c, ownerToken=1, runId=null, pass=0))]
+reject|0|-
+cmd|1|BindRun(identity=RuntimeRunIdentity(conversationId=c, ownerToken=1, runId=run1, pass=0))
+state|1|Active(identity=RuntimeRunIdentity(conversationId=c, ownerToken=1, runId=run1, pass=0), coroutineSettled=false, providerPhase=None, toolPhase=None)
+effects|1|[]
+reject|1|-
+cmd|2|StopRequested(identity=RuntimeRunIdentity(conversationId=c, ownerToken=1, runId=run1, pass=0), coroutineAlreadySettled=false, requiresPersistence=true, effectId=stop)
+state|2|Stopping(identity=RuntimeRunIdentity(conversationId=c, ownerToken=1, runId=run1, pass=0), finalizationEffectId=stop, coroutineSettled=false, persistenceSettled=false, persistenceFailureReported=false)
+effects|2|[CancelProviderPass(identity=RuntimeRunIdentity(conversationId=c, ownerToken=1, runId=run1, pass=0)), FinalizeStop(identity=RunEffectIdentity(conversationId=c, ownerToken=1, runId=run1, pass=0, effectId=stop))]
+reject|2|-
+cmd|3|StopRequested(identity=RuntimeRunIdentity(conversationId=c, ownerToken=1, runId=run1, pass=0), coroutineAlreadySettled=false, requiresPersistence=true, effectId=stop)
+state|3|Stopping(identity=RuntimeRunIdentity(conversationId=c, ownerToken=1, runId=run1, pass=0), finalizationEffectId=stop, coroutineSettled=false, persistenceSettled=false, persistenceFailureReported=false)
+effects|3|[]
+reject|3|DUPLICATE_RESULT
+cmd|4|StopRequested(identity=RuntimeRunIdentity(conversationId=c, ownerToken=1, runId=run1, pass=0), coroutineAlreadySettled=false, requiresPersistence=true, effectId=other)
+state|4|Stopping(identity=RuntimeRunIdentity(conversationId=c, ownerToken=1, runId=run1, pass=0), finalizationEffectId=stop, coroutineSettled=false, persistenceSettled=false, persistenceFailureReported=false)
+effects|4|[]
+reject|4|STALE_IDENTITY
+cmd|5|StopRequested(identity=RuntimeRunIdentity(conversationId=c, ownerToken=1, runId=run2, pass=0), coroutineAlreadySettled=false, requiresPersistence=true, effectId=stop)
+state|5|Stopping(identity=RuntimeRunIdentity(conversationId=c, ownerToken=1, runId=run1, pass=0), finalizationEffectId=stop, coroutineSettled=false, persistenceSettled=false, persistenceFailureReported=false)
+effects|5|[]
+reject|5|STALE_IDENTITY

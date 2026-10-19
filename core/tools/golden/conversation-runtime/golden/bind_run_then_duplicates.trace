@@ -1,0 +1,18 @@
+name|bind_run_then_duplicates
+initial|Idle(conversationId=c)
+cmd|0|AcquireSlot(identity=RuntimeRunIdentity(conversationId=c, ownerToken=1, runId=null, pass=0))
+state|0|Active(identity=RuntimeRunIdentity(conversationId=c, ownerToken=1, runId=null, pass=0), coroutineSettled=false, providerPhase=None, toolPhase=None)
+effects|0|[SlotActivated(identity=RuntimeRunIdentity(conversationId=c, ownerToken=1, runId=null, pass=0))]
+reject|0|-
+cmd|1|BindRun(identity=RuntimeRunIdentity(conversationId=c, ownerToken=1, runId=run1, pass=0))
+state|1|Active(identity=RuntimeRunIdentity(conversationId=c, ownerToken=1, runId=run1, pass=0), coroutineSettled=false, providerPhase=None, toolPhase=None)
+effects|1|[]
+reject|1|-
+cmd|2|BindRun(identity=RuntimeRunIdentity(conversationId=c, ownerToken=1, runId=run1, pass=0))
+state|2|Active(identity=RuntimeRunIdentity(conversationId=c, ownerToken=1, runId=run1, pass=0), coroutineSettled=false, providerPhase=None, toolPhase=None)
+effects|2|[]
+reject|2|DUPLICATE_RESULT
+cmd|3|BindRun(identity=RuntimeRunIdentity(conversationId=c, ownerToken=2, runId=run1, pass=0))
+state|3|Active(identity=RuntimeRunIdentity(conversationId=c, ownerToken=1, runId=run1, pass=0), coroutineSettled=false, providerPhase=None, toolPhase=None)
+effects|3|[]
+reject|3|STALE_IDENTITY

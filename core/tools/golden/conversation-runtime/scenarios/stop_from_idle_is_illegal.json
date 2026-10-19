@@ -1,0 +1,1 @@
+{"name": "stop_from_idle_is_illegal", "conversationId": "c", "commands": [{"kind": "StopRequested", "identity": {"conversationId": "c", "ownerToken": 1, "pass": 0}, "coroutineAlreadySettled": false, "requiresPersistence": false, "effectId": null}]}

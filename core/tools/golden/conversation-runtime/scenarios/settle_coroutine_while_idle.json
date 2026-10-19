@@ -1,0 +1,1 @@
+{"name": "settle_coroutine_while_idle", "conversationId": "c", "commands": [{"kind": "CoroutineSettled", "identity": {"conversationId": "c", "ownerToken": 1, "pass": 0}}]}

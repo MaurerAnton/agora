@@ -1,0 +1,1 @@
+{"name": "input_persisted_rejected_outside_preparing", "conversationId": "c", "commands": [{"kind": "AcquireSlot", "identity": {"conversationId": "c", "ownerToken": 1, "pass": 0}}, {"kind": "InputPersisted", "identity": {"conversationId": "c", "ownerToken": 1, "runId": "prop", "pass": 0, "effectId": "send"}}]}

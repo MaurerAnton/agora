@@ -1,0 +1,10 @@
+name|settle_coroutine_while_preparing_stale
+initial|Idle(conversationId=c)
+cmd|0|SendRequested(identity=RunEffectIdentity(conversationId=c, ownerToken=1, runId=prop, pass=0, effectId=send), directOnly=false, hasPendingGuidance=false)
+state|0|Preparing(ownerIdentity=RuntimeRunIdentity(conversationId=c, ownerToken=1, runId=null, pass=0), inputEffectIdentity=RunEffectIdentity(conversationId=c, ownerToken=1, runId=prop, pass=0, effectId=send), inputFailureReported=false)
+effects|0|[PersistAcceptedInput(identity=RunEffectIdentity(conversationId=c, ownerToken=1, runId=prop, pass=0, effectId=send))]
+reject|0|-
+cmd|1|CoroutineSettled(identity=RuntimeRunIdentity(conversationId=c, ownerToken=2, runId=null, pass=0))
+state|1|Preparing(ownerIdentity=RuntimeRunIdentity(conversationId=c, ownerToken=1, runId=null, pass=0), inputEffectIdentity=RunEffectIdentity(conversationId=c, ownerToken=1, runId=prop, pass=0, effectId=send), inputFailureReported=false)
+effects|1|[]
+reject|1|STALE_IDENTITY

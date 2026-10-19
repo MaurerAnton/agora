@@ -1,0 +1,1 @@
+{"name": "send_rejected_while_recovering", "conversationId": "c", "commands": [{"kind": "Recover", "snapshot": {"conversationId": "c", "runId": "run1", "pass": 0, "status": "ACTIVE"}}, {"kind": "SendRequested", "identity": {"conversationId": "c", "ownerToken": 1, "runId": "prop", "pass": 0, "effectId": "send"}, "directOnly": false, "hasPendingGuidance": false}]}

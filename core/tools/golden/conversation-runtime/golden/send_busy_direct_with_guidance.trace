@@ -1,0 +1,6 @@
+name|send_busy_direct_with_guidance
+initial|Idle(conversationId=c)
+cmd|0|SendRequested(identity=RunEffectIdentity(conversationId=c, ownerToken=1, runId=prop, pass=0, effectId=send), directOnly=true, hasPendingGuidance=true)
+state|0|Idle(conversationId=c)
+effects|0|[RejectSendBusy(identity=RunEffectIdentity(conversationId=c, ownerToken=1, runId=prop, pass=0, effectId=send))]
+reject|0|-

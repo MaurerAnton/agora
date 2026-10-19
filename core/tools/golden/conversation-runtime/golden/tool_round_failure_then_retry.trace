@@ -1,0 +1,30 @@
+name|tool_round_failure_then_retry
+initial|Idle(conversationId=c)
+cmd|0|AcquireSlot(identity=RuntimeRunIdentity(conversationId=c, ownerToken=1, runId=null, pass=0))
+state|0|Active(identity=RuntimeRunIdentity(conversationId=c, ownerToken=1, runId=null, pass=0), coroutineSettled=false, providerPhase=None, toolPhase=None)
+effects|0|[SlotActivated(identity=RuntimeRunIdentity(conversationId=c, ownerToken=1, runId=null, pass=0))]
+reject|0|-
+cmd|1|BindRun(identity=RuntimeRunIdentity(conversationId=c, ownerToken=1, runId=run1, pass=0))
+state|1|Active(identity=RuntimeRunIdentity(conversationId=c, ownerToken=1, runId=run1, pass=0), coroutineSettled=false, providerPhase=None, toolPhase=None)
+effects|1|[]
+reject|1|-
+cmd|2|ToolBatchRequested(identity=RunEffectIdentity(conversationId=c, ownerToken=1, runId=run1, pass=0, effectId=tb))
+state|2|Active(identity=RuntimeRunIdentity(conversationId=c, ownerToken=1, runId=run1, pass=0), coroutineSettled=false, providerPhase=None, toolPhase=Executing(batchIdentity=RunEffectIdentity(conversationId=c, ownerToken=1, runId=run1, pass=0, effectId=tool-batch-tb)))
+effects|2|[ExecuteToolBatch(identity=RunEffectIdentity(conversationId=c, ownerToken=1, runId=run1, pass=0, effectId=tool-batch-tb))]
+reject|2|-
+cmd|3|ToolBatchCompleted(identity=RunEffectIdentity(conversationId=c, ownerToken=1, runId=run1, pass=0, effectId=tool-batch-tb))
+state|3|Active(identity=RuntimeRunIdentity(conversationId=c, ownerToken=1, runId=run1, pass=0), coroutineSettled=false, providerPhase=None, toolPhase=Committing(batchIdentity=RunEffectIdentity(conversationId=c, ownerToken=1, runId=run1, pass=0, effectId=tool-batch-tb), commitIdentity=RunEffectIdentity(conversationId=c, ownerToken=1, runId=run1, pass=0, effectId=tool-round-tool-batch-tb), failureReported=false))
+effects|3|[CommitToolRound(identity=RunEffectIdentity(conversationId=c, ownerToken=1, runId=run1, pass=0, effectId=tool-round-tool-batch-tb))]
+reject|3|-
+cmd|4|ToolRoundCommitted(identity=RunEffectIdentity(conversationId=c, ownerToken=1, runId=run1, pass=0, effectId=tool-round-tool-batch-tb), success=false)
+state|4|Active(identity=RuntimeRunIdentity(conversationId=c, ownerToken=1, runId=run1, pass=0), coroutineSettled=false, providerPhase=None, toolPhase=Committing(batchIdentity=RunEffectIdentity(conversationId=c, ownerToken=1, runId=run1, pass=0, effectId=tool-batch-tb), commitIdentity=RunEffectIdentity(conversationId=c, ownerToken=1, runId=run1, pass=0, effectId=tool-round-tool-batch-tb), failureReported=true))
+effects|4|[ToolRoundCommitFailed(identity=RunEffectIdentity(conversationId=c, ownerToken=1, runId=run1, pass=0, effectId=tool-round-tool-batch-tb))]
+reject|4|-
+cmd|5|ToolRoundCommitted(identity=RunEffectIdentity(conversationId=c, ownerToken=1, runId=run1, pass=0, effectId=tool-round-tool-batch-tb), success=false)
+state|5|Active(identity=RuntimeRunIdentity(conversationId=c, ownerToken=1, runId=run1, pass=0), coroutineSettled=false, providerPhase=None, toolPhase=Committing(batchIdentity=RunEffectIdentity(conversationId=c, ownerToken=1, runId=run1, pass=0, effectId=tool-batch-tb), commitIdentity=RunEffectIdentity(conversationId=c, ownerToken=1, runId=run1, pass=0, effectId=tool-round-tool-batch-tb), failureReported=true))
+effects|5|[]
+reject|5|DUPLICATE_RESULT
+cmd|6|ToolRoundCommitted(identity=RunEffectIdentity(conversationId=c, ownerToken=1, runId=run1, pass=0, effectId=tool-round-tool-batch-tb), success=true)
+state|6|Active(identity=RuntimeRunIdentity(conversationId=c, ownerToken=1, runId=run1, pass=0), coroutineSettled=false, providerPhase=None, toolPhase=None)
+effects|6|[ContinueProviderPass(identity=RunEffectIdentity(conversationId=c, ownerToken=1, runId=run1, pass=0, effectId=tool-round-tool-batch-tb))]
+reject|6|-

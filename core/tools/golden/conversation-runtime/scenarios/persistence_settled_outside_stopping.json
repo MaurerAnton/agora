@@ -1,0 +1,1 @@
+{"name": "persistence_settled_outside_stopping", "conversationId": "c", "commands": [{"kind": "AcquireSlot", "identity": {"conversationId": "c", "ownerToken": 1, "pass": 0}}, {"kind": "PersistenceSettled", "identity": {"conversationId": "c", "ownerToken": 1, "runId": "run1", "pass": 0, "effectId": "stop"}, "success": true}]}

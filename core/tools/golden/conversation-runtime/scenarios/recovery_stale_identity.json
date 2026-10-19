@@ -1,0 +1,1 @@
+{"name": "recovery_stale_identity", "conversationId": "c", "commands": [{"kind": "Recover", "snapshot": {"conversationId": "c", "runId": "run1", "pass": 0, "status": "ACTIVE"}}, {"kind": "RecoveryCompleted", "identity": {"conversationId": "c", "ownerToken": 9223372036854775807, "runId": "run1", "pass": 0, "effectId": "wrong"}, "success": true}]}

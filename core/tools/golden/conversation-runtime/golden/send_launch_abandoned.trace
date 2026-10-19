@@ -1,0 +1,14 @@
+name|send_launch_abandoned
+initial|Idle(conversationId=c)
+cmd|0|SendRequested(identity=RunEffectIdentity(conversationId=c, ownerToken=1, runId=prop, pass=0, effectId=send), directOnly=false, hasPendingGuidance=false)
+state|0|Preparing(ownerIdentity=RuntimeRunIdentity(conversationId=c, ownerToken=1, runId=null, pass=0), inputEffectIdentity=RunEffectIdentity(conversationId=c, ownerToken=1, runId=prop, pass=0, effectId=send), inputFailureReported=false)
+effects|0|[PersistAcceptedInput(identity=RunEffectIdentity(conversationId=c, ownerToken=1, runId=prop, pass=0, effectId=send))]
+reject|0|-
+cmd|1|SendLaunchAbandoned(identity=RunEffectIdentity(conversationId=c, ownerToken=1, runId=prop, pass=0, effectId=send))
+state|1|Idle(conversationId=c)
+effects|1|[ReleaseSlot(identity=RuntimeRunIdentity(conversationId=c, ownerToken=1, runId=null, pass=0), reason=SEND_LAUNCH_ABANDONED)]
+reject|1|-
+cmd|2|SendLaunchAbandoned(identity=RunEffectIdentity(conversationId=c, ownerToken=1, runId=prop, pass=0, effectId=send))
+state|2|Idle(conversationId=c)
+effects|2|[]
+reject|2|ILLEGAL_STATE

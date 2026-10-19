@@ -1,0 +1,10 @@
+name|input_persisted_rejected_outside_preparing
+initial|Idle(conversationId=c)
+cmd|0|AcquireSlot(identity=RuntimeRunIdentity(conversationId=c, ownerToken=1, runId=null, pass=0))
+state|0|Active(identity=RuntimeRunIdentity(conversationId=c, ownerToken=1, runId=null, pass=0), coroutineSettled=false, providerPhase=None, toolPhase=None)
+effects|0|[SlotActivated(identity=RuntimeRunIdentity(conversationId=c, ownerToken=1, runId=null, pass=0))]
+reject|0|-
+cmd|1|InputPersisted(identity=RunEffectIdentity(conversationId=c, ownerToken=1, runId=prop, pass=0, effectId=send))
+state|1|Active(identity=RuntimeRunIdentity(conversationId=c, ownerToken=1, runId=null, pass=0), coroutineSettled=false, providerPhase=None, toolPhase=None)
+effects|1|[]
+reject|1|ILLEGAL_STATE

@@ -1,0 +1,14 @@
+name|send_guidance_while_preparing
+initial|Idle(conversationId=c)
+cmd|0|SendRequested(identity=RunEffectIdentity(conversationId=c, ownerToken=1, runId=prop, pass=0, effectId=send), directOnly=false, hasPendingGuidance=false)
+state|0|Preparing(ownerIdentity=RuntimeRunIdentity(conversationId=c, ownerToken=1, runId=null, pass=0), inputEffectIdentity=RunEffectIdentity(conversationId=c, ownerToken=1, runId=prop, pass=0, effectId=send), inputFailureReported=false)
+effects|0|[PersistAcceptedInput(identity=RunEffectIdentity(conversationId=c, ownerToken=1, runId=prop, pass=0, effectId=send))]
+reject|0|-
+cmd|1|SendRequested(identity=RunEffectIdentity(conversationId=c, ownerToken=1, runId=prop, pass=0, effectId=g1), directOnly=true, hasPendingGuidance=false)
+state|1|Preparing(ownerIdentity=RuntimeRunIdentity(conversationId=c, ownerToken=1, runId=null, pass=0), inputEffectIdentity=RunEffectIdentity(conversationId=c, ownerToken=1, runId=prop, pass=0, effectId=send), inputFailureReported=false)
+effects|1|[RejectSendBusy(identity=RunEffectIdentity(conversationId=c, ownerToken=1, runId=prop, pass=0, effectId=g1))]
+reject|1|-
+cmd|2|SendRequested(identity=RunEffectIdentity(conversationId=c, ownerToken=1, runId=prop, pass=0, effectId=g2), directOnly=false, hasPendingGuidance=false)
+state|2|Preparing(ownerIdentity=RuntimeRunIdentity(conversationId=c, ownerToken=1, runId=null, pass=0), inputEffectIdentity=RunEffectIdentity(conversationId=c, ownerToken=1, runId=prop, pass=0, effectId=send), inputFailureReported=false)
+effects|2|[AcceptGuidance(identity=RunEffectIdentity(conversationId=c, ownerToken=1, runId=prop, pass=0, effectId=g2))]
+reject|2|-

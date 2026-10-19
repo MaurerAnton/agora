@@ -1,0 +1,6 @@
+name|stop_from_idle_is_illegal
+initial|Idle(conversationId=c)
+cmd|0|StopRequested(identity=RuntimeRunIdentity(conversationId=c, ownerToken=1, runId=null, pass=0), coroutineAlreadySettled=false, requiresPersistence=false, effectId=null)
+state|0|Idle(conversationId=c)
+effects|0|[]
+reject|0|ILLEGAL_STATE

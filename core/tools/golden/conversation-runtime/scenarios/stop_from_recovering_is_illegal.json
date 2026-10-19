@@ -1,0 +1,1 @@
+{"name": "stop_from_recovering_is_illegal", "conversationId": "c", "commands": [{"kind": "Recover", "snapshot": {"conversationId": "c", "runId": "run1", "pass": 0, "status": "ACTIVE"}}, {"kind": "StopRequested", "identity": {"conversationId": "c", "ownerToken": 1, "pass": 0}, "coroutineAlreadySettled": false, "requiresPersistence": false, "effectId": null}]}

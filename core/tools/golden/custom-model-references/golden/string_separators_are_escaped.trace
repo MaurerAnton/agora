@@ -1,0 +1,4 @@
+name|string_separators_are_escaped
+op|string
+args|a\pb\sc|a\pb\sc|d\pe\sf
+out|string?|d\pe\sf

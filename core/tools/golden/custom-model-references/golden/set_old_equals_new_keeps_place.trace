@@ -1,0 +1,4 @@
+name|set_old_equals_new_keeps_place
+op|set
+args|a|a|a|b
+out|set|a|b

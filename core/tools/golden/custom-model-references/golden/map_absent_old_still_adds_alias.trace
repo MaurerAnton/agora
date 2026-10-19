@@ -1,0 +1,4 @@
+name|map_absent_old_still_adds_alias
+op|map
+args|x|b|y|a=>1
+out|map|a=>1|b=>y

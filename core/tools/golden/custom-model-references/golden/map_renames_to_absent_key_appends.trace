@@ -1,0 +1,4 @@
+name|map_renames_to_absent_key_appends
+op|map
+args|a|b|x|a=>1
+out|map|b=>x

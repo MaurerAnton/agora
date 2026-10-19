@@ -1,0 +1,4 @@
+name|set_separators_are_escaped
+op|set
+args|a\eb\pc\sd|x\ey|a\eb\pc\sd|e
+out|set|x\ey|e

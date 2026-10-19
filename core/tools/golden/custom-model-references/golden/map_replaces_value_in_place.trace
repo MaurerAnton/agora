@@ -1,0 +1,4 @@
+name|map_replaces_value_in_place
+op|map
+args|a|c|x|a=>1|b=>2
+out|map|b=>2|c=>x

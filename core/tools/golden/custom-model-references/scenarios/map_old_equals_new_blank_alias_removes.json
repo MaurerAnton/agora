@@ -1,0 +1,1 @@
+{"name": "map_old_equals_new_blank_alias_removes", "op": "map", "oldModelId": "a", "newModelId": "a", "alias": "", "entries": [["a", "1"], ["b", "2"]]}

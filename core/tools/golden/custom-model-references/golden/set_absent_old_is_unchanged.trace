@@ -1,0 +1,4 @@
+name|set_absent_old_is_unchanged
+op|set
+args|x|y|a|b
+out|set|a|b

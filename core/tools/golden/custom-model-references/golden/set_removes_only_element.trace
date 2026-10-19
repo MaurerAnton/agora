@@ -1,0 +1,4 @@
+name|set_removes_only_element
+op|set
+args|a|-|a
+out|set|

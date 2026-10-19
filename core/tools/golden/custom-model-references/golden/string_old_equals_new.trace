@@ -1,0 +1,4 @@
+name|string_old_equals_new
+op|string
+args|a|a|a
+out|string?|a

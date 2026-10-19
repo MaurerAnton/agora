@@ -1,0 +1,1 @@
+{"name": "map_newline_alias_is_escaped", "op": "map", "oldModelId": "a", "newModelId": "b", "alias": "x\ny", "entries": [["a", "1"]]}

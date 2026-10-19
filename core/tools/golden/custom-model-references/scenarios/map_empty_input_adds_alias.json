@@ -1,0 +1,1 @@
+{"name": "map_empty_input_adds_alias", "op": "map", "oldModelId": "a", "newModelId": "b", "alias": "x", "entries": []}

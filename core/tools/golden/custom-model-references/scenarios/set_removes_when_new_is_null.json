@@ -1,0 +1,1 @@
+{"name": "set_removes_when_new_is_null", "op": "set", "oldModelId": "a", "newModelId": null, "items": ["a", "b"]}

@@ -1,0 +1,4 @@
+name|map_existing_target_before_old
+op|map
+args|a|b|3|b=>2|a=>1
+out|map|b=>3

@@ -1,0 +1,4 @@
+name|map_existing_target_value_overwritten_in_place
+op|map
+args|a|b|3|a=>1|b=>2
+out|map|b=>3

@@ -1,0 +1,1 @@
+{"name": "preserves_selection_order", "op": "retainValidEdges", "selections": [["p1", "c1"], [null, "c3"], ["p2", "c2"]], "runs": [{"id": "p1", "parentRunId": null}, {"id": "c1", "parentRunId": "p1"}, {"id": "p2", "parentRunId": null}, {"id": "c2", "parentRunId": "p2"}, {"id": "c3", "parentRunId": null}]}

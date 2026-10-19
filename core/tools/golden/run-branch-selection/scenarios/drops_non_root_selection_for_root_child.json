@@ -1,0 +1,1 @@
+{"name": "drops_non_root_selection_for_root_child", "op": "retainValidEdges", "selections": [["p", "c"]], "runs": [{"id": "p", "parentRunId": null}, {"id": "c", "parentRunId": null}]}

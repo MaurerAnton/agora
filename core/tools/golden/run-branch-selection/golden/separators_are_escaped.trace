@@ -1,0 +1,5 @@
+name|separators_are_escaped
+op|retainValidEdges
+selections|s:a\eb\pc\sd=>s:c
+runs|s:a\eb\pc\sd=>n|s:c=>s:a\eb\pc\sd
+out|map|s:a\eb\pc\sd=>s:c

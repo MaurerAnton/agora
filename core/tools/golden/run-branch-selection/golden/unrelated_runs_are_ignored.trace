@@ -1,0 +1,5 @@
+name|unrelated_runs_are_ignored
+op|retainValidEdges
+selections|s:p=>s:c
+runs|s:x=>n|s:y=>s:x|s:p=>n|s:c=>s:p
+out|map|s:p=>s:c

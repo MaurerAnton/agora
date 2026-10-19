@@ -1,0 +1,5 @@
+name|drops_self_edge
+op|retainValidEdges
+selections|s:c=>s:c
+runs|s:c=>s:c
+out|map|

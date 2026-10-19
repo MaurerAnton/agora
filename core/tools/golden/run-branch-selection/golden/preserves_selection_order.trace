@@ -1,0 +1,5 @@
+name|preserves_selection_order
+op|retainValidEdges
+selections|s:p1=>s:c1|n=>s:c3|s:p2=>s:c2
+runs|s:p1=>n|s:c1=>s:p1|s:p2=>n|s:c2=>s:p2|s:c3=>n
+out|map|s:p1=>s:c1|n=>s:c3|s:p2=>s:c2

@@ -1,0 +1,5 @@
+name|keeps_valid_and_drops_invalid_in_order
+op|retainValidEdges
+selections|n=>s:missing|s:p=>s:c|s:q=>s:c
+runs|s:root=>n|s:p=>n|s:q=>n|s:c=>s:p
+out|map|s:p=>s:c

@@ -1,0 +1,5 @@
+name|drops_non_root_selection_for_root_child
+op|retainValidEdges
+selections|s:p=>s:c
+runs|s:p=>n|s:c=>n
+out|map|

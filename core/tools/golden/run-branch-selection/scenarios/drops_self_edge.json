@@ -1,0 +1,1 @@
+{"name": "drops_self_edge", "op": "retainValidEdges", "selections": [["c", "c"]], "runs": [{"id": "c", "parentRunId": "c"}]}

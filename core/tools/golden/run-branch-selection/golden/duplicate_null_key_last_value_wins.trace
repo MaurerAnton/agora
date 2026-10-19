@@ -1,0 +1,5 @@
+name|duplicate_null_key_last_value_wins
+op|retainValidEdges
+selections|n=>s:c2
+runs|s:c1=>n|s:c2=>n
+out|map|n=>s:c2

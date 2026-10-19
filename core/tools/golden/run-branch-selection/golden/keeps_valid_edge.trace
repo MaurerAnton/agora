@@ -1,0 +1,5 @@
+name|keeps_valid_edge
+op|retainValidEdges
+selections|s:p=>s:c
+runs|s:p=>n|s:c=>s:p
+out|map|s:p=>s:c

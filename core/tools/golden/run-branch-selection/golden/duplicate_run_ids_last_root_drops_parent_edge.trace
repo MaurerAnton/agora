@@ -1,0 +1,5 @@
+name|duplicate_run_ids_last_root_drops_parent_edge
+op|retainValidEdges
+selections|n=>s:x|s:p2=>s:x
+runs|s:x=>s:p1|s:x=>s:p2|s:x=>n
+out|map|n=>s:x

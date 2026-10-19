@@ -1,0 +1,4 @@
+name|hints_memory_read_blank_name
+op|hints
+args|MEMORY_READ|{"names":["  "]}
+result|StreamingToolArgumentHints(subject=null, server=null, count=1, operation=null, destination=null)

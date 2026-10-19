@@ -1,0 +1,4 @@
+name|hints_file_write
+op|hints
+args|FILE_WRITE|{"path":"/tmp/x.txt"}
+result|StreamingToolArgumentHints(subject=/tmp/x.txt, server=null, count=null, operation=null, destination=null)

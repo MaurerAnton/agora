@@ -1,0 +1,4 @@
+name|hints_skill_delete
+op|hints
+args|SKILL_DELETE|{"name":"s3.md"}
+result|StreamingToolArgumentHints(subject=s3.md, server=null, count=null, operation=null, destination=null)

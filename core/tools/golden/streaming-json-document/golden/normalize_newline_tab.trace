@@ -1,0 +1,4 @@
+name|normalize_newline_tab
+op|normalize
+args|a\n\tb   c|120
+result|a b c

@@ -1,0 +1,4 @@
+name|hints_image_view
+op|hints
+args|IMAGE_VIEW|{"path":"img.png"}
+result|StreamingToolArgumentHints(subject=img.png, server=null, count=null, operation=null, destination=null)

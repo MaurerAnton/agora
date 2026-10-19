@@ -1,0 +1,4 @@
+name|doc_string_non_ascii
+op|parse
+args|"héllo 🙂"
+result|StreamingJsonDocument(root=StreamingJsonScalar(content=héllo 🙂, kind=STRING, complete=true), status=COMPLETE, errorOffset=null, roots=[StreamingJsonScalar(content=héllo 🙂, kind=STRING, complete=true)])

@@ -1,0 +1,1 @@
+{"name":"hints_operation_shell","op":"hints","kind":"SHELL_EXECUTE","rawArguments":"{\"command\":\"pwd\",\"operation\":\"run\"}"}

@@ -1,0 +1,4 @@
+name|hints_loop_start
+op|hints
+args|LOOP_START|{"name":"x"}
+result|StreamingToolArgumentHints(subject=null, server=null, count=null, operation=null, destination=null)

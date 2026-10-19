@@ -1,0 +1,4 @@
+name|hints_shell_job_get
+op|hints
+args|SHELL_JOB_GET|{"job_id":"j1"}
+result|StreamingToolArgumentHints(subject=j1, server=null, count=null, operation=null, destination=null)

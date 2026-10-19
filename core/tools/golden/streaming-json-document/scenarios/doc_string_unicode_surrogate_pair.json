@@ -1,0 +1,1 @@
+{"name":"doc_string_unicode_surrogate_pair","op":"parse","source":"\"\\ud83d\\ude42\""}

@@ -1,0 +1,4 @@
+name|hints_memory_read_two_names
+op|hints
+args|MEMORY_READ|{"names":["a.md","b.md"]}
+result|StreamingToolArgumentHints(subject=null, server=null, count=2, operation=null, destination=null)

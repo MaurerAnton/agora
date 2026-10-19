@@ -1,0 +1,4 @@
+name|hints_file_read
+op|hints
+args|FILE_READ|{"path":"/etc/hosts"}
+result|StreamingToolArgumentHints(subject=/etc/hosts, server=null, count=null, operation=null, destination=null)

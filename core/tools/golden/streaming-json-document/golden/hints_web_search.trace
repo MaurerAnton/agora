@@ -1,0 +1,4 @@
+name|hints_web_search
+op|hints
+args|WEB_SEARCH|{"query":"cats"}
+result|StreamingToolArgumentHints(subject=cats, server=null, count=null, operation=null, destination=null)

@@ -1,0 +1,4 @@
+name|normalize_small_max
+op|normalize
+args|abcdefg|5
+result|abcd…

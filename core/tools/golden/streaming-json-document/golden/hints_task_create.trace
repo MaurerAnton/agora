@@ -1,0 +1,4 @@
+name|hints_task_create
+op|hints
+args|TASK_CREATE|{"name":"task one"}
+result|StreamingToolArgumentHints(subject=task one, server=null, count=null, operation=null, destination=null)

@@ -1,0 +1,4 @@
+name|doc_number_bad_fraction
+op|parse
+args|1.x
+result|StreamingJsonDocument(root=StreamingJsonScalar(content=1., kind=NUMBER, complete=false), status=INVALID, errorOffset=2, roots=[StreamingJsonScalar(content=1., kind=NUMBER, complete=false)])

@@ -1,0 +1,1 @@
+{"name":"hints_shell_execute","op":"hints","kind":"SHELL_EXECUTE","rawArguments":"{\"command\":\"ls -la\",\"cwd\":\"/tmp\"}"}

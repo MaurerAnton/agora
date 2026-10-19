@@ -1,0 +1,1 @@
+{"name":"hints_server_operation_destination","op":"hints","kind":"MEMORY_CREATE","rawArguments":"{\"name\":\"a\",\"server\":\"srv\",\"operation\":\"PUT\",\"new_name\":\"b\"}"}

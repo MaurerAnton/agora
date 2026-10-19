@@ -1,0 +1,4 @@
+name|hints_conversation_search
+op|hints
+args|CONVERSATION_SEARCH|{"query":"hello"}
+result|StreamingToolArgumentHints(subject=hello, server=null, count=null, operation=null, destination=null)

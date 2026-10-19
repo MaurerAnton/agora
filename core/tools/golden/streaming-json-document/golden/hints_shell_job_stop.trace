@@ -1,0 +1,4 @@
+name|hints_shell_job_stop
+op|hints
+args|SHELL_JOB_STOP|{"job_id":"j3"}
+result|StreamingToolArgumentHints(subject=j3, server=null, count=null, operation=null, destination=null)

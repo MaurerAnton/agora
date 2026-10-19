@@ -1,0 +1,4 @@
+name|hints_operation_shell
+op|hints
+args|SHELL_EXECUTE|{"command":"pwd","operation":"run"}
+result|StreamingToolArgumentHints(subject=pwd, server=null, count=null, operation=run, destination=null)

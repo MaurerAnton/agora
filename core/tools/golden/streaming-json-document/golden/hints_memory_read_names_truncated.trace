@@ -1,0 +1,4 @@
+name|hints_memory_read_names_truncated
+op|hints
+args|MEMORY_READ|{"names":[
+result|StreamingToolArgumentHints(subject=null, server=null, count=null, operation=null, destination=null)

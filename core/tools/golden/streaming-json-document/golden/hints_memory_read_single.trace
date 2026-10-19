@@ -1,0 +1,4 @@
+name|hints_memory_read_single
+op|hints
+args|MEMORY_READ|{"names":["note.md"]}
+result|StreamingToolArgumentHints(subject=note.md, server=null, count=1, operation=null, destination=null)

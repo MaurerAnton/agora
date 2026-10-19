@@ -1,0 +1,4 @@
+name|hints_memory_read_fallback_name
+op|hints
+args|MEMORY_READ|{"name":"x.md"}
+result|StreamingToolArgumentHints(subject=x.md, server=null, count=null, operation=null, destination=null)

@@ -1,0 +1,4 @@
+name|doc_string_short_unicode_truncated
+op|parse
+args|"\\u12
+result|StreamingJsonDocument(root=StreamingJsonScalar(content=, kind=STRING, complete=false), status=INCOMPLETE, errorOffset=null, roots=[StreamingJsonScalar(content=, kind=STRING, complete=false)])

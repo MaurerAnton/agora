@@ -1,0 +1,4 @@
+name|doc_string_control_char
+op|parse
+args|{"a":"xy"}
+result|StreamingJsonDocument(root=StreamingJsonObject(entries=[StreamingJsonEntry(key=a, keyComplete=true, value=StreamingJsonScalar(content=x, kind=STRING, complete=false))], complete=false), status=INVALID, errorOffset=7, roots=[StreamingJsonObject(entries=[StreamingJsonEntry(key=a, keyComplete=true, value=StreamingJsonScalar(content=x, kind=STRING, complete=false))], complete=false)])

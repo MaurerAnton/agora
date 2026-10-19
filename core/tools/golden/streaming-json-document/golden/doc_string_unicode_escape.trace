@@ -1,0 +1,4 @@
+name|doc_string_unicode_escape
+op|parse
+args|"\\u0041\\u00e9"
+result|StreamingJsonDocument(root=StreamingJsonScalar(content=Aé, kind=STRING, complete=true), status=COMPLETE, errorOffset=null, roots=[StreamingJsonScalar(content=Aé, kind=STRING, complete=true)])

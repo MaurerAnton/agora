@@ -1,0 +1,4 @@
+name|doc_array_nested_partial
+op|parse
+args|[["a
+result|StreamingJsonDocument(root=StreamingJsonArray(values=[StreamingJsonArray(values=[StreamingJsonScalar(content=a, kind=STRING, complete=false)], complete=false)], complete=false), status=INCOMPLETE, errorOffset=null, roots=[StreamingJsonArray(values=[StreamingJsonArray(values=[StreamingJsonScalar(content=a, kind=STRING, complete=false)], complete=false)], complete=false)])

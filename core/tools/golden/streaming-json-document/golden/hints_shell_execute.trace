@@ -1,0 +1,4 @@
+name|hints_shell_execute
+op|hints
+args|SHELL_EXECUTE|{"command":"ls -la","cwd":"/tmp"}
+result|StreamingToolArgumentHints(subject=ls -la, server=null, count=null, operation=null, destination=null)

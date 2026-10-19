@@ -1,0 +1,4 @@
+name|hints_ask_user
+op|hints
+args|ASK_USER|{"question":"q?"}
+result|StreamingToolArgumentHints(subject=null, server=null, count=null, operation=null, destination=null)

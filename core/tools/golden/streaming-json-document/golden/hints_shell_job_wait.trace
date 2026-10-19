@@ -1,0 +1,4 @@
+name|hints_shell_job_wait
+op|hints
+args|SHELL_JOB_WAIT|{"job_id":"j2"}
+result|StreamingToolArgumentHints(subject=j2, server=null, count=null, operation=null, destination=null)

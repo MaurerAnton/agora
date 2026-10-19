@@ -1,0 +1,4 @@
+name|hints_memory_list
+op|hints
+args|MEMORY_LIST|{"names":["a","b"]}
+result|StreamingToolArgumentHints(subject=null, server=null, count=null, operation=null, destination=null)

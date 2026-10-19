@@ -1,0 +1,4 @@
+name|hints_image_generate
+op|hints
+args|IMAGE_GENERATE|{"prompt":"a cat"}
+result|StreamingToolArgumentHints(subject=a cat, server=null, count=null, operation=null, destination=null)

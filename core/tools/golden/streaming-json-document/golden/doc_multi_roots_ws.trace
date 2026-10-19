@@ -1,0 +1,4 @@
+name|doc_multi_roots_ws
+op|parse
+args|1 2
+result|StreamingJsonDocument(root=StreamingJsonScalar(content=1, kind=NUMBER, complete=true), status=COMPLETE, errorOffset=null, roots=[StreamingJsonScalar(content=1, kind=NUMBER, complete=true), StreamingJsonScalar(content=2, kind=NUMBER, complete=true)])

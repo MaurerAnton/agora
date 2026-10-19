@@ -1,0 +1,4 @@
+name|doc_multi_roots_no_ws
+op|parse
+args|{}[]
+result|StreamingJsonDocument(root=StreamingJsonObject(entries=[], complete=true), status=INVALID, errorOffset=2, roots=[StreamingJsonObject(entries=[], complete=true)])

@@ -1,0 +1,1 @@
+{"name":"hints_memory_create","op":"hints","kind":"MEMORY_CREATE","rawArguments":"{\"name\":\"x.md\",\"content\":\"hi\"}"}

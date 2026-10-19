@@ -1,0 +1,4 @@
+name|hints_memory_edit
+op|hints
+args|MEMORY_EDIT|{"name":"y.md"}
+result|StreamingToolArgumentHints(subject=y.md, server=null, count=null, operation=null, destination=null)

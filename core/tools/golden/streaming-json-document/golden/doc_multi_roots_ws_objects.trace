@@ -1,0 +1,4 @@
+name|doc_multi_roots_ws_objects
+op|parse
+args|{} []
+result|StreamingJsonDocument(root=StreamingJsonObject(entries=[], complete=true), status=COMPLETE, errorOffset=null, roots=[StreamingJsonObject(entries=[], complete=true), StreamingJsonArray(values=[], complete=true)])

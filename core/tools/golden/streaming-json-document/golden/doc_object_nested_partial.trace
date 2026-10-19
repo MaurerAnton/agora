@@ -1,0 +1,4 @@
+name|doc_object_nested_partial
+op|parse
+args|{"a":{"b":
+result|StreamingJsonDocument(root=StreamingJsonObject(entries=[StreamingJsonEntry(key=a, keyComplete=true, value=StreamingJsonObject(entries=[StreamingJsonEntry(key=b, keyComplete=true, value=null)], complete=false))], complete=false), status=INCOMPLETE, errorOffset=null, roots=[StreamingJsonObject(entries=[StreamingJsonEntry(key=a, keyComplete=true, value=StreamingJsonObject(entries=[StreamingJsonEntry(key=b, keyComplete=true, value=null)], complete=false))], complete=false)])

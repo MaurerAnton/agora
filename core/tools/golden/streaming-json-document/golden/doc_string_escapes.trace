@@ -1,0 +1,4 @@
+name|doc_string_escapes
+op|parse
+args|"\\"\\\\\\/\\b\\f\\n\\r\\t"
+result|StreamingJsonDocument(root=StreamingJsonScalar(content="\\/\n\r\t, kind=STRING, complete=true), status=COMPLETE, errorOffset=null, roots=[StreamingJsonScalar(content="\\/\n\r\t, kind=STRING, complete=true)])

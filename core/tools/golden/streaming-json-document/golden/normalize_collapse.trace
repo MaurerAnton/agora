@@ -1,0 +1,4 @@
+name|normalize_collapse
+op|normalize
+args|  a b  |120
+result|a b

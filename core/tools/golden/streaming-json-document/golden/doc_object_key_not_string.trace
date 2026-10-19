@@ -1,0 +1,4 @@
+name|doc_object_key_not_string
+op|parse
+args|{a:1}
+result|StreamingJsonDocument(root=StreamingJsonObject(entries=[], complete=false), status=INVALID, errorOffset=1, roots=[StreamingJsonObject(entries=[], complete=false)])

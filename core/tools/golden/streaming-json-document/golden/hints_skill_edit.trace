@@ -1,0 +1,4 @@
+name|hints_skill_edit
+op|hints
+args|SKILL_EDIT|{"name":"s2.md"}
+result|StreamingToolArgumentHints(subject=s2.md, server=null, count=null, operation=null, destination=null)

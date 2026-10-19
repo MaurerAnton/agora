@@ -1,0 +1,4 @@
+name|doc_string_bad_unicode
+op|parse
+args|"\\u12g4"
+result|StreamingJsonDocument(root=StreamingJsonScalar(content=, kind=STRING, complete=false), status=INVALID, errorOffset=5, roots=[StreamingJsonScalar(content=, kind=STRING, complete=false)])

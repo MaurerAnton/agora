@@ -1,0 +1,4 @@
+name|doc_error_offset_after_accent
+op|parse
+args|"é\\q"
+result|StreamingJsonDocument(root=StreamingJsonScalar(content=é, kind=STRING, complete=false), status=INVALID, errorOffset=3, roots=[StreamingJsonScalar(content=é, kind=STRING, complete=false)])

@@ -1,0 +1,1 @@
+{"name": "stale_conversation_is_rejected_first", "conversationId": "c", "commands": [{"kind": "AcquireSlot", "identity": {"conversationId": "other", "ownerToken": 1, "pass": 0}}]}

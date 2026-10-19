@@ -1,0 +1,6 @@
+name|stale_conversation_is_rejected_first
+initial|Idle(conversationId=c)
+cmd|0|AcquireSlot(identity=RuntimeRunIdentity(conversationId=other, ownerToken=1, runId=null, pass=0))
+state|0|Idle(conversationId=c)
+effects|0|[]
+reject|0|STALE_IDENTITY

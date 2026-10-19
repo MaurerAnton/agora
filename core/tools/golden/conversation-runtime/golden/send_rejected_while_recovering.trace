@@ -1,0 +1,10 @@
+name|send_rejected_while_recovering
+initial|Idle(conversationId=c)
+cmd|0|Recover(snapshot=RunRecoverySnapshot(conversationId=c, runId=run1, pass=0, status=ACTIVE))
+state|0|Recovering(snapshot=RunRecoverySnapshot(conversationId=c, runId=run1, pass=0, status=ACTIVE), effectIdentity=RunEffectIdentity(conversationId=c, ownerToken=9223372036854775807, runId=run1, pass=0, effectId=recover-run1-0), failureReported=false)
+effects|0|[RecoverDurableRun(identity=RunEffectIdentity(conversationId=c, ownerToken=9223372036854775807, runId=run1, pass=0, effectId=recover-run1-0), priorStatus=ACTIVE)]
+reject|0|-
+cmd|1|SendRequested(identity=RunEffectIdentity(conversationId=c, ownerToken=1, runId=prop, pass=0, effectId=send), directOnly=false, hasPendingGuidance=false)
+state|1|Recovering(snapshot=RunRecoverySnapshot(conversationId=c, runId=run1, pass=0, status=ACTIVE), effectIdentity=RunEffectIdentity(conversationId=c, ownerToken=9223372036854775807, runId=run1, pass=0, effectId=recover-run1-0), failureReported=false)
+effects|1|[]
+reject|1|ILLEGAL_STATE

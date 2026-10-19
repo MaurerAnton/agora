@@ -1,0 +1,1 @@
+{"name": "stop_empty_unbound", "conversationId": "c", "commands": [{"kind": "AcquireSlot", "identity": {"conversationId": "c", "ownerToken": 1, "pass": 0}}, {"kind": "StopRequested", "identity": {"conversationId": "c", "ownerToken": 1, "pass": 0}, "coroutineAlreadySettled": true, "requiresPersistence": false, "effectId": null}]}

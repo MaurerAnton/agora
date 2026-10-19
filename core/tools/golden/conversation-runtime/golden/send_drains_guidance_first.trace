@@ -1,0 +1,6 @@
+name|send_drains_guidance_first
+initial|Idle(conversationId=c)
+cmd|0|SendRequested(identity=RunEffectIdentity(conversationId=c, ownerToken=1, runId=prop, pass=0, effectId=send), directOnly=false, hasPendingGuidance=true)
+state|0|Idle(conversationId=c)
+effects|0|[DrainGuidanceFirst(identity=RunEffectIdentity(conversationId=c, ownerToken=1, runId=prop, pass=0, effectId=send))]
+reject|0|-

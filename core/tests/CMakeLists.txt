@@ -26,6 +26,7 @@ add_executable(agora_core_tests
     model_aliases_parity_test.cpp
     custom_model_references_parity_test.cpp
     run_branch_selection_parity_test.cpp
+    conversation_runtime_parity_test.cpp
     provider_identity_parity_test.cpp
     provider_names_parity_test.cpp
     provider_support_parity_test.cpp
@@ -66,6 +67,7 @@ target_compile_definitions(agora_core_tests PRIVATE
     AGORA_FIXTURE_GLOB_MATCHER_DIR="${CMAKE_CURRENT_SOURCE_DIR}/../tools/golden/glob-matcher"
     AGORA_FIXTURE_CUSTOM_MODEL_REFERENCES_DIR="${CMAKE_CURRENT_SOURCE_DIR}/../tools/golden/custom-model-references"
     AGORA_FIXTURE_RUN_BRANCH_SELECTION_DIR="${CMAKE_CURRENT_SOURCE_DIR}/../tools/golden/run-branch-selection"
+    AGORA_FIXTURE_CONVERSATION_RUNTIME_DIR="${CMAKE_CURRENT_SOURCE_DIR}/../tools/golden/conversation-runtime"
     AGORA_FIXTURE_LOOP_POLICY_DIR="${CMAKE_CURRENT_SOURCE_DIR}/../tools/golden/loop-policy"
     AGORA_FIXTURE_MODEL_ALIASES_DIR="${CMAKE_CURRENT_SOURCE_DIR}/../tools/golden/model-aliases"
     AGORA_FIXTURE_PROVIDER_NAMES_DIR="${CMAKE_CURRENT_SOURCE_DIR}/../tools/golden/provider-names"

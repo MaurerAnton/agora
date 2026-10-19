@@ -1,0 +1,6 @@
+name|settle_coroutine_while_idle
+initial|Idle(conversationId=c)
+cmd|0|CoroutineSettled(identity=RuntimeRunIdentity(conversationId=c, ownerToken=1, runId=null, pass=0))
+state|0|Idle(conversationId=c)
+effects|0|[]
+reject|0|ILLEGAL_STATE

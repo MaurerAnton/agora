@@ -1,0 +1,26 @@
+name|provider_pass_duplicate_and_stale
+initial|Idle(conversationId=c)
+cmd|0|AcquireSlot(identity=RuntimeRunIdentity(conversationId=c, ownerToken=1, runId=null, pass=0))
+state|0|Active(identity=RuntimeRunIdentity(conversationId=c, ownerToken=1, runId=null, pass=0), coroutineSettled=false, providerPhase=None, toolPhase=None)
+effects|0|[SlotActivated(identity=RuntimeRunIdentity(conversationId=c, ownerToken=1, runId=null, pass=0))]
+reject|0|-
+cmd|1|BindRun(identity=RuntimeRunIdentity(conversationId=c, ownerToken=1, runId=run1, pass=0))
+state|1|Active(identity=RuntimeRunIdentity(conversationId=c, ownerToken=1, runId=run1, pass=0), coroutineSettled=false, providerPhase=None, toolPhase=None)
+effects|1|[]
+reject|1|-
+cmd|2|ProviderPassRequested(identity=RunEffectIdentity(conversationId=c, ownerToken=1, runId=run1, pass=0, effectId=pp))
+state|2|Active(identity=RuntimeRunIdentity(conversationId=c, ownerToken=1, runId=run1, pass=0), coroutineSettled=false, providerPhase=Running(identity=RunEffectIdentity(conversationId=c, ownerToken=1, runId=run1, pass=0, effectId=pp)), toolPhase=None)
+effects|2|[StartProviderPass(identity=RunEffectIdentity(conversationId=c, ownerToken=1, runId=run1, pass=0, effectId=pp))]
+reject|2|-
+cmd|3|ProviderPassRequested(identity=RunEffectIdentity(conversationId=c, ownerToken=1, runId=run1, pass=0, effectId=pp))
+state|3|Active(identity=RuntimeRunIdentity(conversationId=c, ownerToken=1, runId=run1, pass=0), coroutineSettled=false, providerPhase=Running(identity=RunEffectIdentity(conversationId=c, ownerToken=1, runId=run1, pass=0, effectId=pp)), toolPhase=None)
+effects|3|[]
+reject|3|DUPLICATE_RESULT
+cmd|4|ProviderPassRequested(identity=RunEffectIdentity(conversationId=c, ownerToken=1, runId=run1, pass=0, effectId=pp2))
+state|4|Active(identity=RuntimeRunIdentity(conversationId=c, ownerToken=1, runId=run1, pass=0), coroutineSettled=false, providerPhase=Running(identity=RunEffectIdentity(conversationId=c, ownerToken=1, runId=run1, pass=0, effectId=pp)), toolPhase=None)
+effects|4|[]
+reject|4|STALE_IDENTITY
+cmd|5|ProviderPassCompleted(identity=RunEffectIdentity(conversationId=c, ownerToken=1, runId=run1, pass=0, effectId=pp2), result=COMPLETED_TEXT)
+state|5|Active(identity=RuntimeRunIdentity(conversationId=c, ownerToken=1, runId=run1, pass=0), coroutineSettled=false, providerPhase=Running(identity=RunEffectIdentity(conversationId=c, ownerToken=1, runId=run1, pass=0, effectId=pp)), toolPhase=None)
+effects|5|[]
+reject|5|STALE_IDENTITY

@@ -1,0 +1,14 @@
+name|send_preparing_flow
+initial|Idle(conversationId=c)
+cmd|0|SendRequested(identity=RunEffectIdentity(conversationId=c, ownerToken=1, runId=prop, pass=0, effectId=send), directOnly=false, hasPendingGuidance=false)
+state|0|Preparing(ownerIdentity=RuntimeRunIdentity(conversationId=c, ownerToken=1, runId=null, pass=0), inputEffectIdentity=RunEffectIdentity(conversationId=c, ownerToken=1, runId=prop, pass=0, effectId=send), inputFailureReported=false)
+effects|0|[PersistAcceptedInput(identity=RunEffectIdentity(conversationId=c, ownerToken=1, runId=prop, pass=0, effectId=send))]
+reject|0|-
+cmd|1|InputPersisted(identity=RunEffectIdentity(conversationId=c, ownerToken=1, runId=prop, pass=0, effectId=send))
+state|1|Active(identity=RuntimeRunIdentity(conversationId=c, ownerToken=1, runId=prop, pass=0), coroutineSettled=false, providerPhase=None, toolPhase=None)
+effects|1|[]
+reject|1|-
+cmd|2|AcquireSlot(identity=RuntimeRunIdentity(conversationId=c, ownerToken=1, runId=null, pass=0))
+state|2|Active(identity=RuntimeRunIdentity(conversationId=c, ownerToken=1, runId=prop, pass=0), coroutineSettled=false, providerPhase=None, toolPhase=None)
+effects|2|[]
+reject|2|ILLEGAL_STATE

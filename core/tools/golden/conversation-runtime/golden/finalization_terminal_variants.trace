@@ -1,0 +1,42 @@
+name|finalization_terminal_variants
+initial|Idle(conversationId=c)
+cmd|0|AcquireSlot(identity=RuntimeRunIdentity(conversationId=c, ownerToken=1, runId=null, pass=0))
+state|0|Active(identity=RuntimeRunIdentity(conversationId=c, ownerToken=1, runId=null, pass=0), coroutineSettled=false, providerPhase=None, toolPhase=None)
+effects|0|[SlotActivated(identity=RuntimeRunIdentity(conversationId=c, ownerToken=1, runId=null, pass=0))]
+reject|0|-
+cmd|1|BindRun(identity=RuntimeRunIdentity(conversationId=c, ownerToken=1, runId=run1, pass=0))
+state|1|Active(identity=RuntimeRunIdentity(conversationId=c, ownerToken=1, runId=run1, pass=0), coroutineSettled=false, providerPhase=None, toolPhase=None)
+effects|1|[]
+reject|1|-
+cmd|2|FinalizationRequested(identity=RunEffectIdentity(conversationId=c, ownerToken=1, runId=run1, pass=0, effectId=f1), status=STOPPED, reason=USER_STOPPED, markConversationUnread=false)
+state|2|Finalizing(identity=RuntimeRunIdentity(conversationId=c, ownerToken=1, runId=run1, pass=0), effectIdentity=RunEffectIdentity(conversationId=c, ownerToken=1, runId=run1, pass=0, effectId=f1), status=STOPPED, reason=USER_STOPPED, markConversationUnread=false, coroutineSettled=false, persistenceSettled=false, persistenceFailureReported=false)
+effects|2|[FinalizeRun(identity=RunEffectIdentity(conversationId=c, ownerToken=1, runId=run1, pass=0, effectId=f1), status=STOPPED, reason=USER_STOPPED, markConversationUnread=false)]
+reject|2|-
+cmd|3|FinalizationCompleted(identity=RunEffectIdentity(conversationId=c, ownerToken=1, runId=run1, pass=0, effectId=f1), success=true)
+state|3|Finalizing(identity=RuntimeRunIdentity(conversationId=c, ownerToken=1, runId=run1, pass=0), effectIdentity=RunEffectIdentity(conversationId=c, ownerToken=1, runId=run1, pass=0, effectId=f1), status=STOPPED, reason=USER_STOPPED, markConversationUnread=false, coroutineSettled=false, persistenceSettled=true, persistenceFailureReported=false)
+effects|3|[]
+reject|3|-
+cmd|4|CoroutineSettled(identity=RuntimeRunIdentity(conversationId=c, ownerToken=1, runId=run1, pass=0))
+state|4|Idle(conversationId=c)
+effects|4|[ReleaseSlot(identity=RuntimeRunIdentity(conversationId=c, ownerToken=1, runId=run1, pass=0), reason=NORMAL_FINALIZATION_SETTLED)]
+reject|4|-
+cmd|5|AcquireSlot(identity=RuntimeRunIdentity(conversationId=c, ownerToken=2, runId=null, pass=0))
+state|5|Active(identity=RuntimeRunIdentity(conversationId=c, ownerToken=2, runId=null, pass=0), coroutineSettled=false, providerPhase=None, toolPhase=None)
+effects|5|[SlotActivated(identity=RuntimeRunIdentity(conversationId=c, ownerToken=2, runId=null, pass=0))]
+reject|5|-
+cmd|6|BindRun(identity=RuntimeRunIdentity(conversationId=c, ownerToken=2, runId=run2, pass=0))
+state|6|Active(identity=RuntimeRunIdentity(conversationId=c, ownerToken=2, runId=run2, pass=0), coroutineSettled=false, providerPhase=None, toolPhase=None)
+effects|6|[]
+reject|6|-
+cmd|7|FinalizationRequested(identity=RunEffectIdentity(conversationId=c, ownerToken=1, runId=run2, pass=0, effectId=f2), status=FAILED, reason=PROVIDER_ERROR, markConversationUnread=true)
+state|7|Active(identity=RuntimeRunIdentity(conversationId=c, ownerToken=2, runId=run2, pass=0), coroutineSettled=false, providerPhase=None, toolPhase=None)
+effects|7|[]
+reject|7|STALE_IDENTITY
+cmd|8|CoroutineSettled(identity=RuntimeRunIdentity(conversationId=c, ownerToken=2, runId=run2, pass=0))
+state|8|Active(identity=RuntimeRunIdentity(conversationId=c, ownerToken=2, runId=run2, pass=0), coroutineSettled=true, providerPhase=None, toolPhase=None)
+effects|8|[]
+reject|8|-
+cmd|9|FinalizationCompleted(identity=RunEffectIdentity(conversationId=c, ownerToken=1, runId=run2, pass=0, effectId=f2), success=true)
+state|9|Active(identity=RuntimeRunIdentity(conversationId=c, ownerToken=2, runId=run2, pass=0), coroutineSettled=true, providerPhase=None, toolPhase=None)
+effects|9|[]
+reject|9|ILLEGAL_STATE

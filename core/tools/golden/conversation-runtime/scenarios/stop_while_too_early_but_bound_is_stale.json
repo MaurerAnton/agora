@@ -1,0 +1,1 @@
+{"name": "stop_while_too_early_but_bound_is_stale", "conversationId": "c", "commands": [{"kind": "AcquireSlot", "identity": {"conversationId": "c", "ownerToken": 1, "pass": 0}}, {"kind": "StopRequested", "identity": {"conversationId": "c", "ownerToken": 1, "pass": 0, "runId": "run1"}, "coroutineAlreadySettled": false, "requiresPersistence": true, "effectId": "stop"}]}

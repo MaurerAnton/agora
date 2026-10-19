@@ -1,0 +1,10 @@
+name|settle_coroutine_unbound_active
+initial|Idle(conversationId=c)
+cmd|0|AcquireSlot(identity=RuntimeRunIdentity(conversationId=c, ownerToken=1, runId=null, pass=0))
+state|0|Active(identity=RuntimeRunIdentity(conversationId=c, ownerToken=1, runId=null, pass=0), coroutineSettled=false, providerPhase=None, toolPhase=None)
+effects|0|[SlotActivated(identity=RuntimeRunIdentity(conversationId=c, ownerToken=1, runId=null, pass=0))]
+reject|0|-
+cmd|1|CoroutineSettled(identity=RuntimeRunIdentity(conversationId=c, ownerToken=1, runId=null, pass=0))
+state|1|Idle(conversationId=c)
+effects|1|[ReleaseSlot(identity=RuntimeRunIdentity(conversationId=c, ownerToken=1, runId=null, pass=0), reason=NORMAL_COMPLETION)]
+reject|1|-

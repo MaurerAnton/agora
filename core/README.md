@@ -87,6 +87,7 @@ parity tests in `core/tests/` — a drifting port is a failing build, not a surp
 | cron expression (5-field grammar, day/hour/minute walk, DST resolution) | **done** | stand `cron-expression`; compiles verbatim with no stubs at all, `tz.cpp` reads TZif and reproduces `Calendar`'s gap/overlap rules |
 | task schedule (cron mapping, editor round-trip, one-shot instants) | **done** | stand `task-schedule`; lenient calendar arithmetic pinned, clock-reading paths documented |
 | loop policy (cadence/cycle validation, prompt normalization, overflow-safe fire times) | **done** | stand `loop-policy`; compiles verbatim with no stubs at all, pins Kotlin's wrapping `Long` guard |
+| conversation runtime reducer (recovery, slot, send/guidance, provider/tool gates, stop/finalization barriers) | **done** | stand `conversation-runtime`; the whole reducer cluster compiles verbatim with no stubs, every state/effect field pinned through Kotlin `toString()` |
 | data layer (export/import, backups) | pending | |
 | tool execution (remaining providers, shell engines) | pending | |
 

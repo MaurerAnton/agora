@@ -1,0 +1,26 @@
+name|stop_from_preparing_then_input_persisted
+initial|Idle(conversationId=c)
+cmd|0|SendRequested(identity=RunEffectIdentity(conversationId=c, ownerToken=1, runId=prop, pass=0, effectId=send), directOnly=false, hasPendingGuidance=false)
+state|0|Preparing(ownerIdentity=RuntimeRunIdentity(conversationId=c, ownerToken=1, runId=null, pass=0), inputEffectIdentity=RunEffectIdentity(conversationId=c, ownerToken=1, runId=prop, pass=0, effectId=send), inputFailureReported=false)
+effects|0|[PersistAcceptedInput(identity=RunEffectIdentity(conversationId=c, ownerToken=1, runId=prop, pass=0, effectId=send))]
+reject|0|-
+cmd|1|StopRequested(identity=RuntimeRunIdentity(conversationId=c, ownerToken=1, runId=null, pass=0), coroutineAlreadySettled=false, requiresPersistence=false, effectId=null)
+state|1|Stopping(identity=RuntimeRunIdentity(conversationId=c, ownerToken=1, runId=null, pass=0), finalizationEffectId=null, coroutineSettled=false, persistenceSettled=true, persistenceFailureReported=false)
+effects|1|[CancelProviderPass(identity=RuntimeRunIdentity(conversationId=c, ownerToken=1, runId=null, pass=0))]
+reject|1|-
+cmd|2|InputPersisted(identity=RunEffectIdentity(conversationId=c, ownerToken=1, runId=prop, pass=0, effectId=send))
+state|2|Stopping(identity=RuntimeRunIdentity(conversationId=c, ownerToken=1, runId=prop, pass=0), finalizationEffectId=stop-1, coroutineSettled=false, persistenceSettled=false, persistenceFailureReported=false)
+effects|2|[FinalizeStop(identity=RunEffectIdentity(conversationId=c, ownerToken=1, runId=prop, pass=0, effectId=stop-1))]
+reject|2|-
+cmd|3|PersistenceSettled(identity=RunEffectIdentity(conversationId=c, ownerToken=1, runId=run1, pass=0, effectId=stop-1), success=true)
+state|3|Stopping(identity=RuntimeRunIdentity(conversationId=c, ownerToken=1, runId=prop, pass=0), finalizationEffectId=stop-1, coroutineSettled=false, persistenceSettled=false, persistenceFailureReported=false)
+effects|3|[]
+reject|3|STALE_IDENTITY
+cmd|4|CoroutineSettled(identity=RuntimeRunIdentity(conversationId=c, ownerToken=1, runId=prop, pass=0))
+state|4|Stopping(identity=RuntimeRunIdentity(conversationId=c, ownerToken=1, runId=prop, pass=0), finalizationEffectId=stop-1, coroutineSettled=true, persistenceSettled=false, persistenceFailureReported=false)
+effects|4|[]
+reject|4|-
+cmd|5|PersistenceSettled(identity=RunEffectIdentity(conversationId=c, ownerToken=1, runId=prop, pass=0, effectId=stop-1), success=true)
+state|5|Idle(conversationId=c)
+effects|5|[ReleaseSlot(identity=RuntimeRunIdentity(conversationId=c, ownerToken=1, runId=prop, pass=0), reason=STOP_BARRIERS_SETTLED)]
+reject|5|-

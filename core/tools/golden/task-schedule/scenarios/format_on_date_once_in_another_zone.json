@@ -1,0 +1,14 @@
+{
+  "locale": "en-US",
+  "name": "format_on_date_once_in_another_zone",
+  "op": "formatOnDate",
+  "schedule": {
+    "dayOfMonth": 10,
+    "hour": 9,
+    "minute": 0,
+    "month": 6,
+    "onceAtMillis": 1780000000000,
+    "type": "ONCE"
+  },
+  "tz": "Asia/Kolkata"
+}

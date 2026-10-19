@@ -1,0 +1,7 @@
+name|parse_rejects_a_hour_above_max
+op|parse
+tz|UTC
+locale|en-US
+schedule|-
+args|30 24 * * *|-
+out|schedule|-

@@ -1,0 +1,7 @@
+name|parse_daily
+op|parse
+tz|UTC
+locale|en-US
+schedule|-
+args|30 9 * * *|-
+out|schedule|DAILY,9,30,,1,1,0

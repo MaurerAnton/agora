@@ -1,0 +1,7 @@
+name|once_at_in_a_standard_time_zone
+op|withOnceAt
+tz|Europe/Berlin
+locale|en-US
+schedule|ONCE,9,30,,1,1,0
+args|2027|1|10
+out|schedule|ONCE,9,30,,10,1,1799569800000

@@ -1,0 +1,7 @@
+name|parse_rejects_an_empty_weekly_selection
+op|parse
+tz|UTC
+locale|en-US
+schedule|-
+args|0 6 * * |-
+out|schedule|-

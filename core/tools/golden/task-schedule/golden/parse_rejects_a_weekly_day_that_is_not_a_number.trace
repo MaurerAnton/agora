@@ -1,0 +1,7 @@
+name|parse_rejects_a_weekly_day_that_is_not_a_number
+op|parse
+tz|UTC
+locale|en-US
+schedule|-
+args|0 6 * * 1,x|-
+out|schedule|-

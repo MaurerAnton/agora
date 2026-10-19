@@ -1,0 +1,8 @@
+{
+  "cronExpr": "   ",
+  "locale": "en-US",
+  "name": "has_schedule_false_when_nothing_is_set",
+  "op": "hasSchedule",
+  "runAt": null,
+  "tz": "UTC"
+}

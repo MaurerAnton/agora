@@ -1,0 +1,7 @@
+name|parse_rejects_a_step_in_the_day_of_week
+op|parse
+tz|UTC
+locale|en-US
+schedule|-
+args|0 6 * * */2|-
+out|schedule|-

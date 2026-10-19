@@ -1,0 +1,6 @@
+name|cron_weekly_on_saturday
+op|toCron
+tz|UTC
+locale|en-US
+schedule|WEEKLY,6,0,6,1,1,0
+out|string|0 6 * * 6

@@ -1,0 +1,7 @@
+{
+  "cronExpr": "45 8 * * 1,3,5",
+  "locale": "en-US",
+  "name": "parse_weekly_several_days",
+  "op": "parse",
+  "tz": "UTC"
+}

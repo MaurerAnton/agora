@@ -1,0 +1,14 @@
+{
+  "locale": "en-US",
+  "name": "format_on_date_daily_is_yearless",
+  "op": "formatOnDate",
+  "schedule": {
+    "dayOfMonth": 14,
+    "hour": 9,
+    "minute": 0,
+    "month": 3,
+    "onceAtMillis": 0,
+    "type": "DAILY"
+  },
+  "tz": "UTC"
+}

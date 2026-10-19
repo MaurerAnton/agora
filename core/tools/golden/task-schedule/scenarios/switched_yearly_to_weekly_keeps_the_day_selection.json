@@ -1,0 +1,18 @@
+{
+  "locale": "en-US",
+  "name": "switched_yearly_to_weekly_keeps_the_day_selection",
+  "newType": "WEEKLY",
+  "op": "switchedTo",
+  "schedule": {
+    "dayOfMonth": 29,
+    "daysOfWeek": [
+      1
+    ],
+    "hour": 0,
+    "minute": 0,
+    "month": 2,
+    "onceAtMillis": 0,
+    "type": "YEARLY"
+  },
+  "tz": "UTC"
+}

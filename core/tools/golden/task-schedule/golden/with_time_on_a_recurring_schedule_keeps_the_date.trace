@@ -1,0 +1,7 @@
+name|with_time_on_a_recurring_schedule_keeps_the_date
+op|withTime
+tz|UTC
+locale|en-US
+schedule|MONTHLY,3,15,,23,11,0
+args|7|5
+out|schedule|MONTHLY,7,5,,23,11,0

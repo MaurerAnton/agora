@@ -1,0 +1,7 @@
+name|switched_once_to_weekly_clears_the_one_shot_epoch
+op|switchedTo
+tz|UTC
+locale|en-US
+schedule|ONCE,14,30,3,10,6,1780000000000
+args|WEEKLY
+out|schedule|WEEKLY,14,30,3,10,6,0

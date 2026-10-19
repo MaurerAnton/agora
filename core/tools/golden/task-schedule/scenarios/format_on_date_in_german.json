@@ -1,0 +1,14 @@
+{
+  "locale": "de-DE",
+  "name": "format_on_date_in_german",
+  "op": "formatOnDate",
+  "schedule": {
+    "dayOfMonth": 14,
+    "hour": 9,
+    "minute": 0,
+    "month": 3,
+    "onceAtMillis": 0,
+    "type": "MONTHLY"
+  },
+  "tz": "UTC"
+}

@@ -1,0 +1,17 @@
+{
+  "day": 31,
+  "locale": "en-US",
+  "month": 12,
+  "name": "once_at_dec_31",
+  "op": "withOnceAt",
+  "schedule": {
+    "dayOfMonth": 1,
+    "hour": 23,
+    "minute": 59,
+    "month": 1,
+    "onceAtMillis": 0,
+    "type": "ONCE"
+  },
+  "tz": "UTC",
+  "year": 2027
+}

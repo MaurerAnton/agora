@@ -1,0 +1,6 @@
+name|format_on_date_once_in_another_zone
+op|formatOnDate
+tz|Asia/Kolkata
+locale|en-US
+schedule|ONCE,9,0,,10,6,1780000000000
+out|string|2026-05-29

@@ -1,0 +1,6 @@
+name|format_on_date_monthly_is_yearless
+op|formatOnDate
+tz|UTC
+locale|en-US
+schedule|MONTHLY,9,0,,23,11,0
+out|string|Nov 23

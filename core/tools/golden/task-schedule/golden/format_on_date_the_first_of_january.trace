@@ -1,0 +1,6 @@
+name|format_on_date_the_first_of_january
+op|formatOnDate
+tz|UTC
+locale|en-US
+schedule|MONTHLY,9,0,,1,1,0
+out|string|Jan 1

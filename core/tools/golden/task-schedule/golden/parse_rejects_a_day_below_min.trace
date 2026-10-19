@@ -1,0 +1,7 @@
+name|parse_rejects_a_day_below_min
+op|parse
+tz|UTC
+locale|en-US
+schedule|-
+args|0 0 0 * *|-
+out|schedule|-

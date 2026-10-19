@@ -1,0 +1,16 @@
+{
+  "locale": "en-US",
+  "name": "with_time_across_a_dst_change_moves_the_instant",
+  "newHour": 3,
+  "newMinute": 0,
+  "op": "withTime",
+  "schedule": {
+    "dayOfMonth": 28,
+    "hour": 14,
+    "minute": 30,
+    "month": 3,
+    "onceAtMillis": 1775000000000,
+    "type": "ONCE"
+  },
+  "tz": "Europe/Berlin"
+}

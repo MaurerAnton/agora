@@ -82,6 +82,7 @@ parity tests in `core/tests/` — a drifting port is a failing build, not a surp
 | Conch shell SSE parser (strict one-event/one-data, shared byte budget) | **done** | stand `conch-sse`; every fail-closed message pinned, `shellUtf8Prefix` extracted verbatim from `ShellClient.kt` |
 | native backup media policy (draft rewrite/restore, attachment meta, tool images) | **done** | stand `backup-media-policy`; the call log pins `firstNotNullOfOrNull` probe order, `MessageSegment` lifted verbatim from `ChatMessage.kt` |
 | cron expression (5-field grammar, day/hour/minute walk, DST resolution) | **done** | stand `cron-expression`; compiles verbatim with no stubs at all, `tz.cpp` reads TZif and reproduces `Calendar`'s gap/overlap rules |
+| task schedule (cron mapping, editor round-trip, one-shot instants) | **done** | stand `task-schedule`; lenient calendar arithmetic pinned, clock-reading paths documented |
 | data layer (export/import, backups) | pending | |
 | tool execution (remaining providers, shell engines) | pending | |
 

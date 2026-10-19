@@ -1,0 +1,6 @@
+name|format_on_date_daily_is_yearless
+op|formatOnDate
+tz|UTC
+locale|en-US
+schedule|DAILY,9,0,,14,3,0
+out|string|Mar 14

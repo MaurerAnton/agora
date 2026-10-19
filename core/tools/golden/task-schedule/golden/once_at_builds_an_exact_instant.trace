@@ -1,0 +1,7 @@
+name|once_at_builds_an_exact_instant
+op|withOnceAt
+tz|UTC
+locale|en-US
+schedule|ONCE,9,30,,1,1,0
+args|2027|5|10
+out|schedule|ONCE,9,30,,10,5,1809941400000

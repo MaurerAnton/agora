@@ -1,0 +1,14 @@
+{
+  "locale": "en-US",
+  "name": "run_at_only_for_a_positive_one_shot",
+  "op": "toRunAt",
+  "schedule": {
+    "dayOfMonth": 10,
+    "hour": 14,
+    "minute": 30,
+    "month": 6,
+    "onceAtMillis": 1780000000000,
+    "type": "ONCE"
+  },
+  "tz": "UTC"
+}

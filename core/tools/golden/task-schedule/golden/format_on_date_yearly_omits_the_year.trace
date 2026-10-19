@@ -1,0 +1,6 @@
+name|format_on_date_yearly_omits_the_year
+op|formatOnDate
+tz|UTC
+locale|en-US
+schedule|YEARLY,9,0,,29,2,0
+out|string|Feb 29

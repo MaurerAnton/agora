@@ -1,0 +1,7 @@
+name|parse_monthly
+op|parse
+tz|UTC
+locale|en-US
+schedule|-
+args|15 3 23 * *|-
+out|schedule|MONTHLY,3,15,,23,1,0

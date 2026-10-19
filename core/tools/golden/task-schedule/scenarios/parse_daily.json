@@ -1,0 +1,7 @@
+{
+  "cronExpr": "30 9 * * *",
+  "locale": "en-US",
+  "name": "parse_daily",
+  "op": "parse",
+  "tz": "UTC"
+}

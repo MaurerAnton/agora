@@ -1,0 +1,7 @@
+{
+  "cronExpr": "0 6 * * 0,7",
+  "locale": "en-US",
+  "name": "parse_weekly_with_both_sunday_spellings",
+  "op": "parse",
+  "tz": "UTC"
+}

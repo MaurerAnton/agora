@@ -1,0 +1,7 @@
+{
+  "cronExpr": "0 0 29 2 *",
+  "locale": "en-US",
+  "name": "parse_yearly",
+  "op": "parse",
+  "tz": "UTC"
+}

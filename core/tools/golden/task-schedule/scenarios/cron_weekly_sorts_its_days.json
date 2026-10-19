@@ -1,0 +1,19 @@
+{
+  "locale": "en-US",
+  "name": "cron_weekly_sorts_its_days",
+  "op": "toCron",
+  "schedule": {
+    "dayOfMonth": 1,
+    "daysOfWeek": [
+      5,
+      1,
+      3
+    ],
+    "hour": 8,
+    "minute": 45,
+    "month": 1,
+    "onceAtMillis": 0,
+    "type": "WEEKLY"
+  },
+  "tz": "UTC"
+}

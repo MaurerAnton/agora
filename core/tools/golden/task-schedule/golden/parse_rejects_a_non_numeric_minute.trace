@@ -1,0 +1,7 @@
+name|parse_rejects_a_non_numeric_minute
+op|parse
+tz|UTC
+locale|en-US
+schedule|-
+args|x 9 * * *|-
+out|schedule|-

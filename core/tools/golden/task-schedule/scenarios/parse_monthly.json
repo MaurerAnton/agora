@@ -1,0 +1,7 @@
+{
+  "cronExpr": "15 3 23 * *",
+  "locale": "en-US",
+  "name": "parse_monthly",
+  "op": "parse",
+  "tz": "UTC"
+}

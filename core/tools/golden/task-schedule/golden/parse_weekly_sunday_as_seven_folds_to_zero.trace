@@ -1,0 +1,7 @@
+name|parse_weekly_sunday_as_seven_folds_to_zero
+op|parse
+tz|UTC
+locale|en-US
+schedule|-
+args|0 6 * * 7|-
+out|schedule|WEEKLY,6,0,0,1,1,0

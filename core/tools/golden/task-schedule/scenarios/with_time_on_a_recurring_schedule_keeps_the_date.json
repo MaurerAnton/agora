@@ -1,0 +1,16 @@
+{
+  "locale": "en-US",
+  "name": "with_time_on_a_recurring_schedule_keeps_the_date",
+  "newHour": 7,
+  "newMinute": 5,
+  "op": "withTime",
+  "schedule": {
+    "dayOfMonth": 23,
+    "hour": 3,
+    "minute": 15,
+    "month": 11,
+    "onceAtMillis": 0,
+    "type": "MONTHLY"
+  },
+  "tz": "UTC"
+}

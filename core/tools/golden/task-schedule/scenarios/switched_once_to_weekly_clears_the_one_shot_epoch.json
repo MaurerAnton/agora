@@ -1,0 +1,18 @@
+{
+  "locale": "en-US",
+  "name": "switched_once_to_weekly_clears_the_one_shot_epoch",
+  "newType": "WEEKLY",
+  "op": "switchedTo",
+  "schedule": {
+    "dayOfMonth": 10,
+    "daysOfWeek": [
+      3
+    ],
+    "hour": 14,
+    "minute": 30,
+    "month": 6,
+    "onceAtMillis": 1780000000000,
+    "type": "ONCE"
+  },
+  "tz": "UTC"
+}

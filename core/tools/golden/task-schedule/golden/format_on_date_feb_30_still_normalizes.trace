@@ -1,0 +1,6 @@
+name|format_on_date_feb_30_still_normalizes
+op|formatOnDate
+tz|UTC
+locale|en-US
+schedule|MONTHLY,9,0,,30,2,0
+out|string|Mar 1

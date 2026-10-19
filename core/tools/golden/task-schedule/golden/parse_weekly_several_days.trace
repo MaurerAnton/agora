@@ -1,0 +1,7 @@
+name|parse_weekly_several_days
+op|parse
+tz|UTC
+locale|en-US
+schedule|-
+args|45 8 * * 1,3,5|-
+out|schedule|WEEKLY,8,45,1,3,5,1,1,0

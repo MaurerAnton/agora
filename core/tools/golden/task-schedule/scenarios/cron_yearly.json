@@ -1,0 +1,14 @@
+{
+  "locale": "en-US",
+  "name": "cron_yearly",
+  "op": "toCron",
+  "schedule": {
+    "dayOfMonth": 29,
+    "hour": 0,
+    "minute": 0,
+    "month": 2,
+    "onceAtMillis": 0,
+    "type": "YEARLY"
+  },
+  "tz": "UTC"
+}

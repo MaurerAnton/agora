@@ -1,0 +1,6 @@
+name|format_on_date_feb_29_uses_a_leap_year
+op|formatOnDate
+tz|UTC
+locale|en-US
+schedule|MONTHLY,9,0,,29,2,0
+out|string|Feb 29

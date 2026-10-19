@@ -1,0 +1,7 @@
+name|switched_monthly_to_weekly_keeps_the_day_selection
+op|switchedTo
+tz|UTC
+locale|en-US
+schedule|MONTHLY,3,15,4,2,23,1,0
+args|WEEKLY
+out|schedule|WEEKLY,3,15,4,2,23,1,0

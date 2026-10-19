@@ -1,0 +1,7 @@
+name|parse_once_wins_over_a_cron
+op|parse
+tz|UTC
+locale|en-US
+schedule|-
+args|30 9 * * *|1780000000000
+out|schedule|ONCE,20,26,,28,5,1780000000000

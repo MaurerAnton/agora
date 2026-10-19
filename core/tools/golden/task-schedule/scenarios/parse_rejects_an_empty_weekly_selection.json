@@ -1,0 +1,7 @@
+{
+  "cronExpr": "0 6 * * ",
+  "locale": "en-US",
+  "name": "parse_rejects_an_empty_weekly_selection",
+  "op": "parse",
+  "tz": "UTC"
+}

@@ -1,0 +1,7 @@
+name|parse_weekly_with_both_sunday_spellings
+op|parse
+tz|UTC
+locale|en-US
+schedule|-
+args|0 6 * * 0,7|-
+out|schedule|WEEKLY,6,0,0,1,1,0

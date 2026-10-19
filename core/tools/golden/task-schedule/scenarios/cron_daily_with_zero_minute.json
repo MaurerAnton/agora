@@ -1,0 +1,14 @@
+{
+  "locale": "en-US",
+  "name": "cron_daily_with_zero_minute",
+  "op": "toCron",
+  "schedule": {
+    "dayOfMonth": 1,
+    "hour": 0,
+    "minute": 0,
+    "month": 1,
+    "onceAtMillis": 0,
+    "type": "DAILY"
+  },
+  "tz": "UTC"
+}

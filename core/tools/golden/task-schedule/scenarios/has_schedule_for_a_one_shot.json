@@ -1,0 +1,8 @@
+{
+  "cronExpr": "",
+  "locale": "en-US",
+  "name": "has_schedule_for_a_one_shot",
+  "op": "hasSchedule",
+  "runAt": 1780000000000,
+  "tz": "UTC"
+}

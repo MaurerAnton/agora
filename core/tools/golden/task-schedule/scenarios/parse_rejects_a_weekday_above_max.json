@@ -1,0 +1,7 @@
+{
+  "cronExpr": "0 0 * * 8",
+  "locale": "en-US",
+  "name": "parse_rejects_a_weekday_above_max",
+  "op": "parse",
+  "tz": "UTC"
+}

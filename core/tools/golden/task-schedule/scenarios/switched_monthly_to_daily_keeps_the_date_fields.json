@@ -1,0 +1,19 @@
+{
+  "locale": "en-US",
+  "name": "switched_monthly_to_daily_keeps_the_date_fields",
+  "newType": "DAILY",
+  "op": "switchedTo",
+  "schedule": {
+    "dayOfMonth": 23,
+    "daysOfWeek": [
+      2,
+      4
+    ],
+    "hour": 3,
+    "minute": 15,
+    "month": 11,
+    "onceAtMillis": 0,
+    "type": "MONTHLY"
+  },
+  "tz": "UTC"
+}

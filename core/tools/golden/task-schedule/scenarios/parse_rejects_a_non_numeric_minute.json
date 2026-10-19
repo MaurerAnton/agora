@@ -1,0 +1,7 @@
+{
+  "cronExpr": "x 9 * * *",
+  "locale": "en-US",
+  "name": "parse_rejects_a_non_numeric_minute",
+  "op": "parse",
+  "tz": "UTC"
+}

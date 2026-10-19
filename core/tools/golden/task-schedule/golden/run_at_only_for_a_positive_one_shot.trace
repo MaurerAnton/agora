@@ -1,0 +1,6 @@
+name|run_at_only_for_a_positive_one_shot
+op|toRunAt
+tz|UTC
+locale|en-US
+schedule|ONCE,14,30,,10,6,1780000000000
+out|long|1780000000000

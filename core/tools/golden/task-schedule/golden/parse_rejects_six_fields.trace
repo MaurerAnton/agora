@@ -1,0 +1,7 @@
+name|parse_rejects_six_fields
+op|parse
+tz|UTC
+locale|en-US
+schedule|-
+args|30 9 * * * *|-
+out|schedule|-

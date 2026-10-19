@@ -1,0 +1,4 @@
+name|request_custom_provider
+op|request
+args|true|flex|true|gpt-5-pro|false
+result|flex

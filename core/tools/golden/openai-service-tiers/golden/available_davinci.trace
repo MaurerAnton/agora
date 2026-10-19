@@ -1,0 +1,4 @@
+name|available_davinci
+op|available
+args|davinci-002|true
+result|auto,default

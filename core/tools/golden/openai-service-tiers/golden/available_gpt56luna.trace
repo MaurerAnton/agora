@@ -1,0 +1,4 @@
+name|available_gpt56luna
+op|available
+args|gpt-5.6-luna|true
+result|auto,default,flex,fast

@@ -1,0 +1,4 @@
+name|available_gpt55pro
+op|available
+args|gpt-5.5-pro|true
+result|auto,default,flex

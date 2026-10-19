@@ -1,0 +1,4 @@
+name|normalize_scale_alias_upper
+op|normalize
+args| SCALE 
+result|default

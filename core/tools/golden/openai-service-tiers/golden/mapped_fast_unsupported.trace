@@ -1,0 +1,4 @@
+name|mapped_fast_unsupported
+op|mapped
+args|fast|gpt-5-pro|true
+result|default

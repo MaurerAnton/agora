@@ -1,0 +1,4 @@
+name|mapped_fast_supported
+op|mapped
+args|fast|gpt-4o|true
+result|fast

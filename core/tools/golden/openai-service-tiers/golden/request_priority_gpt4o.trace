@@ -1,0 +1,4 @@
+name|request_priority_gpt4o
+op|request
+args|true|PRIORITY|true|gpt-4o|true
+result|fast

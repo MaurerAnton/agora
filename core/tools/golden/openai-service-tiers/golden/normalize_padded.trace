@@ -1,0 +1,4 @@
+name|normalize_padded
+op|normalize
+args| Flex 
+result|flex

@@ -1,0 +1,4 @@
+name|index_padded
+op|index
+args| FLEX 
+result|2

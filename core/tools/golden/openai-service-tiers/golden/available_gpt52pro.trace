@@ -1,0 +1,4 @@
+name|available_gpt52pro
+op|available
+args|gpt-5.2-pro|true
+result|auto,default

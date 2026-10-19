@@ -1,0 +1,4 @@
+name|normalize_flex
+op|normalize
+args|flex
+result|flex

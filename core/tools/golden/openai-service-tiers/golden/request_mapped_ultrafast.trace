@@ -1,0 +1,4 @@
+name|request_mapped_ultrafast
+op|request
+args|true|ultrafast|true|gpt-5.4|true
+result|fast

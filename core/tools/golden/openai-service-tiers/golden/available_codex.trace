@@ -1,0 +1,4 @@
+name|available_codex
+op|available
+args|gpt-5.3-codex|true
+result|auto,default,fast

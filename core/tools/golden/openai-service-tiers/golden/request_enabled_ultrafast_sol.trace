@@ -1,0 +1,4 @@
+name|request_enabled_ultrafast_sol
+op|request
+args|true|ultrafast|true|gpt-5.6-sol|true
+result|ultrafast

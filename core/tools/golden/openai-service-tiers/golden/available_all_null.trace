@@ -1,0 +1,4 @@
+name|available_all_null
+op|available
+args|-|true
+result|auto,default,flex,fast,ultrafast

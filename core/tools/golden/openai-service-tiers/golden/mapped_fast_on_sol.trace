@@ -1,0 +1,4 @@
+name|mapped_fast_on_sol
+op|mapped
+args|fast|gpt-5.6-sol|true
+result|fast

@@ -1,0 +1,4 @@
+name|mapped_default
+op|mapped
+args|default|gpt-5-pro|true
+result|default

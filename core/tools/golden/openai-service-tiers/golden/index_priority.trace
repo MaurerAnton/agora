@@ -1,0 +1,4 @@
+name|index_priority
+op|index
+args|PRIORITY
+result|3

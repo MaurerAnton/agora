@@ -1,0 +1,4 @@
+name|available_custom_provider_unknown
+op|available
+args|whatever|false
+result|auto,default,flex,fast,ultrafast

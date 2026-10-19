@@ -1,0 +1,4 @@
+name|mapped_scale
+op|mapped
+args|scale|gpt-5-pro|true
+result|default

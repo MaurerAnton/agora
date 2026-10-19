@@ -1,0 +1,4 @@
+name|normalize_fast
+op|normalize
+args|fast
+result|fast

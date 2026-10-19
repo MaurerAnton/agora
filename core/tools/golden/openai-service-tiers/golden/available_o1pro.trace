@@ -1,0 +1,4 @@
+name|available_o1pro
+op|available
+args|o1-pro|true
+result|auto,default

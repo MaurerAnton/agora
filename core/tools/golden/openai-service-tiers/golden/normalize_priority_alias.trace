@@ -1,0 +1,4 @@
+name|normalize_priority_alias
+op|normalize
+args|priority
+result|fast

@@ -34,6 +34,7 @@ add_library(agora_core_lib STATIC
     src/mcp_protocol.cpp
     src/memory_manager.cpp
     src/json.cpp
+    src/loop_policy.cpp
     src/message_preparation.cpp
     src/model_aliases.cpp
     src/message_preparation_tokens.cpp

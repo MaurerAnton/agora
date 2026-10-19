@@ -1,0 +1,5 @@
+{
+  "name": "normalize_trims",
+  "op": "normalizePrompt",
+  "prompt": "  hello  "
+}

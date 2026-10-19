@@ -1,0 +1,6 @@
+{
+  "name": "validate_interval_error_wins_above_max",
+  "op": "validate",
+  "intervalMs": 604800001,
+  "maxCycles": 101
+}

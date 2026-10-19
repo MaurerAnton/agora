@@ -1,0 +1,6 @@
+{
+  "name": "fire_negative_interval_at_long_max",
+  "op": "nextFireAt",
+  "now": 9223372036854775807,
+  "intervalMs": -10
+}

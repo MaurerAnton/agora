@@ -1,0 +1,6 @@
+{
+  "name": "fire_negative_interval_wraps_threshold",
+  "op": "nextFireAt",
+  "now": 0,
+  "intervalMs": -10
+}

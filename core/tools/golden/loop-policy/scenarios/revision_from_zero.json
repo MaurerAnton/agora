@@ -1,0 +1,5 @@
+{
+  "name": "revision_from_zero",
+  "op": "nextRevision",
+  "current": 0
+}

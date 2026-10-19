@@ -1,0 +1,5 @@
+{
+  "name": "normalize_keeps_inner_tab_between_words",
+  "op": "normalizePrompt",
+  "prompt": " a \t b "
+}

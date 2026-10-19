@@ -1,0 +1,5 @@
+{
+  "name": "normalize_null",
+  "op": "normalizePrompt",
+  "prompt": null
+}

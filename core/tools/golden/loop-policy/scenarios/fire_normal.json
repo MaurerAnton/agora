@@ -1,0 +1,6 @@
+{
+  "name": "fire_normal",
+  "op": "nextFireAt",
+  "now": 1000,
+  "intervalMs": 60000
+}

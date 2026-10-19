@@ -1,0 +1,8 @@
+{
+  "name": "no_terminal_frame_keeps_the_streamed_output",
+  "encrypted": false,
+  "lines": [
+    "event: line",
+    "data: {\"line\": \"partial\", \"stream\": \"stdout\"}"
+  ]
+}

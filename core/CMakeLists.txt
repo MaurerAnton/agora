@@ -19,6 +19,7 @@ add_library(agora_core_lib STATIC
     src/anthropic_stream.cpp
     src/bpe_vocabulary.cpp
     src/citations.cpp
+    src/conch_sse.cpp
     src/duckduckgo.cpp
     src/embedding.cpp
     src/embedding_selector.cpp

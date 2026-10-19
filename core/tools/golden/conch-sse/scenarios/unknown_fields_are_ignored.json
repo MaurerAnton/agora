@@ -1,0 +1,10 @@
+{
+  "name": "unknown_fields_are_ignored",
+  "encrypted": false,
+  "lines": [
+    "event: line",
+    "data: {\"line\": \"hi\", \"stream\": \"stdout\", \"future_key\": [1, 2]}",
+    "event: result",
+    "data: {\"exit_code\": 0, \"elapsed_ms\": 12}"
+  ]
+}

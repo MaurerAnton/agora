@@ -1,0 +1,8 @@
+{
+  "name": "line_event_unsupported_stream",
+  "encrypted": false,
+  "lines": [
+    "event: line",
+    "data: {\"line\": \"x\", \"stream\": \"tty\"}"
+  ]
+}

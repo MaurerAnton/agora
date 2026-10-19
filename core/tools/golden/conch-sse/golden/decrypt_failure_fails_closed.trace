@@ -1,0 +1,3 @@
+name|decrypt_failure_fails_closed
+encrypted|1
+error|Invalid Conch SSE stream: decryption failed: bad padding

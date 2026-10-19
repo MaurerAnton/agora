@@ -1,0 +1,3 @@
+name|data_after_terminal_frame
+encrypted|0
+error|Invalid Conch SSE stream: data received after terminal frame

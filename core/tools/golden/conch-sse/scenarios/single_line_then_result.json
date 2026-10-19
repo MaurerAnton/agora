@@ -1,0 +1,10 @@
+{
+  "name": "single_line_then_result",
+  "encrypted": false,
+  "lines": [
+    "event: line",
+    "data: {\"line\": \"hello\", \"stream\": \"stdout\"}",
+    "event: result",
+    "data: {\"exit_code\": 0}"
+  ]
+}

@@ -1,0 +1,8 @@
+{
+  "name": "event_without_space_is_unexpected",
+  "encrypted": false,
+  "lines": [
+    "event:line",
+    "data: {}"
+  ]
+}

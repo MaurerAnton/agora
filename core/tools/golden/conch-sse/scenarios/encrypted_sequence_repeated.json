@@ -1,0 +1,10 @@
+{
+  "name": "encrypted_sequence_repeated",
+  "encrypted": true,
+  "lines": [
+    "event: line",
+    "data: {\"line\": \"x\", \"stream\": \"stdout\", \"_conch_event\": \"line\", \"_conch_sequence\": 0}",
+    "event: result",
+    "data: {\"exit_code\": 0, \"_conch_event\": \"result\", \"_conch_sequence\": 0}"
+  ]
+}

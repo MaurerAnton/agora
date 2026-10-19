@@ -1,0 +1,7 @@
+{
+  "name": "data_without_event",
+  "encrypted": false,
+  "lines": [
+    "data: {\"line\": \"x\", \"stream\": \"stdout\"}"
+  ]
+}

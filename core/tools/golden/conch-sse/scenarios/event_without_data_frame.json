@@ -1,0 +1,9 @@
+{
+  "name": "event_without_data_frame",
+  "encrypted": false,
+  "lines": [
+    "event: line",
+    "event: result",
+    "data: {\"exit_code\": 0}"
+  ]
+}

@@ -1,0 +1,10 @@
+{
+  "name": "warning_is_recorded",
+  "encrypted": false,
+  "lines": [
+    "event: warning",
+    "data: {\"message\": \"careful\"}",
+    "event: result",
+    "data: {\"exit_code\": 0}"
+  ]
+}

@@ -1,0 +1,9 @@
+{
+  "name": "event_after_terminal_frame",
+  "encrypted": false,
+  "lines": [
+    "event: result",
+    "data: {\"exit_code\": 0}",
+    "event: line"
+  ]
+}

@@ -1,0 +1,8 @@
+name|blank_line_between_frames_is_ignored
+encrypted|0
+emit|hi\n
+output|hi
+exit_code|0
+error_message|-
+timed_out|0
+warning|-

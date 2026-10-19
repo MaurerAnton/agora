@@ -1,0 +1,3 @@
+name|line_event_unsupported_stream
+encrypted|0
+error|Invalid Conch SSE stream: event line has unsupported stream tty

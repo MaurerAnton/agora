@@ -1,0 +1,8 @@
+{
+  "name": "encrypted_missing_event_field",
+  "encrypted": true,
+  "lines": [
+    "event: line",
+    "data: {\"line\": \"x\", \"stream\": \"stdout\", \"_conch_sequence\": 0}"
+  ]
+}

@@ -1,0 +1,4 @@
+name|encrypted_sequence_repeated
+encrypted|1
+emit|x\n
+error|Invalid Conch SSE stream: event authentication or sequence mismatch

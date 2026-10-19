@@ -1,0 +1,10 @@
+{
+  "name": "embedded_newlines_are_preserved",
+  "encrypted": false,
+  "lines": [
+    "event: line",
+    "data: {\"line\": \"one\\ntwo\", \"stream\": \"stdout\"}",
+    "event: result",
+    "data: {\"exit_code\": 0}"
+  ]
+}

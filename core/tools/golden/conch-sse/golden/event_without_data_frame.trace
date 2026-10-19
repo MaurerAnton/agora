@@ -1,0 +1,3 @@
+name|event_without_data_frame
+encrypted|0
+error|Invalid Conch SSE stream: event line has no data frame

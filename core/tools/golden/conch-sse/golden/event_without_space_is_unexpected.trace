@@ -1,0 +1,3 @@
+name|event_without_space_is_unexpected
+encrypted|0
+error|Invalid Conch SSE stream: unexpected line

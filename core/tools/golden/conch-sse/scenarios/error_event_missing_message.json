@@ -1,0 +1,8 @@
+{
+  "name": "error_event_missing_message",
+  "encrypted": false,
+  "lines": [
+    "event: error",
+    "data: {\"timed_out\": true}"
+  ]
+}

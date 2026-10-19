@@ -1,0 +1,3 @@
+name|result_event_missing_exit_code
+encrypted|0
+error|Invalid Conch SSE stream: event result requires integer exit_code

@@ -1,0 +1,8 @@
+{
+  "name": "invalid_json_payload",
+  "encrypted": false,
+  "lines": [
+    "event: line",
+    "data: {oops"
+  ]
+}

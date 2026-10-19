@@ -1,0 +1,5 @@
+name|newline_around_han
+op|containsCjk
+constants|Important: do not use any Chinese (CJK) characters anywhere in your answer.
+args|\n中\n
+out|bool|true

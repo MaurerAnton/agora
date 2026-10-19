@@ -1,0 +1,5 @@
+name|above_unified
+op|containsCjk
+constants|Important: do not use any Chinese (CJK) characters anywhere in your answer.
+args|ꀀ
+out|bool|false

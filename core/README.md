@@ -78,6 +78,7 @@ parity tests in `core/tests/` — a drifting port is a failing build, not a surp
 | model alias inference (Claude/Gemini/Nova display aliases) | **done** | stand `model-aliases` |
 | custom model references (rename/delete rewriting of id sets, selections, aliases) | **done** | stand `custom-model-references`; compiles verbatim with no stubs, pins `LinkedHashSet`/`LinkedHashMap` order and Kotlin `isBlank`/`trim` |
 | run branch selection integrity (durable parent→child projection against the Run tree) | **done** | stand `run-branch-selection`; `RunEntity` lifted verbatim, pins `associateBy` last-wins and null-vs-empty selection keys |
+| CJK output guard (Han-ideograph probe, retry instruction) | **done** | stand `cjk-text`; compiles verbatim with no stubs, pins the three BMP ranges and the deliberate exclusion of supplementary-plane Han |
 | custom provider identity (stable ids, legacyId, remap) | **done** | stand `provider-identity`; UUID v3 legacy ids (MD5), retry path unit-pinned because it reads entropy |
 | memory catalog (active memory, per-file descriptions, metadata store) | **done** | stand `memory-manager`; only `Context`/`StateFlow` are substituted, the store's `.tmp`/`.bak` recovery is pinned |
 | bounded semantic embedding selection (keyset scoring, retention heap) | **done** | stand `embedding-selector`; ties break on row id, malformed rows and non-finite scores are counted not fatal |

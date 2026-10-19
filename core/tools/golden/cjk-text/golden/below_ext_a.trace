@@ -1,0 +1,5 @@
+name|below_ext_a
+op|containsCjk
+constants|Important: do not use any Chinese (CJK) characters anywhere in your answer.
+args|㏿
+out|bool|false

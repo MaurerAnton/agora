@@ -1,0 +1,5 @@
+name|supplementary_not_adjacent_to_range
+op|containsCjk
+constants|Important: do not use any Chinese (CJK) characters anywhere in your answer.
+args|𪛖
+out|bool|false

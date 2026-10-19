@@ -1,0 +1,5 @@
+name|katakana_is_excluded
+op|containsCjk
+constants|Important: do not use any Chinese (CJK) characters anywhere in your answer.
+args|ア
+out|bool|false

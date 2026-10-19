@@ -1,0 +1,3 @@
+name|negative_step
+expr|*/-1 * * * *
+valid|0

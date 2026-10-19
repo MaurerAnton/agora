@@ -1,0 +1,7 @@
+{
+  "after_millis": 1773489600000,
+  "expr": "0 12 * * *",
+  "name": "a_moment_that_just_passed_moves_strictly_after",
+  "next": true,
+  "zone": "UTC"
+}

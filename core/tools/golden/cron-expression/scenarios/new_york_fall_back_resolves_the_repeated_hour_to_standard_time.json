@@ -1,0 +1,7 @@
+{
+  "after_millis": 1793448000000,
+  "expr": "30 1 * * *",
+  "name": "new_york_fall_back_resolves_the_repeated_hour_to_standard_time",
+  "next": true,
+  "zone": "America/New_York"
+}

@@ -1,0 +1,3 @@
+name|non_numeric_value
+expr|x * * * *
+valid|0

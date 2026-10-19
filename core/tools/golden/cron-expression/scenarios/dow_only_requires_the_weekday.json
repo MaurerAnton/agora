@@ -1,0 +1,7 @@
+{
+  "after_millis": 1772323200000,
+  "expr": "0 0 * * 5",
+  "name": "dow_only_requires_the_weekday",
+  "next": true,
+  "zone": "UTC"
+}

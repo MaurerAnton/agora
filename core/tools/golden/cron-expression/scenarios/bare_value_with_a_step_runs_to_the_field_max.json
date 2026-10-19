@@ -1,0 +1,4 @@
+{
+  "expr": "5/10 * * * *",
+  "name": "bare_value_with_a_step_runs_to_the_field_max"
+}

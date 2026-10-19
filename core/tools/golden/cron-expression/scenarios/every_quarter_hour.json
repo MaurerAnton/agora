@@ -1,0 +1,7 @@
+{
+  "after_millis": 1773490020000,
+  "expr": "*/15 * * * *",
+  "name": "every_quarter_hour",
+  "next": true,
+  "zone": "UTC"
+}

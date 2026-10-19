@@ -1,0 +1,7 @@
+{
+  "after_millis": 1773491696789,
+  "expr": "0 0 * * *",
+  "name": "midnight_from_mid_afternoon",
+  "next": true,
+  "zone": "UTC"
+}

@@ -1,0 +1,12 @@
+name|sydney_southern_autumn
+expr|0 2 * * *
+valid|1
+minutes|0
+hours|2
+daysOfMonth|1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19,20,21,22,23,24,25,26,27,28,29,30,31
+months|1,2,3,4,5,6,7,8,9,10,11,12
+daysOfWeek|0,1,2,3,4,5,6
+domRestricted|0
+dowRestricted|0
+zone|Australia/Sydney
+next|1775318400000

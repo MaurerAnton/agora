@@ -1,0 +1,7 @@
+{
+  "after_millis": 1773489600000,
+  "expr": "0 0 * * *",
+  "name": "unknown_zone_falls_back_to_gmt",
+  "next": true,
+  "zone": "Not/AZone"
+}

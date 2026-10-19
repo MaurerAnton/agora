@@ -1,0 +1,4 @@
+{
+  "expr": "-5 * * * *",
+  "name": "range_with_a_missing_start"
+}

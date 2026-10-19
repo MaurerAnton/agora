@@ -81,6 +81,7 @@ parity tests in `core/tests/` — a drifting port is a failing build, not a surp
 | bounded semantic embedding selection (keyset scoring, retention heap) | **done** | stand `embedding-selector`; ties break on row id, malformed rows and non-finite scores are counted not fatal |
 | Conch shell SSE parser (strict one-event/one-data, shared byte budget) | **done** | stand `conch-sse`; every fail-closed message pinned, `shellUtf8Prefix` extracted verbatim from `ShellClient.kt` |
 | native backup media policy (draft rewrite/restore, attachment meta, tool images) | **done** | stand `backup-media-policy`; the call log pins `firstNotNullOfOrNull` probe order, `MessageSegment` lifted verbatim from `ChatMessage.kt` |
+| cron expression (5-field grammar, day/hour/minute walk, DST resolution) | **done** | stand `cron-expression`; compiles verbatim with no stubs at all, `tz.cpp` reads TZif and reproduces `Calendar`'s gap/overlap rules |
 | data layer (export/import, backups) | pending | |
 | tool execution (remaining providers, shell engines) | pending | |
 

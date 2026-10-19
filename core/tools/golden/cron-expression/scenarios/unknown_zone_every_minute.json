@@ -1,0 +1,7 @@
+{
+  "after_millis": 1773489630000,
+  "expr": "* * * * *",
+  "name": "unknown_zone_every_minute",
+  "next": true,
+  "zone": "Not/AZone"
+}

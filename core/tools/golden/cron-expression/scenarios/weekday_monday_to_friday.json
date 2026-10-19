@@ -1,0 +1,7 @@
+{
+  "after_millis": 1773489600000,
+  "expr": "0 9 * * 1-5",
+  "name": "weekday_monday_to_friday",
+  "next": true,
+  "zone": "UTC"
+}

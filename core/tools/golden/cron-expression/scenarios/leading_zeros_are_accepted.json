@@ -1,0 +1,4 @@
+{
+  "expr": "05 * * * *",
+  "name": "leading_zeros_are_accepted"
+}

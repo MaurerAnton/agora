@@ -1,0 +1,4 @@
+{
+  "expr": "- * * * *",
+  "name": "bare_minus_sign"
+}

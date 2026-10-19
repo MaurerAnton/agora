@@ -1,0 +1,3 @@
+name|non_breaking_space_is_not_whitespace_to_the_cron_splitter
+expr|1 2 3 4 5
+valid|0

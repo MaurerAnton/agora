@@ -1,0 +1,4 @@
+{
+  "expr": "0 0 28-31 * *",
+  "name": "dom_range_that_ends_on_the_max"
+}

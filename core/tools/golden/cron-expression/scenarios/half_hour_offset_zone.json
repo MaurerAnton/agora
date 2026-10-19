@@ -1,0 +1,7 @@
+{
+  "after_millis": 1773446400000,
+  "expr": "0 12 * * *",
+  "name": "half_hour_offset_zone",
+  "next": true,
+  "zone": "GMT+05:30"
+}

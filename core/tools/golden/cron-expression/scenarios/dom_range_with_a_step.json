@@ -1,0 +1,4 @@
+{
+  "expr": "0 0 1-7/2 * *",
+  "name": "dom_range_with_a_step"
+}

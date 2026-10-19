@@ -1,0 +1,7 @@
+{
+  "after_millis": 1773446400000,
+  "expr": "0 12 * * *",
+  "name": "asia_kolkata_half_hour_offset",
+  "next": true,
+  "zone": "Asia/Kolkata"
+}

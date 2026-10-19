@@ -1,0 +1,7 @@
+{
+  "after_millis": 1792843200000,
+  "expr": "0 2 * * *",
+  "name": "berlin_the_hour_before_the_change",
+  "next": true,
+  "zone": "Europe/Berlin"
+}

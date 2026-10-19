@@ -1,0 +1,7 @@
+{
+  "after_millis": 1773489600001,
+  "expr": "0 12 * * *",
+  "name": "the_same_day_still_matches_later",
+  "next": true,
+  "zone": "UTC"
+}

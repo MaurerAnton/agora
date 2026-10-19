@@ -1,0 +1,3 @@
+name|trailing_comma
+expr|1, * * * *
+valid|0

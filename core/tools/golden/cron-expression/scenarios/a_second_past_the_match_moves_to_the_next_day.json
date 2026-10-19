@@ -1,0 +1,7 @@
+{
+  "after_millis": 1773491400001,
+  "expr": "30 12 * * *",
+  "name": "a_second_past_the_match_moves_to_the_next_day",
+  "next": true,
+  "zone": "UTC"
+}

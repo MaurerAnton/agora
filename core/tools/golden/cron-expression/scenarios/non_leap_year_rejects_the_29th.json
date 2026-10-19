@@ -1,0 +1,7 @@
+{
+  "after_millis": 1772280000000,
+  "expr": "0 0 29 2 *",
+  "name": "non_leap_year_rejects_the_29th",
+  "next": true,
+  "zone": "UTC"
+}

@@ -1,0 +1,7 @@
+{
+  "after_millis": 1773446400000,
+  "expr": "0 0 * * *",
+  "name": "negative_eight_offset_zone",
+  "next": true,
+  "zone": "Etc/GMT+8"
+}

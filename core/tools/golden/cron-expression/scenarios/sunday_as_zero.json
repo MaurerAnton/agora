@@ -1,0 +1,4 @@
+{
+  "expr": "0 0 * * 0",
+  "name": "sunday_as_zero"
+}

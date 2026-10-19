@@ -1,0 +1,4 @@
+{
+  "expr": "0 0 * * 0,7",
+  "name": "sunday_as_both_collapses_to_one_value"
+}

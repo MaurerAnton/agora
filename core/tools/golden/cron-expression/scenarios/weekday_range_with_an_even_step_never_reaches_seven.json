@@ -1,0 +1,4 @@
+{
+  "expr": "0 0 * * 0-7/2",
+  "name": "weekday_range_with_an_even_step_never_reaches_seven"
+}

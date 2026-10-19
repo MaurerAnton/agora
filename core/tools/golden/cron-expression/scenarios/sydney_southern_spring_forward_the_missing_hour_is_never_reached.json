@@ -1,0 +1,7 @@
+{
+  "after_millis": 1791028800000,
+  "expr": "30 2 * * *",
+  "name": "sydney_southern_spring_forward_the_missing_hour_is_never_reached",
+  "next": true,
+  "zone": "Australia/Sydney"
+}

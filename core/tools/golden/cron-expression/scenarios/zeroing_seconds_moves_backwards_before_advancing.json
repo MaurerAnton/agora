@@ -1,0 +1,7 @@
+{
+  "after_millis": 1773491399999,
+  "expr": "30 12 * * *",
+  "name": "zeroing_seconds_moves_backwards_before_advancing",
+  "next": true,
+  "zone": "UTC"
+}

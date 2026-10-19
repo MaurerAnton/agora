@@ -1,0 +1,7 @@
+{
+  "after_millis": 1774699200000,
+  "expr": "0 3 * * *",
+  "name": "berlin_spring_forward_the_hour_that_replaces_it",
+  "next": true,
+  "zone": "Europe/Berlin"
+}

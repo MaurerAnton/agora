@@ -1,0 +1,12 @@
+name|leap_day_exactly_now_moves_on
+expr|0 0 29 2 *
+valid|1
+minutes|0
+hours|0
+daysOfMonth|29
+months|2
+daysOfWeek|0,1,2,3,4,5,6
+domRestricted|1
+dowRestricted|0
+zone|UTC
+next|1961625600000

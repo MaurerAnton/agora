@@ -1,0 +1,4 @@
+name|resolve_ollama_max
+op|resolve
+args|OLLAMA|gpt-oss|true|max|false|0
+result|ResolvedThinking(enabled=true, effort=high, budgetTokens=null, capability=ModelThinkingCapability(canDisableThinking=true, supportedEfforts=[low, medium, high], supportsThinkingBudget=false, minBudgetTokens=1, maxBudgetTokens=null, supportsEffortWithBudget=true, supportsSamplingParams=true))

@@ -1,0 +1,4 @@
+name|cap_gemini
+op|capability
+args|GEMINI|gemini-2.5-pro
+result|ModelThinkingCapability(canDisableThinking=true, supportedEfforts=[minimal, low, medium, high], supportsThinkingBudget=true, minBudgetTokens=1, maxBudgetTokens=null, supportsEffortWithBudget=false, supportsSamplingParams=true)

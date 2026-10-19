@@ -1,0 +1,4 @@
+name|cap_ollama_library
+op|capability
+args|OLLAMA|library/gpt-oss:latest
+result|ModelThinkingCapability(canDisableThinking=true, supportedEfforts=[low, medium, high], supportsThinkingBudget=false, minBudgetTokens=1, maxBudgetTokens=null, supportsEffortWithBudget=true, supportsSamplingParams=true)

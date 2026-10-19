@@ -1,0 +1,4 @@
+name|family_default_groq
+op|familyDefault
+args|GROQ
+result|ModelThinkingCapability(canDisableThinking=true, supportedEfforts=[low, medium, high], supportsThinkingBudget=false, minBudgetTokens=1, maxBudgetTokens=null, supportsEffortWithBudget=true, supportsSamplingParams=true)

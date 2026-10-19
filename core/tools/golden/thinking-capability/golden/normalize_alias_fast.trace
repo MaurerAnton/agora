@@ -1,0 +1,4 @@
+name|normalize_alias_fast
+op|normalize
+args|FAST
+result|low

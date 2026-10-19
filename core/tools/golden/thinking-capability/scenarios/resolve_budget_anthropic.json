@@ -1,0 +1,1 @@
+{"name":"resolve_budget_anthropic","op":"resolve","family":"ANTHROPIC","modelId":"claude-opus-4-6","enabled":true,"effort":"high","budgetEnabled":true,"budgetTokens":8000}

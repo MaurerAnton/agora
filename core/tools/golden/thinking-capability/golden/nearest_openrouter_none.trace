@@ -1,0 +1,4 @@
+name|nearest_openrouter_none
+op|nearest
+args|OPENROUTER|anything|none
+result|minimal

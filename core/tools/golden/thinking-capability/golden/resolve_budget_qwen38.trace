@@ -1,0 +1,4 @@
+name|resolve_budget_qwen38
+op|resolve
+args|QWEN|qwen3.8-max|true|high|true|50000
+result|ResolvedThinking(enabled=true, effort=null, budgetTokens=32768, capability=ModelThinkingCapability(canDisableThinking=true, supportedEfforts=[low, medium, xhigh], supportsThinkingBudget=true, minBudgetTokens=1, maxBudgetTokens=32768, supportsEffortWithBudget=false, supportsSamplingParams=true))

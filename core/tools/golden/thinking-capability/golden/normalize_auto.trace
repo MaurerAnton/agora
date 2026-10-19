@@ -1,0 +1,4 @@
+name|normalize_auto
+op|normalize
+args|auto
+result|medium

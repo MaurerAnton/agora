@@ -1,0 +1,4 @@
+name|clamp_qwen_high
+op|clamp
+args|QWEN|qwen-plus|100000
+result|32768

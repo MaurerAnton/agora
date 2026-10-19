@@ -1,0 +1,4 @@
+name|family_protocol_openai_is_compatible
+op|family
+args|anthropic|openai
+result|OPENAI_COMPATIBLE

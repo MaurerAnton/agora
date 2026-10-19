@@ -88,6 +88,7 @@ parity tests in `core/tests/` — a drifting port is a failing build, not a surp
 | task schedule (cron mapping, editor round-trip, one-shot instants) | **done** | stand `task-schedule`; lenient calendar arithmetic pinned, clock-reading paths documented |
 | loop policy (cadence/cycle validation, prompt normalization, overflow-safe fire times) | **done** | stand `loop-policy`; compiles verbatim with no stubs at all, pins Kotlin's wrapping `Long` guard |
 | conversation runtime reducer (recovery, slot, send/guidance, provider/tool gates, stop/finalization barriers) | **done** | stand `conversation-runtime`; the whole reducer cluster compiles verbatim with no stubs, every state/effect field pinned through Kotlin `toString()` |
+| thinking capability (effort normalization, provider family, per-model budgets, resolution) | **done** | stand `thinking-capability`; all four files compile verbatim with no stubs, pins the nearest-effort upward tie rule and the forced-thinking-off fallback |
 | data layer (export/import, backups) | pending | |
 | tool execution (remaining providers, shell engines) | pending | |
 

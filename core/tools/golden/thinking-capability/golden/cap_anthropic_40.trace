@@ -1,0 +1,4 @@
+name|cap_anthropic_40
+op|capability
+args|ANTHROPIC|claude-opus-4-0
+result|ModelThinkingCapability(canDisableThinking=true, supportedEfforts=[], supportsThinkingBudget=true, minBudgetTokens=1024, maxBudgetTokens=null, supportsEffortWithBudget=false, supportsSamplingParams=true)

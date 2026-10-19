@@ -1,0 +1,4 @@
+name|legacy_budget_case_space
+op|legacyBudget
+args| BUDGET:4096 
+result|4096

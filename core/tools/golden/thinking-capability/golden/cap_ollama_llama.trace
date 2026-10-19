@@ -1,0 +1,4 @@
+name|cap_ollama_llama
+op|capability
+args|OLLAMA|llama3.2
+result|ModelThinkingCapability(canDisableThinking=true, supportedEfforts=[], supportsThinkingBudget=false, minBudgetTokens=1, maxBudgetTokens=null, supportsEffortWithBudget=true, supportsSamplingParams=true)

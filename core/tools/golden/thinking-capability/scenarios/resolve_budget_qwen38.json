@@ -1,0 +1,1 @@
+{"name":"resolve_budget_qwen38","op":"resolve","family":"QWEN","modelId":"qwen3.8-max","enabled":true,"effort":"high","budgetEnabled":true,"budgetTokens":50000}

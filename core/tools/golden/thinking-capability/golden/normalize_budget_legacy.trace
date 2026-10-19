@@ -1,0 +1,4 @@
+name|normalize_budget_legacy
+op|normalize
+args|budget:8192
+result|medium

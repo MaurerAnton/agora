@@ -1,0 +1,4 @@
+name|cap_deepseek_v4
+op|capability
+args|QWEN|deepseek-v4-pro
+result|ModelThinkingCapability(canDisableThinking=true, supportedEfforts=[low, high, max], supportsThinkingBudget=true, minBudgetTokens=1, maxBudgetTokens=32768, supportsEffortWithBudget=true, supportsSamplingParams=true)

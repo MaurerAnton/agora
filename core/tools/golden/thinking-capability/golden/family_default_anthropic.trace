@@ -1,0 +1,4 @@
+name|family_default_anthropic
+op|familyDefault
+args|ANTHROPIC
+result|ModelThinkingCapability(canDisableThinking=true, supportedEfforts=[low, medium, high, xhigh, max], supportsThinkingBudget=true, minBudgetTokens=1024, maxBudgetTokens=null, supportsEffortWithBudget=false, supportsSamplingParams=false)

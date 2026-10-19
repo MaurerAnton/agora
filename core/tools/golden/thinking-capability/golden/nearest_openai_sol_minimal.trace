@@ -1,0 +1,4 @@
+name|nearest_openai_sol_minimal
+op|nearest
+args|OPENAI|gpt-6-sol|minimal
+result|low

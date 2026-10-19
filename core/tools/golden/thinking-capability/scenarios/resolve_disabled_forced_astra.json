@@ -1,0 +1,1 @@
+{"name":"resolve_disabled_forced_astra","op":"resolve","family":"OPENAI","modelId":"gpt-6-astra","enabled":false,"effort":"high","budgetEnabled":false,"budgetTokens":0}

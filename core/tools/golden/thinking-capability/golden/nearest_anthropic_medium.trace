@@ -1,0 +1,4 @@
+name|nearest_anthropic_medium
+op|nearest
+args|ANTHROPIC|claude-opus-4-6|medium
+result|medium

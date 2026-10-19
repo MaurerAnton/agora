@@ -1,0 +1,4 @@
+name|normalize_null
+op|normalize
+args|-
+result|medium

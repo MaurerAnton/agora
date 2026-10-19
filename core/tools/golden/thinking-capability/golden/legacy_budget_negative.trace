@@ -1,0 +1,4 @@
+name|legacy_budget_negative
+op|legacyBudget
+args|budget:-3
+result|null

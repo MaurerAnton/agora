@@ -1,0 +1,4 @@
+name|cap_anthropic_37
+op|capability
+args|ANTHROPIC|claude-3-7-sonnet-20250219
+result|ModelThinkingCapability(canDisableThinking=true, supportedEfforts=[], supportsThinkingBudget=true, minBudgetTokens=1024, maxBudgetTokens=null, supportsEffortWithBudget=false, supportsSamplingParams=true)

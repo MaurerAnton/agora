@@ -1,0 +1,4 @@
+name|legacy_budget_plain
+op|legacyBudget
+args|budget:2048
+result|2048

@@ -1,0 +1,4 @@
+name|cap_qwen38_24t
+op|capability
+args|QWEN|qwen3.8-2.4t-a95b
+result|ModelThinkingCapability(canDisableThinking=true, supportedEfforts=[low, medium, xhigh], supportsThinkingBudget=true, minBudgetTokens=1, maxBudgetTokens=32768, supportsEffortWithBudget=false, supportsSamplingParams=true)

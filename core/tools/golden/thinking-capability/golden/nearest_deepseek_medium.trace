@@ -1,0 +1,4 @@
+name|nearest_deepseek_medium
+op|nearest
+args|DEEPSEEK|deepseek-chat|medium
+result|high

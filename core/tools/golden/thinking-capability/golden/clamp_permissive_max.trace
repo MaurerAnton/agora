@@ -1,0 +1,4 @@
+name|clamp_permissive_max
+op|clamp
+args|OPENAI_COMPATIBLE|anything|2147483647
+result|2147483647

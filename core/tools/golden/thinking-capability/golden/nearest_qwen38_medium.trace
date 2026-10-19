@@ -1,0 +1,4 @@
+name|nearest_qwen38_medium
+op|nearest
+args|QWEN|qwen3.8-max|medium
+result|medium

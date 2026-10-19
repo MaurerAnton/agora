@@ -1,0 +1,4 @@
+name|resolve_disabled_forced_astra
+op|resolve
+args|OPENAI|gpt-6-astra|false|high|false|0
+result|ResolvedThinking(enabled=true, effort=low, budgetTokens=null, capability=ModelThinkingCapability(canDisableThinking=false, supportedEfforts=[low, medium, high, xhigh, max], supportsThinkingBudget=false, minBudgetTokens=1, maxBudgetTokens=null, supportsEffortWithBudget=true, supportsSamplingParams=true))

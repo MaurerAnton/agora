@@ -1,0 +1,4 @@
+name|cap_groq_gpt_oss
+op|capability
+args|GROQ|openai/gpt-oss-120b
+result|ModelThinkingCapability(canDisableThinking=false, supportedEfforts=[low, medium, high], supportsThinkingBudget=false, minBudgetTokens=1, maxBudgetTokens=null, supportsEffortWithBudget=true, supportsSamplingParams=true)

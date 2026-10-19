@@ -1,0 +1,4 @@
+name|clamp_groq_no_ceiling
+op|clamp
+args|GROQ|llama-3.3-70b|999999
+result|999999

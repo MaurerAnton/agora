@@ -1,0 +1,4 @@
+name|normalize_alias_xhigh
+op|normalize
+args|  X-High 
+result|xhigh

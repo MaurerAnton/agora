@@ -1,0 +1,4 @@
+name|index_for_effort_trim_case
+op|indexForEffort
+args|  HIGH 
+result|3

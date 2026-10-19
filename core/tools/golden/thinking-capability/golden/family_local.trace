@@ -1,0 +1,4 @@
+name|family_local
+op|family
+args|local|-
+result|LOCAL

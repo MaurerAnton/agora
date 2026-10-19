@@ -1,0 +1,4 @@
+name|resolve_enabled_unknown_effort
+op|resolve
+args|OPENAI|gpt-9|true|ultra|false|0
+result|ResolvedThinking(enabled=true, effort=medium, budgetTokens=null, capability=ModelThinkingCapability(canDisableThinking=true, supportedEfforts=[minimal, low, medium, high, xhigh, max], supportsThinkingBudget=false, minBudgetTokens=1, maxBudgetTokens=null, supportsEffortWithBudget=true, supportsSamplingParams=true))

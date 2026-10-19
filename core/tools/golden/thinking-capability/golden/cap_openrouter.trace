@@ -1,0 +1,4 @@
+name|cap_openrouter
+op|capability
+args|OPENROUTER|openai/gpt-5
+result|ModelThinkingCapability(canDisableThinking=true, supportedEfforts=[minimal, low, medium, high, xhigh, max], supportsThinkingBudget=true, minBudgetTokens=1, maxBudgetTokens=null, supportsEffortWithBudget=false, supportsSamplingParams=true)

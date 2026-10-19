@@ -1,0 +1,4 @@
+name|family_default_local
+op|familyDefault
+args|LOCAL
+result|ModelThinkingCapability(canDisableThinking=true, supportedEfforts=[], supportsThinkingBudget=false, minBudgetTokens=1, maxBudgetTokens=null, supportsEffortWithBudget=true, supportsSamplingParams=true)

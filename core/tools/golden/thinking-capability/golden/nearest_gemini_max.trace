@@ -1,0 +1,4 @@
+name|nearest_gemini_max
+op|nearest
+args|GEMINI|gemini-2.5-pro|max
+result|high

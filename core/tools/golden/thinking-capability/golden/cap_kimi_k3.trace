@@ -1,0 +1,4 @@
+name|cap_kimi_k3
+op|capability
+args|QWEN|kimi-k3
+result|ModelThinkingCapability(canDisableThinking=true, supportedEfforts=[low, high, max], supportsThinkingBudget=true, minBudgetTokens=1, maxBudgetTokens=32768, supportsEffortWithBudget=true, supportsSamplingParams=true)

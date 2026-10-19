@@ -1,0 +1,4 @@
+name|clamp_qwen_zero
+op|clamp
+args|QWEN|qwen-plus|0
+result|1

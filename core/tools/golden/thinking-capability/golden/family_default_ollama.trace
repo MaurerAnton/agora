@@ -1,0 +1,4 @@
+name|family_default_ollama
+op|familyDefault
+args|OLLAMA
+result|ModelThinkingCapability(canDisableThinking=true, supportedEfforts=[], supportsThinkingBudget=false, minBudgetTokens=1, maxBudgetTokens=null, supportsEffortWithBudget=true, supportsSamplingParams=true)

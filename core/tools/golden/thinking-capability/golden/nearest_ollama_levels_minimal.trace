@@ -1,0 +1,4 @@
+name|nearest_ollama_levels_minimal
+op|nearest
+args|OLLAMA|gpt-oss|minimal
+result|low

@@ -1,0 +1,4 @@
+name|cap_qwq_plus_prefix
+op|capability
+args|QWEN|qwq-plus-2025-01-01
+result|ModelThinkingCapability(canDisableThinking=false, supportedEfforts=[], supportsThinkingBudget=true, minBudgetTokens=1, maxBudgetTokens=32768, supportsEffortWithBudget=true, supportsSamplingParams=true)

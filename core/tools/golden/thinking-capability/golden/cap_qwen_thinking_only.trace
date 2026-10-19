@@ -1,0 +1,4 @@
+name|cap_qwen_thinking_only
+op|capability
+args|QWEN|qwen3-next-80b-a3b-thinking
+result|ModelThinkingCapability(canDisableThinking=false, supportedEfforts=[], supportsThinkingBudget=true, minBudgetTokens=1, maxBudgetTokens=32768, supportsEffortWithBudget=true, supportsSamplingParams=true)

@@ -1,0 +1,4 @@
+name|normalize_none
+op|normalize
+args|NONE
+result|none

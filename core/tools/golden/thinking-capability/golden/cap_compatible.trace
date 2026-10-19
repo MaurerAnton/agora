@@ -1,0 +1,4 @@
+name|cap_compatible
+op|capability
+args|OPENAI_COMPATIBLE|custom-model
+result|ModelThinkingCapability(canDisableThinking=true, supportedEfforts=[minimal, low, medium, high, xhigh, max], supportsThinkingBudget=true, minBudgetTokens=1, maxBudgetTokens=null, supportsEffortWithBudget=true, supportsSamplingParams=true)

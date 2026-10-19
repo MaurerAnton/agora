@@ -1,0 +1,4 @@
+name|resolve_budget_anthropic_clamped
+op|resolve
+args|ANTHROPIC|claude-opus-4-6|true|high|true|100
+result|ResolvedThinking(enabled=true, effort=null, budgetTokens=1024, capability=ModelThinkingCapability(canDisableThinking=true, supportedEfforts=[low, medium, high, xhigh, max], supportsThinkingBudget=true, minBudgetTokens=1024, maxBudgetTokens=null, supportsEffortWithBudget=false, supportsSamplingParams=true))

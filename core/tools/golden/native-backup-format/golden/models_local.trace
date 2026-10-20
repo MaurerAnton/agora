@@ -1,0 +1,3 @@
+name|models_local
+op|models
+result|{"shell":{"id":"s1","name":"dev","apiKey":"","sshPassword":""},"mcp":{"id":"m1","headers":{}},"embedding":null}|-

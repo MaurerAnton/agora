@@ -1,0 +1,4 @@
+name|normalize_8192
+op|normalize
+args|8192
+result|8192

@@ -1,0 +1,4 @@
+name|normalize_min
+op|normalize
+args|4095
+result|4096

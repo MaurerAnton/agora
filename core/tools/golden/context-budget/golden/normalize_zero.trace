@@ -1,0 +1,4 @@
+name|normalize_zero
+op|normalize
+args|0
+result|262144

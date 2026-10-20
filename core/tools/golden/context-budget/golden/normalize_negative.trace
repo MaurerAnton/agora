@@ -1,0 +1,4 @@
+name|normalize_negative
+op|normalize
+args|-1
+result|262144

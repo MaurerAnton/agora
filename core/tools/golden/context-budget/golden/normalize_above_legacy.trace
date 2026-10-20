@@ -1,0 +1,4 @@
+name|normalize_above_legacy
+op|normalize
+args|101
+result|4096

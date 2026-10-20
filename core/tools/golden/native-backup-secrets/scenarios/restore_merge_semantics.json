@@ -1,0 +1,130 @@
+{
+  "name": "restore_merge_semantics",
+  "op": "restore",
+  "settings": {
+    "apiKeys": [
+      {
+        "id": "a",
+        "name": "A",
+        "key": "ka",
+        "provider": "google"
+      }
+    ],
+    "activeApiKeyIds": {
+      "old": "a"
+    },
+    "webSearchApiKeys": {
+      "brave": "old",
+      "keep": "k"
+    },
+    "proxyPassword": "existing",
+    "shellDevices": [
+      {
+        "id": "s1",
+        "name": "dev",
+        "apiKey": "old-ak",
+        "sshPassword": "old-pw"
+      },
+      {
+        "id": "s2",
+        "name": "other",
+        "apiKey": "o-ak",
+        "sshPassword": "o-pw"
+      }
+    ],
+    "embeddingModels": [
+      {
+        "id": "e1",
+        "name": "remote",
+        "type": "REMOTE",
+        "remoteApiKey": "old-key",
+        "localFilePath": "",
+        "batchSize": 8
+      },
+      {
+        "id": "e2",
+        "name": "local",
+        "type": "LOCAL",
+        "remoteApiKey": "local-old",
+        "localFilePath": "/tmp/e2",
+        "batchSize": 8
+      }
+    ],
+    "mcpServers": [
+      {
+        "id": "m1",
+        "name": "server",
+        "headers": {
+          "Old": "1"
+        }
+      }
+    ]
+  },
+  "secrets": {
+    "apiKeys": [
+      {
+        "id": "b",
+        "name": "B",
+        "key": "kb",
+        "provider": "openai"
+      },
+      {
+        "id": "c",
+        "name": "C",
+        "key": "ka",
+        "provider": "google"
+      },
+      {
+        "id": "d",
+        "name": "D",
+        "key": "ka",
+        "provider": "anthropic"
+      },
+      {
+        "id": "a",
+        "name": "A2",
+        "key": "ka2",
+        "provider": "google"
+      }
+    ],
+    "activeApiKeyIds": {
+      "x": "a",
+      "y": "b",
+      "z": "c",
+      "q": "missing"
+    },
+    "webSearchApiKeys": {
+      "brave": "new",
+      "ddg": "d"
+    },
+    "proxyPassword": "",
+    "shellDevices": {
+      "s1": {
+        "apiKey": "newak",
+        "sshPassword": "newpw"
+      },
+      "ghost": {
+        "apiKey": "g",
+        "sshPassword": "gp"
+      }
+    },
+    "shellApiKeys": {
+      "dev": "legacy",
+      "ghostname": "x"
+    },
+    "embeddingApiKeys": {
+      "e1": "newkey",
+      "e2": "local-ignore",
+      "orphan": "x"
+    },
+    "mcpHeaders": {
+      "m1": {
+        "New": "2"
+      },
+      "orphan": {
+        "C": "D"
+      }
+    }
+  },
+  "replace": false
+}

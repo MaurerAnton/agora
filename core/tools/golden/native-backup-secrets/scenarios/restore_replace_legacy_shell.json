@@ -1,0 +1,39 @@
+{
+  "name": "restore_replace_legacy_shell",
+  "op": "restore",
+  "settings": {
+    "apiKeys": [],
+    "activeApiKeyIds": {},
+    "webSearchApiKeys": {},
+    "proxyPassword": "",
+    "shellDevices": [
+      {
+        "id": "s2",
+        "name": "dev",
+        "apiKey": "old-ak",
+        "sshPassword": "old-pw"
+      },
+      {
+        "id": "s3",
+        "name": "other",
+        "apiKey": "other-ak",
+        "sshPassword": "other-pw"
+      }
+    ],
+    "embeddingModels": [],
+    "mcpServers": []
+  },
+  "secrets": {
+    "apiKeys": [],
+    "activeApiKeyIds": {},
+    "webSearchApiKeys": {},
+    "proxyPassword": "",
+    "shellDevices": {},
+    "shellApiKeys": {
+      "dev": "legacy"
+    },
+    "embeddingApiKeys": {},
+    "mcpHeaders": {}
+  },
+  "replace": true
+}

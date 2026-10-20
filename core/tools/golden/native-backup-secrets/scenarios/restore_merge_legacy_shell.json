@@ -1,0 +1,39 @@
+{
+  "name": "restore_merge_legacy_shell",
+  "op": "restore",
+  "settings": {
+    "apiKeys": [],
+    "activeApiKeyIds": {},
+    "webSearchApiKeys": {},
+    "proxyPassword": "",
+    "shellDevices": [
+      {
+        "id": "s1",
+        "name": "dev",
+        "apiKey": "old-ak",
+        "sshPassword": "old-pw"
+      },
+      {
+        "id": "s2",
+        "name": "other",
+        "apiKey": "o-ak",
+        "sshPassword": "o-pw"
+      }
+    ],
+    "embeddingModels": [],
+    "mcpServers": []
+  },
+  "secrets": {
+    "apiKeys": [],
+    "activeApiKeyIds": {},
+    "webSearchApiKeys": {},
+    "proxyPassword": "",
+    "shellDevices": {},
+    "shellApiKeys": {
+      "dev": "legacy"
+    },
+    "embeddingApiKeys": {},
+    "mcpHeaders": {}
+  },
+  "replace": false
+}

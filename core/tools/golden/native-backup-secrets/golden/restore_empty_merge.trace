@@ -1,0 +1,4 @@
+name|restore_empty_merge
+op|restore
+warnings|[]|-
+result|{"apiKeys":[{"id":"a","name":"A","key":"ka","provider":"google"}],"activeApiKeyIds":{"old":"a"},"webSearchApiKeys":{"brave":"old"},"proxyPassword":"existing","shellDevices":[{"id":"s1","name":"dev","apiKey":"old-ak","sshPassword":"old-pw"}],"embeddingModels":[{"id":"e1","type":"REMOTE","remoteApiKey":"old-key"}],"mcpServers":[{"id":"m1","headers":{"Old":"1"}}]}|-

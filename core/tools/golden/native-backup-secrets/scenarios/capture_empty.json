@@ -1,0 +1,13 @@
+{
+  "name": "capture_empty",
+  "op": "capture",
+  "settings": {
+    "apiKeys": [],
+    "activeApiKeyIds": {},
+    "webSearchApiKeys": {},
+    "proxyPassword": "",
+    "shellDevices": [],
+    "embeddingModels": [],
+    "mcpServers": []
+  }
+}

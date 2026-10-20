@@ -1,0 +1,4 @@
+name|restore_replace_legacy_shell
+op|restore
+warnings|[]|-
+result|{"apiKeys":[],"activeApiKeyIds":{},"webSearchApiKeys":{},"proxyPassword":"","shellDevices":[{"id":"s2","name":"dev","apiKey":"legacy","sshPassword":""},{"id":"s3","name":"other","apiKey":"","sshPassword":""}],"embeddingModels":[],"mcpServers":[]}|-

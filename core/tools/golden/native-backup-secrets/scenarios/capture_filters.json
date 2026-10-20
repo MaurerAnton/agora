@@ -1,0 +1,108 @@
+{
+  "name": "capture_filters",
+  "op": "capture",
+  "settings": {
+    "apiKeys": [
+      {
+        "id": "k1",
+        "name": "One",
+        "key": "sk-1",
+        "provider": "openai"
+      },
+      {
+        "id": "k2",
+        "name": "Two",
+        "key": "sk-2",
+        "provider": "google"
+      }
+    ],
+    "activeApiKeyIds": {
+      "openai": "k1"
+    },
+    "webSearchApiKeys": {
+      "brave": "b1"
+    },
+    "proxyPassword": "proxy-pw",
+    "shellDevices": [
+      {
+        "id": "s1",
+        "name": "dev-one",
+        "apiKey": "ak1",
+        "sshPassword": "sp1"
+      },
+      {
+        "id": "blank",
+        "name": "blank",
+        "apiKey": "",
+        "sshPassword": ""
+      },
+      {
+        "id": "ssh-only",
+        "name": "ssh-only",
+        "apiKey": "",
+        "sshPassword": "sp2"
+      },
+      {
+        "id": "s1",
+        "name": "dev-duplicate",
+        "apiKey": "ak2",
+        "sshPassword": "sp3"
+      },
+      {
+        "id": "spaces",
+        "name": "spaces",
+        "apiKey": "   ",
+        "sshPassword": "  "
+      }
+    ],
+    "embeddingModels": [
+      {
+        "id": "e1",
+        "name": "remote",
+        "type": "REMOTE",
+        "remoteApiKey": "r1",
+        "localFilePath": "",
+        "batchSize": 8
+      },
+      {
+        "id": "e2",
+        "name": "local",
+        "type": "LOCAL",
+        "remoteApiKey": "local-key",
+        "localFilePath": "/tmp/e2",
+        "batchSize": 8
+      },
+      {
+        "id": "e3",
+        "name": "remote-blank",
+        "type": "REMOTE",
+        "remoteApiKey": "",
+        "localFilePath": "",
+        "batchSize": 8
+      },
+      {
+        "id": "e4",
+        "name": "remote-spaces",
+        "type": "REMOTE",
+        "remoteApiKey": "   ",
+        "localFilePath": "",
+        "batchSize": 8
+      }
+    ],
+    "mcpServers": [
+      {
+        "id": "m1",
+        "name": "with-headers",
+        "headers": {
+          "Authorization": "Bearer x",
+          "X-Empty": ""
+        }
+      },
+      {
+        "id": "m2",
+        "name": "empty",
+        "headers": {}
+      }
+    ]
+  }
+}

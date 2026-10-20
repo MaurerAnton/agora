@@ -1,0 +1,4 @@
+name|restore_merge_semantics
+op|restore
+warnings|["ignored 2 shell credential record(s) without a matching device","ignored 1 embedding credential record(s) without a matching model","ignored 1 MCP header record(s) without a matching server"]|-
+result|{"apiKeys":[{"id":"a","name":"A2","key":"ka2","provider":"google"},{"id":"b","name":"B","key":"kb","provider":"openai"},{"id":"d","name":"D","key":"ka","provider":"anthropic"}],"activeApiKeyIds":{"old":"a","x":"a","y":"b","z":"a"},"webSearchApiKeys":{"brave":"new","keep":"k","ddg":"d"},"proxyPassword":"existing","shellDevices":[{"id":"s1","name":"dev","apiKey":"newak","sshPassword":"newpw"},{"id":"s2","name":"other","apiKey":"o-ak","sshPassword":"o-pw"}],"embeddingModels":[{"id":"e1","type":"REMOTE","remoteApiKey":"newkey"},{"id":"e2","type":"LOCAL","remoteApiKey":"local-old"}],"mcpServers":[{"id":"m1","headers":{"New":"2"}}]}|-

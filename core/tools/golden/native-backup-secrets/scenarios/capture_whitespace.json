@@ -1,0 +1,38 @@
+{
+  "name": "capture_whitespace",
+  "op": "capture",
+  "settings": {
+    "apiKeys": [],
+    "activeApiKeyIds": {},
+    "webSearchApiKeys": {},
+    "proxyPassword": "  ",
+    "shellDevices": [
+      {
+        "id": "s1",
+        "name": "spaces",
+        "apiKey": "  ",
+        "sshPassword": "\t"
+      }
+    ],
+    "embeddingModels": [
+      {
+        "id": "e1",
+        "name": "spaces",
+        "type": "REMOTE",
+        "remoteApiKey": "  ",
+        "localFilePath": "",
+        "batchSize": 8
+      }
+    ],
+    "mcpServers": [
+      {
+        "id": "m1",
+        "name": "headers",
+        "headers": {
+          "A": " ",
+          "B": ""
+        }
+      }
+    ]
+  }
+}

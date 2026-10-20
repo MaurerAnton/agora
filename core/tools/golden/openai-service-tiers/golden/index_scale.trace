@@ -1,0 +1,4 @@
+name|index_scale
+op|index
+args|SCALE
+result|1

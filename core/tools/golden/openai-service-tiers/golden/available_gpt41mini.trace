@@ -1,0 +1,4 @@
+name|available_gpt41mini
+op|available
+args|gpt-4.1-mini|true
+result|auto,default,fast

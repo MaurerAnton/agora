@@ -1,0 +1,4 @@
+name|mapped_priority_gpt4o
+op|mapped
+args|PRIORITY|gpt-4o|true
+result|fast

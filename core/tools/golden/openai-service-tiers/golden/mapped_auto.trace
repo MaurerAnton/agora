@@ -1,0 +1,4 @@
+name|mapped_auto
+op|mapped
+args|auto|gpt-5-pro|true
+result|auto

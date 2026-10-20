@@ -1,0 +1,4 @@
+name|available_o3
+op|available
+args|o3|true
+result|auto,default,flex,fast

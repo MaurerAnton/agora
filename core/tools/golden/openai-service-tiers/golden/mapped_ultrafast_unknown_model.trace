@@ -1,0 +1,4 @@
+name|mapped_ultrafast_unknown_model
+op|mapped
+args|ultrafast|unknown-model|true
+result|ultrafast

@@ -1,0 +1,4 @@
+name|normalize_partial
+op|normalize
+args|flexx
+result|auto

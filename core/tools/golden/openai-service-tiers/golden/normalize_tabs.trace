@@ -1,0 +1,4 @@
+name|normalize_tabs
+op|normalize
+args|\tFAST\n
+result|fast

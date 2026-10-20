@@ -1,0 +1,4 @@
+name|mapped_padded_value
+op|mapped
+args| Fast |gpt-5-pro|true
+result|default

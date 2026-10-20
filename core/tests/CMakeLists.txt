@@ -30,6 +30,7 @@ add_executable(agora_core_tests
     thinking_capability_parity_test.cpp
     token_pricing_parity_test.cpp
     streaming_json_parity_test.cpp
+    openai_service_tiers_parity_test.cpp
     provider_identity_parity_test.cpp
     provider_names_parity_test.cpp
     provider_support_parity_test.cpp
@@ -74,6 +75,7 @@ target_compile_definitions(agora_core_tests PRIVATE
     AGORA_FIXTURE_THINKING_CAPABILITY_DIR="${CMAKE_CURRENT_SOURCE_DIR}/../tools/golden/thinking-capability"
     AGORA_FIXTURE_TOKEN_PRICING_DIR="${CMAKE_CURRENT_SOURCE_DIR}/../tools/golden/token-pricing"
     AGORA_FIXTURE_STREAMING_JSON_DIR="${CMAKE_CURRENT_SOURCE_DIR}/../tools/golden/streaming-json-document"
+    AGORA_FIXTURE_OPENAI_SERVICE_TIERS_DIR="${CMAKE_CURRENT_SOURCE_DIR}/../tools/golden/openai-service-tiers"
     AGORA_FIXTURE_LOOP_POLICY_DIR="${CMAKE_CURRENT_SOURCE_DIR}/../tools/golden/loop-policy"
     AGORA_FIXTURE_MODEL_ALIASES_DIR="${CMAKE_CURRENT_SOURCE_DIR}/../tools/golden/model-aliases"
     AGORA_FIXTURE_PROVIDER_NAMES_DIR="${CMAKE_CURRENT_SOURCE_DIR}/../tools/golden/provider-names"

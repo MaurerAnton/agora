@@ -1,0 +1,4 @@
+name|available_empty_model
+op|available
+args||true
+result|auto,default,flex,fast,ultrafast

@@ -1,0 +1,4 @@
+name|mapped_ultrafast_custom_provider
+op|mapped
+args|ultrafast|gpt-5-pro|false
+result|ultrafast

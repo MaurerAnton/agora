@@ -1,0 +1,4 @@
+name|available_gpt6astra
+op|available
+args|GPT-6-ASTRA|true
+result|auto,default,flex,fast

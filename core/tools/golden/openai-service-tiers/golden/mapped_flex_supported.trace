@@ -1,0 +1,4 @@
+name|mapped_flex_supported
+op|mapped
+args|flex|gpt-5.5|true
+result|flex

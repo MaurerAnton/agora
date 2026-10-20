@@ -1,0 +1,4 @@
+name|available_o3pro
+op|available
+args|o3-pro|true
+result|auto,default

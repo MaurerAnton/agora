@@ -1,0 +1,4 @@
+name|mapped_ultrafast_to_fast_54
+op|mapped
+args|ultrafast|gpt-5.4|true
+result|fast

@@ -1,0 +1,4 @@
+name|mapped_fast_standard_model
+op|mapped
+args|fast|gpt-3.5-turbo|true
+result|default

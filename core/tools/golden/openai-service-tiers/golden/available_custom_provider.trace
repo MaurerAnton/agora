@@ -1,0 +1,4 @@
+name|available_custom_provider
+op|available
+args|gpt-5-pro|false
+result|auto,default,flex,fast,ultrafast

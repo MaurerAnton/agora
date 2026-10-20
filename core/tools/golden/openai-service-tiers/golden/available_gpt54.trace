@@ -1,0 +1,4 @@
+name|available_gpt54
+op|available
+args|gpt-5.4|true
+result|auto,default,flex,fast

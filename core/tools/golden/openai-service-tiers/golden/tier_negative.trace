@@ -1,0 +1,4 @@
+name|tier_negative
+op|tier
+args|-5
+result|auto

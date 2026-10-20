@@ -1,0 +1,4 @@
+name|available_case_padded
+op|available
+args| GPT-5-PRO |true
+result|auto,default

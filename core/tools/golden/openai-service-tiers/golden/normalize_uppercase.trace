@@ -1,0 +1,4 @@
+name|normalize_uppercase
+op|normalize
+args|DEFAULT
+result|default

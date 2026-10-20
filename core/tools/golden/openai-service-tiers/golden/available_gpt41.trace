@@ -1,0 +1,4 @@
+name|available_gpt41
+op|available
+args|gpt-4.1|true
+result|auto,default,fast

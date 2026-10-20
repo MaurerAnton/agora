@@ -1,0 +1,4 @@
+name|available_o4mini
+op|available
+args|o4-mini|true
+result|auto,default,flex,fast

@@ -1,0 +1,4 @@
+name|mapped_priority_gpt5pro
+op|mapped
+args|PRIORITY|gpt-5-pro|true
+result|default

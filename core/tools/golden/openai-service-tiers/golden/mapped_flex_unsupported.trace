@@ -1,0 +1,4 @@
+name|mapped_flex_unsupported
+op|mapped
+args|flex|gpt-4o|true
+result|default

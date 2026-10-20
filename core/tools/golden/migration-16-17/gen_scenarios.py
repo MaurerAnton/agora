@@ -83,6 +83,10 @@ case("m16_selection_null_key", [conversation("c1", '{"null":"u2"}')], [
     user("c1", "u1", None, 10),
     user("c1", "u2", None, 20),
 ])
+case("m16_selection_null_key_first", [conversation("c1", '{"null":"u1"}')], [
+    user("c1", "u1", None, 10),
+    user("c1", "u2", None, 20),
+])
 case("m16_selection_invalid_json", [conversation("c1", "not json")], [
     user("c1", "u", None, 10),
 ])
@@ -92,12 +96,20 @@ case("m16_selection_blank", [conversation("c1", "   ")], [
 case("m16_selection_non_string", [conversation("c1", '{"a":1}')], [
     user("c1", "u", None, 10),
 ])
+case("m16_selection_non_string_known", [conversation("c1", '{"null":1}')], [
+    user("c1", "1", None, 10),
+    user("c1", "u1", None, 20),
+])
 case("m16_selection_unknown_id", [conversation("c1", '{"ghost":"u"}')], [
     user("c1", "u", None, 10),
 ])
 case("m16_unknown_enum_values", [conversation("c1")], [
     msg("c1", "u", None, "USER", "SUCCESS", 10),
     msg("c1", "m", "u", "BOGUS", "BOGUS", 11),
+])
+case("m16_unknown_status_only", [conversation("c1")], [
+    user("c1", "u", None, 10),
+    msg("c1", "m", "u", "MODEL", "BOGUS", 11),
 ])
 case("m16_blank_conversation_id", [conversation("")], [user("", "u", None, 10)])
 case("m16_duplicate_ids", [conversation("c1")], [

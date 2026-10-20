@@ -1,0 +1,1 @@
+{"name":"m16_unknown_status_only","op":"migrate","conversations":[{"id":"c1"}],"messages":[{"conversationId":"c1","id":"u","parentId":null,"participant":"USER","status":"SUCCESS","timestamp":10},{"conversationId":"c1","id":"m","parentId":"u","participant":"MODEL","status":"BOGUS","timestamp":11}]}

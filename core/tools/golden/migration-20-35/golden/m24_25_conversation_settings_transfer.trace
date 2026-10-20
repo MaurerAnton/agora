@@ -1,0 +1,4 @@
+name|m24_25_conversation_settings_transfer
+op|migrate
+version|24
+result|[["execSQL","CREATE TABLE IF NOT EXISTS conversation_settings_transfer (\\n    conversationId TEXT NOT NULL,\\n    settingsJson TEXT,\\n    PRIMARY KEY(conversationId),\\n    FOREIGN KEY(conversationId) REFERENCES conversations(id)\\n        ON UPDATE NO ACTION ON DELETE CASCADE\\n)"]]|-

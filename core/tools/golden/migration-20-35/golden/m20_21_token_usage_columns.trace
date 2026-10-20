@@ -1,0 +1,4 @@
+name|m20_21_token_usage_columns
+op|migrate
+version|20
+result|[["execSQL","ALTER TABLE messages ADD COLUMN inputTokenCount INTEGER"],["execSQL","ALTER TABLE messages ADD COLUMN cachedInputTokenCount INTEGER"],["execSQL","ALTER TABLE messages ADD COLUMN uncachedInputTokenCount INTEGER"],["execSQL","ALTER TABLE messages ADD COLUMN outputTokenCount INTEGER"],["execSQL","ALTER TABLE messages ADD COLUMN reasoningTokenCount INTEGER"]]|-

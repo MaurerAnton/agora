@@ -1,0 +1,4 @@
+name|m26_27_settings_import_transfer
+op|migrate
+version|26
+result|[["execSQL","CREATE TABLE IF NOT EXISTS conversation_settings_import_transfer (\\n    id INTEGER NOT NULL,\\n    transferId TEXT NOT NULL,\\n    settingsJson TEXT NOT NULL,\\n    mode TEXT NOT NULL,\\n    PRIMARY KEY(id)\\n)"]]|-

@@ -1,0 +1,4 @@
+name|m23_24_new_chat_persist
+op|migrate
+version|23
+result|[["execSQL","CREATE TABLE IF NOT EXISTS new_chat_persist (\\n    id INTEGER NOT NULL,\\n    modelId TEXT,\\n    systemPromptId TEXT,\\n    conversationSettingsJson TEXT,\\n    draftText TEXT NOT NULL,\\n    draftAttachments TEXT,\\n    PRIMARY KEY(id)\\n)"]]|-

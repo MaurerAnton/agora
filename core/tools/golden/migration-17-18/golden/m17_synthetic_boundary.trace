@@ -1,0 +1,4 @@
+name|m17_synthetic_boundary
+op|migrate
+args|1|2|4
+result|[["query","SELECT id, selectedBranchesJson, selectedRunBranchesJson FROM conversations"],["query","SELECT id, parentRunId, startedAt\\nFROM runs\\nWHERE conversationId = ?","s:c1"],["query","SELECT id, parentId, text, images, attachmentMeta, participant, timestamp, runId, runSequence\\nFROM messages\\nWHERE conversationId = ?","s:c1"]]|-

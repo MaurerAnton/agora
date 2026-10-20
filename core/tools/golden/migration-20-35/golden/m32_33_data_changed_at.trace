@@ -1,0 +1,4 @@
+name|m32_33_data_changed_at
+op|migrate
+version|32
+result|[["execSQL","ALTER TABLE conversations ADD COLUMN dataChangedAt INTEGER NOT NULL DEFAULT 0"]]|-

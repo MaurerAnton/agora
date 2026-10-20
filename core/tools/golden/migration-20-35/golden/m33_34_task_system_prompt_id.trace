@@ -1,0 +1,4 @@
+name|m33_34_task_system_prompt_id
+op|migrate
+version|33
+result|[["execSQL","ALTER TABLE tasks ADD COLUMN systemPromptId TEXT"]]|-

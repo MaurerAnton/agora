@@ -1,0 +1,4 @@
+name|m18_empty
+op|migrate
+args|0|0
+result|[["query","SELECT id, parentRunId, legacyAmbiguous FROM runs"],["query","SELECT id, parentId, participant, runId, runSequence FROM messages"]]|-

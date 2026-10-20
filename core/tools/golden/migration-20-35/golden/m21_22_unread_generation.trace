@@ -1,0 +1,4 @@
+name|m21_22_unread_generation
+op|migrate
+version|21
+result|[["execSQL","ALTER TABLE conversations ADD COLUMN hasUnreadGeneration INTEGER NOT NULL DEFAULT 0"]]|-

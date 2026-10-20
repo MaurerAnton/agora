@@ -1,0 +1,4 @@
+name|m18_dangling_tool_prefix
+op|migrate
+args|2|3
+result|[["query","SELECT id, parentRunId, legacyAmbiguous FROM runs"],["query","SELECT id, parentId, participant, runId, runSequence FROM messages"]]|-

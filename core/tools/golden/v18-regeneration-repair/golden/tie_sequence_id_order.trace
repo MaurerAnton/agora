@@ -1,0 +1,4 @@
+name|tie_sequence_id_order
+op|plan
+args|2|4
+result|d_a=u\sd_b=u

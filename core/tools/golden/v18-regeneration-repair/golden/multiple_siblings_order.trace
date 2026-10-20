@@ -1,0 +1,4 @@
+name|multiple_siblings_order
+op|plan
+args|2|5
+result|d1=u\sd2=u\sd3=u

@@ -96,6 +96,7 @@ parity tests in `core/tests/` — a drifting port is a failing build, not a surp
 | message source (automation task/loop/ask_user record, canonical stored JSON, backup import gate) | **done** | stand `message-source`; source compiles verbatim (kotlinx codec config), `Participant` lifted by script; 86 traces pin decode degradation, canonical encoding, sanitize gating and the ask_user text form |
 | developer-mode unlock (tap counter clamp, seven-tap unlock, remaining-taps feedback) | **done** | stand `developer-mode-unlock`; source compiles verbatim (zero imports); 16 traces pin the counter coercion, the success reset and the three-remaining-taps feedback boundary |
 | database compatibility (missing/supported/future/unreadable gate before Room opens, fail-closed canOpen) | **done** | stand `database-compatibility`; source compiles verbatim (zero imports); 23 traces pin the missing short-circuit, every version edge and all pinned JDK exception descriptions |
+| V18 regeneration-edge repair (rejected v17→v18 migration forward fix, canonical-user and repaired-root guards, LinkedHashMap ordering) | **done** | stand `v18-regeneration-repair`; planner and real `Constants.kt` compile verbatim, `Participant` lifted by script; 26 traces pin every guard, the sibling ordering and the last-wins lookup map |
 | data layer (export/import, backups) | pending | |
 | tool execution (remaining providers, shell engines) | pending | |
 

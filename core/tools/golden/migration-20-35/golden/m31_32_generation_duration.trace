@@ -1,0 +1,4 @@
+name|m31_32_generation_duration
+op|migrate
+version|31
+result|[["execSQL","ALTER TABLE messages ADD COLUMN generationDurationMs INTEGER"]]|-

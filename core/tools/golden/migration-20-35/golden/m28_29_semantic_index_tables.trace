@@ -1,0 +1,4 @@
+name|m28_29_semantic_index_tables
+op|migrate
+version|28
+result|[["execSQL","CREATE TABLE IF NOT EXISTS semantic_index_ledger (\\n    modelId TEXT NOT NULL,\\n    state TEXT NOT NULL,\\n    sourceRevision INTEGER NOT NULL,\\n    completedRevision INTEGER NOT NULL,\\n    updatedAt INTEGER NOT NULL,\\n    PRIMARY KEY(modelId)\\n)"],["execSQL","CREATE TABLE IF NOT EXISTS semantic_index_work (\\n    modelId TEXT NOT NULL,\\n    messageId TEXT NOT NULL,\\n    sourceFingerprint TEXT,\\n    sourceRevision INTEGER NOT NULL,\\n    updatedAt INTEGER NOT NULL,\\n    PRIMARY KEY(modelId, messageId),\\n    FOREIGN KEY(modelId) REFERENCES semantic_index_ledger(modelId)\\n        ON UPDATE NO ACTION ON DELETE CASCADE\\n)"],["execSQL","CREATE INDEX IF NOT EXISTS index_semantic_index_work_modelId_sourceRevision_messageId\\nON semantic_index_work (modelId, sourceRevision, messageId)"]]|-

@@ -1,0 +1,4 @@
+name|m22_23_embedding_model_index
+op|migrate
+version|22
+result|[["execSQL","CREATE INDEX IF NOT EXISTS index_embeddings_modelId ON embeddings (modelId)"]]|-

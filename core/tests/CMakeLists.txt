@@ -42,6 +42,7 @@ add_executable(agora_core_tests
     migration_17_18_parity_test.cpp
     migration_18_19_parity_test.cpp
     migration_19_20_parity_test.cpp
+    migration_20_35_parity_test.cpp
     provider_identity_parity_test.cpp
     provider_names_parity_test.cpp
     provider_support_parity_test.cpp
@@ -98,6 +99,7 @@ target_compile_definitions(agora_core_tests PRIVATE
     AGORA_FIXTURE_MIGRATION_17_18_DIR="${CMAKE_CURRENT_SOURCE_DIR}/../tools/golden/migration-17-18"
     AGORA_FIXTURE_MIGRATION_18_19_DIR="${CMAKE_CURRENT_SOURCE_DIR}/../tools/golden/migration-18-19"
     AGORA_FIXTURE_MIGRATION_19_20_DIR="${CMAKE_CURRENT_SOURCE_DIR}/../tools/golden/migration-19-20"
+    AGORA_FIXTURE_MIGRATION_20_35_DIR="${CMAKE_CURRENT_SOURCE_DIR}/../tools/golden/migration-20-35"
     AGORA_FIXTURE_LOOP_POLICY_DIR="${CMAKE_CURRENT_SOURCE_DIR}/../tools/golden/loop-policy"
     AGORA_FIXTURE_MODEL_ALIASES_DIR="${CMAKE_CURRENT_SOURCE_DIR}/../tools/golden/model-aliases"
     AGORA_FIXTURE_PROVIDER_NAMES_DIR="${CMAKE_CURRENT_SOURCE_DIR}/../tools/golden/provider-names"

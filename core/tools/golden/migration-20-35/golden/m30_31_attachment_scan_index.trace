@@ -1,0 +1,4 @@
+name|m30_31_attachment_scan_index
+op|migrate
+version|30
+result|[["execSQL","CREATE INDEX index_messages_id_images_attachmentMeta ON messages(id, images, attachmentMeta)"]]|-

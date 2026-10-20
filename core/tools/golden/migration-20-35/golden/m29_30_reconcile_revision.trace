@@ -1,0 +1,4 @@
+name|m29_30_reconcile_revision
+op|migrate
+version|29
+result|[["execSQL","ALTER TABLE semantic_index_ledger ADD COLUMN reconcileRevision INTEGER NOT NULL DEFAULT 0"],["execSQL","UPDATE semantic_index_ledger\\nSET reconcileRevision = sourceRevision\\nWHERE state = 'NEEDS_RECONCILE'"],["execSQL","ALTER TABLE embeddings ADD COLUMN sourceFingerprint TEXT"]]|-

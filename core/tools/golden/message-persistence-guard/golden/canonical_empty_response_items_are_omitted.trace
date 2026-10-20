@@ -1,0 +1,7 @@
+name|canonical_empty_response_items_are_omitted
+fn|encodeSegmentsBounded
+canonical|[{"type":"tool"}]
+canonicalUtf8|17
+resultUtf16|17
+resultUtf8|17
+result|[{"type":"tool"}]

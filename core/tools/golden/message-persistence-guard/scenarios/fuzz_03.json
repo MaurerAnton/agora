@@ -1,0 +1,13 @@
+{
+  "name": "fuzz_03",
+  "fn": "encodeSegmentsBounded",
+  "maxBytes": 5000,
+  "segments_json": [
+    {
+      "type": "tool",
+      "content": "",
+      "toolResult": "é ab ",
+      "toolArgs": "漢\n\\b\"漢\té😀é"
+    }
+  ]
+}

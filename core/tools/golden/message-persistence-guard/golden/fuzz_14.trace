@@ -1,0 +1,7 @@
+name|fuzz_14
+fn|encodeSegmentsBounded
+canonical|[{"type":"thought"}]
+canonicalUtf8|20
+resultUtf16|20
+resultUtf8|20
+result|[{"type":"thought"}]

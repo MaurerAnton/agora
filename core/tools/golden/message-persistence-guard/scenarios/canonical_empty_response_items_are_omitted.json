@@ -1,0 +1,10 @@
+{
+  "name": "canonical_empty_response_items_are_omitted",
+  "fn": "encodeSegmentsBounded",
+  "segments_json": [
+    {
+      "type": "tool",
+      "responseOutputItems": []
+    }
+  ]
+}

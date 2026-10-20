@@ -1,0 +1,7 @@
+name|fuzz_18
+fn|encodeSegmentsBounded
+canonical|[{"type":"tool","content":"漢😀 éééa\\\\ x","toolResult":"","responseOutputItems":[{"type":"message","id":"m18"}]}]
+canonicalUtf8|123
+resultUtf16|114
+resultUtf8|123
+result|[{"type":"tool","content":"漢😀 éééa\\\\ x","toolResult":"","responseOutputItems":[{"type":"message","id":"m18"}]}]

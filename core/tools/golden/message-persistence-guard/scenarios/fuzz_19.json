@@ -1,0 +1,14 @@
+{
+  "name": "fuzz_19",
+  "fn": "encodeSegmentsBounded",
+  "maxBytes": 5000,
+  "segments_json": [
+    {
+      "type": "tool",
+      "content": "",
+      "toolResult": "",
+      "toolProgress": "",
+      "toolArgs": "a𝄞 x\\ \tb𝄞\""
+    }
+  ]
+}

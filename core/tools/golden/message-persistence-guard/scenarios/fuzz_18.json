@@ -1,0 +1,18 @@
+{
+  "name": "fuzz_18",
+  "fn": "encodeSegmentsBounded",
+  "maxBytes": 2000,
+  "segments_json": [
+    {
+      "type": "tool",
+      "content": "漢😀 éééa\\ x",
+      "toolResult": "",
+      "responseOutputItems": [
+        {
+          "type": "message",
+          "id": "m18"
+        }
+      ]
+    }
+  ]
+}

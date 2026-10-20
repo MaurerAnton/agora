@@ -137,6 +137,8 @@ std::string encode_attachment_item(const AttachmentItem& item);
 std::string encode_selected_attachment(const SelectedAttachment& attachment);
 std::string encode_tool_image(const ToolImageAttachment& image);
 std::string encode_message_segment(const MessageSegment& segment);
+/** Canonical kotlinx list encoding, used by the persistence guard and the backup codec. */
+std::string encode_message_segments(const std::vector<MessageSegment>& segments);
 
 /** Decodes with kotlinx's ignoreUnknownKeys = true; nullopt stands in for a thrown exception. */
 std::optional<AttachmentMeta> decode_attachment_meta(std::string_view raw);

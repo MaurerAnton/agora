@@ -1,0 +1,5 @@
+name|null_segments
+fn|encodeSegmentsBounded
+canonical|[]
+canonicalUtf8|2
+result|null

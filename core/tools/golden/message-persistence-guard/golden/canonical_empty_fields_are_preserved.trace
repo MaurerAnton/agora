@@ -1,0 +1,7 @@
+name|canonical_empty_fields_are_preserved
+fn|encodeSegmentsBounded
+canonical|[{"type":"tool","toolResult":"","toolProgress":"","toolResultText":"","toolStructuredResult":""}]
+canonicalUtf8|97
+resultUtf16|97
+resultUtf8|97
+result|[{"type":"tool","toolResult":"","toolProgress":"","toolResultText":"","toolStructuredResult":""}]

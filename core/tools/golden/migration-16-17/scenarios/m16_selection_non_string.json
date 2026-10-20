@@ -1,0 +1,1 @@
+{"name":"m16_selection_non_string","op":"migrate","conversations":[{"id":"c1","selectedBranchesJson":"{\"a\":1}"}],"messages":[{"conversationId":"c1","id":"u","parentId":null,"participant":"USER","status":"SUCCESS","timestamp":10}]}

@@ -1,0 +1,4 @@
+name|decode_item_not_object
+op|decode
+args|{"kind":"ask_user","askUser":[1]}
+result|-

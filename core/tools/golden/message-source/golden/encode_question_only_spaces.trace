@@ -1,0 +1,4 @@
+name|encode_question_only_spaces
+op|encode
+args|{"kind":"ask_user","askUser":[{"question":"  "}]}
+result|{"kind":"ask_user","askUser":[{"question":"  "}]}

@@ -1,0 +1,4 @@
+name|readable_pipes
+op|readable
+args|1|a\pb|c\sd
+result|a\pb\nc\sd

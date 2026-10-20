@@ -1,0 +1,4 @@
+name|decode_serial_task_upper
+op|decode
+args|{"kind":"TASK"}
+result|-

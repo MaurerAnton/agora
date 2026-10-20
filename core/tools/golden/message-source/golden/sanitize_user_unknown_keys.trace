@@ -1,0 +1,4 @@
+name|sanitize_user_unknown_keys
+op|sanitize
+args|{"kind":"loop","x":1}|USER
+result|{"kind":"loop"}

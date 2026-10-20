@@ -1,0 +1,4 @@
+name|readable_one
+op|readable
+args|1|Q|A
+result|Q\nA

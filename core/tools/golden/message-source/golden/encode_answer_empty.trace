@@ -1,0 +1,4 @@
+name|encode_answer_empty
+op|encode
+args|{"kind":"ask_user","askUser":[{"question":"Q","answer":""}]}
+result|{"kind":"ask_user","askUser":[{"question":"Q","answer":""}]}

@@ -1,0 +1,4 @@
+name|decode_ask_user_empty
+op|decode
+args|{"kind":"ask_user"}
+result|MessageSource(kind=ASK_USER, askUser=[])

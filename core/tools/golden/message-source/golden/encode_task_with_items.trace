@@ -1,0 +1,4 @@
+name|encode_task_with_items
+op|encode
+args|{"kind":"task","askUser":[{"question":"What now?","answer":"Continue"}]}
+result|-

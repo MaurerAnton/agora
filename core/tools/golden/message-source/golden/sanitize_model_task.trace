@@ -1,0 +1,4 @@
+name|sanitize_model_task
+op|sanitize
+args|{"kind":"task"}|MODEL
+result|-

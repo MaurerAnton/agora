@@ -1,0 +1,4 @@
+name|sanitize_user_task
+op|sanitize
+args|{"kind":"task"}|USER
+result|{"kind":"task"}

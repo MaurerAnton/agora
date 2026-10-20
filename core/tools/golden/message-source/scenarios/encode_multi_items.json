@@ -1,0 +1,1 @@
+{"name":"encode_multi_items","op":"encode","raw":"{\"kind\":\"ask_user\",\"askUser\":[{\"question\":\"Q1\",\"answer\":\"A1\"},{\"question\":\"Q2\"},{\"question\":\"Q3\",\"answer\":\"\"}]}"}

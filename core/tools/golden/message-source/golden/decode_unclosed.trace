@@ -1,0 +1,4 @@
+name|decode_unclosed
+op|decode
+args|{"kind":"task"
+result|-

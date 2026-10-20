@@ -1,0 +1,4 @@
+name|decode_answer_empty
+op|decode
+args|{"kind":"ask_user","askUser":[{"question":"Q","answer":""}]}
+result|MessageSource(kind=ASK_USER, askUser=[AskUserItem(question=Q, answer=)])

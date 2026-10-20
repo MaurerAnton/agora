@@ -1,0 +1,4 @@
+name|decode_loop_with_items
+op|decode
+args|{"kind":"loop","askUser":[{"question":"What now?","answer":"Continue"}]}
+result|-

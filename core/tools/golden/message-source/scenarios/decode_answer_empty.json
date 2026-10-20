@@ -1,0 +1,1 @@
+{"name":"decode_answer_empty","op":"decode","raw":"{\"kind\":\"ask_user\",\"askUser\":[{\"question\":\"Q\",\"answer\":\"\"}]}"}

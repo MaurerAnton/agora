@@ -1,0 +1,4 @@
+name|sanitize_user_invalid
+op|sanitize
+args|not json|USER
+result|-

@@ -1,0 +1,4 @@
+name|decode_kind_unknown
+op|decode
+args|{"kind":"bogus"}
+result|-

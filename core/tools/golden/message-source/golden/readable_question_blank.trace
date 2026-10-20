@@ -1,0 +1,4 @@
+name|readable_question_blank
+op|readable
+args|1||A
+result|\nA

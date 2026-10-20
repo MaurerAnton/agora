@@ -1,0 +1,4 @@
+name|decode_unknown_top_key
+op|decode
+args|{"kind":"task","x":1}
+result|MessageSource(kind=TASK, askUser=[])

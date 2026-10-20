@@ -1,0 +1,4 @@
+name|decode_single_quotes
+op|decode
+args|{'kind':'task'}
+result|-

@@ -1,0 +1,4 @@
+name|decode_item_question_number
+op|decode
+args|{"kind":"ask_user","askUser":[{"question":5}]}
+result|-

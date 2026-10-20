@@ -1,0 +1,4 @@
+name|encode_task_empty_items
+op|encode
+args|{"kind":"task","askUser":[]}
+result|{"kind":"task"}

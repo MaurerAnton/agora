@@ -1,0 +1,4 @@
+name|decode_task
+op|decode
+args|{"kind":"task"}
+result|MessageSource(kind=TASK, askUser=[])

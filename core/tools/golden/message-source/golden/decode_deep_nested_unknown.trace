@@ -1,0 +1,4 @@
+name|decode_deep_nested_unknown
+op|decode
+args|{"kind":"loop","meta":{"a":[1,{"b":null}]}}
+result|MessageSource(kind=LOOP, askUser=[])

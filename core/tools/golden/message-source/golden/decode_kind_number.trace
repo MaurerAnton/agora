@@ -1,0 +1,4 @@
+name|decode_kind_number
+op|decode
+args|{"kind":3}
+result|-

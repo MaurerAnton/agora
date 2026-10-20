@@ -1,0 +1,1 @@
+{"name":"decode_unknown_nested_key","op":"decode","raw":"{\"kind\":\"ask_user\",\"askUser\":[{\"question\":\"Q\",\"answer\":\"A\",\"x\":[1,2]}]}"}

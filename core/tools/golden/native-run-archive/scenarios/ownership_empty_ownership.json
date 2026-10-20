@@ -1,0 +1,15 @@
+{
+  "name": "ownership_empty_ownership",
+  "op": "hasCompleteOwnership",
+  "sourceRunIdsWereUnique": true,
+  "runs": [
+    {
+      "id": "r1",
+      "conversationId": "conv-a",
+      "parentRunId": null,
+      "startedAt": 1,
+      "legacyAmbiguous": false
+    }
+  ],
+  "ownership": []
+}

@@ -1,0 +1,4 @@
+name|terminalize_timestamps_clamp
+op|terminalize
+snapshot|id=s:r1;conv=s:conv-a;parent=n;status=s:STOPPED;started=l:100;checkpoint=l:50;stop=l:90;ended=l:30;reason=n;pass=i:0;ambiguous=false
+out|id=s:r1;conv=s:conv-a;parent=n;status=s:STOPPED;slot=n;started=l:100;checkpoint=l:100;stop=l:90;ended=l:100;reason=s:USER_STOPPED;pass=i:0;ambiguous=false

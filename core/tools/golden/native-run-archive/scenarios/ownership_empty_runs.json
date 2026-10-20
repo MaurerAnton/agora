@@ -1,0 +1,7 @@
+{
+  "name": "ownership_empty_runs",
+  "op": "hasCompleteOwnership",
+  "sourceRunIdsWereUnique": true,
+  "runs": [],
+  "ownership": []
+}

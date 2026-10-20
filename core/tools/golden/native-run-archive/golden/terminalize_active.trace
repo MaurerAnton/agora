@@ -1,0 +1,4 @@
+name|terminalize_active
+op|terminalize
+snapshot|id=s:r1;conv=s:conv-a;parent=s:r-parent;status=s:ACTIVE;started=l:10;checkpoint=l:20;stop=n;ended=n;reason=n;pass=i:2;ambiguous=false
+out|id=s:r1;conv=s:conv-a;parent=s:r-parent;status=s:STOPPED;slot=n;started=l:10;checkpoint=l:20;stop=n;ended=l:20;reason=s:PROCESS_RECOVERED;pass=i:2;ambiguous=false

@@ -1,0 +1,4 @@
+name|order_normal_chain
+op|orderByParent
+input|id=s:c;conv=s:conv-a;parent=s:b;status=s:COMPLETED;slot=n;started=l:30;checkpoint=l:30;stop=n;ended=l:31;reason=s:MODEL_COMPLETED;pass=i:0;ambiguous=false|id=s:b;conv=s:conv-a;parent=s:a;status=s:COMPLETED;slot=n;started=l:20;checkpoint=l:20;stop=n;ended=l:21;reason=s:MODEL_COMPLETED;pass=i:0;ambiguous=false|id=s:a;conv=s:conv-a;parent=n;status=s:COMPLETED;slot=n;started=l:10;checkpoint=l:10;stop=n;ended=l:11;reason=s:MODEL_COMPLETED;pass=i:0;ambiguous=false
+out|id=s:a;conv=s:conv-a;parent=n;status=s:COMPLETED;slot=n;started=l:10;checkpoint=l:10;stop=n;ended=l:11;reason=s:MODEL_COMPLETED;pass=i:0;ambiguous=false|id=s:b;conv=s:conv-a;parent=s:a;status=s:COMPLETED;slot=n;started=l:20;checkpoint=l:20;stop=n;ended=l:21;reason=s:MODEL_COMPLETED;pass=i:0;ambiguous=false|id=s:c;conv=s:conv-a;parent=s:b;status=s:COMPLETED;slot=n;started=l:30;checkpoint=l:30;stop=n;ended=l:31;reason=s:MODEL_COMPLETED;pass=i:0;ambiguous=false

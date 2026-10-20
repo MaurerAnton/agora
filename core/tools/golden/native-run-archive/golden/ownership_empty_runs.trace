@@ -1,0 +1,6 @@
+name|ownership_empty_runs
+op|hasCompleteOwnership
+runs|
+ownership|
+sourceRunIdsWereUnique|true
+out|false

@@ -1,0 +1,15 @@
+{
+  "name": "terminalize_invalid_status_valid_reason",
+  "op": "terminalize",
+  "id": "r1",
+  "conversationId": "conv-a",
+  "parentRunId": null,
+  "status": "NOPE",
+  "startedAt": 10,
+  "lastCheckpointAt": 20,
+  "stopRequestedAt": null,
+  "endedAt": null,
+  "endReason": "USER_STOPPED",
+  "currentPass": 0,
+  "legacyAmbiguous": false
+}

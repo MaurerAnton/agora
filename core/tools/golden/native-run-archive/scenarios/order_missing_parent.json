@@ -1,0 +1,27 @@
+{
+  "name": "order_missing_parent",
+  "op": "orderByParent",
+  "runs": [
+    {
+      "id": "orphan",
+      "conversationId": "conv-a",
+      "parentRunId": "ghost",
+      "startedAt": 5,
+      "legacyAmbiguous": false
+    },
+    {
+      "id": "root",
+      "conversationId": "conv-a",
+      "parentRunId": null,
+      "startedAt": 1,
+      "legacyAmbiguous": false
+    },
+    {
+      "id": "orphan-child",
+      "conversationId": "conv-a",
+      "parentRunId": "orphan",
+      "startedAt": 6,
+      "legacyAmbiguous": false
+    }
+  ]
+}

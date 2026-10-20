@@ -1,0 +1,4 @@
+name|terminalize_invalid_status_valid_reason
+op|terminalize
+snapshot|id=s:r1;conv=s:conv-a;parent=n;status=s:NOPE;started=l:10;checkpoint=l:20;stop=n;ended=n;reason=s:USER_STOPPED;pass=i:0;ambiguous=false
+out|id=s:r1;conv=s:conv-a;parent=n;status=s:FAILED;slot=n;started=l:10;checkpoint=l:20;stop=n;ended=l:20;reason=s:USER_STOPPED;pass=i:0;ambiguous=false

@@ -1,0 +1,20 @@
+{
+  "name": "order_duplicate_missing_parent",
+  "op": "orderByParent",
+  "runs": [
+    {
+      "id": "r1",
+      "conversationId": "conv-a",
+      "parentRunId": null,
+      "startedAt": 2,
+      "legacyAmbiguous": false
+    },
+    {
+      "id": "r1",
+      "conversationId": "conv-a",
+      "parentRunId": "ghost",
+      "startedAt": 1,
+      "legacyAmbiguous": false
+    }
+  ]
+}

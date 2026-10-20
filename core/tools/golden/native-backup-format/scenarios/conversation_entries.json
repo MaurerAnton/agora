@@ -1,0 +1,13 @@
+{
+  "name": "conversation_entries",
+  "op": "entry",
+  "ids": [
+    "plain",
+    "conv 1",
+    "a/b",
+    "Привет",
+    "😀",
+    "tab\tname",
+    ""
+  ]
+}

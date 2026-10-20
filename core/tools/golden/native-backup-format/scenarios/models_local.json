@@ -1,0 +1,35 @@
+{
+  "name": "models_local",
+  "op": "models",
+  "settings": {
+    "shell": {
+      "id": "s1",
+      "name": "dev",
+      "description": "d",
+      "type": "ssh",
+      "serverUrl": "https://conch.example",
+      "apiKey": "",
+      "conchPublicKey": "pub",
+      "sshHost": "host",
+      "sshPort": 2222,
+      "sshUser": "root",
+      "sshPassword": "",
+      "sshHostKey": "key"
+    },
+    "mcp": {
+      "id": "m1",
+      "name": "server",
+      "headers": {}
+    },
+    "embedding": {
+      "id": "e1",
+      "name": "model",
+      "type": "LOCAL",
+      "remoteModelName": "text-embedding",
+      "remoteBaseUrl": "https://api.example",
+      "remoteApiKey": "ignored-key",
+      "localFilePath": "/tmp/local.bin",
+      "batchSize": 16
+    }
+  }
+}

@@ -1,0 +1,3 @@
+name|format_constants
+op|format
+result|{"currentVersion":6,"minSupportedVersion":1,"separateSecretsSinceVersion":5,"incrementalBaselineRevision":1,"manifestEntry":"manifest.json","conversationsEntry":"conversations.json","conversationIndexEntry":"conv/index.json","conversationEntryPrefix":"conv/items/","tasksEntry":"conv/tasks.json","settingsEntry":"settings.json","legacyExtraSettingsEntry":"extra_settings.json","secretsEntry":"api_keys.json","systemPromptsEntry":"system_prompts.json","customFontEntry":"custom_font/font","imageMediaPrefix":"media/images/","videoMediaPrefix":"media/videos/","draftMediaPrefix":"media/drafts/","supported":[false,false,false,true,true,true,true,true,true,false]}|-

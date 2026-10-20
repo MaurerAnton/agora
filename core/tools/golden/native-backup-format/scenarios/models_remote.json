@@ -1,0 +1,38 @@
+{
+  "name": "models_remote",
+  "op": "models",
+  "settings": {
+    "shell": {
+      "id": "s1",
+      "name": "dev",
+      "description": "d",
+      "type": "ssh",
+      "serverUrl": "https://conch.example",
+      "apiKey": "secret-key",
+      "conchPublicKey": "pub",
+      "sshHost": "host",
+      "sshPort": 2222,
+      "sshUser": "root",
+      "sshPassword": "secret-pw",
+      "sshHostKey": "key"
+    },
+    "mcp": {
+      "id": "m1",
+      "name": "server",
+      "headers": {
+        "Authorization": "Bearer x",
+        "X-Empty": ""
+      }
+    },
+    "embedding": {
+      "id": "e1",
+      "name": "model",
+      "type": "REMOTE",
+      "remoteModelName": "text-embedding",
+      "remoteBaseUrl": "https://api.example",
+      "remoteApiKey": "embed-key",
+      "localFilePath": "/tmp/model.bin",
+      "batchSize": 16
+    }
+  }
+}

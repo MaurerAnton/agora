@@ -39,7 +39,7 @@ def plan(name, runs, messages):
 
 # ---- guard rails ------------------------------------------------------------------------------
 plan("plan_empty", [], [])
-plan("no_legacy_run", [run("r2", "p", legacy=False)], [
+plan("no_legacy_run", [run("p"), run("r2", "p", legacy=False)], [
     msg("u", None, "USER", "p", 0),
     msg("root", "u", "MODEL", "r2", 1),
     msg("d", "gone", "MODEL", "r2", 2),

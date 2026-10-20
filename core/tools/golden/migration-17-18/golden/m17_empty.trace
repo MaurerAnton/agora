@@ -1,0 +1,4 @@
+name|m17_empty
+op|migrate
+args|0|0|0
+result|[["query","SELECT id, selectedBranchesJson, selectedRunBranchesJson FROM conversations"]]|-

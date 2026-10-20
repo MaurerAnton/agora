@@ -60,6 +60,7 @@ add_library(agora_core_lib STATIC
     src/legacy_run_backfill.cpp
     src/migration_16_17.cpp
     src/migration_17_18.cpp
+    src/migration_18_19.cpp
     src/sqlite_platform.cpp
     src/uuid_v3.cpp
     src/provider_identity.cpp

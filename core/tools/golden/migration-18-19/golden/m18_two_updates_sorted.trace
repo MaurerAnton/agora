@@ -1,0 +1,4 @@
+name|m18_two_updates_sorted
+op|migrate
+args|2|4
+result|[["query","SELECT id, parentRunId, legacyAmbiguous FROM runs"],["query","SELECT id, parentId, participant, runId, runSequence FROM messages"],["execSQL","UPDATE messages SET parentId = ? WHERE id = ?","s:u","s:d1"],["execSQL","UPDATE messages SET parentId = ? WHERE id = ?","s:u","s:d2"]]|-

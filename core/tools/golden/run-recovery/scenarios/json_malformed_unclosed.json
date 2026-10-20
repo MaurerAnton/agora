@@ -1,0 +1,1 @@
+{"name":"json_malformed_unclosed","fn":"stopIncompleteToolsJson","raw":"[{\"type\":\"tool\""}

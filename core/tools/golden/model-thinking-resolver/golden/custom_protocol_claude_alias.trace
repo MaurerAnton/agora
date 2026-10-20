@@ -1,0 +1,13 @@
+name|custom_protocol_claude_alias
+selected|Relay:gpt-4o
+parsed|Relay|gpt-4o
+provider|0|Relay|anthropic||
+capability|canDisableThinking|true
+capability|supportedEfforts|minimal,low,medium,high,xhigh,max
+capability|supportsThinkingBudget|true
+capability|minBudgetTokens|1024
+capability|maxBudgetTokens|-
+capability|supportsEffortWithBudget|true
+capability|supportsSamplingParams|true
+capability|supportsEffort|true
+capability|lowestEffort|minimal

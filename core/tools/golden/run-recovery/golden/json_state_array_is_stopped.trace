@@ -1,0 +1,4 @@
+name|json_state_array_is_stopped
+fn|stopIncompleteToolsJson
+args|raw|[{"type":"tool","toolState":[]}]
+result|string|[{"type":"tool","toolState":"stopped"}]

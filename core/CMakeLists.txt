@@ -27,6 +27,7 @@ add_library(agora_core_lib STATIC
     src/message_persistence_guard.cpp
     src/native_backup_secrets.cpp
     src/native_backup_format.cpp
+    src/native_run_archive.cpp
     src/conch_sse.cpp
     src/tz.cpp
     src/duckduckgo.cpp
@@ -49,8 +50,11 @@ add_library(agora_core_lib STATIC
     src/openai_stream_codec.cpp
     src/portable_glob.cpp
     src/run_branch_selection.cpp
+    src/run_recovery.cpp
     src/conversation_runtime.cpp
     src/thinking_capability.cpp
+    src/model_thinking_resolver.cpp
+    src/provider_protocol_support.cpp
     src/token_pricing.cpp
     src/streaming_json.cpp
     src/openai_service_tiers.cpp

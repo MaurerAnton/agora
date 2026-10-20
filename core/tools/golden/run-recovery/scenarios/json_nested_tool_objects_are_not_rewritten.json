@@ -1,0 +1,1 @@
+{"name":"json_nested_tool_objects_are_not_rewritten","fn":"stopIncompleteToolsJson","raw":"[{\"type\":\"answer\",\"nested\":{\"type\":\"tool\"}},{\"type\":\"tool\",\"toolState\":\"succeeded\",\"nested\":[{\"type\":\"tool\"}]}]"}

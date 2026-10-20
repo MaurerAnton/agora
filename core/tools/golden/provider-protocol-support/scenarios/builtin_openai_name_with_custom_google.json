@@ -1,0 +1,15 @@
+{
+  "name": "builtin_openai_name_with_custom_google",
+  "providerName": "OpenAI",
+  "customProviders": [
+    {
+      "name": "OpenAI",
+      "protocol": "google",
+      "id": "",
+      "legacyNames": [],
+      "responsesApiEnabled": true,
+      "anthropicCacheEnabled": false,
+      "anthropicCacheTtl": "9m"
+    }
+  ]
+}

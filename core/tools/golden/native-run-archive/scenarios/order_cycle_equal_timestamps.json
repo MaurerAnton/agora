@@ -1,0 +1,27 @@
+{
+  "name": "order_cycle_equal_timestamps",
+  "op": "orderByParent",
+  "runs": [
+    {
+      "id": "a",
+      "conversationId": "conv-a",
+      "parentRunId": "c",
+      "startedAt": 0,
+      "legacyAmbiguous": false
+    },
+    {
+      "id": "b",
+      "conversationId": "conv-a",
+      "parentRunId": "a",
+      "startedAt": 0,
+      "legacyAmbiguous": false
+    },
+    {
+      "id": "c",
+      "conversationId": "conv-a",
+      "parentRunId": "b",
+      "startedAt": 0,
+      "legacyAmbiguous": false
+    }
+  ]
+}

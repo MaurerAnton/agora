@@ -1,0 +1,14 @@
+name|custom_empty_id_uses_name
+provider|Relay
+builtInEnabled|true
+builtInAnthropicEnabled|true
+builtInTtl|1h
+custom|0|Relay|anthropic|||false|true|1h
+isOpenAiProtocol|false
+isAnthropicProtocol|true
+isAnthropicCacheEnabled|true
+supportsPromptCache|true
+isPromptCacheKeyEnabled|false
+isPromptCacheSettingEnabled|true
+anthropicCacheTtl|1h
+isResponsesApiEnabled|false

@@ -1,0 +1,4 @@
+name|json_malformed_trailing_content
+fn|stopIncompleteToolsJson
+args|raw|[]x
+result|string|-

@@ -1,0 +1,12 @@
+{
+  "name": "custom_unknown_wire_protocol",
+  "selectedModel": "Relay:gpt-4o",
+  "customProviders": [
+    {
+      "name": "Relay",
+      "protocol": "something-else",
+      "id": "",
+      "legacyNames": []
+    }
+  ]
+}

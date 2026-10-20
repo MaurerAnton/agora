@@ -1,0 +1,14 @@
+{
+  "name": "custom_legacy_name_match",
+  "selectedModel": "Old Relay:gpt-4o",
+  "customProviders": [
+    {
+      "name": "New Relay",
+      "protocol": "google",
+      "id": "custom-provider-12345678-1234-4234-9234-123456789abc",
+      "legacyNames": [
+        "Old Relay"
+      ]
+    }
+  ]
+}

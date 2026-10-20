@@ -1,0 +1,12 @@
+name|prefixed_empty_provider
+selected|:gpt-4o
+parsed||gpt-4o
+capability|canDisableThinking|true
+capability|supportedEfforts|minimal,low,medium,high,xhigh,max
+capability|supportsThinkingBudget|true
+capability|minBudgetTokens|1
+capability|maxBudgetTokens|-
+capability|supportsEffortWithBudget|true
+capability|supportsSamplingParams|true
+capability|supportsEffort|true
+capability|lowestEffort|minimal

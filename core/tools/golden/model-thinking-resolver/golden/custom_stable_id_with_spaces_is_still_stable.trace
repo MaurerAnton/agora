@@ -1,0 +1,13 @@
+name|custom_stable_id_with_spaces_is_still_stable
+selected|  custom-provider-12345678-1234-4234-9234-123456789abc  :gpt-4o
+parsed|  custom-provider-12345678-1234-4234-9234-123456789abc  |gpt-4o
+provider|0|Relay|openai|  custom-provider-12345678-1234-4234-9234-123456789abc  |
+capability|canDisableThinking|true
+capability|supportedEfforts|minimal,low,medium,high,xhigh,max
+capability|supportsThinkingBudget|true
+capability|minBudgetTokens|1
+capability|maxBudgetTokens|-
+capability|supportsEffortWithBudget|true
+capability|supportsSamplingParams|true
+capability|supportsEffort|true
+capability|lowestEffort|minimal

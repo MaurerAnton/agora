@@ -1,0 +1,4 @@
+name|json_malformed_unclosed
+fn|stopIncompleteToolsJson
+args|raw|[{"type":"tool"
+result|string|-

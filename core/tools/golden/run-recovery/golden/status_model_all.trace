@@ -1,0 +1,16 @@
+name|status_model_all
+fn|recoverMessageStatus
+args|MODEL|TRANSCRIBING
+result|STOPPED
+args|MODEL|SENDING
+result|STOPPED
+args|MODEL|THINKING
+result|STOPPED
+args|MODEL|TOOL_CALLING
+result|STOPPED
+args|MODEL|SUCCESS
+result|SUCCESS
+args|MODEL|STOPPED
+result|STOPPED
+args|MODEL|ERROR
+result|ERROR

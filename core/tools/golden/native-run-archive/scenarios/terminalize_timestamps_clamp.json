@@ -1,0 +1,15 @@
+{
+  "name": "terminalize_timestamps_clamp",
+  "op": "terminalize",
+  "id": "r1",
+  "conversationId": "conv-a",
+  "parentRunId": null,
+  "status": "STOPPED",
+  "startedAt": 100,
+  "lastCheckpointAt": 50,
+  "stopRequestedAt": 90,
+  "endedAt": 30,
+  "endReason": null,
+  "currentPass": 0,
+  "legacyAmbiguous": false
+}

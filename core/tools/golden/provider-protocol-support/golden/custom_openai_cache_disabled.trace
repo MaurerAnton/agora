@@ -1,0 +1,14 @@
+name|custom_openai_cache_disabled
+provider|Relay
+builtInEnabled|true
+builtInAnthropicEnabled|true
+builtInTtl|1h
+custom|0|Relay|openai|||true|false|1h
+isOpenAiProtocol|true
+isAnthropicProtocol|false
+isAnthropicCacheEnabled|false
+supportsPromptCache|true
+isPromptCacheKeyEnabled|false
+isPromptCacheSettingEnabled|false
+anthropicCacheTtl|1h
+isResponsesApiEnabled|true

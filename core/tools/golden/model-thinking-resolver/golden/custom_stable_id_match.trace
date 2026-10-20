@@ -1,0 +1,13 @@
+name|custom_stable_id_match
+selected|custom-provider-12345678-1234-4234-9234-123456789abc:gpt-4o
+parsed|custom-provider-12345678-1234-4234-9234-123456789abc|gpt-4o
+provider|0|Renamed Relay|anthropic|custom-provider-12345678-1234-4234-9234-123456789abc|Old Relay
+capability|canDisableThinking|true
+capability|supportedEfforts|minimal,low,medium,high,xhigh,max
+capability|supportsThinkingBudget|true
+capability|minBudgetTokens|1024
+capability|maxBudgetTokens|-
+capability|supportsEffortWithBudget|true
+capability|supportsSamplingParams|true
+capability|supportsEffort|true
+capability|lowestEffort|minimal

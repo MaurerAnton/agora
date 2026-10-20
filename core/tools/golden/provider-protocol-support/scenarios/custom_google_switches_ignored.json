@@ -1,0 +1,15 @@
+{
+  "name": "custom_google_switches_ignored",
+  "providerName": "Relay",
+  "customProviders": [
+    {
+      "name": "Relay",
+      "protocol": "google",
+      "id": "",
+      "legacyNames": [],
+      "responsesApiEnabled": true,
+      "anthropicCacheEnabled": false,
+      "anthropicCacheTtl": "1h"
+    }
+  ]
+}

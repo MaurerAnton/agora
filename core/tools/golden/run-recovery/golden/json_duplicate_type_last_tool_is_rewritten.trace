@@ -1,0 +1,4 @@
+name|json_duplicate_type_last_tool_is_rewritten
+fn|stopIncompleteToolsJson
+args|raw|[{"type":"answer","toolState":"calling","type":"tool"}]
+result|string|[{"type":"tool","toolState":"stopped"}]

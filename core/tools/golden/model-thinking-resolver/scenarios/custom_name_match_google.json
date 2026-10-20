@@ -1,0 +1,12 @@
+{
+  "name": "custom_name_match_google",
+  "selectedModel": "Relay:gemini-2.5-pro",
+  "customProviders": [
+    {
+      "name": "Relay",
+      "protocol": "google",
+      "id": "",
+      "legacyNames": []
+    }
+  ]
+}

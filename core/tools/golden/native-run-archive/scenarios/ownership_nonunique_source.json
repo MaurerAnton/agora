@@ -1,0 +1,22 @@
+{
+  "name": "ownership_nonunique_source",
+  "op": "hasCompleteOwnership",
+  "sourceRunIdsWereUnique": false,
+  "runs": [
+    {
+      "id": "r1",
+      "conversationId": "conv-a",
+      "parentRunId": null,
+      "startedAt": 1,
+      "legacyAmbiguous": false
+    }
+  ],
+  "ownership": [
+    {
+      "messageId": "m1",
+      "conversationId": "conv-a",
+      "runId": "r1",
+      "runSequence": 0
+    }
+  ]
+}

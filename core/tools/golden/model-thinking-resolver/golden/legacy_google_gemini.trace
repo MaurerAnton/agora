@@ -1,0 +1,12 @@
+name|legacy_google_gemini
+selected|gemini-1.5-flash
+parsed|Google|gemini-1.5-flash
+capability|canDisableThinking|true
+capability|supportedEfforts|minimal,low,medium,high
+capability|supportsThinkingBudget|true
+capability|minBudgetTokens|1
+capability|maxBudgetTokens|-
+capability|supportsEffortWithBudget|false
+capability|supportsSamplingParams|true
+capability|supportsEffort|true
+capability|lowestEffort|minimal

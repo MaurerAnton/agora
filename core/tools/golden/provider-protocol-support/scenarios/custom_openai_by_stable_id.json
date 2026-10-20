@@ -1,0 +1,15 @@
+{
+  "name": "custom_openai_by_stable_id",
+  "providerName": "custom-provider-12345678-1234-4234-9234-123456789abc",
+  "customProviders": [
+    {
+      "name": "Renamed",
+      "protocol": "openai",
+      "id": "custom-provider-12345678-1234-4234-9234-123456789abc",
+      "legacyNames": [],
+      "responsesApiEnabled": false,
+      "anthropicCacheEnabled": true,
+      "anthropicCacheTtl": "1h"
+    }
+  ]
+}

@@ -15,6 +15,7 @@ add_executable(agora_core_tests
     message_persistence_guard_parity_test.cpp
     native_backup_secrets_parity_test.cpp
     native_backup_format_parity_test.cpp
+    native_run_archive_parity_test.cpp
     citations_parity_test.cpp
     cjk_text_parity_test.cpp
     task_schedule_parity_test.cpp
@@ -29,8 +30,11 @@ add_executable(agora_core_tests
     model_aliases_parity_test.cpp
     custom_model_references_parity_test.cpp
     run_branch_selection_parity_test.cpp
+    run_recovery_parity_test.cpp
     conversation_runtime_parity_test.cpp
     thinking_capability_parity_test.cpp
+    model_thinking_resolver_parity_test.cpp
+    provider_protocol_support_parity_test.cpp
     token_pricing_parity_test.cpp
     streaming_json_parity_test.cpp
     openai_service_tiers_parity_test.cpp
@@ -88,6 +92,8 @@ target_compile_definitions(agora_core_tests PRIVATE
     AGORA_FIXTURE_RUN_BRANCH_SELECTION_DIR="${CMAKE_CURRENT_SOURCE_DIR}/../tools/golden/run-branch-selection"
     AGORA_FIXTURE_CONVERSATION_RUNTIME_DIR="${CMAKE_CURRENT_SOURCE_DIR}/../tools/golden/conversation-runtime"
     AGORA_FIXTURE_THINKING_CAPABILITY_DIR="${CMAKE_CURRENT_SOURCE_DIR}/../tools/golden/thinking-capability"
+    AGORA_FIXTURE_MODEL_THINKING_RESOLVER_DIR="${CMAKE_CURRENT_SOURCE_DIR}/../tools/golden/model-thinking-resolver"
+    AGORA_FIXTURE_PROVIDER_PROTOCOL_SUPPORT_DIR="${CMAKE_CURRENT_SOURCE_DIR}/../tools/golden/provider-protocol-support"
     AGORA_FIXTURE_TOKEN_PRICING_DIR="${CMAKE_CURRENT_SOURCE_DIR}/../tools/golden/token-pricing"
     AGORA_FIXTURE_STREAMING_JSON_DIR="${CMAKE_CURRENT_SOURCE_DIR}/../tools/golden/streaming-json-document"
     AGORA_FIXTURE_OPENAI_SERVICE_TIERS_DIR="${CMAKE_CURRENT_SOURCE_DIR}/../tools/golden/openai-service-tiers"
@@ -105,6 +111,7 @@ target_compile_definitions(agora_core_tests PRIVATE
     AGORA_FIXTURE_MIGRATION_20_35_DIR="${CMAKE_CURRENT_SOURCE_DIR}/../tools/golden/migration-20-35"
     AGORA_FIXTURE_NATIVE_BACKUP_SECRETS_DIR="${CMAKE_CURRENT_SOURCE_DIR}/../tools/golden/native-backup-secrets"
     AGORA_FIXTURE_NATIVE_BACKUP_FORMAT_DIR="${CMAKE_CURRENT_SOURCE_DIR}/../tools/golden/native-backup-format"
+    AGORA_FIXTURE_NATIVE_RUN_ARCHIVE_DIR="${CMAKE_CURRENT_SOURCE_DIR}/../tools/golden/native-run-archive"
     AGORA_FIXTURE_LOOP_POLICY_DIR="${CMAKE_CURRENT_SOURCE_DIR}/../tools/golden/loop-policy"
     AGORA_FIXTURE_MODEL_ALIASES_DIR="${CMAKE_CURRENT_SOURCE_DIR}/../tools/golden/model-aliases"
     AGORA_FIXTURE_PROVIDER_NAMES_DIR="${CMAKE_CURRENT_SOURCE_DIR}/../tools/golden/provider-names"
@@ -122,6 +129,7 @@ target_compile_definitions(agora_core_tests PRIVATE
     AGORA_FIXTURE_TASK_SCHEDULE_DIR="${CMAKE_CURRENT_SOURCE_DIR}/../tools/golden/task-schedule"
     AGORA_FIXTURE_BACKUP_MEDIA_POLICY_DIR="${CMAKE_CURRENT_SOURCE_DIR}/../tools/golden/backup-media-policy"
     AGORA_FIXTURE_MESSAGE_PERSISTENCE_GUARD_DIR="${CMAKE_CURRENT_SOURCE_DIR}/../tools/golden/message-persistence-guard"
+    AGORA_FIXTURE_RUN_RECOVERY_DIR="${CMAKE_CURRENT_SOURCE_DIR}/../tools/golden/run-recovery"
     AGORA_FIXTURE_PREP_VOCAB="${CMAKE_CURRENT_SOURCE_DIR}/../../app/src/main/assets/tokenizers/o200k_base.tiktoken"
 )
 

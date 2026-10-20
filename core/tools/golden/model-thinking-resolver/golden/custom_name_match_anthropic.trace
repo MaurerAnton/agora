@@ -1,0 +1,13 @@
+name|custom_name_match_anthropic
+selected|Relay:claude-3-opus
+parsed|Relay|claude-3-opus
+provider|0|Relay|anthropic||
+capability|canDisableThinking|true
+capability|supportedEfforts|
+capability|supportsThinkingBudget|false
+capability|minBudgetTokens|1
+capability|maxBudgetTokens|-
+capability|supportsEffortWithBudget|true
+capability|supportsSamplingParams|true
+capability|supportsEffort|false
+capability|lowestEffort|-

@@ -1,0 +1,5 @@
+{
+  "name": "prefixed_openai",
+  "selectedModel": "OpenAI:gpt-4o",
+  "customProviders": []
+}

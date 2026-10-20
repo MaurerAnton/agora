@@ -1,0 +1,4 @@
+name|json_malformed_invalid_escape
+fn|stopIncompleteToolsJson
+args|raw|[{"type":"\\q"}]
+result|string|-

@@ -1,0 +1,4 @@
+name|json_root_object
+fn|stopIncompleteToolsJson
+args|raw|{"type":"tool"}
+result|string|-

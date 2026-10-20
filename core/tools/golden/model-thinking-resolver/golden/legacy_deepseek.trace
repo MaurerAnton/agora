@@ -1,0 +1,12 @@
+name|legacy_deepseek
+selected|deepseek-chat
+parsed|DeepSeek|deepseek-chat
+capability|canDisableThinking|true
+capability|supportedEfforts|low,high,max
+capability|supportsThinkingBudget|false
+capability|minBudgetTokens|1
+capability|maxBudgetTokens|-
+capability|supportsEffortWithBudget|true
+capability|supportsSamplingParams|true
+capability|supportsEffort|true
+capability|lowestEffort|low

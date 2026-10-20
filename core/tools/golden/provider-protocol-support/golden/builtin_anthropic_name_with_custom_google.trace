@@ -1,0 +1,14 @@
+name|builtin_anthropic_name_with_custom_google
+provider|Anthropic
+builtInEnabled|true
+builtInAnthropicEnabled|false
+builtInTtl|30m
+custom|0|Anthropic|google|||false|false|9m
+isOpenAiProtocol|false
+isAnthropicProtocol|true
+isAnthropicCacheEnabled|true
+supportsPromptCache|true
+isPromptCacheKeyEnabled|false
+isPromptCacheSettingEnabled|false
+anthropicCacheTtl|30m
+isResponsesApiEnabled|false

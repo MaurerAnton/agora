@@ -1,0 +1,12 @@
+name|legacy_claude
+selected|claude-3-opus
+parsed|Anthropic|claude-3-opus
+capability|canDisableThinking|true
+capability|supportedEfforts|
+capability|supportsThinkingBudget|false
+capability|minBudgetTokens|1
+capability|maxBudgetTokens|-
+capability|supportsEffortWithBudget|true
+capability|supportsSamplingParams|true
+capability|supportsEffort|false
+capability|lowestEffort|-

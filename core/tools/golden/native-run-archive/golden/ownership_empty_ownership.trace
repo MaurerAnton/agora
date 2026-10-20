@@ -1,0 +1,6 @@
+name|ownership_empty_ownership
+op|hasCompleteOwnership
+runs|id=s:r1;conv=s:conv-a;parent=n;status=s:COMPLETED;slot=n;started=l:1;checkpoint=l:1;stop=n;ended=l:2;reason=s:MODEL_COMPLETED;pass=i:0;ambiguous=false
+ownership|
+sourceRunIdsWereUnique|true
+out|true

@@ -1,0 +1,4 @@
+name|order_cycle_equal_timestamps
+op|orderByParent
+input|id=s:a;conv=s:conv-a;parent=s:c;status=s:COMPLETED;slot=n;started=l:0;checkpoint=l:0;stop=n;ended=l:1;reason=s:MODEL_COMPLETED;pass=i:0;ambiguous=false|id=s:b;conv=s:conv-a;parent=s:a;status=s:COMPLETED;slot=n;started=l:0;checkpoint=l:0;stop=n;ended=l:1;reason=s:MODEL_COMPLETED;pass=i:0;ambiguous=false|id=s:c;conv=s:conv-a;parent=s:b;status=s:COMPLETED;slot=n;started=l:0;checkpoint=l:0;stop=n;ended=l:1;reason=s:MODEL_COMPLETED;pass=i:0;ambiguous=false
+out|id=s:a;conv=s:conv-a;parent=n;status=s:COMPLETED;slot=n;started=l:0;checkpoint=l:0;stop=n;ended=l:1;reason=s:MODEL_COMPLETED;pass=i:0;ambiguous=true|id=s:b;conv=s:conv-a;parent=s:a;status=s:COMPLETED;slot=n;started=l:0;checkpoint=l:0;stop=n;ended=l:1;reason=s:MODEL_COMPLETED;pass=i:0;ambiguous=false|id=s:c;conv=s:conv-a;parent=s:b;status=s:COMPLETED;slot=n;started=l:0;checkpoint=l:0;stop=n;ended=l:1;reason=s:MODEL_COMPLETED;pass=i:0;ambiguous=false

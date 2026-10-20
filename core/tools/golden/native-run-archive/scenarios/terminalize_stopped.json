@@ -1,0 +1,15 @@
+{
+  "name": "terminalize_stopped",
+  "op": "terminalize",
+  "id": "r1",
+  "conversationId": "conv-a",
+  "parentRunId": null,
+  "status": "STOPPED",
+  "startedAt": 10,
+  "lastCheckpointAt": 20,
+  "stopRequestedAt": null,
+  "endedAt": null,
+  "endReason": null,
+  "currentPass": 0,
+  "legacyAmbiguous": false
+}

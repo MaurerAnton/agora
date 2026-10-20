@@ -1,0 +1,4 @@
+name|terminalize_stopping
+op|terminalize
+snapshot|id=s:r1;conv=s:conv-a;parent=n;status=s:STOPPING;started=l:10;checkpoint=l:20;stop=l:15;ended=n;reason=n;pass=i:0;ambiguous=false
+out|id=s:r1;conv=s:conv-a;parent=n;status=s:STOPPED;slot=n;started=l:10;checkpoint=l:20;stop=l:15;ended=l:20;reason=s:PROCESS_RECOVERED;pass=i:0;ambiguous=false

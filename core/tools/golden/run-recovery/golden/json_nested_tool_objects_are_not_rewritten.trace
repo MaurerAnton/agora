@@ -1,0 +1,4 @@
+name|json_nested_tool_objects_are_not_rewritten
+fn|stopIncompleteToolsJson
+args|raw|[{"type":"answer","nested":{"type":"tool"}},{"type":"tool","toolState":"succeeded","nested":[{"type":"tool"}]}]
+result|string|[{"type":"answer","nested":{"type":"tool"}},{"type":"tool","toolState":"succeeded","nested":[{"type":"tool"}]}]

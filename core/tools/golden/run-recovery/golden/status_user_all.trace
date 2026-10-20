@@ -1,0 +1,16 @@
+name|status_user_all
+fn|recoverMessageStatus
+args|USER|TRANSCRIBING
+result|TRANSCRIBING
+args|USER|SENDING
+result|SENDING
+args|USER|THINKING
+result|THINKING
+args|USER|TOOL_CALLING
+result|TOOL_CALLING
+args|USER|SUCCESS
+result|SUCCESS
+args|USER|STOPPED
+result|STOPPED
+args|USER|ERROR
+result|ERROR

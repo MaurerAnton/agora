@@ -1,0 +1,1 @@
+{"name":"json_type_uppercase_is_not_tool","fn":"stopIncompleteToolsJson","raw":"[{\"type\":\"Tool\",\"toolState\":\"calling\"}]"}

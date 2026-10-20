@@ -1,0 +1,4 @@
+name|json_duplicate_state_last_non_terminal_wins
+fn|stopIncompleteToolsJson
+args|raw|[{"type":"tool","toolState":"succeeded","toolState":"calling"}]
+result|string|[{"type":"tool","toolState":"stopped"}]

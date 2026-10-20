@@ -1,0 +1,1 @@
+{"name":"json_type_null_is_not_tool","fn":"stopIncompleteToolsJson","raw":"[{\"type\":null,\"toolState\":\"calling\"}]"}

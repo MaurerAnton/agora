@@ -1,0 +1,4 @@
+name|json_duplicate_type_last_non_tool_returns_raw
+fn|stopIncompleteToolsJson
+args|raw|[{"type":"tool","toolState":"calling","type":"answer"}]
+result|string|[{"type":"tool","toolState":"calling","type":"answer"}]

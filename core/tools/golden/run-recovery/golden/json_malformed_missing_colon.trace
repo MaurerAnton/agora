@@ -1,0 +1,4 @@
+name|json_malformed_missing_colon
+fn|stopIncompleteToolsJson
+args|raw|[{"type" "tool"}]
+result|string|-

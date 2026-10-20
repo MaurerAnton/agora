@@ -1,0 +1,1 @@
+{"name":"json_unchanged_non_tool_returns_raw_verbatim","fn":"stopIncompleteToolsJson","raw":"[\n  {\"type\": \"answer\", \"toolState\": \"calling\"},\n  {\"type\":\"thought\",\"toolState\":null},\n  42, \"x\", null, [1,2]\n]\n"}

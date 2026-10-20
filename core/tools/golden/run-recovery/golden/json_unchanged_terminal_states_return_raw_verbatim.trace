@@ -1,0 +1,4 @@
+name|json_unchanged_terminal_states_return_raw_verbatim
+fn|stopIncompleteToolsJson
+args|raw|[\n  {"type": "tool", "toolState": "succeeded"},\n  {"toolState":"empty","type":"tool"},\n  {"type":"tool","toolState":"failed"},\n  {"type":"tool","toolState":"stopped"},\n  {"type":"tool","toolState":"background_running"}\n]  
+result|string|[\n  {"type": "tool", "toolState": "succeeded"},\n  {"toolState":"empty","type":"tool"},\n  {"type":"tool","toolState":"failed"},\n  {"type":"tool","toolState":"stopped"},\n  {"type":"tool","toolState":"background_running"}\n]  

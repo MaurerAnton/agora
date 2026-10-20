@@ -1,0 +1,1 @@
+{"name":"segments_non_terminal_states_are_stopped","fn":"stopIncompleteTools","segments":[{"type":"tool","content":"segment-content","toolState":"calling","toolName":"one"},{"type":"tool","content":"segment-content","toolState":"running","toolName":"two"},{"type":"tool","content":"segment-content","toolName":"three"}]}

@@ -1,0 +1,4 @@
+name|segments_empty
+fn|stopIncompleteTools
+args|segments|[]
+result|segments|[]

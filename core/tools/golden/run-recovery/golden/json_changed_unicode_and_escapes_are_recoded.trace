@@ -1,0 +1,4 @@
+name|json_changed_unicode_and_escapes_are_recoded
+fn|stopIncompleteToolsJson
+args|raw|[{"type":"tool","content":"caf\\u00e9 \\u65e5\\u672c\\u8a9e \\ud83d\\ude00 \\/ slash \\\\ quote \\" tab \\t newline \\n ctrl \\u0001","na\\u006de":"value"}]
+result|string|[{"type":"tool","content":"café 日本語 😀 / slash \\\\ quote \\" tab \\t newline \\n ctrl \\u0001","name":"value","toolState":"stopped"}]

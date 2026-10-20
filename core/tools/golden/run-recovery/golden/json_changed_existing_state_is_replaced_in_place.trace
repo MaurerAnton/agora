@@ -1,0 +1,4 @@
+name|json_changed_existing_state_is_replaced_in_place
+fn|stopIncompleteToolsJson
+args|raw|[{"type":"tool","toolState":"calling","toolName":"shell"}]
+result|string|[{"type":"tool","toolState":"stopped","toolName":"shell"}]

@@ -1,0 +1,1 @@
+{"name":"json_malformed_missing_colon","fn":"stopIncompleteToolsJson","raw":"[{\"type\" \"tool\"}]"}

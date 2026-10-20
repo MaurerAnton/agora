@@ -1,0 +1,4 @@
+name|enabled_negative
+op|advance
+args|-1|true
+result|DeveloperUnlockResult(tapCount=0, remainingTaps=0, feedback=ALREADY_ENABLED)

@@ -1,0 +1,4 @@
+name|advance_two
+op|advance
+args|2|false
+result|DeveloperUnlockResult(tapCount=3, remainingTaps=4, feedback=NONE)

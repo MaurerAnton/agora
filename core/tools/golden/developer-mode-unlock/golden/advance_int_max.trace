@@ -1,0 +1,4 @@
+name|advance_int_max
+op|advance
+args|2147483647|false
+result|DeveloperUnlockResult(tapCount=0, remainingTaps=0, feedback=ENABLED)

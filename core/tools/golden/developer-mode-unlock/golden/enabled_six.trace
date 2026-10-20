@@ -1,0 +1,4 @@
+name|enabled_six
+op|advance
+args|6|true
+result|DeveloperUnlockResult(tapCount=0, remainingTaps=0, feedback=ALREADY_ENABLED)

@@ -1,0 +1,4 @@
+name|classify_future_negative_current
+op|classify
+args|true|-1|0|-|-
+result|FutureVersion(storedVersion=0, supportedVersion=-1)

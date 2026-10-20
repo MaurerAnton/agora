@@ -1,0 +1,4 @@
+name|classify_supported_negative_stored
+op|classify
+args|true|5|-1|-|-
+result|Supported(storedVersion=-1)

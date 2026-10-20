@@ -1,0 +1,4 @@
+name|can_open_unreadable
+op|can_open
+args|true|5|-|java.lang.IllegalStateException|boom
+result|false

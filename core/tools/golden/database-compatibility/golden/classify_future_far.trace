@@ -1,0 +1,4 @@
+name|classify_future_far
+op|classify
+args|true|5|99|-|-
+result|FutureVersion(storedVersion=99, supportedVersion=5)

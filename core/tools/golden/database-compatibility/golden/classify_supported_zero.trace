@@ -1,0 +1,4 @@
+name|classify_supported_zero
+op|classify
+args|true|0|0|-|-
+result|Supported(storedVersion=0)

@@ -1,0 +1,4 @@
+name|can_open_future
+op|can_open
+args|true|5|6|-|-
+result|false

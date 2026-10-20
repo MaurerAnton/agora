@@ -1,0 +1,4 @@
+name|classify_unreadable_ise_empty_message
+op|classify
+args|true|5|-|java.lang.IllegalStateException|
+result|Unreadable(error=java.lang.IllegalStateException: )

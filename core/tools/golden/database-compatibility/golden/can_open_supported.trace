@@ -1,0 +1,4 @@
+name|can_open_supported
+op|can_open
+args|true|5|4|-|-
+result|true

@@ -54,6 +54,7 @@ add_library(agora_core_lib STATIC
     src/context_budget.cpp
     src/message_source.cpp
     src/developer_mode_unlock.cpp
+    src/database_compatibility.cpp
     src/provider_identity.cpp
     src/provider_support.cpp
     src/sha256.cpp

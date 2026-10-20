@@ -119,6 +119,7 @@ repair_case(
 repair_case("m17_images_json", images1='["a","b"]', images2='["a","b"]')
 repair_case("m17_images_fallback", images1="a|||b", images2="a|||b")
 repair_case("m17_images_paths_agree", images1='["a","b"]', images2="a|||b")
+repair_case("m17_images_empty_vs_empty_array", images1="", images2="[]")
 repair_case("m17_images_differ", images1="[]", images2='["a"]')
 repair_case(
     "m17_invalid_selections",

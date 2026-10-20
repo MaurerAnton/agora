@@ -62,6 +62,7 @@ add_library(agora_core_lib STATIC
     src/migration_17_18.cpp
     src/migration_18_19.cpp
     src/migration_19_20.cpp
+    src/migration_20_35.cpp
     src/sqlite_platform.cpp
     src/uuid_v3.cpp
     src/provider_identity.cpp

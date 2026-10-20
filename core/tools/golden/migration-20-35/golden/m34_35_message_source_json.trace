@@ -1,0 +1,4 @@
+name|m34_35_message_source_json
+op|migrate
+version|34
+result|[["execSQL","ALTER TABLE messages ADD COLUMN sourceJson TEXT"]]|-

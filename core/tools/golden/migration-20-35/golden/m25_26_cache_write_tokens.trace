@@ -1,0 +1,4 @@
+name|m25_26_cache_write_tokens
+op|migrate
+version|25
+result|[["execSQL","ALTER TABLE messages ADD COLUMN cacheWriteInputTokenCount INTEGER"]]|-

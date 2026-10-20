@@ -1,0 +1,16 @@
+{
+  "object": {
+    "conversationSettings": {
+      "c1": {
+        "openAiServiceTier": "bogus"
+      }
+    }
+  },
+  "replace": false,
+  "allowSecrets": false,
+  "allowedConversationIds": [
+    "c1"
+  ],
+  "modelAliases": {},
+  "customModels": []
+}

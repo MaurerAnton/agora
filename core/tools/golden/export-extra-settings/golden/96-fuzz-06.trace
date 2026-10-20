@@ -1,0 +1,1 @@
+{"calls":[{"name":"saveImageTranscriptionEnabled","value":{"bool":true}},{"name":"saveImageTranscriptionBatchSize","value":{"int":4}},{"name":"saveShowDocumentationFab","value":{"bool":true}},{"name":"saveProxyEnabled","value":{"bool":true}},{"name":"saveProxyBypass","value":{"string":"localhost,127.0.0.1"}}],"error":"IllegalStateException"}

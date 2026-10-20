@@ -15,6 +15,7 @@ add_executable(agora_core_tests
     native_backup_secrets_parity_test.cpp
     native_backup_format_parity_test.cpp
     native_run_archive_parity_test.cpp
+    export_extra_settings_parity_test.cpp
     citations_parity_test.cpp
     cjk_text_parity_test.cpp
     task_schedule_parity_test.cpp
@@ -111,6 +112,7 @@ target_compile_definitions(agora_core_tests PRIVATE
     AGORA_FIXTURE_NATIVE_BACKUP_SECRETS_DIR="${CMAKE_CURRENT_SOURCE_DIR}/../tools/golden/native-backup-secrets"
     AGORA_FIXTURE_NATIVE_BACKUP_FORMAT_DIR="${CMAKE_CURRENT_SOURCE_DIR}/../tools/golden/native-backup-format"
     AGORA_FIXTURE_NATIVE_RUN_ARCHIVE_DIR="${CMAKE_CURRENT_SOURCE_DIR}/../tools/golden/native-run-archive"
+    AGORA_FIXTURE_EXPORT_EXTRA_SETTINGS_DIR="${CMAKE_CURRENT_SOURCE_DIR}/../tools/golden/export-extra-settings"
     AGORA_FIXTURE_LOOP_POLICY_DIR="${CMAKE_CURRENT_SOURCE_DIR}/../tools/golden/loop-policy"
     AGORA_FIXTURE_MODEL_ALIASES_DIR="${CMAKE_CURRENT_SOURCE_DIR}/../tools/golden/model-aliases"
     AGORA_FIXTURE_PROVIDER_NAMES_DIR="${CMAKE_CURRENT_SOURCE_DIR}/../tools/golden/provider-names"

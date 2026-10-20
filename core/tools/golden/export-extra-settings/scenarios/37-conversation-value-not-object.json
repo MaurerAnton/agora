@@ -1,0 +1,14 @@
+{
+  "object": {
+    "conversationSettings": {
+      "c1": []
+    }
+  },
+  "replace": false,
+  "allowSecrets": false,
+  "allowedConversationIds": [
+    "c1"
+  ],
+  "modelAliases": {},
+  "customModels": []
+}

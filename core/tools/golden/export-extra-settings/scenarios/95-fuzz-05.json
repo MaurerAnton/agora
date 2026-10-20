@@ -1,0 +1,27 @@
+{
+  "object": {
+    "reduceMotion": false,
+    "automationToolsEnabled": false,
+    "openAiServiceTierEnabled": true,
+    "automationWakeLockEnabled": false,
+    "proxyPassword": "",
+    "colorScheme": " ",
+    "defaultFrequencyPenalty": 0.1,
+    "schemeStyle": "tonal",
+    "searchMatchLimit": 12,
+    "proxyUsername": "user",
+    "hapticsEnabled": 1,
+    "defaultTopP": "true"
+  },
+  "replace": true,
+  "allowSecrets": false,
+  "allowedConversationIds": [
+    "c1"
+  ],
+  "modelAliases": {
+    "seed": "S"
+  },
+  "customModels": [
+    "seed"
+  ]
+}

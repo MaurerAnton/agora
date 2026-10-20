@@ -27,6 +27,7 @@ add_library(agora_core_lib STATIC
     src/native_backup_secrets.cpp
     src/native_backup_format.cpp
     src/native_run_archive.cpp
+    src/export_extra_settings.cpp
     src/conch_sse.cpp
     src/tz.cpp
     src/duckduckgo.cpp

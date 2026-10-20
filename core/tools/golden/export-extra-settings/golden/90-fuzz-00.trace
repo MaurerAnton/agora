@@ -1,0 +1,1 @@
+{"calls":[{"name":"saveImageTranscriptionPrompt","value":{"string":"Describe the image."}},{"name":"saveSearchContextWindow","value":{"int":8192}},{"name":"saveSearchMatchLimit","value":{"int":12}}],"error":"NumberFormatException"}

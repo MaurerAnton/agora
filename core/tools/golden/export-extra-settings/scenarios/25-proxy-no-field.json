@@ -1,0 +1,8 @@
+{
+  "object": {},
+  "replace": false,
+  "allowSecrets": true,
+  "allowedConversationIds": [],
+  "modelAliases": {},
+  "customModels": []
+}

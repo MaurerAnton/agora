@@ -1,0 +1,4 @@
+name|restore_replace_all
+op|restore
+warnings|["ignored 2 shell credential record(s) without a matching device","ignored 1 embedding credential record(s) without a matching model","ignored 1 MCP header record(s) without a matching server"]|-
+result|{"apiKeys":[{"id":"k1","name":"Imported","key":"sk-new","provider":"openai"}],"activeApiKeyIds":{"openai":"k1"},"webSearchApiKeys":{"brave":"new"},"proxyPassword":"new","shellDevices":[{"id":"s1","name":"dev","apiKey":"ak","sshPassword":"pw"},{"id":"s2","name":"unmatched","apiKey":"","sshPassword":""}],"embeddingModels":[{"id":"e1","type":"REMOTE","remoteApiKey":"newkey"},{"id":"e2","type":"LOCAL","remoteApiKey":"local-old"}],"mcpServers":[{"id":"m1","headers":{"A":"B"}}]}|-

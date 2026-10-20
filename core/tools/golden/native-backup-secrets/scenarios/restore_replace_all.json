@@ -1,0 +1,108 @@
+{
+  "name": "restore_replace_all",
+  "op": "restore",
+  "settings": {
+    "apiKeys": [
+      {
+        "id": "old",
+        "name": "Old",
+        "key": "sk-old",
+        "provider": "google"
+      }
+    ],
+    "activeApiKeyIds": {
+      "google": "old"
+    },
+    "webSearchApiKeys": {
+      "ddg": "old"
+    },
+    "proxyPassword": "old",
+    "shellDevices": [
+      {
+        "id": "s1",
+        "name": "dev",
+        "apiKey": "old-ak",
+        "sshPassword": "old-pw"
+      },
+      {
+        "id": "s2",
+        "name": "unmatched",
+        "apiKey": "u-ak",
+        "sshPassword": "u-pw"
+      }
+    ],
+    "embeddingModels": [
+      {
+        "id": "e1",
+        "name": "remote",
+        "type": "REMOTE",
+        "remoteApiKey": "old-key",
+        "localFilePath": "",
+        "batchSize": 8
+      },
+      {
+        "id": "e2",
+        "name": "local",
+        "type": "LOCAL",
+        "remoteApiKey": "local-old",
+        "localFilePath": "/tmp/e2",
+        "batchSize": 8
+      }
+    ],
+    "mcpServers": [
+      {
+        "id": "m1",
+        "name": "server",
+        "headers": {
+          "Old": "1"
+        }
+      }
+    ]
+  },
+  "secrets": {
+    "apiKeys": [
+      {
+        "id": "k1",
+        "name": "Imported",
+        "key": "sk-new",
+        "provider": "openai"
+      }
+    ],
+    "activeApiKeyIds": {
+      "openai": "k1",
+      "broken": "missing"
+    },
+    "webSearchApiKeys": {
+      "brave": "new"
+    },
+    "proxyPassword": "new",
+    "shellDevices": {
+      "s1": {
+        "apiKey": "ak",
+        "sshPassword": "pw"
+      },
+      "ghost": {
+        "apiKey": "g",
+        "sshPassword": ""
+      }
+    },
+    "shellApiKeys": {
+      "dev": "legacy-ignored",
+      "ghostname": "x"
+    },
+    "embeddingApiKeys": {
+      "e1": "newkey",
+      "e2": "local-ignore",
+      "orphan": "x"
+    },
+    "mcpHeaders": {
+      "m1": {
+        "A": "B"
+      },
+      "orphan": {
+        "C": "D"
+      }
+    }
+  },
+  "replace": true
+}

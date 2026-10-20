@@ -1,0 +1,59 @@
+{
+  "name": "restore_empty_merge",
+  "op": "restore",
+  "settings": {
+    "apiKeys": [
+      {
+        "id": "a",
+        "name": "A",
+        "key": "ka",
+        "provider": "google"
+      }
+    ],
+    "activeApiKeyIds": {
+      "old": "a"
+    },
+    "webSearchApiKeys": {
+      "brave": "old"
+    },
+    "proxyPassword": "existing",
+    "shellDevices": [
+      {
+        "id": "s1",
+        "name": "dev",
+        "apiKey": "old-ak",
+        "sshPassword": "old-pw"
+      }
+    ],
+    "embeddingModels": [
+      {
+        "id": "e1",
+        "name": "remote",
+        "type": "REMOTE",
+        "remoteApiKey": "old-key",
+        "localFilePath": "",
+        "batchSize": 8
+      }
+    ],
+    "mcpServers": [
+      {
+        "id": "m1",
+        "name": "server",
+        "headers": {
+          "Old": "1"
+        }
+      }
+    ]
+  },
+  "secrets": {
+    "apiKeys": [],
+    "activeApiKeyIds": {},
+    "webSearchApiKeys": {},
+    "proxyPassword": "",
+    "shellDevices": {},
+    "shellApiKeys": {},
+    "embeddingApiKeys": {},
+    "mcpHeaders": {}
+  },
+  "replace": false
+}

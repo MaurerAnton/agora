@@ -1,0 +1,67 @@
+{
+  "name": "restore_replace_clears",
+  "op": "restore",
+  "settings": {
+    "apiKeys": [
+      {
+        "id": "old",
+        "name": "Old",
+        "key": "sk-old",
+        "provider": "google"
+      }
+    ],
+    "activeApiKeyIds": {
+      "google": "old"
+    },
+    "webSearchApiKeys": {
+      "ddg": "old"
+    },
+    "proxyPassword": "old",
+    "shellDevices": [
+      {
+        "id": "s1",
+        "name": "dev",
+        "apiKey": "old-ak",
+        "sshPassword": "old-pw"
+      }
+    ],
+    "embeddingModels": [
+      {
+        "id": "e1",
+        "name": "remote",
+        "type": "REMOTE",
+        "remoteApiKey": "old-key",
+        "localFilePath": "",
+        "batchSize": 8
+      },
+      {
+        "id": "e2",
+        "name": "local",
+        "type": "LOCAL",
+        "remoteApiKey": "local-old",
+        "localFilePath": "/tmp/e2",
+        "batchSize": 8
+      }
+    ],
+    "mcpServers": [
+      {
+        "id": "m1",
+        "name": "server",
+        "headers": {
+          "Old": "1"
+        }
+      }
+    ]
+  },
+  "secrets": {
+    "apiKeys": [],
+    "activeApiKeyIds": {},
+    "webSearchApiKeys": {},
+    "proxyPassword": "",
+    "shellDevices": {},
+    "shellApiKeys": {},
+    "embeddingApiKeys": {},
+    "mcpHeaders": {}
+  },
+  "replace": true
+}

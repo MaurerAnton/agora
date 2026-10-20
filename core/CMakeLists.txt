@@ -24,6 +24,7 @@ add_library(agora_core_lib STATIC
     src/cron_expression.cpp
     src/custom_model_references.cpp
     src/backup_media_policy.cpp
+    src/native_backup_secrets.cpp
     src/conch_sse.cpp
     src/tz.cpp
     src/duckduckgo.cpp

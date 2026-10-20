@@ -1,0 +1,3 @@
+name|capture_empty
+op|capture
+result|{"apiKeys":[],"activeApiKeyIds":{},"webSearchApiKeys":{},"proxyPassword":"","shellDevices":{},"shellApiKeys":{},"embeddingApiKeys":{},"mcpHeaders":{}}|-

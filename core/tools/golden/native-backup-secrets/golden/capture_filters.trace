@@ -1,0 +1,3 @@
+name|capture_filters
+op|capture
+result|{"apiKeys":[{"id":"k1","name":"One","key":"sk-1","provider":"openai"},{"id":"k2","name":"Two","key":"sk-2","provider":"google"}],"activeApiKeyIds":{"openai":"k1"},"webSearchApiKeys":{"brave":"b1"},"proxyPassword":"proxy-pw","shellDevices":{"s1":{"apiKey":"ak2","sshPassword":"sp3"},"ssh-only":{"apiKey":"","sshPassword":"sp2"}},"shellApiKeys":{},"embeddingApiKeys":{"e1":"r1"},"mcpHeaders":{"m1":{"Authorization":"Bearer x","X-Empty":""}}}|-

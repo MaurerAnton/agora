@@ -46,5 +46,5 @@ KOTLINX_JARS=...core.jar:...json.jar ./run_golden.sh           # verify
 KOTLINX_JARS=... ./run_golden.sh --freeze                      # refreeze traces
 ```
 
-`python3 gen_scenarios.py` rewrites `scenarios/` deterministically (23 cases); rerun
+`python3 gen_scenarios.py` rewrites `scenarios/` deterministically (24 cases); rerun
 `./run_golden.sh --freeze` afterwards.

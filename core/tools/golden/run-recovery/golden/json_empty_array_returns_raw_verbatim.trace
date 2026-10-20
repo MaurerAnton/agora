@@ -1,0 +1,4 @@
+name|json_empty_array_returns_raw_verbatim
+fn|stopIncompleteToolsJson
+args|raw| [ ] \n
+result|string| [ ] \n

@@ -1,0 +1,4 @@
+name|json_state_whitespace_is_stopped
+fn|stopIncompleteToolsJson
+args|raw|[{"type":"tool","toolState":" stopped "}]
+result|string|[{"type":"tool","toolState":"stopped"}]

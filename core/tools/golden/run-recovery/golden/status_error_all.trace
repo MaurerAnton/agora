@@ -1,0 +1,16 @@
+name|status_error_all
+fn|recoverMessageStatus
+args|ERROR|TRANSCRIBING
+result|TRANSCRIBING
+args|ERROR|SENDING
+result|SENDING
+args|ERROR|THINKING
+result|THINKING
+args|ERROR|TOOL_CALLING
+result|TOOL_CALLING
+args|ERROR|SUCCESS
+result|SUCCESS
+args|ERROR|STOPPED
+result|STOPPED
+args|ERROR|ERROR
+result|ERROR

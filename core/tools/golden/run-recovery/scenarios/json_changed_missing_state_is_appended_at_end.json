@@ -1,0 +1,1 @@
+{"name":"json_changed_missing_state_is_appended_at_end","fn":"stopIncompleteToolsJson","raw":"[{\"type\":\"tool\",\"toolName\":\"shell\",\"toolArgs\":\"{}\",\"content\":\"a\"}]"}

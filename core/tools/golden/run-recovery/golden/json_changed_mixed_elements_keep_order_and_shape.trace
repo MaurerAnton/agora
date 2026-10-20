@@ -1,0 +1,4 @@
+name|json_changed_mixed_elements_keep_order_and_shape
+fn|stopIncompleteToolsJson
+args|raw|[null,{"type":"answer","toolState":"calling"},{"type":"tool","content":"a"},{"type":"tool","toolState":"succeeded"},[1,2],"x",{"type":"tool","toolState":"running"}]
+result|string|[null,{"type":"answer","toolState":"calling"},{"type":"tool","content":"a","toolState":"stopped"},{"type":"tool","toolState":"succeeded"},[1,2],"x",{"type":"tool","toolState":"stopped"}]

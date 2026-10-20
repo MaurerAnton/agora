@@ -1,0 +1,4 @@
+name|json_root_string
+fn|stopIncompleteToolsJson
+args|raw|"tool"
+result|string|-

@@ -48,6 +48,7 @@ add_library(agora_core_lib STATIC
     src/openai_stream_codec.cpp
     src/portable_glob.cpp
     src/run_branch_selection.cpp
+    src/run_recovery.cpp
     src/conversation_runtime.cpp
     src/thinking_capability.cpp
     src/token_pricing.cpp

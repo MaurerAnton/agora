@@ -1,0 +1,4 @@
+name|json_changed_compacts_source_whitespace
+fn|stopIncompleteToolsJson
+args|raw|[\n\t{ "type" : "tool", "content" : "x" },\n\t{ "type" : "answer" }\n]\n
+result|string|[{"type":"tool","content":"x","toolState":"stopped"},{"type":"answer"}]

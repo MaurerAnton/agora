@@ -1,0 +1,1 @@
+{"name":"json_duplicate_state_last_terminal_returns_raw","fn":"stopIncompleteToolsJson","raw":"[{\"type\":\"tool\",\"toolState\":\"calling\",\"toolState\":\"succeeded\"}]"}

@@ -1,0 +1,4 @@
+name|json_duplicate_state_last_terminal_returns_raw
+fn|stopIncompleteToolsJson
+args|raw|[{"type":"tool","toolState":"calling","toolState":"succeeded"}]
+result|string|[{"type":"tool","toolState":"calling","toolState":"succeeded"}]

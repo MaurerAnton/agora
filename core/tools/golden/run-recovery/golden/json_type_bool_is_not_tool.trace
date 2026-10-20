@@ -1,0 +1,4 @@
+name|json_type_bool_is_not_tool
+fn|stopIncompleteToolsJson
+args|raw|[{"type":true,"toolState":"calling"}]
+result|string|[{"type":true,"toolState":"calling"}]

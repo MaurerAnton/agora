@@ -1,0 +1,13 @@
+name|custom_protocol_gemini_alias
+selected|Relay:gpt-4o
+parsed|Relay|gpt-4o
+provider|0|Relay|google||
+capability|canDisableThinking|true
+capability|supportedEfforts|minimal,low,medium,high
+capability|supportsThinkingBudget|true
+capability|minBudgetTokens|1
+capability|maxBudgetTokens|-
+capability|supportsEffortWithBudget|false
+capability|supportsSamplingParams|true
+capability|supportsEffort|true
+capability|lowestEffort|minimal

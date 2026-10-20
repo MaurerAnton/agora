@@ -1,0 +1,6 @@
+{
+  "name": "builtin_anthropic_cache_disabled",
+  "providerName": "Anthropic",
+  "customProviders": [],
+  "builtInEnabled": false
+}

@@ -1,0 +1,13 @@
+name|custom_provider_without_match
+selected|Elsewhere:claude-3
+parsed|Elsewhere|claude-3
+provider|0|Relay|google||
+capability|canDisableThinking|true
+capability|supportedEfforts|minimal,low,medium,high,xhigh,max
+capability|supportsThinkingBudget|true
+capability|minBudgetTokens|1
+capability|maxBudgetTokens|-
+capability|supportsEffortWithBudget|true
+capability|supportsSamplingParams|true
+capability|supportsEffort|true
+capability|lowestEffort|minimal

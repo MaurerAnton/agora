@@ -1,0 +1,17 @@
+{
+  "name": "custom_anthropic_by_legacy",
+  "providerName": "Old Name",
+  "customProviders": [
+    {
+      "name": "New Name",
+      "protocol": "anthropic",
+      "id": "custom-provider-12345678-1234-4234-9234-123456789abc",
+      "legacyNames": [
+        "Old Name"
+      ],
+      "responsesApiEnabled": false,
+      "anthropicCacheEnabled": true,
+      "anthropicCacheTtl": "1h"
+    }
+  ]
+}

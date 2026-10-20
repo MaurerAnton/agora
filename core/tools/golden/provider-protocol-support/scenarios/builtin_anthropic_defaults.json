@@ -1,0 +1,5 @@
+{
+  "name": "builtin_anthropic_defaults",
+  "providerName": "Anthropic",
+  "customProviders": []
+}

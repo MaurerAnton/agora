@@ -1,0 +1,13 @@
+name|builtin_anthropic_disabled
+provider|Anthropic
+builtInEnabled|true
+builtInAnthropicEnabled|false
+builtInTtl|5m
+isOpenAiProtocol|false
+isAnthropicProtocol|true
+isAnthropicCacheEnabled|true
+supportsPromptCache|true
+isPromptCacheKeyEnabled|false
+isPromptCacheSettingEnabled|false
+anthropicCacheTtl|5m
+isResponsesApiEnabled|false

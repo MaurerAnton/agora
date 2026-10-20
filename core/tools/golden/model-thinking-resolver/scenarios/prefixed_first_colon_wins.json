@@ -1,0 +1,5 @@
+{
+  "name": "prefixed_first_colon_wins",
+  "selectedModel": "Provider:model:with:colons",
+  "customProviders": []
+}

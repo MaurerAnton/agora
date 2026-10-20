@@ -1,0 +1,24 @@
+{
+  "name": "any_openai_after_nonmatching",
+  "providerName": "Relay",
+  "customProviders": [
+    {
+      "name": "Other",
+      "protocol": "anthropic",
+      "id": "",
+      "legacyNames": [],
+      "responsesApiEnabled": false,
+      "anthropicCacheEnabled": true,
+      "anthropicCacheTtl": "1h"
+    },
+    {
+      "name": "Relay",
+      "protocol": "openai",
+      "id": "",
+      "legacyNames": [],
+      "responsesApiEnabled": true,
+      "anthropicCacheEnabled": true,
+      "anthropicCacheTtl": "1h"
+    }
+  ]
+}

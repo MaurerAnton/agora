@@ -1,0 +1,13 @@
+name|builtin_openai_disabled
+provider|OpenAI
+builtInEnabled|false
+builtInAnthropicEnabled|true
+builtInTtl|1h
+isOpenAiProtocol|true
+isAnthropicProtocol|false
+isAnthropicCacheEnabled|false
+supportsPromptCache|false
+isPromptCacheKeyEnabled|true
+isPromptCacheSettingEnabled|true
+anthropicCacheTtl|1h
+isResponsesApiEnabled|false

@@ -1,0 +1,14 @@
+name|builtin_openai_name_with_custom_google
+provider|OpenAI
+builtInEnabled|true
+builtInAnthropicEnabled|true
+builtInTtl|1h
+custom|0|OpenAI|google|||true|false|9m
+isOpenAiProtocol|true
+isAnthropicProtocol|false
+isAnthropicCacheEnabled|false
+supportsPromptCache|false
+isPromptCacheKeyEnabled|true
+isPromptCacheSettingEnabled|false
+anthropicCacheTtl|9m
+isResponsesApiEnabled|true

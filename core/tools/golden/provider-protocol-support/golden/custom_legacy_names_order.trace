@@ -1,0 +1,14 @@
+name|custom_legacy_names_order
+provider|Alias B
+builtInEnabled|true
+builtInAnthropicEnabled|true
+builtInTtl|1h
+custom|0|Relay|anthropic|custom-provider-12345678-1234-4234-9234-123456789abc|Alias C,Alias B|false|false|1h
+isOpenAiProtocol|false
+isAnthropicProtocol|true
+isAnthropicCacheEnabled|false
+supportsPromptCache|true
+isPromptCacheKeyEnabled|false
+isPromptCacheSettingEnabled|false
+anthropicCacheTtl|1h
+isResponsesApiEnabled|false

@@ -1,0 +1,13 @@
+name|custom_name_is_case_sensitive
+selected|relay:gpt-4o
+parsed|relay|gpt-4o
+provider|0|Relay|anthropic||
+capability|canDisableThinking|true
+capability|supportedEfforts|minimal,low,medium,high,xhigh,max
+capability|supportsThinkingBudget|true
+capability|minBudgetTokens|1
+capability|maxBudgetTokens|-
+capability|supportsEffortWithBudget|true
+capability|supportsSamplingParams|true
+capability|supportsEffort|true
+capability|lowestEffort|minimal

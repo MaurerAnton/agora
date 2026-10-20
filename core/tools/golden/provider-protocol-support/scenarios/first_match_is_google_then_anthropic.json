@@ -1,0 +1,24 @@
+{
+  "name": "first_match_is_google_then_anthropic",
+  "providerName": "Relay",
+  "customProviders": [
+    {
+      "name": "Relay",
+      "protocol": "google",
+      "id": "",
+      "legacyNames": [],
+      "responsesApiEnabled": false,
+      "anthropicCacheEnabled": false,
+      "anthropicCacheTtl": "9m"
+    },
+    {
+      "name": "Relay",
+      "protocol": "anthropic",
+      "id": "",
+      "legacyNames": [],
+      "responsesApiEnabled": true,
+      "anthropicCacheEnabled": true,
+      "anthropicCacheTtl": "1h"
+    }
+  ]
+}

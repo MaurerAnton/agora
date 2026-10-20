@@ -1,0 +1,12 @@
+{
+  "name": "custom_blank_protocol",
+  "selectedModel": "Relay:gpt-4o",
+  "customProviders": [
+    {
+      "name": "Relay",
+      "protocol": "   ",
+      "id": "",
+      "legacyNames": []
+    }
+  ]
+}

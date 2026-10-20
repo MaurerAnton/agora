@@ -1,0 +1,12 @@
+{
+  "name": "custom_empty_id_uses_name",
+  "selectedModel": "Relay:claude-3",
+  "customProviders": [
+    {
+      "name": "Relay",
+      "protocol": "openai",
+      "id": "",
+      "legacyNames": []
+    }
+  ]
+}

@@ -1,0 +1,15 @@
+{
+  "name": "custom_anthropic_cache_disabled",
+  "providerName": "Relay",
+  "customProviders": [
+    {
+      "name": "Relay",
+      "protocol": "anthropic",
+      "id": "",
+      "legacyNames": [],
+      "responsesApiEnabled": false,
+      "anthropicCacheEnabled": false,
+      "anthropicCacheTtl": "5m"
+    }
+  ]
+}

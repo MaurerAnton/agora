@@ -1,0 +1,13 @@
+name|custom_legacy_names_order
+selected|Alias B:gpt-4o
+parsed|Alias B|gpt-4o
+provider|0|Relay|anthropic|custom-provider-12345678-1234-4234-9234-123456789abc|Alias A,Alias B,Alias C
+capability|canDisableThinking|true
+capability|supportedEfforts|minimal,low,medium,high,xhigh,max
+capability|supportsThinkingBudget|true
+capability|minBudgetTokens|1024
+capability|maxBudgetTokens|-
+capability|supportsEffortWithBudget|true
+capability|supportsSamplingParams|true
+capability|supportsEffort|true
+capability|lowestEffort|minimal

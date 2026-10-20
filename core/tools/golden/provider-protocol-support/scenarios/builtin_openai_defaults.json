@@ -1,0 +1,5 @@
+{
+  "name": "builtin_openai_defaults",
+  "providerName": "OpenAI",
+  "customProviders": []
+}

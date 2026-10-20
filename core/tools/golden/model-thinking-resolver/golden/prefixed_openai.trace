@@ -1,0 +1,12 @@
+name|prefixed_openai
+selected|OpenAI:gpt-4o
+parsed|OpenAI|gpt-4o
+capability|canDisableThinking|true
+capability|supportedEfforts|minimal,low,medium,high,xhigh,max
+capability|supportsThinkingBudget|false
+capability|minBudgetTokens|1
+capability|maxBudgetTokens|-
+capability|supportsEffortWithBudget|true
+capability|supportsSamplingParams|true
+capability|supportsEffort|true
+capability|lowestEffort|minimal

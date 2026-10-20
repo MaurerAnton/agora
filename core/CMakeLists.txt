@@ -52,6 +52,8 @@ add_library(agora_core_lib STATIC
     src/run_recovery.cpp
     src/conversation_runtime.cpp
     src/thinking_capability.cpp
+    src/model_thinking_resolver.cpp
+    src/provider_protocol_support.cpp
     src/token_pricing.cpp
     src/streaming_json.cpp
     src/openai_service_tiers.cpp

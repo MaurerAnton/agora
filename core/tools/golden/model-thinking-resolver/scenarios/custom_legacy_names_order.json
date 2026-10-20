@@ -1,0 +1,16 @@
+{
+  "name": "custom_legacy_names_order",
+  "selectedModel": "Alias B:gpt-4o",
+  "customProviders": [
+    {
+      "name": "Relay",
+      "protocol": "anthropic",
+      "id": "custom-provider-12345678-1234-4234-9234-123456789abc",
+      "legacyNames": [
+        "Alias A",
+        "Alias B",
+        "Alias C"
+      ]
+    }
+  ]
+}

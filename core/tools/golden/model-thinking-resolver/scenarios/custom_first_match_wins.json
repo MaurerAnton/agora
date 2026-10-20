@@ -1,0 +1,18 @@
+{
+  "name": "custom_first_match_wins",
+  "selectedModel": "Relay:gpt-4o",
+  "customProviders": [
+    {
+      "name": "Relay",
+      "protocol": "anthropic",
+      "id": "",
+      "legacyNames": []
+    },
+    {
+      "name": "Relay",
+      "protocol": "google",
+      "id": "",
+      "legacyNames": []
+    }
+  ]
+}

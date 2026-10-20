@@ -1,0 +1,5 @@
+{
+  "name": "legacy_qwen",
+  "selectedModel": "qwen2.5-coder",
+  "customProviders": []
+}

@@ -1,0 +1,6 @@
+{
+  "name": "builtin_openai_disabled",
+  "providerName": "OpenAI",
+  "customProviders": [],
+  "builtInEnabled": false
+}

@@ -1,0 +1,1 @@
+{"name":"sanitize_user_ask_user","op":"sanitize","raw":"{\"kind\":\"ask_user\",\"askUser\":[{\"question\":\"What now?\",\"answer\":\"Continue\"}]}","participant":"USER"}

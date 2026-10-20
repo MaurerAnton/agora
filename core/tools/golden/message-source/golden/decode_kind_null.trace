@@ -1,0 +1,4 @@
+name|decode_kind_null
+op|decode
+args|{"kind":null}
+result|-

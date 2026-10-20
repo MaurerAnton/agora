@@ -1,0 +1,1 @@
+{"name":"sanitize_user_ask_user_empty","op":"sanitize","raw":"{\"kind\":\"ask_user\",\"askUser\":[]}","participant":"USER"}

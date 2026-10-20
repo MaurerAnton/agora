@@ -1,0 +1,4 @@
+name|encode_input_whitespace
+op|encode
+args| { "kind" : "ask_user" , "askUser" : [ { "question" : "Q" } ] } 
+result|{"kind":"ask_user","askUser":[{"question":"Q"}]}

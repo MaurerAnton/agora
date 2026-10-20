@@ -1,0 +1,4 @@
+name|encode_control_chars
+op|encode
+args|{"kind":"ask_user","askUser":[{"question":"\\u0001\\u0007\\u000b\\u001f","answer":"ok"}]}
+result|{"kind":"ask_user","askUser":[{"question":"\\u0001\\u0007\\u000b\\u001f","answer":"ok"}]}

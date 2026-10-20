@@ -1,0 +1,4 @@
+name|encode_ask_user_empty
+op|encode
+args|{"kind":"ask_user"}
+result|{"kind":"ask_user"}

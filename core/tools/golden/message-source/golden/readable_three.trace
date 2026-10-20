@@ -1,0 +1,4 @@
+name|readable_three
+op|readable
+args|3|Q1|A1|Q2|-|Q3|A3
+result|Q1\nA1\n\nQ2\n(No answer)\n\nQ3\nA3

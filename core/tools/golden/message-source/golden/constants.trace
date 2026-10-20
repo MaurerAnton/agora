@@ -1,0 +1,4 @@
+name|constants
+op|constants
+args|
+result|(No answer)|MessageSource(kind=TASK, askUser=[])|MessageSource(kind=LOOP, askUser=[])

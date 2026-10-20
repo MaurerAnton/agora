@@ -1,0 +1,4 @@
+name|encode_loop
+op|encode
+args|{"kind":"loop"}
+result|{"kind":"loop"}

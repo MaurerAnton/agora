@@ -1,0 +1,4 @@
+name|readable_question_newline
+op|readable
+args|1|line1\nline2|A
+result|line1\nline2\nA

@@ -1,0 +1,4 @@
+name|encode_task
+op|encode
+args|{"kind":"task"}
+result|{"kind":"task"}

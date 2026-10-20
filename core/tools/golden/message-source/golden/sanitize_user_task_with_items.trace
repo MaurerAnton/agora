@@ -1,0 +1,4 @@
+name|sanitize_user_task_with_items
+op|sanitize
+args|{"kind":"task","askUser":[{"question":"What now?","answer":"Continue"}]}|USER
+result|-

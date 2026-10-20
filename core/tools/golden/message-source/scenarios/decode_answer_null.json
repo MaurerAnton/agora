@@ -1,0 +1,1 @@
+{"name":"decode_answer_null","op":"decode","raw":"{\"kind\":\"ask_user\",\"askUser\":[{\"question\":\"Q\",\"answer\":null}]}"}

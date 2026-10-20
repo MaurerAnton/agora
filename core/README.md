@@ -93,6 +93,7 @@ parity tests in `core/tests/` — a drifting port is a failing build, not a surp
 | streaming tool arguments (prefix JSON parser, compact tool-card hints, subject normalization) | **done** | stand `streaming-json-document`; both sources compile verbatim (zero imports), `ToolKind` lifted by script; 133 traces pin UTF-16 error offsets, open leaves, every hint branch and the 4096-unit prefix boundary |
 | OpenAI service tiers (normalize/aliases, per-model availability, fallback mapping, settings/request value) | **done** | stand `openai-service-tiers`; source compiles verbatim (zero imports); 92 traces pin the model tables, the flex/fast/ultrafast fallbacks and the enabled×responses gate |
 | context budget (legacy-window migration, min/max clamp, compact occupancy labels) | **done** | stand `context-budget`; source compiles verbatim (zero imports); 45 traces pin the PRESETS array, the ≤100 migration edge, the clamp and the 1000/1024 label boundaries with Long rounding |
+| message source (automation task/loop/ask_user record, canonical stored JSON, backup import gate) | **done** | stand `message-source`; source compiles verbatim (kotlinx codec config), `Participant` lifted by script; 86 traces pin decode degradation, canonical encoding, sanitize gating and the ask_user text form |
 | data layer (export/import, backups) | pending | |
 | tool execution (remaining providers, shell engines) | pending | |
 

@@ -1,0 +1,4 @@
+name|decode_ask_user_null
+op|decode
+args|{"kind":"ask_user","askUser":null}
+result|-

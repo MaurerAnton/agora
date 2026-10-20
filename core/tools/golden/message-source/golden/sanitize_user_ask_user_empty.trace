@@ -1,0 +1,4 @@
+name|sanitize_user_ask_user_empty
+op|sanitize
+args|{"kind":"ask_user","askUser":[]}|USER
+result|{"kind":"ask_user"}

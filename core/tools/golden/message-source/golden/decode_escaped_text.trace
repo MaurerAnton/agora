@@ -1,0 +1,4 @@
+name|decode_escaped_text
+op|decode
+args|{"kind":"ask_user","askUser":[{"question":"a\\"b\\\\c\\nd\\te","answer":"é🙂"}]}
+result|MessageSource(kind=ASK_USER, askUser=[AskUserItem(question=a"b\\c\nd\te, answer=é🙂)])

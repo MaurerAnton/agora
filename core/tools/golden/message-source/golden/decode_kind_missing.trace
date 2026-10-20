@@ -1,0 +1,4 @@
+name|decode_kind_missing
+op|decode
+args|{"x":1}
+result|-

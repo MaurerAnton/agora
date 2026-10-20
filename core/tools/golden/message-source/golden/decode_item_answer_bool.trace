@@ -1,0 +1,4 @@
+name|decode_item_answer_bool
+op|decode
+args|{"kind":"ask_user","askUser":[{"question":"Q","answer":true}]}
+result|-

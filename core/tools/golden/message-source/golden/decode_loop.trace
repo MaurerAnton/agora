@@ -1,0 +1,4 @@
+name|decode_loop
+op|decode
+args|{"kind":"loop"}
+result|MessageSource(kind=LOOP, askUser=[])

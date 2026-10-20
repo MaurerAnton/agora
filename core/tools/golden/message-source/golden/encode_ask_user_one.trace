@@ -1,0 +1,4 @@
+name|encode_ask_user_one
+op|encode
+args|{"kind":"ask_user","askUser":[{"question":"What now?","answer":"Continue"}]}
+result|{"kind":"ask_user","askUser":[{"question":"What now?","answer":"Continue"}]}

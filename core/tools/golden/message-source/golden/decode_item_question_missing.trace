@@ -1,0 +1,4 @@
+name|decode_item_question_missing
+op|decode
+args|{"kind":"ask_user","askUser":[{"answer":"A"}]}
+result|-

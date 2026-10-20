@@ -1,0 +1,4 @@
+name|decode_two_values
+op|decode
+args|{"kind":"task"}{"kind":"loop"}
+result|-

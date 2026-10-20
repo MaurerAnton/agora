@@ -52,6 +52,7 @@ add_library(agora_core_lib STATIC
     src/streaming_json.cpp
     src/openai_service_tiers.cpp
     src/context_budget.cpp
+    src/message_source.cpp
     src/provider_identity.cpp
     src/provider_support.cpp
     src/sha256.cpp

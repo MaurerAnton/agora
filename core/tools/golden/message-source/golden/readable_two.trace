@@ -1,0 +1,4 @@
+name|readable_two
+op|readable
+args|2|Q1|A1|Q2|A2
+result|Q1\nA1\n\nQ2\nA2

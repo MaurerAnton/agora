@@ -1,0 +1,4 @@
+name|encode_unicode
+op|encode
+args|{"kind":"ask_user","askUser":[{"question":"héllo 🙂","answer":"日本語"}]}
+result|{"kind":"ask_user","askUser":[{"question":"héllo 🙂","answer":"日本語"}]}

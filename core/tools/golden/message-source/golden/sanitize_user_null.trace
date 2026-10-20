@@ -1,0 +1,4 @@
+name|sanitize_user_null
+op|sanitize
+args|-|USER
+result|-

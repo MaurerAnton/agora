@@ -1,0 +1,4 @@
+name|encode_question_escapes
+op|encode
+args|{"kind":"ask_user","askUser":[{"question":"a\\"b\\\\c\\nd\\te","answer":"tab\\there"}]}
+result|{"kind":"ask_user","askUser":[{"question":"a\\"b\\\\c\\nd\\te","answer":"tab\\there"}]}

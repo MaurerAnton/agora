@@ -59,6 +59,7 @@ add_library(agora_core_lib STATIC
     src/regeneration_tree_repair.cpp
     src/legacy_run_backfill.cpp
     src/migration_16_17.cpp
+    src/migration_17_18.cpp
     src/sqlite_platform.cpp
     src/uuid_v3.cpp
     src/provider_identity.cpp

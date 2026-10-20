@@ -39,6 +39,7 @@ add_executable(agora_core_tests
     regeneration_tree_repair_parity_test.cpp
     legacy_run_backfill_parity_test.cpp
     migration_16_17_parity_test.cpp
+    migration_17_18_parity_test.cpp
     provider_identity_parity_test.cpp
     provider_names_parity_test.cpp
     provider_support_parity_test.cpp
@@ -92,6 +93,7 @@ target_compile_definitions(agora_core_tests PRIVATE
     AGORA_FIXTURE_REGENERATION_TREE_REPAIR_DIR="${CMAKE_CURRENT_SOURCE_DIR}/../tools/golden/regeneration-tree-repair"
     AGORA_FIXTURE_LEGACY_RUN_BACKFILL_DIR="${CMAKE_CURRENT_SOURCE_DIR}/../tools/golden/legacy-run-backfill"
     AGORA_FIXTURE_MIGRATION_16_17_DIR="${CMAKE_CURRENT_SOURCE_DIR}/../tools/golden/migration-16-17"
+    AGORA_FIXTURE_MIGRATION_17_18_DIR="${CMAKE_CURRENT_SOURCE_DIR}/../tools/golden/migration-17-18"
     AGORA_FIXTURE_LOOP_POLICY_DIR="${CMAKE_CURRENT_SOURCE_DIR}/../tools/golden/loop-policy"
     AGORA_FIXTURE_MODEL_ALIASES_DIR="${CMAKE_CURRENT_SOURCE_DIR}/../tools/golden/model-aliases"
     AGORA_FIXTURE_PROVIDER_NAMES_DIR="${CMAKE_CURRENT_SOURCE_DIR}/../tools/golden/provider-names"

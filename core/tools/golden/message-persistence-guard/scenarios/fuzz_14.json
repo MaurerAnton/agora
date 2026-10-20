@@ -1,0 +1,11 @@
+{
+  "name": "fuzz_14",
+  "fn": "encodeSegmentsBounded",
+  "maxBytes": 500,
+  "segments_json": [
+    {
+      "type": "thought",
+      "content": ""
+    }
+  ]
+}

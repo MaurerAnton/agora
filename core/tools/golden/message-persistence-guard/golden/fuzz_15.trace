@@ -1,0 +1,7 @@
+name|fuzz_15
+fn|encodeSegmentsBounded
+canonical|[{"type":"tool","toolResult":"éax\\t漢"}]
+canonicalUtf8|42
+resultUtf16|39
+resultUtf8|42
+result|[{"type":"tool","toolResult":"éax\\t漢"}]

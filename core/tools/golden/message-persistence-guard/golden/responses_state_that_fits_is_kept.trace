@@ -1,0 +1,7 @@
+name|responses_state_that_fits_is_kept
+fn|encodeSegmentsBounded
+canonical|[{"type":"tool","toolName":"lookup","toolResult":"ok","responseOutputItems":[{"type":"message","id":"m1","content":[{"type":"output_text","text":"ok"}]}],"responseOutputItemProvider":"OpenAI"}]
+canonicalUtf8|193
+resultUtf16|193
+resultUtf8|193
+result|[{"type":"tool","toolName":"lookup","toolResult":"ok","responseOutputItems":[{"type":"message","id":"m1","content":[{"type":"output_text","text":"ok"}]}],"responseOutputItemProvider":"OpenAI"}]

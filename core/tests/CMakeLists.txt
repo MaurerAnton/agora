@@ -12,6 +12,7 @@ add_executable(agora_core_tests
     stream_normalization_parity_test.cpp
     stream_normalization_test.cpp
     backup_media_policy_parity_test.cpp
+    message_persistence_guard_parity_test.cpp
     native_backup_secrets_parity_test.cpp
     native_backup_format_parity_test.cpp
     native_run_archive_parity_test.cpp
@@ -127,6 +128,7 @@ target_compile_definitions(agora_core_tests PRIVATE
     AGORA_FIXTURE_CRON_EXPRESSION_DIR="${CMAKE_CURRENT_SOURCE_DIR}/../tools/golden/cron-expression"
     AGORA_FIXTURE_TASK_SCHEDULE_DIR="${CMAKE_CURRENT_SOURCE_DIR}/../tools/golden/task-schedule"
     AGORA_FIXTURE_BACKUP_MEDIA_POLICY_DIR="${CMAKE_CURRENT_SOURCE_DIR}/../tools/golden/backup-media-policy"
+    AGORA_FIXTURE_MESSAGE_PERSISTENCE_GUARD_DIR="${CMAKE_CURRENT_SOURCE_DIR}/../tools/golden/message-persistence-guard"
     AGORA_FIXTURE_RUN_RECOVERY_DIR="${CMAKE_CURRENT_SOURCE_DIR}/../tools/golden/run-recovery"
     AGORA_FIXTURE_PREP_VOCAB="${CMAKE_CURRENT_SOURCE_DIR}/../../app/src/main/assets/tokenizers/o200k_base.tiktoken"
 )

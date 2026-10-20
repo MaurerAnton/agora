@@ -692,6 +692,10 @@ std::string encode_segments(const std::vector<MessageSegment>& segments) {
 
 }  // namespace
 
+std::string encode_message_segments(const std::vector<MessageSegment>& segments) {
+    return encode_segments(segments);
+}
+
 // ---------------------------------------------------------------------------------------------
 // Policy
 // ---------------------------------------------------------------------------------------------

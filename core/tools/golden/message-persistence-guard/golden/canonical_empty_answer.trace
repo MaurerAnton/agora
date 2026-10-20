@@ -1,0 +1,7 @@
+name|canonical_empty_answer
+fn|encodeSegmentsBounded
+canonical|[{"type":"answer"}]
+canonicalUtf8|19
+resultUtf16|19
+resultUtf8|19
+result|[{"type":"answer"}]

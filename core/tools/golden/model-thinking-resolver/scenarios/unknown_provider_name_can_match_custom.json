@@ -1,0 +1,12 @@
+{
+  "name": "unknown_provider_name_can_match_custom",
+  "selectedModel": "Unknown:model",
+  "customProviders": [
+    {
+      "name": "Unknown",
+      "protocol": "google",
+      "id": "",
+      "legacyNames": []
+    }
+  ]
+}

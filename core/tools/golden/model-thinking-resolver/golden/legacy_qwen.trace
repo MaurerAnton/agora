@@ -1,0 +1,12 @@
+name|legacy_qwen
+selected|qwen2.5-coder
+parsed|Qwen|qwen2.5-coder
+capability|canDisableThinking|true
+capability|supportedEfforts|
+capability|supportsThinkingBudget|true
+capability|minBudgetTokens|1
+capability|maxBudgetTokens|32768
+capability|supportsEffortWithBudget|true
+capability|supportsSamplingParams|true
+capability|supportsEffort|false
+capability|lowestEffort|-

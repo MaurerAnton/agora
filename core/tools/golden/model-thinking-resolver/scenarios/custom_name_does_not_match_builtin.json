@@ -1,0 +1,12 @@
+{
+  "name": "custom_name_does_not_match_builtin",
+  "selectedModel": "OpenAI:gpt-4o",
+  "customProviders": [
+    {
+      "name": "Other",
+      "protocol": "anthropic",
+      "id": "",
+      "legacyNames": []
+    }
+  ]
+}

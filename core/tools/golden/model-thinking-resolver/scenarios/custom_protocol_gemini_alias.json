@@ -1,0 +1,12 @@
+{
+  "name": "custom_protocol_gemini_alias",
+  "selectedModel": "Relay:gpt-4o",
+  "customProviders": [
+    {
+      "name": "Relay",
+      "protocol": "gemini",
+      "id": "",
+      "legacyNames": []
+    }
+  ]
+}

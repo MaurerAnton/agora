@@ -1,0 +1,12 @@
+{
+  "name": "custom_stable_id_with_spaces_is_still_stable",
+  "selectedModel": "  custom-provider-12345678-1234-4234-9234-123456789abc  :gpt-4o",
+  "customProviders": [
+    {
+      "name": "Relay",
+      "protocol": "openai",
+      "id": "  custom-provider-12345678-1234-4234-9234-123456789abc  ",
+      "legacyNames": []
+    }
+  ]
+}

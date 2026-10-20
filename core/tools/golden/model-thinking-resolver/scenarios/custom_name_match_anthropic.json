@@ -1,0 +1,12 @@
+{
+  "name": "custom_name_match_anthropic",
+  "selectedModel": "Relay:claude-3-opus",
+  "customProviders": [
+    {
+      "name": "Relay",
+      "protocol": "anthropic",
+      "id": "",
+      "legacyNames": []
+    }
+  ]
+}

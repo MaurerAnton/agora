@@ -50,6 +50,7 @@ add_library(agora_core_lib STATIC
     src/run_branch_selection.cpp
     src/conversation_runtime.cpp
     src/thinking_capability.cpp
+    src/model_thinking_resolver.cpp
     src/token_pricing.cpp
     src/streaming_json.cpp
     src/openai_service_tiers.cpp

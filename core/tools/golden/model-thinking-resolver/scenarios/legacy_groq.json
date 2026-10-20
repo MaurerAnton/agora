@@ -1,0 +1,5 @@
+{
+  "name": "legacy_groq",
+  "selectedModel": "groq/llama-3",
+  "customProviders": []
+}

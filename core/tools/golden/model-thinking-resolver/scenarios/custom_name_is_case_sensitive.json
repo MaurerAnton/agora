@@ -1,0 +1,12 @@
+{
+  "name": "custom_name_is_case_sensitive",
+  "selectedModel": "relay:gpt-4o",
+  "customProviders": [
+    {
+      "name": "Relay",
+      "protocol": "anthropic",
+      "id": "",
+      "legacyNames": []
+    }
+  ]
+}

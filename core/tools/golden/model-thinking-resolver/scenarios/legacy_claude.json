@@ -1,0 +1,5 @@
+{
+  "name": "legacy_claude",
+  "selectedModel": "claude-3-opus",
+  "customProviders": []
+}

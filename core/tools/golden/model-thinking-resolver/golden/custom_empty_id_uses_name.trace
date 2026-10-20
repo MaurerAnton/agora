@@ -1,0 +1,13 @@
+name|custom_empty_id_uses_name
+selected|Relay:claude-3
+parsed|Relay|claude-3
+provider|0|Relay|openai||
+capability|canDisableThinking|true
+capability|supportedEfforts|minimal,low,medium,high,xhigh,max
+capability|supportsThinkingBudget|true
+capability|minBudgetTokens|1
+capability|maxBudgetTokens|-
+capability|supportsEffortWithBudget|true
+capability|supportsSamplingParams|true
+capability|supportsEffort|true
+capability|lowestEffort|minimal

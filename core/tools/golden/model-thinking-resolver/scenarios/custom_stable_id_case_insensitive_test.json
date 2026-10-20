@@ -1,0 +1,12 @@
+{
+  "name": "custom_stable_id_case_insensitive_test",
+  "selectedModel": "CUSTOM-PROVIDER-ABCDEFAB-1234-4234-9234-123456789ABC:gpt-4o",
+  "customProviders": [
+    {
+      "name": "Relay",
+      "protocol": "anthropic",
+      "id": "CUSTOM-PROVIDER-ABCDEFAB-1234-4234-9234-123456789ABC",
+      "legacyNames": []
+    }
+  ]
+}

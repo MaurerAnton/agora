@@ -1,0 +1,12 @@
+{
+  "name": "custom_provider_without_match",
+  "selectedModel": "Elsewhere:claude-3",
+  "customProviders": [
+    {
+      "name": "Relay",
+      "protocol": "google",
+      "id": "",
+      "legacyNames": []
+    }
+  ]
+}

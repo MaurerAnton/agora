@@ -1,0 +1,1 @@
+{"name":"plan_nested_boundary_under_tool","op":"plan","conversationId":"c","messages":[{"id":"u","parentId":null,"participant":"USER","status":"SUCCESS","timestamp":10},{"id":"tool_t","parentId":"u","participant":"MODEL","status":"SUCCESS","timestamp":11},{"id":"u2","parentId":"tool_t","participant":"USER","status":"SUCCESS","timestamp":12}]}

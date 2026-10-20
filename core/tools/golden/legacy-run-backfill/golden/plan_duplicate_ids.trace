@@ -1,0 +1,4 @@
+name|plan_duplicate_ids
+op|plan
+args|c|2
+result|ERROR|Legacy message IDs must be unique

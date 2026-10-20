@@ -1,0 +1,4 @@
+name|plan_synthetic_siblings
+op|plan
+args|c|3
+result|runs=PlannedLegacyRun(id=83d86951-b8d7-317a-a1e7-f8bc7e712af1, conversationId=c, parentRunId=null, boundaryMessageId=u, status=COMPLETED, endReason=MODEL_COMPLETED, startedAt=10, endedAt=12, legacyAmbiguous=false)\passignments=PlannedMessageAssignment(messageId=u, runId=83d86951-b8d7-317a-a1e7-f8bc7e712af1, runSequence=0, consumedAtPass=0)\sPlannedMessageAssignment(messageId=tool_a, runId=83d86951-b8d7-317a-a1e7-f8bc7e712af1, runSequence=1, consumedAtPass=null)\sPlannedMessageAssignment(messageId=result_b, runId=83d86951-b8d7-317a-a1e7-f8bc7e712af1, runSequence=2, consumedAtPass=null)

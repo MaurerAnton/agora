@@ -1,0 +1,1 @@
+{"name":"plan_synthetic_flag_override","op":"plan","conversationId":"c","messages":[{"id":"u","parentId":null,"participant":"USER","status":"SUCCESS","timestamp":10},{"id":"plain_model","parentId":"u","participant":"MODEL","status":"SUCCESS","timestamp":11,"isSynthetic":true}]}

@@ -1,0 +1,4 @@
+name|plan_orphan_model
+op|plan
+args|c|1
+result|runs=PlannedLegacyRun(id=08b84d91-62c8-3ba9-8fed-e526c46d2d0d, conversationId=c, parentRunId=null, boundaryMessageId=null, status=COMPLETED, endReason=MODEL_COMPLETED, startedAt=10, endedAt=10, legacyAmbiguous=true)\passignments=PlannedMessageAssignment(messageId=m, runId=08b84d91-62c8-3ba9-8fed-e526c46d2d0d, runSequence=0, consumedAtPass=null)

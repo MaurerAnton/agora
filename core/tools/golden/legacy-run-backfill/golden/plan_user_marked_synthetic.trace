@@ -1,0 +1,4 @@
+name|plan_user_marked_synthetic
+op|plan
+args|c|1
+result|runs=PlannedLegacyRun(id=4ac9a990-11df-3ddb-8581-1ac0434c9472, conversationId=c, parentRunId=null, boundaryMessageId=null, status=COMPLETED, endReason=MODEL_COMPLETED, startedAt=10, endedAt=10, legacyAmbiguous=true)\passignments=PlannedMessageAssignment(messageId=u_x, runId=4ac9a990-11df-3ddb-8581-1ac0434c9472, runSequence=0, consumedAtPass=null)

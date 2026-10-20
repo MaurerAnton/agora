@@ -1,0 +1,1 @@
+{"name":"selected_roots_synthetic","op":"selected","conversationId":"c","messages":[{"id":"tool_x","parentId":null,"participant":"USER","status":"SUCCESS","timestamp":5},{"id":"u2","parentId":null,"participant":"USER","status":"SUCCESS","timestamp":20}],"selectedMessageBranches":{"null":"tool_x"}}

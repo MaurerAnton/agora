@@ -1,0 +1,1 @@
+{"name":"selected_boundary_same_run","op":"selected","conversationId":"c","messages":[{"id":"u","parentId":null,"participant":"USER","status":"SUCCESS","timestamp":10},{"id":"m1","parentId":"u","participant":"MODEL","status":"SUCCESS","timestamp":11},{"id":"m2","parentId":"u","participant":"MODEL","status":"SUCCESS","timestamp":12}],"selectedMessageBranches":{"u":"m1"}}

@@ -1,0 +1,1 @@
+{"name":"plan_error_participant","op":"plan","conversationId":"c","messages":[{"id":"u","parentId":null,"participant":"USER","status":"SUCCESS","timestamp":10},{"id":"e","parentId":"u","participant":"ERROR","status":"SUCCESS","timestamp":11}]}

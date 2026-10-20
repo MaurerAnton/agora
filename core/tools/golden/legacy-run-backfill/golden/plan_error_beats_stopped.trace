@@ -1,0 +1,4 @@
+name|plan_error_beats_stopped
+op|plan
+args|c|3
+result|runs=PlannedLegacyRun(id=83d86951-b8d7-317a-a1e7-f8bc7e712af1, conversationId=c, parentRunId=null, boundaryMessageId=u, status=FAILED, endReason=PROVIDER_ERROR, startedAt=10, endedAt=12, legacyAmbiguous=true)\passignments=PlannedMessageAssignment(messageId=u, runId=83d86951-b8d7-317a-a1e7-f8bc7e712af1, runSequence=0, consumedAtPass=0)\sPlannedMessageAssignment(messageId=m1, runId=83d86951-b8d7-317a-a1e7-f8bc7e712af1, runSequence=1, consumedAtPass=null)\sPlannedMessageAssignment(messageId=m2, runId=83d86951-b8d7-317a-a1e7-f8bc7e712af1, runSequence=2, consumedAtPass=null)

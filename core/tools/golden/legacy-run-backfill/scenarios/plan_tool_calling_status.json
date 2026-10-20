@@ -1,0 +1,1 @@
+{"name":"plan_tool_calling_status","op":"plan","conversationId":"c","messages":[{"id":"u","parentId":null,"participant":"USER","status":"SUCCESS","timestamp":10},{"id":"m","parentId":"u","participant":"MODEL","status":"TOOL_CALLING","timestamp":11}]}

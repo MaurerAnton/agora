@@ -98,6 +98,7 @@ parity tests in `core/tests/` — a drifting port is a failing build, not a surp
 | database compatibility (missing/supported/future/unreadable gate before Room opens, fail-closed canOpen) | **done** | stand `database-compatibility`; source compiles verbatim (zero imports); 23 traces pin the missing short-circuit, every version edge and all pinned JDK exception descriptions |
 | V18 regeneration-edge repair (rejected v17→v18 migration forward fix, canonical-user and repaired-root guards, LinkedHashMap ordering) | **done** | stand `v18-regeneration-repair`; planner and real `Constants.kt` compile verbatim, `Participant` lifted by script; 26 traces pin every guard, the sibling ordering and the last-wins lookup map |
 | regeneration tree repair (v17 Regenerate/Edit sibling grouping, cloned-input deletion, root reparenting, selection migration, SHA-256 input fingerprint) | **done** | stand `regeneration-tree-repair`; planner compiles verbatim, `Participant` lifted by script; 53 traces pin grouping, anchor ordering, selection fallbacks, dedup contracts and the attachment sanitizer |
+| legacy Run backfill (v16 message forest → v17 Runs, deterministic UUID v3 ids, topology order, ambiguity and status derivation, selection migration) | **done** | stand `legacy-run-backfill`; planner compiles verbatim, four model enums lifted by script; 42 traces pin ids, ordering, cycle/orphan guards, statuses and selections |
 | data layer (export/import, backups) | pending | |
 | tool execution (remaining providers, shell engines) | pending | |
 

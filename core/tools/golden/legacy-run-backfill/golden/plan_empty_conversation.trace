@@ -1,0 +1,4 @@
+name|plan_empty_conversation
+op|plan
+args||1
+result|ERROR|conversationId must not be blank

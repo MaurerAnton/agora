@@ -1,0 +1,11 @@
+{
+  "name": "fuzz_04",
+  "fn": "encodeSegmentsBounded",
+  "maxBytes": 2000,
+  "segments_json": [
+    {
+      "type": "thought",
+      "content": "b \n\\\u0001x\"\\\"b\u0001x  a𝄞\" \"😀\t漢\u0001b漢 \"\u0001\u0001b漢\\𝄞\t 漢x\t𝄞\n\t\\\\b\n漢\\é\n\"é  \"é \u0001x漢b é\"😀a \tx \t\\\né \t\u0001漢漢\t𝄞漢éxxé\n\\ \" x𝄞b 😀𝄞 x\u0001 "
+    }
+  ]
+}

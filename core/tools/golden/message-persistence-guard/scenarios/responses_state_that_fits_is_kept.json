@@ -1,0 +1,24 @@
+{
+  "name": "responses_state_that_fits_is_kept",
+  "fn": "encodeSegmentsBounded",
+  "segments_json": [
+    {
+      "type": "tool",
+      "toolName": "lookup",
+      "toolResult": "ok",
+      "responseOutputItems": [
+        {
+          "type": "message",
+          "id": "m1",
+          "content": [
+            {
+              "type": "output_text",
+              "text": "ok"
+            }
+          ]
+        }
+      ],
+      "responseOutputItemProvider": "OpenAI"
+    }
+  ]
+}

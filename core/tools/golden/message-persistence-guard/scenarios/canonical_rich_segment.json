@@ -1,0 +1,46 @@
+{
+  "name": "canonical_rich_segment",
+  "fn": "encodeSegmentsBounded",
+  "segments_json": [
+    {
+      "type": "answer",
+      "content": "quoted \" text \\ newline\n control\u0001 😀",
+      "signature": "sig",
+      "signatureProvider": "provider"
+    },
+    {
+      "type": "tool",
+      "content": "tool content",
+      "toolName": "lookup",
+      "toolArgs": "{\"query\":\"value\"}",
+      "toolResult": "result",
+      "toolResultText": "display",
+      "toolStructuredResult": "{\"ok\":true}",
+      "toolProgress": "complete",
+      "toolCallId": "call-1",
+      "durationMs": 1234,
+      "toolState": "succeeded",
+      "toolTarget": "target",
+      "toolDisplayName": "Lookup",
+      "toolTranscription": "transcription",
+      "responseOutputItems": [
+        {
+          "id": "m1",
+          "type": "message"
+        }
+      ],
+      "responseOutputItemProvider": "OpenAI",
+      "errorCode": "none",
+      "toolImages": [
+        {
+          "path": "media/a.png",
+          "mimeType": "image/png",
+          "sizeBytes": 1234,
+          "sha256": "abababababababababababababababababababababababababababababababab",
+          "width": 10,
+          "height": 20
+        }
+      ]
+    }
+  ]
+}

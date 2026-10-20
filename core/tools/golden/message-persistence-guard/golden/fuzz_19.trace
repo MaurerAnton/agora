@@ -1,0 +1,7 @@
+name|fuzz_19
+fn|encodeSegmentsBounded
+canonical|[{"type":"tool","toolArgs":"a𝄞 x\\\\ \\tb𝄞\\"","toolResult":"","toolProgress":""}]
+canonicalUtf8|86
+resultUtf16|80
+resultUtf8|86
+result|[{"type":"tool","toolArgs":"a𝄞 x\\\\ \\tb𝄞\\"","toolResult":"","toolProgress":""}]

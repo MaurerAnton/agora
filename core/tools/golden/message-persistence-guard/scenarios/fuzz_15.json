@@ -1,0 +1,11 @@
+{
+  "name": "fuzz_15",
+  "fn": "encodeSegmentsBounded",
+  "maxBytes": 3000,
+  "segments_json": [
+    {
+      "type": "tool",
+      "toolResult": "éax\t漢"
+    }
+  ]
+}

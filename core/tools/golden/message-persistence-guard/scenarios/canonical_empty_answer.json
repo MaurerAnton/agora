@@ -1,0 +1,9 @@
+{
+  "name": "canonical_empty_answer",
+  "fn": "encodeSegmentsBounded",
+  "segments_json": [
+    {
+      "type": "answer"
+    }
+  ]
+}

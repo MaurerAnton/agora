@@ -1,0 +1,7 @@
+name|fuzz_03
+fn|encodeSegmentsBounded
+canonical|[{"type":"tool","toolArgs":"漢\\n\\\\b\\"漢\\té😀é","toolResult":"é ab "}]
+canonicalUtf8|78
+resultUtf16|69
+resultUtf8|78
+result|[{"type":"tool","toolArgs":"漢\\n\\\\b\\"漢\\té😀é","toolResult":"é ab "}]

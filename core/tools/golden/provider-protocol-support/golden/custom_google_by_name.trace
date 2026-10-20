@@ -1,0 +1,14 @@
+name|custom_google_by_name
+provider|Relay
+builtInEnabled|true
+builtInAnthropicEnabled|true
+builtInTtl|1h
+custom|0|Relay|google|||false|true|1h
+isOpenAiProtocol|false
+isAnthropicProtocol|false
+isAnthropicCacheEnabled|false
+supportsPromptCache|false
+isPromptCacheKeyEnabled|false
+isPromptCacheSettingEnabled|true
+anthropicCacheTtl|1h
+isResponsesApiEnabled|false

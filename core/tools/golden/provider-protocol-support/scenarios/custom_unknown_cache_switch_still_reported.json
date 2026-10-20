@@ -1,0 +1,15 @@
+{
+  "name": "custom_unknown_cache_switch_still_reported",
+  "providerName": "Relay",
+  "customProviders": [
+    {
+      "name": "Relay",
+      "protocol": "unknown",
+      "id": "",
+      "legacyNames": [],
+      "responsesApiEnabled": false,
+      "anthropicCacheEnabled": false,
+      "anthropicCacheTtl": "9m"
+    }
+  ]
+}

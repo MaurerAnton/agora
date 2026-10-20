@@ -1,0 +1,15 @@
+{
+  "name": "custom_openai_responses_enabled",
+  "providerName": "Relay",
+  "customProviders": [
+    {
+      "name": "Relay",
+      "protocol": "openai",
+      "id": "",
+      "legacyNames": [],
+      "responsesApiEnabled": true,
+      "anthropicCacheEnabled": true,
+      "anthropicCacheTtl": "1h"
+    }
+  ]
+}

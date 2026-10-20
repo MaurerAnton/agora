@@ -1,0 +1,26 @@
+{
+  "name": "first_match_is_legacy_then_name",
+  "providerName": "Old Name",
+  "customProviders": [
+    {
+      "name": "First",
+      "protocol": "anthropic",
+      "id": "custom-provider-12345678-1234-4234-9234-123456789abc",
+      "legacyNames": [
+        "Old Name"
+      ],
+      "responsesApiEnabled": false,
+      "anthropicCacheEnabled": false,
+      "anthropicCacheTtl": "1h"
+    },
+    {
+      "name": "Old Name",
+      "protocol": "openai",
+      "id": "",
+      "legacyNames": [],
+      "responsesApiEnabled": true,
+      "anthropicCacheEnabled": true,
+      "anthropicCacheTtl": "1h"
+    }
+  ]
+}

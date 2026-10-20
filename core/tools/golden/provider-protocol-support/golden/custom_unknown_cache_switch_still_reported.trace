@@ -1,0 +1,14 @@
+name|custom_unknown_cache_switch_still_reported
+provider|Relay
+builtInEnabled|true
+builtInAnthropicEnabled|true
+builtInTtl|1h
+custom|0|Relay|unknown|||false|false|9m
+isOpenAiProtocol|false
+isAnthropicProtocol|false
+isAnthropicCacheEnabled|false
+supportsPromptCache|false
+isPromptCacheKeyEnabled|false
+isPromptCacheSettingEnabled|false
+anthropicCacheTtl|9m
+isResponsesApiEnabled|false

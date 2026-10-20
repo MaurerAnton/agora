@@ -1,0 +1,14 @@
+name|custom_openai_by_stable_id
+provider|custom-provider-12345678-1234-4234-9234-123456789abc
+builtInEnabled|true
+builtInAnthropicEnabled|true
+builtInTtl|1h
+custom|0|Renamed|openai|custom-provider-12345678-1234-4234-9234-123456789abc||false|true|1h
+isOpenAiProtocol|true
+isAnthropicProtocol|false
+isAnthropicCacheEnabled|false
+supportsPromptCache|true
+isPromptCacheKeyEnabled|true
+isPromptCacheSettingEnabled|true
+anthropicCacheTtl|1h
+isResponsesApiEnabled|false

@@ -1,0 +1,15 @@
+name|first_match_is_anthropic_then_openai
+provider|Relay
+builtInEnabled|true
+builtInAnthropicEnabled|true
+builtInTtl|1h
+custom|0|Relay|anthropic|||false|false|5m
+custom|1|Relay|openai|||true|true|1h
+isOpenAiProtocol|true
+isAnthropicProtocol|true
+isAnthropicCacheEnabled|false
+supportsPromptCache|true
+isPromptCacheKeyEnabled|false
+isPromptCacheSettingEnabled|false
+anthropicCacheTtl|5m
+isResponsesApiEnabled|false

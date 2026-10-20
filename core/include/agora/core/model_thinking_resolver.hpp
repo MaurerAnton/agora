@@ -44,6 +44,12 @@ struct CustomProviderConfig {
     CustomEndpointProtocol protocol = CustomEndpointProtocol::openai;
     std::string id;
     std::vector<std::string> legacy_names;
+    /** Retained across protocol changes; consumed only by OpenAI-protocol requests. */
+    bool responses_api_enabled = false;
+    /** Prompt-cache switch; OpenAI uses it as prompt_cache_key, Anthropic as cache_control. */
+    bool anthropic_cache_enabled = true;
+    /** Anthropic-only cache TTL. */
+    std::string anthropic_cache_ttl = "1h";
 };
 
 /** CustomProviderConfig.providerId: a stable id wins, otherwise the display name. */

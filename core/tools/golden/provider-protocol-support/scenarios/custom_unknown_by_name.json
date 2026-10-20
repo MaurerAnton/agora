@@ -1,0 +1,15 @@
+{
+  "name": "custom_unknown_by_name",
+  "providerName": "Relay",
+  "customProviders": [
+    {
+      "name": "Relay",
+      "protocol": "unknown",
+      "id": "",
+      "legacyNames": [],
+      "responsesApiEnabled": false,
+      "anthropicCacheEnabled": true,
+      "anthropicCacheTtl": "1h"
+    }
+  ]
+}

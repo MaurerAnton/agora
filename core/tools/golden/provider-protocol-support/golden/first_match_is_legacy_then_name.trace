@@ -1,0 +1,15 @@
+name|first_match_is_legacy_then_name
+provider|Old Name
+builtInEnabled|true
+builtInAnthropicEnabled|true
+builtInTtl|1h
+custom|0|First|anthropic|custom-provider-12345678-1234-4234-9234-123456789abc|Old Name|false|false|1h
+custom|1|Old Name|openai|||true|true|1h
+isOpenAiProtocol|true
+isAnthropicProtocol|true
+isAnthropicCacheEnabled|false
+supportsPromptCache|true
+isPromptCacheKeyEnabled|false
+isPromptCacheSettingEnabled|false
+anthropicCacheTtl|1h
+isResponsesApiEnabled|false

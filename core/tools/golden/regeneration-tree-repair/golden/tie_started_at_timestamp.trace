@@ -1,0 +1,4 @@
+name|tie_started_at_timestamp
+op|plan
+args|2|4
+result|runParent=r1=r2\pdeleted=u1\pmessageParent=m1=u2\prunSequence=m1=0\pmessageSelections=\prunSelections=\pinferred=r1

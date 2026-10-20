@@ -1,0 +1,4 @@
+name|fingerprint_unicode
+op|fingerprint
+args|Привет, мир|3|-
+result|c6fa26cc22ac43e8194d62617862db5e4a1f0773cf66d638bccb4b79cf3021e7

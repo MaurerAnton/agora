@@ -1,0 +1,4 @@
+name|sequence_by_timestamp
+op|plan
+args|2|5
+result|runParent=r2=r1\pdeleted=u2\pmessageParent=m2=u1\prunSequence=m2b=0\sm2=1\pmessageSelections=\prunSelections=\pinferred=r2

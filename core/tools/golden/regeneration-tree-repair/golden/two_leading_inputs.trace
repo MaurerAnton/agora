@@ -1,0 +1,4 @@
+name|two_leading_inputs
+op|plan
+args|2|5
+result|runParent=r2=r1\pdeleted=u2a,u2b\pmessageParent=m2=u1\prunSequence=m2=0\pmessageSelections=\prunSelections=\pinferred=r2

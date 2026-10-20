@@ -1,0 +1,4 @@
+name|group_by_parent_run
+op|plan
+args|4|8
+result|runParent=r2=r1\srb=ra\pdeleted=u2,ub\pmessageParent=m2=u1\smb=ua\prunSequence=m2=0\smb=0\pmessageSelections=\prunSelections=\pinferred=r2,rb

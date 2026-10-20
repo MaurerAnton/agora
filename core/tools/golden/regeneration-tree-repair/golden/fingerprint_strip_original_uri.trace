@@ -1,0 +1,4 @@
+name|fingerprint_strip_original_uri
+op|fingerprint
+args|text|1|{"a":[{"originalUri":"x","b":1}],"originalUri":"y"}
+result|d826dea2af80e93c266b0564ea39e8deabf244d87f0e6b6350df355b177d96a5

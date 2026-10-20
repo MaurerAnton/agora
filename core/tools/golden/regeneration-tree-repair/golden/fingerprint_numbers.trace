@@ -1,0 +1,4 @@
+name|fingerprint_numbers
+op|fingerprint
+args|t|0|{"n":1.50,"e":1e3,"neg":-0,"bool":true,"nil":null}
+result|1c14711d53db0e9eca714e0392004d097a96d605e2be0379eb81af8cb55f63ee

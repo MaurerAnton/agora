@@ -1,0 +1,4 @@
+name|two_groups
+op|plan
+args|4|8
+result|runParent=r2=r1\sr4=r3\pdeleted=u2,u4\pmessageParent=m2=u1\sm4=u3\prunSequence=m2=0\sm4=0\pmessageSelections=\prunSelections=\pinferred=r2,r4

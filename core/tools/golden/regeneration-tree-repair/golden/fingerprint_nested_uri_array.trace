@@ -1,0 +1,4 @@
+name|fingerprint_nested_uri_array
+op|fingerprint
+args|t|4|[{"originalUri":"a","keep":[{"originalUri":"b","v":"é"}]}]
+result|bd5b448bc0edd59bb6358231e189822ddab5c92a224565f92148fa3b35f4cc7b

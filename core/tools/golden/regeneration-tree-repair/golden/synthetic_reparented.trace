@@ -1,0 +1,4 @@
+name|synthetic_reparented
+op|plan
+args|2|5
+result|runParent=r2=r1\pdeleted=u2\pmessageParent=m2=u1\stool_h=u1\prunSequence=m2=0\stool_h=1\pmessageSelections=\prunSelections=\pinferred=r2

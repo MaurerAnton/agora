@@ -1,0 +1,4 @@
+name|no_leading_inputs
+op|plan
+args|2|4
+result|runParent=\pdeleted=\pmessageParent=\prunSequence=\pmessageSelections=\prunSelections=\pinferred=

@@ -1,0 +1,4 @@
+name|classify_future_int_extremes
+op|classify
+args|true|-2147483648|2147483647|-|-
+result|FutureVersion(storedVersion=2147483647, supportedVersion=-2147483648)

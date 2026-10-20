@@ -1,0 +1,4 @@
+name|classify_unreadable_io
+op|classify
+args|true|5|-|java.io.IOException|disk
+result|Unreadable(error=java.io.IOException: disk)

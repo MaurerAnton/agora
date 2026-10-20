@@ -1,0 +1,4 @@
+name|classify_unreadable_runtime
+op|classify
+args|true|5|-|java.lang.RuntimeException|db locked
+result|Unreadable(error=java.lang.RuntimeException: db locked)

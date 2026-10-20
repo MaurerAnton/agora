@@ -1,0 +1,4 @@
+name|classify_supported_equal
+op|classify
+args|true|5|5|-|-
+result|Supported(storedVersion=5)

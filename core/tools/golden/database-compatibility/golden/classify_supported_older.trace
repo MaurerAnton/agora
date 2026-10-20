@@ -1,0 +1,4 @@
+name|classify_supported_older
+op|classify
+args|true|5|4|-|-
+result|Supported(storedVersion=4)

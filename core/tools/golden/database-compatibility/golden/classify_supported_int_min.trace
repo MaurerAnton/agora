@@ -1,0 +1,4 @@
+name|classify_supported_int_min
+op|classify
+args|true|0|-2147483648|-|-
+result|Supported(storedVersion=-2147483648)

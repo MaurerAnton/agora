@@ -1,0 +1,4 @@
+name|classify_unreadable_argument
+op|classify
+args|true|5|-|java.lang.IllegalArgumentException|version
+result|Unreadable(error=java.lang.IllegalArgumentException: version)

@@ -1,0 +1,4 @@
+name|can_open_supported_negative_stored
+op|can_open
+args|true|5|-1|-|-
+result|true

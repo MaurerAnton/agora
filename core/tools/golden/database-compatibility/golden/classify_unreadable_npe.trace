@@ -1,0 +1,4 @@
+name|classify_unreadable_npe
+op|classify
+args|true|5|-|java.lang.NullPointerException|x is null
+result|Unreadable(error=java.lang.NullPointerException: x is null)

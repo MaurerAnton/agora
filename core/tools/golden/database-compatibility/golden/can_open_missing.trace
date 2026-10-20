@@ -1,0 +1,4 @@
+name|can_open_missing
+op|can_open
+args|false|5|0|-|-
+result|true

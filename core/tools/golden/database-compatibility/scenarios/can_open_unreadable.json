@@ -1,0 +1,1 @@
+{"name":"can_open_unreadable","op":"can_open","databaseExists":true,"currentVersion":5,"throwClass":"java.lang.IllegalStateException","throwMessage":"boom"}

@@ -1,0 +1,4 @@
+name|classify_unreadable_ise
+op|classify
+args|true|5|-|java.lang.IllegalStateException|boom
+result|Unreadable(error=java.lang.IllegalStateException: boom)

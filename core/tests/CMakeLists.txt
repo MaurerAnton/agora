@@ -34,6 +34,7 @@ add_executable(agora_core_tests
     context_budget_parity_test.cpp
     message_source_parity_test.cpp
     developer_mode_unlock_parity_test.cpp
+    database_compatibility_parity_test.cpp
     provider_identity_parity_test.cpp
     provider_names_parity_test.cpp
     provider_support_parity_test.cpp
@@ -82,6 +83,7 @@ target_compile_definitions(agora_core_tests PRIVATE
     AGORA_FIXTURE_CONTEXT_BUDGET_DIR="${CMAKE_CURRENT_SOURCE_DIR}/../tools/golden/context-budget"
     AGORA_FIXTURE_MESSAGE_SOURCE_DIR="${CMAKE_CURRENT_SOURCE_DIR}/../tools/golden/message-source"
     AGORA_FIXTURE_DEVELOPER_MODE_UNLOCK_DIR="${CMAKE_CURRENT_SOURCE_DIR}/../tools/golden/developer-mode-unlock"
+    AGORA_FIXTURE_DATABASE_COMPATIBILITY_DIR="${CMAKE_CURRENT_SOURCE_DIR}/../tools/golden/database-compatibility"
     AGORA_FIXTURE_LOOP_POLICY_DIR="${CMAKE_CURRENT_SOURCE_DIR}/../tools/golden/loop-policy"
     AGORA_FIXTURE_MODEL_ALIASES_DIR="${CMAKE_CURRENT_SOURCE_DIR}/../tools/golden/model-aliases"
     AGORA_FIXTURE_PROVIDER_NAMES_DIR="${CMAKE_CURRENT_SOURCE_DIR}/../tools/golden/provider-names"

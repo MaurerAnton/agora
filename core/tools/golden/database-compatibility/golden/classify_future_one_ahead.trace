@@ -1,0 +1,4 @@
+name|classify_future_one_ahead
+op|classify
+args|true|5|6|-|-
+result|FutureVersion(storedVersion=6, supportedVersion=5)

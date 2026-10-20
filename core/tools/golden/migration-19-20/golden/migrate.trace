@@ -1,0 +1,4 @@
+name|repair-oversized
+op|migrate
+args|0|0
+result|[["execSQL","UPDATE messages\\nSET toolCallJson = NULL\\nWHERE toolCallJson IS NOT NULL\\n  AND length(CAST(toolCallJson AS BLOB)) > ?","i:600000"],["execSQL","UPDATE messages\\nSET text = substr(text, 1, ?) \p\p ?\\nWHERE length(text) > ?","i:100000","s:\\n…[truncated for persistence]","i:100000"],["execSQL","UPDATE messages\\nSET thoughts = substr(thoughts, 1, ?) \p\p ?\\nWHERE thoughts IS NOT NULL\\n  AND length(thoughts) > ?","i:100000","s:\\n…[truncated for persistence]","i:100000"]]|-

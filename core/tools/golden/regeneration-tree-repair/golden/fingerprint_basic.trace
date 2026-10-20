@@ -1,0 +1,4 @@
+name|fingerprint_basic
+op|fingerprint
+args|hello|0|-
+result|8b4057e773b5ae9d893d225535dde6c20ee233dd7eece0c4177c5a34010b8bf2

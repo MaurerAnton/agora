@@ -1,0 +1,4 @@
+name|fingerprint_empty_obj
+op|fingerprint
+args|text|0|{}
+result|bfa5d701f7fcc517b897ad40d3a35db8420faf51890fc3628b0c1ef7cf5bf5c1

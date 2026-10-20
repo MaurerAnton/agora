@@ -1,0 +1,4 @@
+name|fingerprint_invalid_json
+op|fingerprint
+args|text|2|not json
+result|a38386d47c9d749dc542a7218e858891aace5d3747a6ce65bb0b9a3df1d939f8

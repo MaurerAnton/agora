@@ -1,0 +1,4 @@
+name|error_root_candidate
+op|plan
+args|2|5
+result|runParent=r2=r1\pdeleted=u2\pmessageParent=\prunSequence=e2=0\sm2=1\pmessageSelections=p0=u1\su1=m2\prunSelections=<null>=r1\sr1=r2\pinferred=r2

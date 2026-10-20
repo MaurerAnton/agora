@@ -1,0 +1,4 @@
+name|three_runs_same_input
+op|plan
+args|3|6
+result|runParent=r2=r1\sr3=r1\pdeleted=u2,u3\pmessageParent=m2=u1\sm3=u1\prunSequence=m2=0\sm3=0\pmessageSelections=\prunSelections=\pinferred=r2,r3

@@ -1,0 +1,4 @@
+name|fingerprint_array_meta
+op|fingerprint
+args|t|0|[1,"x",null]
+result|4cd9fca6a852fafc37df7e869d8e7146d09642a8eab8352389a52c6f224397d6

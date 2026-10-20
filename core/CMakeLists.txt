@@ -56,6 +56,7 @@ add_library(agora_core_lib STATIC
     src/developer_mode_unlock.cpp
     src/database_compatibility.cpp
     src/v18_regeneration_repair.cpp
+    src/regeneration_tree_repair.cpp
     src/provider_identity.cpp
     src/provider_support.cpp
     src/sha256.cpp

@@ -1,0 +1,4 @@
+name|selection_missing_retained
+op|plan
+args|2|4
+result|runParent=r2=r1\pdeleted=u2\pmessageParent=m2=u1\prunSequence=m2=0\pmessageSelections=p0=gone\prunSelections=\pinferred=r2

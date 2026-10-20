@@ -1,0 +1,4 @@
+name|selection_output_removed_fallback
+op|plan
+args|2|5
+result|runParent=r2=r1\pdeleted=u2a,u2b\pmessageParent=\prunSequence=m2a=0\pmessageSelections=p0=u1\su1=m2a\prunSelections=<null>=r1\sr1=r2\pinferred=r2

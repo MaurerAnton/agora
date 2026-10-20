@@ -1,0 +1,4 @@
+name|selected_max_reparented
+op|plan
+args|2|5
+result|runParent=r2=r1\pdeleted=u2\pmessageParent=m2a=u1\sm2b=u1\prunSequence=m2a=0\sm2b=1\pmessageSelections=p0=u1\su1=m2b\prunSelections=<null>=r1\sr1=r2\pinferred=r2

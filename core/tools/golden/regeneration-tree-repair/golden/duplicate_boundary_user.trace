@@ -1,0 +1,4 @@
+name|duplicate_boundary_user
+op|plan
+args|2|5
+result|runParent=r2=r1\pdeleted=u2\pmessageParent=m2=u1a\prunSequence=m2=0\pmessageSelections=\prunSelections=\pinferred=r2

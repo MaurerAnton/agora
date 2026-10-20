@@ -1,0 +1,4 @@
+name|boundary_null_parent_message_selection
+op|plan
+args|2|4
+result|runParent=r2=r1\pdeleted=u2\pmessageParent=m2=u1\prunSequence=m2=0\pmessageSelections=<null>=u1\su1=m2\prunSelections=<null>=r1\sr1=r2\pinferred=r2

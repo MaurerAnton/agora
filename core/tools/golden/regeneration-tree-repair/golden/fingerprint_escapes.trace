@@ -1,0 +1,4 @@
+name|fingerprint_escapes
+op|fingerprint
+args|t|0|{"s":"line\\nquote\\"back\\\\slash\\u0001","raw":"héllo"}
+result|1c10b3ba39a2e6933ee70c3687ac4a525fbce17d7e8f76df028bf56310348f93

@@ -1,0 +1,4 @@
+name|advance_int_min
+op|advance
+args|-2147483648|false
+result|DeveloperUnlockResult(tapCount=1, remainingTaps=6, feedback=NONE)

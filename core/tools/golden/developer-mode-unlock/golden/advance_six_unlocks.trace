@@ -1,0 +1,4 @@
+name|advance_six_unlocks
+op|advance
+args|6|false
+result|DeveloperUnlockResult(tapCount=0, remainingTaps=0, feedback=ENABLED)

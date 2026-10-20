@@ -1,0 +1,4 @@
+name|advance_five
+op|advance
+args|5|false
+result|DeveloperUnlockResult(tapCount=6, remainingTaps=1, feedback=REMAINING_TAPS)

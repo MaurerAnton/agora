@@ -1,0 +1,52 @@
+{
+  "content": "C\t{\"id\":\"c1\"}\nM\t{\"msg\":\"m1\"}\nM\t{\"msg\":\"m2\"}\nT\t{\"task\":\"t1\"}\n",
+  "reads": [
+    {
+      "kind": "iterator",
+      "slices": [
+        [
+          0,
+          12
+        ],
+        [
+          12,
+          40
+        ]
+      ]
+    },
+    {
+      "kind": "iterator",
+      "slices": [
+        [
+          0,
+          13
+        ],
+        [
+          13,
+          26
+        ]
+      ]
+    },
+    {
+      "kind": "iterator",
+      "slices": [
+        [
+          5,
+          18
+        ],
+        [
+          18,
+          100
+        ]
+      ],
+      "type": "M"
+    },
+    {
+      "kind": "records",
+      "slice": [
+        5,
+        18
+      ]
+    }
+  ]
+}

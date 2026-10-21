@@ -1,0 +1,22 @@
+{
+  "content": "",
+  "reads": [
+    {
+      "kind": "records",
+      "slice": [
+        0,
+        0
+      ]
+    },
+    {
+      "kind": "iterator",
+      "slices": [
+        [
+          0,
+          0
+        ]
+      ],
+      "probeNext": true
+    }
+  ]
+}

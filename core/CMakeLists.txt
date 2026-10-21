@@ -33,6 +33,7 @@ add_library(agora_core_lib STATIC
     src/conch_sse.cpp
     src/tz.cpp
     src/duckduckgo.cpp
+    src/export_spool.cpp
     src/embedding.cpp
     src/embedding_selector.cpp
     src/gemini_request.cpp

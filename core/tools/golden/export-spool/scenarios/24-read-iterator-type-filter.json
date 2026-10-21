@@ -1,0 +1,55 @@
+{
+  "content": "C\tc\nR\tr\nM\tm1\nM\tm2\nT\tt\nL\tl\n",
+  "reads": [
+    {
+      "kind": "iterator",
+      "slices": [
+        [
+          0,
+          1000
+        ]
+      ],
+      "type": "M"
+    },
+    {
+      "kind": "iterator",
+      "slices": [
+        [
+          0,
+          1000
+        ]
+      ],
+      "type": "T"
+    },
+    {
+      "kind": "iterator",
+      "slices": [
+        [
+          0,
+          1000
+        ]
+      ],
+      "type": "X"
+    },
+    {
+      "kind": "iterator",
+      "slices": [
+        [
+          0,
+          1000
+        ]
+      ],
+      "type": "M",
+      "probeNext": true
+    },
+    {
+      "kind": "iterator",
+      "slices": [
+        [
+          0,
+          1000
+        ]
+      ]
+    }
+  ]
+}

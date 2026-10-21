@@ -32,6 +32,7 @@ add_executable(agora_core_tests
     custom_model_references_parity_test.cpp
     run_branch_selection_parity_test.cpp
     run_recovery_parity_test.cpp
+    imported_citation_projection_parity_test.cpp
     conversation_runtime_parity_test.cpp
     thinking_capability_parity_test.cpp
     model_thinking_resolver_parity_test.cpp
@@ -131,6 +132,7 @@ target_compile_definitions(agora_core_tests PRIVATE
     AGORA_FIXTURE_TASK_SCHEDULE_DIR="${CMAKE_CURRENT_SOURCE_DIR}/../tools/golden/task-schedule"
     AGORA_FIXTURE_BACKUP_MEDIA_POLICY_DIR="${CMAKE_CURRENT_SOURCE_DIR}/../tools/golden/backup-media-policy"
     AGORA_FIXTURE_MESSAGE_PERSISTENCE_GUARD_DIR="${CMAKE_CURRENT_SOURCE_DIR}/../tools/golden/message-persistence-guard"
+    AGORA_FIXTURE_IMPORTED_CITATION_DIR="${CMAKE_CURRENT_SOURCE_DIR}/../tools/golden/imported-citation-projection"
     AGORA_FIXTURE_RUN_RECOVERY_DIR="${CMAKE_CURRENT_SOURCE_DIR}/../tools/golden/run-recovery"
     AGORA_FIXTURE_PREP_VOCAB="${CMAKE_CURRENT_SOURCE_DIR}/../../app/src/main/assets/tokenizers/o200k_base.tiktoken"
 )

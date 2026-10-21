@@ -1,0 +1,11 @@
+{
+  "op": "gpt",
+  "rawText": "content citeturn3f12 end",
+  "references": [
+    {
+      "text": "see turn3f12 in text",
+      "url": "https://example.com/content",
+      "matched_text": "end"
+    }
+  ]
+}

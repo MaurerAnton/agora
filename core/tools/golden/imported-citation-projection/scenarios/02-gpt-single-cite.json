@@ -1,0 +1,14 @@
+{
+  "op": "gpt",
+  "rawText": "First sentence. citeturn3f12 Second sentence.",
+  "references": [
+    {
+      "source_id": "turn3f12",
+      "url": "https://example.com/doc",
+      "title": "Doc",
+      "matched_text": "Second",
+      "start_idx": 16,
+      "end_idx": 22
+    }
+  ]
+}

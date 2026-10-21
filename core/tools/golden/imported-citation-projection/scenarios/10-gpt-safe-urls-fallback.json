@@ -1,0 +1,21 @@
+{
+  "op": "gpt",
+  "rawText": "Text citeturn3f12 tail.",
+  "references": [
+    {
+      "source_id": "turn3f12",
+      "safe_urls": [
+        "https://safe.example/x"
+      ],
+      "matched_text": "tail."
+    },
+    {
+      "source_id": "turn3f13",
+      "safe_urls": [
+        42,
+        null
+      ],
+      "matched_text": "tail."
+    }
+  ]
+}

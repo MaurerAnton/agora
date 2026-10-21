@@ -1,0 +1,10 @@
+{
+  "op": "gpt",
+  "rawText": "drop citeturn3f12 this citation",
+  "references": [
+    {
+      "source_id": "turn3f12",
+      "matched_text": "this"
+    }
+  ]
+}

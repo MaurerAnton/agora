@@ -1,0 +1,12 @@
+{
+  "op": "gpt",
+  "rawText": "citeturn3f12 and citeturn3f12 again.",
+  "references": [
+    {
+      "source_id": "turn3f12",
+      "url": "https://example.com/dup",
+      "title": "Dup",
+      "matched_text": "again."
+    }
+  ]
+}

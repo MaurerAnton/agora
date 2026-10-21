@@ -1,0 +1,13 @@
+{
+  "op": "gpt",
+  "rawText": "Answer text 【turn3f12】 end.",
+  "references": [
+    {
+      "turn_index": 3,
+      "ref_type": "f",
+      "ref_index": 12,
+      "url": "https://structured.example",
+      "title": "Structured"
+    }
+  ]
+}

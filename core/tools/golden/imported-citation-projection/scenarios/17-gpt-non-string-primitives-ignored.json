@@ -1,0 +1,14 @@
+{
+  "op": "gpt",
+  "rawText": "x citeturn3f12 y",
+  "references": [
+    {
+      "title": 42,
+      "url": true,
+      "matched_text": "y",
+      "turn_index": "3",
+      "ref_type": "f",
+      "ref_index": 12
+    }
+  ]
+}

@@ -1,0 +1,24 @@
+{
+  "op": "gpt",
+  "rawText": "Aciteturn3f12Bciteturn3f13 turn3f14 C",
+  "references": [
+    {
+      "source_id": "turn3f12",
+      "url": "https://one.example",
+      "title": "One",
+      "matched_text": "A"
+    },
+    {
+      "source_id": "turn3f13",
+      "url": "https://two.example",
+      "title": "Two",
+      "matched_text": "B"
+    },
+    {
+      "source_id": "turn3f14",
+      "url": "https://three.example",
+      "title": "Three",
+      "matched_text": "C"
+    }
+  ]
+}

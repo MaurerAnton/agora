@@ -1,0 +1,29 @@
+{
+  "op": "gpt",
+  "rawText": "fileciteturn4f14citeturn1f12fileciteturn4f10gamma fileciteturn1f07",
+  "references": [
+    {
+      "source_id": "turn1f07",
+      "url": "https://fuzz.example",
+      "title": "F",
+      "matched_text": "tail."
+    },
+    {
+      "source_id": "turn1f12",
+      "title": "T"
+    },
+    {
+      "source_id": "turn4f10",
+      "url": "not a url"
+    },
+    {
+      "source_id": "turn4f14",
+      "file_name": "f.txt",
+      "file_type": "text/plain"
+    },
+    {
+      "uuid": "id-0",
+      "matched_text": "plain text "
+    }
+  ]
+}

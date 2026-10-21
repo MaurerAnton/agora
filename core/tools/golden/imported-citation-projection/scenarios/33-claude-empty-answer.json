@@ -1,0 +1,10 @@
+{
+  "op": "claude",
+  "citation": {
+    "url": "https://empty.example",
+    "title": "E",
+    "matched_text": "m"
+  },
+  "startIndex": 0,
+  "answerText": ""
+}

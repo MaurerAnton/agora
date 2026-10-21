@@ -1,0 +1,1 @@
+{"entries":[{"name":"a.json","method":8,"size":7,"compressedSize":9,"crc":1444654255,"content":"{\"a\":1}"},{"name":"b/c.json","method":0,"size":7,"compressedSize":7,"crc":982943164,"content":"{\"b\":2}"},{"name":"d.txt","method":0,"size":10,"compressedSize":10,"crc":1141575608,"content":"plain text"}]}

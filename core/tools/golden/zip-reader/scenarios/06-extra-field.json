@@ -1,0 +1,10 @@
+{
+  "entries": [
+    {
+      "name": "with-extra.json",
+      "content": "{\"x\":1}",
+      "method": "deflate",
+      "extra": "EXTRA-INFO-BYTES"
+    }
+  ]
+}

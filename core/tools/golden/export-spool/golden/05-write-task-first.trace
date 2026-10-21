@@ -1,0 +1,1 @@
+{"bytes":"T\t{\"task\":\"t0\"}\nC\t{\"id\":\"c1\"}\nM\t{\"msg\":\"m1\"}\n","index":{"conversations":[{"id":"c1","dataChangedAt":7,"start":16,"end":45}],"taskSlices":[{"start":0,"end":16}],"watermarks":{"c1":7}},"reads":[{"records":[{"type":"T","json":"{\"task\":\"t0\"}"}]},{"records":[{"type":"C","json":"{\"id\":\"c1\"}"},{"type":"M","json":"{\"msg\":\"m1\"}"}]}]}

@@ -1,0 +1,1 @@
+{"bytes":"bad\n","reads":[{},{"error":{"type":"IOException","message":"Invalid export spool record"}},{}]}

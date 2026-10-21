@@ -1,0 +1,10 @@
+{
+  "reads": [
+    {
+      "kind": "iterator",
+      "slices": [],
+      "type": "T"
+    }
+  ],
+  "content": "bad\n"
+}

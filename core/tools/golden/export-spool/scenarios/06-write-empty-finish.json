@@ -1,0 +1,12 @@
+{
+  "writes": [],
+  "reads": [
+    {
+      "kind": "records",
+      "slice": [
+        0,
+        0
+      ]
+    }
+  ]
+}

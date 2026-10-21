@@ -1,0 +1,22 @@
+{
+  "content": "C\t{\"id\":\"c1\"}\nM\tok\nBADLINE\nM\t{\"msg\":\"m2\"}\n",
+  "reads": [
+    {
+      "kind": "records",
+      "slice": [
+        0,
+        1000
+      ]
+    },
+    {
+      "kind": "iterator",
+      "slices": [
+        [
+          0,
+          1000
+        ]
+      ],
+      "probeNext": true
+    }
+  ]
+}

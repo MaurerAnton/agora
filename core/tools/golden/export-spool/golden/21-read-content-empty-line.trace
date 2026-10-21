@@ -1,0 +1,1 @@
+{"bytes":"C\t{\"id\":\"c1\"}\n\nM\t{\"msg\":\"m1\"}\n","reads":[{"records":[{"type":"C","json":"{\"id\":\"c1\"}"}],"error":{"type":"IOException","message":"Invalid export spool record"}},{"payloads":["{\"id\":\"c1\"}"],"error":{"type":"IOException","message":"Invalid export spool record"},"hasNextAfter":false}]}

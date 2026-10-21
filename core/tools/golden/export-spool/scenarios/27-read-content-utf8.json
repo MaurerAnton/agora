@@ -1,0 +1,41 @@
+{
+  "content": "C\t{\"title\":\"юникод 🙂\"}\nM\t{\"text\":\"日本語\"}\n",
+  "reads": [
+    {
+      "kind": "records",
+      "slice": [
+        0,
+        1000
+      ]
+    },
+    {
+      "kind": "iterator",
+      "slices": [
+        [
+          0,
+          1000
+        ]
+      ]
+    },
+    {
+      "kind": "iterator",
+      "slices": [
+        [
+          0,
+          10
+        ],
+        [
+          10,
+          100
+        ]
+      ]
+    },
+    {
+      "kind": "records",
+      "slice": [
+        1,
+        12
+      ]
+    }
+  ]
+}

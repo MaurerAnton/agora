@@ -1,0 +1,41 @@
+{
+  "writes": [
+    {
+      "op": "conversation",
+      "id": "c1",
+      "dataChangedAt": 122214604944,
+      "json": "{\"a\":1,\"b\":\"text\"}"
+    },
+    {
+      "op": "run",
+      "json": ""
+    },
+    {
+      "op": "conversation",
+      "id": "c2",
+      "dataChangedAt": 71256613633,
+      "json": ""
+    }
+  ],
+  "reads": [
+    {
+      "kind": "iterator",
+      "slices": [
+        [
+          51,
+          54
+        ],
+        [
+          0,
+          1000000
+        ],
+        [
+          6,
+          22
+        ]
+      ],
+      "type": "R",
+      "probeNext": true
+    }
+  ]
+}

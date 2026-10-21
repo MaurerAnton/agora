@@ -1,0 +1,1 @@
+{"bytes":"C\t{\"title\":\"юникод 🙂\"}\nM\t{\"text\":\"日本語\"}\n","reads":[{"records":[{"type":"C","json":"{\"title\":\"юникод 🙂\"}"},{"type":"M","json":"{\"text\":\"日本語\"}"}]},{"payloads":["{\"title\":\"юникод 🙂\"}","{\"text\":\"日本語\"}"]},{"payloads":["{\"title\":\"юникод 🙂\"}","{\"text\":\"日本語\"}"]},{"error":{"type":"IOException","message":"Invalid export spool record"}}]}

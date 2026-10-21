@@ -1,0 +1,33 @@
+{
+  "reads": [
+    {
+      "kind": "records",
+      "slice": [
+        7,
+        29
+      ]
+    },
+    {
+      "kind": "iterator",
+      "slices": []
+    },
+    {
+      "kind": "iterator",
+      "slices": [
+        [
+          3,
+          25
+        ]
+      ],
+      "probeNext": false
+    },
+    {
+      "kind": "records",
+      "slice": [
+        8,
+        43
+      ]
+    }
+  ],
+  "content": "C\tc\nM\tm\n"
+}

@@ -1,0 +1,38 @@
+{
+  "writes": [
+    {
+      "op": "message",
+      "json": "{\"x\":1}"
+    },
+    {
+      "op": "message",
+      "json": "{\"y\":\"日本\"}"
+    }
+  ],
+  "reads": [
+    {
+      "kind": "records",
+      "slice": [
+        32,
+        77
+      ]
+    },
+    {
+      "kind": "iterator",
+      "slices": [
+        [
+          23,
+          49
+        ]
+      ],
+      "probeNext": true
+    },
+    {
+      "kind": "records",
+      "slice": [
+        7,
+        31
+      ]
+    }
+  ]
+}

@@ -90,6 +90,7 @@ add_library(agora_core_lib STATIC
     src/token_count.cpp
     src/unicode.cpp
     src/zip_reader.cpp
+    src/gpt_chat_importer.cpp
 )
 target_include_directories(agora_core_lib PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/include)
 # The library gets linked into shared objects (the Android JNI shim, host smoke builds).

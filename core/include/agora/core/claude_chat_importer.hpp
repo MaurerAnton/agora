@@ -91,6 +91,8 @@ struct ImportChatEntity {
     std::string id;
     std::string title;
     std::int64_t last_updated = 0;
+    /** The selected branches of the current path: the GPT importer sets it, Claude never does. */
+    std::optional<std::string> selected_branches_json;
 };
 
 struct ImportMessageEntity {

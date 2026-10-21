@@ -33,23 +33,6 @@ bool is_null_literal(const Value& value) {
     return value.kind == Kind::Literal && value.text == "null";
 }
 
-/**
- * kotlinx's lenient string decoding: any primitive contributes its content (so the number 42
- * becomes "42"), a null is coerced and an object/array is a decode error.
- */
-std::optional<std::string> decode_string(const Value* value, bool nullable) {
-    if (value == nullptr) {
-        if (nullable) return std::nullopt;
-        return std::string();  // the field's default
-    }
-    if (is_null_literal(*value)) {
-        if (nullable) return std::nullopt;
-        return std::string();
-    }
-    if (value->kind == Kind::String || value->kind == Kind::Literal) return value->text;
-    throw DecodeError("expected a string");
-}
-
 std::optional<std::int64_t> decode_long(const Value* value) {
     if (value == nullptr || is_null_literal(*value)) return std::nullopt;
     if (value->kind != Kind::String && value->kind != Kind::Literal) {

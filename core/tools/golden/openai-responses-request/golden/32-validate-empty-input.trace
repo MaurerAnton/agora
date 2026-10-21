@@ -1,0 +1,1 @@
+{"error":{"type":"RequestFormatException","message":"openai request validation failed: input is empty; input does not end in user/function output","violations":["input is empty","input does not end in user/function output"]}}

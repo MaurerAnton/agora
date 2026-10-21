@@ -1,0 +1,29 @@
+{
+  "op": "validate",
+  "provider": "openai",
+  "request": {
+    "model": "gpt-5.4",
+    "input": [
+      {
+        "type": "function_call",
+        "call_id": "bad id",
+        "name": "g",
+        "arguments": "{}"
+      },
+      {
+        "type": "function_call_output",
+        "call_id": "call_2",
+        "output": "done"
+      }
+    ],
+    "stream": true,
+    "top_p": 1.5,
+    "max_output_tokens": 100,
+    "tools": [
+      {
+        "type": "web_search",
+        "name": "f"
+      }
+    ]
+  }
+}

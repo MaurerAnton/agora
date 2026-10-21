@@ -1,0 +1,17 @@
+{
+  "op": "tools",
+  "tools": [
+    {
+      "type": "function",
+      "function": {
+        "name": "search",
+        "description": "Search the web",
+        "parameters": {
+          "type": "object",
+          "properties": {},
+          "required": []
+        }
+      }
+    }
+  ]
+}

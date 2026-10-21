@@ -1,0 +1,1 @@
+{"error":{"type":"RequestFormatException","message":"openai request validation failed: input[0] has invalid message role wizard; input does not end in user/function output","violations":["input[0] has invalid message role wizard","input does not end in user/function output"]}}

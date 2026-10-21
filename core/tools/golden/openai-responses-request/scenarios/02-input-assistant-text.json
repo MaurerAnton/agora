@@ -1,0 +1,14 @@
+{
+  "op": "input",
+  "messages": [
+    {
+      "role": "assistant",
+      "content": [
+        {
+          "type": "text",
+          "text": "hi there"
+        }
+      ]
+    }
+  ]
+}

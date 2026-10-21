@@ -1,0 +1,1 @@
+{"error":{"type":"RequestFormatException","message":"openai request validation failed: model is blank; input[0] does not match a pending function call","violations":["model is blank","input[0] does not match a pending function call"]}}

@@ -1,0 +1,24 @@
+{
+  "op": "input",
+  "provider": "openai",
+  "messages": [
+    {
+      "role": "assistant",
+      "response_output_items": [
+        {
+          "type": "reasoning",
+          "id": "rs_1",
+          "summary": [
+            {
+              "type": "summary_text",
+              "text": "thought"
+            }
+          ],
+          "encrypted_content": "abc"
+        }
+      ],
+      "response_output_item_provider": "openai",
+      "response_output_item_model": "gpt-5.4"
+    }
+  ]
+}

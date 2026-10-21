@@ -1,0 +1,1 @@
+{"input":[{"type":"message","role":"system","content":[{"type":"input_text","text":"be brief"}]},{"type":"message","role":"developer","content":[{"type":"input_text","text":"follow the rules"}]}]}

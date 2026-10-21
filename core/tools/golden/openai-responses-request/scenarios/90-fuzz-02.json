@@ -1,0 +1,29 @@
+{
+  "op": "validate",
+  "provider": "openai",
+  "request": {
+    "model": "",
+    "input": [
+      {
+        "type": "reasoning",
+        "id": "  "
+      },
+      {
+        "type": "function_call_output",
+        "call_id": "call_2",
+        "output": ""
+      },
+      {
+        "type": "reasoning",
+        "id": "  "
+      }
+    ],
+    "stream": true,
+    "tools": [
+      {
+        "type": "custom",
+        "name": "bad name"
+      }
+    ]
+  }
+}

@@ -50,6 +50,7 @@ add_library(agora_core_lib STATIC
     src/ollama.cpp
     src/openai_request.cpp
     src/openai_request_json.cpp
+    src/openai_responses_request.cpp
     src/openai_stream.cpp
     src/openai_stream_codec.cpp
     src/portable_glob.cpp

@@ -1,0 +1,25 @@
+{
+  "op": "validate",
+  "provider": "openai",
+  "request": {
+    "model": "gpt-5.4",
+    "input": [
+      {
+        "type": "message",
+        "role": "user",
+        "content": [
+          {
+            "type": "input_text",
+            "text": "hi"
+          }
+        ]
+      },
+      {
+        "type": "web_search_call",
+        "id": "ws_1",
+        "status": "done"
+      }
+    ],
+    "stream": true
+  }
+}

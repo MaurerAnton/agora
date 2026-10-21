@@ -1,0 +1,16 @@
+{
+  "op": "validate",
+  "provider": "openai",
+  "request": {
+    "model": "",
+    "input": [
+      {
+        "type": "function_call_output",
+        "call_id": "call_1",
+        "output": "done"
+      }
+    ],
+    "stream": true,
+    "top_p": 0.0
+  }
+}

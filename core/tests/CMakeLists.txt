@@ -6,6 +6,7 @@ add_executable(agora_core_tests
     openai_stream_parity_test.cpp
     openai_stream_codec_test.cpp
     openai_request_parity_test.cpp
+    openai_responses_request_parity_test.cpp
     openai_request_test.cpp
     message_preparation_parity_test.cpp
     message_preparation_test.cpp
@@ -88,6 +89,7 @@ target_compile_definitions(agora_core_tests PRIVATE
     AGORA_FIXTURE_EXPORT_SPOOL_DIR="${CMAKE_CURRENT_SOURCE_DIR}/../tools/golden/export-spool"
     AGORA_FIXTURE_OPENAI_CODEC_DIR="${CMAKE_CURRENT_SOURCE_DIR}/../../app/src/test/resources/openai_stream_codec"
     AGORA_FIXTURE_OPENAI_REQUEST_DIR="${CMAKE_CURRENT_SOURCE_DIR}/../tools/golden/openai-request"
+    AGORA_FIXTURE_OPENAI_RESPONSES_REQUEST_DIR="${CMAKE_CURRENT_SOURCE_DIR}/../tools/golden/openai-responses-request"
     AGORA_FIXTURE_MESSAGE_PREP_DIR="${CMAKE_CURRENT_SOURCE_DIR}/../tools/golden/message-preparation"
     AGORA_FIXTURE_STREAM_NORMALIZATION_DIR="${CMAKE_CURRENT_SOURCE_DIR}/../tools/golden/stream-normalization"
     AGORA_FIXTURE_CITATIONS_DIR="${CMAKE_CURRENT_SOURCE_DIR}/../tools/golden/citations"

@@ -1,0 +1,1 @@
+{"error":{"type":"RequestFormatException","message":"openai request validation failed: input[1] arguments are not a JSON object; function calls are missing outputs; input does not end in user/function output","violations":["input[1] arguments are not a JSON object","function calls are missing outputs","input does not end in user/function output"]}}

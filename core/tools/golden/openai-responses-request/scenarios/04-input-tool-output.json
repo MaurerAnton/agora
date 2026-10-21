@@ -1,0 +1,24 @@
+{
+  "op": "input",
+  "messages": [
+    {
+      "role": "user",
+      "content": [
+        {
+          "type": "text",
+          "text": "run it"
+        }
+      ]
+    },
+    {
+      "role": "tool",
+      "tool_call_id": "call_1",
+      "content": [
+        {
+          "type": "text",
+          "text": "done"
+        }
+      ]
+    }
+  ]
+}

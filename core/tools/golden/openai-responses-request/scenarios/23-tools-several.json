@@ -1,0 +1,29 @@
+{
+  "op": "tools",
+  "tools": [
+    {
+      "type": "function",
+      "function": {
+        "name": "a",
+        "description": "first",
+        "parameters": {
+          "type": "object",
+          "properties": {},
+          "required": []
+        }
+      }
+    },
+    {
+      "type": "function",
+      "function": {
+        "name": "b",
+        "description": "second",
+        "parameters": {
+          "type": "object",
+          "properties": {},
+          "required": []
+        }
+      }
+    }
+  ]
+}

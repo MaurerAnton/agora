@@ -1,0 +1,56 @@
+{
+  "visibleMessages": [
+    {
+      "id": "m0",
+      "participant": "MODEL",
+      "text": "",
+      "timestamp": 0,
+      "status": "THINKING",
+      "runId": "run-1"
+    },
+    {
+      "id": "m1",
+      "participant": "ERROR",
+      "text": "",
+      "timestamp": 2,
+      "status": "STOPPED",
+      "parentId": "m0"
+    },
+    {
+      "id": "m2",
+      "participant": "MODEL",
+      "text": "text",
+      "timestamp": 0,
+      "status": "THINKING",
+      "parentId": "m0",
+      "runId": "run-2"
+    }
+  ],
+  "allMessages": [
+    {
+      "id": "m0",
+      "participant": "MODEL",
+      "text": "",
+      "timestamp": 0,
+      "status": "THINKING",
+      "runId": "run-1"
+    },
+    {
+      "id": "m1",
+      "participant": "ERROR",
+      "text": "",
+      "timestamp": 2,
+      "status": "STOPPED",
+      "parentId": "m0"
+    },
+    {
+      "id": "m2",
+      "participant": "MODEL",
+      "text": "text",
+      "timestamp": 0,
+      "status": "THINKING",
+      "parentId": "m0",
+      "runId": "run-2"
+    }
+  ]
+}

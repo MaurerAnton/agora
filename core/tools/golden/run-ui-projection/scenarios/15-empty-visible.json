@@ -1,0 +1,12 @@
+{
+  "visibleMessages": [],
+  "allMessages": [
+    {
+      "id": "m1",
+      "participant": "USER",
+      "text": "hi",
+      "timestamp": 0,
+      "status": "SUCCESS"
+    }
+  ]
+}

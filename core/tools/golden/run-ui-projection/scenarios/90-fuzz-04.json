@@ -1,0 +1,32 @@
+{
+  "visibleMessages": [
+    {
+      "id": "m1",
+      "participant": "ERROR",
+      "text": "",
+      "timestamp": 1,
+      "status": "STOPPED",
+      "parentId": "m0",
+      "runId": "run-2"
+    }
+  ],
+  "allMessages": [
+    {
+      "id": "m0",
+      "participant": "ERROR",
+      "text": "text 🙂",
+      "timestamp": 1,
+      "status": "THINKING",
+      "runId": "run-2"
+    },
+    {
+      "id": "m1",
+      "participant": "ERROR",
+      "text": "",
+      "timestamp": 1,
+      "status": "STOPPED",
+      "parentId": "m0",
+      "runId": "run-2"
+    }
+  ]
+}

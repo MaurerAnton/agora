@@ -1,0 +1,36 @@
+{
+  "visibleMessages": [
+    {
+      "id": "m1",
+      "participant": "USER",
+      "text": "question",
+      "timestamp": 1,
+      "status": "SUCCESS"
+    },
+    {
+      "id": "m2",
+      "participant": "ERROR",
+      "text": "failed",
+      "timestamp": 2,
+      "status": "ERROR",
+      "parentId": "m1"
+    }
+  ],
+  "allMessages": [
+    {
+      "id": "m1",
+      "participant": "USER",
+      "text": "question",
+      "timestamp": 1,
+      "status": "SUCCESS"
+    },
+    {
+      "id": "m2",
+      "participant": "ERROR",
+      "text": "failed",
+      "timestamp": 2,
+      "status": "ERROR",
+      "parentId": "m1"
+    }
+  ]
+}

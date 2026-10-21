@@ -1,0 +1,68 @@
+{
+  "visibleMessages": [
+    {
+      "id": "m1",
+      "participant": "USER",
+      "text": "question",
+      "timestamp": 1,
+      "status": "SUCCESS"
+    },
+    {
+      "id": "tool_1",
+      "participant": "MODEL",
+      "text": "tool call",
+      "timestamp": 2,
+      "status": "SUCCESS",
+      "parentId": "m1"
+    },
+    {
+      "id": "result_1",
+      "participant": "MODEL",
+      "text": "tool result",
+      "timestamp": 3,
+      "status": "SUCCESS",
+      "parentId": "tool_1"
+    },
+    {
+      "id": "m2",
+      "participant": "MODEL",
+      "text": "answer",
+      "timestamp": 4,
+      "status": "SUCCESS",
+      "parentId": "m1"
+    }
+  ],
+  "allMessages": [
+    {
+      "id": "m1",
+      "participant": "USER",
+      "text": "question",
+      "timestamp": 1,
+      "status": "SUCCESS"
+    },
+    {
+      "id": "tool_1",
+      "participant": "MODEL",
+      "text": "tool call",
+      "timestamp": 2,
+      "status": "SUCCESS",
+      "parentId": "m1"
+    },
+    {
+      "id": "result_1",
+      "participant": "MODEL",
+      "text": "tool result",
+      "timestamp": 3,
+      "status": "SUCCESS",
+      "parentId": "tool_1"
+    },
+    {
+      "id": "m2",
+      "participant": "MODEL",
+      "text": "answer",
+      "timestamp": 4,
+      "status": "SUCCESS",
+      "parentId": "m1"
+    }
+  ]
+}

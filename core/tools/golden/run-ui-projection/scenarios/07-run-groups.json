@@ -1,0 +1,74 @@
+{
+  "visibleMessages": [
+    {
+      "id": "m1",
+      "participant": "USER",
+      "text": "question",
+      "timestamp": 1,
+      "status": "SUCCESS"
+    },
+    {
+      "id": "m2",
+      "participant": "MODEL",
+      "text": "a",
+      "timestamp": 2,
+      "status": "SUCCESS",
+      "parentId": "m1",
+      "runId": "run-1"
+    },
+    {
+      "id": "m3",
+      "participant": "MODEL",
+      "text": "b",
+      "timestamp": 3,
+      "status": "SUCCESS",
+      "parentId": "m1",
+      "runId": "run-2"
+    },
+    {
+      "id": "m4",
+      "participant": "MODEL",
+      "text": "c",
+      "timestamp": 4,
+      "status": "SUCCESS",
+      "parentId": "m1",
+      "runId": "run-2"
+    }
+  ],
+  "allMessages": [
+    {
+      "id": "m1",
+      "participant": "USER",
+      "text": "question",
+      "timestamp": 1,
+      "status": "SUCCESS"
+    },
+    {
+      "id": "m2",
+      "participant": "MODEL",
+      "text": "a",
+      "timestamp": 2,
+      "status": "SUCCESS",
+      "parentId": "m1",
+      "runId": "run-1"
+    },
+    {
+      "id": "m3",
+      "participant": "MODEL",
+      "text": "b",
+      "timestamp": 3,
+      "status": "SUCCESS",
+      "parentId": "m1",
+      "runId": "run-2"
+    },
+    {
+      "id": "m4",
+      "participant": "MODEL",
+      "text": "c",
+      "timestamp": 4,
+      "status": "SUCCESS",
+      "parentId": "m1",
+      "runId": "run-2"
+    }
+  ]
+}

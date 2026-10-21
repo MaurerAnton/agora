@@ -1,0 +1,1 @@
+{"error":{"type":"RequestFormatException","message":"openai request validation failed: input[0].content[0] assistant text must use output_text; input does not end in user/function output","violations":["input[0].content[0] assistant text must use output_text","input does not end in user/function output"]}}

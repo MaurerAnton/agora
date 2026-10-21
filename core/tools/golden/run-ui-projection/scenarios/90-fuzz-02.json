@@ -1,0 +1,90 @@
+{
+  "visibleMessages": [
+    {
+      "id": "m5",
+      "participant": "USER",
+      "text": "",
+      "timestamp": 1,
+      "status": "STOPPED",
+      "parentId": "m4"
+    },
+    {
+      "id": "m6",
+      "participant": "MODEL",
+      "text": "text",
+      "timestamp": 1,
+      "status": "SUCCESS",
+      "parentId": "m5",
+      "runId": "run-1"
+    }
+  ],
+  "allMessages": [
+    {
+      "id": "m0",
+      "participant": "MODEL",
+      "text": "text 🙂",
+      "timestamp": 5,
+      "status": "STOPPED",
+      "runId": "run-1"
+    },
+    {
+      "id": "m1",
+      "participant": "MODEL",
+      "text": "",
+      "timestamp": 1,
+      "status": "STOPPED",
+      "runId": "run-2"
+    },
+    {
+      "id": "m2",
+      "participant": "MODEL",
+      "text": "",
+      "timestamp": 2,
+      "status": "THINKING",
+      "parentId": "m1"
+    },
+    {
+      "id": "m3",
+      "participant": "MODEL",
+      "text": "",
+      "timestamp": 2,
+      "status": "SUCCESS",
+      "parentId": "m2",
+      "runId": "run-2"
+    },
+    {
+      "id": "m4",
+      "participant": "MODEL",
+      "text": "text",
+      "timestamp": 1,
+      "status": "SUCCESS",
+      "parentId": "m1",
+      "runId": "run-1"
+    },
+    {
+      "id": "m5",
+      "participant": "USER",
+      "text": "",
+      "timestamp": 1,
+      "status": "STOPPED",
+      "parentId": "m4"
+    },
+    {
+      "id": "m6",
+      "participant": "MODEL",
+      "text": "text",
+      "timestamp": 1,
+      "status": "SUCCESS",
+      "parentId": "m5",
+      "runId": "run-1"
+    },
+    {
+      "id": "m2",
+      "participant": "MODEL",
+      "text": "",
+      "timestamp": 2,
+      "status": "THINKING",
+      "parentId": "m1"
+    }
+  ]
+}

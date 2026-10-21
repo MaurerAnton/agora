@@ -1,0 +1,1 @@
+{"input":[{"type":"function_call","call_id":"call_1","name":"search","arguments":"{\"q\":\"x\"}"},{"type":"function_call","call_id":"call_2","name":"fetch","arguments":"{}"}]}

@@ -1,0 +1,21 @@
+{
+  "op": "validate",
+  "provider": "openai",
+  "request": {
+    "model": "  ",
+    "input": [
+      {
+        "type": "opaque",
+        "id": ""
+      }
+    ],
+    "stream": true,
+    "max_output_tokens": -5,
+    "tools": [
+      {
+        "type": "function",
+        "name": "bad name"
+      }
+    ]
+  }
+}

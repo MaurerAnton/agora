@@ -1,0 +1,27 @@
+{
+  "visibleMessages": [
+    {
+      "id": "m1",
+      "participant": "USER",
+      "text": "question",
+      "timestamp": 1,
+      "status": "SUCCESS"
+    },
+    {
+      "id": "m1",
+      "participant": "USER",
+      "text": "question",
+      "timestamp": 1,
+      "status": "SUCCESS"
+    }
+  ],
+  "allMessages": [
+    {
+      "id": "m1",
+      "participant": "USER",
+      "text": "question",
+      "timestamp": 1,
+      "status": "SUCCESS"
+    }
+  ]
+}

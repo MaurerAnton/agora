@@ -1,0 +1,1 @@
+{"tools":[{"type":"function","name":"search","description":"Search the web","parameters":{"type":"object","properties":{},"required":[]}}]}

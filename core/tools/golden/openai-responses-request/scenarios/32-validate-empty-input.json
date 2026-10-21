@@ -1,0 +1,9 @@
+{
+  "op": "validate",
+  "provider": "openai",
+  "request": {
+    "model": "gpt-5.4",
+    "input": [],
+    "stream": true
+  }
+}

@@ -1,0 +1,52 @@
+{
+  "visibleMessages": [
+    {
+      "id": "m1",
+      "participant": "USER",
+      "text": "question",
+      "timestamp": 1,
+      "status": "SUCCESS"
+    },
+    {
+      "id": "m2",
+      "participant": "MODEL",
+      "text": "first",
+      "timestamp": 2,
+      "status": "SUCCESS",
+      "parentId": "m1"
+    },
+    {
+      "id": "m3",
+      "participant": "MODEL",
+      "text": "second",
+      "timestamp": 3,
+      "status": "SUCCESS",
+      "parentId": "m1"
+    }
+  ],
+  "allMessages": [
+    {
+      "id": "m1",
+      "participant": "USER",
+      "text": "question",
+      "timestamp": 1,
+      "status": "SUCCESS"
+    },
+    {
+      "id": "m2",
+      "participant": "MODEL",
+      "text": "first",
+      "timestamp": 2,
+      "status": "SUCCESS",
+      "parentId": "m1"
+    },
+    {
+      "id": "m3",
+      "participant": "MODEL",
+      "text": "second",
+      "timestamp": 3,
+      "status": "SUCCESS",
+      "parentId": "m1"
+    }
+  ]
+}

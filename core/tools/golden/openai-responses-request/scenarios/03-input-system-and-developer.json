@@ -1,0 +1,23 @@
+{
+  "op": "input",
+  "messages": [
+    {
+      "role": "system",
+      "content": [
+        {
+          "type": "text",
+          "text": "be brief"
+        }
+      ]
+    },
+    {
+      "role": "developer",
+      "content": [
+        {
+          "type": "text",
+          "text": "follow the rules"
+        }
+      ]
+    }
+  ]
+}

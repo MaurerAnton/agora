@@ -1,0 +1,20 @@
+{
+  "op": "input",
+  "messages": [
+    {
+      "role": "user",
+      "content": [
+        {
+          "type": "image_url",
+          "image_url": {
+            "url": "https://img.example/a.png"
+          }
+        },
+        {
+          "type": "text",
+          "text": "what?"
+        }
+      ]
+    }
+  ]
+}

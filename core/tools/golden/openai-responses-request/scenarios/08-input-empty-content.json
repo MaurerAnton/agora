@@ -1,0 +1,12 @@
+{
+  "op": "input",
+  "messages": [
+    {
+      "role": "user",
+      "content": []
+    },
+    {
+      "role": "user"
+    }
+  ]
+}

@@ -1,0 +1,20 @@
+{
+  "op": "validate",
+  "provider": "openai",
+  "request": {
+    "model": "gpt-5.4",
+    "input": [
+      {
+        "type": "message",
+        "role": "user",
+        "content": [
+          {
+            "type": "input_image",
+            "image_url": "https://i.example/a.png"
+          }
+        ]
+      }
+    ],
+    "stream": true
+  }
+}

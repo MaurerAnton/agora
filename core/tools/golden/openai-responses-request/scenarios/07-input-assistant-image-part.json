@@ -1,0 +1,16 @@
+{
+  "op": "input",
+  "messages": [
+    {
+      "role": "assistant",
+      "content": [
+        {
+          "type": "image_url",
+          "image_url": {
+            "url": "https://img.example/b.png"
+          }
+        }
+      ]
+    }
+  ]
+}

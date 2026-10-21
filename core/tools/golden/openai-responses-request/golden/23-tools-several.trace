@@ -1,0 +1,1 @@
+{"tools":[{"type":"function","name":"a","description":"first","parameters":{"type":"object","properties":{},"required":[]}},{"type":"function","name":"b","description":"second","parameters":{"type":"object","properties":{},"required":[]}}]}

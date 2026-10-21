@@ -1,0 +1,29 @@
+{
+  "visibleMessages": [
+    {
+      "id": "m2",
+      "participant": "MODEL",
+      "text": "answer",
+      "timestamp": 2,
+      "status": "SUCCESS",
+      "parentId": "m1"
+    }
+  ],
+  "allMessages": [
+    {
+      "id": "m1",
+      "participant": "USER",
+      "text": "question",
+      "timestamp": 1,
+      "status": "SUCCESS"
+    },
+    {
+      "id": "m2",
+      "participant": "MODEL",
+      "text": "answer",
+      "timestamp": 2,
+      "status": "SUCCESS",
+      "parentId": "m1"
+    }
+  ]
+}

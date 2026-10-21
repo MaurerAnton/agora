@@ -1,0 +1,1 @@
+{"error":{"type":"RequestFormatException","message":"openai request validation failed: input[2] reuses call_id call_1; function calls are missing outputs; input does not end in user/function output","violations":["input[2] reuses call_id call_1","function calls are missing outputs","input does not end in user/function output"]}}

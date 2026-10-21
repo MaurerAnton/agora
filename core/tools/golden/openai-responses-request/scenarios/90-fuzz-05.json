@@ -1,0 +1,19 @@
+{
+  "op": "validate",
+  "provider": "openai",
+  "request": {
+    "model": "gpt-5.4",
+    "input": [
+      {
+        "type": "reasoning",
+        "id": "rs_1"
+      },
+      {
+        "type": "opaque",
+        "id": ""
+      }
+    ],
+    "stream": true,
+    "max_output_tokens": -5
+  }
+}

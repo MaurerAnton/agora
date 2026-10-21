@@ -1,0 +1,25 @@
+{
+  "op": "validate",
+  "provider": "openai",
+  "request": {
+    "model": "gpt-5.4",
+    "input": [
+      {
+        "type": "message",
+        "role": "user",
+        "content": [
+          {
+            "type": "input_text",
+            "text": "hi"
+          }
+        ]
+      },
+      {
+        "type": "function_call_output",
+        "call_id": "call_1",
+        "output": "done"
+      }
+    ],
+    "stream": true
+  }
+}

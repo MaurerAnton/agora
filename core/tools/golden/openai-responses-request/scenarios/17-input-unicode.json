@@ -1,0 +1,14 @@
+{
+  "op": "input",
+  "messages": [
+    {
+      "role": "user",
+      "content": [
+        {
+          "type": "text",
+          "text": "привет 🙂"
+        }
+      ]
+    }
+  ]
+}

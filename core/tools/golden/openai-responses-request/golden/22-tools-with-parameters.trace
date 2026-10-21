@@ -1,0 +1,1 @@
+{"tools":[{"type":"function","name":"search","description":"Search","parameters":{"type":"object","properties":{"q":{"type":"string","description":"query"}},"required":["q"]}}]}

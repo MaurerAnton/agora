@@ -1,0 +1,22 @@
+{
+  "op": "validate",
+  "provider": "openai",
+  "request": {
+    "model": "",
+    "input": [
+      {
+        "type": "message",
+        "role": "assistant",
+        "content": [
+          {
+            "type": "input_text",
+            "text": "hi"
+          }
+        ]
+      }
+    ],
+    "stream": true,
+    "max_output_tokens": -1,
+    "top_p": 2.0
+  }
+}

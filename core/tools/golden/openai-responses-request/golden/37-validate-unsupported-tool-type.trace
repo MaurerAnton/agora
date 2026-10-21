@@ -1,0 +1,1 @@
+{"error":{"type":"RequestFormatException","message":"openai request validation failed: tools[0] has unsupported type custom","violations":["tools[0] has unsupported type custom"]}}

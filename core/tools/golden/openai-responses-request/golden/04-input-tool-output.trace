@@ -1,0 +1,1 @@
+{"input":[{"type":"message","role":"user","content":[{"type":"input_text","text":"run it"}]},{"type":"function_call_output","call_id":"call_1","output":"done"}]}

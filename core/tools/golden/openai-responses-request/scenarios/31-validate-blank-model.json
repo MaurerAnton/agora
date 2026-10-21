@@ -1,0 +1,20 @@
+{
+  "op": "validate",
+  "provider": "openai",
+  "request": {
+    "model": "   ",
+    "input": [
+      {
+        "type": "message",
+        "role": "user",
+        "content": [
+          {
+            "type": "input_text",
+            "text": "hi"
+          }
+        ]
+      }
+    ],
+    "stream": true
+  }
+}

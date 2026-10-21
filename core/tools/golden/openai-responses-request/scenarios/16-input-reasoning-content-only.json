@@ -1,0 +1,15 @@
+{
+  "op": "input",
+  "messages": [
+    {
+      "role": "assistant",
+      "reasoning_content": "because",
+      "content": [
+        {
+          "type": "text",
+          "text": "answer"
+        }
+      ]
+    }
+  ]
+}

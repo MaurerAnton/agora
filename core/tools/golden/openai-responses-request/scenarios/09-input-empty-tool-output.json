@@ -1,0 +1,15 @@
+{
+  "op": "input",
+  "messages": [
+    {
+      "role": "tool",
+      "tool_call_id": "call_1",
+      "content": [
+        {
+          "type": "text",
+          "text": ""
+        }
+      ]
+    }
+  ]
+}

@@ -1,0 +1,26 @@
+{
+  "op": "input",
+  "messages": [
+    {
+      "role": "assistant",
+      "tool_calls": [
+        {
+          "id": "call_1",
+          "type": "function",
+          "function": {
+            "name": "search",
+            "arguments": "{\"q\":\"x\"}"
+          }
+        },
+        {
+          "id": "call_2",
+          "type": "function",
+          "function": {
+            "name": "fetch",
+            "arguments": "{}"
+          }
+        }
+      ]
+    }
+  ]
+}

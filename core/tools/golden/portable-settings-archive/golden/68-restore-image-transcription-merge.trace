@@ -1,0 +1,1 @@
+{"calls":[{"name":"saveImageTranscriptionEnabled","value":{"bool":true}},{"name":"saveImageTranscriptionEnabledModels","value":{"strings":["whisper-large","whisper-tiny"]}},{"name":"saveImageTranscriptionBatchSize","value":{"int":99}},{"name":"invalidatePortableModelCaches","value":{"none":true}}],"warnings":[]}

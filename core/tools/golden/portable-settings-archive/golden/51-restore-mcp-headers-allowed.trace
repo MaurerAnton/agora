@@ -1,0 +1,1 @@
+{"calls":[{"name":"saveMcpServers","value":{"mcpServers":[{"id":"mcp-1","name":"","enabled":true,"url":"","transport":"STREAMABLE_HTTP","headers":{"X":"imported"},"disabledTools":[]}]}},{"name":"invalidatePortableModelCaches","value":{"none":true}}],"warnings":[]}

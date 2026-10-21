@@ -1,0 +1,1 @@
+{"calls":[{"name":"saveContextCompactModel","value":{"string":"m1"}},{"name":"saveContextCompactPreserveSystemPrompt","value":{"bool":false}},{"name":"invalidatePortableModelCaches","value":{"none":true}}],"warnings":[]}

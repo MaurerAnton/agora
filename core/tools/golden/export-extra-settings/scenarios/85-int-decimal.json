@@ -1,0 +1,10 @@
+{
+  "object": {
+    "imageTranscriptionBatchSize": 1.5
+  },
+  "replace": false,
+  "allowSecrets": false,
+  "allowedConversationIds": [],
+  "modelAliases": {},
+  "customModels": []
+}

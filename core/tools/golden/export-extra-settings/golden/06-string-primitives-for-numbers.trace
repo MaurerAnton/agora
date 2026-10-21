@@ -1,0 +1,1 @@
+{"calls":[{"name":"saveImageTranscriptionBatchSize","value":{"int":7}}],"error":"NumberFormatException"}

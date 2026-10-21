@@ -1,0 +1,1 @@
+{"calls":[{"name":"saveImageTranscriptionEnabledModels","value":{"strings":["whisper-large","whisper-small"]}},{"name":"saveWebSearchNumResults","value":{"int":0}}],"error":"NumberFormatException"}

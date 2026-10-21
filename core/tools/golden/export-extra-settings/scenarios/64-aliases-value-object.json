@@ -1,0 +1,14 @@
+{
+  "object": {
+    "modelAliases": {
+      "a": {
+        "nested": 1
+      }
+    }
+  },
+  "replace": false,
+  "allowSecrets": false,
+  "allowedConversationIds": [],
+  "modelAliases": {},
+  "customModels": []
+}

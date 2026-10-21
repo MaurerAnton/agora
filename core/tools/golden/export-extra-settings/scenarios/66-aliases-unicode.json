@@ -1,0 +1,13 @@
+{
+  "object": {
+    "modelAliases": {
+      "модель": "🙂",
+      "": "empty"
+    }
+  },
+  "replace": true,
+  "allowSecrets": false,
+  "allowedConversationIds": [],
+  "modelAliases": {},
+  "customModels": []
+}

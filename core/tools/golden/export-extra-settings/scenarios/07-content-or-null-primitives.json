@@ -1,0 +1,19 @@
+{
+  "object": {
+    "imageTranscriptionModel": 42,
+    "imageTranscriptionPrompt": true,
+    "proxyType": 3.5,
+    "proxyHost": false,
+    "themeMode": null,
+    "colorScheme": [
+      "not",
+      "a",
+      "primitive"
+    ]
+  },
+  "replace": false,
+  "allowSecrets": false,
+  "allowedConversationIds": [],
+  "modelAliases": {},
+  "customModels": []
+}

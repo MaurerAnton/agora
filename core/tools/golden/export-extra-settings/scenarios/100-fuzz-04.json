@@ -1,0 +1,24 @@
+{
+  "object": {
+    "searchContextWindow": 8192,
+    "automationToolsEnabled": false,
+    "fontPreference": "system",
+    "defaultPresencePenalty": -0.2,
+    "showDocumentationFab": true,
+    "themeMode": "dark",
+    "imageTranscriptionBatchSize": 4,
+    "defaultMaxTokens": 4096,
+    "dynamicColor": false,
+    "imageTranscriptionModel": "gpt-4o-mini",
+    "proxyHost": ""
+  },
+  "replace": false,
+  "allowSecrets": false,
+  "allowedConversationIds": [],
+  "modelAliases": {
+    "seed": "S"
+  },
+  "customModels": [
+    "seed"
+  ]
+}

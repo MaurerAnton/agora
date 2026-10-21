@@ -1,0 +1,10 @@
+{
+  "object": {
+    "defaultTemperature": "-infinity"
+  },
+  "replace": false,
+  "allowSecrets": false,
+  "allowedConversationIds": [],
+  "modelAliases": {},
+  "customModels": []
+}

@@ -1,0 +1,1 @@
+{"calls":[{"name":"saveShellDevices","value":{"shellDevices":[{"id":"dev-1","name":"home-conch","description":"Living room","type":"conch","serverUrl":"https://conch.example","apiKey":"shell-secret","conchPublicKey":"","sshHost":"","sshPort":22,"sshUser":"root","sshPassword":"","sshHostKey":""}]}},{"name":"invalidatePortableModelCaches","value":{"none":true}}],"warnings":[]}

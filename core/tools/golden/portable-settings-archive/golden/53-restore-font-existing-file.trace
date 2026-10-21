@@ -1,0 +1,1 @@
+{"calls":[{"name":"saveCustomFontPath","value":{"string":"platform_font.ttf"}},{"name":"saveCustomFontName","value":{"string":"Old Font"}},{"name":"saveFontPreference","value":{"string":"custom"}},{"name":"invalidatePortableModelCaches","value":{"none":true}}],"warnings":[]}

@@ -1,0 +1,1 @@
+{"calls":[{"name":"saveThinkingLevel","value":{"string":"medium"}},{"name":"saveThinkingBudgetEnabled","value":{"bool":false}},{"name":"saveThinkingBudgetTokens","value":{"int":1024}},{"name":"invalidatePortableModelCaches","value":{"none":true}}],"warnings":[]}

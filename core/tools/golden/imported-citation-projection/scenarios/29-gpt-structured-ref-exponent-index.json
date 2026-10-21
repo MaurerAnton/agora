@@ -1,0 +1,13 @@
+{
+  "op": "gpt",
+  "rawText": "exp citeturn300f12",
+  "references": [
+    {
+      "turn_index": "3e2",
+      "ref_type": "f",
+      "ref_index": 12,
+      "url": "https://example.com/exp",
+      "title": "Exp"
+    }
+  ]
+}

@@ -169,6 +169,18 @@ def main() -> None:
         [{"source_id": "turn3f12", "url": "https://unicode.example", "title": "Юникод",
           "matched_text": "юникод"}])
     gpt("26-gpt-empty-text", "", [])
+    gpt("27-gpt-int-accessor-trimmed-string",
+        "tail ZZZ more " + cite("turn1f1"),
+        [{"source_id": "turn1f1", "url": "https://example.com/trim",
+          "matched_text": "ZZZ", "start_idx": " 5 ", "end_idx": " 8 "}])
+    gpt("28-gpt-int-accessor-fraction-string",
+        "tail ZZZ more " + cite("turn1f1"),
+        [{"source_id": "turn1f1", "url": "https://example.com/fraction",
+          "matched_text": "ZZZ", "start_idx": 5, "end_idx": "8.0"}])
+    gpt("29-gpt-structured-ref-exponent-index",
+        "exp " + cite("turn300f12"),
+        [{"turn_index": "3e2", "ref_type": "f", "ref_index": 12,
+          "url": "https://example.com/exp", "title": "Exp"}])
 
     # --------------------------------------------------------------- claude citations
     claude("30-claude-url-source",

@@ -673,6 +673,34 @@ def main() -> None:
     for name, obj in accessor_cases.items():
         write(f"70-accessor-{name}", op="restore", replace=False, object=obj)
 
+    # ------------------------------------------------- restore decode (runCatching) probes
+    decode_cases = {
+        "set_mixed": {"customModels": ["m1", 42]},
+        "set_bool": {"customModels": ["m1", True]},
+        "set_num_elem": {"customModels": ["m1", 1]},
+        "alias_null_val": {"modelAliases": {"a": None}},
+        "alias_num_val": {"modelAliases": {"a": 42}},
+        "provider_names_num": {"modelProviderNames": {"a": 1}},
+        "provider_names_str": {"modelProviderNames": {"a": "true"}},
+        "baseurls_bool": {"providerBaseUrls": {"a": True}},
+        "emb_type_lower": {"remoteEmbeddingModels": [
+            {"id": "e", "name": "N", "type": "remote"}]},
+        "emb_extra": {"remoteEmbeddingModels": [
+            {"id": "e", "name": "N", "type": "REMOTE", "zzz": 1}]},
+        "mcp_transport_upper": {"mcpServers": [{"id": "m", "transport": "SSE"}]},
+        "mcp_transport_missing": {"mcpServers": [{"id": "m"}]},
+        "prov_claude": {"customProviders": [{"name": "P", "protocol": "claude"}]},
+        "prov_weird": {"customProviders": [{"name": "P", "protocol": "weird"}]},
+        "prov_missing_protocol": {"customProviders": [{"name": "P"}]},
+        "shell_port_str": {"shellDevices": [{"id": "s", "sshPort": "22"}]},
+        "prov_bool_str": {"customProviders": [
+            {"name": "P", "responsesApiEnabled": "true"}]},
+        "prov_ttl_num": {"customProviders": [
+            {"name": "P", "anthropicCacheTtl": 1}]},
+    }
+    for name, obj in decode_cases.items():
+        write(f"71-decode-{name}", op="restore", replace=False, object=obj)
+
     # --------------------------------------------------------------------- fuzz
     string_keys = []
     nullable_string_keys = []

@@ -334,15 +334,28 @@ std::string inflate_raw(const std::string& input, std::size_t* consumed) {
 
 }  // namespace
 
-Reader::Reader(std::string path) : path_(std::move(path)) {}
+Reader::Reader(std::string path) {
+    std::ifstream file(path, std::ios::binary);
+    if (!file.is_open()) throw ZipException("cannot open archive");
+    archive_ = std::string((std::istreambuf_iterator<char>(file)), std::istreambuf_iterator<char>());
+}
+
+Reader Reader::from_bytes(std::string bytes) {
+    Reader reader;
+    reader.archive_ = std::move(bytes);
+    return reader;
+}
 
 std::vector<Entry> Reader::entries() {
-    std::ifstream file(path_, std::ios::binary);
-    if (!file.is_open()) throw ZipException("cannot open archive");
-    std::string archive((std::istreambuf_iterator<char>(file)), std::istreambuf_iterator<char>());
-
     std::vector<Entry> entries;
-    std::size_t offset = 0;
+    Entry entry;
+    while (next_entry(entry)) entries.push_back(std::move(entry));
+    return entries;
+}
+
+bool Reader::next_entry(Entry& out) {
+    const std::string& archive = archive_;
+    std::size_t offset = offset_;
     while (offset < archive.size()) {
         if (archive.size() - offset < 4) break;  // a short tail ends the archive silently
         const unsigned char* raw = reinterpret_cast<const unsigned char*>(archive.data()) + offset;
@@ -413,9 +426,12 @@ std::vector<Entry> Reader::entries() {
             throw ZipException("invalid entry CRC (expected 0x" + hex_value(entry.crc32) +
                                 " but got 0x" + hex_value(computed) + ")");
         }
-        entries.push_back(std::move(entry));
+        out = std::move(entry);
+        offset_ = offset;
+        return true;
     }
-    return entries;
+    offset_ = offset;
+    return false;
 }
 
 }  // namespace agora::core::zip

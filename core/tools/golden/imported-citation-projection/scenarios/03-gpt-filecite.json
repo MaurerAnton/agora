@@ -1,0 +1,12 @@
+{
+  "op": "gpt",
+  "rawText": "See fileciteturn3f12 for details.",
+  "references": [
+    {
+      "source_id": "turn3f12",
+      "file_name": "notes.md",
+      "file_type": "text/markdown",
+      "extracted_content": "# notes"
+    }
+  ]
+}

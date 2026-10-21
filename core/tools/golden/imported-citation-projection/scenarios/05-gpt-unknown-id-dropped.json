@@ -1,0 +1,12 @@
+{
+  "op": "gpt",
+  "rawText": "Keep citeturn9z99 but no source matches.",
+  "references": [
+    {
+      "source_id": "turn7x77",
+      "url": "https://example.com/a",
+      "title": "Other",
+      "matched_text": "Keep "
+    }
+  ]
+}

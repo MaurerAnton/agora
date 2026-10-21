@@ -1,0 +1,11 @@
+{
+  "op": "gpt",
+  "rawText": "Text citeturn3f12 tail.",
+  "references": [
+    {
+      "source_id": "turn3f12",
+      "url": "not a url",
+      "matched_text": "tail."
+    }
+  ]
+}

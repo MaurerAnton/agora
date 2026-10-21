@@ -1,0 +1,11 @@
+{
+  "op": "claude",
+  "citation": {
+    "url": "https://claude.example/doc",
+    "title": "Claude Doc",
+    "uuid": "cite-1",
+    "matched_text": "answer"
+  },
+  "startIndex": 0,
+  "answerText": "the answer text"
+}

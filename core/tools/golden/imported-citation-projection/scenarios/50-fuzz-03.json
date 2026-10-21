@@ -1,0 +1,29 @@
+{
+  "op": "gpt",
+  "rawText": "fileciteturn2f09 gamma 【turn1f02】citeturn2f01beta alpha ",
+  "references": [
+    {
+      "source_id": "turn1f02",
+      "url": "https://fuzz.example",
+      "title": "F",
+      "matched_text": "tail."
+    },
+    {
+      "source_id": "turn2f01",
+      "title": "T"
+    },
+    {
+      "source_id": "turn2f09",
+      "url": "not a url"
+    },
+    {
+      "title": "T0",
+      "matched_text": "tail."
+    },
+    {
+      "url": "https://fuzz.example/1",
+      "title": "F1",
+      "matched_text": "end"
+    }
+  ]
+}

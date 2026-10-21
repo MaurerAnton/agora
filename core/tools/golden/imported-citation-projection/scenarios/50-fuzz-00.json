@@ -1,0 +1,32 @@
+{
+  "op": "gpt",
+  "rawText": "【turn1f09】【turn2f20】fileciteturn3f08citeturn2f07",
+  "references": [
+    {
+      "source_id": "turn1f09",
+      "title": "T"
+    },
+    {
+      "source_id": "turn2f07",
+      "url": "not a url"
+    },
+    {
+      "source_id": "turn2f20",
+      "url": "not a url"
+    },
+    {
+      "source_id": "turn3f08",
+      "title": "T"
+    },
+    {
+      "title": "T0",
+      "matched_text": "tail."
+    },
+    {
+      "turn_index": 1,
+      "ref_type": "f",
+      "ref_index": 1,
+      "url": "https://struct.example"
+    }
+  ]
+}

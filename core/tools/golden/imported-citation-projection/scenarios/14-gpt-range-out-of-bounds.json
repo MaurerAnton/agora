@@ -1,0 +1,14 @@
+{
+  "op": "gpt",
+  "rawText": "short citeturn3f12 tail",
+  "references": [
+    {
+      "source_id": "turn3f12",
+      "url": "https://example.com/ob",
+      "title": "O",
+      "matched_text": "tail",
+      "start_idx": 100,
+      "end_idx": 104
+    }
+  ]
+}

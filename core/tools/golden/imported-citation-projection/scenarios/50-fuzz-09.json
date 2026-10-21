@@ -1,0 +1,29 @@
+{
+  "op": "gpt",
+  "rawText": "\n🙂 【turn4f02】【turn2f10】alpha fileciteturn2f07",
+  "references": [
+    {
+      "source_id": "turn2f07",
+      "url": "not a url"
+    },
+    {
+      "source_id": "turn2f10",
+      "url": "https://fuzz.example",
+      "title": "F",
+      "matched_text": "tail."
+    },
+    {
+      "source_id": "turn4f02",
+      "file_name": "f.txt",
+      "file_type": "text/plain"
+    },
+    {
+      "uuid": "id-0",
+      "matched_text": "plain text "
+    },
+    {
+      "title": "T1",
+      "matched_text": "tail."
+    }
+  ]
+}

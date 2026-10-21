@@ -1,0 +1,25 @@
+{
+  "op": "gpt",
+  "rawText": "nested citeturn3f12 end",
+  "references": [
+    [
+      {
+        "source_id": "turn3f12",
+        "url": "https://nested.example",
+        "title": "Nested",
+        "matched_text": "end"
+      }
+    ],
+    {
+      "whatever": {
+        "deep": [
+          {
+            "source_id": "turn3f13",
+            "title": "Deep",
+            "matched_text": "nested "
+          }
+        ]
+      }
+    }
+  ]
+}

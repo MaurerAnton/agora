@@ -1,0 +1,12 @@
+{
+  "op": "gpt",
+  "rawText": "alpha beta citeturn3f12 gamma   ",
+  "references": [
+    {
+      "source_id": "turn3f12",
+      "url": "https://example.com/fb",
+      "title": "F",
+      "matched_text": "alpha beta"
+    }
+  ]
+}

@@ -1,0 +1,12 @@
+{
+  "op": "gpt",
+  "rawText": "citeturn3f12citeturn3f13",
+  "references": [
+    {
+      "source_id": "turn3f12",
+      "url": "https://example.com/beyond",
+      "title": "B",
+      "matched_text": "gone"
+    }
+  ]
+}

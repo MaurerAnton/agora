@@ -1,0 +1,3 @@
+{
+  "text": "[{\"conversation_id\": \"c12\", \"title\": \"Chat\", \"create_time\": 1700000000.0, \"update_time\": 1700000005.5, \"mapping\": {\"n0\": {\"id\": \"n0\", \"parent\": \"client-created-root\"}, \"n1\": {\"id\": \"n1\", \"message\": {\"id\": \"m1\", \"author\": {\"role\": \"assistant\"}, \"content\": {\"content_type\": \"text\", \"parts\": [\"done\"]}, \"create_time\": 1700000000.0, \"metadata\": {\"model_slug\": \"gpt-4o\", \"is_complete\": false}}, \"parent\": \"n0\"}, \"n2\": {\"id\": \"n2\", \"message\": {\"id\": \"m2\", \"author\": {\"role\": \"assistant\"}, \"content\": {\"content_type\": \"text\", \"parts\": [\"stopped\"]}, \"create_time\": 1700000000.0, \"metadata\": {\"finish_details\": {\"type\": \"max_tokens\"}}}, \"parent\": \"n1\"}}}]"
+}

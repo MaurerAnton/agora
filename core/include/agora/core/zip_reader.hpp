@@ -31,16 +31,28 @@ public:
     using std::runtime_error::runtime_error;
 };
 
-/** Reads every entry of an archive in local-header order. */
+/** Reads the entries of an archive in local-header order. */
 class Reader {
 public:
     explicit Reader(std::string path);
 
+    /** Reads an archive that is already in memory (the importers receive bytes, not a file). */
+    static Reader from_bytes(std::string bytes);
+
     /** Throws ZipException with the JDK's message on a malformed archive. */
     std::vector<Entry> entries();
 
+    /**
+     * Streaming variant: reads the next entry and returns false at the end of the archive.
+     * The importer stops at the first entry it can use, so the reader must not read ahead.
+     */
+    bool next_entry(Entry& out);
+
 private:
-    std::string path_;
+    Reader() = default;
+
+    std::string archive_;
+    std::size_t offset_ = 0;
 };
 
 }  // namespace agora::core::zip

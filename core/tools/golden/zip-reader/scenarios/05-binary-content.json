@@ -1,0 +1,9 @@
+{
+  "entries": [
+    {
+      "name": "bin.dat",
+      "content": "\u0000\u0001\u0002ÿ",
+      "method": "deflate"
+    }
+  ]
+}

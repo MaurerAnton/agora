@@ -1,0 +1,9 @@
+{
+  "entries": [
+    {
+      "name": "lines.txt",
+      "content": "a\tb\nc\rd\n",
+      "method": "deflate"
+    }
+  ]
+}

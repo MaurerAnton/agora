@@ -1,0 +1,19 @@
+{
+  "entries": [
+    {
+      "name": "one.json",
+      "content": "{\"one\":1}",
+      "method": "stored"
+    },
+    {
+      "name": "two.json",
+      "content": "{\"two\":2}",
+      "method": "deflate"
+    },
+    {
+      "name": "three.json",
+      "content": "{\"three\":3}",
+      "method": "stored"
+    }
+  ]
+}

@@ -1,0 +1,19 @@
+{
+  "entries": [
+    {
+      "name": "a.json",
+      "content": "{\"a\":1}",
+      "method": "deflate"
+    },
+    {
+      "name": "b/c.json",
+      "content": "{\"b\":2}",
+      "method": "stored"
+    },
+    {
+      "name": "d.txt",
+      "content": "plain text",
+      "method": "stored"
+    }
+  ]
+}

@@ -1,0 +1,104 @@
+{
+  "entries": [
+    {
+      "name": "part-0.json",
+      "content": "{\"i\":0}",
+      "method": "deflate"
+    },
+    {
+      "name": "part-1.json",
+      "content": "{\"i\":1}",
+      "method": "deflate"
+    },
+    {
+      "name": "part-2.json",
+      "content": "{\"i\":2}",
+      "method": "deflate"
+    },
+    {
+      "name": "part-3.json",
+      "content": "{\"i\":3}",
+      "method": "deflate"
+    },
+    {
+      "name": "part-4.json",
+      "content": "{\"i\":4}",
+      "method": "deflate"
+    },
+    {
+      "name": "part-5.json",
+      "content": "{\"i\":5}",
+      "method": "deflate"
+    },
+    {
+      "name": "part-6.json",
+      "content": "{\"i\":6}",
+      "method": "deflate"
+    },
+    {
+      "name": "part-7.json",
+      "content": "{\"i\":7}",
+      "method": "deflate"
+    },
+    {
+      "name": "part-8.json",
+      "content": "{\"i\":8}",
+      "method": "deflate"
+    },
+    {
+      "name": "part-9.json",
+      "content": "{\"i\":9}",
+      "method": "deflate"
+    },
+    {
+      "name": "part-10.json",
+      "content": "{\"i\":10}",
+      "method": "deflate"
+    },
+    {
+      "name": "part-11.json",
+      "content": "{\"i\":11}",
+      "method": "deflate"
+    },
+    {
+      "name": "part-12.json",
+      "content": "{\"i\":12}",
+      "method": "deflate"
+    },
+    {
+      "name": "part-13.json",
+      "content": "{\"i\":13}",
+      "method": "deflate"
+    },
+    {
+      "name": "part-14.json",
+      "content": "{\"i\":14}",
+      "method": "deflate"
+    },
+    {
+      "name": "part-15.json",
+      "content": "{\"i\":15}",
+      "method": "deflate"
+    },
+    {
+      "name": "part-16.json",
+      "content": "{\"i\":16}",
+      "method": "deflate"
+    },
+    {
+      "name": "part-17.json",
+      "content": "{\"i\":17}",
+      "method": "deflate"
+    },
+    {
+      "name": "part-18.json",
+      "content": "{\"i\":18}",
+      "method": "deflate"
+    },
+    {
+      "name": "part-19.json",
+      "content": "{\"i\":19}",
+      "method": "deflate"
+    }
+  ]
+}

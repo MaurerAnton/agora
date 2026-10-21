@@ -1,0 +1,9 @@
+{
+  "entries": [
+    {
+      "name": "tiny.txt",
+      "content": "x",
+      "method": "deflate"
+    }
+  ]
+}

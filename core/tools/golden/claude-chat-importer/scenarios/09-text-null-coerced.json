@@ -1,0 +1,3 @@
+{
+  "text": "{\"conversations\": [{\"uuid\": \"c9\", \"name\": null, \"summary\": null, \"created_at\": null, \"updated_at\": null, \"chat_messages\": [{\"uuid\": \"m9\", \"sender\": null, \"text\": null, \"created_at\": null, \"parent_message_uuid\": null, \"content\": null}]}]}"
+}

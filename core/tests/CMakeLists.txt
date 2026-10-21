@@ -20,6 +20,7 @@ add_executable(agora_core_tests
     native_run_archive_parity_test.cpp
     export_extra_settings_parity_test.cpp
     citations_parity_test.cpp
+    claude_chat_importer_parity_test.cpp
     cjk_text_parity_test.cpp
     task_schedule_parity_test.cpp
     cron_expression_parity_test.cpp
@@ -88,6 +89,7 @@ target_compile_definitions(agora_core_tests PRIVATE
     AGORA_FIXTURE_MESSAGE_PREP_DIR="${CMAKE_CURRENT_SOURCE_DIR}/../tools/golden/message-preparation"
     AGORA_FIXTURE_STREAM_NORMALIZATION_DIR="${CMAKE_CURRENT_SOURCE_DIR}/../tools/golden/stream-normalization"
     AGORA_FIXTURE_CITATIONS_DIR="${CMAKE_CURRENT_SOURCE_DIR}/../tools/golden/citations"
+    AGORA_FIXTURE_CLAUDE_CHAT_IMPORTER_DIR="${CMAKE_CURRENT_SOURCE_DIR}/../tools/golden/claude-chat-importer"
     AGORA_FIXTURE_CJK_TEXT_DIR="${CMAKE_CURRENT_SOURCE_DIR}/../tools/golden/cjk-text"
     AGORA_FIXTURE_ANTHROPIC_STREAM_DIR="${CMAKE_CURRENT_SOURCE_DIR}/../tools/golden/anthropic-stream"
     AGORA_FIXTURE_ANTHROPIC_REQUEST_DIR="${CMAKE_CURRENT_SOURCE_DIR}/../tools/golden/anthropic-request"

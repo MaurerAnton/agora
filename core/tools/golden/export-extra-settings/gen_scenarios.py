@@ -380,7 +380,7 @@ def main() -> None:
                 obj[key] = valid_values[key]
             else:
                 obj[key] = rng.choice(invalid_values)
-        write(f"9{index}-fuzz-{index:02d}", obj,
+        write(f"100-fuzz-{index:02d}", obj,
               replace=rng.choice([False, True]),
               allow_secrets=rng.choice([False, True]),
               allowed=["c1"] if rng.random() < 0.6 else [],

@@ -1,0 +1,21 @@
+{
+  "content": "C\t{\"id\":\"c1\"}\nM\t{\"msg\":\"m1\"}\nM\tunterminated",
+  "reads": [
+    {
+      "kind": "records",
+      "slice": [
+        0,
+        1000
+      ]
+    },
+    {
+      "kind": "iterator",
+      "slices": [
+        [
+          0,
+          1000
+        ]
+      ]
+    }
+  ]
+}

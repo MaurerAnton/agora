@@ -1,0 +1,24 @@
+{
+  "object": {
+    "searchContextWindow": 8192,
+    "reduceMotion": false,
+    "colorScheme": "green",
+    "imageTranscriptionPrompt": "Describe the image.",
+    "detailedTokenUsage": true,
+    "defaultTopP": 0.9,
+    "openAiServiceTier": "flex",
+    "defaultTemperature": "scale",
+    "proxyEnabled": true,
+    "themeMode": "false",
+    "searchMatchLimit": 12
+  },
+  "replace": false,
+  "allowSecrets": false,
+  "allowedConversationIds": [],
+  "modelAliases": {
+    "seed": "S"
+  },
+  "customModels": [
+    "seed"
+  ]
+}

@@ -1,0 +1,20 @@
+{
+  "object": {
+    "conversationSettings": {
+      "c1": {
+        "unknown": 1,
+        "another": [
+          2
+        ],
+        "contextWindow": 99
+      }
+    }
+  },
+  "replace": false,
+  "allowSecrets": false,
+  "allowedConversationIds": [
+    "c1"
+  ],
+  "modelAliases": {},
+  "customModels": []
+}

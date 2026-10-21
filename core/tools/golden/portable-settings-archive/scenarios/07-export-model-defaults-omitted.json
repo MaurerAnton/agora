@@ -1,0 +1,137 @@
+{
+  "op": "export",
+  "settings": {
+    "selectedModel": "gpt-5.4",
+    "contextCompactPrompt": "Compact the conversation",
+    "thinkingLevel": "high",
+    "openAiServiceTier": "default",
+    "anthropicCacheTtl": "1h",
+    "titleGenerationPrompt": "Summarize the chat",
+    "modelSearchMethod": "semantic",
+    "manualSearchMethod": "keyword",
+    "appLanguage": "system",
+    "webSearchProvider": "duckduckgo",
+    "webSearchBaseUrl": "",
+    "imageGenSize": "1024x1024",
+    "imageTranscriptionPrompt": "Describe the image",
+    "themeMode": "FOLLOW_DEVICE",
+    "colorScheme": "dynamic_green",
+    "schemeStyle": "tonal",
+    "fontPreference": "app_default",
+    "proxyType": "http",
+    "proxyHost": "127.0.0.1",
+    "proxyPort": "8080",
+    "proxyUsername": "",
+    "proxyBypass": "",
+    "toolCallDisplayMode": "compact",
+    "thinkingSegmentDisplayMode": "auto",
+    "activeEmbeddingModelId": "e1",
+    "customFontName": "",
+    "customFontPath": "",
+    "contextCompactModel": null,
+    "titleGenerationModel": null,
+    "imageGenModel": null,
+    "imageTranscriptionModel": null,
+    "activeSystemPromptId": null,
+    "accessActiveMemory": true,
+    "accessPastConversations": true,
+    "accessSavedMemories": false,
+    "accessSkills": true,
+    "amoledEnabled": false,
+    "anthropicCacheEnabled": true,
+    "askUserEnabled": true,
+    "autoCacheEnabled": true,
+    "autoExpandActiveGroup": false,
+    "automationToolsEnabled": false,
+    "automationWakeLockEnabled": false,
+    "autoUpdateCheck": true,
+    "autoWrapCodeBlocks": true,
+    "blurEffectsEnabled": true,
+    "codeExecutionEnabled": false,
+    "contextCompactEnabled": true,
+    "contextCompactPreserveSystemPrompt": true,
+    "detailedTokenUsage": false,
+    "dynamicColor": true,
+    "exactExecutionEnabled": false,
+    "googleSearchEnabled": false,
+    "hapticsEnabled": true,
+    "imageGenEnabled": false,
+    "imageTranscriptionEnabled": false,
+    "openAiResponsesApiEnabled": true,
+    "openAiServiceTierEnabled": false,
+    "parseInlineDollarMath": false,
+    "proxyEnabled": false,
+    "ragSearchEnabled": false,
+    "reduceMotion": false,
+    "shellConfirmEnabled": true,
+    "shellEnabled": true,
+    "showDocumentationFab": true,
+    "showUncachedNotification": true,
+    "stickToBottom": true,
+    "thinkingBudgetEnabled": false,
+    "thinkingEnabled": true,
+    "titleGenerationEnabled": true,
+    "titleGenerationNotificationsEnabled": false,
+    "visualizeContextRollout": false,
+    "webSearchEnabled": true,
+    "contextCompactRetainCount": 4,
+    "contextCompactThresholdPercent": 90,
+    "imageTranscriptionBatchSize": 3,
+    "maxContextWindow": 128000,
+    "searchContextWindow": 8,
+    "searchMatchLimit": 10,
+    "thinkingBudgetTokens": 4096,
+    "webSearchNumResults": 5,
+    "defaultMaxTokens": null,
+    "ragThreshold": 0.5,
+    "defaultTemperature": 0.7,
+    "defaultTopP": null,
+    "defaultFrequencyPenalty": null,
+    "defaultPresencePenalty": null,
+    "customModels": [
+      "m1",
+      "m2"
+    ],
+    "enabledModels": [
+      "m1"
+    ],
+    "imageTranscriptionEnabledModels": [
+      "whisper-large"
+    ],
+    "modelAliases": {
+      "m1": "One"
+    },
+    "providerBaseUrls": {
+      "custom-provider-11111111-1111-4111-8111-111111111111": "https://a.example/v1"
+    },
+    "modelProviderNames": {
+      "m1": true
+    },
+    "embeddingModels": [
+      {
+        "id": "e1",
+        "name": "E",
+        "type": "REMOTE"
+      }
+    ],
+    "shellDevices": [
+      {
+        "id": "s1",
+        "name": "only-name"
+      }
+    ],
+    "mcpServers": [
+      {
+        "id": "m1",
+        "name": "n",
+        "url": "https://u.example"
+      }
+    ],
+    "customProviders": [
+      {
+        "name": "P"
+      }
+    ]
+  },
+  "customFontIncluded": false
+}

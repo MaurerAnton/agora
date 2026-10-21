@@ -1,0 +1,23 @@
+{
+  "object": {
+    "imageTranscriptionBatchSize": 4,
+    "proxyEnabled": true,
+    "hapticsEnabled": "",
+    "imageTranscriptionEnabled": true,
+    "showDocumentationFab": true,
+    "proxyBypass": "localhost,127.0.0.1",
+    "automationWakeLockEnabled": null,
+    "exactExecutionEnabled": true,
+    "proxyPassword": {},
+    "automationToolsEnabled": false
+  },
+  "replace": true,
+  "allowSecrets": false,
+  "allowedConversationIds": [],
+  "modelAliases": {
+    "seed": "S"
+  },
+  "customModels": [
+    "seed"
+  ]
+}

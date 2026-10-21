@@ -1,0 +1,1 @@
+{"bytes":"C\t{\"id\":\"c1\"}\nM\t{\"msg\":\"m1\"}\nM\tunterminated","reads":[{"records":[{"type":"C","json":"{\"id\":\"c1\"}"},{"type":"M","json":"{\"msg\":\"m1\"}"},{"type":"M","json":"unterminated"}]},{"payloads":["{\"id\":\"c1\"}","{\"msg\":\"m1\"}","unterminated"]}]}

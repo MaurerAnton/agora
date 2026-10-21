@@ -1,0 +1,27 @@
+{
+  "object": {
+    "exactExecutionEnabled": true,
+    "dynamicColor": false,
+    "proxyEnabled": true,
+    "detailedTokenUsage": true,
+    "hapticsEnabled": false,
+    "automationToolsEnabled": [],
+    "automationWakeLockEnabled": false,
+    "reduceMotion": false,
+    "imageTranscriptionEnabledModels": "whisper-large,whisper-small",
+    "colorScheme": "green",
+    "defaultTopP": 0.9,
+    "imageTranscriptionModel": "gpt-4o-mini"
+  },
+  "replace": false,
+  "allowSecrets": true,
+  "allowedConversationIds": [
+    "c1"
+  ],
+  "modelAliases": {
+    "seed": "S"
+  },
+  "customModels": [
+    "seed"
+  ]
+}

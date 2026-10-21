@@ -1,0 +1,12 @@
+{
+  "op": "gpt",
+  "rawText": "up CITETURN3F12 case",
+  "references": [
+    {
+      "source_id": "turn3f12",
+      "url": "https://example.com/upper",
+      "title": "U",
+      "matched_text": "case"
+    }
+  ]
+}

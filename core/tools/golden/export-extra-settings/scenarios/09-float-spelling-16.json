@@ -1,0 +1,10 @@
+{
+  "object": {
+    "defaultTemperature": "NAN"
+  },
+  "replace": false,
+  "allowSecrets": false,
+  "allowedConversationIds": [],
+  "modelAliases": {},
+  "customModels": []
+}

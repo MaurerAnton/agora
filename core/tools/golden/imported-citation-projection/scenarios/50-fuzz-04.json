@@ -1,0 +1,16 @@
+{
+  "op": "gpt",
+  "rawText": "fileciteturn2f03alpha gamma beta fileciteturn4f19gamma ",
+  "references": [
+    {
+      "source_id": "turn2f03",
+      "url": "https://fuzz.example",
+      "title": "F",
+      "matched_text": "tail."
+    },
+    {
+      "source_id": "turn4f19",
+      "title": "T"
+    }
+  ]
+}

@@ -1,0 +1,10 @@
+{
+  "object": {
+    "imageTranscriptionEnabledModels": "a,b,a"
+  },
+  "replace": false,
+  "allowSecrets": false,
+  "allowedConversationIds": [],
+  "modelAliases": {},
+  "customModels": []
+}

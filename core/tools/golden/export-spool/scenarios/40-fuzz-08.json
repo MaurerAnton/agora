@@ -1,0 +1,30 @@
+{
+  "reads": [
+    {
+      "kind": "iterator",
+      "slices": [
+        [
+          4,
+          8
+        ],
+        [
+          5,
+          36
+        ]
+      ],
+      "type": "C",
+      "probeNext": false
+    },
+    {
+      "kind": "iterator",
+      "slices": [
+        [
+          10,
+          23
+        ]
+      ],
+      "probeNext": true
+    }
+  ],
+  "content": "C\tc\nM\tm\n"
+}

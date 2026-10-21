@@ -1,0 +1,1 @@
+{"calls":[{"name":"saveImageTranscriptionModel","value":{"string":"42"}},{"name":"saveImageTranscriptionPrompt","value":{"string":"true"}},{"name":"saveProxyType","value":{"string":"3.5"}},{"name":"saveProxyHost","value":{"string":"false"}}],"error":"IllegalArgumentException"}

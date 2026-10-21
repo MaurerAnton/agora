@@ -25,12 +25,15 @@ add_library(agora_core_lib STATIC
     src/custom_model_references.cpp
     src/backup_media_policy.cpp
     src/message_persistence_guard.cpp
+    src/imported_citation_projection.cpp
     src/native_backup_secrets.cpp
     src/native_backup_format.cpp
     src/native_run_archive.cpp
+    src/export_extra_settings.cpp
     src/conch_sse.cpp
     src/tz.cpp
     src/duckduckgo.cpp
+    src/export_spool.cpp
     src/embedding.cpp
     src/embedding_selector.cpp
     src/gemini_request.cpp
@@ -49,6 +52,7 @@ add_library(agora_core_lib STATIC
     src/openai_stream.cpp
     src/openai_stream_codec.cpp
     src/portable_glob.cpp
+    src/portable_settings_archive.cpp
     src/run_branch_selection.cpp
     src/run_recovery.cpp
     src/conversation_runtime.cpp

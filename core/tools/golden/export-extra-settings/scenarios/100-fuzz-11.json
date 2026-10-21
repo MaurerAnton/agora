@@ -1,0 +1,29 @@
+{
+  "object": {
+    "proxyHost": "proxy.example",
+    "imageTranscriptionEnabledModels": "whisper-large,whisper-small",
+    "openAiServiceTierEnabled": "true",
+    "defaultFrequencyPenalty": true,
+    "hapticsEnabled": false,
+    "reduceMotion": false,
+    "exactExecutionEnabled": "text",
+    "fontPreference": "system",
+    "customModels": [
+      "x",
+      "y",
+      "x"
+    ],
+    "webSearchNumResults": 0
+  },
+  "replace": false,
+  "allowSecrets": true,
+  "allowedConversationIds": [
+    "c1"
+  ],
+  "modelAliases": {
+    "seed": "S"
+  },
+  "customModels": [
+    "seed"
+  ]
+}

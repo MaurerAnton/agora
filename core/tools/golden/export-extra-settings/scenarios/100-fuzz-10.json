@@ -1,0 +1,47 @@
+{
+  "object": {
+    "automationToolsEnabled": 1,
+    "webSearchNumResults": 5,
+    "openAiServiceTierEnabled": 2147483648,
+    "openAiServiceTier": "flex",
+    "conversationSettings": {
+      "c1": {
+        "contextWindow": 128000,
+        "temperature": 0.6,
+        "maxTokens": 2048,
+        "topP": 0.95,
+        "frequencyPenalty": 0.25,
+        "presencePenalty": -0.5,
+        "codeExecutionEnabled": true,
+        "googleSearchEnabled": false,
+        "openAiWebSearchEnabled": true,
+        "thinkingEnabled": true,
+        "thinkingLevel": "high",
+        "thinkingBudgetEnabled": false,
+        "thinkingBudgetTokens": 0,
+        "openAiServiceTierEnabled": true,
+        "openAiServiceTier": "priority",
+        "webSearchEnabled": false,
+        "shellEnabled": true,
+        "lowContextModeEnabled": false
+      },
+      "c2": {
+        "maxTokens": 9
+      }
+    },
+    "defaultTopP": 0.9,
+    "defaultMaxTokens": 4096,
+    "automationWakeLockEnabled": false
+  },
+  "replace": true,
+  "allowSecrets": false,
+  "allowedConversationIds": [
+    "c1"
+  ],
+  "modelAliases": {
+    "seed": "S"
+  },
+  "customModels": [
+    "seed"
+  ]
+}

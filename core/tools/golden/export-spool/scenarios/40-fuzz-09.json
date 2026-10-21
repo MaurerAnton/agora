@@ -1,0 +1,40 @@
+{
+  "reads": [
+    {
+      "kind": "records",
+      "slice": [
+        5,
+        45
+      ]
+    },
+    {
+      "kind": "iterator",
+      "slices": [
+        [
+          4,
+          22
+        ],
+        [
+          6,
+          13
+        ]
+      ],
+      "probeNext": false
+    },
+    {
+      "kind": "records",
+      "slice": [
+        4,
+        30
+      ]
+    },
+    {
+      "kind": "records",
+      "slice": [
+        7,
+        24
+      ]
+    }
+  ],
+  "content": "M\tok\n"
+}

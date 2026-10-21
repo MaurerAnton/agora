@@ -1,0 +1,53 @@
+{
+  "reads": [
+    {
+      "kind": "records",
+      "slice": [
+        7,
+        12
+      ]
+    },
+    {
+      "kind": "iterator",
+      "slices": [
+        [
+          5,
+          37
+        ],
+        [
+          2,
+          29
+        ],
+        [
+          9,
+          13
+        ]
+      ],
+      "type": "R",
+      "probeNext": true
+    },
+    {
+      "kind": "records",
+      "slice": [
+        7,
+        28
+      ]
+    },
+    {
+      "kind": "iterator",
+      "slices": [
+        [
+          4,
+          32
+        ],
+        [
+          4,
+          26
+        ]
+      ],
+      "type": "R",
+      "probeNext": true
+    }
+  ],
+  "content": "\n"
+}

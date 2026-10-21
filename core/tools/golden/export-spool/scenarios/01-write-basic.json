@@ -1,0 +1,67 @@
+{
+  "writes": [
+    {
+      "op": "conversation",
+      "id": "c1",
+      "dataChangedAt": 1700000000000,
+      "json": "{\"id\":\"c1\"}"
+    },
+    {
+      "op": "run",
+      "json": "{\"run\":\"r1\"}"
+    },
+    {
+      "op": "message",
+      "json": "{\"msg\":\"m1\"}"
+    },
+    {
+      "op": "message",
+      "json": "{\"msg\":\"m2\"}"
+    },
+    {
+      "op": "loop",
+      "json": "{\"loop\":\"l1\"}"
+    }
+  ],
+  "reads": [
+    {
+      "kind": "records",
+      "slice": "conv:0"
+    },
+    {
+      "kind": "records",
+      "slice": [
+        0,
+        1000
+      ]
+    },
+    {
+      "kind": "iterator",
+      "slices": [
+        "conv:0"
+      ]
+    },
+    {
+      "kind": "iterator",
+      "slices": [
+        "conv:0"
+      ],
+      "type": "M"
+    },
+    {
+      "kind": "iterator",
+      "slices": [
+        "conv:0"
+      ],
+      "type": "R"
+    },
+    {
+      "kind": "iterator",
+      "slices": [
+        "conv:0"
+      ],
+      "type": "M",
+      "probeNext": true
+    }
+  ]
+}

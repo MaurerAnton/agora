@@ -1,0 +1,14 @@
+{
+  "op": "gpt",
+  "rawText": "prefix citeturn3f12 suffix",
+  "references": [
+    {
+      "source_id": "turn3f12",
+      "url": "https://example.com/range",
+      "title": "R",
+      "matched_text": "suffix",
+      "start_idx": 8,
+      "end_idx": 14
+    }
+  ]
+}

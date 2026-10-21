@@ -1,0 +1,13 @@
+{
+  "op": "gpt",
+  "rawText": "tail ZZZ more citeturn1f1",
+  "references": [
+    {
+      "source_id": "turn1f1",
+      "url": "https://example.com/fraction",
+      "matched_text": "ZZZ",
+      "start_idx": 5,
+      "end_idx": "8.0"
+    }
+  ]
+}

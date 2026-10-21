@@ -1,0 +1,10 @@
+{
+  "object": {
+    "proxyBypass": " "
+  },
+  "replace": false,
+  "allowSecrets": true,
+  "allowedConversationIds": [],
+  "modelAliases": {},
+  "customModels": []
+}

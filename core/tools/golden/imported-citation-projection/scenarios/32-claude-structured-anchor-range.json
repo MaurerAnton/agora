@@ -1,0 +1,10 @@
+{
+  "op": "claude",
+  "citation": {
+    "url": "https://range.example",
+    "title": "R",
+    "matched_text": "ZZZ"
+  },
+  "startIndex": 4,
+  "answerText": "abcdZZZtail"
+}

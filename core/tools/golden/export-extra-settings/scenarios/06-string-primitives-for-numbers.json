@@ -1,0 +1,18 @@
+{
+  "object": {
+    "imageTranscriptionBatchSize": " 7 ",
+    "webSearchNumResults": "+3",
+    "searchContextWindow": "00042",
+    "searchMatchLimit": "-0",
+    "defaultTemperature": " 0.5f ",
+    "defaultMaxTokens": "12",
+    "defaultTopP": "NaN",
+    "defaultFrequencyPenalty": "Infinity",
+    "defaultPresencePenalty": "-Infinity"
+  },
+  "replace": false,
+  "allowSecrets": false,
+  "allowedConversationIds": [],
+  "modelAliases": {},
+  "customModels": []
+}

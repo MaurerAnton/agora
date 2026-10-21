@@ -1,0 +1,33 @@
+{
+  "object": {
+    "conversationSettings": {
+      "c1": {
+        "contextWindow": null,
+        "temperature": null,
+        "maxTokens": null,
+        "topP": null,
+        "frequencyPenalty": null,
+        "presencePenalty": null,
+        "codeExecutionEnabled": null,
+        "googleSearchEnabled": null,
+        "openAiWebSearchEnabled": null,
+        "thinkingEnabled": null,
+        "thinkingLevel": null,
+        "thinkingBudgetEnabled": null,
+        "thinkingBudgetTokens": null,
+        "openAiServiceTierEnabled": null,
+        "openAiServiceTier": null,
+        "webSearchEnabled": null,
+        "shellEnabled": null,
+        "lowContextModeEnabled": null
+      }
+    }
+  },
+  "replace": false,
+  "allowSecrets": false,
+  "allowedConversationIds": [
+    "c1"
+  ],
+  "modelAliases": {},
+  "customModels": []
+}

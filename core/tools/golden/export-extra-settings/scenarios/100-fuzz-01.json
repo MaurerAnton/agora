@@ -1,0 +1,18 @@
+{
+  "object": {
+    "defaultPresencePenalty": -0.2,
+    "webSearchNumResults": 5,
+    "exactExecutionEnabled": true,
+    "blurEffectsEnabled": true,
+    "defaultTopP": 0.9
+  },
+  "replace": false,
+  "allowSecrets": false,
+  "allowedConversationIds": [],
+  "modelAliases": {
+    "seed": "S"
+  },
+  "customModels": [
+    "seed"
+  ]
+}

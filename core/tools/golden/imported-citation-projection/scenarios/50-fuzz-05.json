@@ -1,0 +1,25 @@
+{
+  "op": "gpt",
+  "rawText": "fileciteturn3f16citeturn1f07gamma ",
+  "references": [
+    {
+      "source_id": "turn1f07",
+      "url": "not a url"
+    },
+    {
+      "source_id": "turn3f16",
+      "url": "https://fuzz.example",
+      "title": "F",
+      "matched_text": "tail."
+    },
+    {
+      "safe_urls": [
+        "https://safe.example/0"
+      ]
+    },
+    {
+      "file_name": "f1.txt",
+      "file_type": "text/plain"
+    }
+  ]
+}

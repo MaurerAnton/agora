@@ -1,0 +1,26 @@
+{
+  "writes": [
+    {
+      "op": "conversation",
+      "id": "c1",
+      "dataChangedAt": 1,
+      "json": "{\"id\":\"c1\"}"
+    },
+    {
+      "op": "message",
+      "json": "{\"text\":\"line1\nline2\"}"
+    }
+  ],
+  "reads": [
+    {
+      "kind": "records",
+      "slice": "conv:0"
+    },
+    {
+      "kind": "iterator",
+      "slices": [
+        "conv:0"
+      ]
+    }
+  ]
+}

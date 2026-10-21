@@ -1,0 +1,16 @@
+{
+  "object": {
+    "conversationSettings": {
+      "беседа-🙂": {
+        "shellEnabled": true
+      }
+    }
+  },
+  "replace": false,
+  "allowSecrets": false,
+  "allowedConversationIds": [
+    "беседа-🙂"
+  ],
+  "modelAliases": {},
+  "customModels": []
+}

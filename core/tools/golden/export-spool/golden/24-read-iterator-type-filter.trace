@@ -1,0 +1,1 @@
+{"bytes":"C\tc\nR\tr\nM\tm1\nM\tm2\nT\tt\nL\tl\n","reads":[{"payloads":["m1","m2"]},{"payloads":["t"]},{},{"payloads":["m1","m2"],"errorAfter":{"type":"NoSuchElementException","message":"Export spool iterator exhausted"}},{"payloads":["c","r","m1","m2","t","l"]}]}

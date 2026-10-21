@@ -1,0 +1,14 @@
+{
+  "object": {
+    "defaultTemperature": 0.1,
+    "defaultMaxTokens": 2147483647,
+    "defaultTopP": 1e-07,
+    "defaultFrequencyPenalty": -123.456,
+    "defaultPresencePenalty": 3.4028235e+38
+  },
+  "replace": false,
+  "allowSecrets": false,
+  "allowedConversationIds": [],
+  "modelAliases": {},
+  "customModels": []
+}

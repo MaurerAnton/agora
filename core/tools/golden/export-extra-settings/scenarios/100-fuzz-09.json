@@ -1,0 +1,22 @@
+{
+  "object": {
+    "imageTranscriptionEnabled": -1,
+    "schemeStyle": "tonal",
+    "imageTranscriptionPrompt": "Describe the image.",
+    "autoUpdateCheck": true,
+    "autoExpandActiveGroup": false,
+    "defaultTopP": 0.9,
+    "fontPreference": "system"
+  },
+  "replace": false,
+  "allowSecrets": true,
+  "allowedConversationIds": [
+    "c1"
+  ],
+  "modelAliases": {
+    "seed": "S"
+  },
+  "customModels": [
+    "seed"
+  ]
+}

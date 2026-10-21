@@ -1,0 +1,21 @@
+{
+  "op": "encode",
+  "citations": [
+    {
+      "sourceId": "s1",
+      "provider": "openai",
+      "kind": "url",
+      "title": "T",
+      "url": "https://example.com/a",
+      "excerpt": "An excerpt",
+      "anchors": [
+        {
+          "startIndex": 0,
+          "endIndex": 6,
+          "citedText": "answer"
+        }
+      ]
+    }
+  ],
+  "answerText": "answer text"
+}

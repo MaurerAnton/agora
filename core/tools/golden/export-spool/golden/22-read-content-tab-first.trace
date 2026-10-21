@@ -1,0 +1,1 @@
+{"bytes":"\t{\"id\":\"c1\"}\nM\t{\"msg\":\"m1\"}\n","reads":[{"error":{"type":"IOException","message":"Invalid export spool record"}},{"error":{"type":"IOException","message":"Invalid export spool record"},"hasNextAfter":false}]}

@@ -1,0 +1,28 @@
+{
+  "writes": [
+    {
+      "op": "task",
+      "json": "{\"task\":\"t0\"}"
+    },
+    {
+      "op": "conversation",
+      "id": "c1",
+      "dataChangedAt": 7,
+      "json": "{\"id\":\"c1\"}"
+    },
+    {
+      "op": "message",
+      "json": "{\"msg\":\"m1\"}"
+    }
+  ],
+  "reads": [
+    {
+      "kind": "records",
+      "slice": "task:0"
+    },
+    {
+      "kind": "records",
+      "slice": "conv:0"
+    }
+  ]
+}

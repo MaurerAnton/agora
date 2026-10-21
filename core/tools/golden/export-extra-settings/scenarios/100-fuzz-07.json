@@ -1,0 +1,18 @@
+{
+  "object": {
+    "modelAliases": 1,
+    "defaultFrequencyPenalty": 0.1,
+    "proxyPassword": "secret",
+    "proxyEnabled": true,
+    "autoUpdateCheck": []
+  },
+  "replace": false,
+  "allowSecrets": true,
+  "allowedConversationIds": [],
+  "modelAliases": {
+    "seed": "S"
+  },
+  "customModels": [
+    "seed"
+  ]
+}

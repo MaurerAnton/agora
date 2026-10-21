@@ -1,0 +1,10 @@
+{
+  "op": "claude",
+  "citation": {
+    "file_name": "report.pdf",
+    "file_type": "application/pdf",
+    "title": "Report"
+  },
+  "startIndex": 0,
+  "answerText": "answer"
+}

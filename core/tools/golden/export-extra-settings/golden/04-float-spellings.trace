@@ -1,0 +1,1 @@
+{"calls":[{"name":"saveDefaultTemperature","value":{"float":"0.1"}},{"name":"saveDefaultMaxTokens","value":{"int":2147483647}},{"name":"saveDefaultTopP","value":{"float":"1.0E-7"}},{"name":"saveDefaultFrequencyPenalty","value":{"float":"-123.456"}},{"name":"saveDefaultPresencePenalty","value":{"float":"3.4028235E38"}}]}

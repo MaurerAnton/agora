@@ -1,0 +1,20 @@
+{
+  "op": "encode",
+  "citations": [
+    {
+      "sourceId": "s1",
+      "provider": "openai",
+      "kind": "url",
+      "title": "First",
+      "url": "https://example.com/a"
+    },
+    {
+      "sourceId": "s2",
+      "provider": "openai",
+      "kind": "url",
+      "title": "Second",
+      "url": "https://example.com/a"
+    }
+  ],
+  "answerText": "answer"
+}

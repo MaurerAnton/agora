@@ -1,0 +1,77 @@
+{
+  "writes": [
+    {
+      "op": "conversation",
+      "id": "c1",
+      "dataChangedAt": 100,
+      "json": "{\"id\":\"c1\"}"
+    },
+    {
+      "op": "message",
+      "json": "{\"msg\":\"m1\"}"
+    },
+    {
+      "op": "task",
+      "json": "{\"task\":\"t1\"}"
+    },
+    {
+      "op": "task",
+      "json": "{\"task\":\"t2\"}"
+    },
+    {
+      "op": "conversation",
+      "id": "c2",
+      "dataChangedAt": 200,
+      "json": "{\"id\":\"c2\"}"
+    },
+    {
+      "op": "message",
+      "json": "{\"msg\":\"m2\"}"
+    },
+    {
+      "op": "task",
+      "json": "{\"task\":\"t3\"}"
+    }
+  ],
+  "reads": [
+    {
+      "kind": "records",
+      "slice": "conv:0"
+    },
+    {
+      "kind": "records",
+      "slice": "conv:1"
+    },
+    {
+      "kind": "records",
+      "slice": "task:0"
+    },
+    {
+      "kind": "records",
+      "slice": "task:1"
+    },
+    {
+      "kind": "iterator",
+      "slices": [
+        "conv:0",
+        "conv:1"
+      ]
+    },
+    {
+      "kind": "iterator",
+      "slices": [
+        "task:0",
+        "task:1"
+      ],
+      "type": "T"
+    },
+    {
+      "kind": "iterator",
+      "slices": [
+        "conv:0",
+        "task:1",
+        "conv:1"
+      ]
+    }
+  ]
+}

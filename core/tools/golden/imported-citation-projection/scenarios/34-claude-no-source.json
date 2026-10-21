@@ -1,0 +1,8 @@
+{
+  "op": "claude",
+  "citation": {
+    "foo": "bar"
+  },
+  "startIndex": 0,
+  "answerText": "answer"
+}

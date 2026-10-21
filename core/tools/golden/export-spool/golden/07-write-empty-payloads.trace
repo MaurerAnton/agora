@@ -1,0 +1,1 @@
+{"bytes":"C\t\nM\t\n","index":{"conversations":[{"id":"c1","dataChangedAt":1,"start":0,"end":6}],"taskSlices":[],"watermarks":{"c1":1}},"reads":[{"records":[{"type":"C","json":""},{"type":"M","json":""}]},{"payloads":["",""]}]}

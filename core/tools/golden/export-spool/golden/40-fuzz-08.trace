@@ -1,0 +1,1 @@
+{"bytes":"C\tc\nM\tm\n","reads":[{"error":{"type":"IOException","message":"Invalid export spool record"},"hasNextAfter":false},{"errorAfter":{"type":"NoSuchElementException","message":"Export spool iterator exhausted"}}]}

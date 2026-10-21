@@ -1,0 +1,12 @@
+{
+  "object": {
+    "customModels": []
+  },
+  "replace": true,
+  "allowSecrets": false,
+  "allowedConversationIds": [],
+  "modelAliases": {},
+  "customModels": [
+    "seed"
+  ]
+}

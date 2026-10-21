@@ -1,0 +1,10 @@
+{
+  "object": {
+    "webSearchNumResults": "3E+2"
+  },
+  "replace": false,
+  "allowSecrets": false,
+  "allowedConversationIds": [],
+  "modelAliases": {},
+  "customModels": []
+}

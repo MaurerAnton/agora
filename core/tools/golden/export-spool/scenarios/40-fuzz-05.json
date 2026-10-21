@@ -1,0 +1,32 @@
+{
+  "writes": [
+    {
+      "op": "conversation",
+      "id": "c1",
+      "dataChangedAt": 534494914833,
+      "json": "{\"id\":\"юникод1\"}"
+    },
+    {
+      "op": "conversation",
+      "id": "c2",
+      "dataChangedAt": 193653013265,
+      "json": "{\"id\":\"юникод2\"}"
+    },
+    {
+      "op": "conversation",
+      "id": "c3",
+      "dataChangedAt": 664507095934,
+      "json": "{\"id\":\"c3\"}"
+    }
+  ],
+  "reads": [
+    {
+      "kind": "records",
+      "slice": "conv:1"
+    },
+    {
+      "kind": "records",
+      "slice": "conv:2"
+    }
+  ]
+}

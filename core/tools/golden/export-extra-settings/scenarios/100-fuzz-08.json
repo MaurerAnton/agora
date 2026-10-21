@@ -1,0 +1,27 @@
+{
+  "object": {
+    "themeMode": "dark",
+    "webSearchNumResults": 5,
+    "searchContextWindow": 8192,
+    "imageTranscriptionBatchSize": 4,
+    "defaultMaxTokens": 4096,
+    "searchMatchLimit": 12,
+    "colorScheme": false,
+    "imageTranscriptionEnabled": "text",
+    "proxyBypass": "localhost,127.0.0.1",
+    "defaultTemperature": 0.7,
+    "automationToolsEnabled": "budget:64",
+    "proxyType": ""
+  },
+  "replace": true,
+  "allowSecrets": false,
+  "allowedConversationIds": [
+    "c1"
+  ],
+  "modelAliases": {
+    "seed": "S"
+  },
+  "customModels": [
+    "seed"
+  ]
+}

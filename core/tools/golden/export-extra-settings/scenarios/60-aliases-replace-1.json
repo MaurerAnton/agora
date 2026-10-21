@@ -1,0 +1,17 @@
+{
+  "object": {
+    "modelAliases": {
+      "m1": "One",
+      "m2": "Two",
+      "m3": "Three"
+    }
+  },
+  "replace": true,
+  "allowSecrets": false,
+  "allowedConversationIds": [],
+  "modelAliases": {
+    "seed1": "Seed",
+    "m2": "Old"
+  },
+  "customModels": []
+}

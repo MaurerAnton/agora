@@ -1,0 +1,20 @@
+{
+  "op": "gpt",
+  "rawText": "gamma \nciteturn3f16gamma 【turn3f02】fileciteturn4f09\n",
+  "references": [
+    {
+      "source_id": "turn3f02",
+      "file_name": "f.txt",
+      "file_type": "text/plain"
+    },
+    {
+      "source_id": "turn3f16",
+      "title": "T"
+    },
+    {
+      "source_id": "turn4f09",
+      "file_name": "f.txt",
+      "file_type": "text/plain"
+    }
+  ]
+}

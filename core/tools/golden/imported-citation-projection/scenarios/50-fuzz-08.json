@@ -1,0 +1,19 @@
+{
+  "op": "gpt",
+  "rawText": "fileciteturn1f06fileciteturn1f03\t【turn1f03】【turn2f20】",
+  "references": [
+    {
+      "source_id": "turn1f03",
+      "file_name": "f.txt",
+      "file_type": "text/plain"
+    },
+    {
+      "source_id": "turn1f06",
+      "url": "not a url"
+    },
+    {
+      "source_id": "turn2f20",
+      "url": "not a url"
+    }
+  ]
+}

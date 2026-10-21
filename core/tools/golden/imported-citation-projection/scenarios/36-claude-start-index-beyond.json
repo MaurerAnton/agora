@@ -1,0 +1,9 @@
+{
+  "op": "claude",
+  "citation": {
+    "url": "https://b.example",
+    "matched_text": "x"
+  },
+  "startIndex": 99,
+  "answerText": "short"
+}

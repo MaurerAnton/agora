@@ -1,0 +1,1 @@
+{"calls":[{"name":"saveDefaultFrequencyPenalty","value":{"float":"0.1"}},{"name":"saveProxyEnabled","value":{"bool":true}},{"name":"saveProxyPassword","value":{"string":"secret"}}],"error":"IllegalArgumentException"}

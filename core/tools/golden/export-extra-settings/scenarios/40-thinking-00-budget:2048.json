@@ -1,0 +1,16 @@
+{
+  "object": {
+    "conversationSettings": {
+      "c1": {
+        "thinkingLevel": "budget:2048"
+      }
+    }
+  },
+  "replace": false,
+  "allowSecrets": false,
+  "allowedConversationIds": [
+    "c1"
+  ],
+  "modelAliases": {},
+  "customModels": []
+}

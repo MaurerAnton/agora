@@ -1,0 +1,20 @@
+{
+  "object": {
+    "imageTranscriptionEnabled": true,
+    "imageTranscriptionModel": "m",
+    "conversationSettings": {
+      "c1": {
+        "contextWindow": 1
+      }
+    },
+    "imageTranscriptionBatchSize": null,
+    "themeMode": "dark"
+  },
+  "replace": false,
+  "allowSecrets": false,
+  "allowedConversationIds": [
+    "c1"
+  ],
+  "modelAliases": {},
+  "customModels": []
+}

@@ -1,0 +1,53 @@
+{
+  "seed": {
+    "conversations": [
+      {
+        "id": "twice",
+        "selectedRunBranchesJson": "{\"r1\":\"r2\",\"r2\":\"r2\"}",
+        "dataChangedAt": 100
+      }
+    ],
+    "runs": [
+      {
+        "id": "r1",
+        "conversationId": "twice",
+        "status": "COMPLETED",
+        "startedAt": 1000,
+        "lastCheckpointAt": 1000,
+        "currentPass": 0,
+        "legacyAmbiguous": false,
+        "endedAt": 2000,
+        "endReason": "MODEL_COMPLETED"
+      },
+      {
+        "id": "r2",
+        "conversationId": "twice",
+        "status": "ACTIVE",
+        "startedAt": 1000,
+        "lastCheckpointAt": 1000,
+        "currentPass": 0,
+        "legacyAmbiguous": false,
+        "parentRunId": "r1",
+        "activeSlot": 1
+      }
+    ]
+  },
+  "steps": [
+    {
+      "op": "repairRunBranches",
+      "conversationId": "twice"
+    },
+    {
+      "op": "getMaintenanceConversation",
+      "conversationId": "twice"
+    },
+    {
+      "op": "repairRunBranches",
+      "conversationId": "twice"
+    },
+    {
+      "op": "repairRunBranches",
+      "conversationId": "twice"
+    }
+  ]
+}

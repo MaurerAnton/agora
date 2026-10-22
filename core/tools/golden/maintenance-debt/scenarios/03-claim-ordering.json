@@ -1,0 +1,72 @@
+{
+  "steps": [
+    {
+      "op": "enqueue",
+      "kind": "ATTACHMENT_ORPHANS",
+      "identity": "b",
+      "updatedAt": 30
+    },
+    {
+      "op": "enqueue",
+      "kind": "ATTACHMENT_ORPHANS",
+      "identity": "a",
+      "updatedAt": 30
+    },
+    {
+      "op": "enqueue",
+      "kind": "EMBEDDING_ORPHANS",
+      "identity": "*",
+      "updatedAt": 10
+    },
+    {
+      "op": "enqueue",
+      "kind": "RUN_BRANCHES",
+      "identity": "z",
+      "updatedAt": 20
+    },
+    {
+      "op": "claim",
+      "claimId": "claim-1",
+      "claimedAt": 100,
+      "staleBefore": 50,
+      "limit": 10
+    },
+    {
+      "op": "getClaimCandidates",
+      "staleBefore": 100,
+      "limit": 10
+    },
+    {
+      "op": "claim",
+      "claimId": "",
+      "claimedAt": 100,
+      "staleBefore": 50,
+      "limit": 1
+    },
+    {
+      "op": "claim",
+      "claimId": "c",
+      "claimedAt": 40,
+      "staleBefore": 50,
+      "limit": 1
+    },
+    {
+      "op": "claim",
+      "claimId": "c",
+      "claimedAt": 100,
+      "staleBefore": 50,
+      "limit": 0
+    },
+    {
+      "op": "claim",
+      "claimId": "c",
+      "claimedAt": 100,
+      "staleBefore": 50,
+      "limit": 101
+    },
+    {
+      "op": "sql",
+      "sql": "SELECT 1"
+    }
+  ]
+}

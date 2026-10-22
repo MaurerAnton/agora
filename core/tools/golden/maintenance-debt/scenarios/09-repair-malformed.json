@@ -1,0 +1,44 @@
+{
+  "seed": {
+    "conversations": [
+      {
+        "id": "array",
+        "selectedRunBranchesJson": "[1, 2]",
+        "dataChangedAt": 100
+      },
+      {
+        "id": "number",
+        "selectedRunBranchesJson": "5",
+        "dataChangedAt": 100
+      },
+      {
+        "id": "not-a-string-map",
+        "selectedRunBranchesJson": "{\"a\": 1}",
+        "dataChangedAt": 100
+      },
+      {
+        "id": "empty",
+        "selectedRunBranchesJson": "",
+        "dataChangedAt": 100
+      }
+    ]
+  },
+  "steps": [
+    {
+      "op": "repairRunBranches",
+      "conversationId": "array"
+    },
+    {
+      "op": "repairRunBranches",
+      "conversationId": "number"
+    },
+    {
+      "op": "repairRunBranches",
+      "conversationId": "not-a-string-map"
+    },
+    {
+      "op": "repairRunBranches",
+      "conversationId": "empty"
+    }
+  ]
+}

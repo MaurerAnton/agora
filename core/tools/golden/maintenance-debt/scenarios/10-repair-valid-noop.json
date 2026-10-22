@@ -1,0 +1,50 @@
+{
+  "seed": {
+    "conversations": [
+      {
+        "id": "keep",
+        "selectedRunBranchesJson": "{\"r1\":\"r2\"}",
+        "dataChangedAt": 100
+      },
+      {
+        "id": "blank",
+        "selectedRunBranchesJson": "{}",
+        "dataChangedAt": 100
+      }
+    ],
+    "runs": [
+      {
+        "id": "r1",
+        "conversationId": "keep",
+        "status": "COMPLETED",
+        "startedAt": 1000,
+        "lastCheckpointAt": 1000,
+        "currentPass": 0,
+        "legacyAmbiguous": false,
+        "endedAt": 2000,
+        "endReason": "MODEL_COMPLETED"
+      },
+      {
+        "id": "r2",
+        "conversationId": "keep",
+        "status": "ACTIVE",
+        "startedAt": 1000,
+        "lastCheckpointAt": 1000,
+        "currentPass": 0,
+        "legacyAmbiguous": false,
+        "parentRunId": "r1",
+        "activeSlot": 1
+      }
+    ]
+  },
+  "steps": [
+    {
+      "op": "repairRunBranches",
+      "conversationId": "keep"
+    },
+    {
+      "op": "repairRunBranches",
+      "conversationId": "blank"
+    }
+  ]
+}

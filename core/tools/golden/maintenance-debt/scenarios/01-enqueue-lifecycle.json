@@ -1,0 +1,67 @@
+{
+  "steps": [
+    {
+      "op": "hasDebt"
+    },
+    {
+      "op": "enqueue",
+      "kind": "ATTACHMENT_ORPHANS",
+      "identity": "c1",
+      "updatedAt": 10
+    },
+    {
+      "op": "enqueue",
+      "kind": "ATTACHMENT_ORPHANS",
+      "identity": "c1",
+      "updatedAt": 20
+    },
+    {
+      "op": "enqueue",
+      "kind": "EMBEDDING_ORPHANS",
+      "identity": "*",
+      "updatedAt": 30
+    },
+    {
+      "op": "hasDebt"
+    },
+    {
+      "op": "getDebt",
+      "kind": "ATTACHMENT_ORPHANS",
+      "identity": "c1"
+    },
+    {
+      "op": "getDebt",
+      "kind": "RUN_BRANCHES",
+      "identity": "c9"
+    },
+    {
+      "op": "enqueue",
+      "kind": "",
+      "identity": "c1",
+      "updatedAt": 40
+    },
+    {
+      "op": "enqueue",
+      "kind": "ATTACHMENT_ORPHANS",
+      "identity": "  ",
+      "updatedAt": 40
+    },
+    {
+      "op": "renewDebt",
+      "kind": "EMBEDDING_ORPHANS",
+      "identity": "*",
+      "updatedAt": 50
+    },
+    {
+      "op": "renewDebt",
+      "kind": "MISSING",
+      "identity": "*",
+      "updatedAt": 50
+    },
+    {
+      "op": "getClaimCandidates",
+      "staleBefore": 0,
+      "limit": 10
+    }
+  ]
+}

@@ -1,0 +1,107 @@
+{
+  "steps": [
+    {
+      "op": "insertDebt",
+      "debt": {
+        "kind": "",
+        "identity": "c1",
+        "state": "PENDING",
+        "revision": 1,
+        "updatedAt": 1
+      }
+    },
+    {
+      "op": "insertDebt",
+      "debt": {
+        "kind": "K",
+        "identity": "",
+        "state": "PENDING",
+        "revision": 1,
+        "updatedAt": 1
+      }
+    },
+    {
+      "op": "insertDebt",
+      "debt": {
+        "kind": "K",
+        "identity": "  ",
+        "state": "PENDING",
+        "revision": 1,
+        "updatedAt": 1
+      }
+    },
+    {
+      "op": "insertDebt",
+      "debt": {
+        "kind": "K",
+        "identity": "id",
+        "state": "BROKEN",
+        "revision": 1,
+        "updatedAt": 1
+      }
+    },
+    {
+      "op": "insertDebt",
+      "debt": {
+        "kind": "K",
+        "identity": "id",
+        "state": "PENDING",
+        "revision": 0,
+        "updatedAt": 1
+      }
+    },
+    {
+      "op": "insertDebt",
+      "debt": {
+        "kind": "K",
+        "identity": "id",
+        "state": "PENDING",
+        "revision": 1,
+        "updatedAt": 1,
+        "claimId": "c-only"
+      }
+    },
+    {
+      "op": "insertDebt",
+      "debt": {
+        "kind": "K",
+        "identity": "id",
+        "state": "CLAIMED",
+        "revision": 1,
+        "updatedAt": 1
+      }
+    },
+    {
+      "op": "insertDebt",
+      "debt": {
+        "kind": "K",
+        "identity": "id",
+        "state": "PENDING",
+        "revision": 1,
+        "updatedAt": 1,
+        "claimId": "c1",
+        "claimedAt": 5
+      }
+    },
+    {
+      "op": "insertDebt",
+      "debt": {
+        "kind": "K",
+        "identity": "id",
+        "state": "PENDING",
+        "revision": 1,
+        "updatedAt": 1
+      }
+    },
+    {
+      "op": "insertDebt",
+      "debt": {
+        "kind": "K",
+        "identity": "id",
+        "state": "PENDING",
+        "revision": 1,
+        "updatedAt": 2
+      }
+    }
+  ]
+}

@@ -1,0 +1,96 @@
+{
+  "seed": {
+    "conversations": [
+      {
+        "id": "b1",
+        "selectedRunBranchesJson": "{\"b1r1\":\"b1r2\",\"b1r2\":\"b1r2\"}",
+        "dataChangedAt": 100
+      },
+      {
+        "id": "b2",
+        "selectedRunBranchesJson": "{\"b2r1\":\"b2r2\"}",
+        "dataChangedAt": 100
+      },
+      {
+        "id": "b3",
+        "selectedRunBranchesJson": "[1, 2]",
+        "dataChangedAt": 100
+      },
+      {
+        "id": "b4",
+        "selectedRunBranchesJson": null,
+        "dataChangedAt": 100
+      }
+    ],
+    "runs": [
+      {
+        "id": "b1r1",
+        "conversationId": "b1",
+        "status": "COMPLETED",
+        "startedAt": 1000,
+        "lastCheckpointAt": 1000,
+        "currentPass": 0,
+        "legacyAmbiguous": false,
+        "endedAt": 2000,
+        "endReason": "MODEL_COMPLETED"
+      },
+      {
+        "id": "b1r2",
+        "conversationId": "b1",
+        "status": "COMPLETED",
+        "startedAt": 1000,
+        "lastCheckpointAt": 1000,
+        "currentPass": 0,
+        "legacyAmbiguous": false,
+        "parentRunId": "b1r1",
+        "endedAt": 2000,
+        "endReason": "MODEL_COMPLETED"
+      },
+      {
+        "id": "b2r1",
+        "conversationId": "b2",
+        "status": "COMPLETED",
+        "startedAt": 1000,
+        "lastCheckpointAt": 1000,
+        "currentPass": 0,
+        "legacyAmbiguous": false,
+        "endedAt": 2000,
+        "endReason": "MODEL_COMPLETED"
+      },
+      {
+        "id": "b2r2",
+        "conversationId": "b2",
+        "status": "COMPLETED",
+        "startedAt": 1000,
+        "lastCheckpointAt": 1000,
+        "currentPass": 0,
+        "legacyAmbiguous": false,
+        "parentRunId": "b2r1",
+        "endedAt": 2000,
+        "endReason": "MODEL_COMPLETED"
+      }
+    ]
+  },
+  "steps": [
+    {
+      "op": "executeRuntimeRecovery",
+      "conversationId": "b1",
+      "at": 5000
+    },
+    {
+      "op": "executeRuntimeRecovery",
+      "conversationId": "b2",
+      "at": 5000
+    },
+    {
+      "op": "executeRuntimeRecovery",
+      "conversationId": "b3",
+      "at": 5000
+    },
+    {
+      "op": "executeRuntimeRecovery",
+      "conversationId": "b4",
+      "at": 5000
+    }
+  ]
+}

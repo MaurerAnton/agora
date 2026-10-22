@@ -1,0 +1,67 @@
+{
+  "seed": {
+    "conversations": [
+      {
+        "id": "c1",
+        "selectedRunBranchesJson": "{\"r1\":\"r2\",\"r2\":\"r2\"}",
+        "dataChangedAt": 100
+      }
+    ],
+    "runs": [
+      {
+        "id": "r1",
+        "conversationId": "c1",
+        "status": "ACTIVE",
+        "startedAt": 1000,
+        "lastCheckpointAt": 1000,
+        "currentPass": 0,
+        "legacyAmbiguous": false,
+        "activeSlot": 1
+      }
+    ],
+    "messages": [
+      {
+        "id": "m1",
+        "conversationId": "c1",
+        "text": "body",
+        "status": "THINKING",
+        "participant": "MODEL",
+        "timestamp": 10,
+        "runId": "r1",
+        "runSequence": 0,
+        "tokenCount": 0
+      },
+      {
+        "id": "m2",
+        "conversationId": "c1",
+        "text": "body",
+        "status": "SENDING",
+        "participant": "USER",
+        "timestamp": 11,
+        "runId": "r1",
+        "runSequence": 1,
+        "tokenCount": 0
+      },
+      {
+        "id": "m3",
+        "conversationId": "c1",
+        "text": "body",
+        "status": "TOOL_CALLING",
+        "participant": "MODEL",
+        "timestamp": 12,
+        "runId": "r1",
+        "runSequence": 2,
+        "tokenCount": 0,
+        "imagesRaw": "x|||y",
+        "toolCallJson": "[{\"type\":\"tool\",\"toolState\":\"calling\"}]"
+      }
+    ]
+  },
+  "steps": [
+    {
+      "op": "executeRuntimeRecovery",
+      "conversationId": "c1",
+      "at": 5000
+    }
+  ]
+}

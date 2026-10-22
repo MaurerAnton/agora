@@ -156,44 +156,6 @@ void RunEntry::validate() const {
 
 // ---- run selection JSON --------------------------------------------------------------------
 
-std::optional<RunSelections> decode_maintenance_run_selections(const std::string& raw) {
-    // Json.decodeFromString<Map<String, String>>(raw) inside runCatching: a JSON object whose
-    // values are all strings, folded into a LinkedHashMap (last value wins, first position kept),
-    // with the key "null" mapped back to a null key.
-    const json::ParseResult parsed = json::parse(raw);
-    if (!parsed.value.has_value() || parsed.value->kind != json::Kind::Object) return std::nullopt;
-    RunSelections selections;
-    for (const json::Member& member : parsed.value->members) {
-        if (member.value.kind != json::Kind::String) return std::nullopt;
-        const std::optional<std::string> key =
-            member.key == "null" ? std::nullopt : std::optional<std::string>(member.key);
-        bool replaced = false;
-        for (auto& entry : selections) {
-            if (entry.first == key) {
-                entry.second = member.value.text;
-                replaced = true;
-                break;
-            }
-        }
-        if (!replaced) selections.emplace_back(key, member.value.text);
-    }
-    return selections;
-}
-
-std::string encode_maintenance_run_selections(const RunSelections& selections) {
-    // Json.encodeToString(selections.mapKeys { it.key ?: "null" }) — LinkedHashMap order.
-    json::Value object;
-    object.kind = json::Kind::Object;
-    for (const auto& [key, value] : selections) {
-        json::Member member;
-        member.key = key.value_or("null");
-        member.value.kind = json::Kind::String;
-        member.value.text = value;
-        object.members.push_back(std::move(member));
-    }
-    return json::to_kotlin_string(object);
-}
-
 // ---- transactions ---------------------------------------------------------------------------
 
 void MaintenanceDebtDao::begin_transaction() { stack_.begin(); }
@@ -480,7 +442,7 @@ bool MaintenanceDebtDao::repair_run_branches(std::string_view conversation_id,
         if (!conversation.has_value()) return false;
         if (!conversation->selected_run_branches_json.has_value()) return false;
         const std::string& raw = *conversation->selected_run_branches_json;
-        const std::optional<RunSelections> decoded = decode_maintenance_run_selections(raw);
+        const std::optional<RunSelections> decoded = run_branch::decode_selection_map(raw);
         RunSelections repaired;
         if (decoded.has_value()) {
             std::vector<run_branch::RunRef> runs;
@@ -498,7 +460,7 @@ bool MaintenanceDebtDao::repair_run_branches(std::string_view conversation_id,
         }
         if (decoded.has_value() && repaired == *decoded) return false;
         return compare_and_set_maintenance_run_branches(conversation_id, raw,
-                                                        encode_maintenance_run_selections(repaired),
+                                                        run_branch::encode_selection_map(repaired),
                                                         now_ms) == 1;
     });
 }

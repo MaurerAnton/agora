@@ -1,5 +1,7 @@
 #include "agora/core/run_branch_selection.hpp"
 
+#include "agora/core/json.hpp"
+
 #include <optional>
 #include <string>
 #include <unordered_map>
@@ -36,6 +38,40 @@ std::vector<Selection> retain_valid_edges(const std::vector<Selection>& selectio
         kept.push_back(selection);
     }
     return kept;
+}
+
+std::optional<SelectionMap> decode_selection_map(const std::string& raw) {
+    const json::ParseResult parsed = json::parse(raw);
+    if (!parsed.value.has_value() || parsed.value->kind != json::Kind::Object) return std::nullopt;
+    SelectionMap selections;
+    for (const json::Member& member : parsed.value->members) {
+        if (member.value.kind != json::Kind::String) return std::nullopt;
+        const std::optional<std::string> key =
+            member.key == "null" ? std::nullopt : std::optional<std::string>(member.key);
+        bool replaced = false;
+        for (auto& entry : selections) {
+            if (entry.first == key) {
+                entry.second = member.value.text;
+                replaced = true;
+                break;
+            }
+        }
+        if (!replaced) selections.emplace_back(key, member.value.text);
+    }
+    return selections;
+}
+
+std::string encode_selection_map(const SelectionMap& selections) {
+    json::Value object;
+    object.kind = json::Kind::Object;
+    for (const auto& [key, value] : selections) {
+        json::Member member;
+        member.key = key.value_or("null");
+        member.value.kind = json::Kind::String;
+        member.value.text = value;
+        object.members.push_back(std::move(member));
+    }
+    return json::to_kotlin_string(object);
 }
 
 }  // namespace agora::core::run_branch_selection

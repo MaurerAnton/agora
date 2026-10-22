@@ -1,0 +1,12 @@
+{
+  "sources": [
+    {
+      "name": "a.png",
+      "content": "png-bytes"
+    }
+  ],
+  "messages": [],
+  "standaloneMeta": {
+    "raw": "{\"items\": [{\"type\": \"image\", \"file_name\": \"a.png\", \"originalUri\": \"file://platform_clone_workspace/sources/a.png\"}, {\"type\": \"file\", \"file_name\": \"b.txt\", \"originalUri\": \"https://example.com/b.txt\"}, {\"type\": \"file\", \"file_name\": \"c.txt\"}]}"
+  }
+}

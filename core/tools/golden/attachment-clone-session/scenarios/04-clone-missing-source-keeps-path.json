@@ -1,0 +1,12 @@
+{
+  "sources": [],
+  "messages": [
+    {
+      "id": "m1",
+      "conversationId": "c1",
+      "images": [
+        "platform_clone_workspace/sources/missing.png"
+      ]
+    }
+  ]
+}

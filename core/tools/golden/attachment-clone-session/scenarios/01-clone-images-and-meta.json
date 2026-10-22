@@ -1,0 +1,23 @@
+{
+  "sources": [
+    {
+      "name": "a.png",
+      "content": "png-bytes"
+    },
+    {
+      "name": "b.txt",
+      "content": "text-bytes"
+    }
+  ],
+  "messages": [
+    {
+      "id": "m1",
+      "conversationId": "c1",
+      "text": "with attachments",
+      "images": [
+        "platform_clone_workspace/sources/a.png"
+      ],
+      "attachmentMeta": "{\"items\": [{\"type\": \"image\", \"file_name\": \"a.png\", \"originalUri\": \"file://platform_clone_workspace/sources/a.png\"}, {\"type\": \"file\", \"file_name\": \"b.txt\", \"originalUri\": \"https://example.com/b.txt\"}, {\"type\": \"file\", \"file_name\": \"c.txt\"}]}"
+    }
+  ]
+}

@@ -1,0 +1,14 @@
+{
+  "requests": [
+    {
+      "cause": "duplicate tool call id",
+      "originalName": "search",
+      "originalArguments": "{\"q\":\"x\"}",
+      "streamKey": "stream-7",
+      "signature": "sig-1"
+    }
+  ],
+  "results": [
+    "{\"error\":\"duplicate tool call id\",\"original_name\":\"search\",\"original_arguments\":\"{\\\"q\\\":\\\"x\\\"}\"}"
+  ]
+}

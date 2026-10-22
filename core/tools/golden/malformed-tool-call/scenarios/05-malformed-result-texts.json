@@ -1,0 +1,20 @@
+{
+  "requests": [
+    {
+      "cause": "cause",
+      "originalName": null,
+      "originalArguments": null,
+      "streamKey": null,
+      "signature": null
+    }
+  ],
+  "results": [
+    "not json at all",
+    "",
+    "{}",
+    "{\"error\":\"\"}",
+    "{\"error\":\"e\",\"original_name\":\"\",\"original_arguments\":\"\"}",
+    "{\"error\":42}",
+    "{\"other\":\"x\"}"
+  ]
+}

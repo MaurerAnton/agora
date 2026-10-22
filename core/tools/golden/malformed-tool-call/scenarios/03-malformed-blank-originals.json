@@ -1,0 +1,14 @@
+{
+  "requests": [
+    {
+      "cause": "arguments were not an object",
+      "originalName": "",
+      "originalArguments": "",
+      "streamKey": "  ",
+      "signature": ""
+    }
+  ],
+  "results": [
+    "{\"error\":\"arguments were not an object\"}"
+  ]
+}

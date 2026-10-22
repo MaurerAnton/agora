@@ -1,0 +1,118 @@
+{
+  "seed": {
+    "messages": [
+      {
+        "id": "m1",
+        "conversationId": "c1",
+        "text": "before",
+        "participant": "USER"
+      },
+      {
+        "id": "m2",
+        "conversationId": "c1",
+        "text": "stable",
+        "participant": "USER"
+      },
+      {
+        "id": "m3",
+        "conversationId": "c1",
+        "text": "",
+        "participant": "USER"
+      }
+    ],
+    "embeddings": [
+      {
+        "id": 1,
+        "messageId": "m1",
+        "modelId": "active",
+        "embedding": "01",
+        "chunkText": "before",
+        "dimension": 1,
+        "sourceFingerprint": "old"
+      },
+      {
+        "id": 2,
+        "messageId": "m1",
+        "modelId": "other",
+        "embedding": "02",
+        "chunkText": "before",
+        "dimension": 1,
+        "sourceFingerprint": "old"
+      },
+      {
+        "id": 3,
+        "messageId": "m2",
+        "modelId": "active",
+        "embedding": "03",
+        "chunkText": "stable",
+        "dimension": 1,
+        "sourceFingerprint": "stable"
+      }
+    ]
+  },
+  "steps": [
+    {
+      "op": "withSemanticSourceMutation",
+      "activeModelId": "active",
+      "configured": [
+        "active",
+        "other"
+      ],
+      "messageIds": [
+        "m1",
+        "m2",
+        "",
+        "m1"
+      ],
+      "updatedAt": 100,
+      "blockSql": [
+        {
+          "sql": "UPDATE messages SET text = ? WHERE id = ?",
+          "args": [
+            "after",
+            "m1"
+          ]
+        }
+      ]
+    },
+    {
+      "op": "withSemanticSourceMutation",
+      "activeModelId": "active",
+      "configured": [
+        "active",
+        "other"
+      ],
+      "messageIds": [
+        "m1",
+        "m2"
+      ],
+      "updatedAt": 200,
+      "blockSql": [
+        {
+          "sql": "SELECT 1"
+        }
+      ]
+    },
+    {
+      "op": "withSemanticSourceMutation",
+      "activeModelId": "active",
+      "configured": [
+        "active",
+        "other"
+      ],
+      "messageIds": [
+        "m3"
+      ],
+      "updatedAt": 300,
+      "blockSql": [
+        {
+          "sql": "UPDATE messages SET text = ? WHERE id = ?",
+          "args": [
+            "now indexed",
+            "m3"
+          ]
+        }
+      ]
+    }
+  ]
+}

@@ -1,0 +1,74 @@
+{
+  "seed": {
+    "messages": [
+      {
+        "id": "m1",
+        "conversationId": "c1",
+        "text": "alpha",
+        "participant": "USER"
+      }
+    ],
+    "embeddings": [
+      {
+        "id": 1,
+        "messageId": "m1",
+        "modelId": "a",
+        "embedding": "01",
+        "chunkText": "alpha",
+        "dimension": 1,
+        "sourceFingerprint": "fp"
+      },
+      {
+        "id": 2,
+        "messageId": "m1",
+        "modelId": "b",
+        "embedding": "02",
+        "chunkText": "alpha",
+        "dimension": 1,
+        "sourceFingerprint": "fp"
+      }
+    ]
+  },
+  "steps": [
+    {
+      "op": "requestReconcile",
+      "modelId": "a",
+      "updatedAt": 1
+    },
+    {
+      "op": "requestReconcile",
+      "modelId": "b",
+      "updatedAt": 2
+    },
+    {
+      "op": "upsertWork",
+      "work": {
+        "modelId": "a",
+        "messageId": "m1",
+        "sourceFingerprint": "fp",
+        "sourceRevision": 2,
+        "updatedAt": 3
+      }
+    },
+    {
+      "op": "invalidateSemanticModel",
+      "modelId": "a",
+      "updatedAt": 10
+    },
+    {
+      "op": "deleteSemanticModel",
+      "modelId": "b"
+    },
+    {
+      "op": "getLedgers",
+      "modelIds": [
+        "a",
+        "b"
+      ]
+    },
+    {
+      "op": "getLedgers",
+      "modelIds": []
+    }
+  ]
+}

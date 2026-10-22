@@ -1,0 +1,84 @@
+{
+  "seed": {
+    "messages": [
+      {
+        "id": "m1",
+        "conversationId": "c1",
+        "text": "alpha",
+        "participant": "USER"
+      },
+      {
+        "id": "m2",
+        "conversationId": "c1",
+        "text": "beta",
+        "participant": "USER"
+      }
+    ],
+    "embeddings": [
+      {
+        "id": 1,
+        "messageId": "m1",
+        "modelId": "active",
+        "embedding": "01",
+        "chunkText": "alpha",
+        "dimension": 1,
+        "sourceFingerprint": "fp1"
+      },
+      {
+        "id": 2,
+        "messageId": "m2",
+        "modelId": "active",
+        "embedding": "02",
+        "chunkText": "beta",
+        "dimension": 1,
+        "sourceFingerprint": "fp2"
+      },
+      {
+        "id": 3,
+        "messageId": "m1",
+        "modelId": "other",
+        "embedding": "03",
+        "chunkText": "alpha",
+        "dimension": 1,
+        "sourceFingerprint": "fp1"
+      }
+    ]
+  },
+  "steps": [
+    {
+      "op": "withSemanticGraphMutation",
+      "activeModelId": "active",
+      "configured": [
+        "active",
+        "other"
+      ],
+      "clearMessageIds": [
+        "m1",
+        "",
+        "m1"
+      ],
+      "clearAllEmbeddings": false,
+      "updatedAt": 100,
+      "blockSql": [
+        {
+          "sql": "SELECT 1"
+        }
+      ]
+    },
+    {
+      "op": "withSemanticGraphMutation",
+      "activeModelId": "active",
+      "configured": [
+        "active"
+      ],
+      "clearMessageIds": [],
+      "clearAllEmbeddings": true,
+      "updatedAt": 200,
+      "blockSql": [
+        {
+          "sql": "SELECT 1"
+        }
+      ]
+    }
+  ]
+}

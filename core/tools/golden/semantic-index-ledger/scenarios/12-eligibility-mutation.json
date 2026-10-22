@@ -1,0 +1,124 @@
+{
+  "seed": {
+    "conversations": [
+      {
+        "id": "c1",
+        "taskId": null
+      },
+      {
+        "id": "c2",
+        "taskId": null
+      },
+      {
+        "id": "task",
+        "taskId": "t1"
+      }
+    ],
+    "messages": [
+      {
+        "id": "m1",
+        "conversationId": "c1",
+        "text": "alpha",
+        "participant": "USER"
+      },
+      {
+        "id": "m2",
+        "conversationId": "c2",
+        "text": "beta",
+        "participant": "USER"
+      },
+      {
+        "id": "m3",
+        "conversationId": "task",
+        "text": "gamma",
+        "participant": "USER"
+      }
+    ],
+    "embeddings": [
+      {
+        "id": 1,
+        "messageId": "m1",
+        "modelId": "active",
+        "embedding": "01",
+        "chunkText": "alpha",
+        "dimension": 1,
+        "sourceFingerprint": "fp1"
+      },
+      {
+        "id": 2,
+        "messageId": "m2",
+        "modelId": "active",
+        "embedding": "02",
+        "chunkText": "beta",
+        "dimension": 1,
+        "sourceFingerprint": "fp2"
+      }
+    ]
+  },
+  "steps": [
+    {
+      "op": "withSemanticEligibilityMutation",
+      "activeModelId": "active",
+      "configured": [
+        "active"
+      ],
+      "conversationId": "c1",
+      "updatedAt": 100,
+      "blockSql": [
+        {
+          "sql": "UPDATE conversations SET taskId = ? WHERE id = ?",
+          "args": [
+            "t9",
+            "c1"
+          ]
+        }
+      ]
+    },
+    {
+      "op": "withSemanticEligibilityMutation",
+      "activeModelId": "active",
+      "configured": [
+        "active"
+      ],
+      "conversationId": "c2",
+      "updatedAt": 200,
+      "blockSql": [
+        {
+          "sql": "SELECT 1"
+        }
+      ]
+    },
+    {
+      "op": "withSemanticEligibilityMutation",
+      "activeModelId": "active",
+      "configured": [
+        "active"
+      ],
+      "conversationId": "task",
+      "updatedAt": 300,
+      "blockSql": [
+        {
+          "sql": "UPDATE conversations SET taskId = ? WHERE id = ?",
+          "args": [
+            null,
+            "task"
+          ]
+        }
+      ]
+    },
+    {
+      "op": "withSemanticEligibilityMutation",
+      "activeModelId": "active",
+      "configured": [
+        "active"
+      ],
+      "conversationId": "missing",
+      "updatedAt": 400,
+      "blockSql": [
+        {
+          "sql": "SELECT 1"
+        }
+      ]
+    }
+  ]
+}

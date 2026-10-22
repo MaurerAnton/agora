@@ -1,0 +1,122 @@
+{
+  "steps": [
+    {
+      "op": "insertLedger",
+      "ledger": {
+        "modelId": "m",
+        "state": "BROKEN",
+        "sourceRevision": 0,
+        "completedRevision": 0,
+        "reconcileRevision": 0,
+        "updatedAt": 1
+      }
+    },
+    {
+      "op": "insertLedger",
+      "ledger": {
+        "modelId": "m",
+        "state": "NEEDS_RECONCILE",
+        "sourceRevision": -1,
+        "completedRevision": 0,
+        "reconcileRevision": 0,
+        "updatedAt": 1
+      }
+    },
+    {
+      "op": "insertLedger",
+      "ledger": {
+        "modelId": "m",
+        "state": "NEEDS_RECONCILE",
+        "sourceRevision": 2,
+        "completedRevision": 3,
+        "reconcileRevision": 0,
+        "updatedAt": 1
+      }
+    },
+    {
+      "op": "insertLedger",
+      "ledger": {
+        "modelId": "m",
+        "state": "NEEDS_RECONCILE",
+        "sourceRevision": 2,
+        "completedRevision": 0,
+        "reconcileRevision": 3,
+        "updatedAt": 1
+      }
+    },
+    {
+      "op": "insertLedger",
+      "ledger": {
+        "modelId": "m",
+        "state": "CURRENT",
+        "sourceRevision": 1,
+        "completedRevision": 0,
+        "reconcileRevision": 0,
+        "updatedAt": 1
+      }
+    },
+    {
+      "op": "insertLedger",
+      "ledger": {
+        "modelId": "m",
+        "state": "CURRENT",
+        "sourceRevision": 1,
+        "completedRevision": 1,
+        "reconcileRevision": 0,
+        "updatedAt": 1
+      }
+    },
+    {
+      "op": "insertLedger",
+      "ledger": {
+        "modelId": "m",
+        "state": "NEEDS_RECONCILE",
+        "sourceRevision": 0,
+        "completedRevision": 0,
+        "reconcileRevision": 0,
+        "updatedAt": 1
+      }
+    },
+    {
+      "op": "insertLedger",
+      "ledger": {
+        "modelId": "m",
+        "state": "NEEDS_RECONCILE",
+        "sourceRevision": 0,
+        "completedRevision": 0,
+        "reconcileRevision": 0,
+        "updatedAt": 2
+      }
+    },
+    {
+      "op": "upsertWork",
+      "work": {
+        "modelId": "m",
+        "messageId": "",
+        "sourceFingerprint": null,
+        "sourceRevision": 1,
+        "updatedAt": 1
+      }
+    },
+    {
+      "op": "upsertWork",
+      "work": {
+        "modelId": "m",
+        "messageId": "x",
+        "sourceFingerprint": "  ",
+        "sourceRevision": 1,
+        "updatedAt": 1
+      }
+    },
+    {
+      "op": "upsertWork",
+      "work": {
+        "modelId": "m",
+        "messageId": "x",
+        "sourceFingerprint": null,
+        "sourceRevision": 0,
+        "updatedAt": 1
+      }
+    }
+  ]
+}

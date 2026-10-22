@@ -1,0 +1,58 @@
+{
+  "seed": {
+    "conversations": [
+      {
+        "id": "c1",
+        "taskId": null
+      }
+    ]
+  },
+  "steps": [
+    {
+      "op": "fingerprint",
+      "text": "hello"
+    },
+    {
+      "op": "snapshot",
+      "activeModelId": "m1",
+      "configured": [
+        "m1",
+        "",
+        "m2",
+        "m1"
+      ]
+    },
+    {
+      "op": "admitModel",
+      "modelId": "m1",
+      "updatedAt": 100
+    },
+    {
+      "op": "admitModel",
+      "modelId": "m1",
+      "updatedAt": 200
+    },
+    {
+      "op": "getLedger",
+      "modelId": "m1"
+    },
+    {
+      "op": "requestReconcile",
+      "modelId": "m1",
+      "updatedAt": 300
+    },
+    {
+      "op": "getLedger",
+      "modelId": "m1"
+    },
+    {
+      "op": "getLedger",
+      "modelId": "missing"
+    },
+    {
+      "op": "admitModel",
+      "modelId": "",
+      "updatedAt": 1
+    }
+  ]
+}

@@ -1,0 +1,74 @@
+{
+  "seed": {
+    "messages": [
+      {
+        "id": "m1",
+        "conversationId": "c1",
+        "text": "hello",
+        "participant": "USER"
+      }
+    ]
+  },
+  "steps": [
+    {
+      "op": "requestReconcile",
+      "modelId": "model",
+      "updatedAt": 10
+    },
+    {
+      "op": "enqueueExactWork",
+      "modelId": "model",
+      "messageId": "m1",
+      "sourceFingerprint": "fp",
+      "updatedAt": 20
+    },
+    {
+      "op": "completeReconcile",
+      "modelId": "model",
+      "expectedReconcileRevision": 1,
+      "updatedAt": 30
+    },
+    {
+      "op": "getLedger",
+      "modelId": "model"
+    },
+    {
+      "op": "completeReconcile",
+      "modelId": "model",
+      "expectedReconcileRevision": 1,
+      "updatedAt": 40
+    },
+    {
+      "op": "deleteWorkForModel",
+      "modelId": "model"
+    },
+    {
+      "op": "completeReconcile",
+      "modelId": "model",
+      "expectedReconcileRevision": 1,
+      "updatedAt": 50
+    },
+    {
+      "op": "getLedger",
+      "modelId": "model"
+    },
+    {
+      "op": "completeReconcile",
+      "modelId": "model",
+      "expectedReconcileRevision": 5,
+      "updatedAt": 60
+    },
+    {
+      "op": "completeReconcile",
+      "modelId": "",
+      "expectedReconcileRevision": 1,
+      "updatedAt": 70
+    },
+    {
+      "op": "completeReconcile",
+      "modelId": "model",
+      "expectedReconcileRevision": -1,
+      "updatedAt": 70
+    }
+  ]
+}

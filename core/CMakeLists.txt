@@ -54,6 +54,7 @@ add_library(agora_core_lib STATIC
     src/openai_stream.cpp
     src/openai_stream_codec.cpp
     src/portable_glob.cpp
+    src/portable_settings_reset.cpp
     src/run_ui_projection.cpp
     src/portable_settings_archive.cpp
     src/run_branch_selection.cpp

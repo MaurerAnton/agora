@@ -16,6 +16,7 @@ add_executable(agora_core_tests
     message_persistence_guard_parity_test.cpp
     zip_reader_parity_test.cpp
     gpt_chat_importer_parity_test.cpp
+    generation_policies_parity_test.cpp
     export_spool_parity_test.cpp
     native_backup_secrets_parity_test.cpp
     native_backup_format_parity_test.cpp
@@ -88,6 +89,7 @@ target_compile_definitions(agora_core_tests PRIVATE
     AGORA_FIXTURE_OPENAI_GOLDEN_DIR="${CMAKE_CURRENT_SOURCE_DIR}/../tools/golden/openai"
     AGORA_FIXTURE_ZIP_READER_DIR="${CMAKE_CURRENT_SOURCE_DIR}/../tools/golden/zip-reader"
     AGORA_FIXTURE_GPT_CHAT_IMPORTER_DIR="${CMAKE_CURRENT_SOURCE_DIR}/../tools/golden/gpt-chat-importer"
+    AGORA_FIXTURE_GENERATION_POLICIES_DIR="${CMAKE_CURRENT_SOURCE_DIR}/../tools/golden/generation-policies"
     AGORA_FIXTURE_EXPORT_SPOOL_DIR="${CMAKE_CURRENT_SOURCE_DIR}/../tools/golden/export-spool"
     AGORA_FIXTURE_OPENAI_CODEC_DIR="${CMAKE_CURRENT_SOURCE_DIR}/../../app/src/test/resources/openai_stream_codec"
     AGORA_FIXTURE_OPENAI_REQUEST_DIR="${CMAKE_CURRENT_SOURCE_DIR}/../tools/golden/openai-request"

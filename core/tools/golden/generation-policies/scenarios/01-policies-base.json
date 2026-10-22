@@ -1,0 +1,125 @@
+{
+  "messages": [
+    {
+      "id": "m1",
+      "participant": "USER",
+      "text": "question",
+      "timestamp": 1714979289000,
+      "status": "SUCCESS"
+    },
+    {
+      "id": "m2",
+      "participant": "MODEL",
+      "text": "answer",
+      "timestamp": 1714979289000,
+      "status": "SUCCESS",
+      "parentId": "m1",
+      "modelName": "OpenAI:gpt-5.4"
+    }
+  ],
+  "segments": [
+    {
+      "type": "thought",
+      "content": "thinking",
+      "signature": "sig",
+      "signatureProvider": "openai",
+      "durationMs": 1200
+    },
+    {
+      "type": "answer",
+      "content": "partial"
+    },
+    {
+      "type": "tool",
+      "content": "tool output"
+    }
+  ],
+  "compactorRounds": [
+    {
+      "runId": "run-1",
+      "segments": [
+        {
+          "type": "thought",
+          "content": "first thought",
+          "signature": "sig1"
+        },
+        {
+          "type": "answer",
+          "content": "answer one"
+        }
+      ]
+    },
+    {
+      "runId": "run-1",
+      "segments": [
+        {
+          "type": "thought",
+          "content": "first thought",
+          "signature": "sig1"
+        },
+        {
+          "type": "thought",
+          "content": "second thought",
+          "signature": "sig2"
+        },
+        {
+          "type": "answer",
+          "content": "answer two"
+        }
+      ]
+    },
+    {
+      "runId": "run-1",
+      "segments": [
+        {
+          "type": "thought",
+          "content": "first thought",
+          "signature": "sig1"
+        },
+        {
+          "type": "thought",
+          "content": "second thought",
+          "signature": "sig2"
+        },
+        {
+          "type": "answer",
+          "content": "answer two"
+        }
+      ]
+    },
+    {
+      "runId": "run-2",
+      "segments": [
+        {
+          "type": "thought",
+          "content": "other run",
+          "signature": "sig3"
+        }
+      ]
+    }
+  ],
+  "templates": {
+    "userPrepend": "<user> ",
+    "userPostpend": " {sent_time} {sent_date} {message_model_id}",
+    "assistantPrepend": "",
+    "assistantPostpend": " [{sent_date}]"
+  },
+  "automaticSource": {
+    "kind": "ask_user",
+    "askUser": [
+      {
+        "question": "which one?",
+        "answer": "the first"
+      },
+      {
+        "question": "and now?",
+        "answer": null
+      }
+    ],
+    "text": "raw text"
+  },
+  "projection": {
+    "includeImages": true,
+    "initialUserPrompt": "start here"
+  }
+}

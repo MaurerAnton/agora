@@ -1,0 +1,28 @@
+{
+  "messages": [
+    {
+      "id": "m0",
+      "participant": "MODEL",
+      "text": "text 🙂",
+      "timestamp": 0,
+      "status": "SUCCESS",
+      "modelName": "OpenAI:gpt-5.4"
+    }
+  ],
+  "segments": [
+    {
+      "type": "thought",
+      "content": "s",
+      "signature": "sig",
+      "durationMs": 5
+    }
+  ],
+  "compactorRounds": [],
+  "templates": {
+    "userPrepend": "U",
+    "userPostpend": ""
+  },
+  "projection": {
+    "includeImages": true
+  }
+}

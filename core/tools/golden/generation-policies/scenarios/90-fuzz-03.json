@@ -1,0 +1,80 @@
+{
+  "messages": [
+    {
+      "id": "m0",
+      "participant": "MODEL",
+      "text": "text",
+      "timestamp": 1714979289000,
+      "status": "SUCCESS",
+      "modelName": "OpenAI:gpt-5.4",
+      "images": []
+    },
+    {
+      "id": "m1",
+      "participant": "MODEL",
+      "text": "{sent_time}",
+      "timestamp": 1714979289001,
+      "status": "SUCCESS",
+      "parentId": "m0",
+      "modelName": "gpt-4o",
+      "images": [
+        "a.png"
+      ],
+      "source": {
+        "kind": "task",
+        "askUser": []
+      }
+    }
+  ],
+  "segments": [
+    {
+      "type": "thought",
+      "content": "s",
+      "signature": "sig",
+      "durationMs": 5
+    }
+  ],
+  "compactorRounds": [
+    {
+      "runId": "r1",
+      "segments": [
+        {
+          "type": "tool",
+          "content": "x"
+        },
+        {
+          "type": "tool",
+          "content": "x"
+        }
+      ]
+    },
+    {
+      "runId": "r1",
+      "segments": []
+    },
+    {
+      "runId": "r2",
+      "segments": []
+    },
+    {
+      "runId": "r1",
+      "segments": [
+        {
+          "type": "tool",
+          "content": ""
+        },
+        {
+          "type": "tool",
+          "content": "x"
+        }
+      ]
+    }
+  ],
+  "templates": {
+    "userPrepend": "",
+    "userPostpend": ""
+  },
+  "projection": {
+    "includeImages": false
+  }
+}

@@ -1,0 +1,68 @@
+{
+  "messages": [
+    {
+      "id": "m0",
+      "participant": "MODEL",
+      "text": "text",
+      "timestamp": 1714979289000,
+      "status": "SUCCESS",
+      "modelName": "gpt-4o",
+      "source": {
+        "kind": "task",
+        "askUser": []
+      }
+    }
+  ],
+  "segments": [
+    {
+      "type": "thought",
+      "content": "s",
+      "signature": "sig",
+      "durationMs": 5
+    }
+  ],
+  "compactorRounds": [
+    {
+      "runId": "r1",
+      "segments": [
+        {
+          "type": "tool",
+          "content": "x"
+        },
+        {
+          "type": "answer",
+          "content": ""
+        }
+      ]
+    },
+    {
+      "runId": "r1",
+      "segments": [
+        {
+          "type": "thought",
+          "content": "x"
+        }
+      ]
+    },
+    {
+      "runId": "r1",
+      "segments": [
+        {
+          "type": "thought",
+          "content": "x"
+        },
+        {
+          "type": "tool",
+          "content": "x"
+        }
+      ]
+    }
+  ],
+  "templates": {
+    "userPrepend": "",
+    "userPostpend": " {sent_time}"
+  },
+  "projection": {
+    "includeImages": true
+  }
+}

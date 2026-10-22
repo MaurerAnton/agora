@@ -1,0 +1,34 @@
+{
+  "messages": [
+    {
+      "id": "m0",
+      "participant": "USER",
+      "text": "",
+      "timestamp": 0,
+      "status": "SUCCESS",
+      "images": [
+        "a.png"
+      ],
+      "source": {
+        "kind": "task",
+        "askUser": []
+      }
+    }
+  ],
+  "segments": [
+    {
+      "type": "thought",
+      "content": "s",
+      "signature": "sig",
+      "durationMs": 5
+    }
+  ],
+  "compactorRounds": [],
+  "templates": {
+    "userPrepend": "U",
+    "userPostpend": " {sent_time}"
+  },
+  "projection": {
+    "includeImages": false
+  }
+}

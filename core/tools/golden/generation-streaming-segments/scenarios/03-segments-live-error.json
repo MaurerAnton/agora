@@ -1,0 +1,17 @@
+{
+  "clock": [],
+  "timingSteps": [],
+  "merge": [],
+  "live": {
+    "flushed": [
+      {
+        "type": "answer",
+        "content": "kept"
+      }
+    ],
+    "answer": "partial",
+    "thought": "",
+    "errorMessage": "provider failed",
+    "errorCode": "http_500"
+  }
+}

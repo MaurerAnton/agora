@@ -1,0 +1,40 @@
+{
+  "clock": [],
+  "timingSteps": [],
+  "merge": [],
+  "snapshot": {
+    "messageId": "m1",
+    "parentId": "m0",
+    "text": "the answer",
+    "images": [
+      "a.png"
+    ],
+    "thoughts": "  ",
+    "thoughtTitle": "title",
+    "tokenCount": 42,
+    "timestamp": 1700000000000,
+    "thoughtTimeMs": 1200,
+    "modelName": "OpenAI:gpt-5.4",
+    "flushedSegments": [
+      {
+        "type": "citation",
+        "content": "cite"
+      }
+    ],
+    "answerBuffer": "the answer",
+    "thoughtBuffer": "",
+    "thoughtSignature": "sig",
+    "thoughtSignatureProvider": "openai",
+    "thoughtDurationMs": 900,
+    "errorMessage": null,
+    "errorCode": null,
+    "runId": "run-1",
+    "runSequence": 7,
+    "answerDeltas": [
+      {
+        "sequence": 3,
+        "codePointCount": 4
+      }
+    ]
+  }
+}

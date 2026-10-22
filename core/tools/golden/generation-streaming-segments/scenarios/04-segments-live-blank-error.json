@@ -1,0 +1,12 @@
+{
+  "clock": [],
+  "timingSteps": [],
+  "merge": [],
+  "live": {
+    "flushed": [],
+    "answer": "a",
+    "thought": "",
+    "errorMessage": "   ",
+    "errorCode": "x"
+  }
+}

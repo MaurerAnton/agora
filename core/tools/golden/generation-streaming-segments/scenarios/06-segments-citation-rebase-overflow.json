@@ -1,0 +1,21 @@
+{
+  "clock": [],
+  "timingSteps": [],
+  "merge": [],
+  "citation": {
+    "sourceId": "s1",
+    "provider": "openai",
+    "kind": "url",
+    "title": "Doc",
+    "url": "https://example.com",
+    "anchors": [
+      {
+        "startIndex": 2147483640,
+        "endIndex": 2147483647,
+        "citedText": "tail"
+      }
+    ]
+  },
+  "providerAnswerStart": 100,
+  "finalAnswer": "short"
+}

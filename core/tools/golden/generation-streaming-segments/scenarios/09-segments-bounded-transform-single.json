@@ -1,0 +1,21 @@
+{
+  "clock": [],
+  "timingSteps": [],
+  "merge": [],
+  "message": {
+    "id": "m1",
+    "text": "hello",
+    "status": "SUCCESS",
+    "participant": "MODEL",
+    "timestamp": 1,
+    "segments": [
+      {
+        "type": "answer",
+        "content": "hello"
+      }
+    ]
+  },
+  "transform": {
+    "replacement": "hi"
+  }
+}

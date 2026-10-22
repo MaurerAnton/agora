@@ -1,0 +1,10 @@
+{
+  "clock": [],
+  "timingSteps": [],
+  "merge": [],
+  "terminalError": {
+    "status": "SUCCESS",
+    "currentError": "boom",
+    "fallbackError": "fallback"
+  }
+}

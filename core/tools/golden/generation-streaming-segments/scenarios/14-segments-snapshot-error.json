@@ -1,0 +1,28 @@
+{
+  "clock": [],
+  "timingSteps": [],
+  "merge": [],
+  "snapshot": {
+    "messageId": "m2",
+    "parentId": null,
+    "text": "partial",
+    "images": [],
+    "thoughts": "thinking",
+    "thoughtTitle": null,
+    "tokenCount": 0,
+    "timestamp": 1700000001000,
+    "thoughtTimeMs": null,
+    "modelName": "",
+    "flushedSegments": [],
+    "answerBuffer": "",
+    "thoughtBuffer": "thinking",
+    "thoughtSignature": null,
+    "thoughtSignatureProvider": null,
+    "thoughtDurationMs": 100,
+    "errorMessage": "failed",
+    "errorCode": "e1",
+    "runId": "run-2",
+    "runSequence": 1,
+    "answerDeltas": []
+  }
+}

@@ -1,4 +1,5 @@
 find_package(Threads REQUIRED)
+find_package(SQLite3 REQUIRED)
 
 add_executable(agora_core_tests
     test_main.cpp
@@ -14,6 +15,7 @@ add_executable(agora_core_tests
     stream_normalization_test.cpp
     backup_media_policy_parity_test.cpp
     attachment_clone_session_parity_test.cpp
+    semantic_index_ledger_parity_test.cpp
     message_persistence_guard_parity_test.cpp
     zip_reader_parity_test.cpp
     gpt_chat_importer_parity_test.cpp
@@ -78,7 +80,7 @@ add_executable(agora_core_tests
     parity_test.cpp
     fuzz_parity_test.cpp
 )
-target_link_libraries(agora_core_tests PRIVATE agora_core_lib Threads::Threads)
+target_link_libraries(agora_core_tests PRIVATE agora_core_lib Threads::Threads SQLite::SQLite3)
 target_include_directories(agora_core_tests PRIVATE ${CMAKE_CURRENT_SOURCE_DIR})
 
 # Fixtures: the shipped vocabulary and the tiktoken reference set live in the app tree, two
@@ -127,6 +129,7 @@ target_compile_definitions(agora_core_tests PRIVATE
     AGORA_FIXTURE_REGENERATION_TREE_REPAIR_DIR="${CMAKE_CURRENT_SOURCE_DIR}/../tools/golden/regeneration-tree-repair"
     AGORA_FIXTURE_LEGACY_RUN_BACKFILL_DIR="${CMAKE_CURRENT_SOURCE_DIR}/../tools/golden/legacy-run-backfill"
     AGORA_FIXTURE_MIGRATION_16_17_DIR="${CMAKE_CURRENT_SOURCE_DIR}/../tools/golden/migration-16-17"
+    AGORA_FIXTURE_SEMANTIC_INDEX_LEDGER_DIR="${CMAKE_CURRENT_SOURCE_DIR}/../tools/golden/semantic-index-ledger"
     AGORA_FIXTURE_MIGRATION_17_18_DIR="${CMAKE_CURRENT_SOURCE_DIR}/../tools/golden/migration-17-18"
     AGORA_FIXTURE_MIGRATION_18_19_DIR="${CMAKE_CURRENT_SOURCE_DIR}/../tools/golden/migration-18-19"
     AGORA_FIXTURE_MIGRATION_19_20_DIR="${CMAKE_CURRENT_SOURCE_DIR}/../tools/golden/migration-19-20"

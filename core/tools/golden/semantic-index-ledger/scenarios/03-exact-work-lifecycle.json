@@ -1,0 +1,138 @@
+{
+  "seed": {
+    "messages": [
+      {
+        "id": "m1",
+        "conversationId": "c1",
+        "text": "hello",
+        "participant": "USER"
+      },
+      {
+        "id": "m2",
+        "conversationId": "c1",
+        "text": "world",
+        "participant": "USER"
+      }
+    ],
+    "conversations": [
+      {
+        "id": "c1",
+        "taskId": null
+      }
+    ]
+  },
+  "steps": [
+    {
+      "op": "enqueueExactWork",
+      "modelId": "model",
+      "messageId": "m1",
+      "sourceFingerprint": "fp-1",
+      "updatedAt": 10
+    },
+    {
+      "op": "getWork",
+      "modelId": "model",
+      "messageId": "m1"
+    },
+    {
+      "op": "completeExactWork",
+      "work": {
+        "modelId": "model",
+        "messageId": "m1",
+        "sourceFingerprint": "fp-1",
+        "sourceRevision": 1,
+        "updatedAt": 10
+      },
+      "updatedAt": 20
+    },
+    {
+      "op": "getLedger",
+      "modelId": "model"
+    },
+    {
+      "op": "completeExactWork",
+      "work": {
+        "modelId": "model",
+        "messageId": "m1",
+        "sourceFingerprint": "fp-1",
+        "sourceRevision": 1,
+        "updatedAt": 10
+      },
+      "updatedAt": 30
+    },
+    {
+      "op": "enqueueExactWork",
+      "modelId": "model",
+      "messageId": "m1",
+      "sourceFingerprint": "fp-2",
+      "updatedAt": 40
+    },
+    {
+      "op": "enqueueExactWork",
+      "modelId": "model",
+      "messageId": "m2",
+      "sourceFingerprint": null,
+      "updatedAt": 50
+    },
+    {
+      "op": "completeExactWork",
+      "work": {
+        "modelId": "model",
+        "messageId": "m1",
+        "sourceFingerprint": "fp-1",
+        "sourceRevision": 2,
+        "updatedAt": 40
+      },
+      "updatedAt": 60
+    },
+    {
+      "op": "getWork",
+      "modelId": "model",
+      "messageId": "m1"
+    },
+    {
+      "op": "completeExactWork",
+      "work": {
+        "modelId": "model",
+        "messageId": "m1",
+        "sourceFingerprint": "fp-2",
+        "sourceRevision": 2,
+        "updatedAt": 40
+      },
+      "updatedAt": 70
+    },
+    {
+      "op": "getLedger",
+      "modelId": "model"
+    },
+    {
+      "op": "completeExactWork",
+      "work": {
+        "modelId": "model",
+        "messageId": "m2",
+        "sourceFingerprint": null,
+        "sourceRevision": 3,
+        "updatedAt": 50
+      },
+      "updatedAt": 80
+    },
+    {
+      "op": "getLedger",
+      "modelId": "model"
+    },
+    {
+      "op": "enqueueExactWork",
+      "modelId": "",
+      "messageId": "m1",
+      "sourceFingerprint": null,
+      "updatedAt": 90
+    },
+    {
+      "op": "enqueueExactWork",
+      "modelId": "model",
+      "messageId": "",
+      "sourceFingerprint": null,
+      "updatedAt": 90
+    }
+  ]
+}

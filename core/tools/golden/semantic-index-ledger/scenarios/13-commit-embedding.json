@@ -1,0 +1,178 @@
+{
+  "seed": {
+    "messages": [
+      {
+        "id": "m1",
+        "conversationId": "c1",
+        "text": "alpha",
+        "participant": "USER"
+      },
+      {
+        "id": "m2",
+        "conversationId": "c1",
+        "text": "beta",
+        "participant": "USER"
+      }
+    ],
+    "embeddings": [
+      {
+        "id": 5,
+        "messageId": "m1",
+        "modelId": "model",
+        "embedding": "01",
+        "chunkText": "alpha",
+        "dimension": 1,
+        "sourceFingerprint": "fp-alpha"
+      }
+    ]
+  },
+  "steps": [
+    {
+      "op": "requestReconcile",
+      "modelId": "model",
+      "updatedAt": 10
+    },
+    {
+      "op": "enqueueExactWork",
+      "modelId": "model",
+      "messageId": "m2",
+      "sourceFingerprint": "fp-beta",
+      "updatedAt": 20
+    },
+    {
+      "op": "commitSemanticEmbedding",
+      "embedding": {
+        "id": null,
+        "messageId": "m2",
+        "modelId": "model",
+        "embedding": "aabb",
+        "chunkText": "beta",
+        "dimension": 2,
+        "sourceFingerprint": "fp-beta"
+      },
+      "expectedFingerprint": "fp-beta",
+      "updatedAt": 30,
+      "expectedWorkRevision": 2,
+      "expectedReconcileRevision": 1,
+      "completePendingWork": true
+    },
+    {
+      "op": "getLedger",
+      "modelId": "model"
+    },
+    {
+      "op": "getWork",
+      "modelId": "model",
+      "messageId": "m2"
+    },
+    {
+      "op": "commitSemanticEmbedding",
+      "embedding": {
+        "id": null,
+        "messageId": "m2",
+        "modelId": "model",
+        "embedding": "ccdd",
+        "chunkText": "beta",
+        "dimension": 2,
+        "sourceFingerprint": "fp-beta"
+      },
+      "expectedFingerprint": "fp-wrong",
+      "updatedAt": 40,
+      "expectedWorkRevision": 2,
+      "expectedReconcileRevision": 1,
+      "completePendingWork": true
+    },
+    {
+      "op": "commitSemanticEmbedding",
+      "embedding": {
+        "id": null,
+        "messageId": "m2",
+        "modelId": "model",
+        "embedding": "ccdd",
+        "chunkText": "beta",
+        "dimension": 2,
+        "sourceFingerprint": "fp-beta"
+      },
+      "expectedFingerprint": "fp-beta",
+      "updatedAt": 40,
+      "expectedWorkRevision": 9,
+      "expectedReconcileRevision": 1,
+      "completePendingWork": true
+    },
+    {
+      "op": "commitSemanticEmbedding",
+      "embedding": {
+        "id": null,
+        "messageId": "m2",
+        "modelId": "model",
+        "embedding": "ccdd",
+        "chunkText": "beta",
+        "dimension": 2,
+        "sourceFingerprint": "fp-beta"
+      },
+      "expectedFingerprint": "fp-beta",
+      "updatedAt": 40,
+      "expectedWorkRevision": 2,
+      "expectedReconcileRevision": 7,
+      "completePendingWork": true
+    },
+    {
+      "op": "commitSemanticEmbedding",
+      "embedding": {
+        "id": null,
+        "messageId": "m2",
+        "modelId": "unknown",
+        "embedding": "ccdd",
+        "chunkText": "beta",
+        "dimension": 2,
+        "sourceFingerprint": "fp-beta"
+      },
+      "expectedFingerprint": "fp-beta",
+      "updatedAt": 40,
+      "expectedWorkRevision": null,
+      "expectedReconcileRevision": null,
+      "completePendingWork": true
+    },
+    {
+      "op": "commitSemanticEmbedding",
+      "embedding": {
+        "id": null,
+        "messageId": "m1",
+        "modelId": "model",
+        "embedding": "eeff",
+        "chunkText": "alpha",
+        "dimension": 2,
+        "sourceFingerprint": "fp-alpha"
+      },
+      "expectedFingerprint": "fp-alpha",
+      "updatedAt": 50,
+      "expectedWorkRevision": null,
+      "expectedReconcileRevision": 1,
+      "completePendingWork": false
+    },
+    {
+      "op": "enqueueExactWork",
+      "modelId": "model",
+      "messageId": "m2",
+      "sourceFingerprint": "fp-beta",
+      "updatedAt": 60
+    },
+    {
+      "op": "commitSemanticEmbedding",
+      "embedding": {
+        "id": 11,
+        "messageId": "m2",
+        "modelId": "model",
+        "embedding": "1122",
+        "chunkText": "beta two",
+        "dimension": 2,
+        "sourceFingerprint": "fp-beta"
+      },
+      "expectedFingerprint": "fp-beta",
+      "updatedAt": 70,
+      "expectedWorkRevision": 4,
+      "expectedReconcileRevision": null,
+      "completePendingWork": true
+    }
+  ]
+}

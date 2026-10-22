@@ -1,0 +1,101 @@
+{
+  "steps": [
+    {
+      "op": "requestReconcile",
+      "modelId": "model",
+      "updatedAt": 1
+    },
+    {
+      "op": "upsertWork",
+      "work": {
+        "modelId": "model",
+        "messageId": "a",
+        "sourceFingerprint": "fa",
+        "sourceRevision": 2,
+        "updatedAt": 10
+      }
+    },
+    {
+      "op": "upsertWork",
+      "work": {
+        "modelId": "model",
+        "messageId": "b",
+        "sourceFingerprint": "fb",
+        "sourceRevision": 1,
+        "updatedAt": 11
+      }
+    },
+    {
+      "op": "upsertWork",
+      "work": {
+        "modelId": "model",
+        "messageId": "c",
+        "sourceFingerprint": null,
+        "sourceRevision": 2,
+        "updatedAt": 12
+      }
+    },
+    {
+      "op": "upsertWork",
+      "work": {
+        "modelId": "model",
+        "messageId": "d",
+        "sourceFingerprint": "fd",
+        "sourceRevision": 3,
+        "updatedAt": 13
+      }
+    },
+    {
+      "op": "upsertWork",
+      "work": {
+        "modelId": "other",
+        "messageId": "a",
+        "sourceFingerprint": "fo",
+        "sourceRevision": 1,
+        "updatedAt": 14
+      }
+    },
+    {
+      "op": "getWorkPage",
+      "modelId": "model",
+      "maxSourceRevision": 2,
+      "afterSourceRevision": 0,
+      "afterMessageId": "",
+      "limit": 2
+    },
+    {
+      "op": "getWorkPage",
+      "modelId": "model",
+      "maxSourceRevision": 2,
+      "afterSourceRevision": 1,
+      "afterMessageId": "b",
+      "limit": 2
+    },
+    {
+      "op": "getWorkPage",
+      "modelId": "model",
+      "maxSourceRevision": 2,
+      "afterSourceRevision": 2,
+      "afterMessageId": "c",
+      "limit": 2
+    },
+    {
+      "op": "getWorkPage",
+      "modelId": "model",
+      "maxSourceRevision": 3,
+      "afterSourceRevision": 0,
+      "afterMessageId": "",
+      "limit": 10
+    },
+    {
+      "op": "getWorkCountThroughRevision",
+      "modelId": "model",
+      "maxSourceRevision": 2
+    },
+    {
+      "op": "getWorkCountThroughRevision",
+      "modelId": "model",
+      "maxSourceRevision": 0
+    }
+  ]
+}

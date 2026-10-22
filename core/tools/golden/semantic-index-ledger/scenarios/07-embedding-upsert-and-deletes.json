@@ -1,0 +1,127 @@
+{
+  "seed": {
+    "messages": [
+      {
+        "id": "m1",
+        "conversationId": "c1",
+        "text": "alpha",
+        "participant": "USER"
+      },
+      {
+        "id": "m2",
+        "conversationId": "c1",
+        "text": "beta",
+        "participant": "USER"
+      }
+    ],
+    "embeddings": [
+      {
+        "id": 7,
+        "messageId": "m1",
+        "modelId": "model",
+        "embedding": "01",
+        "chunkText": "alpha",
+        "dimension": 1,
+        "sourceFingerprint": "fp-1"
+      },
+      {
+        "id": 8,
+        "messageId": "m1",
+        "modelId": "other",
+        "embedding": "02",
+        "chunkText": "alpha",
+        "dimension": 1,
+        "sourceFingerprint": "fp-1"
+      },
+      {
+        "id": 9,
+        "messageId": "m2",
+        "modelId": "model",
+        "embedding": "03",
+        "chunkText": "beta",
+        "dimension": 1,
+        "sourceFingerprint": "fp-2"
+      }
+    ]
+  },
+  "steps": [
+    {
+      "op": "upsertEmbedding",
+      "embedding": {
+        "id": null,
+        "messageId": "m2",
+        "modelId": "new-model",
+        "embedding": "aa",
+        "chunkText": "beta",
+        "dimension": 1,
+        "sourceFingerprint": "fp-2"
+      }
+    },
+    {
+      "op": "upsertEmbedding",
+      "embedding": {
+        "id": 7,
+        "messageId": "m1",
+        "modelId": "model",
+        "embedding": "aabb",
+        "chunkText": "alpha2",
+        "dimension": 2,
+        "sourceFingerprint": "fp-1b"
+      }
+    },
+    {
+      "op": "upsertEmbedding",
+      "embedding": {
+        "id": null,
+        "messageId": "m1",
+        "modelId": "model",
+        "embedding": "cccc",
+        "chunkText": "alpha3",
+        "dimension": 2,
+        "sourceFingerprint": "fp-1c"
+      }
+    },
+    {
+      "op": "upsertEmbedding",
+      "embedding": {
+        "id": 8,
+        "messageId": "m1",
+        "modelId": "other",
+        "embedding": "dd",
+        "chunkText": "alpha4",
+        "dimension": 1,
+        "sourceFingerprint": "fp-1d"
+      }
+    },
+    {
+      "op": "getWork",
+      "modelId": "model",
+      "messageId": "m1"
+    },
+    {
+      "op": "deleteMatchingWork",
+      "modelId": "model",
+      "messageId": "m1",
+      "sourceFingerprint": null,
+      "sourceRevision": 1
+    },
+    {
+      "op": "deleteEmbeddingsForMessages",
+      "messageIds": [
+        "m1",
+        "missing"
+      ]
+    },
+    {
+      "op": "deleteEmbeddingsForModel",
+      "modelId": "model"
+    },
+    {
+      "op": "deleteEmbeddingsForMessages",
+      "messageIds": []
+    },
+    {
+      "op": "deleteAllEmbeddings"
+    }
+  ]
+}

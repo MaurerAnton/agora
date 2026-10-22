@@ -1,0 +1,188 @@
+{
+  "seed": {
+    "conversations": [
+      {
+        "id": "c1",
+        "taskId": null
+      },
+      {
+        "id": "task",
+        "taskId": "t1"
+      }
+    ],
+    "messages": [
+      {
+        "id": "m1",
+        "conversationId": "c1",
+        "text": "alpha",
+        "participant": "USER"
+      },
+      {
+        "id": "m2",
+        "conversationId": "c1",
+        "text": "beta",
+        "participant": "MODEL"
+      },
+      {
+        "id": "m3",
+        "conversationId": "c1",
+        "text": "",
+        "participant": "USER"
+      },
+      {
+        "id": "m4",
+        "conversationId": "c1",
+        "text": "tool body",
+        "participant": "USER"
+      },
+      {
+        "id": "tool_1",
+        "conversationId": "c1",
+        "text": "tool",
+        "participant": "USER"
+      },
+      {
+        "id": "result_1",
+        "conversationId": "c1",
+        "text": "result",
+        "participant": "USER"
+      },
+      {
+        "id": "compact_1",
+        "conversationId": "c1",
+        "text": "compact",
+        "participant": "USER"
+      },
+      {
+        "id": "m5",
+        "conversationId": "task",
+        "text": "task message",
+        "participant": "USER"
+      },
+      {
+        "id": "m6",
+        "conversationId": "c1",
+        "text": "gamma",
+        "participant": "SYSTEM"
+      },
+      {
+        "id": "m10",
+        "conversationId": "c1",
+        "text": "delta",
+        "participant": "USER"
+      },
+      {
+        "id": "m11",
+        "conversationId": "c1",
+        "text": "epsilon",
+        "participant": "USER"
+      }
+    ],
+    "embeddings": [
+      {
+        "id": 1,
+        "messageId": "m1",
+        "modelId": "model",
+        "embedding": "0a0b",
+        "chunkText": "alpha",
+        "dimension": 2,
+        "sourceFingerprint": "fp-alpha"
+      },
+      {
+        "id": 2,
+        "messageId": "m2",
+        "modelId": "model",
+        "embedding": "0c0d0e",
+        "chunkText": "beta",
+        "dimension": 3,
+        "sourceFingerprint": null
+      },
+      {
+        "id": 3,
+        "messageId": "m1",
+        "modelId": "other",
+        "embedding": "ff",
+        "chunkText": "alpha",
+        "dimension": 1,
+        "sourceFingerprint": "fp-other"
+      }
+    ]
+  },
+  "steps": [
+    {
+      "op": "getReconcileMessagesPage",
+      "modelId": "model",
+      "maxWorkRevision": 0,
+      "afterId": null,
+      "limit": 10
+    },
+    {
+      "op": "getReconcileMessagesPage",
+      "modelId": "model",
+      "maxWorkRevision": 0,
+      "afterId": "m1",
+      "limit": 3
+    },
+    {
+      "op": "getReconcileMessagesPage",
+      "modelId": "model",
+      "maxWorkRevision": 5,
+      "afterId": null,
+      "limit": 10
+    },
+    {
+      "op": "upsertWork",
+      "work": {
+        "modelId": "model",
+        "messageId": "m1",
+        "sourceFingerprint": "fp-alpha",
+        "sourceRevision": 4,
+        "updatedAt": 20
+      }
+    },
+    {
+      "op": "upsertWork",
+      "work": {
+        "modelId": "model",
+        "messageId": "m10",
+        "sourceFingerprint": "fp-delta",
+        "sourceRevision": 6,
+        "updatedAt": 21
+      }
+    },
+    {
+      "op": "getReconcileMessagesPage",
+      "modelId": "model",
+      "maxWorkRevision": 4,
+      "afterId": null,
+      "limit": 10
+    },
+    {
+      "op": "getReconcileMessagesPage",
+      "modelId": "model",
+      "maxWorkRevision": 5,
+      "afterId": null,
+      "limit": 10
+    },
+    {
+      "op": "getSearchableMessageText",
+      "messageId": "m1"
+    },
+    {
+      "op": "getSearchableMessageText",
+      "messageId": "tool_1"
+    },
+    {
+      "op": "getSearchableMessageText",
+      "messageId": "m5"
+    },
+    {
+      "op": "getSearchableMessageText",
+      "messageId": "missing"
+    },
+    {
+      "op": "getSearchableMessageText",
+      "messageId": "m6"
+    }
+  ]
+}

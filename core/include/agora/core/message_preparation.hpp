@@ -9,6 +9,7 @@
 #include <vector>
 
 #include "agora/core/json.hpp"
+#include "agora/core/message_source.hpp"
 #include "agora/core/openai_request.hpp"
 
 namespace agora::core::prep {
@@ -49,6 +50,8 @@ struct MessageSegment {
     std::optional<std::string> error_code;
     std::vector<json::Value> response_output_items;
     std::optional<std::string> response_output_item_provider;
+    /** The duration the provider reported for a thought segment. */
+    std::optional<std::int64_t> duration_ms;
 };
 
 struct ToolCallData {
@@ -63,6 +66,8 @@ struct ToolCallData {
     std::optional<std::string> transcription;
     std::vector<json::Value> response_output_items;
     std::optional<std::string> response_output_item_provider;
+    /** The duration the provider reported for a thought segment. */
+    std::optional<std::int64_t> duration_ms;
 };
 
 struct AttachmentItem {
@@ -95,6 +100,8 @@ struct ChatMessage {
     std::optional<AttachmentMeta> attachment_meta;
     std::optional<std::string> run_id;
     std::optional<std::int64_t> run_sequence;
+    /** The structured source of an automatic message (task / loop / ask_user answers). */
+    std::optional<message_source::Source> source;
 
     /** ChatMessage.isToolProtocolMessage: a tool_ or result_ row. */
     bool is_tool_protocol_message() const;

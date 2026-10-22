@@ -1,0 +1,71 @@
+{
+  "messages": [
+    {
+      "id": "m1",
+      "participant": "USER",
+      "text": "question",
+      "timestamp": 1714979289000,
+      "status": "SUCCESS"
+    },
+    {
+      "id": "m2",
+      "participant": "MODEL",
+      "text": "answer",
+      "timestamp": 1714979289000,
+      "status": "SUCCESS",
+      "parentId": "m1",
+      "modelName": "gpt-4o"
+    },
+    {
+      "id": "m3",
+      "participant": "USER",
+      "text": "",
+      "timestamp": 1714979289000,
+      "status": "SUCCESS",
+      "parentId": "m2"
+    },
+    {
+      "id": "tool_1",
+      "participant": "MODEL",
+      "text": "tool row",
+      "timestamp": 1714979289000,
+      "status": "SUCCESS",
+      "parentId": "m2"
+    },
+    {
+      "id": "result_1",
+      "participant": "MODEL",
+      "text": "tool result",
+      "timestamp": 1714979289000,
+      "status": "SUCCESS",
+      "parentId": "tool_1"
+    },
+    {
+      "id": "compact_1",
+      "participant": "MODEL",
+      "text": "summary",
+      "timestamp": 1714979289000,
+      "status": "SUCCESS",
+      "parentId": "m2"
+    },
+    {
+      "id": "m4",
+      "participant": "USER",
+      "text": "second",
+      "timestamp": 1714979289000,
+      "status": "SUCCESS",
+      "parentId": "m2"
+    }
+  ],
+  "segments": [],
+  "compactorRounds": [],
+  "templates": {
+    "userPrepend": "PRE {sent_time}|",
+    "userPostpend": "|POST {sent_date}|",
+    "assistantPrepend": "A",
+    "assistantPostpend": "B {message_model_id}"
+  },
+  "projection": {
+    "includeImages": false
+  }
+}

@@ -1,0 +1,36 @@
+{
+  "messages": [
+    {
+      "id": "m1",
+      "participant": "USER",
+      "text": "look",
+      "timestamp": 1714979289000,
+      "status": "SUCCESS",
+      "images": [
+        "a.png",
+        "b.png"
+      ]
+    },
+    {
+      "id": "m2",
+      "participant": "MODEL",
+      "text": "answer",
+      "timestamp": 1714979289000,
+      "status": "SUCCESS",
+      "parentId": "m1",
+      "images": [
+        "c.png"
+      ]
+    }
+  ],
+  "segments": [],
+  "compactorRounds": [],
+  "templates": {
+    "userPrepend": "U",
+    "userPostpend": ""
+  },
+  "projection": {
+    "includeImages": false,
+    "initialUserPrompt": "extra prompt"
+  }
+}

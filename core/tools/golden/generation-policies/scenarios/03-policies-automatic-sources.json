@@ -1,0 +1,74 @@
+{
+  "messages": [
+    {
+      "id": "m1",
+      "participant": "USER",
+      "text": "typed by the user",
+      "timestamp": 1714979289000,
+      "status": "SUCCESS"
+    },
+    {
+      "id": "m2",
+      "participant": "USER",
+      "text": "task prompt",
+      "timestamp": 1714979289000,
+      "status": "SUCCESS",
+      "source": {
+        "kind": "task",
+        "askUser": []
+      }
+    },
+    {
+      "id": "m3",
+      "participant": "USER",
+      "text": "loop prompt",
+      "timestamp": 1714979289000,
+      "status": "SUCCESS",
+      "source": {
+        "kind": "loop",
+        "askUser": []
+      }
+    },
+    {
+      "id": "m4",
+      "participant": "USER",
+      "text": "answers",
+      "timestamp": 1714979289000,
+      "status": "SUCCESS",
+      "source": {
+        "kind": "ask_user",
+        "askUser": [
+          {
+            "question": "q1",
+            "answer": "a1"
+          },
+          {
+            "question": "q2",
+            "answer": null
+          }
+        ]
+      }
+    },
+    {
+      "id": "m5",
+      "participant": "MODEL",
+      "text": "model reply",
+      "timestamp": 1714979289000,
+      "status": "SUCCESS",
+      "source": {
+        "kind": "task",
+        "askUser": []
+      }
+    }
+  ],
+  "segments": [],
+  "compactorRounds": [],
+  "automaticSource": {
+    "kind": "task",
+    "askUser": [],
+    "text": "task & <text>"
+  },
+  "projection": {
+    "includeImages": true
+  }
+}

@@ -1,0 +1,100 @@
+{
+  "seed": {
+    "messages": [
+      {
+        "id": "m1",
+        "conversationId": "c1",
+        "text": "alpha"
+      },
+      {
+        "id": "m2",
+        "conversationId": "c1",
+        "text": "beta"
+      }
+    ],
+    "embeddings": [
+      {
+        "id": 1,
+        "messageId": "m1",
+        "modelId": "a",
+        "embedding": "01"
+      },
+      {
+        "id": 2,
+        "messageId": "compact_9",
+        "modelId": "a",
+        "embedding": "02"
+      },
+      {
+        "id": 3,
+        "messageId": "ghost",
+        "modelId": "a",
+        "embedding": "03"
+      },
+      {
+        "id": 4,
+        "messageId": "ghost",
+        "modelId": "b",
+        "embedding": "04"
+      },
+      {
+        "id": 5,
+        "messageId": "m2",
+        "modelId": "a",
+        "embedding": "05"
+      },
+      {
+        "id": 6,
+        "messageId": "lost",
+        "modelId": "a",
+        "embedding": "06"
+      }
+    ]
+  },
+  "steps": [
+    {
+      "op": "getOrphanEmbeddingIdsPage",
+      "afterId": 0,
+      "limit": 3
+    },
+    {
+      "op": "getOrphanEmbeddingIdsPage",
+      "afterId": 3,
+      "limit": 3
+    },
+    {
+      "op": "getOrphanEmbeddingIdsPage",
+      "afterId": 6,
+      "limit": 3
+    },
+    {
+      "op": "deleteOrphanEmbeddingsForMessage",
+      "messageId": "ghost"
+    },
+    {
+      "op": "deleteOrphanEmbeddingsForMessage",
+      "messageId": "m1"
+    },
+    {
+      "op": "deleteOrphanEmbeddingsByIds",
+      "ids": [
+        2
+      ]
+    },
+    {
+      "op": "deleteOrphanEmbeddingsByIds",
+      "ids": []
+    },
+    {
+      "op": "deleteOrphanEmbeddingsByIds",
+      "ids": [
+        99
+      ]
+    },
+    {
+      "op": "getOrphanEmbeddingIdsPage",
+      "afterId": 0,
+      "limit": 10
+    }
+  ]
+}

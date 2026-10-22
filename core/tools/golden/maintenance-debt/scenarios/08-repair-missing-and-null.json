@@ -1,0 +1,21 @@
+{
+  "seed": {
+    "conversations": [
+      {
+        "id": "present",
+        "selectedRunBranchesJson": null,
+        "dataChangedAt": 100
+      }
+    ]
+  },
+  "steps": [
+    {
+      "op": "repairRunBranches",
+      "conversationId": "absent"
+    },
+    {
+      "op": "repairRunBranches",
+      "conversationId": "present"
+    }
+  ]
+}

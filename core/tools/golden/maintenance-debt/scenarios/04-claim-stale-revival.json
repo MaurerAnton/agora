@@ -1,0 +1,37 @@
+{
+  "steps": [
+    {
+      "op": "enqueue",
+      "kind": "ATTACHMENT_ORPHANS",
+      "identity": "fresh",
+      "updatedAt": 90
+    },
+    {
+      "op": "enqueue",
+      "kind": "EMBEDDING_ORPHANS",
+      "identity": "stale",
+      "updatedAt": 10
+    },
+    {
+      "op": "claim",
+      "claimId": "first",
+      "claimedAt": 60,
+      "staleBefore": 50,
+      "limit": 10
+    },
+    {
+      "op": "claim",
+      "claimId": "second",
+      "claimedAt": 120,
+      "staleBefore": 75,
+      "limit": 10
+    },
+    {
+      "op": "claim",
+      "claimId": "third",
+      "claimedAt": 40,
+      "staleBefore": 40,
+      "limit": 10
+    }
+  ]
+}

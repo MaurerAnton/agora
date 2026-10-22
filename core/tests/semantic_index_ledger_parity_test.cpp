@@ -31,9 +31,9 @@ using ledger::EmbeddingEntry;
 using ledger::LedgerEntry;
 using ledger::ReconcileIndexableMessage;
 using ledger::SemanticModelSnapshot;
-using ledger::SqlArgs;
-using ledger::SqlRow;
-using ledger::SqlValue;
+using agora::core::SqlArgs;
+using agora::core::SqlRow;
+using agora::core::SqlValue;
 using ledger::WorkEntry;
 
 std::string read_file(const std::filesystem::path& path) {
@@ -71,7 +71,7 @@ std::string primitive_content(const json::Value& value) {
 std::string required_string(const json::Value& object, std::string_view name) {
     const json::Value* value = field(object, name);
     if (value == nullptr || value->kind == json::Kind::Array || value->kind == json::Kind::Object) {
-        throw ledger::KotlinError("IllegalStateException",
+        throw agora::core::KotlinError("IllegalStateException",
                                   "missing string " + std::string(name));
     }
     return primitive_content(*value);
@@ -91,7 +91,7 @@ std::int64_t required_long(const json::Value& object, std::string_view name) {
         if (consumed != content.size()) throw std::invalid_argument("trailing");
         return parsed;
     } catch (const std::exception&) {
-        throw ledger::KotlinError("NumberFormatException", "For input string: \"" + content + "\"");
+        throw agora::core::KotlinError("NumberFormatException", "For input string: \"" + content + "\"");
     }
 }
 
@@ -104,7 +104,7 @@ std::optional<std::int64_t> optional_long(const json::Value& object, std::string
         if (consumed != content->size()) throw std::invalid_argument("trailing");
         return parsed;
     } catch (const std::exception&) {
-        throw ledger::KotlinError("NumberFormatException",
+        throw agora::core::KotlinError("NumberFormatException",
                                   "For input string: \"" + *content + "\"");
     }
 }
@@ -208,7 +208,7 @@ std::vector<std::uint8_t> hex_to_bytes(std::string_view hex) {
 
 // ---- sqlite executor (SqlExecutor boundary) -----------------------------------------------
 
-class SqliteExecutor : public ledger::SqlExecutor {
+class SqliteExecutor : public agora::core::SqlExecutor {
 public:
     explicit SqliteExecutor(const std::filesystem::path& schema_file) {
         if (sqlite3_open(":memory:", &db_) != SQLITE_OK) {
@@ -246,12 +246,12 @@ public:
             // java.sql.SQLException("Query returns results"): executeUpdate refuses a statement
             // that produces rows. The golden driver records it as a SQLException step result.
             sqlite3_finalize(statement);
-            throw ledger::SqlError("Query returns results");
+            throw agora::core::SqlError("Query returns results");
         }
         const std::string message = sqlite3_errmsg(db_);
         sqlite3_finalize(statement);
-        if ((rc & 0xFF) == SQLITE_CONSTRAINT) throw ledger::SqlConstraintError(message);
-        throw ledger::SqlError("sqlite: " + message + " in " + sql);
+        if ((rc & 0xFF) == SQLITE_CONSTRAINT) throw agora::core::SqlConstraintError(message);
+        throw agora::core::SqlError("sqlite: " + message + " in " + sql);
     }
 
     std::vector<SqlRow> query(const std::string& sql, const SqlArgs& args) override {
@@ -272,7 +272,7 @@ public:
             if (rc == SQLITE_DONE) break;
             const std::string message = sqlite3_errmsg(db_);
             sqlite3_finalize(statement);
-            throw ledger::SqlError("sqlite: " + message + " in " + sql);
+            throw agora::core::SqlError("sqlite: " + message + " in " + sql);
         }
         sqlite3_finalize(statement);
         return rows;
@@ -289,7 +289,7 @@ private:
         sqlite3_stmt* statement = nullptr;
         const int rc = sqlite3_prepare_v2(db_, sql.c_str(), -1, &statement, nullptr);
         if (rc != SQLITE_OK) {
-            throw ledger::SqlError(std::string("sqlite prepare: ") + sqlite3_errmsg(db_) + " in " +
+            throw agora::core::SqlError(std::string("sqlite prepare: ") + sqlite3_errmsg(db_) + " in " +
                                    sql);
         }
         return statement;
@@ -324,7 +324,7 @@ private:
                 }
             }
             if (rc != SQLITE_OK) {
-                throw ledger::SqlError(std::string("sqlite bind: ") + sqlite3_errmsg(db_));
+                throw agora::core::SqlError(std::string("sqlite bind: ") + sqlite3_errmsg(db_));
             }
         }
     }
@@ -363,7 +363,7 @@ private:
                     break;
                 }
                 default:
-                    throw ledger::SqlError("sqlite: unsupported column type");
+                    throw agora::core::SqlError("sqlite: unsupported column type");
             }
             row.push_back(std::move(value));
         }
@@ -375,7 +375,7 @@ private:
         if (sqlite3_exec(db_, sql, nullptr, nullptr, &error) != SQLITE_OK) {
             const std::string message = error != nullptr ? error : "statement failed";
             sqlite3_free(error);
-            throw ledger::SqlError("sqlite: " + message);
+            throw agora::core::SqlError("sqlite: " + message);
         }
     }
 
@@ -484,7 +484,7 @@ json::Value reconcile_row_json(const ReconcileIndexableMessage& row) {
                         {"embeddingBytes", std::move(bytes)}});
 }
 
-json::Value error_json(const ledger::KotlinError& failure) {
+json::Value error_json(const agora::core::KotlinError& failure) {
     return json_object({{"error", json_string(failure.class_name())},
                         {"message", json_string(failure.what())}});
 }
@@ -728,7 +728,7 @@ json::Value dispatch(const std::string& op,
         }
         return json_long(sql.execute(required_string(step, "sql"), args));
     }
-    throw ledger::KotlinError("IllegalStateException", "unknown operation " + op);
+    throw agora::core::KotlinError("IllegalStateException", "unknown operation " + op);
 }
 
 void seed(SqliteExecutor& sql, const json::Value& root) {
@@ -869,9 +869,9 @@ std::string run_scenario(const std::filesystem::path& scenario) {
             json::Value result;
             try {
                 result = dispatch(op, step, dao, conversations, sql);
-            } catch (const ledger::KotlinError& failure) {
+            } catch (const agora::core::KotlinError& failure) {
                 result = error_json(failure);
-            } catch (const ledger::SqlError& failure) {
+            } catch (const agora::core::SqlError& failure) {
                 // The Kotlin driver executes blockSql/sql outside the DAO proxy, so JDBC failures
                 // surface as java.sql.SQLException instead of the proxy's UndeclaredThrowable wrapper.
                 result = json_object({{"error", json_string("SQLException")},

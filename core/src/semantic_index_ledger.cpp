@@ -168,85 +168,13 @@ void WorkEntry::validate() const {
     kotlin_require(source_revision > 0);
 }
 
-// ---- SqlValue -----------------------------------------------------------------------------
-
-SqlValue SqlValue::null() { return SqlValue{}; }
-
-SqlValue SqlValue::text_value(std::string value) {
-    SqlValue out;
-    out.kind = Kind::Text;
-    out.text = std::move(value);
-    return out;
-}
-
-SqlValue SqlValue::integer_value(std::int64_t value) {
-    SqlValue out;
-    out.kind = Kind::Integer;
-    out.integer = value;
-    return out;
-}
-
-SqlValue SqlValue::bool_value(bool value) { return integer_value(value ? 1 : 0); }
-
-const std::string& SqlValue::as_text() const {
-    if (kind != Kind::Text) throw SqlError("SemanticIndexDao: expected a TEXT value");
-    return text;
-}
-
-std::int64_t SqlValue::as_integer() const {
-    if (kind != Kind::Integer && kind != Kind::Real) {
-        throw SqlError("SemanticIndexDao: expected an INTEGER value");
-    }
-    return integer;
-}
-
-std::vector<std::uint8_t> SqlValue::as_blob() const {
-    if (kind != Kind::Blob) throw SqlError("SemanticIndexDao: expected a BLOB value");
-    return blob;
-}
-
-std::optional<std::string> SqlValue::text_or_null() const {
-    if (kind == Kind::Null) return std::nullopt;
-    return as_text();
-}
-
-std::optional<std::int64_t> SqlValue::integer_or_null() const {
-    if (kind == Kind::Null) return std::nullopt;
-    return as_integer();
-}
-
 // ---- transactions -------------------------------------------------------------------------
 
-void SemanticIndexDao::begin_transaction() {
-    if (depth_ == 0) {
-        aborted_ = false;
-        sql_.begin();
-    }
-    level_successful_.push_back(false);
-    ++depth_;
-}
+void SemanticIndexDao::begin_transaction() { stack_.begin(); }
 
-void SemanticIndexDao::set_transaction_successful() {
-    kotlin_check(depth_ > 0, "RoomDatabase: no transaction in progress");
-    level_successful_.back() = true;
-}
+void SemanticIndexDao::set_transaction_successful() { stack_.mark_successful(); }
 
-void SemanticIndexDao::end_transaction() {
-    kotlin_check(depth_ > 0, "RoomDatabase: no transaction in progress");
-    const bool successful = level_successful_.back();
-    level_successful_.pop_back();
-    --depth_;
-    if (!successful) aborted_ = true;
-    if (depth_ == 0) {
-        if (aborted_) {
-            sql_.rollback();
-        } else {
-            sql_.commit();
-        }
-        aborted_ = false;
-        level_successful_.clear();
-    }
-}
+void SemanticIndexDao::end_transaction() { stack_.end(); }
 
 // ---- plain DAO methods --------------------------------------------------------------------
 

@@ -1,0 +1,147 @@
+{
+  "seed": {
+    "conversations": [
+      {
+        "id": "mixed",
+        "selectedRunBranchesJson": "{\"r1\":\"r2\",\"r2\":\"r2\",\"rX\":\"r2\"}",
+        "dataChangedAt": 100
+      },
+      {
+        "id": "null-keys",
+        "selectedRunBranchesJson": "{\"null\":\"n1\",\"null\":\"n2\",\"n1\":\"n3\"}",
+        "dataChangedAt": 100
+      },
+      {
+        "id": "self-null",
+        "selectedRunBranchesJson": "{\"null\":\"s1\",\"s1\":\"s1\"}",
+        "dataChangedAt": 100
+      },
+      {
+        "id": "future-clock",
+        "selectedRunBranchesJson": "{\"f1\":\"f2\",\"f9\":\"f2\"}",
+        "dataChangedAt": 5000000000000
+      }
+    ],
+    "runs": [
+      {
+        "id": "r1",
+        "conversationId": "mixed",
+        "status": "COMPLETED",
+        "startedAt": 1000,
+        "lastCheckpointAt": 1000,
+        "currentPass": 0,
+        "legacyAmbiguous": false,
+        "endedAt": 2000,
+        "endReason": "MODEL_COMPLETED"
+      },
+      {
+        "id": "r2",
+        "conversationId": "mixed",
+        "status": "ACTIVE",
+        "startedAt": 1000,
+        "lastCheckpointAt": 1000,
+        "currentPass": 0,
+        "legacyAmbiguous": false,
+        "parentRunId": "r1",
+        "activeSlot": 1
+      },
+      {
+        "id": "r3",
+        "conversationId": "mixed",
+        "status": "COMPLETED",
+        "startedAt": 1000,
+        "lastCheckpointAt": 1000,
+        "currentPass": 0,
+        "legacyAmbiguous": false,
+        "parentRunId": "r1",
+        "endedAt": 2100,
+        "endReason": "MODEL_COMPLETED"
+      },
+      {
+        "id": "n1",
+        "conversationId": "null-keys",
+        "status": "COMPLETED",
+        "startedAt": 1000,
+        "lastCheckpointAt": 1000,
+        "currentPass": 0,
+        "legacyAmbiguous": false,
+        "endedAt": 2000,
+        "endReason": "MODEL_COMPLETED"
+      },
+      {
+        "id": "n2",
+        "conversationId": "null-keys",
+        "status": "ACTIVE",
+        "startedAt": 1000,
+        "lastCheckpointAt": 1000,
+        "currentPass": 0,
+        "legacyAmbiguous": false,
+        "parentRunId": "n1",
+        "activeSlot": 1
+      },
+      {
+        "id": "n3",
+        "conversationId": "null-keys",
+        "status": "COMPLETED",
+        "startedAt": 1000,
+        "lastCheckpointAt": 1000,
+        "currentPass": 0,
+        "legacyAmbiguous": false,
+        "parentRunId": "n1",
+        "endedAt": 2100,
+        "endReason": "MODEL_COMPLETED"
+      },
+      {
+        "id": "s1",
+        "conversationId": "self-null",
+        "status": "COMPLETED",
+        "startedAt": 1000,
+        "lastCheckpointAt": 1000,
+        "currentPass": 0,
+        "legacyAmbiguous": false,
+        "endedAt": 2000,
+        "endReason": "MODEL_COMPLETED"
+      },
+      {
+        "id": "f1",
+        "conversationId": "future-clock",
+        "status": "COMPLETED",
+        "startedAt": 1000,
+        "lastCheckpointAt": 1000,
+        "currentPass": 0,
+        "legacyAmbiguous": false,
+        "endedAt": 2000,
+        "endReason": "MODEL_COMPLETED"
+      },
+      {
+        "id": "f2",
+        "conversationId": "future-clock",
+        "status": "ACTIVE",
+        "startedAt": 1000,
+        "lastCheckpointAt": 1000,
+        "currentPass": 0,
+        "legacyAmbiguous": false,
+        "parentRunId": "f1",
+        "activeSlot": 1
+      }
+    ]
+  },
+  "steps": [
+    {
+      "op": "repairRunBranches",
+      "conversationId": "mixed"
+    },
+    {
+      "op": "repairRunBranches",
+      "conversationId": "null-keys"
+    },
+    {
+      "op": "repairRunBranches",
+      "conversationId": "self-null"
+    },
+    {
+      "op": "repairRunBranches",
+      "conversationId": "future-clock"
+    }
+  ]
+}

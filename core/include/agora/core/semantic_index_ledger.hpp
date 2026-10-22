@@ -8,104 +8,9 @@
 #include <string_view>
 #include <vector>
 
+#include "agora/core/sql_boundary.hpp"
+
 namespace agora::core::semantic_index {
-
-// ---- Kotlin validation failures ----------------------------------------------------------
-
-/**
- * A Kotlin `require`/`check`/`checkNotNull` failure surfaced with the JVM exception class,
- * because the golden driver records `{"error": class, "message": message}` for every step.
- */
-class KotlinError : public std::runtime_error {
-public:
-    KotlinError(std::string class_name, std::string message)
-        : std::runtime_error(std::move(message)), class_name_(std::move(class_name)) {}
-
-    const std::string& class_name() const { return class_name_; }
-
-private:
-    std::string class_name_;
-};
-
-/** Kotlin require(value) / require(value) { message }. */
-inline void kotlin_require(bool satisfied, std::string message = "Failed requirement.") {
-    if (!satisfied) throw KotlinError("IllegalArgumentException", std::move(message));
-}
-
-/** Kotlin check(value) / checkNotNull(value) { message }. */
-inline void kotlin_check(bool satisfied, std::string message = "Check failed.") {
-    if (!satisfied) throw KotlinError("IllegalStateException", std::move(message));
-}
-
-// ---- SQL execution surface ---------------------------------------------------------------
-
-/** A bound parameter or result cell with the SQLite runtime type preserved. */
-struct SqlValue {
-    enum class Kind {
-        Null,
-        Text,
-        Integer,
-        Real,
-        Blob,
-    };
-
-    Kind kind = Kind::Null;
-    std::string text;
-    std::int64_t integer = 0;
-    double real = 0.0;
-    std::vector<std::uint8_t> blob;
-
-    static SqlValue null();
-    static SqlValue text_value(std::string value);
-    static SqlValue integer_value(std::int64_t value);
-    static SqlValue bool_value(bool value);
-
-    bool is_null() const { return kind == Kind::Null; }
-    const std::string& as_text() const;
-    std::int64_t as_integer() const;
-    std::vector<std::uint8_t> as_blob() const;
-    std::optional<std::string> text_or_null() const;
-    std::optional<std::int64_t> integer_or_null() const;
-};
-
-using SqlArgs = std::vector<SqlValue>;
-using SqlRow = std::vector<SqlValue>;
-
-/** A constraint rejection (SQLITE_CONSTRAINT): Room's @Upsert falls back to update-by-PK. */
-class SqlConstraintError : public std::runtime_error {
-public:
-    using std::runtime_error::runtime_error;
-};
-
-/** Any other SQLite failure — only reachable through a bug in the ported SQL. */
-class SqlError : public std::runtime_error {
-public:
-    using std::runtime_error::runtime_error;
-};
-
-/**
- * The SQLite execution boundary. Room is replaced by this surface the same way the clone stand
- * replaced the file system: the port owns the SQL text (transcribed from the @Query annotations)
- * and every conditional sequence, and the caller supplies the database.
- */
-class SqlExecutor {
-public:
-    virtual ~SqlExecutor() = default;
-
-    /** Runs a statement without result rows; returns the number of changed rows. */
-    virtual std::int64_t execute(const std::string& sql, const SqlArgs& args) = 0;
-
-    /** Runs a query; rows carry their cells in column order. */
-    virtual std::vector<SqlRow> query(const std::string& sql, const SqlArgs& args) = 0;
-
-    /** sqlite3_last_insert_rowid() for this connection. */
-    virtual std::int64_t last_insert_rowid() = 0;
-
-    /** SQLite transaction control; begin/commit/rollback arrive in matched pairs. */
-    virtual void begin() = 0;
-    virtual void commit() = 0;
-    virtual void rollback() = 0;
-};
 
 // ---- entity rows ------------------------------------------------------------------------
 
@@ -170,7 +75,7 @@ struct SemanticModelSnapshot {
  */
 class SemanticIndexDao {
 public:
-    explicit SemanticIndexDao(SqlExecutor& sql) : sql_(sql) {}
+    explicit SemanticIndexDao(SqlExecutor& sql) : sql_(sql), stack_(sql) {}
 
     // -- @Transaction nesting (RoomDatabase.beginTransaction/setTransactionSuccessful/endTransaction)
 
@@ -257,9 +162,7 @@ public:
 
 private:
     SqlExecutor& sql_;
-    int depth_ = 0;
-    bool aborted_ = false;
-    std::vector<bool> level_successful_;
+    TransactionStack stack_;
 };
 
 // ---- ChatDao surface the orchestration reads ---------------------------------------------

@@ -1,0 +1,169 @@
+{
+  "steps": [
+    {
+      "op": "enqueue",
+      "kind": "ATTACHMENT_ORPHANS",
+      "identity": "c1",
+      "updatedAt": 10
+    },
+    {
+      "op": "enqueue",
+      "kind": "RUN_BRANCHES",
+      "identity": "c2",
+      "updatedAt": 11
+    },
+    {
+      "op": "claim",
+      "claimId": "claim-1",
+      "claimedAt": 100,
+      "staleBefore": 50,
+      "limit": 10
+    },
+    {
+      "op": "complete",
+      "debt": {
+        "kind": "ATTACHMENT_ORPHANS",
+        "identity": "c1",
+        "state": "CLAIMED",
+        "revision": 1,
+        "updatedAt": 10,
+        "claimId": "claim-1",
+        "claimedAt": 100
+      }
+    },
+    {
+      "op": "complete",
+      "debt": {
+        "kind": "ATTACHMENT_ORPHANS",
+        "identity": "c1",
+        "state": "CLAIMED",
+        "revision": 1,
+        "updatedAt": 10,
+        "claimId": "claim-1",
+        "claimedAt": 100
+      }
+    },
+    {
+      "op": "release",
+      "debt": {
+        "kind": "RUN_BRANCHES",
+        "identity": "c2",
+        "state": "CLAIMED",
+        "revision": 1,
+        "updatedAt": 11,
+        "claimId": "claim-1",
+        "claimedAt": 100
+      },
+      "updatedAt": 99
+    },
+    {
+      "op": "complete",
+      "debt": {
+        "kind": "RUN_BRANCHES",
+        "identity": "c2",
+        "state": "PENDING",
+        "revision": 1,
+        "updatedAt": 11
+      }
+    },
+    {
+      "op": "release",
+      "debt": {
+        "kind": "RUN_BRANCHES",
+        "identity": "c2",
+        "state": "CLAIMED",
+        "revision": 1,
+        "updatedAt": 11,
+        "claimId": "claim-1",
+        "claimedAt": 100
+      },
+      "updatedAt": 120
+    },
+    {
+      "op": "release",
+      "debt": {
+        "kind": "RUN_BRANCHES",
+        "identity": "c2",
+        "state": "CLAIMED",
+        "revision": 1,
+        "updatedAt": 11,
+        "claimId": "claim-1",
+        "claimedAt": 100
+      },
+      "updatedAt": 130
+    },
+    {
+      "op": "enqueue",
+      "kind": "EMBEDDING_ORPHANS",
+      "identity": "*",
+      "updatedAt": 140
+    },
+    {
+      "op": "claim",
+      "claimId": "claim-2",
+      "claimedAt": 200,
+      "staleBefore": 150,
+      "limit": 10
+    },
+    {
+      "op": "sql",
+      "sql": "UPDATE maintenance_debt SET revision = revision + 1 WHERE kind = 'EMBEDDING_ORPHANS'",
+      "args": []
+    },
+    {
+      "op": "complete",
+      "debt": {
+        "kind": "EMBEDDING_ORPHANS",
+        "identity": "*",
+        "state": "CLAIMED",
+        "revision": 1,
+        "updatedAt": 140,
+        "claimId": "claim-2",
+        "claimedAt": 200
+      }
+    },
+    {
+      "op": "release",
+      "debt": {
+        "kind": "EMBEDDING_ORPHANS",
+        "identity": "*",
+        "state": "CLAIMED",
+        "revision": 1,
+        "updatedAt": 140,
+        "claimId": "claim-2",
+        "claimedAt": 200
+      },
+      "updatedAt": 300
+    },
+    {
+      "op": "completeClaimed",
+      "kind": "EMBEDDING_ORPHANS",
+      "identity": "*",
+      "revision": 2,
+      "claimId": "claim-2"
+    },
+    {
+      "op": "completeClaimed",
+      "kind": "EMBEDDING_ORPHANS",
+      "identity": "*",
+      "revision": 2,
+      "claimId": "other"
+    },
+    {
+      "op": "releaseClaimed",
+      "kind": "EMBEDDING_ORPHANS",
+      "identity": "*",
+      "revision": 2,
+      "claimId": "claim-2",
+      "updatedAt": 400
+    },
+    {
+      "op": "releaseClaimed",
+      "kind": "EMBEDDING_ORPHANS",
+      "identity": "*",
+      "revision": 99,
+      "claimId": "claim-2",
+      "updatedAt": 401
+    }
+  ]
+}

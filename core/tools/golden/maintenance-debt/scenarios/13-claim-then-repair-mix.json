@@ -1,0 +1,79 @@
+{
+  "seed": {
+    "conversations": [
+      {
+        "id": "c1",
+        "selectedRunBranchesJson": "{\"r1\":\"r2\"}",
+        "dataChangedAt": 100
+      }
+    ],
+    "runs": [
+      {
+        "id": "r1",
+        "conversationId": "c1",
+        "status": "STOPPING",
+        "startedAt": 1000,
+        "lastCheckpointAt": 1000,
+        "currentPass": 0,
+        "legacyAmbiguous": false,
+        "activeSlot": 1,
+        "stopRequestedAt": 1500
+      },
+      {
+        "id": "r2",
+        "conversationId": "c1",
+        "status": "STOPPED",
+        "startedAt": 1000,
+        "lastCheckpointAt": 1000,
+        "currentPass": 0,
+        "legacyAmbiguous": false,
+        "parentRunId": "r1",
+        "endedAt": 2500,
+        "endReason": "USER_STOPPED"
+      }
+    ]
+  },
+  "steps": [
+    {
+      "op": "enqueue",
+      "kind": "RUN_BRANCHES",
+      "identity": "c1",
+      "updatedAt": 5
+    },
+    {
+      "op": "claim",
+      "claimId": "worker",
+      "claimedAt": 50,
+      "staleBefore": 20,
+      "limit": 10
+    },
+    {
+      "op": "repairRunBranches",
+      "conversationId": "c1"
+    },
+    {
+      "op": "getMaintenanceRuns",
+      "conversationId": "c1"
+    },
+    {
+      "op": "complete",
+      "debt": {
+        "kind": "RUN_BRANCHES",
+        "identity": "c1",
+        "state": "CLAIMED",
+        "revision": 1,
+        "updatedAt": 5,
+        "claimId": "worker",
+        "claimedAt": 50
+      }
+    },
+    {
+      "op": "hasDebt"
+    },
+    {
+      "op": "getClaimCandidates",
+      "staleBefore": 0,
+      "limit": 10
+    }
+  ]
+}

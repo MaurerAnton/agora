@@ -1,0 +1,132 @@
+{
+  "seed": {
+    "conversations": [
+      {
+        "id": "c1",
+        "selectedRunBranchesJson": "{\"r1\":\"r2\"}",
+        "dataChangedAt": 100
+      },
+      {
+        "id": "c2",
+        "selectedRunBranchesJson": null,
+        "dataChangedAt": 100
+      },
+      {
+        "id": "c3",
+        "selectedRunBranchesJson": "",
+        "dataChangedAt": 100
+      },
+      {
+        "id": "c4",
+        "selectedRunBranchesJson": "{}",
+        "dataChangedAt": 100
+      },
+      {
+        "id": "bad-pass",
+        "selectedRunBranchesJson": "{}",
+        "dataChangedAt": 100
+      },
+      {
+        "id": "bad-status",
+        "selectedRunBranchesJson": "{}",
+        "dataChangedAt": 100
+      }
+    ],
+    "runs": [
+      {
+        "id": "r1",
+        "conversationId": "c1",
+        "status": "COMPLETED",
+        "startedAt": 1000,
+        "lastCheckpointAt": 1000,
+        "currentPass": 0,
+        "legacyAmbiguous": false,
+        "endedAt": 2000,
+        "endReason": "MODEL_COMPLETED"
+      },
+      {
+        "id": "r2",
+        "conversationId": "c1",
+        "status": "ACTIVE",
+        "startedAt": 1000,
+        "lastCheckpointAt": 1000,
+        "currentPass": 0,
+        "legacyAmbiguous": false,
+        "parentRunId": "r1",
+        "activeSlot": 1
+      },
+      {
+        "id": "x1",
+        "conversationId": "c3",
+        "status": "FAILED",
+        "startedAt": 1000,
+        "lastCheckpointAt": 1000,
+        "currentPass": 0,
+        "legacyAmbiguous": false,
+        "endedAt": 3000,
+        "endReason": "PROVIDER_ERROR"
+      },
+      {
+        "id": "bad",
+        "conversationId": "bad-pass",
+        "status": "COMPLETED",
+        "startedAt": 1000,
+        "lastCheckpointAt": 1000,
+        "currentPass": -1,
+        "legacyAmbiguous": false,
+        "endedAt": 4000,
+        "endReason": "MODEL_COMPLETED"
+      },
+      {
+        "id": "weird",
+        "conversationId": "bad-status",
+        "status": "BOGUS",
+        "startedAt": 1000,
+        "lastCheckpointAt": 1000,
+        "currentPass": 0,
+        "legacyAmbiguous": false
+      }
+    ]
+  },
+  "steps": [
+    {
+      "op": "getRunBranchConversationIdsPage",
+      "afterId": null,
+      "limit": 10
+    },
+    {
+      "op": "getRunBranchConversationIdsPage",
+      "afterId": "c1",
+      "limit": 1
+    },
+    {
+      "op": "getRunBranchConversationIdsPage",
+      "afterId": "zzz",
+      "limit": 5
+    },
+    {
+      "op": "getMaintenanceConversation",
+      "conversationId": "c1"
+    },
+    {
+      "op": "getMaintenanceConversation",
+      "conversationId": "missing"
+    },
+    {
+      "op": "getMaintenanceRuns",
+      "conversationId": "c1"
+    },
+    {
+      "op": "getMaintenanceRuns",
+      "conversationId": "missing"
+    },
+    {
+      "op": "getMaintenanceRuns",
+      "conversationId": "bad-pass"
+    },
+    {
+      "op": "getMaintenanceRuns",
+      "conversationId": "bad-status"
+    }
+  ]
+}

@@ -1,0 +1,84 @@
+{
+  "seed": {
+    "conversations": [
+      {
+        "id": "t1",
+        "selectedRunBranchesJson": "{\"t1r1\":\"t1r2\"}",
+        "dataChangedAt": 9000
+      },
+      {
+        "id": "t2",
+        "selectedRunBranchesJson": "{\"t2r1\":\"t2r2\"}",
+        "dataChangedAt": 9000
+      }
+    ],
+    "runs": [
+      {
+        "id": "t1r1",
+        "conversationId": "t1",
+        "status": "COMPLETED",
+        "startedAt": 1000,
+        "lastCheckpointAt": 1000,
+        "currentPass": 0,
+        "legacyAmbiguous": false,
+        "endedAt": 2000,
+        "endReason": "MODEL_COMPLETED"
+      },
+      {
+        "id": "t1r2",
+        "conversationId": "t1",
+        "status": "COMPLETED",
+        "startedAt": 1000,
+        "lastCheckpointAt": 1000,
+        "currentPass": 0,
+        "legacyAmbiguous": false,
+        "parentRunId": "t1r1",
+        "endedAt": 2000,
+        "endReason": "MODEL_COMPLETED"
+      },
+      {
+        "id": "t2r1",
+        "conversationId": "t2",
+        "status": "COMPLETED",
+        "startedAt": 1000,
+        "lastCheckpointAt": 1000,
+        "currentPass": 0,
+        "legacyAmbiguous": false,
+        "endedAt": 2000,
+        "endReason": "MODEL_COMPLETED"
+      },
+      {
+        "id": "t2r2",
+        "conversationId": "t2",
+        "status": "COMPLETED",
+        "startedAt": 1000,
+        "lastCheckpointAt": 1000,
+        "currentPass": 0,
+        "legacyAmbiguous": false,
+        "parentRunId": "t2r1",
+        "endedAt": 2000,
+        "endReason": "MODEL_COMPLETED"
+      }
+    ]
+  },
+  "steps": [
+    {
+      "op": "sql",
+      "sql": "UPDATE conversations SET selectedRunBranchesJson = ? WHERE id = ?",
+      "args": [
+        "{\"t1r1\":\"t1r2\",\"ghost\":\"t1r2\"}",
+        "t1"
+      ]
+    },
+    {
+      "op": "executeRuntimeRecovery",
+      "conversationId": "t1",
+      "at": 5000
+    },
+    {
+      "op": "executeRuntimeRecovery",
+      "conversationId": "t2",
+      "at": 5000
+    }
+  ]
+}

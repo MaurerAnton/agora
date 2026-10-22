@@ -2,6 +2,7 @@
 
 #include <optional>
 #include <string>
+#include <utility>
 #include <vector>
 
 namespace agora::core::run_branch_selection {
@@ -41,5 +42,21 @@ struct Selection {
  */
 std::vector<Selection> retain_valid_edges(const std::vector<Selection>& selections,
                                           const std::vector<RunRef>& runs);
+
+/**
+ * LinkedHashMap<String?, String>: input order, the last value wins at the first position.
+ * The nullable key is how Kotlin's `mapKeys { if (it.key == "null") null else it.key }` round trip
+ * represents a null parent Run id in JSON.
+ */
+using SelectionMap = std::vector<std::pair<std::optional<std::string>, std::string>>;
+
+/**
+ * decodeSelectionMap: `Json.decodeFromString<Map<String, String>>(raw)` inside runCatching —
+ * null when the raw text is not a JSON object of string values.
+ */
+std::optional<SelectionMap> decode_selection_map(const std::string& raw);
+
+/** encodeSelectionMap: `Json.encodeToString(selections.mapKeys { it.key ?: "null" })`. */
+std::string encode_selection_map(const SelectionMap& selections);
 
 }  // namespace agora::core::run_branch_selection

@@ -1,0 +1,55 @@
+{
+  "seed": {
+    "conversations": [
+      {
+        "id": "c1",
+        "selectedRunBranchesJson": null,
+        "dataChangedAt": 100
+      }
+    ],
+    "runs": [
+      {
+        "id": "r1",
+        "conversationId": "c1",
+        "status": "STOPPING",
+        "startedAt": 1000,
+        "lastCheckpointAt": 1000,
+        "currentPass": 2,
+        "legacyAmbiguous": false,
+        "activeSlot": 1,
+        "stopRequestedAt": 1500
+      }
+    ],
+    "messages": [
+      {
+        "id": "m1",
+        "conversationId": "c1",
+        "text": "body",
+        "status": "TOOL_CALLING",
+        "participant": "MODEL",
+        "timestamp": 10,
+        "runId": "r1",
+        "runSequence": 0,
+        "tokenCount": 0
+      },
+      {
+        "id": "m2",
+        "conversationId": "c1",
+        "text": "body",
+        "status": "ERROR",
+        "participant": "MODEL",
+        "timestamp": 11,
+        "runId": "r1",
+        "runSequence": 0,
+        "tokenCount": 0
+      }
+    ]
+  },
+  "steps": [
+    {
+      "op": "executeRuntimeRecovery",
+      "conversationId": "c1",
+      "at": 7000
+    }
+  ]
+}

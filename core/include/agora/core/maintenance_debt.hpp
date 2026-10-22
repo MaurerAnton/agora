@@ -7,6 +7,7 @@
 #include <utility>
 #include <vector>
 
+#include "agora/core/run_branch_selection.hpp"
 #include "agora/core/sql_boundary.hpp"
 
 namespace agora::core::maintenance_debt {
@@ -60,17 +61,8 @@ struct RunEntry {
     void validate() const;
 };
 
-/** LinkedHashMap<String?, String>: input order, last value wins at the first position. */
-using RunSelections = std::vector<std::pair<std::optional<std::string>, std::string>>;
-
-/**
- * decodeMaintenanceRunSelections: null when the raw text is not a JSON object of string values
- * (Json.decodeFromString<Map<String, String>> inside runCatching).
- */
-std::optional<RunSelections> decode_maintenance_run_selections(const std::string& raw);
-
-/** encodeMaintenanceRunSelections: order preserved, null keys written as the string "null". */
-std::string encode_maintenance_run_selections(const RunSelections& selections);
+/** The run-selection map: maintenance and recovery share the JSON round trip (run_branch_selection). */
+using RunSelections = agora::core::run_branch_selection::SelectionMap;
 
 /** The ChatDao-independent maintenance queue over a SqlExecutor (Room replaced by the boundary). */
 class MaintenanceDebtDao {

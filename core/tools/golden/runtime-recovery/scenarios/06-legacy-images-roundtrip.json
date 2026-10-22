@@ -1,0 +1,70 @@
+{
+  "seed": {
+    "conversations": [
+      {
+        "id": "c1",
+        "selectedRunBranchesJson": null,
+        "dataChangedAt": 100
+      }
+    ],
+    "runs": [
+      {
+        "id": "r1",
+        "conversationId": "c1",
+        "status": "ACTIVE",
+        "startedAt": 1000,
+        "lastCheckpointAt": 1000,
+        "currentPass": 0,
+        "legacyAmbiguous": false,
+        "activeSlot": 1
+      }
+    ],
+    "messages": [
+      {
+        "id": "m1",
+        "conversationId": "c1",
+        "text": "body",
+        "status": "THINKING",
+        "participant": "MODEL",
+        "timestamp": 10,
+        "runId": "r1",
+        "runSequence": 0,
+        "tokenCount": 0,
+        "imagesRaw": "a.png|||b.png"
+      },
+      {
+        "id": "m2",
+        "conversationId": "c1",
+        "text": "body",
+        "status": "SUCCESS",
+        "participant": "MODEL",
+        "timestamp": 11,
+        "runId": "r1",
+        "runSequence": 1,
+        "tokenCount": 0,
+        "imagesRaw": ""
+      },
+      {
+        "id": "m3",
+        "conversationId": "c1",
+        "text": "body",
+        "status": "THINKING",
+        "participant": "MODEL",
+        "timestamp": 12,
+        "runId": "r1",
+        "runSequence": 2,
+        "tokenCount": 0,
+        "images": [
+          "c.png"
+        ]
+      }
+    ]
+  },
+  "steps": [
+    {
+      "op": "executeRuntimeRecovery",
+      "conversationId": "c1",
+      "at": 5000
+    }
+  ]
+}

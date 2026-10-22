@@ -1,0 +1,1 @@
+{"clones":[{"id":"m1","images":["<workspace>/clones/<uuid>.png"],"attachmentMeta":null},{"id":"m2","images":["<workspace>/clones/<uuid>.png"],"attachmentMeta":null},{"id":"m3","images":["<workspace>/clones/<uuid>.png"],"attachmentMeta":null}],"cloneDirectoryExists":true,"cloneFiles":[],"sourceFiles":[{"name":"a.png","content":"png-bytes"}]}

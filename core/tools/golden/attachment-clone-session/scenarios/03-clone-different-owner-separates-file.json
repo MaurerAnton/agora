@@ -1,0 +1,26 @@
+{
+  "sources": [
+    {
+      "name": "a.png",
+      "content": "png-bytes"
+    }
+  ],
+  "messages": [
+    {
+      "id": "m1",
+      "conversationId": "c1",
+      "ownerKey": "owner-1",
+      "images": [
+        "platform_clone_workspace/sources/a.png"
+      ]
+    },
+    {
+      "id": "m2",
+      "conversationId": "c1",
+      "ownerKey": "owner-2",
+      "images": [
+        "platform_clone_workspace/sources/a.png"
+      ]
+    }
+  ]
+}

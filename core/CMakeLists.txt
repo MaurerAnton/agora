@@ -25,6 +25,7 @@ add_library(agora_core_lib STATIC
     src/cron_expression.cpp
     src/custom_model_references.cpp
     src/backup_media_policy.cpp
+    src/attachment_clone_session.cpp
     src/message_persistence_guard.cpp
     src/imported_citation_projection.cpp
     src/native_backup_secrets.cpp

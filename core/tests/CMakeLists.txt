@@ -13,6 +13,7 @@ add_executable(agora_core_tests
     stream_normalization_parity_test.cpp
     stream_normalization_test.cpp
     backup_media_policy_parity_test.cpp
+    attachment_clone_session_parity_test.cpp
     message_persistence_guard_parity_test.cpp
     zip_reader_parity_test.cpp
     gpt_chat_importer_parity_test.cpp
@@ -151,6 +152,7 @@ target_compile_definitions(agora_core_tests PRIVATE
     AGORA_FIXTURE_CRON_EXPRESSION_DIR="${CMAKE_CURRENT_SOURCE_DIR}/../tools/golden/cron-expression"
     AGORA_FIXTURE_TASK_SCHEDULE_DIR="${CMAKE_CURRENT_SOURCE_DIR}/../tools/golden/task-schedule"
     AGORA_FIXTURE_BACKUP_MEDIA_POLICY_DIR="${CMAKE_CURRENT_SOURCE_DIR}/../tools/golden/backup-media-policy"
+    AGORA_FIXTURE_ATTACHMENT_CLONE_SESSION_DIR="${CMAKE_CURRENT_SOURCE_DIR}/../tools/golden/attachment-clone-session"
     AGORA_FIXTURE_PORTABLE_SETTINGS_ARCHIVE_DIR="${CMAKE_CURRENT_SOURCE_DIR}/../tools/golden/portable-settings-archive"
     AGORA_FIXTURE_PORTABLE_SETTINGS_RESET_DIR="${CMAKE_CURRENT_SOURCE_DIR}/../tools/golden/portable-settings-reset"
     AGORA_FIXTURE_MESSAGE_PERSISTENCE_GUARD_DIR="${CMAKE_CURRENT_SOURCE_DIR}/../tools/golden/message-persistence-guard"

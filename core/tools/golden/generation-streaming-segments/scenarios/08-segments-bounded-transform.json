@@ -1,0 +1,25 @@
+{
+  "clock": [],
+  "timingSteps": [],
+  "merge": [],
+  "message": {
+    "id": "m1",
+    "text": "0123456789",
+    "status": "SUCCESS",
+    "participant": "MODEL",
+    "timestamp": 1,
+    "segments": [
+      {
+        "type": "answer",
+        "content": "01234"
+      },
+      {
+        "type": "answer",
+        "content": "56789"
+      }
+    ]
+  },
+  "transform": {
+    "replacement": "abcde"
+  }
+}

@@ -11,6 +11,8 @@
 #include "agora/core/json.hpp"
 #include "agora/core/message_source.hpp"
 #include "agora/core/openai_request.hpp"
+#include "agora/core/run_recovery.hpp"
+#include "agora/core/token_usage.hpp"
 
 namespace agora::core::prep {
 
@@ -52,6 +54,8 @@ struct MessageSegment {
     std::optional<std::string> response_output_item_provider;
     /** The duration the provider reported for a thought segment. */
     std::optional<std::int64_t> duration_ms;
+    /** The streamed text deltas of a live answer (the persistence guard drops them). */
+    std::vector<run_recovery::StreamingTextDelta> streaming_text_deltas;
 };
 
 struct ToolCallData {
@@ -66,8 +70,6 @@ struct ToolCallData {
     std::optional<std::string> transcription;
     std::vector<json::Value> response_output_items;
     std::optional<std::string> response_output_item_provider;
-    /** The duration the provider reported for a thought segment. */
-    std::optional<std::int64_t> duration_ms;
 };
 
 struct AttachmentItem {
@@ -102,6 +104,10 @@ struct ChatMessage {
     std::optional<std::int64_t> run_sequence;
     /** The structured source of an automatic message (task / loop / ask_user answers). */
     std::optional<message_source::Source> source;
+    /** The token usage of the message. */
+    std::optional<TokenUsage> token_usage;
+    /** How long the thought phase of the message took. */
+    std::optional<std::int64_t> thought_time_ms;
 
     /** ChatMessage.isToolProtocolMessage: a tool_ or result_ row. */
     bool is_tool_protocol_message() const;

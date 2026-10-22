@@ -1,0 +1,84 @@
+{
+  "clock": [
+    0,
+    100,
+    150,
+    200,
+    300,
+    400,
+    500
+  ],
+  "timingSteps": [
+    {
+      "action": "ensureStarted"
+    },
+    {
+      "action": "live"
+    },
+    {
+      "action": "finish"
+    },
+    {
+      "action": "live"
+    },
+    {
+      "action": "reset"
+    },
+    {
+      "action": "live"
+    },
+    {
+      "action": "adopt",
+      "duration": 1234
+    }
+  ],
+  "merge": [
+    {
+      "type": "answer",
+      "content": "first"
+    },
+    {
+      "type": "answer",
+      "content": " second"
+    },
+    {
+      "type": "thought",
+      "content": "thinking",
+      "signature": "sig",
+      "durationMs": 100
+    },
+    {
+      "type": "thought",
+      "content": " more",
+      "signature": null,
+      "durationMs": 50
+    },
+    {
+      "type": "tool",
+      "content": "tool output"
+    },
+    {
+      "type": "answer",
+      "content": "third"
+    }
+  ],
+  "live": {
+    "flushed": [
+      {
+        "type": "citation",
+        "content": "citation body"
+      }
+    ],
+    "answer": "live answer",
+    "thought": "live thought",
+    "signature": "sig",
+    "signatureProvider": "openai",
+    "thoughtDurationMs": 700,
+    "answerDeltas": [
+      {
+        "sequence": 1,
+        "codePointCount": 5
+      }
+    ]
+  }
+}

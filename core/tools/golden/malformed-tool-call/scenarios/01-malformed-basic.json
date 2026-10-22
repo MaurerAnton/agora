@@ -1,0 +1,14 @@
+{
+  "requests": [
+    {
+      "cause": "the tool name was empty",
+      "originalName": null,
+      "originalArguments": null,
+      "streamKey": null,
+      "signature": null
+    }
+  ],
+  "results": [
+    "{\"error\":\"the tool name was empty\"}"
+  ]
+}

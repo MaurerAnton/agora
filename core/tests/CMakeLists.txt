@@ -70,6 +70,7 @@ add_executable(agora_core_tests
     embedding_selector_parity_test.cpp
     loop_policy_parity_test.cpp
     mcp_protocol_parity_test.cpp
+    malformed_tool_call_parity_test.cpp
     memory_manager_parity_test.cpp
     shell_definitions_parity_test.cpp
     shell_tools_parity_test.cpp
@@ -140,6 +141,7 @@ target_compile_definitions(agora_core_tests PRIVATE
     AGORA_FIXTURE_PROVIDER_SUPPORT_DIR="${CMAKE_CURRENT_SOURCE_DIR}/../tools/golden/provider-support"
     AGORA_FIXTURE_DUCKDUCKGO_DIR="${CMAKE_CURRENT_SOURCE_DIR}/../tools/golden/duckduckgo"
     AGORA_FIXTURE_MCP_PROTOCOL_DIR="${CMAKE_CURRENT_SOURCE_DIR}/../tools/golden/mcp-protocol"
+    AGORA_FIXTURE_MALFORMED_TOOL_CALL_DIR="${CMAKE_CURRENT_SOURCE_DIR}/../tools/golden/malformed-tool-call"
     AGORA_FIXTURE_EMBEDDING_DIR="${CMAKE_CURRENT_SOURCE_DIR}/../tools/golden/embedding"
     AGORA_FIXTURE_SHELL_DEFINITIONS_DIR="${CMAKE_CURRENT_SOURCE_DIR}/../tools/golden/shell-definitions"
     AGORA_FIXTURE_SHELL_TOOLS_DIR="${CMAKE_CURRENT_SOURCE_DIR}/../tools/golden/shell-tools"

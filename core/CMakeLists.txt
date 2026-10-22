@@ -46,6 +46,7 @@ add_library(agora_core_lib STATIC
     src/loop_policy.cpp
     src/message_preparation.cpp
     src/model_aliases.cpp
+    src/malformed_tool_call.cpp
     src/message_preparation_tokens.cpp
     src/ollama.cpp
     src/openai_request.cpp

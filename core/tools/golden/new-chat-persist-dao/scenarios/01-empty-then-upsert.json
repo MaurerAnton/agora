@@ -1,0 +1,58 @@
+{
+  "seed": {
+    "newChatPersist": []
+  },
+  "steps": [
+    {
+      "op": "observeNewChatPersist"
+    },
+    {
+      "op": "getNewChatPersist"
+    },
+    {
+      "op": "upsertNewChatPersist",
+      "modelId": "m1",
+      "systemPromptId": null,
+      "conversationSettingsJson": "{\"t\":0.2}",
+      "draftText": "hello",
+      "draftAttachments": "[\"a.png\"]"
+    },
+    {
+      "op": "observeNewChatPersist"
+    },
+    {
+      "op": "getNewChatPersist"
+    },
+    {
+      "op": "upsertNewChatPersist",
+      "modelId": null,
+      "systemPromptId": "p2",
+      "conversationSettingsJson": null,
+      "draftText": "",
+      "draftAttachments": null
+    },
+    {
+      "op": "getNewChatPersist"
+    },
+    {
+      "op": "observeNewChatPersist"
+    },
+    {
+      "op": "deleteNewChatPersistIfMatches",
+      "modelId": null,
+      "systemPromptId": "p2",
+      "conversationSettingsJson": null,
+      "draftText": "",
+      "draftAttachments": null
+    },
+    {
+      "op": "observeNewChatPersist"
+    },
+    {
+      "op": "getNewChatPersist"
+    },
+    {
+      "op": "deleteNewChatPersist"
+    }
+  ]
+}

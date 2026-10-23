@@ -1,8 +1,9 @@
-// Golden parity test for data/local/ChatDao.kt.
+// Golden parity tests for data/local/ChatDao.kt and data/ConversationExportSnapshotReader.kt.
 //
-// The stand compiles the app's DAO interfaces verbatim over a real SQLite database with Room's
-// generated adapter replaced. This test drives the composed C++ ChatDao over the same Room schema
-// and compares every step result and the final table dump with the frozen Kotlin traces.
+// The stands compile the app's DAO interfaces and snapshot reader verbatim over a real SQLite
+// database with Room's generated adapter and reader-connection surface replaced. These tests
+// drive the C++ ports over the same Room schema and compare every step result and the final table
+// dump (or key inventory) with the frozen Kotlin traces.
 #include <algorithm>
 #include <cctype>
 #include <cstdint>
@@ -11,6 +12,7 @@
 #include <fstream>
 #include <map>
 #include <optional>
+#include <set>
 #include <sstream>
 #include <stdexcept>
 #include <string>
@@ -21,6 +23,7 @@
 #include <sqlite3.h>
 
 #include "agora/core/chat_dao.hpp"
+#include "agora/core/conversation_export_snapshot_reader.hpp"
 #include "agora/core/json.hpp"
 #include "check.hpp"
 
@@ -29,6 +32,7 @@ namespace {
 namespace automation = agora::core::automation;
 namespace chat = agora::core::chat_dao;
 namespace compact = agora::core::context_compact;
+namespace export_snapshot = agora::core::conversation_export_snapshot;
 namespace json = agora::core::json;
 namespace new_chat = agora::core::new_chat_persist;
 namespace recovery = agora::core::run_recovery;
@@ -40,6 +44,7 @@ using agora::core::MessageEntity;
 using agora::core::SqlArgs;
 using agora::core::SqlConstraintError;
 using agora::core::SqlError;
+using agora::core::SqlExecutor;
 using agora::core::SqlRow;
 using agora::core::SqlValue;
 using chat::ChatConversation;
@@ -901,6 +906,19 @@ json::Value task_json(const automation::TaskEntity& entity) {
     });
 }
 
+json::Value loop_json(const automation::LoopEntity& entity) {
+    return json_object({
+        {"conversationId", json_string(entity.conversation_id)},
+        {"intervalMs", json_long(entity.interval_ms)},
+        {"prompt", optional_json_string(entity.prompt)},
+        {"nextFireAt", json_long(entity.next_fire_at)},
+        {"cycleCount", json_long(entity.cycle_count)},
+        {"maxCycles", optional_json_int(entity.max_cycles)},
+        {"active", json_bool(entity.active)},
+        {"revision", json_long(entity.revision)},
+    });
+}
+
 json::Value new_chat_json(const new_chat::NewChatPersistEntity& entity) {
     return json_object({
         {"id", json_long(entity.id)},
@@ -1749,6 +1767,172 @@ void test_chat_dao_golden() {
     }
 }
 
+json::Value reader_record_json(const export_snapshot::SnapshotRecord& record) {
+    switch (record.type()) {
+        case export_snapshot::RecordType::Conversation:
+            return json_object({{"type", json_string("conversation")},
+                                {"entity", conversation_json(std::get<ChatEntity>(record.payload))}});
+        case export_snapshot::RecordType::Run:
+            return json_object({{"type", json_string("run")},
+                                {"entity", run_json(std::get<RunEntity>(record.payload))}});
+        case export_snapshot::RecordType::Message:
+            return json_object({{"type", json_string("message")},
+                                {"entity", message_json(std::get<MessageEntity>(record.payload))}});
+        case export_snapshot::RecordType::Loop:
+            return json_object({{"type", json_string("loop")},
+                                {"entity",
+                                 loop_json(std::get<automation::LoopEntity>(record.payload))}});
+        case export_snapshot::RecordType::Task:
+            return json_object({{"type", json_string("task")},
+                                {"entity",
+                                 task_json(std::get<automation::TaskEntity>(record.payload))}});
+    }
+    throw KotlinError("IllegalStateException", "unknown snapshot record type");
+}
+
+json::Value reader_key_array(SqlExecutor& sql, const std::string& query) {
+    std::vector<json::Value> keys;
+    for (const SqlRow& row : sql.query(query, {})) {
+        keys.push_back(json_string(row.at(0).as_text()));
+    }
+    return json_array(std::move(keys));
+}
+
+json::Value dump_reader_keys(SqlExecutor& sql) {
+    return json_object({
+        {"conversations", reader_key_array(sql, "SELECT id FROM conversations ORDER BY rowid")},
+        {"runs", reader_key_array(sql, "SELECT id FROM runs ORDER BY rowid")},
+        {"messages", reader_key_array(sql, "SELECT id FROM messages ORDER BY rowid")},
+        {"loops", reader_key_array(sql, "SELECT conversationId FROM loops ORDER BY rowid")},
+        {"tasks", reader_key_array(sql, "SELECT id FROM tasks ORDER BY rowid")},
+    });
+}
+
+void run_reader_scenario(const std::filesystem::path& scenario_path,
+                         const std::filesystem::path& trace_path,
+                         const std::filesystem::path& schema_path) {
+    const json::ParseResult scenario_parsed = json::parse(read_file(scenario_path));
+    if (!scenario_parsed.value.has_value()) {
+        scenario_fail("cannot parse " + scenario_path.string());
+    }
+    const json::ParseResult trace_parsed = json::parse(read_file(trace_path));
+    if (!trace_parsed.value.has_value()) {
+        scenario_fail("cannot parse " + trace_path.string());
+    }
+    const json::Value& scenario = *scenario_parsed.value;
+    const json::Value& trace = *trace_parsed.value;
+
+    SqliteExecutor sql(schema_path);
+    if (const json::Value* seed = field(scenario, "seedSql")) {
+        if (seed->kind != json::Kind::Array) {
+            scenario_fail("seedSql is not an array in " + scenario_path.filename().string());
+        }
+        for (const json::Value& statement : seed->elements) {
+            if (statement.kind != json::Kind::String) {
+                scenario_fail("seedSql element is not a string");
+            }
+            sql.execute(statement.text, {});
+        }
+    }
+
+    ChatDao dao(sql);
+    export_snapshot::ChatDaoSnapshotStore store(dao, sql);
+
+    const json::Value* scenario_steps = field(scenario, "steps");
+    const json::Value* trace_steps = field(trace, "steps");
+    if (scenario_steps == nullptr || trace_steps == nullptr ||
+        scenario_steps->kind != json::Kind::Array || trace_steps->kind != json::Kind::Array) {
+        scenario_fail("missing steps in " + scenario_path.filename().string());
+    }
+    if (scenario_steps->elements.size() != trace_steps->elements.size()) {
+        scenario_fail("step count mismatch in " + scenario_path.filename().string());
+    }
+
+    for (std::size_t index = 0; index < scenario_steps->elements.size(); ++index) {
+        const json::Value& step = scenario_steps->elements[index];
+        const json::Value& expected_step = trace_steps->elements[index];
+        const std::string op = required_string(step, "op");
+        if (op != required_string(expected_step, "op")) {
+            scenario_fail("reader trace op mismatch at step " + std::to_string(index));
+        }
+
+        const std::vector<std::string> skipped = string_list(step, "skipBody");
+        const std::set<std::string> skip_set(skipped.begin(), skipped.end());
+        const std::optional<std::string> fail_include =
+            optional_string(step, "failIncludeBody");
+        const std::optional<int> fail_at = optional_int(step, "failOnRecordAt");
+        std::vector<json::Value> records;
+        std::vector<json::Value> calls;
+        json::Value actual;
+        try {
+            export_snapshot::read_snapshot(
+                store,
+                [&](const ChatEntity& conversation) {
+                    calls.push_back(json_string(conversation.id));
+                    if (fail_include.has_value() && *fail_include == conversation.id) {
+                        throw KotlinError("IllegalStateException",
+                                          "includeBody failed for " + conversation.id);
+                    }
+                    return skip_set.find(conversation.id) == skip_set.end();
+                },
+                [&](const export_snapshot::SnapshotRecord& record) {
+                    if (fail_at.has_value() &&
+                        static_cast<int>(records.size()) == *fail_at) {
+                        throw KotlinError("IllegalStateException",
+                                          "onRecord failed at " +
+                                              std::to_string(records.size()));
+                    }
+                    records.push_back(reader_record_json(record));
+                });
+            actual = json_object({
+                {"records", json_array(std::move(records))},
+                {"includeBodyCalls", json_array(std::move(calls))},
+            });
+        } catch (const std::exception& error) {
+            actual = error_json(error);
+            actual.members.push_back({"records", json_array(std::move(records))});
+            actual.members.push_back({"includeBodyCalls", json_array(std::move(calls))});
+        }
+
+        const json::Value* expected = field(expected_step, "result");
+        if (expected == nullptr || !json_equal(actual, *expected)) {
+            scenario_fail(scenario_path.filename().string() + " step " +
+                          std::to_string(index) + " (" + op + ")\n  expected: " +
+                          (expected == nullptr ? std::string("<missing>") : excerpt(*expected)) +
+                          "\n  actual:   " + excerpt(actual));
+        }
+    }
+
+    const json::Value* expected_tables = field(trace, "tables");
+    const json::Value actual_tables = dump_reader_keys(sql);
+    if (expected_tables == nullptr || !json_equal(actual_tables, *expected_tables)) {
+        scenario_fail(scenario_path.filename().string() +
+                      " table keys\n  expected: " +
+                      (expected_tables == nullptr ? std::string("<missing>")
+                                                  : excerpt(*expected_tables)) +
+                      "\n  actual:   " + excerpt(actual_tables));
+    }
+}
+
+void test_reader_golden() {
+    const std::filesystem::path root = AGORA_FIXTURE_CONVERSATION_EXPORT_SNAPSHOT_READER_DIR;
+    const std::filesystem::path scenario_dir = root / "scenarios";
+    const std::filesystem::path golden_dir = root / "golden";
+    std::vector<std::filesystem::path> scenarios;
+    for (const auto& entry : std::filesystem::directory_iterator(scenario_dir)) {
+        if (entry.is_regular_file() && entry.path().extension() == ".json") {
+            scenarios.push_back(entry.path());
+        }
+    }
+    std::sort(scenarios.begin(), scenarios.end());
+    if (scenarios.empty()) scenario_fail("no snapshot-reader scenarios found");
+    for (const std::filesystem::path& scenario : scenarios) {
+        const std::filesystem::path trace = golden_dir / (scenario.stem().string() + ".trace");
+        run_reader_scenario(scenario, trace, root / "platform" / "schema.sql");
+    }
+}
+
 }  // namespace
 
 TEST(chat_dao_golden_parity) { test_chat_dao_golden(); }
+TEST(conversation_export_snapshot_reader_golden_parity) { test_reader_golden(); }

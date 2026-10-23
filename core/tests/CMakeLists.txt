@@ -115,6 +115,7 @@ target_compile_definitions(agora_core_tests PRIVATE
     AGORA_FIXTURE_STREAM_NORMALIZATION_DIR="${CMAKE_CURRENT_SOURCE_DIR}/../tools/golden/stream-normalization"
     AGORA_FIXTURE_CITATIONS_DIR="${CMAKE_CURRENT_SOURCE_DIR}/../tools/golden/citations"
     AGORA_FIXTURE_CHAT_DAO_DIR="${CMAKE_CURRENT_SOURCE_DIR}/../tools/golden/chat-dao"
+    AGORA_FIXTURE_CONVERSATION_EXPORT_SNAPSHOT_READER_DIR="${CMAKE_CURRENT_SOURCE_DIR}/../tools/golden/conversation-export-snapshot-reader"
     AGORA_FIXTURE_CLAUDE_CHAT_IMPORTER_DIR="${CMAKE_CURRENT_SOURCE_DIR}/../tools/golden/claude-chat-importer"
     AGORA_FIXTURE_CJK_TEXT_DIR="${CMAKE_CURRENT_SOURCE_DIR}/../tools/golden/cjk-text"
     AGORA_FIXTURE_ANTHROPIC_STREAM_DIR="${CMAKE_CURRENT_SOURCE_DIR}/../tools/golden/anthropic-stream"

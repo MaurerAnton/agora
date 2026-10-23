@@ -1,0 +1,20 @@
+{
+  "seedSql": [
+    "INSERT INTO conversations (id, title, lastUpdated, dataChangedAt, selectedBranchesJson, modelId, taskId, origin, graduated, draftText, selectedRunBranchesJson, hasUnreadGeneration, isPinned) VALUES ('c1', 'c1', 0, 0, NULL, NULL, NULL, 'user', 0, '', NULL, 0, 0)",
+    "INSERT INTO runs (id, conversationId, parentRunId, status, activeSlot, startedAt, lastCheckpointAt, stopRequestedAt, endedAt, endReason, currentPass, legacyAmbiguous) VALUES ('r1', 'c1', NULL, 'COMPLETED', NULL, 1, 0, NULL, 0, 'MODEL_COMPLETED', 0, 0)",
+    "INSERT INTO messages (id, conversationId, parentId, text, images, tokenCount, status, participant, timestamp, modelName, runId, runSequence) VALUES ('m1', 'c1', NULL, 'm1', '[]', 0, 'SUCCESS', 'MODEL', 1, NULL, 'r1', 0)",
+    "INSERT INTO messages (id, conversationId, parentId, text, images, tokenCount, status, participant, timestamp, modelName, runId, runSequence) VALUES ('m2', 'c1', NULL, 'm2', '[]', 0, 'SUCCESS', 'MODEL', 2, NULL, 'r1', 0)",
+    "INSERT INTO messages (id, conversationId, parentId, text, images, tokenCount, status, participant, timestamp, modelName, runId, runSequence) VALUES ('m3', 'c1', NULL, 'm3', '[]', 0, 'SUCCESS', 'MODEL', 3, NULL, 'r1', 0)",
+    "INSERT INTO loops (conversationId, intervalMs, prompt, nextFireAt, cycleCount, maxCycles, active, revision) VALUES ('c1', 60000, NULL, 1000, 0, NULL, 1, 0)",
+    "INSERT INTO tasks (id, name, prompt, cronExpr, nextRunAt, enabled, createdAt, lastRunAt) VALUES ('t1', 't1', 't1', '0 * * * *', 1000, 1, 1, NULL)"
+  ],
+  "steps": [
+    {
+      "op": "readSnapshot",
+      "failOnRecordAt": 2
+    },
+    {
+      "op": "readSnapshot"
+    }
+  ]
+}

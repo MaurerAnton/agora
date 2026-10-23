@@ -1,0 +1,112 @@
+{
+  "seed": {
+    "conversations": [],
+    "tasks": [
+      {
+        "id": "t1",
+        "name": "t1",
+        "prompt": "prompt-t1",
+        "cronExpr": "",
+        "nextRunAt": 0,
+        "enabled": true,
+        "createdAt": 1,
+        "modelId": "openai:gpt-4"
+      },
+      {
+        "id": "t2",
+        "name": "t2",
+        "prompt": "prompt-t2",
+        "cronExpr": "",
+        "nextRunAt": 0,
+        "enabled": true,
+        "createdAt": 2,
+        "modelId": "openai:gpt-4o"
+      },
+      {
+        "id": "t3",
+        "name": "t3",
+        "prompt": "prompt-t3",
+        "cronExpr": "",
+        "nextRunAt": 0,
+        "enabled": true,
+        "createdAt": 3,
+        "modelId": "anthropic:claude"
+      },
+      {
+        "id": "t4",
+        "name": "t4",
+        "prompt": "prompt-t4",
+        "cronExpr": "",
+        "nextRunAt": 0,
+        "enabled": true,
+        "createdAt": 4
+      },
+      {
+        "id": "t5",
+        "name": "t5",
+        "prompt": "prompt-t5",
+        "cronExpr": "",
+        "nextRunAt": 0,
+        "enabled": true,
+        "createdAt": 5,
+        "modelId": "other"
+      },
+      {
+        "id": "t6",
+        "name": "t6",
+        "prompt": "prompt-t6",
+        "cronExpr": "",
+        "nextRunAt": 0,
+        "enabled": true,
+        "createdAt": 6,
+        "modelId": "openai"
+      },
+      {
+        "id": "t7",
+        "name": "t7",
+        "prompt": "prompt-t7",
+        "cronExpr": "",
+        "nextRunAt": 0,
+        "enabled": true,
+        "createdAt": 7,
+        "modelId": "openaix:foo"
+      }
+    ],
+    "loops": []
+  },
+  "steps": [
+    {
+      "op": "replaceTaskModelReferences",
+      "oldModelId": "openai:gpt-4",
+      "newModelId": "local:model"
+    },
+    {
+      "op": "replaceTaskModelReferences",
+      "oldModelId": "openai:gpt-4",
+      "newModelId": null
+    },
+    {
+      "op": "replaceTaskModelReferences",
+      "oldModelId": "missing",
+      "newModelId": "x"
+    },
+    {
+      "op": "renameTaskProviderModelReferences",
+      "oldProvider": "openai",
+      "newProvider": "azure"
+    },
+    {
+      "op": "renameTaskProviderModelReferences",
+      "oldProvider": "azure",
+      "newProvider": "openai"
+    },
+    {
+      "op": "renameTaskProviderModelReferences",
+      "oldProvider": "openai",
+      "newProvider": "x"
+    },
+    {
+      "op": "getAllTasksList"
+    }
+  ]
+}

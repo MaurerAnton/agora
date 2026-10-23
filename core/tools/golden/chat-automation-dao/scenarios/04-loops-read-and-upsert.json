@@ -1,0 +1,87 @@
+{
+  "seed": {
+    "conversations": [
+      {
+        "id": "c1"
+      },
+      {
+        "id": "c2"
+      },
+      {
+        "id": "c3"
+      }
+    ],
+    "tasks": [],
+    "loops": [
+      {
+        "conversationId": "c1",
+        "intervalMs": 60000,
+        "nextFireAt": 5000,
+        "cycleCount": 1,
+        "active": true,
+        "revision": 2,
+        "prompt": "continue",
+        "maxCycles": 10
+      },
+      {
+        "conversationId": "c2",
+        "intervalMs": 30000,
+        "nextFireAt": 0,
+        "cycleCount": 0,
+        "active": false,
+        "revision": 0
+      }
+    ]
+  },
+  "steps": [
+    {
+      "op": "getLoop",
+      "conversationId": "c1"
+    },
+    {
+      "op": "getLoop",
+      "conversationId": "missing"
+    },
+    {
+      "op": "getActiveLoops"
+    },
+    {
+      "op": "observeActiveLoops"
+    },
+    {
+      "op": "getAllLoopsList"
+    },
+    {
+      "op": "getLoopsForConversationSnapshot",
+      "conversationId": "c2"
+    },
+    {
+      "op": "upsertLoopRow",
+      "conversationId": "c2",
+      "intervalMs": 30000,
+      "prompt": "p2",
+      "nextFireAt": 7000,
+      "cycleCount": 3,
+      "maxCycles": 5,
+      "active": true,
+      "revision": 1
+    },
+    {
+      "op": "observeActiveLoops"
+    },
+    {
+      "op": "upsertLoopRow",
+      "conversationId": "c3",
+      "intervalMs": 10000,
+      "prompt": null,
+      "nextFireAt": 9000,
+      "cycleCount": 0,
+      "maxCycles": null,
+      "active": true,
+      "revision": 0
+    },
+    {
+      "op": "getAllLoopsList"
+    }
+  ]
+}

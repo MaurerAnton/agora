@@ -1,0 +1,60 @@
+{
+  "seed": {
+    "conversations": [
+      {
+        "id": "c1"
+      }
+    ],
+    "tasks": [],
+    "loops": [
+      {
+        "conversationId": "c1",
+        "intervalMs": 60000,
+        "nextFireAt": 2000,
+        "cycleCount": 2,
+        "active": true,
+        "revision": 4,
+        "prompt": "p",
+        "maxCycles": 9
+      }
+    ]
+  },
+  "steps": [
+    {
+      "op": "upsertLoopRow",
+      "conversationId": "c1",
+      "intervalMs": 1000,
+      "prompt": null,
+      "nextFireAt": 0,
+      "cycleCount": 2,
+      "maxCycles": null,
+      "active": false,
+      "revision": 5
+    },
+    {
+      "op": "getLoop",
+      "conversationId": "c1"
+    },
+    {
+      "op": "upsertLoopRow",
+      "conversationId": "c1",
+      "intervalMs": 2000,
+      "prompt": "x",
+      "nextFireAt": 5000,
+      "cycleCount": 0,
+      "maxCycles": 3,
+      "active": true,
+      "revision": 6
+    },
+    {
+      "op": "getLoop",
+      "conversationId": "c1"
+    },
+    {
+      "op": "deleteAllLoops"
+    },
+    {
+      "op": "getAllLoopsList"
+    }
+  ]
+}

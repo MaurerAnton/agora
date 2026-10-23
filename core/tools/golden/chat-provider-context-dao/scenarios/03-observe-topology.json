@@ -1,0 +1,84 @@
+{
+  "seed": {
+    "conversations": [
+      {
+        "id": "c-1",
+        "selectedBranchesJson": null
+      },
+      {
+        "id": "c-2",
+        "selectedBranchesJson": null
+      }
+    ],
+    "runs": [
+      {
+        "id": "run-c-1",
+        "conversationId": "c-1",
+        "status": "COMPLETED",
+        "startedAt": 100,
+        "lastCheckpointAt": 100,
+        "endedAt": 200,
+        "endReason": "MODEL_COMPLETED",
+        "currentPass": 0,
+        "legacyAmbiguous": false
+      },
+      {
+        "id": "run-c-2",
+        "conversationId": "c-2",
+        "status": "COMPLETED",
+        "startedAt": 100,
+        "lastCheckpointAt": 100,
+        "endedAt": 200,
+        "endReason": "MODEL_COMPLETED",
+        "currentPass": 0,
+        "legacyAmbiguous": false
+      }
+    ],
+    "messages": [
+      {
+        "id": "m-02",
+        "conversationId": "c-1",
+        "status": "STOPPED",
+        "participant": "USER",
+        "timestamp": 1,
+        "tokenCount": 0,
+        "runId": "run-c-1",
+        "runSequence": -1
+      },
+      {
+        "id": "m-01",
+        "conversationId": "c-1",
+        "status": "SUCCESS",
+        "participant": "MODEL",
+        "timestamp": 2,
+        "tokenCount": 0,
+        "runId": "run-c-1",
+        "runSequence": -1
+      },
+      {
+        "id": "m-03",
+        "conversationId": "c-2",
+        "status": "SUCCESS",
+        "participant": "MODEL",
+        "timestamp": 0,
+        "tokenCount": 0,
+        "runId": "run-c-2",
+        "runSequence": -1
+      }
+    ]
+  },
+  "steps": [
+    {
+      "op": "observeMessageContextTopology",
+      "conversationId": "c-1"
+    },
+    {
+      "op": "observeMessageContextTopology",
+      "conversationId": "c-2"
+    },
+    {
+      "op": "observeMessageContextTopology",
+      "conversationId": "missing"
+    }
+  ]
+}

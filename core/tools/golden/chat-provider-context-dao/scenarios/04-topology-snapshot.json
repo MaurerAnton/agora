@@ -1,0 +1,132 @@
+{
+  "seed": {
+    "conversations": [
+      {
+        "id": "c-01",
+        "selectedBranchesJson": "{\"m-1\":\"m-2\"}"
+      },
+      {
+        "id": "c-02",
+        "selectedBranchesJson": null
+      },
+      {
+        "id": "c-03",
+        "selectedBranchesJson": ""
+      },
+      {
+        "id": "c-04",
+        "selectedBranchesJson": "[]"
+      }
+    ],
+    "runs": [
+      {
+        "id": "run-c-01",
+        "conversationId": "c-01",
+        "status": "COMPLETED",
+        "startedAt": 100,
+        "lastCheckpointAt": 100,
+        "endedAt": 200,
+        "endReason": "MODEL_COMPLETED",
+        "currentPass": 0,
+        "legacyAmbiguous": false
+      },
+      {
+        "id": "run-c-02",
+        "conversationId": "c-02",
+        "status": "COMPLETED",
+        "startedAt": 100,
+        "lastCheckpointAt": 100,
+        "endedAt": 200,
+        "endReason": "MODEL_COMPLETED",
+        "currentPass": 0,
+        "legacyAmbiguous": false
+      },
+      {
+        "id": "run-c-03",
+        "conversationId": "c-03",
+        "status": "COMPLETED",
+        "startedAt": 100,
+        "lastCheckpointAt": 100,
+        "endedAt": 200,
+        "endReason": "MODEL_COMPLETED",
+        "currentPass": 0,
+        "legacyAmbiguous": false
+      },
+      {
+        "id": "run-c-04",
+        "conversationId": "c-04",
+        "status": "COMPLETED",
+        "startedAt": 100,
+        "lastCheckpointAt": 100,
+        "endedAt": 200,
+        "endReason": "MODEL_COMPLETED",
+        "currentPass": 0,
+        "legacyAmbiguous": false
+      }
+    ],
+    "messages": [
+      {
+        "id": "m-02",
+        "conversationId": "c-01",
+        "status": "SUCCESS",
+        "participant": "MODEL",
+        "timestamp": 20,
+        "tokenCount": 0,
+        "runId": "run-c-01",
+        "runSequence": -1
+      },
+      {
+        "id": "m-01",
+        "conversationId": "c-01",
+        "status": "THINKING",
+        "participant": "USER",
+        "timestamp": 10,
+        "tokenCount": 0,
+        "runId": "run-c-01",
+        "runSequence": -1
+      },
+      {
+        "id": "m-03",
+        "conversationId": "c-02",
+        "status": "SUCCESS",
+        "participant": "MODEL",
+        "timestamp": 5,
+        "tokenCount": 0,
+        "runId": "run-c-02",
+        "runSequence": -1
+      },
+      {
+        "id": "m-04",
+        "conversationId": "c-03",
+        "status": "SUCCESS",
+        "participant": "MODEL",
+        "timestamp": 6,
+        "tokenCount": 0,
+        "runId": "run-c-03",
+        "runSequence": -1
+      }
+    ]
+  },
+  "steps": [
+    {
+      "op": "getProviderContextTopologySnapshot",
+      "conversationId": "c-01"
+    },
+    {
+      "op": "getProviderContextTopologySnapshot",
+      "conversationId": "c-02"
+    },
+    {
+      "op": "getProviderContextTopologySnapshot",
+      "conversationId": "c-03"
+    },
+    {
+      "op": "getProviderContextTopologySnapshot",
+      "conversationId": "c-04"
+    },
+    {
+      "op": "getProviderContextTopologySnapshot",
+      "conversationId": "missing"
+    }
+  ]
+}

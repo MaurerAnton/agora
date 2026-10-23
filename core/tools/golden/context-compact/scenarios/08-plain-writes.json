@@ -1,0 +1,249 @@
+{
+  "seed": {
+    "conversations": [
+      {
+        "id": "c1",
+        "selectedBranchesJson": null,
+        "selectedRunBranchesJson": null,
+        "lastUpdated": 100,
+        "dataChangedAt": 100
+      }
+    ],
+    "runs": [
+      {
+        "id": "r1",
+        "conversationId": "c1",
+        "status": "COMPLETED",
+        "activeSlot": null,
+        "startedAt": 1000,
+        "lastCheckpointAt": 1000,
+        "stopRequestedAt": null,
+        "endedAt": 1100,
+        "endReason": "MODEL_COMPLETED",
+        "currentPass": 0,
+        "legacyAmbiguous": false
+      },
+      {
+        "id": "r_child",
+        "conversationId": "c1",
+        "status": "COMPLETED",
+        "activeSlot": null,
+        "startedAt": 1000,
+        "lastCheckpointAt": 1000,
+        "stopRequestedAt": null,
+        "endedAt": 1100,
+        "endReason": "MODEL_COMPLETED",
+        "currentPass": 0,
+        "legacyAmbiguous": false,
+        "parentRunId": "r1"
+      },
+      {
+        "id": "r_del",
+        "conversationId": "c1",
+        "status": "COMPLETED",
+        "activeSlot": null,
+        "startedAt": 1000,
+        "lastCheckpointAt": 1000,
+        "stopRequestedAt": null,
+        "endedAt": 1100,
+        "endReason": "MODEL_COMPLETED",
+        "currentPass": 0,
+        "legacyAmbiguous": false
+      }
+    ],
+    "messages": [
+      {
+        "id": "m1",
+        "conversationId": "c1",
+        "text": "body",
+        "status": "SUCCESS",
+        "participant": "MODEL",
+        "timestamp": 100,
+        "runId": "r1",
+        "runSequence": 0,
+        "tokenCount": 0
+      },
+      {
+        "id": "m2",
+        "conversationId": "c1",
+        "text": "body",
+        "status": "SUCCESS",
+        "participant": "MODEL",
+        "timestamp": 100,
+        "runId": "r1",
+        "runSequence": 1,
+        "tokenCount": 0,
+        "parentId": "m1"
+      },
+      {
+        "id": "m3",
+        "conversationId": "c1",
+        "text": "body",
+        "status": "SUCCESS",
+        "participant": "MODEL",
+        "timestamp": 100,
+        "runId": "r1",
+        "runSequence": 2,
+        "tokenCount": 0
+      },
+      {
+        "id": "compact_1",
+        "conversationId": "c1",
+        "text": "body",
+        "status": "SUCCESS",
+        "participant": "MODEL",
+        "timestamp": 100,
+        "runId": "r1",
+        "runSequence": 3,
+        "tokenCount": 0
+      }
+    ],
+    "embeddings": [
+      {
+        "id": 1,
+        "messageId": "m1",
+        "modelId": "m",
+        "embedding": "0a0b",
+        "chunkText": "chunk",
+        "dimension": 2,
+        "sourceFingerprint": "fp"
+      },
+      {
+        "id": 2,
+        "messageId": "m2",
+        "modelId": "m",
+        "embedding": "0a0b",
+        "chunkText": "chunk",
+        "dimension": 2,
+        "sourceFingerprint": "fp"
+      }
+    ]
+  },
+  "steps": [
+    {
+      "op": "insertMessage",
+      "message": {
+        "id": "m_new",
+        "conversationId": "c1",
+        "text": "inserted",
+        "status": "SUCCESS",
+        "participant": "MODEL",
+        "timestamp": 50,
+        "runId": "r1",
+        "runSequence": 7
+      }
+    },
+    {
+      "op": "insertRun",
+      "run": {
+        "id": "r_new",
+        "conversationId": "c1",
+        "status": "COMPLETED",
+        "activeSlot": null,
+        "startedAt": 70,
+        "lastCheckpointAt": 70,
+        "stopRequestedAt": null,
+        "endedAt": 170,
+        "endReason": "MODEL_COMPLETED",
+        "currentPass": 0,
+        "legacyAmbiguous": false
+      }
+    },
+    {
+      "op": "touchRun",
+      "runId": "r1",
+      "at": 77
+    },
+    {
+      "op": "touchRun",
+      "runId": "missing",
+      "at": 77
+    },
+    {
+      "op": "reparentMessageChildren",
+      "removedMessageId": "m1",
+      "replacementParentId": "m3"
+    },
+    {
+      "op": "reparentMessageChildren",
+      "removedMessageId": "m1",
+      "replacementParentId": null
+    },
+    {
+      "op": "reparentRunChildren",
+      "removedRunId": "r1",
+      "replacementParentRunId": "r_new"
+    },
+    {
+      "op": "reparentRunChildren",
+      "removedRunId": "missing",
+      "replacementParentRunId": null
+    },
+    {
+      "op": "replaceContextCompactMessageRun",
+      "messageId": "compact_1",
+      "oldRunId": "r1",
+      "newRunId": "r_new",
+      "modelName": "model-x"
+    },
+    {
+      "op": "replaceContextCompactMessageRun",
+      "messageId": "compact_1",
+      "oldRunId": "r1",
+      "newRunId": "r_new",
+      "modelName": "model-x"
+    },
+    {
+      "op": "updateSelectionsForRunDeletion",
+      "conversationId": "c1",
+      "selectedBranchesJson": "{\"a\":\"b\"}",
+      "selectedRunBranchesJson": "{\"c\":\"d\"}",
+      "at": 500
+    },
+    {
+      "op": "updateMessageBranchSelections",
+      "conversationId": "c1",
+      "selectedBranchesJson": "{\"e\":\"f\"}",
+      "at": 600
+    },
+    {
+      "op": "updateRunBranchSelections",
+      "conversationId": "c1",
+      "selectedRunBranchesJson": "{\"g\":\"h\"}",
+      "at": 700
+    },
+    {
+      "op": "updateBranchSelections",
+      "conversationId": "c1",
+      "selectedBranchesJson": "{\"i\":\"j\"}",
+      "selectedRunBranchesJson": "{\"k\":\"l\"}",
+      "at": 800
+    },
+    {
+      "op": "updateMessageBranchSelections",
+      "conversationId": "missing",
+      "selectedBranchesJson": "{}",
+      "at": 900
+    },
+    {
+      "op": "deleteMessagesByIds",
+      "ids": [
+        "m3"
+      ]
+    },
+    {
+      "op": "deleteEmbeddingsByMessageIds",
+      "messageIds": [
+        "m1"
+      ]
+    },
+    {
+      "op": "deleteRun",
+      "runId": "r_del"
+    },
+    {
+      "op": "deleteRun",
+      "runId": "missing"
+    }
+  ]
+}

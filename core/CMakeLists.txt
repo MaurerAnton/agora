@@ -29,6 +29,7 @@ add_library(agora_core_lib STATIC
     src/semantic_index_ledger.cpp
     src/maintenance_debt.cpp
     src/runtime_recovery.cpp
+    src/context_compact.cpp
     src/message_persistence_guard.cpp
     src/imported_citation_projection.cpp
     src/native_backup_secrets.cpp

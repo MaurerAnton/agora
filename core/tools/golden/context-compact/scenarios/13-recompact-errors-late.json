@@ -1,0 +1,306 @@
+{
+  "seed": {
+    "conversations": [
+      {
+        "id": "c1",
+        "selectedBranchesJson": "{\"m1\":\"compact_ok\"}",
+        "selectedRunBranchesJson": "{\"r1\":\"compact_graph\",\"other\":\"compact_graph\"}",
+        "lastUpdated": 100,
+        "dataChangedAt": 100
+      },
+      {
+        "id": "c2",
+        "selectedBranchesJson": null,
+        "selectedRunBranchesJson": null,
+        "lastUpdated": 100,
+        "dataChangedAt": 100
+      }
+    ],
+    "runs": [
+      {
+        "id": "r1",
+        "conversationId": "c1",
+        "status": "COMPLETED",
+        "activeSlot": null,
+        "startedAt": 1000,
+        "lastCheckpointAt": 1000,
+        "stopRequestedAt": null,
+        "endedAt": 1100,
+        "endReason": "MODEL_COMPLETED",
+        "currentPass": 0,
+        "legacyAmbiguous": false
+      },
+      {
+        "id": "other_run",
+        "conversationId": "c1",
+        "status": "COMPLETED",
+        "activeSlot": null,
+        "startedAt": 1000,
+        "lastCheckpointAt": 1000,
+        "stopRequestedAt": null,
+        "endedAt": 1100,
+        "endReason": "MODEL_COMPLETED",
+        "currentPass": 0,
+        "legacyAmbiguous": false
+      },
+      {
+        "id": "compact_parentless",
+        "conversationId": "c1",
+        "status": "STOPPED",
+        "activeSlot": null,
+        "startedAt": 1000,
+        "lastCheckpointAt": 1000,
+        "stopRequestedAt": null,
+        "endedAt": 1100,
+        "endReason": "USER_STOPPED",
+        "currentPass": 0,
+        "legacyAmbiguous": false,
+        "parentRunId": "r1"
+      },
+      {
+        "id": "compact_ok",
+        "conversationId": "c1",
+        "status": "STOPPED",
+        "activeSlot": null,
+        "startedAt": 1000,
+        "lastCheckpointAt": 1000,
+        "stopRequestedAt": null,
+        "endedAt": 1100,
+        "endReason": "USER_STOPPED",
+        "currentPass": 0,
+        "legacyAmbiguous": false,
+        "parentRunId": "r1"
+      },
+      {
+        "id": "compact_ancestry",
+        "conversationId": "c1",
+        "status": "STOPPED",
+        "activeSlot": null,
+        "startedAt": 1000,
+        "lastCheckpointAt": 1000,
+        "stopRequestedAt": null,
+        "endedAt": 1100,
+        "endReason": "USER_STOPPED",
+        "currentPass": 0,
+        "legacyAmbiguous": false,
+        "parentRunId": "other_run"
+      },
+      {
+        "id": "compact_graph",
+        "conversationId": "c1",
+        "status": "STOPPED",
+        "activeSlot": null,
+        "startedAt": 1000,
+        "lastCheckpointAt": 1000,
+        "stopRequestedAt": null,
+        "endedAt": 1100,
+        "endReason": "USER_STOPPED",
+        "currentPass": 0,
+        "legacyAmbiguous": false,
+        "parentRunId": "r1"
+      }
+    ],
+    "messages": [
+      {
+        "id": "m1",
+        "conversationId": "c1",
+        "text": "body",
+        "status": "SUCCESS",
+        "participant": "MODEL",
+        "timestamp": 100,
+        "runId": "r1",
+        "runSequence": 0,
+        "tokenCount": 0
+      },
+      {
+        "id": "compact_parentless",
+        "conversationId": "c1",
+        "text": "body",
+        "status": "SUCCESS",
+        "participant": "MODEL",
+        "timestamp": 100,
+        "runId": "compact_parentless",
+        "runSequence": 0,
+        "tokenCount": 0
+      },
+      {
+        "id": "compact_ok",
+        "conversationId": "c1",
+        "text": "body",
+        "status": "SUCCESS",
+        "participant": "MODEL",
+        "timestamp": 100,
+        "runId": "compact_ok",
+        "runSequence": 0,
+        "tokenCount": 0,
+        "parentId": "m1"
+      },
+      {
+        "id": "compact_ancestry",
+        "conversationId": "c1",
+        "text": "body",
+        "status": "SUCCESS",
+        "participant": "MODEL",
+        "timestamp": 100,
+        "runId": "compact_ancestry",
+        "runSequence": 0,
+        "tokenCount": 0,
+        "parentId": "m1"
+      },
+      {
+        "id": "compact_graph",
+        "conversationId": "c1",
+        "text": "body",
+        "status": "SUCCESS",
+        "participant": "MODEL",
+        "timestamp": 100,
+        "runId": "compact_graph",
+        "runSequence": 0,
+        "tokenCount": 0,
+        "parentId": "m1"
+      }
+    ]
+  },
+  "steps": [
+    {
+      "op": "beginRecompactContextCompact",
+      "replacementRun": {
+        "id": "zz_c",
+        "conversationId": "c1",
+        "status": "ACTIVE",
+        "activeSlot": 1,
+        "startedAt": 50,
+        "lastCheckpointAt": 50,
+        "stopRequestedAt": null,
+        "endedAt": null,
+        "endReason": null,
+        "currentPass": 0,
+        "legacyAmbiguous": false,
+        "parentRunId": "r1"
+      },
+      "messageId": "compact_parentless",
+      "modelName": "m",
+      "expectedSelectedBranchesJson": "{\"m1\":\"compact_ok\"}"
+    },
+    {
+      "op": "beginRecompactContextCompact",
+      "replacementRun": {
+        "id": "compact_ok",
+        "conversationId": "c1",
+        "status": "ACTIVE",
+        "activeSlot": 1,
+        "startedAt": 50,
+        "lastCheckpointAt": 50,
+        "stopRequestedAt": null,
+        "endedAt": null,
+        "endReason": null,
+        "currentPass": 0,
+        "legacyAmbiguous": false,
+        "parentRunId": "r1"
+      },
+      "messageId": "compact_ok",
+      "modelName": "m",
+      "expectedSelectedBranchesJson": "{\"m1\":\"compact_ok\"}"
+    },
+    {
+      "op": "beginRecompactContextCompact",
+      "replacementRun": {
+        "id": "zz_wrong",
+        "conversationId": "c2",
+        "status": "ACTIVE",
+        "activeSlot": 1,
+        "startedAt": 50,
+        "lastCheckpointAt": 50,
+        "stopRequestedAt": null,
+        "endedAt": null,
+        "endReason": null,
+        "currentPass": 0,
+        "legacyAmbiguous": false,
+        "parentRunId": "r1"
+      },
+      "messageId": "compact_ok",
+      "modelName": "m",
+      "expectedSelectedBranchesJson": "{\"m1\":\"compact_ok\"}"
+    },
+    {
+      "op": "beginRecompactContextCompact",
+      "replacementRun": {
+        "id": "zz_terminal",
+        "conversationId": "c1",
+        "status": "COMPLETED",
+        "activeSlot": null,
+        "startedAt": 50,
+        "lastCheckpointAt": 50,
+        "stopRequestedAt": null,
+        "endedAt": 150,
+        "endReason": "MODEL_COMPLETED",
+        "currentPass": 0,
+        "legacyAmbiguous": false,
+        "parentRunId": "r1"
+      },
+      "messageId": "compact_ok",
+      "modelName": "m",
+      "expectedSelectedBranchesJson": "{\"m1\":\"compact_ok\"}"
+    },
+    {
+      "op": "beginRecompactContextCompact",
+      "replacementRun": {
+        "id": "zz_parent",
+        "conversationId": "c1",
+        "status": "ACTIVE",
+        "activeSlot": 1,
+        "startedAt": 50,
+        "lastCheckpointAt": 50,
+        "stopRequestedAt": null,
+        "endedAt": null,
+        "endReason": null,
+        "currentPass": 0,
+        "legacyAmbiguous": false,
+        "parentRunId": "other_run"
+      },
+      "messageId": "compact_ok",
+      "modelName": "m",
+      "expectedSelectedBranchesJson": "{\"m1\":\"compact_ok\"}"
+    },
+    {
+      "op": "beginRecompactContextCompact",
+      "replacementRun": {
+        "id": "zz_ancestry",
+        "conversationId": "c1",
+        "status": "ACTIVE",
+        "activeSlot": 1,
+        "startedAt": 50,
+        "lastCheckpointAt": 50,
+        "stopRequestedAt": null,
+        "endedAt": null,
+        "endReason": null,
+        "currentPass": 0,
+        "legacyAmbiguous": false,
+        "parentRunId": "r1"
+      },
+      "messageId": "compact_ancestry",
+      "modelName": "m",
+      "expectedSelectedBranchesJson": "{\"m1\":\"compact_ok\"}"
+    },
+    {
+      "op": "beginRecompactContextCompact",
+      "replacementRun": {
+        "id": "zz_graph",
+        "conversationId": "c1",
+        "status": "ACTIVE",
+        "activeSlot": 1,
+        "startedAt": 50,
+        "lastCheckpointAt": 50,
+        "stopRequestedAt": null,
+        "endedAt": null,
+        "endReason": null,
+        "currentPass": 0,
+        "legacyAmbiguous": false,
+        "parentRunId": "r1"
+      },
+      "messageId": "compact_graph",
+      "modelName": "m",
+      "expectedSelectedBranchesJson": "{\"m1\":\"compact_ok\"}"
+    }
+  ]
+}

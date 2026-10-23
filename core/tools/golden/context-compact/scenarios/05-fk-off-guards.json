@@ -1,0 +1,174 @@
+{
+  "seed": {
+    "conversations": [
+      {
+        "id": "c1",
+        "selectedBranchesJson": "{\"m1\":\"compact_c1\"}",
+        "selectedRunBranchesJson": null,
+        "lastUpdated": 100,
+        "dataChangedAt": 100
+      },
+      {
+        "id": "c2",
+        "selectedBranchesJson": null,
+        "selectedRunBranchesJson": null,
+        "lastUpdated": 100,
+        "dataChangedAt": 100
+      },
+      {
+        "id": "c3",
+        "selectedBranchesJson": null,
+        "selectedRunBranchesJson": null,
+        "lastUpdated": 100,
+        "dataChangedAt": 100
+      }
+    ],
+    "runs": [
+      {
+        "id": "c1_run",
+        "conversationId": "c1",
+        "status": "COMPLETED",
+        "activeSlot": null,
+        "startedAt": 1000,
+        "lastCheckpointAt": 1000,
+        "stopRequestedAt": null,
+        "endedAt": 1100,
+        "endReason": "MODEL_COMPLETED",
+        "currentPass": 0,
+        "legacyAmbiguous": false
+      },
+      {
+        "id": "c2_run",
+        "conversationId": "c2",
+        "status": "COMPLETED",
+        "activeSlot": null,
+        "startedAt": 1000,
+        "lastCheckpointAt": 1000,
+        "stopRequestedAt": null,
+        "endedAt": 1100,
+        "endReason": "MODEL_COMPLETED",
+        "currentPass": 0,
+        "legacyAmbiguous": false
+      },
+      {
+        "id": "c3_run",
+        "conversationId": "c3",
+        "status": "COMPLETED",
+        "activeSlot": null,
+        "startedAt": 1000,
+        "lastCheckpointAt": 1000,
+        "stopRequestedAt": null,
+        "endedAt": 1100,
+        "endReason": "MODEL_COMPLETED",
+        "currentPass": 0,
+        "legacyAmbiguous": false
+      }
+    ],
+    "messages": [
+      {
+        "id": "m1",
+        "conversationId": "c1",
+        "text": "body",
+        "status": "SUCCESS",
+        "participant": "MODEL",
+        "timestamp": 100,
+        "runId": "c1_run",
+        "runSequence": 0,
+        "tokenCount": 0
+      },
+      {
+        "id": "compact_c1",
+        "conversationId": "c1",
+        "text": "body",
+        "status": "SUCCESS",
+        "participant": "MODEL",
+        "timestamp": 100,
+        "runId": "c1_run",
+        "runSequence": 1,
+        "tokenCount": 0,
+        "parentId": "m1"
+      },
+      {
+        "id": "compact_c2",
+        "conversationId": "c2",
+        "text": "body",
+        "status": "SUCCESS",
+        "participant": "MODEL",
+        "timestamp": 100,
+        "runId": "c2_run",
+        "runSequence": 0,
+        "tokenCount": 0
+      },
+      {
+        "id": "compact_c3",
+        "conversationId": "c3",
+        "text": "body",
+        "status": "SUCCESS",
+        "participant": "MODEL",
+        "timestamp": 100,
+        "runId": "c3_run",
+        "runSequence": 0,
+        "tokenCount": 0
+      }
+    ]
+  },
+  "steps": [
+    {
+      "op": "removeContextCompact",
+      "messageId": "missing_message"
+    },
+    {
+      "op": "sql",
+      "sql": "PRAGMA foreign_keys = OFF"
+    },
+    {
+      "op": "sql",
+      "sql": "DELETE FROM conversations WHERE id = ?",
+      "args": [
+        "c1"
+      ]
+    },
+    {
+      "op": "removeContextCompact",
+      "messageId": "compact_c1"
+    },
+    {
+      "op": "sql",
+      "sql": "DELETE FROM runs WHERE id = ?",
+      "args": [
+        "c2_run"
+      ]
+    },
+    {
+      "op": "removeContextCompact",
+      "messageId": "compact_c2"
+    },
+    {
+      "op": "sql",
+      "sql": "DELETE FROM conversations WHERE id = ?",
+      "args": [
+        "c3"
+      ]
+    },
+    {
+      "op": "beginRecompactContextCompact",
+      "replacementRun": {
+        "id": "zz_run",
+        "conversationId": "c3",
+        "status": "ACTIVE",
+        "activeSlot": 1,
+        "startedAt": 50,
+        "lastCheckpointAt": 50,
+        "stopRequestedAt": null,
+        "endedAt": null,
+        "endReason": null,
+        "currentPass": 0,
+        "legacyAmbiguous": false,
+        "parentRunId": "c3_run"
+      },
+      "messageId": "compact_c3",
+      "modelName": "m",
+      "expectedSelectedBranchesJson": "{\"m1\":\"compact_c1\"}"
+    }
+  ]
+}

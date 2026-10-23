@@ -1,0 +1,84 @@
+{
+  "seed": {
+    "conversations": [
+      {
+        "id": "c1",
+        "selectedBranchesJson": "{\"m1\":\"compact_1\"}",
+        "selectedRunBranchesJson": "{\"r1\":\"compact_run\"}",
+        "lastUpdated": 100,
+        "dataChangedAt": 100
+      }
+    ],
+    "runs": [
+      {
+        "id": "r1",
+        "conversationId": "c1",
+        "status": "COMPLETED",
+        "activeSlot": null,
+        "startedAt": 1000,
+        "lastCheckpointAt": 1000,
+        "stopRequestedAt": null,
+        "endedAt": 1100,
+        "endReason": "MODEL_COMPLETED",
+        "currentPass": 0,
+        "legacyAmbiguous": false
+      },
+      {
+        "id": "compact_run",
+        "conversationId": "c1",
+        "status": "STOPPED",
+        "activeSlot": null,
+        "startedAt": 1000,
+        "lastCheckpointAt": 1000,
+        "stopRequestedAt": null,
+        "endedAt": 1100,
+        "endReason": "USER_STOPPED",
+        "currentPass": 0,
+        "legacyAmbiguous": false,
+        "parentRunId": "r1"
+      }
+    ],
+    "messages": [
+      {
+        "id": "m1",
+        "conversationId": "c1",
+        "text": "body",
+        "status": "SUCCESS",
+        "participant": "MODEL",
+        "timestamp": 100,
+        "runId": "r1",
+        "runSequence": 0,
+        "tokenCount": 0
+      },
+      {
+        "id": "compact_1",
+        "conversationId": "c1",
+        "text": "body",
+        "status": "SUCCESS",
+        "participant": "MODEL",
+        "timestamp": 100,
+        "runId": "compact_run",
+        "runSequence": 0,
+        "tokenCount": 0,
+        "parentId": "m1"
+      },
+      {
+        "id": "other_msg",
+        "conversationId": "c1",
+        "text": "body",
+        "status": "SUCCESS",
+        "participant": "MODEL",
+        "timestamp": 100,
+        "runId": "compact_run",
+        "runSequence": 1,
+        "tokenCount": 0
+      }
+    ]
+  },
+  "steps": [
+    {
+      "op": "removeContextCompact",
+      "messageId": "compact_1"
+    }
+  ]
+}

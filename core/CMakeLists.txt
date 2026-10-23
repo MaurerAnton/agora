@@ -54,6 +54,7 @@ add_library(agora_core_lib STATIC
     src/java_uri.cpp
     src/mcp_protocol.cpp
     src/memory_manager.cpp
+    src/skill_manager.cpp
     src/json.cpp
     src/loop_policy.cpp
     src/message_preparation.cpp

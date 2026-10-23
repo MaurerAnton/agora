@@ -1,0 +1,6 @@
+{
+  "name": "create_sanitizes_separators",
+  "mode": "create",
+  "file_name": "nested/thing",
+  "content_param": "# Nested"
+}

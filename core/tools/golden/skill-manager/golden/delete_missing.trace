@@ -1,0 +1,3 @@
+name|delete_missing
+mode|delete
+error|File not found: missing.md

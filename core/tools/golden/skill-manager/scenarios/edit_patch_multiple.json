@@ -1,0 +1,8 @@
+{
+  "name": "edit_patch_multiple",
+  "mode": "edit",
+  "file_name": "guide.md",
+  "setup_content": "foo bar foo",
+  "old_string": "foo",
+  "new_string": "bar"
+}

@@ -1,0 +1,8 @@
+{
+  "name": "edit_rename_and_content",
+  "mode": "edit",
+  "file_name": "old.md",
+  "setup_content": "Original",
+  "content_param": "New content",
+  "new_name": "renamed.md"
+}

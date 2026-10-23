@@ -1,0 +1,8 @@
+{
+  "name": "list_sorted",
+  "mode": "list",
+  "file_name": "beta",
+  "setup_content": "beta",
+  "setup_target_name": "alpha.md",
+  "setup_target_content": "alpha"
+}

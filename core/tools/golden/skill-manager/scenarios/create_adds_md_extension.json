@@ -1,0 +1,6 @@
+{
+  "name": "create_adds_md_extension",
+  "mode": "create",
+  "file_name": "notes",
+  "content_param": "# Notes"
+}

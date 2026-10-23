@@ -1,0 +1,7 @@
+{
+  "name": "list_with_description",
+  "mode": "list",
+  "file_name": "guide",
+  "setup_content": "# Guide",
+  "setup_description": "Guide for agents"
+}

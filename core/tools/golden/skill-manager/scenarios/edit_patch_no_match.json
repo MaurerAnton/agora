@@ -1,0 +1,8 @@
+{
+  "name": "edit_patch_no_match",
+  "mode": "edit",
+  "file_name": "guide.md",
+  "setup_content": "Hello world",
+  "old_string": "",
+  "new_string": "new"
+}

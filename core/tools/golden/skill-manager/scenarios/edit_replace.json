@@ -1,0 +1,7 @@
+{
+  "name": "edit_replace",
+  "mode": "edit",
+  "file_name": "guide.md",
+  "setup_content": "Original",
+  "content_param": "New content"
+}

@@ -1,0 +1,8 @@
+{
+  "name": "edit_description_unchanged",
+  "mode": "edit",
+  "file_name": "guide.md",
+  "setup_content": "Original",
+  "setup_description": "Same description",
+  "description": "Same description"
+}

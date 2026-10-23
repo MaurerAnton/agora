@@ -1,0 +1,9 @@
+{
+  "name": "catalog_with_files",
+  "mode": "catalog",
+  "file_name": "guide",
+  "setup_content": "# Guide",
+  "setup_description": "Guide for agents",
+  "setup_target_name": "notes",
+  "setup_target_content": "scratch"
+}

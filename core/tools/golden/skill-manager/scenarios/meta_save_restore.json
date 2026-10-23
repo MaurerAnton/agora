@@ -1,0 +1,5 @@
+{
+  "name": "meta_save_restore",
+  "mode": "meta_save",
+  "meta_json": "{\"guide.md\": \"Guide for agents\", \"notes.md\": \"\"}"
+}

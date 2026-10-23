@@ -1,0 +1,6 @@
+{
+  "name": "read_adds_md_extension",
+  "mode": "read",
+  "file_name": "guide",
+  "setup_content": "Hello world"
+}

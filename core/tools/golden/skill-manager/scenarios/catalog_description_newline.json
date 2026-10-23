@@ -1,0 +1,7 @@
+{
+  "name": "catalog_description_newline",
+  "mode": "catalog",
+  "file_name": "guide",
+  "setup_content": "# Guide",
+  "setup_description": "line one\n  line two  "
+}

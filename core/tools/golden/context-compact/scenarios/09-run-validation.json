@@ -1,0 +1,130 @@
+{
+  "seed": {
+    "conversations": [
+      {
+        "id": "c_slot",
+        "selectedBranchesJson": null,
+        "selectedRunBranchesJson": null,
+        "lastUpdated": 100,
+        "dataChangedAt": 100
+      },
+      {
+        "id": "c_enum",
+        "selectedBranchesJson": null,
+        "selectedRunBranchesJson": null,
+        "lastUpdated": 100,
+        "dataChangedAt": 100
+      },
+      {
+        "id": "c_end",
+        "selectedBranchesJson": null,
+        "selectedRunBranchesJson": null,
+        "lastUpdated": 100,
+        "dataChangedAt": 100
+      },
+      {
+        "id": "c_stop",
+        "selectedBranchesJson": null,
+        "selectedRunBranchesJson": null,
+        "lastUpdated": 100,
+        "dataChangedAt": 100
+      },
+      {
+        "id": "c_pass",
+        "selectedBranchesJson": null,
+        "selectedRunBranchesJson": null,
+        "lastUpdated": 100,
+        "dataChangedAt": 100
+      }
+    ],
+    "runs": [
+      {
+        "id": "bad_slot",
+        "conversationId": "c_slot",
+        "status": "COMPLETED",
+        "activeSlot": 1,
+        "startedAt": 10,
+        "lastCheckpointAt": 10,
+        "endedAt": 20,
+        "endReason": "MODEL_COMPLETED",
+        "currentPass": 0,
+        "legacyAmbiguous": false
+      },
+      {
+        "id": "bad_enum",
+        "conversationId": "c_enum",
+        "status": "BOGUS",
+        "activeSlot": null,
+        "startedAt": 10,
+        "lastCheckpointAt": 10,
+        "endedAt": null,
+        "endReason": null,
+        "currentPass": 0,
+        "legacyAmbiguous": false
+      },
+      {
+        "id": "bad_end",
+        "conversationId": "c_end",
+        "status": "COMPLETED",
+        "activeSlot": null,
+        "startedAt": 10,
+        "lastCheckpointAt": 10,
+        "endedAt": null,
+        "endReason": null,
+        "currentPass": 0,
+        "legacyAmbiguous": false
+      },
+      {
+        "id": "bad_stop",
+        "conversationId": "c_stop",
+        "status": "STOPPING",
+        "activeSlot": 1,
+        "startedAt": 10,
+        "lastCheckpointAt": 10,
+        "stopRequestedAt": null,
+        "endedAt": null,
+        "endReason": null,
+        "currentPass": 0,
+        "legacyAmbiguous": false
+      },
+      {
+        "id": "bad_pass",
+        "conversationId": "c_pass",
+        "status": "ACTIVE",
+        "activeSlot": 1,
+        "startedAt": 10,
+        "lastCheckpointAt": 10,
+        "endedAt": null,
+        "endReason": null,
+        "currentPass": -1,
+        "legacyAmbiguous": false
+      }
+    ]
+  },
+  "steps": [
+    {
+      "op": "getRun",
+      "runId": "bad_slot"
+    },
+    {
+      "op": "getRun",
+      "runId": "bad_enum"
+    },
+    {
+      "op": "getRun",
+      "runId": "bad_end"
+    },
+    {
+      "op": "getRun",
+      "runId": "bad_stop"
+    },
+    {
+      "op": "getRun",
+      "runId": "bad_pass"
+    },
+    {
+      "op": "getLiveRun",
+      "conversationId": "c_slot"
+    }
+  ]
+}

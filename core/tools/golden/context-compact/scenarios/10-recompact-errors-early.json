@@ -1,0 +1,131 @@
+{
+  "seed": {
+    "conversations": [
+      {
+        "id": "c1",
+        "selectedBranchesJson": null,
+        "selectedRunBranchesJson": null,
+        "lastUpdated": 100,
+        "dataChangedAt": 100
+      },
+      {
+        "id": "cb",
+        "selectedBranchesJson": null,
+        "selectedRunBranchesJson": null,
+        "lastUpdated": 100,
+        "dataChangedAt": 100
+      }
+    ],
+    "runs": [
+      {
+        "id": "r1",
+        "conversationId": "c1",
+        "status": "COMPLETED",
+        "activeSlot": null,
+        "startedAt": 1000,
+        "lastCheckpointAt": 1000,
+        "stopRequestedAt": null,
+        "endedAt": 1100,
+        "endReason": "MODEL_COMPLETED",
+        "currentPass": 0,
+        "legacyAmbiguous": false
+      },
+      {
+        "id": "busy_run",
+        "conversationId": "cb",
+        "status": "ACTIVE",
+        "activeSlot": 1,
+        "startedAt": 10,
+        "lastCheckpointAt": 10,
+        "stopRequestedAt": null,
+        "endedAt": null,
+        "endReason": null,
+        "currentPass": 0,
+        "legacyAmbiguous": false
+      }
+    ],
+    "messages": [
+      {
+        "id": "m1",
+        "conversationId": "c1",
+        "text": "body",
+        "status": "SUCCESS",
+        "participant": "MODEL",
+        "timestamp": 100,
+        "runId": "r1",
+        "runSequence": 0,
+        "tokenCount": 0
+      },
+      {
+        "id": "compact_x",
+        "conversationId": "cb",
+        "text": "body",
+        "status": "SUCCESS",
+        "participant": "MODEL",
+        "timestamp": 100,
+        "runId": "busy_run",
+        "runSequence": 0,
+        "tokenCount": 0
+      }
+    ]
+  },
+  "steps": [
+    {
+      "op": "beginRecompactContextCompact",
+      "replacementRun": {
+        "id": "zz1",
+        "conversationId": "c1",
+        "status": "ACTIVE",
+        "activeSlot": 1,
+        "startedAt": 50,
+        "lastCheckpointAt": 50,
+        "stopRequestedAt": null,
+        "endedAt": null,
+        "endReason": null,
+        "currentPass": 0,
+        "legacyAmbiguous": false
+      },
+      "messageId": "missing_message",
+      "modelName": "m",
+      "expectedSelectedBranchesJson": "{}"
+    },
+    {
+      "op": "beginRecompactContextCompact",
+      "replacementRun": {
+        "id": "zz2",
+        "conversationId": "c1",
+        "status": "ACTIVE",
+        "activeSlot": 1,
+        "startedAt": 50,
+        "lastCheckpointAt": 50,
+        "stopRequestedAt": null,
+        "endedAt": null,
+        "endReason": null,
+        "currentPass": 0,
+        "legacyAmbiguous": false
+      },
+      "messageId": "m1",
+      "modelName": "m",
+      "expectedSelectedBranchesJson": "{}"
+    },
+    {
+      "op": "beginRecompactContextCompact",
+      "replacementRun": {
+        "id": "zz3",
+        "conversationId": "cb",
+        "status": "ACTIVE",
+        "activeSlot": 1,
+        "startedAt": 50,
+        "lastCheckpointAt": 50,
+        "stopRequestedAt": null,
+        "endedAt": null,
+        "endReason": null,
+        "currentPass": 0,
+        "legacyAmbiguous": false
+      },
+      "messageId": "compact_x",
+      "modelName": "m",
+      "expectedSelectedBranchesJson": "{}"
+    }
+  ]
+}

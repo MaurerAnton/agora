@@ -18,6 +18,7 @@ add_executable(agora_core_tests
     semantic_index_ledger_parity_test.cpp
     maintenance_debt_parity_test.cpp
     runtime_recovery_parity_test.cpp
+    context_compact_parity_test.cpp
     message_persistence_guard_parity_test.cpp
     zip_reader_parity_test.cpp
     gpt_chat_importer_parity_test.cpp
@@ -134,6 +135,7 @@ target_compile_definitions(agora_core_tests PRIVATE
     AGORA_FIXTURE_SEMANTIC_INDEX_LEDGER_DIR="${CMAKE_CURRENT_SOURCE_DIR}/../tools/golden/semantic-index-ledger"
     AGORA_FIXTURE_MAINTENANCE_DEBT_DIR="${CMAKE_CURRENT_SOURCE_DIR}/../tools/golden/maintenance-debt"
     AGORA_FIXTURE_RUNTIME_RECOVERY_DIR="${CMAKE_CURRENT_SOURCE_DIR}/../tools/golden/runtime-recovery"
+    AGORA_FIXTURE_CONTEXT_COMPACT_DIR="${CMAKE_CURRENT_SOURCE_DIR}/../tools/golden/context-compact"
     AGORA_FIXTURE_MIGRATION_17_18_DIR="${CMAKE_CURRENT_SOURCE_DIR}/../tools/golden/migration-17-18"
     AGORA_FIXTURE_MIGRATION_18_19_DIR="${CMAKE_CURRENT_SOURCE_DIR}/../tools/golden/migration-18-19"
     AGORA_FIXTURE_MIGRATION_19_20_DIR="${CMAKE_CURRENT_SOURCE_DIR}/../tools/golden/migration-19-20"

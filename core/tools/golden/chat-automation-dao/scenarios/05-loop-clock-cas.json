@@ -1,0 +1,120 @@
+{
+  "seed": {
+    "conversations": [
+      {
+        "id": "c1"
+      },
+      {
+        "id": "c2"
+      }
+    ],
+    "tasks": [],
+    "loops": [
+      {
+        "conversationId": "c1",
+        "intervalMs": 60000,
+        "nextFireAt": 5000,
+        "cycleCount": 1,
+        "active": true,
+        "revision": 2,
+        "prompt": "continue",
+        "maxCycles": 10
+      },
+      {
+        "conversationId": "c2",
+        "intervalMs": 30000,
+        "nextFireAt": 0,
+        "cycleCount": 0,
+        "active": false,
+        "revision": 0
+      }
+    ]
+  },
+  "steps": [
+    {
+      "op": "updateLoopNextFireAtIfUnchanged",
+      "conversationId": "c1",
+      "expectedRevision": 2,
+      "expectedCycleCount": 1,
+      "expectedIntervalMs": 60000,
+      "expectedNextFireAt": 5000,
+      "replacementNextFireAt": 9000
+    },
+    {
+      "op": "getLoop",
+      "conversationId": "c1"
+    },
+    {
+      "op": "updateLoopNextFireAtIfUnchanged",
+      "conversationId": "c1",
+      "expectedRevision": 2,
+      "expectedCycleCount": 1,
+      "expectedIntervalMs": 60000,
+      "expectedNextFireAt": 5000,
+      "replacementNextFireAt": 9000
+    },
+    {
+      "op": "updateLoopNextFireAtIfUnchanged",
+      "conversationId": "c1",
+      "expectedRevision": 2,
+      "expectedCycleCount": 1,
+      "expectedIntervalMs": 60000,
+      "expectedNextFireAt": 9000,
+      "replacementNextFireAt": 12000
+    },
+    {
+      "op": "updateLoopNextFireAtIfUnchanged",
+      "conversationId": "c1",
+      "expectedRevision": 3,
+      "expectedCycleCount": 1,
+      "expectedIntervalMs": 60000,
+      "expectedNextFireAt": 12000,
+      "replacementNextFireAt": 15000
+    },
+    {
+      "op": "updateLoopNextFireAtIfUnchanged",
+      "conversationId": "c2",
+      "expectedRevision": 0,
+      "expectedCycleCount": 0,
+      "expectedIntervalMs": 30000,
+      "expectedNextFireAt": 0,
+      "replacementNextFireAt": 1000
+    },
+    {
+      "op": "deactivateLoopRowIfUnchanged",
+      "conversationId": "c1",
+      "expectedRevision": 2,
+      "expectedCycleCount": 1,
+      "expectedIntervalMs": 60000,
+      "expectedNextFireAt": 12000,
+      "normalizedMaxCycles": 7
+    },
+    {
+      "op": "getLoop",
+      "conversationId": "c1"
+    },
+    {
+      "op": "deactivateLoopRowIfUnchanged",
+      "conversationId": "c1",
+      "expectedRevision": 2,
+      "expectedCycleCount": 1,
+      "expectedIntervalMs": 60000,
+      "expectedNextFireAt": 12000,
+      "normalizedMaxCycles": 7
+    },
+    {
+      "op": "deleteLoopRow",
+      "conversationId": "c1"
+    },
+    {
+      "op": "deleteLoopRow",
+      "conversationId": "c1"
+    },
+    {
+      "op": "deleteAllLoops"
+    },
+    {
+      "op": "getAllLoopsList"
+    }
+  ]
+}

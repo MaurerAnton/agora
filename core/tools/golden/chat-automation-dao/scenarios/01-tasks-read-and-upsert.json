@@ -1,0 +1,98 @@
+{
+  "seed": {
+    "conversations": [],
+    "tasks": [
+      {
+        "id": "t-old",
+        "name": "old",
+        "prompt": "prompt-t-old",
+        "cronExpr": "0 0 * * *",
+        "nextRunAt": 1000,
+        "enabled": true,
+        "createdAt": 100,
+        "systemPrompt": "sys",
+        "modelId": "openai:gpt-4",
+        "lastRunAt": 50
+      },
+      {
+        "id": "t-new",
+        "name": "new",
+        "prompt": "prompt-t-new",
+        "cronExpr": "",
+        "nextRunAt": 0,
+        "enabled": false,
+        "createdAt": 300,
+        "systemPromptId": "sp-1",
+        "runAt": 5000
+      },
+      {
+        "id": "t-mid",
+        "name": "mid",
+        "prompt": "prompt-t-mid",
+        "cronExpr": "*/5 * * * *",
+        "nextRunAt": 2000,
+        "enabled": true,
+        "createdAt": 200,
+        "modelId": "anthropic:claude",
+        "lastRunAt": 150
+      }
+    ],
+    "loops": []
+  },
+  "steps": [
+    {
+      "op": "getAllTasks"
+    },
+    {
+      "op": "getAllTasksList"
+    },
+    {
+      "op": "getTask",
+      "id": "t-mid"
+    },
+    {
+      "op": "getTask",
+      "id": "missing"
+    },
+    {
+      "op": "getEnabledTasks"
+    },
+    {
+      "op": "upsertTask",
+      "id": "t-new",
+      "name": "new name",
+      "prompt": "p-new2",
+      "systemPrompt": "sys2",
+      "systemPromptId": null,
+      "modelId": "local:qwen",
+      "cronExpr": "0 12 * * *",
+      "runAt": null,
+      "nextRunAt": 7000,
+      "enabled": true,
+      "createdAt": 300,
+      "lastRunAt": 600
+    },
+    {
+      "op": "getTask",
+      "id": "t-new"
+    },
+    {
+      "op": "upsertTask",
+      "id": "t-insert",
+      "name": "inserted",
+      "prompt": "pi",
+      "systemPromptId": "sp-2",
+      "modelId": "openai:gpt-4o",
+      "cronExpr": "0 0 1 * *",
+      "nextRunAt": 9000,
+      "enabled": true,
+      "createdAt": 400
+    },
+    {
+      "op": "getAllTasksList"
+    },
+    {
+      "op": "getEnabledTasks"
+    }
+  ]
+}

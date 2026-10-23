@@ -1,0 +1,747 @@
+{
+  "seed": {
+    "conversations": [
+      {
+        "id": "c1",
+        "title": "c1",
+        "lastUpdated": 0,
+        "dataChangedAt": 0,
+        "origin": "user",
+        "graduated": false,
+        "draftText": "",
+        "hasUnreadGeneration": false,
+        "isPinned": false
+      },
+      {
+        "id": "c2",
+        "title": "c2",
+        "lastUpdated": 0,
+        "dataChangedAt": 0,
+        "origin": "user",
+        "graduated": false,
+        "draftText": "",
+        "hasUnreadGeneration": false,
+        "isPinned": false
+      }
+    ],
+    "runs": [
+      {
+        "id": "r1",
+        "conversationId": "c1",
+        "status": "COMPLETED",
+        "activeSlot": null,
+        "startedAt": 1,
+        "lastCheckpointAt": 0,
+        "currentPass": 0,
+        "legacyAmbiguous": false,
+        "endedAt": 2,
+        "endReason": "MODEL_COMPLETED"
+      },
+      {
+        "id": "r2",
+        "conversationId": "c2",
+        "status": "COMPLETED",
+        "activeSlot": null,
+        "startedAt": 3,
+        "lastCheckpointAt": 0,
+        "currentPass": 0,
+        "legacyAmbiguous": false,
+        "endedAt": 4,
+        "endReason": "MODEL_COMPLETED"
+      }
+    ],
+    "messages": [
+      {
+        "id": "m1",
+        "conversationId": "c1",
+        "text": "existing",
+        "images": [],
+        "tokenCount": 0,
+        "status": "SUCCESS",
+        "participant": "MODEL",
+        "timestamp": 1,
+        "runId": "r1",
+        "runSequence": -1
+      }
+    ]
+  },
+  "steps": [
+    {
+      "op": "importRunGraph",
+      "runs": [
+        {
+          "id": "r3",
+          "conversationId": "c1",
+          "status": "COMPLETED",
+          "activeSlot": null,
+          "startedAt": 5,
+          "lastCheckpointAt": 0,
+          "currentPass": 0,
+          "legacyAmbiguous": false,
+          "endedAt": 6,
+          "endReason": "MODEL_COMPLETED"
+        }
+      ],
+      "messages": [
+        {
+          "id": "m2",
+          "conversationId": "c1",
+          "text": "new",
+          "images": [],
+          "tokenCount": 0,
+          "status": "SUCCESS",
+          "participant": "MODEL",
+          "timestamp": 2,
+          "runId": "r3",
+          "runSequence": -1
+        },
+        {
+          "id": "m3",
+          "conversationId": "c1",
+          "text": "existing run",
+          "images": [],
+          "tokenCount": 0,
+          "status": "SUCCESS",
+          "participant": "MODEL",
+          "timestamp": 3,
+          "runId": "r1",
+          "runSequence": -1
+        }
+      ]
+    },
+    {
+      "op": "importRunGraph",
+      "runs": [
+        {
+          "id": "r1",
+          "conversationId": "c1",
+          "status": "COMPLETED",
+          "activeSlot": null,
+          "startedAt": 1,
+          "lastCheckpointAt": 0,
+          "currentPass": 0,
+          "legacyAmbiguous": false,
+          "endedAt": 2,
+          "endReason": "MODEL_COMPLETED"
+        }
+      ],
+      "messages": [
+        {
+          "id": "m4",
+          "conversationId": "c1",
+          "text": "existing run two",
+          "images": [],
+          "tokenCount": 0,
+          "status": "SUCCESS",
+          "participant": "MODEL",
+          "timestamp": 4,
+          "runId": "r1",
+          "runSequence": -1
+        }
+      ]
+    },
+    {
+      "op": "importRunGraph",
+      "runs": [],
+      "messages": [
+        {
+          "id": "m2",
+          "conversationId": "c1",
+          "text": "updated",
+          "images": [],
+          "tokenCount": 0,
+          "status": "SUCCESS",
+          "participant": "MODEL",
+          "timestamp": 5,
+          "runId": "r3",
+          "runSequence": -1
+        }
+      ]
+    },
+    {
+      "op": "importRunGraph",
+      "runs": [
+        {
+          "id": "r4",
+          "conversationId": "c1",
+          "status": "ACTIVE",
+          "activeSlot": 1,
+          "startedAt": 6,
+          "lastCheckpointAt": 0,
+          "currentPass": 0,
+          "legacyAmbiguous": false
+        }
+      ],
+      "messages": [
+        {
+          "id": "m5",
+          "conversationId": "c1",
+          "text": "live",
+          "images": [],
+          "tokenCount": 0,
+          "status": "SUCCESS",
+          "participant": "MODEL",
+          "timestamp": 6,
+          "runId": "r4",
+          "runSequence": -1
+        }
+      ]
+    },
+    {
+      "op": "importRunGraph",
+      "runs": [],
+      "messages": [
+        {
+          "id": "m6",
+          "conversationId": "c1",
+          "text": "missing run",
+          "images": [],
+          "tokenCount": 0,
+          "status": "SUCCESS",
+          "participant": "MODEL",
+          "timestamp": 7,
+          "runId": "missing",
+          "runSequence": -1
+        }
+      ]
+    },
+    {
+      "op": "importRunGraph",
+      "runs": [],
+      "messages": [
+        {
+          "id": "m7",
+          "conversationId": "c1",
+          "text": "foreign run",
+          "images": [],
+          "tokenCount": 0,
+          "status": "SUCCESS",
+          "participant": "MODEL",
+          "timestamp": 8,
+          "runId": "r2",
+          "runSequence": -1
+        }
+      ]
+    },
+    {
+      "op": "replaceImportedConversationGraph",
+      "conversations": [
+        {
+          "id": "cA",
+          "title": "A",
+          "lastUpdated": 0,
+          "dataChangedAt": 0,
+          "origin": "user",
+          "graduated": false,
+          "draftText": "",
+          "hasUnreadGeneration": false,
+          "isPinned": false
+        },
+        {
+          "id": "cB",
+          "title": "B",
+          "lastUpdated": 0,
+          "dataChangedAt": 0,
+          "origin": "user",
+          "graduated": false,
+          "draftText": "",
+          "hasUnreadGeneration": false,
+          "isPinned": false
+        }
+      ],
+      "runs": [
+        {
+          "id": "rA1",
+          "conversationId": "cA",
+          "status": "COMPLETED",
+          "activeSlot": null,
+          "startedAt": 10,
+          "lastCheckpointAt": 0,
+          "currentPass": 0,
+          "legacyAmbiguous": false,
+          "endedAt": 11,
+          "endReason": "MODEL_COMPLETED"
+        },
+        {
+          "id": "rA2",
+          "conversationId": "cA",
+          "status": "COMPLETED",
+          "activeSlot": null,
+          "startedAt": 12,
+          "lastCheckpointAt": 0,
+          "currentPass": 0,
+          "legacyAmbiguous": false,
+          "endedAt": 13,
+          "endReason": "MODEL_COMPLETED",
+          "parentRunId": "rA1"
+        },
+        {
+          "id": "rB1",
+          "conversationId": "cB",
+          "status": "COMPLETED",
+          "activeSlot": null,
+          "startedAt": 14,
+          "lastCheckpointAt": 0,
+          "currentPass": 0,
+          "legacyAmbiguous": false,
+          "endedAt": 15,
+          "endReason": "MODEL_COMPLETED"
+        }
+      ],
+      "messages": [
+        {
+          "id": "mA1",
+          "conversationId": "cA",
+          "text": "a1",
+          "images": [],
+          "tokenCount": 0,
+          "status": "SUCCESS",
+          "participant": "MODEL",
+          "timestamp": 10,
+          "runId": "rA1",
+          "runSequence": -1
+        },
+        {
+          "id": "mA2",
+          "conversationId": "cA",
+          "text": "a2",
+          "images": [],
+          "tokenCount": 0,
+          "status": "SUCCESS",
+          "participant": "MODEL",
+          "timestamp": 11,
+          "runId": "rA2",
+          "runSequence": -1,
+          "parentId": "mA1"
+        },
+        {
+          "id": "mB1",
+          "conversationId": "cB",
+          "text": "b1",
+          "images": [],
+          "tokenCount": 0,
+          "status": "SUCCESS",
+          "participant": "MODEL",
+          "timestamp": 12,
+          "runId": "rB1",
+          "runSequence": -1
+        }
+      ]
+    },
+    {
+      "op": "getAllConversationsList"
+    },
+    {
+      "op": "replaceImportedConversationGraph",
+      "conversations": [
+        {
+          "id": "cA",
+          "title": "cA",
+          "lastUpdated": 0,
+          "dataChangedAt": 0,
+          "origin": "user",
+          "graduated": false,
+          "draftText": "",
+          "hasUnreadGeneration": false,
+          "isPinned": false
+        },
+        {
+          "id": "cA",
+          "title": "cA",
+          "lastUpdated": 0,
+          "dataChangedAt": 0,
+          "origin": "user",
+          "graduated": false,
+          "draftText": "",
+          "hasUnreadGeneration": false,
+          "isPinned": false
+        }
+      ],
+      "runs": [],
+      "messages": []
+    },
+    {
+      "op": "replaceImportedConversationGraph",
+      "conversations": [
+        {
+          "id": "cC",
+          "title": "cC",
+          "lastUpdated": 0,
+          "dataChangedAt": 0,
+          "origin": "user",
+          "graduated": false,
+          "draftText": "",
+          "hasUnreadGeneration": false,
+          "isPinned": false
+        }
+      ],
+      "runs": [
+        {
+          "id": "rC1",
+          "conversationId": "cC",
+          "status": "COMPLETED",
+          "activeSlot": null,
+          "startedAt": 1,
+          "lastCheckpointAt": 0,
+          "currentPass": 0,
+          "legacyAmbiguous": false,
+          "endedAt": 2,
+          "endReason": "MODEL_COMPLETED"
+        },
+        {
+          "id": "rC1",
+          "conversationId": "cC",
+          "status": "COMPLETED",
+          "activeSlot": null,
+          "startedAt": 1,
+          "lastCheckpointAt": 0,
+          "currentPass": 0,
+          "legacyAmbiguous": false,
+          "endedAt": 2,
+          "endReason": "MODEL_COMPLETED"
+        }
+      ],
+      "messages": []
+    },
+    {
+      "op": "replaceImportedConversationGraph",
+      "conversations": [
+        {
+          "id": "cC",
+          "title": "cC",
+          "lastUpdated": 0,
+          "dataChangedAt": 0,
+          "origin": "user",
+          "graduated": false,
+          "draftText": "",
+          "hasUnreadGeneration": false,
+          "isPinned": false
+        }
+      ],
+      "runs": [
+        {
+          "id": "rC1",
+          "conversationId": "cC",
+          "status": "COMPLETED",
+          "activeSlot": null,
+          "startedAt": 1,
+          "lastCheckpointAt": 0,
+          "currentPass": 0,
+          "legacyAmbiguous": false,
+          "endedAt": 2,
+          "endReason": "MODEL_COMPLETED"
+        }
+      ],
+      "messages": [
+        {
+          "id": "mC1",
+          "conversationId": "cC",
+          "text": "a",
+          "images": [],
+          "tokenCount": 0,
+          "status": "SUCCESS",
+          "participant": "MODEL",
+          "timestamp": 1,
+          "runId": "rC1",
+          "runSequence": -1
+        },
+        {
+          "id": "mC1",
+          "conversationId": "cC",
+          "text": "b",
+          "images": [],
+          "tokenCount": 0,
+          "status": "SUCCESS",
+          "participant": "MODEL",
+          "timestamp": 2,
+          "runId": "rC1",
+          "runSequence": -1
+        }
+      ]
+    },
+    {
+      "op": "replaceImportedConversationGraph",
+      "conversations": [
+        {
+          "id": "cC",
+          "title": "cC",
+          "lastUpdated": 0,
+          "dataChangedAt": 0,
+          "origin": "user",
+          "graduated": false,
+          "draftText": "",
+          "hasUnreadGeneration": false,
+          "isPinned": false
+        }
+      ],
+      "runs": [
+        {
+          "id": "rC1",
+          "conversationId": "cC",
+          "status": "ACTIVE",
+          "activeSlot": 1,
+          "startedAt": 1,
+          "lastCheckpointAt": 0,
+          "currentPass": 0,
+          "legacyAmbiguous": false
+        }
+      ],
+      "messages": []
+    },
+    {
+      "op": "replaceImportedConversationGraph",
+      "conversations": [
+        {
+          "id": "cC",
+          "title": "cC",
+          "lastUpdated": 0,
+          "dataChangedAt": 0,
+          "origin": "user",
+          "graduated": false,
+          "draftText": "",
+          "hasUnreadGeneration": false,
+          "isPinned": false
+        }
+      ],
+      "runs": [
+        {
+          "id": "rC1",
+          "conversationId": "cD",
+          "status": "COMPLETED",
+          "activeSlot": null,
+          "startedAt": 1,
+          "lastCheckpointAt": 0,
+          "currentPass": 0,
+          "legacyAmbiguous": false,
+          "endedAt": 2,
+          "endReason": "MODEL_COMPLETED"
+        }
+      ],
+      "messages": []
+    },
+    {
+      "op": "replaceImportedConversationGraph",
+      "conversations": [
+        {
+          "id": "cC",
+          "title": "cC",
+          "lastUpdated": 0,
+          "dataChangedAt": 0,
+          "origin": "user",
+          "graduated": false,
+          "draftText": "",
+          "hasUnreadGeneration": false,
+          "isPinned": false
+        },
+        {
+          "id": "cD",
+          "title": "cD",
+          "lastUpdated": 0,
+          "dataChangedAt": 0,
+          "origin": "user",
+          "graduated": false,
+          "draftText": "",
+          "hasUnreadGeneration": false,
+          "isPinned": false
+        }
+      ],
+      "runs": [
+        {
+          "id": "rC1",
+          "conversationId": "cC",
+          "status": "COMPLETED",
+          "activeSlot": null,
+          "startedAt": 1,
+          "lastCheckpointAt": 0,
+          "currentPass": 0,
+          "legacyAmbiguous": false,
+          "endedAt": 2,
+          "endReason": "MODEL_COMPLETED"
+        },
+        {
+          "id": "rD1",
+          "conversationId": "cD",
+          "status": "COMPLETED",
+          "activeSlot": null,
+          "startedAt": 3,
+          "lastCheckpointAt": 0,
+          "currentPass": 0,
+          "legacyAmbiguous": false,
+          "endedAt": 4,
+          "endReason": "MODEL_COMPLETED",
+          "parentRunId": "rC1"
+        }
+      ],
+      "messages": []
+    },
+    {
+      "op": "replaceImportedConversationGraph",
+      "conversations": [
+        {
+          "id": "cC",
+          "title": "cC",
+          "lastUpdated": 0,
+          "dataChangedAt": 0,
+          "origin": "user",
+          "graduated": false,
+          "draftText": "",
+          "hasUnreadGeneration": false,
+          "isPinned": false
+        }
+      ],
+      "runs": [
+        {
+          "id": "rC1",
+          "conversationId": "cC",
+          "status": "COMPLETED",
+          "activeSlot": null,
+          "startedAt": 1,
+          "lastCheckpointAt": 0,
+          "currentPass": 0,
+          "legacyAmbiguous": false,
+          "endedAt": 2,
+          "endReason": "MODEL_COMPLETED"
+        }
+      ],
+      "messages": [
+        {
+          "id": "mC1",
+          "conversationId": "cD",
+          "text": "a",
+          "images": [],
+          "tokenCount": 0,
+          "status": "SUCCESS",
+          "participant": "MODEL",
+          "timestamp": 1,
+          "runId": "rC1",
+          "runSequence": -1
+        }
+      ]
+    },
+    {
+      "op": "replaceImportedConversationGraph",
+      "conversations": [
+        {
+          "id": "cC",
+          "title": "cC",
+          "lastUpdated": 0,
+          "dataChangedAt": 0,
+          "origin": "user",
+          "graduated": false,
+          "draftText": "",
+          "hasUnreadGeneration": false,
+          "isPinned": false
+        }
+      ],
+      "runs": [
+        {
+          "id": "rC1",
+          "conversationId": "cC",
+          "status": "COMPLETED",
+          "activeSlot": null,
+          "startedAt": 1,
+          "lastCheckpointAt": 0,
+          "currentPass": 0,
+          "legacyAmbiguous": false,
+          "endedAt": 2,
+          "endReason": "MODEL_COMPLETED"
+        }
+      ],
+      "messages": [
+        {
+          "id": "mC1",
+          "conversationId": "cC",
+          "text": "a",
+          "images": [],
+          "tokenCount": 0,
+          "status": "SUCCESS",
+          "participant": "MODEL",
+          "timestamp": 1,
+          "runId": "rC1",
+          "runSequence": -1,
+          "parentId": "missing"
+        }
+      ]
+    },
+    {
+      "op": "replaceImportedConversationGraph",
+      "conversations": [
+        {
+          "id": "cC",
+          "title": "cC",
+          "lastUpdated": 0,
+          "dataChangedAt": 0,
+          "origin": "user",
+          "graduated": false,
+          "draftText": "",
+          "hasUnreadGeneration": false,
+          "isPinned": false
+        },
+        {
+          "id": "cD",
+          "title": "cD",
+          "lastUpdated": 0,
+          "dataChangedAt": 0,
+          "origin": "user",
+          "graduated": false,
+          "draftText": "",
+          "hasUnreadGeneration": false,
+          "isPinned": false
+        }
+      ],
+      "runs": [
+        {
+          "id": "rC1",
+          "conversationId": "cC",
+          "status": "COMPLETED",
+          "activeSlot": null,
+          "startedAt": 1,
+          "lastCheckpointAt": 0,
+          "currentPass": 0,
+          "legacyAmbiguous": false,
+          "endedAt": 2,
+          "endReason": "MODEL_COMPLETED"
+        }
+      ],
+      "messages": [
+        {
+          "id": "mC1",
+          "conversationId": "cC",
+          "text": "a",
+          "images": [],
+          "tokenCount": 0,
+          "status": "SUCCESS",
+          "participant": "MODEL",
+          "timestamp": 1,
+          "runId": "rC1",
+          "runSequence": -1,
+          "parentId": "mD1"
+        },
+        {
+          "id": "mD1",
+          "conversationId": "cD",
+          "text": "d",
+          "images": [],
+          "tokenCount": 0,
+          "status": "SUCCESS",
+          "participant": "MODEL",
+          "timestamp": 2,
+          "runId": "rD1",
+          "runSequence": -1
+        }
+      ]
+    },
+    {
+      "op": "getAllConversationsList"
+    },
+    {
+      "op": "replaceImportedConversationGraph",
+      "conversations": [],
+      "runs": [],
+      "messages": []
+    },
+    {
+      "op": "getAllConversationsList"
+    }
+  ]
+}

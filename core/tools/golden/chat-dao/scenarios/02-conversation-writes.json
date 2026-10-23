@@ -1,0 +1,430 @@
+{
+  "seed": {
+    "conversations": [
+      {
+        "id": "c1",
+        "title": "Alpha",
+        "lastUpdated": 10,
+        "dataChangedAt": 1,
+        "origin": "user",
+        "graduated": false,
+        "draftText": "draft",
+        "hasUnreadGeneration": false,
+        "isPinned": false,
+        "selectedBranchesJson": "{\"u1\":\"m1\"}",
+        "systemPromptId": "p1",
+        "modelId": "openai:gpt-4",
+        "draftAttachments": "[\"a\"]",
+        "selectedRunBranchesJson": "{\"null\":\"r1\"}"
+      },
+      {
+        "id": "c2",
+        "title": "Beta",
+        "lastUpdated": 20,
+        "dataChangedAt": 2,
+        "origin": "user",
+        "graduated": false,
+        "draftText": "",
+        "hasUnreadGeneration": false,
+        "isPinned": false,
+        "modelId": "openai:gpt-4"
+      },
+      {
+        "id": "c3",
+        "title": "Task",
+        "lastUpdated": 30,
+        "dataChangedAt": 3,
+        "origin": "user",
+        "graduated": false,
+        "draftText": "",
+        "hasUnreadGeneration": false,
+        "isPinned": false,
+        "modelId": "openai:gpt-4",
+        "taskId": "t1"
+      }
+    ],
+    "runs": [
+      {
+        "id": "r1",
+        "conversationId": "c1",
+        "status": "ACTIVE",
+        "activeSlot": 1,
+        "startedAt": 1,
+        "lastCheckpointAt": 0,
+        "currentPass": 0,
+        "legacyAmbiguous": false
+      },
+      {
+        "id": "r2",
+        "conversationId": "c2",
+        "status": "COMPLETED",
+        "activeSlot": null,
+        "startedAt": 2,
+        "lastCheckpointAt": 0,
+        "currentPass": 0,
+        "legacyAmbiguous": false,
+        "endedAt": 3,
+        "endReason": "MODEL_COMPLETED"
+      },
+      {
+        "id": "r3",
+        "conversationId": "c1",
+        "status": "COMPLETED",
+        "activeSlot": null,
+        "startedAt": 4,
+        "lastCheckpointAt": 0,
+        "currentPass": 0,
+        "legacyAmbiguous": false,
+        "endedAt": 5,
+        "endReason": "MODEL_COMPLETED"
+      }
+    ],
+    "messages": [
+      {
+        "id": "m1",
+        "conversationId": "c1",
+        "text": "body",
+        "images": [],
+        "tokenCount": 0,
+        "status": "SUCCESS",
+        "participant": "MODEL",
+        "timestamp": 1,
+        "runId": "r1",
+        "runSequence": -1
+      },
+      {
+        "id": "m9",
+        "conversationId": "c3",
+        "text": "task body",
+        "images": [],
+        "tokenCount": 0,
+        "status": "SUCCESS",
+        "participant": "MODEL",
+        "timestamp": 2,
+        "runId": "r1",
+        "runSequence": -1
+      }
+    ],
+    "tasks": [
+      {
+        "id": "t1",
+        "name": "t1",
+        "prompt": "prompt",
+        "cronExpr": "",
+        "nextRunAt": 0,
+        "enabled": true,
+        "createdAt": 0,
+        "modelId": "openai:gpt-4"
+      }
+    ],
+    "newChatPersist": {
+      "id": 0,
+      "modelId": "openai:gpt-4",
+      "systemPromptId": null,
+      "conversationSettingsJson": null,
+      "draftText": "new",
+      "draftAttachments": null
+    },
+    "settingsTransfers": [
+      {
+        "conversationId": "c1",
+        "settingsJson": "{\"a\":1}"
+      }
+    ],
+    "embeddings": [
+      {
+        "id": 1,
+        "messageId": "m1",
+        "modelId": "m1",
+        "embeddingBase64": "AQID",
+        "chunkText": "",
+        "dimension": 0
+      }
+    ]
+  },
+  "steps": [
+    {
+      "op": "upsertConversation",
+      "id": "c4",
+      "title": "New",
+      "lastUpdated": 40,
+      "dataChangedAt": 4,
+      "selectedBranchesJson": "{\"k\":\"v\"}",
+      "systemPromptId": "p4",
+      "modelId": "openai:gpt-4",
+      "taskId": null,
+      "origin": "import",
+      "graduated": true,
+      "draftText": "new draft",
+      "draftAttachments": "[\"z\"]",
+      "selectedRunBranchesJson": "{\"null\":\"r1\"}",
+      "hasUnreadGeneration": true,
+      "isPinned": true
+    },
+    {
+      "op": "upsertConversation",
+      "id": "c1",
+      "title": "Changed",
+      "lastUpdated": 11,
+      "dataChangedAt": 5
+    },
+    {
+      "op": "updateConversationModel",
+      "conversationId": "c1",
+      "modelId": "openai:gpt-5",
+      "at": 50
+    },
+    {
+      "op": "updateConversationModel",
+      "conversationId": "c1",
+      "modelId": null,
+      "at": 10
+    },
+    {
+      "op": "updateConversationModel",
+      "conversationId": "absent",
+      "modelId": "x",
+      "at": 10
+    },
+    {
+      "op": "updateConversationSystemPrompt",
+      "conversationId": "c1",
+      "promptId": null,
+      "at": 60
+    },
+    {
+      "op": "updateConversationSystemPrompt",
+      "conversationId": "c1",
+      "promptId": "p9",
+      "at": 5
+    },
+    {
+      "op": "updateConversationSystemPrompt",
+      "conversationId": "absent",
+      "promptId": "p",
+      "at": 5
+    },
+    {
+      "op": "touchConversationData",
+      "conversationId": "c1",
+      "at": 70
+    },
+    {
+      "op": "touchConversationData",
+      "conversationId": "c1",
+      "at": 1
+    },
+    {
+      "op": "touchConversationData",
+      "conversationId": "absent",
+      "at": 1
+    },
+    {
+      "op": "updateConversationTitle",
+      "conversationId": "c1",
+      "title": "Title2",
+      "at": 80
+    },
+    {
+      "op": "updateConversationTitle",
+      "conversationId": "absent",
+      "title": "Title2",
+      "at": 80
+    },
+    {
+      "op": "setConversationPinned",
+      "conversationId": "c1",
+      "pinned": true,
+      "at": 90
+    },
+    {
+      "op": "setConversationPinned",
+      "conversationId": "c1",
+      "pinned": true,
+      "at": 91
+    },
+    {
+      "op": "setConversationPinned",
+      "conversationId": "c3",
+      "pinned": true,
+      "at": 92
+    },
+    {
+      "op": "setConversationPinned",
+      "conversationId": "absent",
+      "pinned": true,
+      "at": 92
+    },
+    {
+      "op": "setConversationUnreadGeneration",
+      "conversationId": "c1",
+      "unread": true
+    },
+    {
+      "op": "setConversationUnreadGeneration",
+      "conversationId": "c1",
+      "unread": true
+    },
+    {
+      "op": "setConversationUnreadGeneration",
+      "conversationId": "c3",
+      "unread": true
+    },
+    {
+      "op": "setConversationUnreadGeneration",
+      "conversationId": "absent",
+      "unread": true
+    },
+    {
+      "op": "updateConversationTitleIfUnchanged",
+      "conversationId": "c1",
+      "expectedTitle": "Title2",
+      "newTitle": "Title3",
+      "at": 100
+    },
+    {
+      "op": "updateConversationTitleIfUnchanged",
+      "conversationId": "c1",
+      "expectedTitle": "Title2",
+      "newTitle": "Stale",
+      "at": 101
+    },
+    {
+      "op": "updateConversationTitleIfUnchanged",
+      "conversationId": "absent",
+      "expectedTitle": "x",
+      "newTitle": "y",
+      "at": 102
+    },
+    {
+      "op": "replaceConversationModelReferences",
+      "oldModelId": "openai:gpt-4",
+      "newModelId": "anthropic:claude",
+      "at": 110
+    },
+    {
+      "op": "replaceConversationModelReferences",
+      "oldModelId": "openai:gpt-4",
+      "newModelId": "anthropic:claude",
+      "at": 111
+    },
+    {
+      "op": "replaceNewChatModelReference",
+      "oldModelId": "openai:gpt-4",
+      "newModelId": "google:gemini"
+    },
+    {
+      "op": "replaceNewChatModelReference",
+      "oldModelId": "openai:gpt-4",
+      "newModelId": "google:gemini"
+    },
+    {
+      "op": "updateConversationForRunAdmission",
+      "conversationId": "c1",
+      "selectedBranchesJson": "{\"a\":\"b\"}",
+      "selectedRunBranchesJson": "{\"null\":\"r9\"}",
+      "modelId": null,
+      "at": 120,
+      "touchConversationOnAdmission": false
+    },
+    {
+      "op": "updateConversationForRunAdmission",
+      "conversationId": "c1",
+      "selectedBranchesJson": "{\"a\":\"c\"}",
+      "selectedRunBranchesJson": "{\"null\":\"r9\"}",
+      "modelId": "x:y",
+      "at": 130,
+      "touchConversationOnAdmission": true
+    },
+    {
+      "op": "updateConversationForRunAdmission",
+      "conversationId": "absent",
+      "selectedBranchesJson": "{}",
+      "selectedRunBranchesJson": "{}",
+      "modelId": "x:y",
+      "at": 131,
+      "touchConversationOnAdmission": true
+    },
+    {
+      "op": "upsertMessage",
+      "id": "m2",
+      "conversationId": "c1",
+      "runId": "r1",
+      "text": "new",
+      "timestamp": 2,
+      "runSequence": 1,
+      "parentId": "m1"
+    },
+    {
+      "op": "upsertMessage",
+      "id": "m1",
+      "conversationId": "c1",
+      "runId": "r1",
+      "text": "replaced",
+      "timestamp": 3,
+      "runSequence": 1,
+      "thoughts": null,
+      "modelName": null
+    },
+    {
+      "op": "upsertRun",
+      "id": "r3",
+      "conversationId": "c2",
+      "status": "ACTIVE",
+      "activeSlot": 1,
+      "startedAt": 20,
+      "lastCheckpointAt": 21,
+      "currentPass": 2,
+      "legacyAmbiguous": true
+    },
+    {
+      "op": "upsertRun",
+      "id": "r2",
+      "conversationId": "c2",
+      "status": "COMPLETED",
+      "activeSlot": null,
+      "startedAt": 30,
+      "lastCheckpointAt": 31,
+      "endedAt": 32,
+      "endReason": "MODEL_COMPLETED",
+      "currentPass": 1
+    },
+    {
+      "op": "deleteEmbeddingsByConversation",
+      "conversationId": "c1"
+    },
+    {
+      "op": "deleteOrphanedEmbeddings"
+    },
+    {
+      "op": "deleteMessagesByConversation",
+      "conversationId": "c1"
+    },
+    {
+      "op": "updateRunParent",
+      "runId": "r1",
+      "newParentRunId": "r3"
+    },
+    {
+      "op": "updateRunParent",
+      "runId": "r3",
+      "newParentRunId": null
+    },
+    {
+      "op": "updateRunParent",
+      "runId": "absent",
+      "newParentRunId": "r1"
+    },
+    {
+      "op": "deleteConversation",
+      "conversationId": "c4"
+    },
+    {
+      "op": "deleteConversation",
+      "conversationId": "c4"
+    },
+    {
+      "op": "getAllConversationsList"
+    }
+  ]
+}

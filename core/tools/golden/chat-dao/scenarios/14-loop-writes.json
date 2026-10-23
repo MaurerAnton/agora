@@ -1,0 +1,121 @@
+{
+  "seed": {
+    "conversations": [
+      {
+        "id": "c1",
+        "title": "c1",
+        "lastUpdated": 0,
+        "dataChangedAt": 1,
+        "origin": "user",
+        "graduated": false,
+        "draftText": "",
+        "hasUnreadGeneration": false,
+        "isPinned": false
+      },
+      {
+        "id": "c2",
+        "title": "c2",
+        "lastUpdated": 0,
+        "dataChangedAt": 2,
+        "origin": "user",
+        "graduated": false,
+        "draftText": "",
+        "hasUnreadGeneration": false,
+        "isPinned": false
+      },
+      {
+        "id": "c3",
+        "title": "c3",
+        "lastUpdated": 0,
+        "dataChangedAt": 3,
+        "origin": "user",
+        "graduated": false,
+        "draftText": "",
+        "hasUnreadGeneration": false,
+        "isPinned": false
+      }
+    ],
+    "loops": [
+      {
+        "conversationId": "c1",
+        "intervalMs": 1000,
+        "nextFireAt": 500,
+        "cycleCount": 2,
+        "active": true,
+        "revision": 3,
+        "prompt": "p",
+        "maxCycles": 5
+      },
+      {
+        "conversationId": "c2",
+        "intervalMs": 2000,
+        "nextFireAt": 600,
+        "cycleCount": 0,
+        "active": false,
+        "revision": 0
+      }
+    ]
+  },
+  "steps": [
+    {
+      "op": "upsertLoop",
+      "conversationId": "c3",
+      "intervalMs": 3000,
+      "nextFireAt": 700
+    },
+    {
+      "op": "upsertLoop",
+      "conversationId": "c1",
+      "intervalMs": 1100,
+      "prompt": null,
+      "nextFireAt": 550,
+      "cycleCount": 3,
+      "maxCycles": 7,
+      "active": true,
+      "revision": 4
+    },
+    {
+      "op": "deactivateLoopIfUnchanged",
+      "conversationId": "c1",
+      "expectedRevision": 4,
+      "expectedCycleCount": 3,
+      "expectedIntervalMs": 1100,
+      "expectedNextFireAt": 550,
+      "normalizedMaxCycles": 9
+    },
+    {
+      "op": "deactivateLoopIfUnchanged",
+      "conversationId": "c1",
+      "expectedRevision": 4,
+      "expectedCycleCount": 3,
+      "expectedIntervalMs": 1100,
+      "expectedNextFireAt": 550,
+      "normalizedMaxCycles": 9
+    },
+    {
+      "op": "deactivateLoopIfUnchanged",
+      "conversationId": "c2",
+      "expectedRevision": 0,
+      "expectedCycleCount": 0,
+      "expectedIntervalMs": 2000,
+      "expectedNextFireAt": 600,
+      "normalizedMaxCycles": 9
+    },
+    {
+      "op": "deleteLoop",
+      "conversationId": "c3"
+    },
+    {
+      "op": "deleteLoop",
+      "conversationId": "c3"
+    },
+    {
+      "op": "deleteLoop",
+      "conversationId": "absent"
+    },
+    {
+      "op": "getAllConversationsList"
+    }
+  ],
+  "maskClock": true
+}

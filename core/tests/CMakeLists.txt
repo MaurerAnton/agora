@@ -24,6 +24,7 @@ add_executable(agora_core_tests
     chat_provider_context_dao_parity_test.cpp
     new_chat_persist_dao_parity_test.cpp
     chat_automation_dao_parity_test.cpp
+    chat_dao_parity_test.cpp
     message_persistence_guard_parity_test.cpp
     zip_reader_parity_test.cpp
     native_backup_v5_parity_test.cpp
@@ -113,6 +114,7 @@ target_compile_definitions(agora_core_tests PRIVATE
     AGORA_FIXTURE_MESSAGE_PREP_DIR="${CMAKE_CURRENT_SOURCE_DIR}/../tools/golden/message-preparation"
     AGORA_FIXTURE_STREAM_NORMALIZATION_DIR="${CMAKE_CURRENT_SOURCE_DIR}/../tools/golden/stream-normalization"
     AGORA_FIXTURE_CITATIONS_DIR="${CMAKE_CURRENT_SOURCE_DIR}/../tools/golden/citations"
+    AGORA_FIXTURE_CHAT_DAO_DIR="${CMAKE_CURRENT_SOURCE_DIR}/../tools/golden/chat-dao"
     AGORA_FIXTURE_CLAUDE_CHAT_IMPORTER_DIR="${CMAKE_CURRENT_SOURCE_DIR}/../tools/golden/claude-chat-importer"
     AGORA_FIXTURE_CJK_TEXT_DIR="${CMAKE_CURRENT_SOURCE_DIR}/../tools/golden/cjk-text"
     AGORA_FIXTURE_ANTHROPIC_STREAM_DIR="${CMAKE_CURRENT_SOURCE_DIR}/../tools/golden/anthropic-stream"

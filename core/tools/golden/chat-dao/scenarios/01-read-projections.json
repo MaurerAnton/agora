@@ -1,0 +1,511 @@
+{
+  "seed": {
+    "conversations": [
+      {
+        "id": "c1",
+        "title": "Alpha",
+        "lastUpdated": 10,
+        "dataChangedAt": 1,
+        "origin": "user",
+        "graduated": false,
+        "draftText": "draft1",
+        "hasUnreadGeneration": false,
+        "isPinned": false,
+        "selectedBranchesJson": "{\"u1\":\"m1\"}",
+        "systemPromptId": "p1",
+        "modelId": "openai:gpt-4",
+        "draftAttachments": "[\"a\"]",
+        "selectedRunBranchesJson": "{\"null\":\"r1\"}"
+      },
+      {
+        "id": "c2",
+        "title": "Beta",
+        "lastUpdated": 30,
+        "dataChangedAt": 2,
+        "origin": "user",
+        "graduated": false,
+        "draftText": "",
+        "hasUnreadGeneration": true,
+        "isPinned": true,
+        "modelId": "openai:gpt-4"
+      },
+      {
+        "id": "c3",
+        "title": "Task",
+        "lastUpdated": 20,
+        "dataChangedAt": 0,
+        "origin": "user",
+        "graduated": false,
+        "draftText": "",
+        "hasUnreadGeneration": false,
+        "isPinned": false,
+        "modelId": "openai:gpt-4",
+        "taskId": "t1"
+      },
+      {
+        "id": "c4",
+        "title": "Gamma",
+        "lastUpdated": 20,
+        "dataChangedAt": 0,
+        "origin": "user",
+        "graduated": false,
+        "draftText": "",
+        "hasUnreadGeneration": false,
+        "isPinned": false,
+        "modelId": "openai:gpt-4"
+      },
+      {
+        "id": "c5",
+        "title": "Delta",
+        "lastUpdated": 15,
+        "dataChangedAt": 0,
+        "origin": "user",
+        "graduated": false,
+        "draftText": "",
+        "hasUnreadGeneration": false,
+        "isPinned": false,
+        "modelId": "openai:gpt-4"
+      }
+    ],
+    "runs": [
+      {
+        "id": "r1",
+        "conversationId": "c1",
+        "status": "ACTIVE",
+        "activeSlot": 1,
+        "startedAt": 10,
+        "lastCheckpointAt": 10,
+        "currentPass": 0,
+        "legacyAmbiguous": false
+      },
+      {
+        "id": "r2",
+        "conversationId": "c1",
+        "status": "COMPLETED",
+        "activeSlot": null,
+        "startedAt": 20,
+        "lastCheckpointAt": 0,
+        "currentPass": 0,
+        "legacyAmbiguous": false,
+        "endedAt": 30,
+        "endReason": "MODEL_COMPLETED",
+        "parentRunId": "r1"
+      },
+      {
+        "id": "r3",
+        "conversationId": "c3",
+        "status": "COMPLETED",
+        "activeSlot": null,
+        "startedAt": 5,
+        "lastCheckpointAt": 0,
+        "currentPass": 0,
+        "legacyAmbiguous": false,
+        "endedAt": 6,
+        "endReason": "MODEL_COMPLETED"
+      },
+      {
+        "id": "r4",
+        "conversationId": "c2",
+        "status": "ACTIVE",
+        "activeSlot": 1,
+        "startedAt": 7,
+        "lastCheckpointAt": 0,
+        "currentPass": 0,
+        "legacyAmbiguous": false
+      }
+    ],
+    "messages": [
+      {
+        "id": "m1",
+        "conversationId": "c1",
+        "text": "hello world",
+        "images": [],
+        "tokenCount": 0,
+        "status": "SUCCESS",
+        "participant": "MODEL",
+        "timestamp": 10,
+        "runId": "r1",
+        "runSequence": 0,
+        "modelName": "openai:gpt-4"
+      },
+      {
+        "id": "m2",
+        "conversationId": "c1",
+        "text": "second",
+        "images": [],
+        "tokenCount": 0,
+        "status": "SUCCESS",
+        "participant": "USER",
+        "timestamp": 11,
+        "runId": "r1",
+        "runSequence": 1,
+        "parentId": "m1"
+      },
+      {
+        "id": "m3",
+        "conversationId": "c1",
+        "text": "sending",
+        "images": [],
+        "tokenCount": 0,
+        "status": "SENDING",
+        "participant": "MODEL",
+        "timestamp": 12,
+        "runId": "r1",
+        "runSequence": 2,
+        "parentId": "m2"
+      },
+      {
+        "id": "m4",
+        "conversationId": "c1",
+        "text": "user sending",
+        "images": [],
+        "tokenCount": 0,
+        "status": "SENDING",
+        "participant": "USER",
+        "timestamp": 13,
+        "runId": "r1",
+        "runSequence": 3
+      },
+      {
+        "id": "m5",
+        "conversationId": "c1",
+        "text": "thinking",
+        "images": [],
+        "tokenCount": 0,
+        "status": "THINKING",
+        "participant": "MODEL",
+        "timestamp": 14,
+        "runId": "r1",
+        "runSequence": 4
+      },
+      {
+        "id": "m6",
+        "conversationId": "c1",
+        "text": "tool",
+        "images": [],
+        "tokenCount": 0,
+        "status": "TOOL_CALLING",
+        "participant": "USER",
+        "timestamp": 15,
+        "runId": "r1",
+        "runSequence": 5
+      },
+      {
+        "id": "m7",
+        "conversationId": "c1",
+        "text": "transcribing",
+        "images": [],
+        "tokenCount": 0,
+        "status": "TRANSCRIBING",
+        "participant": "MODEL",
+        "timestamp": 16,
+        "runId": "r1",
+        "runSequence": 6
+      },
+      {
+        "id": "m8",
+        "conversationId": "c1",
+        "text": "done",
+        "images": [],
+        "tokenCount": 0,
+        "status": "SUCCESS",
+        "participant": "MODEL",
+        "timestamp": 17,
+        "runId": "r1",
+        "runSequence": 7
+      },
+      {
+        "id": "m9",
+        "conversationId": "c3",
+        "text": "task model",
+        "images": [],
+        "tokenCount": 0,
+        "status": "SUCCESS",
+        "participant": "MODEL",
+        "timestamp": 18,
+        "runId": "r3",
+        "runSequence": 0
+      },
+      {
+        "id": "m10",
+        "conversationId": "c3",
+        "text": "task error",
+        "images": [],
+        "tokenCount": 0,
+        "status": "ERROR",
+        "participant": "ERROR",
+        "timestamp": 19,
+        "runId": "r3",
+        "runSequence": 1
+      },
+      {
+        "id": "m11",
+        "conversationId": "c3",
+        "text": "xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx",
+        "images": [],
+        "tokenCount": 0,
+        "status": "SUCCESS",
+        "participant": "MODEL",
+        "timestamp": 20,
+        "runId": "r3",
+        "runSequence": 2
+      },
+      {
+        "id": "m12",
+        "conversationId": "c2",
+        "text": "other",
+        "images": [],
+        "tokenCount": 0,
+        "status": "SUCCESS",
+        "participant": "MODEL",
+        "timestamp": 9,
+        "runId": "r4",
+        "runSequence": 0
+      }
+    ],
+    "tasks": [
+      {
+        "id": "t1",
+        "name": "t1",
+        "prompt": "prompt",
+        "cronExpr": "",
+        "nextRunAt": 0,
+        "enabled": true,
+        "createdAt": 0,
+        "modelId": "openai:gpt-4"
+      },
+      {
+        "id": "t2",
+        "name": "t2",
+        "prompt": "prompt",
+        "cronExpr": "",
+        "nextRunAt": 0,
+        "enabled": false,
+        "createdAt": 0
+      }
+    ],
+    "settingsTransfers": [
+      {
+        "conversationId": "c1",
+        "settingsJson": "{\"a\":1}"
+      },
+      {
+        "conversationId": "c2",
+        "settingsJson": null
+      }
+    ],
+    "importTransfer": {
+      "transferId": "tr1",
+      "settingsJson": "{\"m\":1}",
+      "mode": "MERGE"
+    }
+  },
+  "steps": [
+    {
+      "op": "getAllConversations"
+    },
+    {
+      "op": "observeDrawerConversations",
+      "limit": 3
+    },
+    {
+      "op": "getDrawerConversations",
+      "ids": [
+        "c1",
+        "c3",
+        "c5",
+        "zzz"
+      ]
+    },
+    {
+      "op": "getExecutionsForTask",
+      "taskId": "t1"
+    },
+    {
+      "op": "observeConversation",
+      "conversationId": "c1"
+    },
+    {
+      "op": "observeConversation",
+      "conversationId": "absent"
+    },
+    {
+      "op": "getConversationSettingsTransfer",
+      "conversationId": "c1"
+    },
+    {
+      "op": "getConversationSettingsTransfer",
+      "conversationId": "c3"
+    },
+    {
+      "op": "getConversationSettingsTransfer",
+      "conversationId": "absent"
+    },
+    {
+      "op": "getPendingConversationSettingsTransfers"
+    },
+    {
+      "op": "upsertConversationSettingsTransfer",
+      "conversationId": "c3",
+      "settingsJson": "{\"x\":true}"
+    },
+    {
+      "op": "upsertConversationSettingsTransfer",
+      "conversationId": "c1",
+      "settingsJson": null
+    },
+    {
+      "op": "deleteConversationSettingsTransfer",
+      "conversationId": "c2"
+    },
+    {
+      "op": "deleteConversationSettingsTransfer",
+      "conversationId": "c2"
+    },
+    {
+      "op": "getConversationSettingsImportTransfer"
+    },
+    {
+      "op": "upsertConversationSettingsImportTransfer",
+      "id": 0,
+      "transferId": "tr1",
+      "settingsJson": "{\"m\":2}",
+      "mode": "REPLACE"
+    },
+    {
+      "op": "upsertConversationSettingsImportTransfer",
+      "id": 1,
+      "transferId": "tr2",
+      "settingsJson": "{}",
+      "mode": "MERGE"
+    },
+    {
+      "op": "deleteConversationSettingsImportTransfer",
+      "transferId": "wrong"
+    },
+    {
+      "op": "deleteConversationSettingsImportTransfer",
+      "transferId": "tr1"
+    },
+    {
+      "op": "observeMessage",
+      "messageId": "m1"
+    },
+    {
+      "op": "observeMessage",
+      "messageId": "absent"
+    },
+    {
+      "op": "stopStuckMessagesForConversation",
+      "conversationId": "c1"
+    },
+    {
+      "op": "stopStuckMessagesForConversation",
+      "conversationId": "c1"
+    },
+    {
+      "op": "getLastMessageForConversation",
+      "conversationId": "c1"
+    },
+    {
+      "op": "getLastMessageForConversation",
+      "conversationId": "c3"
+    },
+    {
+      "op": "getLastMessageForConversation",
+      "conversationId": "absent"
+    },
+    {
+      "op": "observeExecutionMessagesForTask",
+      "taskId": "t1"
+    },
+    {
+      "op": "getAllConversationsList"
+    },
+    {
+      "op": "getAllConversationIds"
+    },
+    {
+      "op": "getAllTaskIds"
+    },
+    {
+      "op": "getMessagesPage",
+      "afterId": null,
+      "limit": 3
+    },
+    {
+      "op": "getMessagesPage",
+      "afterId": "m10",
+      "limit": 3
+    },
+    {
+      "op": "getMessagesPage",
+      "afterId": "m5",
+      "limit": 2
+    },
+    {
+      "op": "getConversationMessagesPage",
+      "conversationId": "c1",
+      "afterId": null,
+      "limit": 3
+    },
+    {
+      "op": "getConversationMessagesPage",
+      "conversationId": "c1",
+      "afterId": "m2",
+      "limit": 3
+    },
+    {
+      "op": "getConversationMessagesPage",
+      "conversationId": "absent",
+      "afterId": null,
+      "limit": 3
+    },
+    {
+      "op": "findExistingMessageIds",
+      "ids": [
+        "m1",
+        "mX",
+        "m5"
+      ]
+    },
+    {
+      "op": "findExistingMessageIds",
+      "ids": []
+    },
+    {
+      "op": "getMessagesByIds",
+      "ids": [
+        "m3",
+        "m1",
+        "mX"
+      ]
+    },
+    {
+      "op": "compareAndSetRunBranchSelections",
+      "conversationId": "c1",
+      "expected": "{\"null\":\"r1\"}",
+      "replacement": "{\"null\":\"r2\"}"
+    },
+    {
+      "op": "compareAndSetRunBranchSelections",
+      "conversationId": "c1",
+      "expected": "{\"null\":\"r1\"}",
+      "replacement": "{\"null\":\"r3\"}"
+    },
+    {
+      "op": "updateDraft",
+      "id": "c1",
+      "text": "draft2",
+      "attachments": null,
+      "at": 99
+    },
+    {
+      "op": "updateDraft",
+      "id": "absent",
+      "text": "draft3",
+      "attachments": "[\"b\"]",
+      "at": 100
+    }
+  ]
+}

@@ -35,6 +35,7 @@ add_library(agora_core_lib STATIC
     src/chat_provider_context_dao.cpp
     src/new_chat_persist_dao.cpp
     src/chat_automation_dao.cpp
+    src/chat_dao.cpp
     src/message_persistence_guard.cpp
     src/imported_citation_projection.cpp
     src/native_backup_secrets.cpp

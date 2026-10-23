@@ -1,0 +1,175 @@
+{
+  "seed": {
+    "conversations": [
+      {
+        "id": "c1",
+        "title": "c1",
+        "lastUpdated": 0,
+        "dataChangedAt": 0,
+        "origin": "user",
+        "graduated": false,
+        "draftText": "",
+        "hasUnreadGeneration": false,
+        "isPinned": false
+      },
+      {
+        "id": "c2",
+        "title": "c2",
+        "lastUpdated": 0,
+        "dataChangedAt": 0,
+        "origin": "user",
+        "graduated": false,
+        "draftText": "",
+        "hasUnreadGeneration": false,
+        "isPinned": false
+      }
+    ],
+    "runs": [
+      {
+        "id": "r1",
+        "conversationId": "c1",
+        "status": "ACTIVE",
+        "activeSlot": 1,
+        "startedAt": 1,
+        "lastCheckpointAt": 0,
+        "currentPass": 0,
+        "legacyAmbiguous": false
+      },
+      {
+        "id": "r2",
+        "conversationId": "c2",
+        "status": "COMPLETED",
+        "activeSlot": null,
+        "startedAt": 2,
+        "lastCheckpointAt": 0,
+        "currentPass": 0,
+        "legacyAmbiguous": false,
+        "endedAt": 3,
+        "endReason": "MODEL_COMPLETED"
+      }
+    ],
+    "messages": [
+      {
+        "id": "m1",
+        "conversationId": "c1",
+        "text": "one",
+        "images": [],
+        "tokenCount": 0,
+        "status": "SUCCESS",
+        "participant": "MODEL",
+        "timestamp": 1,
+        "runId": "r1",
+        "runSequence": -1
+      },
+      {
+        "id": "m2",
+        "conversationId": "c2",
+        "text": "two",
+        "images": [],
+        "tokenCount": 0,
+        "status": "SUCCESS",
+        "participant": "MODEL",
+        "timestamp": 2,
+        "runId": "r2",
+        "runSequence": -1
+      }
+    ],
+    "tasks": [
+      {
+        "id": "t1",
+        "name": "t1",
+        "prompt": "prompt",
+        "cronExpr": "",
+        "nextRunAt": 0,
+        "enabled": true,
+        "createdAt": 0
+      }
+    ],
+    "loops": [
+      {
+        "conversationId": "c1",
+        "intervalMs": 1000,
+        "nextFireAt": 2,
+        "cycleCount": 0,
+        "active": true,
+        "revision": 0
+      }
+    ],
+    "settingsTransfers": [
+      {
+        "conversationId": "c1",
+        "settingsJson": "{\"a\":1}"
+      }
+    ],
+    "embeddings": [
+      {
+        "id": 1,
+        "messageId": "m1",
+        "modelId": "m",
+        "embeddingBase64": "AQ==",
+        "chunkText": "",
+        "dimension": 0
+      },
+      {
+        "id": 2,
+        "messageId": "m2",
+        "modelId": "m",
+        "embeddingBase64": "Ag==",
+        "chunkText": "",
+        "dimension": 0
+      }
+    ]
+  },
+  "steps": [
+    {
+      "op": "deleteConversation",
+      "conversationId": "c1"
+    },
+    {
+      "op": "getAllConversationIds"
+    },
+    {
+      "op": "getAllConversationsList"
+    },
+    {
+      "op": "deleteMessagesByConversation",
+      "conversationId": "c2"
+    },
+    {
+      "op": "getRunsForConversation",
+      "conversationId": "c2"
+    },
+    {
+      "op": "getMessagesByIds",
+      "ids": [
+        "m2"
+      ]
+    },
+    {
+      "op": "deleteAllConversations"
+    },
+    {
+      "op": "deleteAllConversations"
+    },
+    {
+      "op": "deleteConversation",
+      "conversationId": "absent"
+    },
+    {
+      "op": "deleteMessagesByConversation",
+      "conversationId": "absent"
+    },
+    {
+      "op": "getAllConversationIds"
+    },
+    {
+      "op": "getAllTaskIds"
+    },
+    {
+      "op": "deleteOrphanedEmbeddings"
+    },
+    {
+      "op": "getAllEmbeddings"
+    }
+  ]
+}

@@ -1,0 +1,24 @@
+{
+  "name": "26-stream-size-mismatch",
+  "archive": "size-mismatch.zip",
+  "ops": [
+    {
+      "op": "open",
+      "mode": "file"
+    },
+    {
+      "op": "stream_open",
+      "key": "s",
+      "name": "conv/tasks.json"
+    },
+    {
+      "op": "stream_read",
+      "key": "s",
+      "count": 4
+    },
+    {
+      "op": "stream_read_to_end",
+      "key": "s"
+    }
+  ]
+}

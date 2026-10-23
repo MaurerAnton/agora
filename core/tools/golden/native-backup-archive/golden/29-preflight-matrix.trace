@@ -1,0 +1,12 @@
+op|0|open
+open|ok
+op|1|preflight
+preflight|87
+op|2|preflight
+preflight|0
+op|3|preflight
+preflight|46
+op|4|preflight
+error|Insufficient storage for <dir>/import_dest4: 79 bytes required, 40 available
+op|5|close
+close|ok

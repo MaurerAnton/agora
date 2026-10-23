@@ -500,15 +500,50 @@ void Reader::parse_central_directory() {
             throw ZipException("unexpected EOF in central header fields");
         }
         std::string name(archive, offset, name_length);
+        const unsigned char* extra = reinterpret_cast<const unsigned char*>(archive.data()) +
+                                     offset + name_length;
+        const std::size_t extra_length_all = extra_length;
+
+        std::uint64_t size_value = size;
+        std::uint64_t compressed_value = compressed_size;
+        std::uint64_t offset_value = local_offset;
+        // ZIP64 extended information (id 0x0001): only the fields still carrying their
+        // 0xFFFFFFFF placeholder are present, in uncompressed/compressed/offset order.
+        if (size == 0xFFFFFFFFu || compressed_size == 0xFFFFFFFFu || local_offset == 0xFFFFFFFFu) {
+            std::size_t at = 0;
+            while (at + 4 <= extra_length_all) {
+                const std::uint16_t id = static_cast<std::uint16_t>(extra[at] | (extra[at + 1] << 8));
+                const std::uint16_t len = static_cast<std::uint16_t>(extra[at + 2] | (extra[at + 3] << 8));
+                at += 4;
+                if (at + len > extra_length_all) break;
+                if (id == 0x0001) {
+                    std::size_t data = at;
+                    const std::size_t data_end = at + len;
+                    const auto take = [&](std::uint64_t& target) {
+                        if (data + 8 <= data_end) {
+                            std::uint64_t value = 0;
+                            for (int i = 7; i >= 0; --i) value = (value << 8) | extra[data + i];
+                            target = value;
+                            data += 8;
+                        }
+                    };
+                    if (size == 0xFFFFFFFFu) take(size_value);
+                    if (compressed_size == 0xFFFFFFFFu) take(compressed_value);
+                    if (local_offset == 0xFFFFFFFFu) take(offset_value);
+                    break;
+                }
+                at += len;
+            }
+        }
         offset += name_length + extra_length + comment_length;
 
         CentralEntry ce;
         ce.name = std::move(name);
         ce.method = static_cast<int>(method);
-        ce.size = static_cast<std::int64_t>(size);
-        ce.compressed_size = static_cast<std::int64_t>(compressed_size);
+        ce.size = static_cast<std::int64_t>(size_value);
+        ce.compressed_size = static_cast<std::int64_t>(compressed_value);
         ce.crc32 = crc;
-        ce.local_offset = static_cast<std::uint64_t>(local_offset);
+        ce.local_offset = static_cast<std::uint64_t>(offset_value);
         central_entries_.push_back(std::move(ce));
     }
     central_parsed_ = true;

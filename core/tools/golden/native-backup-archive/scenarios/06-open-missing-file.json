@@ -1,0 +1,16 @@
+{
+  "name": "06-open-missing-file",
+  "archive": "missing.zip",
+  "ops": [
+    {
+      "op": "open",
+      "mode": "file"
+    },
+    {
+      "op": "names"
+    },
+    {
+      "op": "temp_exists"
+    }
+  ]
+}

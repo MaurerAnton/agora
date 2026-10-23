@@ -1,0 +1,19 @@
+{
+  "name": "32-preflight-insufficient",
+  "archive": "valid-v6.zip",
+  "ops": [
+    {
+      "op": "open",
+      "mode": "file"
+    },
+    {
+      "op": "preflight",
+      "conversations": true,
+      "settings": true,
+      "version": 6,
+      "dest": "tight",
+      "fontLimit": 1000,
+      "available": 10
+    }
+  ]
+}

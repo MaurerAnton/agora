@@ -1,0 +1,19 @@
+op|0|open
+open|ok
+op|1|copy_to
+error|Could not create import destination: <dir>/blocker
+exists|false
+op|2|copy_stream_raw
+error|Failed requirement.
+exists|false
+op|3|copy_stream_raw
+error|direct.bin size mismatch: declared 99 bytes, read 7
+exists|false
+op|4|copy_stream_raw
+error|crc.bin CRC mismatch
+exists|false
+op|5|copy_stream_raw
+error|more.bin size mismatch: declared 2 bytes, read more
+exists|false
+op|6|close
+close|ok

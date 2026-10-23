@@ -1,0 +1,16 @@
+{
+  "name": "16-open-backslash",
+  "archive": "backslash.zip",
+  "ops": [
+    {
+      "op": "open",
+      "mode": "file"
+    },
+    {
+      "op": "names"
+    },
+    {
+      "op": "temp_exists"
+    }
+  ]
+}

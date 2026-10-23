@@ -1,0 +1,24 @@
+{
+  "name": "03-open-channel-probes",
+  "archive": "valid-v6.zip",
+  "ops": [
+    {
+      "op": "open",
+      "mode": "channel"
+    },
+    {
+      "op": "has",
+      "name": "manifest.json"
+    },
+    {
+      "op": "size",
+      "name": "manifest.json"
+    },
+    {
+      "op": "close"
+    },
+    {
+      "op": "temp_exists"
+    }
+  ]
+}

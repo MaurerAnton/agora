@@ -1,0 +1,33 @@
+op|0|open
+open|ok
+op|1|names
+names|15
+entry|manifest.json
+entry|settings.json
+entry|system_prompts.json
+entry|api_keys.json
+entry|conversations.json
+entry|conv/tasks.json
+entry|conv/items/aaaaaaaaaaaaaaaa.json
+entry|media/images/11111111-2222-3333-4444-555555555555.png
+entry|media/drafts/99999999-8888-7777-6666-555555555555.jpg
+entry|custom_font/font
+entry|images/legacy.png
+entry|videos/legacy.mp4
+entry|custom_font/legacy.ttf
+entry|memories/memory_db/note.md
+entry|theme.bin
+op|2|bytes
+error|Resource entry must be copied to storage: custom_font/font
+op|3|stream_open
+error|Resource entry must be copied to storage: media/images/11111111-2222-3333-4444-555555555555.png
+op|4|stream_open
+stream|s|opened
+op|5|stream_read
+read|7|{"recor
+op|6|stream_close
+close|s|ok
+op|7|close
+close|ok
+op|8|temp_exists
+exists|true

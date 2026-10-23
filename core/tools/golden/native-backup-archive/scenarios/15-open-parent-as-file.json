@@ -1,0 +1,16 @@
+{
+  "name": "15-open-parent-as-file",
+  "archive": "parent-as-file.zip",
+  "ops": [
+    {
+      "op": "open",
+      "mode": "file"
+    },
+    {
+      "op": "names"
+    },
+    {
+      "op": "temp_exists"
+    }
+  ]
+}

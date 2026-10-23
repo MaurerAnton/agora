@@ -1,0 +1,17 @@
+{
+  "name": "08-open-negative-metadata-limit",
+  "archive": "valid-v6.zip",
+  "ops": [
+    {
+      "op": "open",
+      "mode": "file",
+      "metadataLimit": -1
+    },
+    {
+      "op": "names"
+    },
+    {
+      "op": "temp_exists"
+    }
+  ]
+}

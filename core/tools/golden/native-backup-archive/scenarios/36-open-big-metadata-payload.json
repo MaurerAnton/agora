@@ -1,0 +1,17 @@
+{
+  "name": "36-open-big-metadata-payload",
+  "archive": "big-payload.zip",
+  "ops": [
+    {
+      "op": "open",
+      "mode": "file",
+      "metadataLimit": 40
+    },
+    {
+      "op": "names"
+    },
+    {
+      "op": "temp_exists"
+    }
+  ]
+}

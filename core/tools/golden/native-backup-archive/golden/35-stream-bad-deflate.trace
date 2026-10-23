@@ -1,0 +1,10 @@
+op|0|open
+open|ok
+op|1|stream_open
+stream|s|opened
+op|2|stream_read
+error|invalid stored block lengths
+op|3|stream_close
+close|s|ok
+op|4|temp_exists
+exists|true

@@ -1,0 +1,61 @@
+{
+  "name": "34-stream-rendering",
+  "archive": "valid-v6.zip",
+  "ops": [
+    {
+      "op": "open",
+      "mode": "file"
+    },
+    {
+      "op": "stream_open",
+      "key": "theme",
+      "name": "theme.bin"
+    },
+    {
+      "op": "stream_read",
+      "key": "theme",
+      "count": 3
+    },
+    {
+      "op": "stream_read",
+      "key": "theme",
+      "count": 100
+    },
+    {
+      "op": "stream_read",
+      "key": "theme",
+      "count": 1
+    },
+    {
+      "op": "stream_close",
+      "key": "theme"
+    },
+    {
+      "op": "stream_open",
+      "key": "res",
+      "name": "media/images/11111111-2222-3333-4444-555555555555.png"
+    },
+    {
+      "op": "stream_read",
+      "key": "res",
+      "count": 4
+    },
+    {
+      "op": "stream_open",
+      "key": "font",
+      "name": "custom_font/font"
+    },
+    {
+      "op": "stream_read",
+      "key": "missing",
+      "count": 4
+    },
+    {
+      "op": "stream_close",
+      "key": "missing"
+    },
+    {
+      "op": "close"
+    }
+  ]
+}

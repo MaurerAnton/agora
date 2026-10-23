@@ -1,0 +1,52 @@
+{
+  "name": "28-copy-destination-and-buffer",
+  "archive": "valid-v6.zip",
+  "ops": [
+    {
+      "op": "open",
+      "mode": "file"
+    },
+    {
+      "op": "copy_to",
+      "name": "settings.json",
+      "target": "blocker/out.json",
+      "maxBytes": 1125899906842624,
+      "available": 1125899906842624
+    },
+    {
+      "op": "copy_stream_raw",
+      "target": "buffer.json",
+      "input": "abc",
+      "bufferBytes": 0,
+      "sourceName": "buffer.json"
+    },
+    {
+      "op": "copy_stream_raw",
+      "target": "direct.bin",
+      "input": "payload",
+      "declaredSize": 99,
+      "expectedCrc": 0,
+      "sourceName": "direct.bin"
+    },
+    {
+      "op": "copy_stream_raw",
+      "target": "crc.bin",
+      "input": "payload",
+      "expectedCrc": 12345,
+      "sourceName": "crc.bin"
+    },
+    {
+      "op": "copy_stream_raw",
+      "target": "more.bin",
+      "input": "payload",
+      "declaredSize": 2,
+      "sourceName": "more.bin"
+    },
+    {
+      "op": "close"
+    }
+  ],
+  "setupFiles": [
+    "blocker"
+  ]
+}

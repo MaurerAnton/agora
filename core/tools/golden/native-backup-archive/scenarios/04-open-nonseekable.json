@@ -1,0 +1,16 @@
+{
+  "name": "04-open-nonseekable",
+  "archive": "valid-v6.zip",
+  "ops": [
+    {
+      "op": "open",
+      "mode": "nonseek"
+    },
+    {
+      "op": "names"
+    },
+    {
+      "op": "close"
+    }
+  ]
+}

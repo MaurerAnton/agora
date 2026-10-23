@@ -1,0 +1,4 @@
+op|0|open
+error|Error reading Zip content from BytesChannel
+op|1|names
+error|Archive is not open

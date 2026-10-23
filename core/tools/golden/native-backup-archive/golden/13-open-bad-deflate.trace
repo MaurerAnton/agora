@@ -1,0 +1,6 @@
+op|0|open
+error|invalid stored block lengths
+op|1|names
+error|Archive is not open
+op|2|temp_exists
+exists|false

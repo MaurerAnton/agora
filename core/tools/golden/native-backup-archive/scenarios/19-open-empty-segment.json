@@ -1,0 +1,16 @@
+{
+  "name": "19-open-empty-segment",
+  "archive": "empty-segment.zip",
+  "ops": [
+    {
+      "op": "open",
+      "mode": "file"
+    },
+    {
+      "op": "names"
+    },
+    {
+      "op": "temp_exists"
+    }
+  ]
+}

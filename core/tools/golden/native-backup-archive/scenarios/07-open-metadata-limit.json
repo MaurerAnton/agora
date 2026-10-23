@@ -1,0 +1,17 @@
+{
+  "name": "07-open-metadata-limit",
+  "archive": "valid-v6.zip",
+  "ops": [
+    {
+      "op": "open",
+      "mode": "file",
+      "metadataLimit": 5
+    },
+    {
+      "op": "names"
+    },
+    {
+      "op": "temp_exists"
+    }
+  ]
+}

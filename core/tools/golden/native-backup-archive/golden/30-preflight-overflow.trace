@@ -1,0 +1,4 @@
+op|0|open
+open|ok
+op|1|preflight
+error|Conversation data size is too large

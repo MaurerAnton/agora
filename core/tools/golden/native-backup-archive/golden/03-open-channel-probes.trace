@@ -1,0 +1,10 @@
+op|0|open
+open|ok
+op|1|has
+has|true
+op|2|size
+size|57
+op|3|close
+close|ok
+op|4|temp_exists
+exists|true

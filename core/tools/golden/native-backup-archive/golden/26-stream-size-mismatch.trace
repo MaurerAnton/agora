@@ -1,0 +1,8 @@
+op|0|open
+open|ok
+op|1|stream_open
+stream|s|opened
+op|2|stream_read
+read|4|{"re
+op|3|stream_read_to_end
+error|conv/tasks.json size mismatch: declared 99 bytes, read 14

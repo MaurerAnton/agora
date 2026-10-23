@@ -1,0 +1,4 @@
+op|0|open
+open|ok
+op|1|preflight
+error|Insufficient storage for <dir>/tight: 87 bytes required, 10 available

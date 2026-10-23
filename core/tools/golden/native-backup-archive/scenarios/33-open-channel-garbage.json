@@ -1,0 +1,14 @@
+{
+  "name": "33-open-channel-garbage",
+  "archive": "garbage.bin",
+  "ops": [
+    {
+      "op": "open",
+      "mode": "channel",
+      "channelFixture": "garbage.bin"
+    },
+    {
+      "op": "names"
+    }
+  ]
+}

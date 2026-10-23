@@ -1,0 +1,49 @@
+{
+  "name": "29-preflight-matrix",
+  "archive": "valid-v6.zip",
+  "ops": [
+    {
+      "op": "open",
+      "mode": "file"
+    },
+    {
+      "op": "preflight",
+      "conversations": true,
+      "settings": true,
+      "version": 6,
+      "dest": "import_dest",
+      "fontLimit": 1000,
+      "available": 1125899906842624
+    },
+    {
+      "op": "preflight",
+      "conversations": false,
+      "settings": false,
+      "version": 6,
+      "dest": "import_dest2",
+      "fontLimit": 1000,
+      "available": 1125899906842624
+    },
+    {
+      "op": "preflight",
+      "conversations": true,
+      "settings": false,
+      "version": 3,
+      "dest": "import_dest3",
+      "fontLimit": 1000,
+      "available": 1125899906842624
+    },
+    {
+      "op": "preflight",
+      "conversations": true,
+      "settings": true,
+      "version": 6,
+      "dest": "import_dest4",
+      "fontLimit": 0,
+      "available": 40
+    },
+    {
+      "op": "close"
+    }
+  ]
+}

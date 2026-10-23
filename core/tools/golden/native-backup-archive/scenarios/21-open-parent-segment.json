@@ -1,0 +1,16 @@
+{
+  "name": "21-open-parent-segment",
+  "archive": "parent-segment.zip",
+  "ops": [
+    {
+      "op": "open",
+      "mode": "file"
+    },
+    {
+      "op": "names"
+    },
+    {
+      "op": "temp_exists"
+    }
+  ]
+}

@@ -1,0 +1,16 @@
+{
+  "name": "09-open-crc-mismatch-metadata",
+  "archive": "crc-mismatch-metadata.zip",
+  "ops": [
+    {
+      "op": "open",
+      "mode": "file"
+    },
+    {
+      "op": "names"
+    },
+    {
+      "op": "temp_exists"
+    }
+  ]
+}

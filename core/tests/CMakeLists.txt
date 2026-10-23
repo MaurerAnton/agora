@@ -22,6 +22,7 @@ add_executable(agora_core_tests
     chat_search_dao_parity_test.cpp
     chat_media_references_dao_parity_test.cpp
     chat_provider_context_dao_parity_test.cpp
+    new_chat_persist_dao_parity_test.cpp
     message_persistence_guard_parity_test.cpp
     zip_reader_parity_test.cpp
     native_backup_v5_parity_test.cpp
@@ -144,6 +145,7 @@ target_compile_definitions(agora_core_tests PRIVATE
     AGORA_FIXTURE_CHAT_SEARCH_DAO_DIR="${CMAKE_CURRENT_SOURCE_DIR}/../tools/golden/chat-search-dao"
     AGORA_FIXTURE_CHAT_MEDIA_REFERENCES_DAO_DIR="${CMAKE_CURRENT_SOURCE_DIR}/../tools/golden/chat-media-references-dao"
     AGORA_FIXTURE_CHAT_PROVIDER_CONTEXT_DAO_DIR="${CMAKE_CURRENT_SOURCE_DIR}/../tools/golden/chat-provider-context-dao"
+    AGORA_FIXTURE_NEW_CHAT_PERSIST_DAO_DIR="${CMAKE_CURRENT_SOURCE_DIR}/../tools/golden/new-chat-persist-dao"
     AGORA_FIXTURE_MIGRATION_17_18_DIR="${CMAKE_CURRENT_SOURCE_DIR}/../tools/golden/migration-17-18"
     AGORA_FIXTURE_MIGRATION_18_19_DIR="${CMAKE_CURRENT_SOURCE_DIR}/../tools/golden/migration-18-19"
     AGORA_FIXTURE_MIGRATION_19_20_DIR="${CMAKE_CURRENT_SOURCE_DIR}/../tools/golden/migration-19-20"

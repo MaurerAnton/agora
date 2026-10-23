@@ -1,0 +1,1 @@
+{"steps":[{"op":"deleteNewChatPersistIfMatches","result":0},{"op":"getNewChatPersist","result":{"id":0,"modelId":null,"systemPromptId":null,"conversationSettingsJson":null,"draftText":"x","draftAttachments":null}},{"op":"deleteNewChatPersistIfMatches","result":1},{"op":"getNewChatPersist","result":null},{"op":"deleteNewChatPersist","result":0}],"tables":{"new_chat_persist":[]}}

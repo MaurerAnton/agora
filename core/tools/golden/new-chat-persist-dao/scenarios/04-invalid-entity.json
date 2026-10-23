@@ -1,0 +1,23 @@
+{
+  "seed": {
+    "newChatPersist": []
+  },
+  "steps": [
+    {
+      "op": "upsertNewChatPersist",
+      "id": 1,
+      "draftText": "bad"
+    },
+    {
+      "op": "upsertNewChatPersist",
+      "id": -1,
+      "draftText": "worse"
+    },
+    {
+      "op": "observeNewChatPersist"
+    },
+    {
+      "op": "getNewChatPersist"
+    }
+  ]
+}

@@ -1,0 +1,1 @@
+{"steps":[{"op":"upsertNewChatPersist","result":{"error":"IllegalArgumentException","message":"Failed requirement."}},{"op":"upsertNewChatPersist","result":{"error":"IllegalArgumentException","message":"Failed requirement."}},{"op":"observeNewChatPersist","result":null},{"op":"getNewChatPersist","result":null}],"tables":{"new_chat_persist":[]}}

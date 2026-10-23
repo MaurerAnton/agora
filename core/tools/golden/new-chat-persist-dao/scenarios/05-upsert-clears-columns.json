@@ -1,0 +1,36 @@
+{
+  "seed": {
+    "newChatPersist": [
+      {
+        "id": 0,
+        "modelId": "m1",
+        "systemPromptId": "p1",
+        "conversationSettingsJson": "{\"x\":1}",
+        "draftText": "draft",
+        "draftAttachments": "[\"a\"]"
+      }
+    ]
+  },
+  "steps": [
+    {
+      "op": "upsertNewChatPersist",
+      "modelId": null,
+      "systemPromptId": null,
+      "conversationSettingsJson": null,
+      "draftText": "z",
+      "draftAttachments": null
+    },
+    {
+      "op": "getNewChatPersist"
+    },
+    {
+      "op": "observeNewChatPersist"
+    },
+    {
+      "op": "deleteNewChatPersist"
+    },
+    {
+      "op": "observeNewChatPersist"
+    }
+  ]
+}

@@ -1,0 +1,136 @@
+{
+  "seed": {
+    "conversations": [
+      {
+        "id": "c-01",
+        "draftAttachments": "[\"a.png\"]"
+      },
+      {
+        "id": "c-02",
+        "draftAttachments": null
+      },
+      {
+        "id": "c-03",
+        "draftAttachments": ""
+      },
+      {
+        "id": "c-04",
+        "draftAttachments": "{\"draft\":\"b.png\"}"
+      },
+      {
+        "id": "c-05",
+        "draftAttachments": "legacy|||format"
+      }
+    ],
+    "runs": [
+      {
+        "id": "run-c-01",
+        "conversationId": "c-01",
+        "status": "COMPLETED",
+        "startedAt": 100,
+        "lastCheckpointAt": 100,
+        "endedAt": 200,
+        "endReason": "MODEL_COMPLETED",
+        "currentPass": 0,
+        "legacyAmbiguous": false
+      },
+      {
+        "id": "run-c-02",
+        "conversationId": "c-02",
+        "status": "COMPLETED",
+        "startedAt": 100,
+        "lastCheckpointAt": 100,
+        "endedAt": 200,
+        "endReason": "MODEL_COMPLETED",
+        "currentPass": 0,
+        "legacyAmbiguous": false
+      },
+      {
+        "id": "run-c-03",
+        "conversationId": "c-03",
+        "status": "COMPLETED",
+        "startedAt": 100,
+        "lastCheckpointAt": 100,
+        "endedAt": 200,
+        "endReason": "MODEL_COMPLETED",
+        "currentPass": 0,
+        "legacyAmbiguous": false
+      },
+      {
+        "id": "run-c-04",
+        "conversationId": "c-04",
+        "status": "COMPLETED",
+        "startedAt": 100,
+        "lastCheckpointAt": 100,
+        "endedAt": 200,
+        "endReason": "MODEL_COMPLETED",
+        "currentPass": 0,
+        "legacyAmbiguous": false
+      },
+      {
+        "id": "run-c-05",
+        "conversationId": "c-05",
+        "status": "COMPLETED",
+        "startedAt": 100,
+        "lastCheckpointAt": 100,
+        "endedAt": 200,
+        "endReason": "MODEL_COMPLETED",
+        "currentPass": 0,
+        "legacyAmbiguous": false
+      }
+    ],
+    "messages": [],
+    "newChatPersist": []
+  },
+  "steps": [
+    {
+      "op": "getConversationDraftAttachmentReferencesPage",
+      "afterId": null,
+      "limit": 100
+    },
+    {
+      "op": "getConversationDraftAttachmentReferencesPage",
+      "afterId": null,
+      "limit": 100,
+      "pathToken": "a.png"
+    },
+    {
+      "op": "getConversationDraftAttachmentReferencesPage",
+      "afterId": null,
+      "limit": 100,
+      "pathToken": "b.png"
+    },
+    {
+      "op": "getConversationDraftAttachmentReferencesPage",
+      "afterId": null,
+      "limit": 100,
+      "pathToken": "legacy"
+    },
+    {
+      "op": "getConversationDraftAttachmentReferencesPage",
+      "afterId": null,
+      "limit": 100,
+      "pathToken": "A.png"
+    },
+    {
+      "op": "getConversationDraftAttachmentReferencesPage",
+      "afterId": "c-01",
+      "limit": 100
+    },
+    {
+      "op": "getConversationDraftAttachmentReferencesPage",
+      "afterId": null,
+      "limit": 2
+    },
+    {
+      "op": "getConversationDraftAttachmentReferencesPage",
+      "afterId": null,
+      "limit": 0
+    },
+    {
+      "op": "getConversationDraftAttachmentReferencesPage",
+      "afterId": "",
+      "limit": 100
+    }
+  ]
+}

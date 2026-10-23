@@ -1,0 +1,129 @@
+{
+  "seed": {
+    "conversations": [
+      {
+        "id": "c-1",
+        "draftAttachments": null
+      },
+      {
+        "id": "c-2",
+        "draftAttachments": null
+      }
+    ],
+    "runs": [
+      {
+        "id": "run-c-1",
+        "conversationId": "c-1",
+        "status": "COMPLETED",
+        "startedAt": 100,
+        "lastCheckpointAt": 100,
+        "endedAt": 200,
+        "endReason": "MODEL_COMPLETED",
+        "currentPass": 0,
+        "legacyAmbiguous": false
+      },
+      {
+        "id": "run-c-2",
+        "conversationId": "c-2",
+        "status": "COMPLETED",
+        "startedAt": 100,
+        "lastCheckpointAt": 100,
+        "endedAt": 200,
+        "endReason": "MODEL_COMPLETED",
+        "currentPass": 0,
+        "legacyAmbiguous": false
+      }
+    ],
+    "messages": [
+      {
+        "id": "m-01",
+        "conversationId": "c-1",
+        "runId": "run-c-1",
+        "images": [
+          "a.png"
+        ]
+      },
+      {
+        "id": "m-02",
+        "conversationId": "c-1",
+        "runId": "run-c-1",
+        "images": [],
+        "attachmentMeta": "{}"
+      },
+      {
+        "id": "m-03",
+        "conversationId": "c-1",
+        "runId": "run-c-1",
+        "images": []
+      },
+      {
+        "id": "m-04",
+        "conversationId": "c-1",
+        "runId": "run-c-1",
+        "images": [
+          "b.png"
+        ]
+      },
+      {
+        "id": "m-05",
+        "conversationId": "c-2",
+        "runId": "run-c-2",
+        "images": [
+          "c.png"
+        ]
+      },
+      {
+        "id": "m-06",
+        "conversationId": "c-2",
+        "runId": "run-c-2",
+        "images": [],
+        "attachmentMeta": "{}"
+      }
+    ],
+    "newChatPersist": []
+  },
+  "steps": [
+    {
+      "op": "getConversationMessageAttachmentReferencesPage",
+      "conversationId": "c-1",
+      "afterId": null,
+      "limit": 100
+    },
+    {
+      "op": "getConversationMessageAttachmentReferencesPage",
+      "conversationId": "c-1",
+      "afterId": "m-02",
+      "limit": 100
+    },
+    {
+      "op": "getConversationMessageAttachmentReferencesPage",
+      "conversationId": "c-1",
+      "afterId": null,
+      "limit": 1
+    },
+    {
+      "op": "getConversationMessageAttachmentReferencesPage",
+      "conversationId": "c-2",
+      "afterId": null,
+      "limit": 100
+    },
+    {
+      "op": "getConversationMessageAttachmentReferencesPage",
+      "conversationId": "c-3",
+      "afterId": null,
+      "limit": 100
+    },
+    {
+      "op": "getConversationMessageAttachmentReferencesPage",
+      "conversationId": "c-1",
+      "afterId": "m-04",
+      "limit": 100
+    },
+    {
+      "op": "getConversationMessageAttachmentReferencesPage",
+      "conversationId": "c-1",
+      "afterId": "",
+      "limit": 100
+    }
+  ]
+}

@@ -1,0 +1,39 @@
+{
+  "seed": {
+    "conversations": [
+      {
+        "id": "c-1",
+        "draftAttachments": null
+      }
+    ],
+    "runs": [
+      {
+        "id": "run-c-1",
+        "conversationId": "c-1",
+        "status": "COMPLETED",
+        "startedAt": 100,
+        "lastCheckpointAt": 100,
+        "endedAt": 200,
+        "endReason": "MODEL_COMPLETED",
+        "currentPass": 0,
+        "legacyAmbiguous": false
+      }
+    ],
+    "messages": [],
+    "newChatPersist": [
+      {
+        "id": 0,
+        "draftAttachments": ""
+      }
+    ]
+  },
+  "steps": [
+    {
+      "op": "getNewChatDraftAttachmentReference"
+    },
+    {
+      "op": "getNewChatDraftAttachmentReference",
+      "pathToken": "x"
+    }
+  ]
+}

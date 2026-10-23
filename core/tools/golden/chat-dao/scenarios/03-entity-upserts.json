@@ -1,0 +1,147 @@
+{
+  "seed": {
+    "conversations": [
+      {
+        "id": "c1",
+        "title": "c1",
+        "lastUpdated": 0,
+        "dataChangedAt": 1,
+        "origin": "user",
+        "graduated": false,
+        "draftText": "",
+        "hasUnreadGeneration": false,
+        "isPinned": false
+      }
+    ]
+  },
+  "steps": [
+    {
+      "op": "upsertConversation",
+      "id": "c1",
+      "title": "Full",
+      "lastUpdated": 5,
+      "dataChangedAt": 2,
+      "selectedBranchesJson": "{\"a\":\"b\"}",
+      "systemPromptId": "p",
+      "modelId": "m",
+      "taskId": null,
+      "origin": "user",
+      "graduated": true,
+      "draftText": "d",
+      "draftAttachments": "[\"x\"]",
+      "selectedRunBranchesJson": "{\"null\":\"r\"}",
+      "hasUnreadGeneration": true,
+      "isPinned": true
+    },
+    {
+      "op": "upsertConversation",
+      "id": "c1",
+      "title": "Sparse",
+      "lastUpdated": 6,
+      "dataChangedAt": 3
+    },
+    {
+      "op": "upsertMessage",
+      "id": "m1",
+      "conversationId": "c1",
+      "runId": "r1",
+      "text": "full",
+      "images": [
+        "a",
+        "b"
+      ],
+      "thoughts": "t",
+      "thoughtTitle": "tt",
+      "tokenCount": 5,
+      "inputTokenCount": 1,
+      "cachedInputTokenCount": 2,
+      "cacheWriteInputTokenCount": 3,
+      "uncachedInputTokenCount": 4,
+      "outputTokenCount": 6,
+      "reasoningTokenCount": 7,
+      "generationDurationMs": 8,
+      "status": "SENDING",
+      "participant": "USER",
+      "timestamp": 9,
+      "thoughtTimeMs": 10,
+      "modelName": "m",
+      "toolCallJson": "[{\"type\":\"tool\"}]",
+      "attachmentMeta": "{\"name\":\"a\"}",
+      "runSequence": 3,
+      "consumedAtPass": 2,
+      "sourceJson": "{\"kind\":\"auto\"}",
+      "parentId": null
+    },
+    {
+      "op": "upsertMessage",
+      "id": "m1",
+      "conversationId": "c1",
+      "runId": "r1",
+      "text": "sparse",
+      "timestamp": 11
+    },
+    {
+      "op": "upsertRun",
+      "id": "r1",
+      "conversationId": "c1",
+      "status": "ACTIVE",
+      "activeSlot": 1,
+      "startedAt": 1,
+      "lastCheckpointAt": 2,
+      "currentPass": 3
+    },
+    {
+      "op": "upsertRun",
+      "id": "r1",
+      "conversationId": "c1",
+      "status": "STOPPED",
+      "activeSlot": null,
+      "startedAt": 1,
+      "lastCheckpointAt": 4,
+      "stopRequestedAt": 3,
+      "endedAt": 5,
+      "endReason": "USER_STOPPED",
+      "currentPass": 3,
+      "legacyAmbiguous": true
+    },
+    {
+      "op": "upsertRun",
+      "id": "r2",
+      "conversationId": "c1",
+      "status": "COMPLETED",
+      "activeSlot": null,
+      "startedAt": 6,
+      "lastCheckpointAt": 7,
+      "endedAt": 8,
+      "endReason": "MODEL_COMPLETED",
+      "currentPass": 0
+    },
+    {
+      "op": "upsertConversationSettingsTransfer",
+      "conversationId": "c1",
+      "settingsJson": "{\"s\":1}"
+    },
+    {
+      "op": "upsertConversationSettingsTransfer",
+      "conversationId": "c1",
+      "settingsJson": null
+    },
+    {
+      "op": "upsertConversationSettingsImportTransfer",
+      "id": 0,
+      "transferId": "t1",
+      "settingsJson": "{\"i\":1}",
+      "mode": "MERGE"
+    },
+    {
+      "op": "upsertConversationSettingsImportTransfer",
+      "id": 0,
+      "transferId": "t2",
+      "settingsJson": "{\"i\":2}",
+      "mode": "REPLACE"
+    },
+    {
+      "op": "getAllConversationsList"
+    }
+  ]
+}

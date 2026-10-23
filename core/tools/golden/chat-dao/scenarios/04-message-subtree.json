@@ -1,0 +1,351 @@
+{
+  "seed": {
+    "conversations": [
+      {
+        "id": "c1",
+        "title": "c1",
+        "lastUpdated": 0,
+        "dataChangedAt": 0,
+        "origin": "user",
+        "graduated": false,
+        "draftText": "",
+        "hasUnreadGeneration": false,
+        "isPinned": false
+      },
+      {
+        "id": "c2",
+        "title": "c2",
+        "lastUpdated": 0,
+        "dataChangedAt": 0,
+        "origin": "user",
+        "graduated": false,
+        "draftText": "",
+        "hasUnreadGeneration": false,
+        "isPinned": false
+      },
+      {
+        "id": "cZ",
+        "title": "cZ",
+        "lastUpdated": 0,
+        "dataChangedAt": 0,
+        "origin": "user",
+        "graduated": false,
+        "draftText": "",
+        "hasUnreadGeneration": false,
+        "isPinned": false
+      }
+    ],
+    "runs": [
+      {
+        "id": "r1",
+        "conversationId": "c1",
+        "status": "ACTIVE",
+        "activeSlot": 1,
+        "startedAt": 1,
+        "lastCheckpointAt": 0,
+        "currentPass": 0,
+        "legacyAmbiguous": false
+      },
+      {
+        "id": "r2",
+        "conversationId": "c1",
+        "status": "COMPLETED",
+        "activeSlot": null,
+        "startedAt": 2,
+        "lastCheckpointAt": 0,
+        "currentPass": 0,
+        "legacyAmbiguous": false,
+        "endedAt": 3,
+        "endReason": "MODEL_COMPLETED"
+      },
+      {
+        "id": "r3",
+        "conversationId": "c1",
+        "status": "COMPLETED",
+        "activeSlot": null,
+        "startedAt": 4,
+        "lastCheckpointAt": 0,
+        "currentPass": 0,
+        "legacyAmbiguous": false,
+        "endedAt": 5,
+        "endReason": "MODEL_COMPLETED",
+        "parentRunId": "r2"
+      },
+      {
+        "id": "r4",
+        "conversationId": "c2",
+        "status": "COMPLETED",
+        "activeSlot": null,
+        "startedAt": 6,
+        "lastCheckpointAt": 0,
+        "currentPass": 0,
+        "legacyAmbiguous": false,
+        "endedAt": 7,
+        "endReason": "MODEL_COMPLETED"
+      },
+      {
+        "id": "r5",
+        "conversationId": "cZ",
+        "status": "COMPLETED",
+        "activeSlot": null,
+        "startedAt": 8,
+        "lastCheckpointAt": 0,
+        "currentPass": 0,
+        "legacyAmbiguous": false,
+        "endedAt": 9,
+        "endReason": "MODEL_COMPLETED"
+      }
+    ],
+    "messages": [
+      {
+        "id": "m1",
+        "conversationId": "c1",
+        "text": "keep",
+        "images": [],
+        "tokenCount": 0,
+        "status": "SUCCESS",
+        "participant": "MODEL",
+        "timestamp": 1,
+        "runId": "r1",
+        "runSequence": 0
+      },
+      {
+        "id": "m2",
+        "conversationId": "c1",
+        "text": "root",
+        "images": [],
+        "tokenCount": 0,
+        "status": "SUCCESS",
+        "participant": "MODEL",
+        "timestamp": 2,
+        "runId": "r2",
+        "runSequence": 0
+      },
+      {
+        "id": "m3",
+        "conversationId": "c1",
+        "text": "child",
+        "images": [],
+        "tokenCount": 0,
+        "status": "SUCCESS",
+        "participant": "MODEL",
+        "timestamp": 3,
+        "runId": "r2",
+        "runSequence": 1,
+        "parentId": "m2"
+      },
+      {
+        "id": "m4",
+        "conversationId": "c1",
+        "text": "branch",
+        "images": [],
+        "tokenCount": 0,
+        "status": "SUCCESS",
+        "participant": "MODEL",
+        "timestamp": 4,
+        "runId": "r3",
+        "runSequence": 0,
+        "parentId": "m2"
+      },
+      {
+        "id": "m5",
+        "conversationId": "c2",
+        "text": "other",
+        "images": [],
+        "tokenCount": 0,
+        "status": "SUCCESS",
+        "participant": "MODEL",
+        "timestamp": 5,
+        "runId": "r4",
+        "runSequence": -1
+      },
+      {
+        "id": "m6",
+        "conversationId": "cZ",
+        "text": "gone conversation",
+        "images": [],
+        "tokenCount": 0,
+        "status": "SUCCESS",
+        "participant": "MODEL",
+        "timestamp": 6,
+        "runId": "r5",
+        "runSequence": -1
+      },
+      {
+        "id": "m7",
+        "conversationId": "c1",
+        "text": "wrong run",
+        "images": [],
+        "tokenCount": 0,
+        "status": "SUCCESS",
+        "participant": "MODEL",
+        "timestamp": 7,
+        "runId": "r4",
+        "runSequence": -1
+      },
+      {
+        "id": "m8",
+        "conversationId": "c1",
+        "text": "ghost run",
+        "images": [],
+        "tokenCount": 0,
+        "status": "SUCCESS",
+        "participant": "MODEL",
+        "timestamp": 8,
+        "runId": "r1",
+        "runSequence": -1
+      }
+    ],
+    "embeddings": [
+      {
+        "id": 1,
+        "messageId": "m1",
+        "modelId": "a",
+        "embeddingBase64": "AQ==",
+        "chunkText": "",
+        "dimension": 0
+      },
+      {
+        "id": 2,
+        "messageId": "m2",
+        "modelId": "a",
+        "embeddingBase64": "Ag==",
+        "chunkText": "",
+        "dimension": 0
+      },
+      {
+        "id": 3,
+        "messageId": "m3",
+        "modelId": "a",
+        "embeddingBase64": "Aw==",
+        "chunkText": "",
+        "dimension": 0
+      },
+      {
+        "id": 4,
+        "messageId": "m4",
+        "modelId": "a",
+        "embeddingBase64": "BA==",
+        "chunkText": "",
+        "dimension": 0
+      }
+    ]
+  },
+  "steps": [
+    {
+      "op": "deleteMessageSubtree",
+      "conversationId": "c1",
+      "rootMessageId": "m2",
+      "staleMessageIds": [
+        "m2",
+        "m3",
+        "m4"
+      ],
+      "rootRunIdsToDelete": [
+        "r2",
+        "r3"
+      ],
+      "selectedBranchesJson": "{\"x\":\"y\"}",
+      "selectedRunBranchesJson": "{\"null\":\"r1\"}",
+      "at": 50
+    },
+    {
+      "op": "deleteMessageSubtree",
+      "conversationId": "c1",
+      "rootMessageId": "absent",
+      "staleMessageIds": [
+        "absent"
+      ],
+      "rootRunIdsToDelete": [],
+      "selectedBranchesJson": "{}",
+      "selectedRunBranchesJson": "{}",
+      "at": 51
+    },
+    {
+      "op": "deleteMessageSubtree",
+      "conversationId": "c2",
+      "rootMessageId": "m1",
+      "staleMessageIds": [
+        "m1"
+      ],
+      "rootRunIdsToDelete": [],
+      "selectedBranchesJson": "{}",
+      "selectedRunBranchesJson": "{}",
+      "at": 52
+    },
+    {
+      "op": "deleteMessageSubtree",
+      "conversationId": "c1",
+      "rootMessageId": "m1",
+      "staleMessageIds": [
+        "m2"
+      ],
+      "rootRunIdsToDelete": [],
+      "selectedBranchesJson": "{}",
+      "selectedRunBranchesJson": "{}",
+      "at": 53
+    },
+    {
+      "op": "deleteMessageSubtree",
+      "conversationId": "cZ",
+      "rootMessageId": "m6",
+      "staleMessageIds": [
+        "m6"
+      ],
+      "rootRunIdsToDelete": [],
+      "selectedBranchesJson": "{}",
+      "selectedRunBranchesJson": "{}",
+      "at": 54
+    },
+    {
+      "op": "deleteMessageSubtree",
+      "conversationId": "c1",
+      "rootMessageId": "m7",
+      "staleMessageIds": [
+        "m7"
+      ],
+      "rootRunIdsToDelete": [
+        "r4"
+      ],
+      "selectedBranchesJson": "{}",
+      "selectedRunBranchesJson": "{}",
+      "at": 55
+    },
+    {
+      "op": "deleteMessageSubtree",
+      "conversationId": "c1",
+      "rootMessageId": "m8",
+      "staleMessageIds": [
+        "m8"
+      ],
+      "rootRunIdsToDelete": [
+        "ghost"
+      ],
+      "selectedBranchesJson": "{\"g\":\"h\"}",
+      "selectedRunBranchesJson": "{}",
+      "at": 56
+    },
+    {
+      "op": "deleteMessageSubtree",
+      "conversationId": "c1",
+      "rootMessageId": "m2",
+      "staleMessageIds": [
+        "m2"
+      ],
+      "rootRunIdsToDelete": [],
+      "selectedBranchesJson": "{}",
+      "selectedRunBranchesJson": "{}",
+      "at": 57
+    },
+    {
+      "op": "deleteMessageSubtree",
+      "conversationId": "c1",
+      "rootMessageId": "m5",
+      "staleMessageIds": [],
+      "rootRunIdsToDelete": [],
+      "selectedBranchesJson": "{}",
+      "selectedRunBranchesJson": "{}",
+      "at": 58
+    }
+  ]
+}

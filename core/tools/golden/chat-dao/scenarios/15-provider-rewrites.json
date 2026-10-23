@@ -1,0 +1,308 @@
+{
+  "seed": {
+    "conversations": [
+      {
+        "id": "c1",
+        "title": "c1",
+        "lastUpdated": 0,
+        "dataChangedAt": 0,
+        "origin": "user",
+        "graduated": false,
+        "draftText": "",
+        "hasUnreadGeneration": false,
+        "isPinned": false,
+        "modelId": "openai:gpt-4"
+      },
+      {
+        "id": "c2",
+        "title": "c2",
+        "lastUpdated": 0,
+        "dataChangedAt": 0,
+        "origin": "user",
+        "graduated": false,
+        "draftText": "",
+        "hasUnreadGeneration": false,
+        "isPinned": false,
+        "modelId": "openai:gpt-4o"
+      },
+      {
+        "id": "c3",
+        "title": "c3",
+        "lastUpdated": 0,
+        "dataChangedAt": 0,
+        "origin": "user",
+        "graduated": false,
+        "draftText": "",
+        "hasUnreadGeneration": false,
+        "isPinned": false,
+        "modelId": "openaix:foo"
+      },
+      {
+        "id": "c4",
+        "title": "c4",
+        "lastUpdated": 0,
+        "dataChangedAt": 0,
+        "origin": "user",
+        "graduated": false,
+        "draftText": "",
+        "hasUnreadGeneration": false,
+        "isPinned": false,
+        "modelId": null
+      },
+      {
+        "id": "c5",
+        "title": "c5",
+        "lastUpdated": 0,
+        "dataChangedAt": 0,
+        "origin": "user",
+        "graduated": false,
+        "draftText": "",
+        "hasUnreadGeneration": false,
+        "isPinned": false,
+        "modelId": "anthropic:claude"
+      }
+    ],
+    "runs": [
+      {
+        "id": "r1",
+        "conversationId": "c1",
+        "status": "COMPLETED",
+        "activeSlot": null,
+        "startedAt": 1,
+        "lastCheckpointAt": 0,
+        "currentPass": 0,
+        "legacyAmbiguous": false,
+        "endedAt": 2,
+        "endReason": "MODEL_COMPLETED"
+      },
+      {
+        "id": "r2",
+        "conversationId": "c2",
+        "status": "COMPLETED",
+        "activeSlot": null,
+        "startedAt": 2,
+        "lastCheckpointAt": 0,
+        "currentPass": 0,
+        "legacyAmbiguous": false,
+        "endedAt": 3,
+        "endReason": "MODEL_COMPLETED"
+      },
+      {
+        "id": "r3",
+        "conversationId": "c3",
+        "status": "COMPLETED",
+        "activeSlot": null,
+        "startedAt": 3,
+        "lastCheckpointAt": 0,
+        "currentPass": 0,
+        "legacyAmbiguous": false,
+        "endedAt": 4,
+        "endReason": "MODEL_COMPLETED"
+      },
+      {
+        "id": "r4",
+        "conversationId": "c4",
+        "status": "COMPLETED",
+        "activeSlot": null,
+        "startedAt": 4,
+        "lastCheckpointAt": 0,
+        "currentPass": 0,
+        "legacyAmbiguous": false,
+        "endedAt": 5,
+        "endReason": "MODEL_COMPLETED"
+      },
+      {
+        "id": "r5",
+        "conversationId": "c5",
+        "status": "COMPLETED",
+        "activeSlot": null,
+        "startedAt": 5,
+        "lastCheckpointAt": 0,
+        "currentPass": 0,
+        "legacyAmbiguous": false,
+        "endedAt": 6,
+        "endReason": "MODEL_COMPLETED"
+      }
+    ],
+    "messages": [
+      {
+        "id": "m1",
+        "conversationId": "c1",
+        "text": "one",
+        "images": [],
+        "tokenCount": 0,
+        "status": "SUCCESS",
+        "participant": "MODEL",
+        "timestamp": 1,
+        "runId": "r1",
+        "runSequence": -1,
+        "modelName": "openai:gpt-4"
+      },
+      {
+        "id": "m2",
+        "conversationId": "c2",
+        "text": "two",
+        "images": [],
+        "tokenCount": 0,
+        "status": "SUCCESS",
+        "participant": "MODEL",
+        "timestamp": 2,
+        "runId": "r2",
+        "runSequence": -1,
+        "modelName": "openai:gpt-4o"
+      },
+      {
+        "id": "m3",
+        "conversationId": "c3",
+        "text": "three",
+        "images": [],
+        "tokenCount": 0,
+        "status": "SUCCESS",
+        "participant": "MODEL",
+        "timestamp": 3,
+        "runId": "r3",
+        "runSequence": -1,
+        "modelName": "openaix:foo"
+      },
+      {
+        "id": "m4",
+        "conversationId": "c4",
+        "text": "four",
+        "images": [],
+        "tokenCount": 0,
+        "status": "SUCCESS",
+        "participant": "MODEL",
+        "timestamp": 4,
+        "runId": "r4",
+        "runSequence": -1
+      },
+      {
+        "id": "m5",
+        "conversationId": "c5",
+        "text": "five",
+        "images": [],
+        "tokenCount": 0,
+        "status": "SUCCESS",
+        "participant": "MODEL",
+        "timestamp": 5,
+        "runId": "r5",
+        "runSequence": -1,
+        "modelName": "anthropic:claude"
+      }
+    ],
+    "tasks": [
+      {
+        "id": "t1",
+        "name": "t1",
+        "prompt": "prompt",
+        "cronExpr": "",
+        "nextRunAt": 0,
+        "enabled": true,
+        "createdAt": 0,
+        "modelId": "openai:gpt-4"
+      },
+      {
+        "id": "t2",
+        "name": "t2",
+        "prompt": "prompt",
+        "cronExpr": "",
+        "nextRunAt": 0,
+        "enabled": true,
+        "createdAt": 0,
+        "modelId": "openaix:foo"
+      },
+      {
+        "id": "t3",
+        "name": "t3",
+        "prompt": "prompt",
+        "cronExpr": "",
+        "nextRunAt": 0,
+        "enabled": true,
+        "createdAt": 0,
+        "modelId": null
+      }
+    ],
+    "newChatPersist": {
+      "id": 0,
+      "modelId": "openai:gpt-4",
+      "systemPromptId": null,
+      "conversationSettingsJson": null,
+      "draftText": "",
+      "draftAttachments": null
+    }
+  },
+  "steps": [
+    {
+      "op": "renameConfiguredProviderModelReferences",
+      "oldProvider": "openai",
+      "newProvider": "azure"
+    },
+    {
+      "op": "renameConversationProviderModelReferences",
+      "oldProvider": "azure",
+      "newProvider": "openai",
+      "at": 70
+    },
+    {
+      "op": "touchConversationsWithMessageProvider",
+      "oldProvider": "azure",
+      "at": 80
+    },
+    {
+      "op": "renameNewChatProviderModelReference",
+      "oldProvider": "azure",
+      "newProvider": "openai"
+    },
+    {
+      "op": "renameMessageProviderModelReferences",
+      "oldProvider": "azure",
+      "newProvider": "openai"
+    },
+    {
+      "op": "renameConfiguredProviderModelReferences",
+      "oldProvider": "none",
+      "newProvider": "x"
+    },
+    {
+      "op": "replaceConfiguredModelReferences",
+      "oldModelId": "openai:gpt-4",
+      "newModelId": "google:gemini"
+    },
+    {
+      "op": "replaceConfiguredModelReferences",
+      "oldModelId": "openai:gpt-4o",
+      "newModelId": null
+    },
+    {
+      "op": "replaceNewChatModelReference",
+      "oldModelId": "google:gemini",
+      "newModelId": null
+    },
+    {
+      "op": "replaceConversationModelReferences",
+      "oldModelId": "google:gemini",
+      "newModelId": null,
+      "at": 90
+    },
+    {
+      "op": "getAllConversationsList"
+    },
+    {
+      "op": "getAllTasksList"
+    },
+    {
+      "op": "getNewChatPersist"
+    },
+    {
+      "op": "getMessagesByIds",
+      "ids": [
+        "m1",
+        "m2",
+        "m3",
+        "m4",
+        "m5"
+      ]
+    }
+  ],
+  "maskClock": true
+}

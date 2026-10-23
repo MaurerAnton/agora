@@ -1,0 +1,773 @@
+{
+  "seed": {
+    "conversations": [
+      {
+        "id": "cS",
+        "title": "cS",
+        "lastUpdated": 0,
+        "dataChangedAt": 0,
+        "origin": "user",
+        "graduated": false,
+        "draftText": "",
+        "hasUnreadGeneration": false,
+        "isPinned": false
+      },
+      {
+        "id": "cOther",
+        "title": "cOther",
+        "lastUpdated": 0,
+        "dataChangedAt": 0,
+        "origin": "user",
+        "graduated": false,
+        "draftText": "",
+        "hasUnreadGeneration": false,
+        "isPinned": false
+      }
+    ],
+    "runs": [
+      {
+        "id": "rS1",
+        "conversationId": "cS",
+        "status": "COMPLETED",
+        "activeSlot": null,
+        "startedAt": 1,
+        "lastCheckpointAt": 0,
+        "currentPass": 0,
+        "legacyAmbiguous": false,
+        "endedAt": 2,
+        "endReason": "MODEL_COMPLETED"
+      },
+      {
+        "id": "rS2",
+        "conversationId": "cS",
+        "status": "COMPLETED",
+        "activeSlot": null,
+        "startedAt": 3,
+        "lastCheckpointAt": 0,
+        "currentPass": 0,
+        "legacyAmbiguous": false,
+        "endedAt": 4,
+        "endReason": "MODEL_COMPLETED",
+        "parentRunId": "rS1"
+      },
+      {
+        "id": "rO",
+        "conversationId": "cOther",
+        "status": "COMPLETED",
+        "activeSlot": null,
+        "startedAt": 5,
+        "lastCheckpointAt": 0,
+        "currentPass": 0,
+        "legacyAmbiguous": false,
+        "endedAt": 6,
+        "endReason": "MODEL_COMPLETED"
+      }
+    ],
+    "messages": [
+      {
+        "id": "s1",
+        "conversationId": "cS",
+        "text": "source one",
+        "images": [],
+        "tokenCount": 0,
+        "status": "SUCCESS",
+        "participant": "MODEL",
+        "timestamp": 1,
+        "runId": "rS1",
+        "runSequence": -1
+      },
+      {
+        "id": "s2",
+        "conversationId": "cS",
+        "text": "source two",
+        "images": [],
+        "tokenCount": 0,
+        "status": "SUCCESS",
+        "participant": "MODEL",
+        "timestamp": 2,
+        "runId": "rS2",
+        "runSequence": -1,
+        "parentId": "s1"
+      },
+      {
+        "id": "s3",
+        "conversationId": "cS",
+        "text": "source three",
+        "images": [],
+        "tokenCount": 0,
+        "status": "SUCCESS",
+        "participant": "MODEL",
+        "timestamp": 3,
+        "runId": "rS2",
+        "runSequence": -1,
+        "parentId": "s1"
+      }
+    ],
+    "embeddings": [
+      {
+        "id": 1,
+        "messageId": "s1",
+        "modelId": "m1",
+        "embeddingBase64": "AQID",
+        "chunkText": "chunk1",
+        "dimension": 3,
+        "sourceFingerprint": "fp1"
+      },
+      {
+        "id": 2,
+        "messageId": "s1",
+        "modelId": "m2",
+        "embeddingBase64": "BAUG",
+        "chunkText": "chunk2",
+        "dimension": 3
+      },
+      {
+        "id": 3,
+        "messageId": "s2",
+        "modelId": "m1",
+        "embeddingBase64": "BwgJ",
+        "chunkText": "chunk3",
+        "dimension": 3,
+        "sourceFingerprint": "fp3"
+      }
+    ]
+  },
+  "steps": [
+    {
+      "op": "createForkGraph",
+      "conversation": {
+        "id": "cF",
+        "title": "Fork",
+        "lastUpdated": 0,
+        "dataChangedAt": 0,
+        "origin": "user",
+        "graduated": false,
+        "draftText": "",
+        "hasUnreadGeneration": false,
+        "isPinned": false
+      },
+      "runs": [
+        {
+          "id": "f1",
+          "conversationId": "cF",
+          "status": "COMPLETED",
+          "activeSlot": null,
+          "startedAt": 10,
+          "lastCheckpointAt": 0,
+          "currentPass": 0,
+          "legacyAmbiguous": false,
+          "endedAt": 11,
+          "endReason": "MODEL_COMPLETED"
+        },
+        {
+          "id": "f2",
+          "conversationId": "cF",
+          "status": "COMPLETED",
+          "activeSlot": null,
+          "startedAt": 12,
+          "lastCheckpointAt": 0,
+          "currentPass": 0,
+          "legacyAmbiguous": false,
+          "endedAt": 13,
+          "endReason": "MODEL_COMPLETED",
+          "parentRunId": "f1"
+        }
+      ],
+      "messages": [
+        {
+          "id": "f1m",
+          "conversationId": "cF",
+          "text": "fork one",
+          "images": [],
+          "tokenCount": 0,
+          "status": "SUCCESS",
+          "participant": "MODEL",
+          "timestamp": 10,
+          "runId": "f1",
+          "runSequence": -1
+        },
+        {
+          "id": "f2m",
+          "conversationId": "cF",
+          "text": "fork two",
+          "images": [],
+          "tokenCount": 0,
+          "status": "SUCCESS",
+          "participant": "MODEL",
+          "timestamp": 11,
+          "runId": "f2",
+          "runSequence": -1,
+          "parentId": "f1m"
+        }
+      ],
+      "sourceToForkMessageIds": {
+        "s1": "f1m",
+        "s2": "f2m"
+      }
+    },
+    {
+      "op": "getAllConversationsList"
+    },
+    {
+      "op": "getAllEmbeddings"
+    },
+    {
+      "op": "createForkGraph",
+      "conversation": {
+        "id": "cF",
+        "title": "cF",
+        "lastUpdated": 0,
+        "dataChangedAt": 0,
+        "origin": "user",
+        "graduated": false,
+        "draftText": "",
+        "hasUnreadGeneration": false,
+        "isPinned": false
+      },
+      "runs": [
+        {
+          "id": "x1",
+          "conversationId": "cF",
+          "status": "COMPLETED",
+          "activeSlot": null,
+          "startedAt": 1,
+          "lastCheckpointAt": 0,
+          "currentPass": 0,
+          "legacyAmbiguous": false,
+          "endedAt": 2,
+          "endReason": "MODEL_COMPLETED"
+        }
+      ],
+      "messages": [
+        {
+          "id": "x1m",
+          "conversationId": "cF",
+          "text": "x",
+          "images": [],
+          "tokenCount": 0,
+          "status": "SUCCESS",
+          "participant": "MODEL",
+          "timestamp": 1,
+          "runId": "x1",
+          "runSequence": -1
+        }
+      ],
+      "sourceToForkMessageIds": {
+        "s1": "x1m"
+      }
+    },
+    {
+      "op": "createForkGraph",
+      "conversation": {
+        "id": "cG",
+        "title": "cG",
+        "lastUpdated": 0,
+        "dataChangedAt": 0,
+        "origin": "user",
+        "graduated": false,
+        "draftText": "",
+        "hasUnreadGeneration": false,
+        "isPinned": false
+      },
+      "runs": [],
+      "messages": [
+        {
+          "id": "x1m",
+          "conversationId": "cG",
+          "text": "x",
+          "images": [],
+          "tokenCount": 0,
+          "status": "SUCCESS",
+          "participant": "MODEL",
+          "timestamp": 1,
+          "runId": "x1",
+          "runSequence": -1
+        }
+      ],
+      "sourceToForkMessageIds": {}
+    },
+    {
+      "op": "createForkGraph",
+      "conversation": {
+        "id": "cG",
+        "title": "cG",
+        "lastUpdated": 0,
+        "dataChangedAt": 0,
+        "origin": "user",
+        "graduated": false,
+        "draftText": "",
+        "hasUnreadGeneration": false,
+        "isPinned": false
+      },
+      "runs": [
+        {
+          "id": "x1",
+          "conversationId": "cG",
+          "status": "COMPLETED",
+          "activeSlot": null,
+          "startedAt": 1,
+          "lastCheckpointAt": 0,
+          "currentPass": 0,
+          "legacyAmbiguous": false,
+          "endedAt": 2,
+          "endReason": "MODEL_COMPLETED"
+        }
+      ],
+      "messages": [],
+      "sourceToForkMessageIds": {}
+    },
+    {
+      "op": "createForkGraph",
+      "conversation": {
+        "id": "cG",
+        "title": "cG",
+        "lastUpdated": 0,
+        "dataChangedAt": 0,
+        "origin": "user",
+        "graduated": false,
+        "draftText": "",
+        "hasUnreadGeneration": false,
+        "isPinned": false
+      },
+      "runs": [
+        {
+          "id": "x1",
+          "conversationId": "cOther",
+          "status": "COMPLETED",
+          "activeSlot": null,
+          "startedAt": 1,
+          "lastCheckpointAt": 0,
+          "currentPass": 0,
+          "legacyAmbiguous": false,
+          "endedAt": 2,
+          "endReason": "MODEL_COMPLETED"
+        }
+      ],
+      "messages": [
+        {
+          "id": "x1m",
+          "conversationId": "cG",
+          "text": "x",
+          "images": [],
+          "tokenCount": 0,
+          "status": "SUCCESS",
+          "participant": "MODEL",
+          "timestamp": 1,
+          "runId": "x1",
+          "runSequence": -1
+        }
+      ],
+      "sourceToForkMessageIds": {
+        "s1": "x1m"
+      }
+    },
+    {
+      "op": "createForkGraph",
+      "conversation": {
+        "id": "cG",
+        "title": "cG",
+        "lastUpdated": 0,
+        "dataChangedAt": 0,
+        "origin": "user",
+        "graduated": false,
+        "draftText": "",
+        "hasUnreadGeneration": false,
+        "isPinned": false
+      },
+      "runs": [
+        {
+          "id": "x1",
+          "conversationId": "cG",
+          "status": "COMPLETED",
+          "activeSlot": null,
+          "startedAt": 1,
+          "lastCheckpointAt": 0,
+          "currentPass": 0,
+          "legacyAmbiguous": false,
+          "endedAt": 2,
+          "endReason": "MODEL_COMPLETED"
+        }
+      ],
+      "messages": [
+        {
+          "id": "x1m",
+          "conversationId": "cOther",
+          "text": "x",
+          "images": [],
+          "tokenCount": 0,
+          "status": "SUCCESS",
+          "participant": "MODEL",
+          "timestamp": 1,
+          "runId": "x1",
+          "runSequence": -1
+        }
+      ],
+      "sourceToForkMessageIds": {
+        "s1": "x1m"
+      }
+    },
+    {
+      "op": "createForkGraph",
+      "conversation": {
+        "id": "cG1",
+        "title": "cG1",
+        "lastUpdated": 0,
+        "dataChangedAt": 0,
+        "origin": "user",
+        "graduated": false,
+        "draftText": "",
+        "hasUnreadGeneration": false,
+        "isPinned": false
+      },
+      "runs": [
+        {
+          "id": "x1",
+          "conversationId": "cG1",
+          "status": "COMPLETED",
+          "activeSlot": null,
+          "startedAt": 1,
+          "lastCheckpointAt": 0,
+          "currentPass": 0,
+          "legacyAmbiguous": false,
+          "endedAt": 2,
+          "endReason": "MODEL_COMPLETED"
+        }
+      ],
+      "messages": [
+        {
+          "id": "x1m",
+          "conversationId": "cG1",
+          "text": "x",
+          "images": [],
+          "tokenCount": 0,
+          "status": "SUCCESS",
+          "participant": "MODEL",
+          "timestamp": 1,
+          "runId": "x1",
+          "runSequence": -1
+        }
+      ],
+      "sourceToForkMessageIds": {
+        "s3": "x1m"
+      }
+    },
+    {
+      "op": "createForkGraph",
+      "conversation": {
+        "id": "cG2",
+        "title": "cG2",
+        "lastUpdated": 0,
+        "dataChangedAt": 0,
+        "origin": "user",
+        "graduated": false,
+        "draftText": "",
+        "hasUnreadGeneration": false,
+        "isPinned": false
+      },
+      "runs": [
+        {
+          "id": "x1",
+          "conversationId": "cG2",
+          "status": "COMPLETED",
+          "activeSlot": null,
+          "startedAt": 1,
+          "lastCheckpointAt": 0,
+          "currentPass": 0,
+          "legacyAmbiguous": false,
+          "endedAt": 2,
+          "endReason": "MODEL_COMPLETED"
+        }
+      ],
+      "messages": [
+        {
+          "id": "x1m",
+          "conversationId": "cG2",
+          "text": "x",
+          "images": [],
+          "tokenCount": 0,
+          "status": "SUCCESS",
+          "participant": "MODEL",
+          "timestamp": 1,
+          "runId": "x1",
+          "runSequence": -1,
+          "parentId": "nope"
+        }
+      ],
+      "sourceToForkMessageIds": {
+        "s1": "x1m"
+      }
+    },
+    {
+      "op": "createForkGraph",
+      "conversation": {
+        "id": "cG3",
+        "title": "cG3",
+        "lastUpdated": 0,
+        "dataChangedAt": 0,
+        "origin": "user",
+        "graduated": false,
+        "draftText": "",
+        "hasUnreadGeneration": false,
+        "isPinned": false
+      },
+      "runs": [
+        {
+          "id": "x1",
+          "conversationId": "cG3",
+          "status": "COMPLETED",
+          "activeSlot": null,
+          "startedAt": 1,
+          "lastCheckpointAt": 0,
+          "currentPass": 0,
+          "legacyAmbiguous": false,
+          "endedAt": 2,
+          "endReason": "MODEL_COMPLETED"
+        }
+      ],
+      "messages": [
+        {
+          "id": "x1m",
+          "conversationId": "cG3",
+          "text": "x",
+          "images": [],
+          "tokenCount": 0,
+          "status": "SUCCESS",
+          "participant": "MODEL",
+          "timestamp": 1,
+          "runId": "missing",
+          "runSequence": -1
+        }
+      ],
+      "sourceToForkMessageIds": {
+        "s1": "x1m"
+      }
+    },
+    {
+      "op": "createForkGraph",
+      "conversation": {
+        "id": "cG4",
+        "title": "cG4",
+        "lastUpdated": 0,
+        "dataChangedAt": 0,
+        "origin": "user",
+        "graduated": false,
+        "draftText": "",
+        "hasUnreadGeneration": false,
+        "isPinned": false
+      },
+      "runs": [
+        {
+          "id": "x1",
+          "conversationId": "cG4",
+          "status": "COMPLETED",
+          "activeSlot": null,
+          "startedAt": 1,
+          "lastCheckpointAt": 0,
+          "currentPass": 0,
+          "legacyAmbiguous": false,
+          "endedAt": 2,
+          "endReason": "MODEL_COMPLETED"
+        }
+      ],
+      "messages": [
+        {
+          "id": "x1m",
+          "conversationId": "cG4",
+          "text": "x",
+          "images": [],
+          "tokenCount": 0,
+          "status": "SUCCESS",
+          "participant": "MODEL",
+          "timestamp": 1,
+          "runId": "x1",
+          "runSequence": -1
+        }
+      ],
+      "sourceToForkMessageIds": {}
+    },
+    {
+      "op": "createForkGraph",
+      "conversation": {
+        "id": "cG5",
+        "title": "cG5",
+        "lastUpdated": 0,
+        "dataChangedAt": 0,
+        "origin": "user",
+        "graduated": false,
+        "draftText": "",
+        "hasUnreadGeneration": false,
+        "isPinned": false
+      },
+      "runs": [
+        {
+          "id": "x1",
+          "conversationId": "cG5",
+          "status": "COMPLETED",
+          "activeSlot": null,
+          "startedAt": 1,
+          "lastCheckpointAt": 0,
+          "currentPass": 0,
+          "legacyAmbiguous": false,
+          "endedAt": 2,
+          "endReason": "MODEL_COMPLETED"
+        }
+      ],
+      "messages": [
+        {
+          "id": "x1m",
+          "conversationId": "cG5",
+          "text": "x",
+          "images": [],
+          "tokenCount": 0,
+          "status": "SUCCESS",
+          "participant": "MODEL",
+          "timestamp": 1,
+          "runId": "x1",
+          "runSequence": -1
+        }
+      ],
+      "sourceToForkMessageIds": {
+        "s1": "wrong"
+      }
+    },
+    {
+      "op": "createForkGraph",
+      "conversation": {
+        "id": "cG6",
+        "title": "cG6",
+        "lastUpdated": 0,
+        "dataChangedAt": 0,
+        "origin": "user",
+        "graduated": false,
+        "draftText": "",
+        "hasUnreadGeneration": false,
+        "isPinned": false
+      },
+      "runs": [
+        {
+          "id": "x1",
+          "conversationId": "cG6",
+          "status": "COMPLETED",
+          "activeSlot": null,
+          "startedAt": 1,
+          "lastCheckpointAt": 0,
+          "currentPass": 0,
+          "legacyAmbiguous": false,
+          "endedAt": 2,
+          "endReason": "MODEL_COMPLETED"
+        }
+      ],
+      "messages": [
+        {
+          "id": "x1m",
+          "conversationId": "cG6",
+          "text": "x",
+          "images": [],
+          "tokenCount": 0,
+          "status": "SUCCESS",
+          "participant": "MODEL",
+          "timestamp": 1,
+          "runId": "x1",
+          "runSequence": -1
+        }
+      ],
+      "sourceToForkMessageIds": {
+        "x1m": "x1m"
+      }
+    },
+    {
+      "op": "createForkGraph",
+      "conversation": {
+        "id": "cG7",
+        "title": "cG7",
+        "lastUpdated": 0,
+        "dataChangedAt": 0,
+        "origin": "user",
+        "graduated": false,
+        "draftText": "",
+        "hasUnreadGeneration": false,
+        "isPinned": false
+      },
+      "runs": [
+        {
+          "id": "x1",
+          "conversationId": "cG7",
+          "status": "COMPLETED",
+          "activeSlot": null,
+          "startedAt": 1,
+          "lastCheckpointAt": 0,
+          "currentPass": 0,
+          "legacyAmbiguous": false,
+          "endedAt": 2,
+          "endReason": "MODEL_COMPLETED"
+        }
+      ],
+      "messages": [
+        {
+          "id": "x1m",
+          "conversationId": "cG7",
+          "text": "x",
+          "images": [],
+          "tokenCount": 0,
+          "status": "SUCCESS",
+          "participant": "MODEL",
+          "timestamp": 1,
+          "runId": "x1",
+          "runSequence": -1
+        }
+      ],
+      "sourceToForkMessageIds": {
+        "f1m": "x1m"
+      }
+    },
+    {
+      "op": "createForkGraph",
+      "conversation": {
+        "id": "cG8",
+        "title": "cG8",
+        "lastUpdated": 0,
+        "dataChangedAt": 0,
+        "origin": "user",
+        "graduated": false,
+        "draftText": "",
+        "hasUnreadGeneration": false,
+        "isPinned": false
+      },
+      "runs": [
+        {
+          "id": "x1",
+          "conversationId": "cG8",
+          "status": "ACTIVE",
+          "activeSlot": 1,
+          "startedAt": 1,
+          "lastCheckpointAt": 0,
+          "currentPass": 0,
+          "legacyAmbiguous": false
+        }
+      ],
+      "messages": [
+        {
+          "id": "x1m",
+          "conversationId": "cG8",
+          "text": "x",
+          "images": [],
+          "tokenCount": 0,
+          "status": "SUCCESS",
+          "participant": "MODEL",
+          "timestamp": 1,
+          "runId": "x1",
+          "runSequence": -1
+        }
+      ],
+      "sourceToForkMessageIds": {
+        "s1": "x1m"
+      }
+    },
+    {
+      "op": "getAllConversationsList"
+    },
+    {
+      "op": "getAllEmbeddings"
+    }
+  ]
+}

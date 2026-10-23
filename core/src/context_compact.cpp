@@ -366,7 +366,8 @@ void ContextCompactDao::end_transaction() { stack_.end(); }
 std::optional<ConversationEntry> ContextCompactDao::get_conversation(
     std::string_view conversation_id) {
     std::vector<SqlRow> rows = sql_.query(
-        "SELECT * FROM conversations WHERE id = ?",
+        "SELECT id, selectedBranchesJson, selectedRunBranchesJson FROM conversations "
+        "WHERE id = ?",
         {SqlValue::text_value(std::string(conversation_id))});
     if (rows.empty()) return std::nullopt;
     kotlin_check(rows.front().size() >= 3, "ChatEntity: row shape mismatch");

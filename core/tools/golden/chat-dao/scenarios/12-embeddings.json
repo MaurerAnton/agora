@@ -1,0 +1,218 @@
+{
+  "seed": {
+    "conversations": [
+      {
+        "id": "c1",
+        "title": "c1",
+        "lastUpdated": 0,
+        "dataChangedAt": 0,
+        "origin": "user",
+        "graduated": false,
+        "draftText": "",
+        "hasUnreadGeneration": false,
+        "isPinned": false
+      },
+      {
+        "id": "c2",
+        "title": "c2",
+        "lastUpdated": 0,
+        "dataChangedAt": 0,
+        "origin": "user",
+        "graduated": false,
+        "draftText": "",
+        "hasUnreadGeneration": false,
+        "isPinned": false
+      }
+    ],
+    "runs": [
+      {
+        "id": "r1",
+        "conversationId": "c1",
+        "status": "ACTIVE",
+        "activeSlot": 1,
+        "startedAt": 1,
+        "lastCheckpointAt": 0,
+        "currentPass": 0,
+        "legacyAmbiguous": false
+      },
+      {
+        "id": "r2",
+        "conversationId": "c2",
+        "status": "ACTIVE",
+        "activeSlot": 1,
+        "startedAt": 2,
+        "lastCheckpointAt": 0,
+        "currentPass": 0,
+        "legacyAmbiguous": false
+      }
+    ],
+    "messages": [
+      {
+        "id": "m1",
+        "conversationId": "c1",
+        "text": "one",
+        "images": [],
+        "tokenCount": 0,
+        "status": "SUCCESS",
+        "participant": "MODEL",
+        "timestamp": 1,
+        "runId": "r1",
+        "runSequence": -1
+      },
+      {
+        "id": "m2",
+        "conversationId": "c1",
+        "text": "two",
+        "images": [],
+        "tokenCount": 0,
+        "status": "SUCCESS",
+        "participant": "MODEL",
+        "timestamp": 2,
+        "runId": "r1",
+        "runSequence": -1
+      },
+      {
+        "id": "m3",
+        "conversationId": "c2",
+        "text": "three",
+        "images": [],
+        "tokenCount": 0,
+        "status": "SUCCESS",
+        "participant": "MODEL",
+        "timestamp": 3,
+        "runId": "r2",
+        "runSequence": -1
+      }
+    ],
+    "embeddings": [
+      {
+        "id": 1,
+        "messageId": "m1",
+        "modelId": "m1",
+        "embeddingBase64": "AQID",
+        "chunkText": "",
+        "dimension": 0
+      },
+      {
+        "id": 2,
+        "messageId": "m1",
+        "modelId": "m2",
+        "embeddingBase64": "BAU=",
+        "chunkText": "",
+        "dimension": 0
+      },
+      {
+        "id": 3,
+        "messageId": "m2",
+        "modelId": "m1",
+        "embeddingBase64": "Bgc=",
+        "chunkText": "",
+        "dimension": 0
+      },
+      {
+        "id": 4,
+        "messageId": "compact_missing",
+        "modelId": "m1",
+        "embeddingBase64": "CAk=",
+        "chunkText": "",
+        "dimension": 0
+      },
+      {
+        "id": 5,
+        "messageId": "m3",
+        "modelId": "m1",
+        "embeddingBase64": "Cgs=",
+        "chunkText": "",
+        "dimension": 0
+      },
+      {
+        "id": 6,
+        "messageId": "missing",
+        "modelId": "m1",
+        "embeddingBase64": "DA0=",
+        "chunkText": "",
+        "dimension": 0
+      }
+    ]
+  },
+  "steps": [
+    {
+      "op": "insertEmbeddings",
+      "embeddings": [
+        {
+          "id": 0,
+          "messageId": "m1",
+          "modelId": "m3",
+          "embeddingBase64": "Dg8=",
+          "chunkText": "new",
+          "dimension": 2,
+          "sourceFingerprint": "fp"
+        }
+      ]
+    },
+    {
+      "op": "insertEmbeddings",
+      "embeddings": [
+        {
+          "id": 10,
+          "messageId": "m2",
+          "modelId": "m2",
+          "embeddingBase64": "EBE=",
+          "chunkText": "explicit",
+          "dimension": 2
+        }
+      ]
+    },
+    {
+      "op": "insertEmbeddings",
+      "embeddings": []
+    },
+    {
+      "op": "getEmbeddingsByMessageIds",
+      "messageIds": [
+        "m1",
+        "m2"
+      ]
+    },
+    {
+      "op": "getEmbeddingsByMessageIds",
+      "messageIds": []
+    },
+    {
+      "op": "getEmbedding",
+      "messageId": "m1"
+    },
+    {
+      "op": "getEmbedding",
+      "messageId": "absent"
+    },
+    {
+      "op": "getAllEmbeddings"
+    },
+    {
+      "op": "deleteOrphanedEmbeddings"
+    },
+    {
+      "op": "deleteEmbeddingsByConversation",
+      "conversationId": "c1"
+    },
+    {
+      "op": "deleteEmbeddingsByConversation",
+      "conversationId": "absent"
+    },
+    {
+      "op": "deleteConversation",
+      "conversationId": "c2"
+    },
+    {
+      "op": "deleteEmbeddingsByConversation",
+      "conversationId": "c2"
+    },
+    {
+      "op": "deleteOrphanedEmbeddings"
+    },
+    {
+      "op": "getAllEmbeddings"
+    }
+  ]
+}

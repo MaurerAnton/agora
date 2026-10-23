@@ -1,0 +1,457 @@
+{
+  "seed": {
+    "conversations": [
+      {
+        "id": "c1",
+        "title": "c1",
+        "lastUpdated": 10,
+        "dataChangedAt": 0,
+        "origin": "user",
+        "graduated": false,
+        "draftText": "",
+        "hasUnreadGeneration": false,
+        "isPinned": false,
+        "selectedBranchesJson": "{\"old\":\"m1\"}",
+        "selectedRunBranchesJson": "{\"null\":\"r0\"}",
+        "modelId": "m0"
+      },
+      {
+        "id": "c2",
+        "title": "c2",
+        "lastUpdated": 0,
+        "dataChangedAt": 0,
+        "origin": "user",
+        "graduated": false,
+        "draftText": "",
+        "hasUnreadGeneration": false,
+        "isPinned": false
+      },
+      {
+        "id": "c3",
+        "title": "c3",
+        "lastUpdated": 0,
+        "dataChangedAt": 0,
+        "origin": "user",
+        "graduated": false,
+        "draftText": "",
+        "hasUnreadGeneration": false,
+        "isPinned": false
+      },
+      {
+        "id": "c4",
+        "title": "c4",
+        "lastUpdated": 0,
+        "dataChangedAt": 0,
+        "origin": "user",
+        "graduated": false,
+        "draftText": "",
+        "hasUnreadGeneration": false,
+        "isPinned": false
+      }
+    ],
+    "runs": [
+      {
+        "id": "r1",
+        "conversationId": "c1",
+        "status": "COMPLETED",
+        "activeSlot": null,
+        "startedAt": 0,
+        "lastCheckpointAt": 0,
+        "currentPass": 0,
+        "legacyAmbiguous": false,
+        "endedAt": 0,
+        "endReason": "MODEL_COMPLETED"
+      },
+      {
+        "id": "rL",
+        "conversationId": "c3",
+        "status": "ACTIVE",
+        "activeSlot": 1,
+        "startedAt": 1,
+        "lastCheckpointAt": 0,
+        "currentPass": 0,
+        "legacyAmbiguous": false
+      },
+      {
+        "id": "rOld",
+        "conversationId": "c4",
+        "status": "COMPLETED",
+        "activeSlot": null,
+        "startedAt": 0,
+        "lastCheckpointAt": 0,
+        "currentPass": 0,
+        "legacyAmbiguous": false,
+        "endedAt": 0,
+        "endReason": "MODEL_COMPLETED"
+      }
+    ]
+  },
+  "steps": [
+    {
+      "op": "createRunWithMessages",
+      "run": {
+        "id": "r10",
+        "conversationId": "c1",
+        "status": "ACTIVE",
+        "activeSlot": 1,
+        "startedAt": 100,
+        "lastCheckpointAt": 0,
+        "currentPass": 0,
+        "legacyAmbiguous": false
+      },
+      "messages": [
+        {
+          "id": "x1",
+          "conversationId": "c1",
+          "text": "one",
+          "images": [],
+          "tokenCount": 0,
+          "status": "SUCCESS",
+          "participant": "MODEL",
+          "timestamp": 101,
+          "runId": "r10",
+          "runSequence": 0
+        },
+        {
+          "id": "x2",
+          "conversationId": "c1",
+          "text": "two",
+          "images": [],
+          "tokenCount": 0,
+          "status": "SUCCESS",
+          "participant": "MODEL",
+          "timestamp": 102,
+          "runId": "r10",
+          "runSequence": 1,
+          "parentId": "x1"
+        }
+      ],
+      "messageSelectionUpdates": {
+        "u1": "x1",
+        "null": "x2"
+      },
+      "conversationModelId": null,
+      "at": 200,
+      "touchConversationOnAdmission": false
+    },
+    {
+      "op": "getRunsForConversation",
+      "conversationId": "c1"
+    },
+    {
+      "op": "getRunsForConversationSnapshot",
+      "conversationId": "c1"
+    },
+    {
+      "op": "getMessagesByIds",
+      "ids": [
+        "x1",
+        "x2"
+      ]
+    },
+    {
+      "op": "createRunWithMessages",
+      "run": {
+        "id": "r11",
+        "conversationId": "c2",
+        "status": "ACTIVE",
+        "activeSlot": 1,
+        "startedAt": 110,
+        "lastCheckpointAt": 0,
+        "currentPass": 0,
+        "legacyAmbiguous": false
+      },
+      "messages": [
+        {
+          "id": "y1",
+          "conversationId": "c2",
+          "text": "one",
+          "images": [],
+          "tokenCount": 0,
+          "status": "SUCCESS",
+          "participant": "MODEL",
+          "timestamp": 111,
+          "runId": "r11",
+          "runSequence": 0
+        }
+      ],
+      "messageSelectionUpdates": {},
+      "conversationModelId": "new:model",
+      "at": 210,
+      "touchConversationOnAdmission": true
+    },
+    {
+      "op": "observeConversation",
+      "conversationId": "c2"
+    },
+    {
+      "op": "createRunWithMessages",
+      "run": {
+        "id": "r12",
+        "conversationId": "c2",
+        "status": "COMPLETED",
+        "activeSlot": null,
+        "startedAt": 120,
+        "lastCheckpointAt": 0,
+        "currentPass": 0,
+        "legacyAmbiguous": false,
+        "endedAt": 0,
+        "endReason": "MODEL_COMPLETED"
+      },
+      "messages": [
+        {
+          "id": "z1",
+          "conversationId": "c2",
+          "text": "z",
+          "images": [],
+          "tokenCount": 0,
+          "status": "SUCCESS",
+          "participant": "MODEL",
+          "timestamp": 121,
+          "runId": "r12",
+          "runSequence": 0
+        }
+      ],
+      "messageSelectionUpdates": {},
+      "conversationModelId": null,
+      "at": 220,
+      "touchConversationOnAdmission": true
+    },
+    {
+      "op": "createRunWithMessages",
+      "run": {
+        "id": "r13",
+        "conversationId": "c2",
+        "status": "ACTIVE",
+        "activeSlot": 1,
+        "startedAt": 130,
+        "lastCheckpointAt": 0,
+        "currentPass": 0,
+        "legacyAmbiguous": false
+      },
+      "messages": [],
+      "messageSelectionUpdates": {},
+      "conversationModelId": null,
+      "at": 230,
+      "touchConversationOnAdmission": true
+    },
+    {
+      "op": "createRunWithMessages",
+      "run": {
+        "id": "r14",
+        "conversationId": "c2",
+        "status": "ACTIVE",
+        "activeSlot": 1,
+        "startedAt": 140,
+        "lastCheckpointAt": 0,
+        "currentPass": 0,
+        "legacyAmbiguous": false
+      },
+      "messages": [
+        {
+          "id": "a1",
+          "conversationId": "c2",
+          "text": "a",
+          "images": [],
+          "tokenCount": 0,
+          "status": "SUCCESS",
+          "participant": "MODEL",
+          "timestamp": 141,
+          "runId": "r14",
+          "runSequence": 0
+        }
+      ],
+      "messageSelectionUpdates": {},
+      "conversationModelId": "",
+      "at": 240,
+      "touchConversationOnAdmission": true
+    },
+    {
+      "op": "createRunWithMessages",
+      "run": {
+        "id": "r15",
+        "conversationId": "c2",
+        "status": "ACTIVE",
+        "activeSlot": 1,
+        "startedAt": 150,
+        "lastCheckpointAt": 0,
+        "currentPass": 0,
+        "legacyAmbiguous": false
+      },
+      "messages": [
+        {
+          "id": "b1",
+          "conversationId": "c1",
+          "text": "b",
+          "images": [],
+          "tokenCount": 0,
+          "status": "SUCCESS",
+          "participant": "MODEL",
+          "timestamp": 151,
+          "runId": "r15",
+          "runSequence": 0
+        }
+      ],
+      "messageSelectionUpdates": {},
+      "conversationModelId": null,
+      "at": 250,
+      "touchConversationOnAdmission": true
+    },
+    {
+      "op": "createRunWithMessages",
+      "run": {
+        "id": "r16",
+        "conversationId": "c2",
+        "status": "ACTIVE",
+        "activeSlot": 1,
+        "startedAt": 160,
+        "lastCheckpointAt": 0,
+        "currentPass": 0,
+        "legacyAmbiguous": false
+      },
+      "messages": [
+        {
+          "id": "d1",
+          "conversationId": "c2",
+          "text": "d",
+          "images": [],
+          "tokenCount": 0,
+          "status": "SUCCESS",
+          "participant": "MODEL",
+          "timestamp": 161,
+          "runId": "r16",
+          "runSequence": 0
+        },
+        {
+          "id": "d2",
+          "conversationId": "c2",
+          "text": "d",
+          "images": [],
+          "tokenCount": 0,
+          "status": "SUCCESS",
+          "participant": "MODEL",
+          "timestamp": 162,
+          "runId": "r16",
+          "runSequence": 2
+        }
+      ],
+      "messageSelectionUpdates": {},
+      "conversationModelId": null,
+      "at": 260,
+      "touchConversationOnAdmission": true
+    },
+    {
+      "op": "createRunWithMessages",
+      "run": {
+        "id": "r17",
+        "conversationId": "absent",
+        "status": "ACTIVE",
+        "activeSlot": 1,
+        "startedAt": 170,
+        "lastCheckpointAt": 0,
+        "currentPass": 0,
+        "legacyAmbiguous": false
+      },
+      "messages": [
+        {
+          "id": "e1",
+          "conversationId": "absent",
+          "text": "e",
+          "images": [],
+          "tokenCount": 0,
+          "status": "SUCCESS",
+          "participant": "MODEL",
+          "timestamp": 171,
+          "runId": "r17",
+          "runSequence": 0
+        }
+      ],
+      "messageSelectionUpdates": {},
+      "conversationModelId": null,
+      "at": 270,
+      "touchConversationOnAdmission": true
+    },
+    {
+      "op": "createRunWithMessages",
+      "run": {
+        "id": "r18",
+        "conversationId": "c3",
+        "status": "ACTIVE",
+        "activeSlot": 1,
+        "startedAt": 180,
+        "lastCheckpointAt": 0,
+        "currentPass": 0,
+        "legacyAmbiguous": false
+      },
+      "messages": [
+        {
+          "id": "f1",
+          "conversationId": "c3",
+          "text": "f",
+          "images": [],
+          "tokenCount": 0,
+          "status": "SUCCESS",
+          "participant": "MODEL",
+          "timestamp": 181,
+          "runId": "r18",
+          "runSequence": 0
+        }
+      ],
+      "messageSelectionUpdates": {},
+      "conversationModelId": null,
+      "at": 280,
+      "touchConversationOnAdmission": true
+    },
+    {
+      "op": "createRunWithMessages",
+      "run": {
+        "id": "r19",
+        "conversationId": "c2",
+        "status": "ACTIVE",
+        "activeSlot": 1,
+        "startedAt": 190,
+        "lastCheckpointAt": 0,
+        "currentPass": 0,
+        "legacyAmbiguous": false
+      },
+      "messages": [
+        {
+          "id": "g1",
+          "conversationId": "c2",
+          "text": "g",
+          "images": [],
+          "tokenCount": 0,
+          "status": "SUCCESS",
+          "participant": "MODEL",
+          "timestamp": 191,
+          "runId": "r19",
+          "runSequence": 0
+        }
+      ],
+      "messageSelectionUpdates": {
+        "k": "absent"
+      },
+      "conversationModelId": null,
+      "at": 290,
+      "touchConversationOnAdmission": true
+    },
+    {
+      "op": "getRunsForConversation",
+      "conversationId": "c2"
+    },
+    {
+      "op": "getMessagesByIds",
+      "ids": [
+        "x1",
+        "y1",
+        "z1",
+        "a1",
+        "b1",
+        "d1",
+        "e1",
+        "f1",
+        "g1"
+      ]
+    }
+  ]
+}

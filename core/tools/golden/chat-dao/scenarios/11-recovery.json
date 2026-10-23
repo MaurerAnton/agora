@@ -1,0 +1,115 @@
+{
+  "seed": {
+    "conversations": [
+      {
+        "id": "c1",
+        "title": "c1",
+        "lastUpdated": 0,
+        "dataChangedAt": 100,
+        "origin": "user",
+        "graduated": false,
+        "draftText": "",
+        "hasUnreadGeneration": false,
+        "isPinned": false,
+        "selectedRunBranchesJson": "{\"r1\":\"r2\",\"r2\":\"r2\"}"
+      },
+      {
+        "id": "c2",
+        "title": "c2",
+        "lastUpdated": 0,
+        "dataChangedAt": 100,
+        "origin": "user",
+        "graduated": false,
+        "draftText": "",
+        "hasUnreadGeneration": false,
+        "isPinned": false,
+        "selectedRunBranchesJson": "{\"null\":\"r2\"}"
+      }
+    ],
+    "runs": [
+      {
+        "id": "r1",
+        "conversationId": "c1",
+        "status": "ACTIVE",
+        "activeSlot": 1,
+        "startedAt": 1000,
+        "lastCheckpointAt": 1000,
+        "currentPass": 0,
+        "legacyAmbiguous": false
+      },
+      {
+        "id": "r2",
+        "conversationId": "c2",
+        "status": "COMPLETED",
+        "activeSlot": null,
+        "startedAt": 1000,
+        "lastCheckpointAt": 0,
+        "currentPass": 0,
+        "legacyAmbiguous": false,
+        "endedAt": 2000,
+        "endReason": "MODEL_COMPLETED"
+      }
+    ],
+    "messages": [
+      {
+        "id": "m1",
+        "conversationId": "c1",
+        "text": "body",
+        "images": [],
+        "tokenCount": 0,
+        "status": "THINKING",
+        "participant": "MODEL",
+        "timestamp": 10,
+        "runId": "r1",
+        "runSequence": -1
+      },
+      {
+        "id": "m2",
+        "conversationId": "c1",
+        "text": "body",
+        "images": [],
+        "tokenCount": 0,
+        "status": "SENDING",
+        "participant": "USER",
+        "timestamp": 11,
+        "runId": "r1",
+        "runSequence": 1
+      },
+      {
+        "id": "m3",
+        "conversationId": "c1",
+        "text": "body",
+        "images": [],
+        "tokenCount": 0,
+        "status": "TOOL_CALLING",
+        "participant": "MODEL",
+        "timestamp": 12,
+        "runId": "r1",
+        "runSequence": 2,
+        "toolCallJson": "[{\"type\":\"tool\",\"toolState\":\"calling\"}]"
+      }
+    ]
+  },
+  "steps": [
+    {
+      "op": "recoverConversationRuntime",
+      "conversationId": "c1",
+      "at": 5000
+    },
+    {
+      "op": "recoverConversationRuntime",
+      "conversationId": "c1",
+      "at": 6000
+    },
+    {
+      "op": "recoverConversationRuntime",
+      "conversationId": "c2",
+      "at": 7000
+    },
+    {
+      "op": "recoverConversationRuntime",
+      "conversationId": "absent",
+      "at": 8000
+    }
+  ]
+}

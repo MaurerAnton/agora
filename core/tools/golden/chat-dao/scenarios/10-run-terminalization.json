@@ -1,0 +1,505 @@
+{
+  "seed": {
+    "conversations": [
+      {
+        "id": "c1",
+        "title": "c1",
+        "lastUpdated": 0,
+        "dataChangedAt": 0,
+        "origin": "user",
+        "graduated": false,
+        "draftText": "",
+        "hasUnreadGeneration": false,
+        "isPinned": false
+      },
+      {
+        "id": "c2",
+        "title": "c2",
+        "lastUpdated": 0,
+        "dataChangedAt": 0,
+        "origin": "user",
+        "graduated": false,
+        "draftText": "",
+        "hasUnreadGeneration": false,
+        "isPinned": false
+      },
+      {
+        "id": "c3",
+        "title": "c3",
+        "lastUpdated": 0,
+        "dataChangedAt": 0,
+        "origin": "user",
+        "graduated": false,
+        "draftText": "",
+        "hasUnreadGeneration": false,
+        "isPinned": false
+      },
+      {
+        "id": "c4",
+        "title": "c4",
+        "lastUpdated": 0,
+        "dataChangedAt": 0,
+        "origin": "user",
+        "graduated": false,
+        "draftText": "",
+        "hasUnreadGeneration": false,
+        "isPinned": false
+      },
+      {
+        "id": "c5",
+        "title": "c5",
+        "lastUpdated": 0,
+        "dataChangedAt": 0,
+        "origin": "user",
+        "graduated": false,
+        "draftText": "",
+        "hasUnreadGeneration": false,
+        "isPinned": false
+      },
+      {
+        "id": "cZ",
+        "title": "cZ",
+        "lastUpdated": 0,
+        "dataChangedAt": 0,
+        "origin": "user",
+        "graduated": false,
+        "draftText": "",
+        "hasUnreadGeneration": false,
+        "isPinned": false
+      }
+    ],
+    "runs": [
+      {
+        "id": "r1",
+        "conversationId": "c1",
+        "status": "ACTIVE",
+        "activeSlot": 1,
+        "startedAt": 1,
+        "lastCheckpointAt": 0,
+        "currentPass": 0,
+        "legacyAmbiguous": false
+      },
+      {
+        "id": "r2",
+        "conversationId": "c2",
+        "status": "STOPPING",
+        "activeSlot": 1,
+        "startedAt": 2,
+        "lastCheckpointAt": 0,
+        "currentPass": 0,
+        "legacyAmbiguous": false,
+        "stopRequestedAt": 5
+      },
+      {
+        "id": "r3",
+        "conversationId": "c1",
+        "status": "COMPLETED",
+        "activeSlot": null,
+        "startedAt": 3,
+        "lastCheckpointAt": 0,
+        "currentPass": 0,
+        "legacyAmbiguous": false,
+        "endedAt": 4,
+        "endReason": "MODEL_COMPLETED"
+      },
+      {
+        "id": "r5",
+        "conversationId": "c3",
+        "status": "ACTIVE",
+        "activeSlot": 1,
+        "startedAt": 5,
+        "lastCheckpointAt": 0,
+        "currentPass": 0,
+        "legacyAmbiguous": false
+      },
+      {
+        "id": "r6",
+        "conversationId": "c4",
+        "status": "ACTIVE",
+        "activeSlot": 1,
+        "startedAt": 6,
+        "lastCheckpointAt": 0,
+        "currentPass": 0,
+        "legacyAmbiguous": false
+      },
+      {
+        "id": "r7",
+        "conversationId": "c5",
+        "status": "ACTIVE",
+        "activeSlot": 1,
+        "startedAt": 7,
+        "lastCheckpointAt": 0,
+        "currentPass": 0,
+        "legacyAmbiguous": false
+      },
+      {
+        "id": "rZ",
+        "conversationId": "cZ",
+        "status": "ACTIVE",
+        "activeSlot": 1,
+        "startedAt": 8,
+        "lastCheckpointAt": 0,
+        "currentPass": 0,
+        "legacyAmbiguous": false
+      }
+    ],
+    "messages": [
+      {
+        "id": "m1",
+        "conversationId": "c1",
+        "text": "thinking",
+        "images": [],
+        "tokenCount": 0,
+        "status": "THINKING",
+        "participant": "MODEL",
+        "timestamp": 1,
+        "runId": "r1",
+        "runSequence": -1
+      },
+      {
+        "id": "m2",
+        "conversationId": "c1",
+        "text": "user sending",
+        "images": [],
+        "tokenCount": 0,
+        "status": "SENDING",
+        "participant": "USER",
+        "timestamp": 2,
+        "runId": "r1",
+        "runSequence": -1
+      },
+      {
+        "id": "m3",
+        "conversationId": "c1",
+        "text": "done",
+        "images": [],
+        "tokenCount": 0,
+        "status": "SUCCESS",
+        "participant": "MODEL",
+        "timestamp": 3,
+        "runId": "r1",
+        "runSequence": -1
+      },
+      {
+        "id": "m4",
+        "conversationId": "c2",
+        "text": "tool",
+        "images": [],
+        "tokenCount": 0,
+        "status": "TOOL_CALLING",
+        "participant": "MODEL",
+        "timestamp": 4,
+        "runId": "r2",
+        "runSequence": -1
+      },
+      {
+        "id": "m5",
+        "conversationId": "c3",
+        "text": "sending",
+        "images": [],
+        "tokenCount": 0,
+        "status": "SENDING",
+        "participant": "MODEL",
+        "timestamp": 5,
+        "runId": "r5",
+        "runSequence": -1
+      },
+      {
+        "id": "m6",
+        "conversationId": "c4",
+        "text": "sending",
+        "images": [],
+        "tokenCount": 0,
+        "status": "SENDING",
+        "participant": "MODEL",
+        "timestamp": 6,
+        "runId": "r6",
+        "runSequence": -1
+      },
+      {
+        "id": "m7",
+        "conversationId": "c5",
+        "text": "done",
+        "images": [],
+        "tokenCount": 0,
+        "status": "SUCCESS",
+        "participant": "MODEL",
+        "timestamp": 7,
+        "runId": "r7",
+        "runSequence": -1
+      },
+      {
+        "id": "mZ",
+        "conversationId": "cZ",
+        "text": "done",
+        "images": [],
+        "tokenCount": 0,
+        "status": "SUCCESS",
+        "participant": "MODEL",
+        "timestamp": 8,
+        "runId": "rZ",
+        "runSequence": -1
+      }
+    ]
+  },
+  "steps": [
+    {
+      "op": "markRunStopping",
+      "runId": "r1",
+      "at": 100
+    },
+    {
+      "op": "markRunStopping",
+      "runId": "r1",
+      "at": 101
+    },
+    {
+      "op": "markRunStopping",
+      "runId": "r2",
+      "at": 102
+    },
+    {
+      "op": "markRunStopping",
+      "runId": "r3",
+      "at": 103
+    },
+    {
+      "op": "markRunStopping",
+      "runId": "absent",
+      "at": 104
+    },
+    {
+      "op": "terminalizeLiveRun",
+      "runId": "r2",
+      "status": "STOPPED",
+      "reason": "USER_STOPPED",
+      "at": 200
+    },
+    {
+      "op": "terminalizeLiveRun",
+      "runId": "r2",
+      "status": "STOPPED",
+      "reason": "USER_STOPPED",
+      "at": 201
+    },
+    {
+      "op": "terminalizeLiveRun",
+      "runId": "r3",
+      "status": "FAILED",
+      "reason": "PROVIDER_ERROR",
+      "at": 202
+    },
+    {
+      "op": "terminalizeLiveRun",
+      "runId": "absent",
+      "status": "COMPLETED",
+      "reason": "MODEL_COMPLETED",
+      "at": 203
+    },
+    {
+      "op": "stopInFlightModelMessages",
+      "runId": "r1"
+    },
+    {
+      "op": "stopInFlightModelMessages",
+      "runId": "r1"
+    },
+    {
+      "op": "stopInFlightModelMessages",
+      "runId": "r2"
+    },
+    {
+      "op": "stopInFlightModelMessages",
+      "runId": "absent"
+    },
+    {
+      "op": "finishGeneration",
+      "checkpoint": {
+        "id": "m5",
+        "text": "finished",
+        "images": [],
+        "tokenCount": 9,
+        "status": "SUCCESS"
+      },
+      "conversationId": "c3",
+      "runId": "r5",
+      "status": "COMPLETED",
+      "reason": "MODEL_COMPLETED",
+      "at": 300,
+      "markConversationUnread": true
+    },
+    {
+      "op": "finishGeneration",
+      "checkpoint": {
+        "id": "m5",
+        "text": "again",
+        "images": [],
+        "tokenCount": 10,
+        "status": "SUCCESS"
+      },
+      "conversationId": "c3",
+      "runId": "r5",
+      "status": "COMPLETED",
+      "reason": "MODEL_COMPLETED",
+      "at": 301,
+      "markConversationUnread": true
+    },
+    {
+      "op": "finishGeneration",
+      "checkpoint": {
+        "id": "absent",
+        "text": "missing",
+        "images": [],
+        "tokenCount": 1,
+        "status": "SUCCESS"
+      },
+      "conversationId": "c4",
+      "runId": "r6",
+      "status": "FAILED",
+      "reason": "PROVIDER_ERROR",
+      "at": 400,
+      "markConversationUnread": true
+    },
+    {
+      "op": "finishGeneration",
+      "checkpoint": {
+        "id": "m6",
+        "text": "active",
+        "images": [],
+        "tokenCount": 1,
+        "status": "SUCCESS"
+      },
+      "conversationId": "c4",
+      "runId": "r6",
+      "status": "ACTIVE",
+      "reason": "MODEL_COMPLETED",
+      "at": 401,
+      "markConversationUnread": false
+    },
+    {
+      "op": "finishStoppedGeneration",
+      "checkpoints": [
+        {
+          "id": "m7",
+          "text": "stopped",
+          "images": [],
+          "tokenCount": 1,
+          "status": "STOPPED"
+        },
+        {
+          "id": "m5",
+          "text": "changed",
+          "images": [],
+          "tokenCount": 11,
+          "status": "STOPPED"
+        }
+      ],
+      "conversationId": "c5",
+      "runId": "r7",
+      "at": 500
+    },
+    {
+      "op": "finishStoppedGeneration",
+      "checkpoints": [
+        {
+          "id": "m1",
+          "text": "stopped again",
+          "images": [],
+          "tokenCount": 1,
+          "status": "STOPPED"
+        }
+      ],
+      "conversationId": "c1",
+      "runId": null,
+      "at": 600
+    },
+    {
+      "op": "finishStoppedGeneration",
+      "checkpoints": [
+        {
+          "id": "m3",
+          "text": "missing run",
+          "images": [],
+          "tokenCount": 1,
+          "status": "STOPPED"
+        }
+      ],
+      "conversationId": "c1",
+      "runId": "missing",
+      "at": 700
+    },
+    {
+      "op": "updateConversationMessageCheckpoint",
+      "conversationId": "c1",
+      "checkpoint": {
+        "id": "m3",
+        "text": "checkpoint",
+        "images": [],
+        "tokenCount": 2,
+        "status": "SUCCESS"
+      },
+      "at": 800
+    },
+    {
+      "op": "updateConversationMessageCheckpoint",
+      "conversationId": "c1",
+      "checkpoint": {
+        "id": "absent",
+        "text": "checkpoint",
+        "images": [],
+        "tokenCount": 2,
+        "status": "SUCCESS"
+      },
+      "at": 801
+    },
+    {
+      "op": "updateConversationMessageCheckpoint",
+      "conversationId": "absent",
+      "checkpoint": {
+        "id": "mZ",
+        "text": "rolled back",
+        "images": [],
+        "tokenCount": 2,
+        "status": "SUCCESS"
+      },
+      "at": 802
+    },
+    {
+      "op": "updateMessageCheckpoint",
+      "checkpoint": {
+        "id": "m1",
+        "text": "direct",
+        "images": [],
+        "tokenCount": 3,
+        "status": "STOPPED"
+      }
+    },
+    {
+      "op": "updateMessageCheckpoint",
+      "checkpoint": {
+        "id": "absent",
+        "text": "direct",
+        "images": [],
+        "tokenCount": 3,
+        "status": "STOPPED"
+      }
+    },
+    {
+      "op": "terminalizeLiveRun",
+      "runId": "r1",
+      "status": "STOPPED",
+      "reason": "USER_STOPPED",
+      "at": 900
+    },
+    {
+      "op": "getMessagesByIds",
+      "ids": [
+        "m1",
+        "m5",
+        "m6",
+        "m7",
+        "mZ"
+      ]
+    }
+  ]
+}

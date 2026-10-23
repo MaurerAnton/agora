@@ -1,0 +1,354 @@
+{
+  "seed": {
+    "conversations": [
+      {
+        "id": "cExisting",
+        "title": "cExisting",
+        "lastUpdated": 0,
+        "dataChangedAt": 0,
+        "origin": "user",
+        "graduated": false,
+        "draftText": "",
+        "hasUnreadGeneration": false,
+        "isPinned": false
+      }
+    ],
+    "newChatPersist": {
+      "id": 0,
+      "modelId": "openai:gpt-4",
+      "systemPromptId": "p1",
+      "conversationSettingsJson": "{\"s\":1}",
+      "draftText": "d",
+      "draftAttachments": "[]"
+    }
+  },
+  "steps": [
+    {
+      "op": "createConversationRunWithMessages",
+      "conversation": {
+        "id": "c10",
+        "title": "First",
+        "lastUpdated": 0,
+        "dataChangedAt": 0,
+        "origin": "user",
+        "graduated": false,
+        "draftText": "",
+        "hasUnreadGeneration": false,
+        "isPinned": false
+      },
+      "run": {
+        "id": "r10",
+        "conversationId": "c10",
+        "status": "ACTIVE",
+        "activeSlot": 1,
+        "startedAt": 300,
+        "lastCheckpointAt": 0,
+        "currentPass": 0,
+        "legacyAmbiguous": false
+      },
+      "messages": [
+        {
+          "id": "y1",
+          "conversationId": "c10",
+          "text": "hello",
+          "images": [],
+          "tokenCount": 0,
+          "status": "SUCCESS",
+          "participant": "MODEL",
+          "timestamp": 301,
+          "runId": "r10",
+          "runSequence": 0
+        }
+      ],
+      "messageSelectionUpdates": {
+        "u1": "y1"
+      },
+      "conversationModelId": "new:model",
+      "conversationSettingsJson": "{\"x\":1}",
+      "expectedNewChatPersist": {
+        "id": 0,
+        "modelId": "openai:gpt-4",
+        "systemPromptId": "p1",
+        "conversationSettingsJson": "{\"s\":1}",
+        "draftText": "d",
+        "draftAttachments": "[]"
+      },
+      "at": 300
+    },
+    {
+      "op": "getAllConversationsList"
+    },
+    {
+      "op": "getConversationSettingsTransfer",
+      "conversationId": "c10"
+    },
+    {
+      "op": "createConversationRunWithMessages",
+      "conversation": {
+        "id": "c11",
+        "title": "Second",
+        "lastUpdated": 0,
+        "dataChangedAt": 0,
+        "origin": "user",
+        "graduated": false,
+        "draftText": "",
+        "hasUnreadGeneration": false,
+        "isPinned": false
+      },
+      "run": {
+        "id": "r11",
+        "conversationId": "c11",
+        "status": "ACTIVE",
+        "activeSlot": 1,
+        "startedAt": 310,
+        "lastCheckpointAt": 0,
+        "currentPass": 0,
+        "legacyAmbiguous": false
+      },
+      "messages": [
+        {
+          "id": "y2",
+          "conversationId": "c11",
+          "text": "hello",
+          "images": [],
+          "tokenCount": 0,
+          "status": "SUCCESS",
+          "participant": "MODEL",
+          "timestamp": 311,
+          "runId": "r11",
+          "runSequence": 0
+        }
+      ],
+      "messageSelectionUpdates": {},
+      "conversationModelId": "m",
+      "conversationSettingsJson": null,
+      "expectedNewChatPersist": {
+        "id": 0,
+        "modelId": "openai:gpt-4",
+        "systemPromptId": "p1",
+        "conversationSettingsJson": "{\"s\":1}",
+        "draftText": "different",
+        "draftAttachments": "[]"
+      },
+      "at": 310
+    },
+    {
+      "op": "getAllConversationsList"
+    },
+    {
+      "op": "createConversationRunWithMessages",
+      "conversation": {
+        "id": "cExisting",
+        "title": "Existing",
+        "lastUpdated": 0,
+        "dataChangedAt": 0,
+        "origin": "user",
+        "graduated": false,
+        "draftText": "",
+        "hasUnreadGeneration": false,
+        "isPinned": false
+      },
+      "run": {
+        "id": "r12",
+        "conversationId": "cExisting",
+        "status": "ACTIVE",
+        "activeSlot": 1,
+        "startedAt": 320,
+        "lastCheckpointAt": 0,
+        "currentPass": 0,
+        "legacyAmbiguous": false
+      },
+      "messages": [
+        {
+          "id": "y3",
+          "conversationId": "cExisting",
+          "text": "x",
+          "images": [],
+          "tokenCount": 0,
+          "status": "SUCCESS",
+          "participant": "MODEL",
+          "timestamp": 321,
+          "runId": "r12",
+          "runSequence": 0
+        }
+      ],
+      "messageSelectionUpdates": {},
+      "conversationModelId": "m",
+      "conversationSettingsJson": null,
+      "expectedNewChatPersist": null,
+      "at": 320
+    },
+    {
+      "op": "createConversationRunWithMessages",
+      "conversation": {
+        "id": "c12",
+        "title": "c12",
+        "lastUpdated": 0,
+        "dataChangedAt": 0,
+        "origin": "user",
+        "graduated": false,
+        "draftText": "",
+        "hasUnreadGeneration": false,
+        "isPinned": false
+      },
+      "run": {
+        "id": "r13",
+        "conversationId": "c13",
+        "status": "ACTIVE",
+        "activeSlot": 1,
+        "startedAt": 330,
+        "lastCheckpointAt": 0,
+        "currentPass": 0,
+        "legacyAmbiguous": false
+      },
+      "messages": [
+        {
+          "id": "y4",
+          "conversationId": "c13",
+          "text": "x",
+          "images": [],
+          "tokenCount": 0,
+          "status": "SUCCESS",
+          "participant": "MODEL",
+          "timestamp": 331,
+          "runId": "r13",
+          "runSequence": 0
+        }
+      ],
+      "messageSelectionUpdates": {},
+      "conversationModelId": "m",
+      "conversationSettingsJson": null,
+      "expectedNewChatPersist": null,
+      "at": 330
+    },
+    {
+      "op": "createConversationRunWithMessages",
+      "conversation": {
+        "id": "c14",
+        "title": "c14",
+        "lastUpdated": 0,
+        "dataChangedAt": 0,
+        "origin": "user",
+        "graduated": false,
+        "draftText": "",
+        "hasUnreadGeneration": false,
+        "isPinned": false
+      },
+      "run": {
+        "id": "r14",
+        "conversationId": "c14",
+        "status": "ACTIVE",
+        "activeSlot": 1,
+        "startedAt": 340,
+        "lastCheckpointAt": 0,
+        "currentPass": 0,
+        "legacyAmbiguous": false
+      },
+      "messages": [
+        {
+          "id": "y5",
+          "conversationId": "c14",
+          "text": "x",
+          "images": [],
+          "tokenCount": 0,
+          "status": "SUCCESS",
+          "participant": "MODEL",
+          "timestamp": 341,
+          "runId": "r14",
+          "runSequence": 0
+        }
+      ],
+      "messageSelectionUpdates": {},
+      "conversationModelId": "",
+      "conversationSettingsJson": null,
+      "expectedNewChatPersist": null,
+      "at": 340
+    },
+    {
+      "op": "createConversationRunWithMessages",
+      "conversation": {
+        "id": "c15",
+        "title": "Rollback",
+        "lastUpdated": 0,
+        "dataChangedAt": 0,
+        "origin": "user",
+        "graduated": false,
+        "draftText": "",
+        "hasUnreadGeneration": false,
+        "isPinned": false
+      },
+      "run": {
+        "id": "r15",
+        "conversationId": "c15",
+        "status": "ACTIVE",
+        "activeSlot": 1,
+        "startedAt": 350,
+        "lastCheckpointAt": 0,
+        "currentPass": 0,
+        "legacyAmbiguous": false
+      },
+      "messages": [],
+      "messageSelectionUpdates": {},
+      "conversationModelId": "m",
+      "conversationSettingsJson": "{\"rb\":1}",
+      "expectedNewChatPersist": {
+        "id": 0,
+        "modelId": "openai:gpt-4",
+        "systemPromptId": "p1",
+        "conversationSettingsJson": "{\"s\":1}",
+        "draftText": "d",
+        "draftAttachments": "[]"
+      },
+      "at": 350
+    },
+    {
+      "op": "getAllConversationsList"
+    },
+    {
+      "op": "createConversationRunWithMessages",
+      "conversation": {
+        "id": "c16",
+        "title": "c16",
+        "lastUpdated": 0,
+        "dataChangedAt": 0,
+        "origin": "user",
+        "graduated": false,
+        "draftText": "",
+        "hasUnreadGeneration": false,
+        "isPinned": false
+      },
+      "run": {
+        "id": "r16",
+        "conversationId": "c16",
+        "status": "ACTIVE",
+        "activeSlot": 1,
+        "startedAt": 360,
+        "lastCheckpointAt": 0,
+        "currentPass": 0,
+        "legacyAmbiguous": false
+      },
+      "messages": [
+        {
+          "id": "y6",
+          "conversationId": "c16",
+          "text": "x",
+          "images": [],
+          "tokenCount": 0,
+          "status": "SUCCESS",
+          "participant": "MODEL",
+          "timestamp": 361,
+          "runId": "r16",
+          "runSequence": 0
+        }
+      ],
+      "messageSelectionUpdates": {},
+      "conversationModelId": "m",
+      "conversationSettingsJson": null,
+      "expectedNewChatPersist": null,
+      "at": 360
+    },
+    {
+      "op": "getAllConversationsList"
+    }
+  ]
+}

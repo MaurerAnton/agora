@@ -1,0 +1,74 @@
+{
+  "steps": [
+    {
+      "op": "createBaseline",
+      "file": "b0",
+      "dump": true,
+      "manifest": {
+        "agora_export_version": 6,
+        "incremental_baseline": 1,
+        "categories": [
+          "conversations"
+        ]
+      },
+      "items": [
+        {
+          "id": "c1",
+          "dataChangedAt": 100,
+          "conversation": "{\"id\":\"c1\"}",
+          "runs": [],
+          "messages": [],
+          "loops": [],
+          "mediaEntries": [
+            "media/images/x.png"
+          ]
+        },
+        {
+          "id": "c2",
+          "dataChangedAt": 200,
+          "conversation": "{\"id\":\"c2\"}",
+          "runs": [],
+          "messages": [],
+          "loops": [],
+          "mediaEntries": []
+        }
+      ],
+      "media": [
+        {
+          "name": "media/images/x.png",
+          "content": "PNGDATA"
+        }
+      ]
+    },
+    {
+      "op": "canReuse",
+      "file": "b0",
+      "id": "c1",
+      "dataChangedAt": 100
+    },
+    {
+      "op": "canReuse",
+      "file": "b0",
+      "id": "c2",
+      "dataChangedAt": 200
+    },
+    {
+      "op": "canReuse",
+      "file": "b0",
+      "id": "c1",
+      "dataChangedAt": 999
+    },
+    {
+      "op": "canReuse",
+      "file": "b0",
+      "id": "unknown",
+      "dataChangedAt": 100
+    },
+    {
+      "op": "canReuse",
+      "file": "never-created",
+      "id": "c1",
+      "dataChangedAt": 100
+    }
+  ]
+}

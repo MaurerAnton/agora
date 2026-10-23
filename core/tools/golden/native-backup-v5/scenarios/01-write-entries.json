@@ -1,0 +1,74 @@
+{
+  "steps": [
+    {
+      "op": "writeConversationEntry",
+      "file": "out",
+      "conversationId": "conv-1",
+      "dataChangedAt": 100,
+      "conversation": "{\"id\":\"conv-1\",\"title\":\"one\"}",
+      "runs": [
+        "{\"id\":\"r1\"}",
+        "{\"id\":\"r2\"}"
+      ],
+      "messages": [
+        "{\"id\":\"m1\"}"
+      ],
+      "loops": [],
+      "mediaEntries": [
+        "media/images/b.png",
+        "media/images/a.png"
+      ]
+    },
+    {
+      "op": "writeConversationEntry",
+      "file": "out",
+      "conversationId": "conv2",
+      "dataChangedAt": 200,
+      "conversation": "{\"id\":\"conv2\"}",
+      "runs": [],
+      "messages": [
+        "{\"id\":\"m2\"}",
+        "{\"id\":\"m3\"}"
+      ],
+      "loops": [
+        "{\"conversationId\":\"conv2\"}"
+      ],
+      "mediaEntries": []
+    },
+    {
+      "op": "writeTasksEntry",
+      "file": "out",
+      "tasks": [
+        "{\"id\":\"t1\"}",
+        "{\"id\":\"t2\"}",
+        "{\"id\":\"t3\"}"
+      ]
+    },
+    {
+      "op": "writeConversationIndex",
+      "file": "out",
+      "entries": [
+        {
+          "id": "conv-1",
+          "dataChangedAt": 100,
+          "entry": "conv/items/636f6e762d31.json",
+          "mediaEntries": [
+            "media/images/a.png",
+            "media/images/b.png"
+          ]
+        },
+        {
+          "id": "conv2",
+          "dataChangedAt": 200,
+          "entry": "conv/items/636f6e7632.json",
+          "mediaEntries": []
+        }
+      ]
+    },
+    {
+      "op": "writeTasksEntry",
+      "file": "empty-tasks",
+      "tasks": []
+    }
+  ]
+}

@@ -1,0 +1,98 @@
+{
+  "steps": [
+    {
+      "op": "createBaseline",
+      "file": "b0",
+      "dump": true,
+      "manifest": {
+        "agora_export_version": 6,
+        "incremental_baseline": 1,
+        "categories": [
+          "conversations"
+        ]
+      },
+      "items": [
+        {
+          "id": "c1",
+          "dataChangedAt": 100,
+          "conversation": "{\"id\":\"c1\"}",
+          "runs": [
+            "{\"id\":\"r1\"}"
+          ],
+          "messages": [],
+          "loops": [],
+          "mediaEntries": [
+            "media/images/x.png"
+          ]
+        }
+      ],
+      "media": [
+        {
+          "name": "media/images/x.png",
+          "content": "PNGDATA"
+        }
+      ]
+    },
+    {
+      "op": "copyRaw",
+      "file": "out",
+      "baseline": "b0",
+      "name": "conv/items/6331.json"
+    },
+    {
+      "op": "copyRaw",
+      "file": "out",
+      "baseline": "b0",
+      "name": "media/images/x.png"
+    },
+    {
+      "op": "copyRaw",
+      "file": "out",
+      "baseline": "b0",
+      "name": "media/missing.png"
+    },
+    {
+      "op": "copyConversationFromBaseline",
+      "file": "out2",
+      "baseline": "b0",
+      "entry": {
+        "id": "c1",
+        "dataChangedAt": 100,
+        "entry": "conv/items/6331.json",
+        "mediaEntries": [
+          "media/images/x.png"
+        ]
+      },
+      "copiedMedia": []
+    },
+    {
+      "op": "copyConversationFromBaseline",
+      "file": "out2",
+      "baseline": "b0",
+      "entry": {
+        "id": "c1",
+        "dataChangedAt": 100,
+        "entry": "conv/items/6331.json",
+        "mediaEntries": [
+          "media/images/x.png"
+        ]
+      }
+    },
+    {
+      "op": "copyConversationFromBaseline",
+      "file": "out3",
+      "baseline": "b0",
+      "entry": {
+        "id": "c1",
+        "dataChangedAt": 100,
+        "entry": "conv/items/6331.json",
+        "mediaEntries": [
+          "media/images/x.png"
+        ]
+      },
+      "copiedMedia": [
+        "media/pre-seeded.png"
+      ]
+    }
+  ]
+}

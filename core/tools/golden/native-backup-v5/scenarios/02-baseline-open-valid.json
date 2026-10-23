@@ -1,0 +1,66 @@
+{
+  "steps": [
+    {
+      "op": "createBaseline",
+      "file": "b0",
+      "dump": true,
+      "manifest": {
+        "agora_export_version": 6,
+        "incremental_baseline": 1,
+        "categories": [
+          "conversations"
+        ]
+      },
+      "items": [
+        {
+          "id": "c1",
+          "dataChangedAt": 10,
+          "conversation": "{\"id\":\"c1\",\"title\":\"first\"}",
+          "runs": [
+            "{\"id\":\"r1\"}"
+          ],
+          "messages": [],
+          "loops": [],
+          "mediaEntries": [
+            "media/images/x.png"
+          ]
+        },
+        {
+          "id": "c2",
+          "dataChangedAt": 20,
+          "conversation": "{\"id\":\"c2\"}",
+          "runs": [],
+          "messages": [
+            "{\"id\":\"m2\"}"
+          ],
+          "loops": [],
+          "mediaEntries": []
+        }
+      ],
+      "media": [
+        {
+          "name": "media/images/x.png",
+          "content": "PNGDATA"
+        }
+      ]
+    },
+    {
+      "op": "openOrNull",
+      "file": "b0"
+    },
+    {
+      "op": "indexEntry",
+      "file": "b0",
+      "id": "c1"
+    },
+    {
+      "op": "indexEntry",
+      "file": "b0",
+      "id": "missing"
+    },
+    {
+      "op": "openOrNull",
+      "file": "never-created"
+    }
+  ]
+}

@@ -1,0 +1,93 @@
+{
+  "steps": [
+    {
+      "op": "createBaseline",
+      "file": "b0",
+      "dump": true,
+      "manifest": {
+        "agora_export_version": 6,
+        "incremental_baseline": 1,
+        "categories": [
+          "conversations"
+        ]
+      },
+      "items": [
+        {
+          "id": "c1",
+          "dataChangedAt": 100,
+          "conversation": "{\"id\":\"c1\"}",
+          "runs": [
+            "{\"id\":\"r1\"}"
+          ],
+          "messages": [],
+          "loops": [],
+          "mediaEntries": [
+            "media/images/x.png"
+          ]
+        }
+      ],
+      "media": [
+        {
+          "name": "media/images/x.png",
+          "content": "PNGDATA"
+        }
+      ]
+    },
+    {
+      "op": "copyConversationFromBaseline",
+      "file": "out",
+      "baseline": "b0",
+      "entry": {
+        "id": "c1",
+        "dataChangedAt": 100,
+        "entry": "conv/items/6331.json",
+        "mediaEntries": [
+          "media/images/x.png"
+        ]
+      },
+      "copiedMedia": []
+    },
+    {
+      "op": "writeConversationEntry",
+      "file": "out",
+      "conversationId": "c2",
+      "dataChangedAt": 300,
+      "conversation": "{\"id\":\"c2\",\"title\":\"fresh\"}",
+      "runs": [
+        "{\"id\":\"r2\"}"
+      ],
+      "messages": [
+        "{\"id\":\"m2\"}"
+      ],
+      "loops": [],
+      "mediaEntries": []
+    },
+    {
+      "op": "writeTasksEntry",
+      "file": "out",
+      "tasks": [
+        "{\"id\":\"t1\"}"
+      ]
+    },
+    {
+      "op": "writeConversationIndex",
+      "file": "out",
+      "entries": [
+        {
+          "id": "c1",
+          "dataChangedAt": 100,
+          "entry": "conv/items/6331.json",
+          "mediaEntries": [
+            "media/images/x.png"
+          ]
+        },
+        {
+          "id": "c2",
+          "dataChangedAt": 300,
+          "entry": "conv/items/6332.json",
+          "mediaEntries": []
+        }
+      ]
+    }
+  ]
+}

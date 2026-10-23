@@ -1,0 +1,896 @@
+{
+  "seed": {
+    "conversations": [
+      {
+        "id": "c-alpha",
+        "title": "Alpha Notes",
+        "lastUpdated": 300,
+        "dataChangedAt": 301,
+        "selectedBranchesJson": "{\"m\":\"x\"}",
+        "systemPromptId": "sp-1",
+        "modelId": "mdl-1",
+        "origin": "user",
+        "draftText": "draft",
+        "draftAttachments": "[]",
+        "selectedRunBranchesJson": "{\"r\":\"y\"}",
+        "hasUnreadGeneration": true,
+        "isPinned": true
+      },
+      {
+        "id": "c-beta",
+        "title": "Project Emerald",
+        "lastUpdated": 100,
+        "origin": "loop",
+        "graduated": true
+      },
+      {
+        "id": "c-delta",
+        "title": "Delta `code` 100%",
+        "lastUpdated": 250,
+        "dataChangedAt": 250,
+        "isPinned": true
+      },
+      {
+        "id": "c-epsilon",
+        "title": "Epsilon",
+        "lastUpdated": 900,
+        "dataChangedAt": 900
+      },
+      {
+        "id": "c-gamma",
+        "title": "Gamma 100% coverage",
+        "lastUpdated": 250,
+        "dataChangedAt": 250
+      },
+      {
+        "id": "c-task",
+        "title": "Secret Alpha Task",
+        "lastUpdated": 50,
+        "taskId": "task-1",
+        "origin": "task",
+        "graduated": true
+      },
+      {
+        "id": "c-zeta",
+        "title": "Zeta",
+        "lastUpdated": 10,
+        "taskId": ""
+      }
+    ],
+    "runs": [
+      {
+        "id": "r-alpha",
+        "conversationId": "c-alpha",
+        "status": "COMPLETED",
+        "activeSlot": null,
+        "startedAt": 100,
+        "lastCheckpointAt": 100,
+        "endedAt": 200,
+        "endReason": "MODEL_COMPLETED",
+        "currentPass": 0,
+        "legacyAmbiguous": false
+      },
+      {
+        "id": "r-beta",
+        "conversationId": "c-beta",
+        "status": "COMPLETED",
+        "activeSlot": null,
+        "startedAt": 100,
+        "lastCheckpointAt": 100,
+        "endedAt": 200,
+        "endReason": "MODEL_COMPLETED",
+        "currentPass": 0,
+        "legacyAmbiguous": false
+      },
+      {
+        "id": "r-delta",
+        "conversationId": "c-delta",
+        "status": "COMPLETED",
+        "activeSlot": null,
+        "startedAt": 100,
+        "lastCheckpointAt": 100,
+        "endedAt": 200,
+        "endReason": "MODEL_COMPLETED",
+        "currentPass": 0,
+        "legacyAmbiguous": false
+      },
+      {
+        "id": "r-epsilon",
+        "conversationId": "c-epsilon",
+        "status": "COMPLETED",
+        "activeSlot": null,
+        "startedAt": 100,
+        "lastCheckpointAt": 100,
+        "endedAt": 200,
+        "endReason": "MODEL_COMPLETED",
+        "currentPass": 0,
+        "legacyAmbiguous": false
+      },
+      {
+        "id": "r-gamma",
+        "conversationId": "c-gamma",
+        "status": "COMPLETED",
+        "activeSlot": null,
+        "startedAt": 100,
+        "lastCheckpointAt": 100,
+        "endedAt": 200,
+        "endReason": "MODEL_COMPLETED",
+        "currentPass": 0,
+        "legacyAmbiguous": false
+      },
+      {
+        "id": "r-task",
+        "conversationId": "c-task",
+        "status": "COMPLETED",
+        "activeSlot": null,
+        "startedAt": 100,
+        "lastCheckpointAt": 100,
+        "endedAt": 200,
+        "endReason": "MODEL_COMPLETED",
+        "currentPass": 0,
+        "legacyAmbiguous": false
+      },
+      {
+        "id": "r-zeta",
+        "conversationId": "c-zeta",
+        "status": "COMPLETED",
+        "activeSlot": null,
+        "startedAt": 100,
+        "lastCheckpointAt": 100,
+        "endedAt": 200,
+        "endReason": "MODEL_COMPLETED",
+        "currentPass": 0,
+        "legacyAmbiguous": false
+      }
+    ],
+    "messages": [
+      {
+        "id": "compact",
+        "conversationId": "c-alpha",
+        "text": "alpha compact boundary",
+        "participant": "MODEL",
+        "timestamp": 282,
+        "runId": "r-alpha",
+        "parentId": "m-01",
+        "images": [
+          "file://a.png"
+        ],
+        "thoughts": "thinking",
+        "thoughtTitle": "plan",
+        "tokenCount": 12,
+        "inputTokenCount": 3,
+        "cachedInputTokenCount": 1,
+        "cacheWriteInputTokenCount": 2,
+        "uncachedInputTokenCount": 0,
+        "outputTokenCount": 4,
+        "reasoningTokenCount": 5,
+        "generationDurationMs": 1234,
+        "thoughtTimeMs": 99,
+        "modelName": "model-x",
+        "attachmentMeta": "{\"files\":[]}",
+        "runSequence": 7,
+        "consumedAtPass": 2,
+        "sourceJson": "{\"kind\":\"edited\"}"
+      },
+      {
+        "id": "compact_09",
+        "conversationId": "c-alpha",
+        "text": "Alpha compact summary",
+        "participant": "MODEL",
+        "timestamp": 960,
+        "runId": "r-alpha",
+        "toolCallJson": "{\"toolCallId\":\"tc\",\"segments\":[{\"type\":\"citation\",\"citationId\":\"cit-1\"}]}"
+      },
+      {
+        "id": "m-01",
+        "conversationId": "c-alpha",
+        "text": "The alpha build ships today",
+        "participant": "MODEL",
+        "timestamp": 500,
+        "runId": "r-alpha",
+        "inputTokenCount": 10,
+        "outputTokenCount": 20
+      },
+      {
+        "id": "m-02",
+        "conversationId": "c-alpha",
+        "text": "Alpha is the first letter",
+        "participant": "USER",
+        "timestamp": 500,
+        "runId": "r-alpha"
+      },
+      {
+        "id": "m-03",
+        "conversationId": "c-beta",
+        "text": "Unrelated body",
+        "participant": "MODEL",
+        "timestamp": 400,
+        "runId": "r-beta"
+      },
+      {
+        "id": "m-04",
+        "conversationId": "c-task",
+        "text": "Alpha in a task conversation",
+        "participant": "MODEL",
+        "timestamp": 600,
+        "runId": "r-task"
+      },
+      {
+        "id": "m-05",
+        "conversationId": "c-alpha",
+        "text": "Alpha from an error participant",
+        "participant": "ERROR",
+        "timestamp": 700,
+        "runId": "r-alpha"
+      },
+      {
+        "id": "m-06",
+        "conversationId": "c-alpha",
+        "text": "",
+        "participant": "MODEL",
+        "timestamp": 800,
+        "runId": "r-alpha"
+      },
+      {
+        "id": "m-07",
+        "conversationId": "c-alpha",
+        "text": "Alpha again",
+        "participant": "MODEL",
+        "timestamp": 500,
+        "runId": "r-alpha"
+      },
+      {
+        "id": "m-08",
+        "conversationId": "c-beta",
+        "text": "Alpha from loop origin",
+        "participant": "USER",
+        "timestamp": 60,
+        "runId": "r-beta"
+      },
+      {
+        "id": "m-09",
+        "conversationId": "c-alpha",
+        "text": "alpha",
+        "participant": "MODEL",
+        "timestamp": 70,
+        "runId": "r-alpha"
+      },
+      {
+        "id": "m-10",
+        "conversationId": "c-gamma",
+        "text": "Lowercase alpha appears",
+        "participant": "USER",
+        "timestamp": 100,
+        "runId": "r-gamma"
+      },
+      {
+        "id": "m-11",
+        "conversationId": "c-epsilon",
+        "text": "100% coverage complete",
+        "participant": "MODEL",
+        "timestamp": 110,
+        "runId": "r-epsilon"
+      },
+      {
+        "id": "m-12",
+        "conversationId": "c-epsilon",
+        "text": "100x coverage failed",
+        "participant": "MODEL",
+        "timestamp": 120,
+        "runId": "r-epsilon"
+      },
+      {
+        "id": "m-13",
+        "conversationId": "c-delta",
+        "text": "value a_b here",
+        "participant": "MODEL",
+        "timestamp": 130,
+        "runId": "r-delta"
+      },
+      {
+        "id": "m-14",
+        "conversationId": "c-delta",
+        "text": "value axb here",
+        "participant": "MODEL",
+        "timestamp": 140,
+        "runId": "r-delta"
+      },
+      {
+        "id": "m-15",
+        "conversationId": "c-alpha",
+        "text": "path C:\\temp\\alpha",
+        "participant": "MODEL",
+        "timestamp": 150,
+        "runId": "r-alpha"
+      },
+      {
+        "id": "m-16",
+        "conversationId": "c-alpha",
+        "text": "citation holder",
+        "participant": "MODEL",
+        "timestamp": 160,
+        "runId": "r-alpha",
+        "toolCallJson": "{\"toolCallId\":\"tc\",\"segments\":[{\"type\":\"citation\",\"citationId\":\"cit-1\"}]}"
+      },
+      {
+        "id": "m-17",
+        "conversationId": "c-beta",
+        "text": "spaced citation",
+        "participant": "MODEL",
+        "timestamp": 170,
+        "runId": "r-beta",
+        "toolCallJson": "{\"segments\":[{\"type\": \"citation\"}]}"
+      },
+      {
+        "id": "m-18",
+        "conversationId": "c-task",
+        "text": "citation in task",
+        "participant": "MODEL",
+        "timestamp": 180,
+        "runId": "r-task",
+        "toolCallJson": "{\"toolCallId\":\"tc\",\"segments\":[{\"type\":\"citation\",\"citationId\":\"cit-1\"}]}"
+      },
+      {
+        "id": "m-19",
+        "conversationId": "c-alpha",
+        "text": "citation user",
+        "participant": "USER",
+        "timestamp": 190,
+        "runId": "r-alpha",
+        "toolCallJson": "{\"toolCallId\":\"tc\",\"segments\":[{\"type\":\"citation\",\"citationId\":\"cit-1\"}]}"
+      },
+      {
+        "id": "m-20",
+        "conversationId": "c-gamma",
+        "text": "citation one",
+        "participant": "MODEL",
+        "timestamp": 200,
+        "runId": "r-gamma",
+        "toolCallJson": "{\"toolCallId\":\"tc\",\"segments\":[{\"type\":\"citation\",\"citationId\":\"cit-1\"}]}"
+      },
+      {
+        "id": "m-21",
+        "conversationId": "c-gamma",
+        "text": "citation two",
+        "participant": "MODEL",
+        "timestamp": 210,
+        "runId": "r-gamma",
+        "toolCallJson": "{\"toolCallId\":\"tc\",\"segments\":[{\"type\":\"citation\",\"citationId\":\"cit-1\"}]}"
+      },
+      {
+        "id": "m-22",
+        "conversationId": "c-alpha",
+        "text": "citation three",
+        "participant": "MODEL",
+        "timestamp": 220,
+        "runId": "r-alpha",
+        "toolCallJson": "{\"toolCallId\":\"tc\",\"segments\":[{\"type\":\"citation\",\"citationId\":\"cit-1\"}]}"
+      },
+      {
+        "id": "m-23",
+        "conversationId": "c-gamma",
+        "text": "éé",
+        "participant": "USER",
+        "timestamp": 230,
+        "runId": "r-gamma"
+      },
+      {
+        "id": "m-24",
+        "conversationId": "c-gamma",
+        "text": "漢字",
+        "participant": "USER",
+        "timestamp": 240,
+        "runId": "r-gamma"
+      },
+      {
+        "id": "m-25",
+        "conversationId": "c-gamma",
+        "text": "é",
+        "participant": "USER",
+        "timestamp": 250,
+        "runId": "r-gamma"
+      },
+      {
+        "id": "m-26",
+        "conversationId": "c-gamma",
+        "text": "😀",
+        "participant": "USER",
+        "timestamp": 260,
+        "runId": "r-gamma"
+      },
+      {
+        "id": "m-27",
+        "conversationId": "c-epsilon",
+        "text": "tools are useful",
+        "participant": "MODEL",
+        "timestamp": 270,
+        "runId": "r-epsilon"
+      },
+      {
+        "id": "m-28",
+        "conversationId": "c-epsilon",
+        "text": "ALPHA",
+        "participant": "MODEL",
+        "timestamp": 80,
+        "runId": "r-epsilon"
+      },
+      {
+        "id": "m-29",
+        "conversationId": "c-zeta",
+        "text": "Alpha in empty-task conversation",
+        "participant": "MODEL",
+        "timestamp": 290,
+        "runId": "r-zeta"
+      },
+      {
+        "id": "m-30",
+        "conversationId": "c-alpha",
+        "text": "citation four",
+        "participant": "MODEL",
+        "timestamp": 300,
+        "runId": "r-alpha",
+        "toolCallJson": "{\"toolCallId\":\"tc\",\"segments\":[{\"type\":\"citation\",\"citationId\":\"cit-1\"}]}"
+      },
+      {
+        "id": "m-31",
+        "conversationId": "c-alpha",
+        "text": "citation five",
+        "participant": "MODEL",
+        "timestamp": 310,
+        "runId": "r-alpha",
+        "toolCallJson": "{\"toolCallId\":\"tc\",\"segments\":[{\"type\":\"citation\",\"citationId\":\"cit-1\"}]}"
+      },
+      {
+        "id": "m-35",
+        "conversationId": "c-alpha",
+        "text": "citation compact exact",
+        "participant": "MODEL",
+        "timestamp": 90,
+        "runId": "r-alpha",
+        "toolCallJson": "{\"toolCallId\":\"tc\",\"segments\":[{\"type\":\"citation\",\"citationId\":\"cit-1\"}]}"
+      },
+      {
+        "id": "result_08",
+        "conversationId": "c-alpha",
+        "text": "Alpha result output",
+        "participant": "MODEL",
+        "timestamp": 950,
+        "runId": "r-alpha"
+      },
+      {
+        "id": "resultx",
+        "conversationId": "c-alpha",
+        "text": "alpha resultx boundary",
+        "participant": "MODEL",
+        "timestamp": 281,
+        "runId": "r-alpha"
+      },
+      {
+        "id": "tool_07",
+        "conversationId": "c-alpha",
+        "text": "Alpha tool output",
+        "participant": "MODEL",
+        "timestamp": 900,
+        "runId": "r-alpha"
+      },
+      {
+        "id": "toolx",
+        "conversationId": "c-epsilon",
+        "text": "alpha with toolx id",
+        "participant": "MODEL",
+        "timestamp": 280,
+        "runId": "r-epsilon"
+      }
+    ],
+    "embeddings": [
+      {
+        "id": 1,
+        "messageId": "m-01",
+        "modelId": "model-a",
+        "embedding": "0a0b",
+        "chunkText": "chunk-1",
+        "dimension": 2,
+        "sourceFingerprint": "fp-1"
+      },
+      {
+        "id": 2,
+        "messageId": "m-02",
+        "modelId": "model-a",
+        "embedding": "0c",
+        "chunkText": "chunk-2",
+        "dimension": 1,
+        "sourceFingerprint": "fp-2"
+      },
+      {
+        "id": 3,
+        "messageId": "m-03",
+        "modelId": "model-a",
+        "embedding": "0d0e",
+        "chunkText": "chunk-3",
+        "dimension": 2,
+        "sourceFingerprint": "fp-3"
+      },
+      {
+        "id": 4,
+        "messageId": "m-04",
+        "modelId": "model-a",
+        "embedding": "0f",
+        "chunkText": "chunk-4",
+        "dimension": 1,
+        "sourceFingerprint": "fp-4"
+      },
+      {
+        "id": 5,
+        "messageId": "m-05",
+        "modelId": "model-a",
+        "embedding": "10",
+        "chunkText": "chunk-5",
+        "dimension": 1,
+        "sourceFingerprint": "fp-5"
+      },
+      {
+        "id": 6,
+        "messageId": "m-06",
+        "modelId": "model-a",
+        "embedding": "11",
+        "chunkText": "chunk-6",
+        "dimension": 1,
+        "sourceFingerprint": "fp-6"
+      },
+      {
+        "id": 7,
+        "messageId": "tool_07",
+        "modelId": "model-a",
+        "embedding": "12",
+        "chunkText": "chunk-7",
+        "dimension": 1,
+        "sourceFingerprint": "fp-7"
+      },
+      {
+        "id": 8,
+        "messageId": "result_08",
+        "modelId": "model-a",
+        "embedding": "13",
+        "chunkText": "chunk-8",
+        "dimension": 1,
+        "sourceFingerprint": "fp-8"
+      },
+      {
+        "id": 9,
+        "messageId": "compact_09",
+        "modelId": "model-a",
+        "embedding": "14",
+        "chunkText": "chunk-9",
+        "dimension": 1,
+        "sourceFingerprint": "fp-9"
+      },
+      {
+        "id": 10,
+        "messageId": "m-10",
+        "modelId": "model-a",
+        "embedding": "15",
+        "chunkText": "chunk-10",
+        "dimension": 1,
+        "sourceFingerprint": "fp-10"
+      },
+      {
+        "id": 11,
+        "messageId": "m-11",
+        "modelId": "model-a",
+        "embedding": "16",
+        "chunkText": "chunk-11",
+        "dimension": 1,
+        "sourceFingerprint": "fp-11"
+      },
+      {
+        "id": 12,
+        "messageId": "m-12",
+        "modelId": "model-a",
+        "embedding": "17",
+        "chunkText": "chunk-12",
+        "dimension": 1,
+        "sourceFingerprint": "fp-12"
+      },
+      {
+        "id": 13,
+        "messageId": "m-13",
+        "modelId": "model-a",
+        "embedding": "18",
+        "chunkText": "chunk-13",
+        "dimension": 1,
+        "sourceFingerprint": "fp-13"
+      },
+      {
+        "id": 14,
+        "messageId": "m-14",
+        "modelId": "model-a",
+        "embedding": "19",
+        "chunkText": "chunk-14",
+        "dimension": 1,
+        "sourceFingerprint": "fp-14"
+      },
+      {
+        "id": 15,
+        "messageId": "m-16",
+        "modelId": "model-a",
+        "embedding": "1a",
+        "chunkText": "chunk-15",
+        "dimension": 1,
+        "sourceFingerprint": "fp-15"
+      },
+      {
+        "id": 16,
+        "messageId": "m-20",
+        "modelId": "model-a",
+        "embedding": "1b",
+        "chunkText": "chunk-16",
+        "dimension": 1,
+        "sourceFingerprint": "fp-16"
+      },
+      {
+        "id": 17,
+        "messageId": "m-21",
+        "modelId": "model-a",
+        "embedding": "1c",
+        "chunkText": "chunk-17",
+        "dimension": 1,
+        "sourceFingerprint": "fp-17"
+      },
+      {
+        "id": 18,
+        "messageId": "m-22",
+        "modelId": "model-a",
+        "embedding": "1d",
+        "chunkText": "chunk-18",
+        "dimension": 1,
+        "sourceFingerprint": "fp-18"
+      },
+      {
+        "id": 19,
+        "messageId": "m-23",
+        "modelId": "model-a",
+        "embedding": "1e",
+        "chunkText": "chunk-19",
+        "dimension": 1,
+        "sourceFingerprint": "fp-19"
+      },
+      {
+        "id": 20,
+        "messageId": "m-24",
+        "modelId": "model-a",
+        "embedding": "1f",
+        "chunkText": "chunk-20",
+        "dimension": 1,
+        "sourceFingerprint": "fp-20"
+      },
+      {
+        "id": 21,
+        "messageId": "m-25",
+        "modelId": "model-a",
+        "embedding": "20",
+        "chunkText": "chunk-21",
+        "dimension": 1,
+        "sourceFingerprint": "fp-21"
+      },
+      {
+        "id": 22,
+        "messageId": "m-26",
+        "modelId": "model-a",
+        "embedding": "21",
+        "chunkText": "chunk-22",
+        "dimension": 1,
+        "sourceFingerprint": "fp-22"
+      },
+      {
+        "id": 23,
+        "messageId": "m-27",
+        "modelId": "model-a",
+        "embedding": "22",
+        "chunkText": "chunk-23",
+        "dimension": 1,
+        "sourceFingerprint": "fp-23"
+      },
+      {
+        "id": 24,
+        "messageId": "m-28",
+        "modelId": "model-a",
+        "embedding": "23",
+        "chunkText": "chunk-24",
+        "dimension": 1,
+        "sourceFingerprint": "fp-24"
+      },
+      {
+        "id": 25,
+        "messageId": "m-30",
+        "modelId": "model-a",
+        "embedding": "24",
+        "chunkText": "chunk-25",
+        "dimension": 1,
+        "sourceFingerprint": "fp-25"
+      },
+      {
+        "id": 26,
+        "messageId": "m-31",
+        "modelId": "model-a",
+        "embedding": "25",
+        "chunkText": "chunk-26",
+        "dimension": 1,
+        "sourceFingerprint": "fp-26"
+      },
+      {
+        "id": 27,
+        "messageId": "m-35",
+        "modelId": "model-a",
+        "embedding": "26",
+        "chunkText": "chunk-27",
+        "dimension": 1,
+        "sourceFingerprint": "fp-27"
+      },
+      {
+        "id": 28,
+        "messageId": "resultx",
+        "modelId": "model-a",
+        "embedding": "27",
+        "chunkText": "chunk-28",
+        "dimension": 1,
+        "sourceFingerprint": "fp-28"
+      },
+      {
+        "id": 29,
+        "messageId": "toolx",
+        "modelId": "model-a",
+        "embedding": "28",
+        "chunkText": "chunk-29",
+        "dimension": 1,
+        "sourceFingerprint": "fp-29"
+      },
+      {
+        "id": 30,
+        "messageId": "m-01",
+        "modelId": "model-b",
+        "embedding": "29",
+        "chunkText": "chunk-30",
+        "dimension": 1,
+        "sourceFingerprint": "fp-30"
+      },
+      {
+        "id": 31,
+        "messageId": "m-02",
+        "modelId": "model-b",
+        "embedding": "2a",
+        "chunkText": "chunk-31",
+        "dimension": 1,
+        "sourceFingerprint": "fp-31"
+      },
+      {
+        "id": 32,
+        "messageId": "m-09",
+        "modelId": "model-b",
+        "embedding": "2b",
+        "chunkText": "chunk-32",
+        "dimension": 1,
+        "sourceFingerprint": "fp-32"
+      },
+      {
+        "id": 33,
+        "messageId": "m-10",
+        "modelId": "model-b",
+        "embedding": "2c",
+        "chunkText": "chunk-33",
+        "dimension": 1,
+        "sourceFingerprint": "fp-33"
+      },
+      {
+        "id": 34,
+        "messageId": "m-01",
+        "modelId": "model-c",
+        "embedding": "2d",
+        "chunkText": "chunk-34",
+        "dimension": 1,
+        "sourceFingerprint": "fp-34"
+      },
+      {
+        "id": 35,
+        "messageId": "m-29",
+        "modelId": "model-a",
+        "embedding": "2e",
+        "chunkText": "chunk-35",
+        "dimension": 1,
+        "sourceFingerprint": "fp-35"
+      },
+      {
+        "id": 36,
+        "messageId": "m-18",
+        "modelId": "model-a",
+        "embedding": "2f",
+        "chunkText": "chunk-36",
+        "dimension": 1,
+        "sourceFingerprint": "fp-36"
+      },
+      {
+        "id": 37,
+        "messageId": "m-04",
+        "modelId": "model-b",
+        "embedding": "30",
+        "chunkText": "chunk-37",
+        "dimension": 1,
+        "sourceFingerprint": "fp-37"
+      }
+    ]
+  },
+  "steps": [
+    {
+      "op": "getSearchableConversation",
+      "conversationId": "c-alpha"
+    },
+    {
+      "op": "getSearchableConversation",
+      "conversationId": "c-beta"
+    },
+    {
+      "op": "getSearchableConversation",
+      "conversationId": "c-task"
+    },
+    {
+      "op": "getSearchableConversation",
+      "conversationId": "c-zeta"
+    },
+    {
+      "op": "getSearchableConversation",
+      "conversationId": "nope"
+    },
+    {
+      "op": "getSearchableConversationCount"
+    },
+    {
+      "op": "getSearchableConversationsPageAscending",
+      "offset": 0,
+      "limit": 100
+    },
+    {
+      "op": "getSearchableConversationsPageAscending",
+      "offset": 0,
+      "limit": 2
+    },
+    {
+      "op": "getSearchableConversationsPageAscending",
+      "offset": 2,
+      "limit": 2
+    },
+    {
+      "op": "getSearchableConversationsPageAscending",
+      "offset": 10,
+      "limit": 5
+    },
+    {
+      "op": "getSearchableConversationsPageAscending",
+      "offset": 0,
+      "limit": 0
+    },
+    {
+      "op": "getSearchableConversationsPageDescending",
+      "offset": 0,
+      "limit": 100
+    },
+    {
+      "op": "getSearchableConversationsPageDescending",
+      "offset": 0,
+      "limit": 2
+    },
+    {
+      "op": "getSearchableConversationsPageDescending",
+      "offset": 2,
+      "limit": 2
+    },
+    {
+      "op": "getSearchableConversationsPageDescending",
+      "offset": 10,
+      "limit": 5
+    },
+    {
+      "op": "getSearchableConversationsPageDescending",
+      "offset": 0,
+      "limit": 0
+    }
+  ]
+}

@@ -1,0 +1,21 @@
+op|0|open
+open|ok
+op|1|copy_to
+copy|8|FONTDATA
+op|2|copy_to
+copy|11|PNGDATA-ONE
+op|3|copy_to
+copy|14|{"records":[]}
+op|4|copy_to
+copy|null
+exists|false
+op|5|copy_to
+error|settings.json exceeds the import size limit
+exists|false
+op|6|copy_to
+error|Insufficient storage for <dir>/poor.json: 23 bytes required, 3 available
+exists|false
+op|7|temp_exists
+exists|true
+op|8|close
+close|ok

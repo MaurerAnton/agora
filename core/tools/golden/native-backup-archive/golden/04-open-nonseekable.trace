@@ -1,0 +1,6 @@
+op|0|open
+error|Backup source does not support random access\s download it to local storage and select the local file
+op|1|names
+error|Archive is not open
+op|2|close
+error|Archive is not open

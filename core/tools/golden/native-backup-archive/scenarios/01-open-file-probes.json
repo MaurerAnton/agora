@@ -1,0 +1,97 @@
+{
+  "name": "01-open-file-probes",
+  "archive": "valid-v6.zip",
+  "ops": [
+    {
+      "op": "open",
+      "mode": "file"
+    },
+    {
+      "op": "names"
+    },
+    {
+      "op": "size",
+      "name": "manifest.json"
+    },
+    {
+      "op": "size",
+      "name": "nope.json"
+    },
+    {
+      "op": "has",
+      "name": "conv/tasks.json"
+    },
+    {
+      "op": "has",
+      "name": "nope.json"
+    },
+    {
+      "op": "bytes",
+      "name": "manifest.json"
+    },
+    {
+      "op": "bytes",
+      "name": "media/images/11111111-2222-3333-4444-555555555555.png"
+    },
+    {
+      "op": "bytes",
+      "name": "conversations.json"
+    },
+    {
+      "op": "bytes",
+      "name": "custom_font/font"
+    },
+    {
+      "op": "bytes",
+      "name": "theme.bin"
+    },
+    {
+      "op": "bytes",
+      "name": "missing.json"
+    },
+    {
+      "op": "prefix",
+      "name": "settings.json",
+      "count": 5
+    },
+    {
+      "op": "prefix",
+      "name": "settings.json",
+      "count": 500
+    },
+    {
+      "op": "prefix",
+      "name": "conv/tasks.json",
+      "count": 6
+    },
+    {
+      "op": "prefix",
+      "name": "theme.bin",
+      "count": 5
+    },
+    {
+      "op": "prefix",
+      "name": "media/images/11111111-2222-3333-4444-555555555555.png",
+      "count": 3
+    },
+    {
+      "op": "prefix",
+      "name": "missing.json",
+      "count": 3
+    },
+    {
+      "op": "prefix",
+      "name": "settings.json",
+      "count": -1
+    },
+    {
+      "op": "temp_exists"
+    },
+    {
+      "op": "close"
+    },
+    {
+      "op": "temp_exists"
+    }
+  ]
+}

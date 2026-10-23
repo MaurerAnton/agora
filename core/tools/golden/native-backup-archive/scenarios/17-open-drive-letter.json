@@ -1,0 +1,16 @@
+{
+  "name": "17-open-drive-letter",
+  "archive": "drive-letter.zip",
+  "ops": [
+    {
+      "op": "open",
+      "mode": "file"
+    },
+    {
+      "op": "names"
+    },
+    {
+      "op": "temp_exists"
+    }
+  ]
+}

@@ -1,0 +1,24 @@
+op|0|open
+open|ok
+op|1|stream_open
+stream|theme|opened
+op|2|stream_read
+read|3|hex:000102
+op|3|stream_read
+read|5|hex:7f4d455441
+op|4|stream_read
+read|-1
+op|5|stream_close
+close|theme|ok
+op|6|stream_open
+error|Resource entry must be copied to storage: media/images/11111111-2222-3333-4444-555555555555.png
+op|7|stream_read
+error|Stream not open: res
+op|8|stream_open
+error|Resource entry must be copied to storage: custom_font/font
+op|9|stream_read
+error|Stream not open: missing
+op|10|stream_close
+error|Stream not open: missing
+op|11|close
+close|ok

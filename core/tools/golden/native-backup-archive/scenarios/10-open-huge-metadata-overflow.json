@@ -1,0 +1,16 @@
+{
+  "name": "10-open-huge-metadata-overflow",
+  "archive": "huge-metadata.zip",
+  "ops": [
+    {
+      "op": "open",
+      "mode": "file"
+    },
+    {
+      "op": "names"
+    },
+    {
+      "op": "temp_exists"
+    }
+  ]
+}

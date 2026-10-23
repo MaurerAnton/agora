@@ -1,0 +1,75 @@
+{
+  "name": "25-stream-crc-mismatch",
+  "archive": "crc-mismatch-stream.zip",
+  "ops": [
+    {
+      "op": "open",
+      "mode": "file"
+    },
+    {
+      "op": "stream_open",
+      "key": "good",
+      "name": "conv/tasks.json"
+    },
+    {
+      "op": "stream_read",
+      "key": "good",
+      "count": 6
+    },
+    {
+      "op": "stream_read_to_end",
+      "key": "good"
+    },
+    {
+      "op": "stream_close",
+      "key": "good"
+    },
+    {
+      "op": "stream_open",
+      "key": "bad",
+      "name": "conv/items/bbbbbbbbbbbbbbbb.json"
+    },
+    {
+      "op": "stream_read",
+      "key": "bad",
+      "count": 5
+    },
+    {
+      "op": "stream_read_to_end",
+      "key": "bad"
+    },
+    {
+      "op": "stream_open",
+      "key": "early",
+      "name": "conv/items/bbbbbbbbbbbbbbbb.json"
+    },
+    {
+      "op": "stream_read",
+      "key": "early",
+      "count": 2
+    },
+    {
+      "op": "stream_close",
+      "key": "early"
+    },
+    {
+      "op": "stream_open",
+      "key": "skip",
+      "name": "conv/tasks.json"
+    },
+    {
+      "op": "stream_skip",
+      "key": "skip",
+      "count": 5
+    },
+    {
+      "op": "stream_read",
+      "key": "skip",
+      "count": 100
+    },
+    {
+      "op": "stream_close",
+      "key": "skip"
+    }
+  ]
+}

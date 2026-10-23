@@ -1,0 +1,19 @@
+{
+  "name": "30-preflight-overflow",
+  "archive": "huge-streamed.zip",
+  "ops": [
+    {
+      "op": "open",
+      "mode": "file"
+    },
+    {
+      "op": "preflight",
+      "conversations": true,
+      "settings": false,
+      "version": 6,
+      "dest": "dest",
+      "fontLimit": 1000,
+      "available": 1125899906842624
+    }
+  ]
+}

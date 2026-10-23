@@ -1,0 +1,16 @@
+{
+  "name": "13-open-bad-deflate",
+  "archive": "bad-deflate.zip",
+  "ops": [
+    {
+      "op": "open",
+      "mode": "file"
+    },
+    {
+      "op": "names"
+    },
+    {
+      "op": "temp_exists"
+    }
+  ]
+}

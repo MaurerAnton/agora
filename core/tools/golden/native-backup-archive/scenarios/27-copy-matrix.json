@@ -1,0 +1,58 @@
+{
+  "name": "27-copy-matrix",
+  "archive": "valid-v6.zip",
+  "ops": [
+    {
+      "op": "open",
+      "mode": "file"
+    },
+    {
+      "op": "copy_to",
+      "name": "custom_font/font",
+      "target": "font.bin",
+      "maxBytes": 1125899906842624,
+      "available": 1125899906842624
+    },
+    {
+      "op": "copy_to",
+      "name": "media/images/11111111-2222-3333-4444-555555555555.png",
+      "target": "img.png",
+      "maxBytes": 1125899906842624,
+      "available": 1125899906842624
+    },
+    {
+      "op": "copy_to",
+      "name": "conv/tasks.json",
+      "target": "tasks.json",
+      "maxBytes": 1125899906842624,
+      "available": 1125899906842624
+    },
+    {
+      "op": "copy_to",
+      "name": "missing.bin",
+      "target": "nope.bin",
+      "maxBytes": 1125899906842624,
+      "available": 1125899906842624
+    },
+    {
+      "op": "copy_to",
+      "name": "settings.json",
+      "target": "small.json",
+      "maxBytes": 4,
+      "available": 1125899906842624
+    },
+    {
+      "op": "copy_to",
+      "name": "settings.json",
+      "target": "poor.json",
+      "maxBytes": 1125899906842624,
+      "available": 3
+    },
+    {
+      "op": "temp_exists"
+    },
+    {
+      "op": "close"
+    }
+  ]
+}

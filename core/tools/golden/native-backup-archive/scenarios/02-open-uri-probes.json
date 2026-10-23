@@ -1,0 +1,42 @@
+{
+  "name": "02-open-uri-probes",
+  "archive": "valid-v6.zip",
+  "ops": [
+    {
+      "op": "open",
+      "mode": "uri"
+    },
+    {
+      "op": "names"
+    },
+    {
+      "op": "bytes",
+      "name": "custom_font/font"
+    },
+    {
+      "op": "stream_open",
+      "key": "res",
+      "name": "media/images/11111111-2222-3333-4444-555555555555.png"
+    },
+    {
+      "op": "stream_open",
+      "key": "s",
+      "name": "conv/tasks.json"
+    },
+    {
+      "op": "stream_read",
+      "key": "s",
+      "count": 7
+    },
+    {
+      "op": "stream_close",
+      "key": "s"
+    },
+    {
+      "op": "close"
+    },
+    {
+      "op": "temp_exists"
+    }
+  ]
+}

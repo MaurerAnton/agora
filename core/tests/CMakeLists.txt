@@ -28,6 +28,7 @@ add_executable(agora_core_tests
     message_persistence_guard_parity_test.cpp
     zip_reader_parity_test.cpp
     native_backup_v5_parity_test.cpp
+    native_backup_archive_parity_test.cpp
     gpt_chat_importer_parity_test.cpp
     generation_policies_parity_test.cpp
     generation_streaming_segments_parity_test.cpp
@@ -173,6 +174,7 @@ target_compile_definitions(agora_core_tests PRIVATE
     AGORA_FIXTURE_SHELL_TOOLS_DIR="${CMAKE_CURRENT_SOURCE_DIR}/../tools/golden/shell-tools"
     AGORA_FIXTURE_MEMORY_MANAGER_DIR="${CMAKE_CURRENT_SOURCE_DIR}/../tools/golden/memory-manager"
     AGORA_FIXTURE_SKILL_MANAGER_DIR="${CMAKE_CURRENT_SOURCE_DIR}/../tools/golden/skill-manager"
+    AGORA_FIXTURE_NATIVE_BACKUP_ARCHIVE_DIR="${CMAKE_CURRENT_SOURCE_DIR}/../tools/golden/native-backup-archive"
     AGORA_FIXTURE_EMBEDDING_SELECTOR_DIR="${CMAKE_CURRENT_SOURCE_DIR}/../tools/golden/embedding-selector"
     AGORA_FIXTURE_CONCH_SSE_DIR="${CMAKE_CURRENT_SOURCE_DIR}/../tools/golden/conch-sse"
     AGORA_FIXTURE_CRON_EXPRESSION_DIR="${CMAKE_CURRENT_SOURCE_DIR}/../tools/golden/cron-expression"

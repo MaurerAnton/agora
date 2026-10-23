@@ -1,0 +1,6 @@
+op|0|open
+error|Unsafe ZIP entry path: /abs.txt
+op|1|names
+error|Archive is not open
+op|2|temp_exists
+exists|false

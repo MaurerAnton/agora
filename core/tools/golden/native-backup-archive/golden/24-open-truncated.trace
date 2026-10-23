@@ -1,0 +1,6 @@
+op|0|open
+error|Error reading Zip content from FileChannelImpl
+op|1|names
+error|Archive is not open
+op|2|temp_exists
+exists|false

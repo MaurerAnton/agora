@@ -1,0 +1,19 @@
+{
+  "name": "31-preflight-resource-overflow",
+  "archive": "huge-resources.zip",
+  "ops": [
+    {
+      "op": "open",
+      "mode": "file"
+    },
+    {
+      "op": "preflight",
+      "conversations": true,
+      "settings": false,
+      "version": 6,
+      "dest": "dest",
+      "fontLimit": 1000,
+      "available": 1125899906842624
+    }
+  ]
+}

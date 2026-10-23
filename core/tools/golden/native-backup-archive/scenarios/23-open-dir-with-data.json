@@ -1,0 +1,16 @@
+{
+  "name": "23-open-dir-with-data",
+  "archive": "dir-with-data.zip",
+  "ops": [
+    {
+      "op": "open",
+      "mode": "file"
+    },
+    {
+      "op": "names"
+    },
+    {
+      "op": "temp_exists"
+    }
+  ]
+}

@@ -1,0 +1,32 @@
+{
+  "steps": [
+    {
+      "op": "createBaseline",
+      "file": "b0",
+      "dump": true,
+      "manifest": {
+        "agora_export_version": 6,
+        "incremental_baseline": 1,
+        "categories": [
+          "conversations"
+        ]
+      },
+      "items": [
+        {
+          "id": "c9",
+          "dataChangedAt": 5,
+          "conversation": "{\"id\":\"c9\"}",
+          "runs": [],
+          "messages": [],
+          "loops": [],
+          "mediaEntries": []
+        }
+      ],
+      "media": []
+    },
+    {
+      "op": "openOrNull",
+      "file": "b0"
+    }
+  ]
+}

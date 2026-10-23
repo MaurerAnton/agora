@@ -99,6 +99,8 @@ add_library(agora_core_lib STATIC
     src/token_count.cpp
     src/unicode.cpp
     src/zip_reader.cpp
+    src/zip_writer.cpp
+    src/native_backup_v5.cpp
     src/gpt_chat_importer.cpp
     src/generation_policies.cpp
     src/generation_streaming_segments.cpp

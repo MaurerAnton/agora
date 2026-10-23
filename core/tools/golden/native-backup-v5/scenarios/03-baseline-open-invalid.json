@@ -1,0 +1,280 @@
+{
+  "steps": [
+    {
+      "op": "createBaseline",
+      "file": "wrong-version",
+      "dump": true,
+      "manifest": {
+        "agora_export_version": 5,
+        "incremental_baseline": 1,
+        "categories": [
+          "conversations"
+        ]
+      },
+      "items": [
+        {
+          "id": "c1",
+          "dataChangedAt": 10,
+          "conversation": "{\"id\":\"c1\"}",
+          "runs": [],
+          "messages": [],
+          "loops": [],
+          "mediaEntries": []
+        }
+      ],
+      "media": []
+    },
+    {
+      "op": "openOrNull",
+      "file": "wrong-version"
+    },
+    {
+      "op": "createBaseline",
+      "file": "wrong-revision",
+      "dump": true,
+      "manifest": {
+        "agora_export_version": 6,
+        "incremental_baseline": 2,
+        "categories": [
+          "conversations"
+        ]
+      },
+      "items": [
+        {
+          "id": "c1",
+          "dataChangedAt": 10,
+          "conversation": "{\"id\":\"c1\"}",
+          "runs": [],
+          "messages": [],
+          "loops": [],
+          "mediaEntries": []
+        }
+      ],
+      "media": []
+    },
+    {
+      "op": "openOrNull",
+      "file": "wrong-revision"
+    },
+    {
+      "op": "createBaseline",
+      "file": "wrong-categories",
+      "dump": true,
+      "manifest": {
+        "agora_export_version": 6,
+        "incremental_baseline": 1,
+        "categories": [
+          "settings"
+        ]
+      },
+      "items": [
+        {
+          "id": "c1",
+          "dataChangedAt": 10,
+          "conversation": "{\"id\":\"c1\"}",
+          "runs": [],
+          "messages": [],
+          "loops": [],
+          "mediaEntries": []
+        }
+      ],
+      "media": []
+    },
+    {
+      "op": "openOrNull",
+      "file": "wrong-categories"
+    },
+    {
+      "op": "createBaseline",
+      "file": "duplicate-ids",
+      "dump": true,
+      "manifest": {
+        "agora_export_version": 6,
+        "incremental_baseline": 1,
+        "categories": [
+          "conversations"
+        ]
+      },
+      "items": [
+        {
+          "id": "c1",
+          "dataChangedAt": 10,
+          "conversation": "{\"id\":\"c1\"}",
+          "runs": [],
+          "messages": [],
+          "loops": [],
+          "mediaEntries": []
+        }
+      ],
+      "media": [],
+      "index": [
+        {
+          "id": "c1",
+          "dataChangedAt": 10,
+          "entry": "conv/items/6331.json",
+          "mediaEntries": []
+        },
+        {
+          "id": "c1",
+          "dataChangedAt": 11,
+          "entry": "conv/items/6331.json",
+          "mediaEntries": []
+        }
+      ]
+    },
+    {
+      "op": "openOrNull",
+      "file": "duplicate-ids"
+    },
+    {
+      "op": "createBaseline",
+      "file": "wrong-entry-name",
+      "dump": true,
+      "manifest": {
+        "agora_export_version": 6,
+        "incremental_baseline": 1,
+        "categories": [
+          "conversations"
+        ]
+      },
+      "items": [
+        {
+          "id": "c1",
+          "dataChangedAt": 10,
+          "conversation": "{\"id\":\"c1\"}",
+          "runs": [],
+          "messages": [],
+          "loops": [],
+          "mediaEntries": []
+        }
+      ],
+      "media": [],
+      "index": [
+        {
+          "id": "c1",
+          "dataChangedAt": 10,
+          "entry": "conv/items/wrong.json",
+          "mediaEntries": []
+        }
+      ]
+    },
+    {
+      "op": "openOrNull",
+      "file": "wrong-entry-name"
+    },
+    {
+      "op": "createBaseline",
+      "file": "missing-item",
+      "dump": true,
+      "manifest": {
+        "agora_export_version": 6,
+        "incremental_baseline": 1,
+        "categories": [
+          "conversations"
+        ]
+      },
+      "items": [],
+      "media": [],
+      "index": [
+        {
+          "id": "c1",
+          "dataChangedAt": 10,
+          "entry": "conv/items/6331.json",
+          "mediaEntries": []
+        }
+      ]
+    },
+    {
+      "op": "openOrNull",
+      "file": "missing-item"
+    },
+    {
+      "op": "createBaseline",
+      "file": "missing-media",
+      "dump": true,
+      "manifest": {
+        "agora_export_version": 6,
+        "incremental_baseline": 1,
+        "categories": [
+          "conversations"
+        ]
+      },
+      "items": [
+        {
+          "id": "c1",
+          "dataChangedAt": 10,
+          "conversation": "{\"id\":\"c1\"}",
+          "runs": [],
+          "messages": [],
+          "loops": [],
+          "mediaEntries": [
+            "media/gone.png"
+          ]
+        }
+      ],
+      "media": []
+    },
+    {
+      "op": "openOrNull",
+      "file": "missing-media"
+    },
+    {
+      "op": "createBaseline",
+      "file": "index-not-json",
+      "dump": true,
+      "manifest": {
+        "agora_export_version": 6,
+        "incremental_baseline": 1,
+        "categories": [
+          "conversations"
+        ]
+      },
+      "items": [
+        {
+          "id": "c1",
+          "dataChangedAt": 10,
+          "conversation": "{\"id\":\"c1\"}",
+          "runs": [],
+          "messages": [],
+          "loops": [],
+          "mediaEntries": []
+        }
+      ],
+      "media": [],
+      "indexText": "not json at all"
+    },
+    {
+      "op": "openOrNull",
+      "file": "index-not-json"
+    },
+    {
+      "op": "createBaseline",
+      "file": "manifest-not-json",
+      "dump": true,
+      "manifest": {
+        "agora_export_version": 6,
+        "incremental_baseline": 1,
+        "categories": [
+          "conversations"
+        ]
+      },
+      "items": [
+        {
+          "id": "c1",
+          "dataChangedAt": 10,
+          "conversation": "{\"id\":\"c1\"}",
+          "runs": [],
+          "messages": [],
+          "loops": [],
+          "mediaEntries": []
+        }
+      ],
+      "media": [],
+      "manifestText": "oops"
+    },
+    {
+      "op": "openOrNull",
+      "file": "manifest-not-json"
+    }
+  ]
+}

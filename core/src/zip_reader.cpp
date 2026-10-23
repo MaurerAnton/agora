@@ -48,7 +48,7 @@ std::string hex_value(std::uint32_t value) {
 }
 
 /** java.util.zip.CRC32 (the same CRC-32/ISO-HDLC polynomial). */
-std::uint32_t crc32_of(const std::string& data) {
+std::uint32_t crc32_of(std::string_view data) {
     static const std::array<std::uint32_t, 256> table = [] {
         std::array<std::uint32_t, 256> built{};
         for (std::uint32_t i = 0; i < 256; ++i) {
@@ -334,6 +334,8 @@ std::string inflate_raw(const std::string& input, std::size_t* consumed) {
 
 }  // namespace
 
+std::uint32_t crc32(std::string_view data) { return crc32_of(data); }
+
 Reader::Reader(std::string path) {
     std::ifstream file(path, std::ios::binary);
     if (!file.is_open()) throw ZipException("cannot open archive");
@@ -432,6 +434,189 @@ bool Reader::next_entry(Entry& out) {
     }
     offset_ = offset;
     return false;
+}
+
+void Reader::parse_central_directory() {
+    if (central_parsed_) return;
+    const std::string& archive = archive_;
+    if (archive.size() < 22) throw ZipException("archive too small for EOCD");
+
+    // Find end of central directory record (scan from end backwards)
+    constexpr std::uint32_t kEocdSignature = 0x06054B50;
+    std::size_t eocd_offset = archive.size() - 22;
+    std::size_t max_search = std::min<std::size_t>(archive.size(), 65536 + 22);
+    bool found = false;
+    for (std::size_t i = 0; i < max_search; ++i) {
+        if (eocd_offset + 4 > archive.size()) break;
+        const unsigned char* raw = reinterpret_cast<const unsigned char*>(archive.data()) + eocd_offset;
+        if (read_u32(raw) == kEocdSignature) {
+            found = true;
+            break;
+        }
+        if (eocd_offset == 0) break;
+        --eocd_offset;
+    }
+    if (!found) throw ZipException("end of central directory not found");
+
+    const unsigned char* eocd = reinterpret_cast<const unsigned char*>(archive.data()) + eocd_offset;
+    if (archive.size() - eocd_offset < 22) throw ZipException("unexpected EOF in EOCD");
+    // disk_number = read_u16(eocd + 4);
+    // disk_with_cd = read_u16(eocd + 6);
+    // entries_on_disk = read_u16(eocd + 8);
+    // entries_total = read_u16(eocd + 10);
+    const std::uint16_t cd_entries = read_u16(eocd + 10);
+    const std::uint32_t cd_size = read_u32(eocd + 12);
+    const std::uint32_t cd_offset = read_u32(eocd + 16);
+    // comment_length = read_u16(eocd + 20);
+
+    if (cd_offset + cd_size > archive.size()) throw ZipException("central directory beyond archive");
+
+    constexpr std::uint32_t kCentralSignature = 0x02014B50;
+    std::size_t offset = cd_offset;
+    central_entries_.reserve(cd_entries);
+
+    for (std::uint16_t i = 0; i < cd_entries; ++i) {
+        if (archive.size() - offset < 46) throw ZipException("unexpected EOF in central header");
+        const unsigned char* raw = reinterpret_cast<const unsigned char*>(archive.data()) + offset;
+        if (read_u32(raw) != kCentralSignature) throw ZipException("central directory signature mismatch");
+        // version_made_by = read_u16(raw + 4);
+        // version_needed = read_u16(raw + 6);
+        // flags = read_u16(raw + 8);
+        const std::uint16_t method = read_u16(raw + 10);
+        // mod_time = read_u16(raw + 12);
+        // mod_date = read_u16(raw + 14);
+        const std::uint32_t crc = read_u32(raw + 16);
+        const std::uint32_t compressed_size = read_u32(raw + 20);
+        const std::uint32_t size = read_u32(raw + 24);
+        const std::uint16_t name_length = read_u16(raw + 28);
+        const std::uint16_t extra_length = read_u16(raw + 30);
+        const std::uint16_t comment_length = read_u16(raw + 32);
+        // disk_number_start = read_u16(raw + 34);
+        // internal_attrs = read_u16(raw + 36);
+        // external_attrs = read_u32(raw + 38);
+        const std::uint32_t local_offset = read_u32(raw + 42);
+        offset += 46;
+        if (archive.size() - offset < static_cast<std::size_t>(name_length) + extra_length + comment_length) {
+            throw ZipException("unexpected EOF in central header fields");
+        }
+        std::string name(archive, offset, name_length);
+        offset += name_length + extra_length + comment_length;
+
+        CentralEntry ce;
+        ce.name = std::move(name);
+        ce.method = static_cast<int>(method);
+        ce.size = static_cast<std::int64_t>(size);
+        ce.compressed_size = static_cast<std::int64_t>(compressed_size);
+        ce.crc32 = crc;
+        ce.local_offset = static_cast<std::uint64_t>(local_offset);
+        central_entries_.push_back(std::move(ce));
+    }
+    central_parsed_ = true;
+}
+
+std::vector<CentralEntry> Reader::central_entries() {
+    parse_central_directory();
+    return central_entries_;
+}
+
+std::string Reader::read_at(std::uint64_t local_offset, std::int64_t expected_size,
+                            std::uint32_t expected_crc) {
+    if (local_offset > archive_.size()) throw ZipException("local offset beyond archive");
+    std::size_t offset = static_cast<std::size_t>(local_offset);
+    const std::string& archive = archive_;
+    if (archive.size() - offset < 30) throw ZipException("unexpected EOF at local header");
+    const unsigned char* raw = reinterpret_cast<const unsigned char*>(archive.data()) + offset;
+    if (read_u32(raw) != kLocalSignature) throw ZipException("local signature mismatch at offset");
+    const std::uint16_t flags = read_u16(raw + 6);
+    const std::uint16_t method = read_u16(raw + 8);
+    // local crc/size/compressed_size may be 0 if data descriptor is used; we trust central values
+    const std::uint16_t name_length = read_u16(raw + 26);
+    const std::uint16_t extra_length = read_u16(raw + 28);
+    offset += 30 + name_length + extra_length;
+
+    const bool has_descriptor = (flags & 0x08) != 0;
+    if (has_descriptor && method != 8) {
+        throw ZipException("only DEFLATED entries can have EXT descriptor");
+    }
+    if (method != 0 && method != 8) throw ZipException("invalid compression method");
+
+    std::string content;
+    if (method == 0) {
+        if (archive.size() - offset < static_cast<std::size_t>(expected_size)) {
+            throw ZipException("unexpected EOF in stored entry");
+        }
+        content = archive.substr(offset, static_cast<std::size_t>(expected_size));
+    } else {
+        std::size_t consumed = 0;
+        content = inflate_raw(archive.substr(offset), &consumed);
+    }
+
+    const std::uint32_t computed = crc32_of(content);
+    if (computed != expected_crc) {
+        throw ZipException("invalid entry CRC (expected 0x" + hex_value(expected_crc) +
+                            " but got 0x" + hex_value(computed) + ")");
+    }
+    if (static_cast<std::int64_t>(content.size()) != expected_size) {
+        throw ZipException("invalid entry size (expected " + std::to_string(expected_size) +
+                            " but got " + std::to_string(content.size()) + " bytes)");
+    }
+    return content;
+}
+
+std::string Reader::read_at_unchecked(std::uint64_t local_offset, std::int64_t expected_size) {
+    if (local_offset > archive_.size()) throw ZipException("local offset beyond archive");
+    std::size_t offset = static_cast<std::size_t>(local_offset);
+    const std::string& archive = archive_;
+    if (archive.size() - offset < 30) throw ZipException("unexpected EOF at local header");
+    const unsigned char* raw = reinterpret_cast<const unsigned char*>(archive.data()) + offset;
+    if (read_u32(raw) != kLocalSignature) throw ZipException("local signature mismatch at offset");
+    const std::uint16_t flags = read_u16(raw + 6);
+    const std::uint16_t method = read_u16(raw + 8);
+    const std::uint16_t name_length = read_u16(raw + 26);
+    const std::uint16_t extra_length = read_u16(raw + 28);
+    offset += 30 + name_length + extra_length;
+
+    const bool has_descriptor = (flags & 0x08) != 0;
+    if (has_descriptor && method != 8) {
+        throw ZipException("only DEFLATED entries can have EXT descriptor");
+    }
+    if (method != 0 && method != 8) throw ZipException("invalid compression method");
+
+    if (method == 0) {
+        if (archive.size() - offset < static_cast<std::size_t>(expected_size)) {
+            throw ZipException("unexpected EOF in stored entry");
+        }
+        return archive.substr(offset, static_cast<std::size_t>(expected_size));
+    }
+    std::size_t consumed = 0;
+    return inflate_raw(archive.substr(offset), &consumed);
+}
+
+std::string Reader::raw_at(std::uint64_t local_offset, std::int64_t compressed_size) {
+    if (local_offset > archive_.size()) throw ZipException("local offset beyond archive");
+    std::size_t offset = static_cast<std::size_t>(local_offset);
+    const std::string& archive = archive_;
+    if (archive.size() - offset < 30) throw ZipException("unexpected EOF at local header");
+    const unsigned char* raw = reinterpret_cast<const unsigned char*>(archive.data()) + offset;
+    if (read_u32(raw) != kLocalSignature) throw ZipException("local signature mismatch at offset");
+    const std::uint16_t name_length = read_u16(raw + 26);
+    const std::uint16_t extra_length = read_u16(raw + 28);
+    offset += 30 + name_length + extra_length;
+    if (compressed_size < 0 ||
+        archive.size() - offset < static_cast<std::size_t>(compressed_size)) {
+        throw ZipException("unexpected EOF in raw entry");
+    }
+    return archive.substr(offset, static_cast<std::size_t>(compressed_size));
+}
+
+std::string Reader::read_named(const std::string& name) {
+    parse_central_directory();
+    for (const auto& ce : central_entries_) {
+        if (ce.name == name) {
+            return read_at(ce.local_offset, ce.size, ce.crc32);
+        }
+    }
+    throw ZipException("entry not found: " + name);
 }
 
 }  // namespace agora::core::zip

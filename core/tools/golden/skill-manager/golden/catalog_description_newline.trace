@@ -1,0 +1,3 @@
+name|catalog_description_newline
+mode|catalog
+catalog|<available_skills>\nUse the skill file tools to read a relevant skill before following it. Only names and descriptions are preloaded.\n- guide.md: line one   line two\n</available_skills>

@@ -1,0 +1,3 @@
+name|catalog_with_files
+mode|catalog
+catalog|<available_skills>\nUse the skill file tools to read a relevant skill before following it. Only names and descriptions are preloaded.\n- guide.md: Guide for agents\n- notes.md\n</available_skills>

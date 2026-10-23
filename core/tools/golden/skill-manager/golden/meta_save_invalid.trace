@@ -1,0 +1,3 @@
+name|meta_save_invalid
+mode|meta_save
+error|Invalid metadata JSON

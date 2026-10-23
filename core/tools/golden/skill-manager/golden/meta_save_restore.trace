@@ -1,0 +1,3 @@
+name|meta_save_restore
+mode|meta_save
+json|{\n    "guide.md": "Guide for agents",\n    "notes.md": ""\n}

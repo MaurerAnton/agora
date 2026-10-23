@@ -1,0 +1,5 @@
+{
+  "name": "meta_save_invalid",
+  "mode": "meta_save",
+  "meta_json": "not json"
+}

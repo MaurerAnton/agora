@@ -1,0 +1,3 @@
+name|edit_patch_multiple
+mode|edit
+error|old_string matches 2 times in guide.md\s it must be unique

@@ -1,0 +1,6 @@
+{
+  "name": "read_existing",
+  "mode": "read",
+  "file_name": "guide.md",
+  "setup_content": "Hello world"
+}

@@ -1,0 +1,8 @@
+{
+  "name": "list_filters_non_md",
+  "mode": "list",
+  "file_name": "keep.md",
+  "setup_content": "keep",
+  "setup_raw_name": "notes.txt",
+  "setup_raw_content": "not a skill"
+}

@@ -1,0 +1,7 @@
+{
+  "name": "edit_rename",
+  "mode": "edit",
+  "file_name": "old.md",
+  "setup_content": "Original",
+  "new_name": "renamed.md"
+}

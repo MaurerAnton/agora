@@ -1,0 +1,7 @@
+{
+  "name": "description_get_existing",
+  "mode": "description_get",
+  "file_name": "guide.md",
+  "setup_content": "# Guide",
+  "setup_description": "Guide for agents"
+}

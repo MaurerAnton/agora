@@ -59,8 +59,11 @@ already-pinned core `zip_reader` and the importers consume.
   bytes. Every archive the port produces is read back by the pinned `zip_reader` in the parity
   test, so the writer is exercised as a real archive producer, not a byte mock.
 * **`copyRaw` carries the compressed stream untouched.** The port reads the source entry's raw
-  bytes from its local header and re-emits them with the recorded metadata (`put_raw_entry`), the
-  same model as `addRawArchiveEntry`; it never recompresses a copied entry.
+  bytes from its local header and re-emits them with the recorded metadata (`put_raw_entry`):
+  name, method, CRC, compressed size and uncompressed size plus the exact compressed bytes. The
+  platform-only fields of `ZipArchiveEntry` (modification time, extra field, comment) are not
+  carried — neither the app's importers nor the archive dumps read them, and the Kotlin driver
+  never sets them, so they carry no app behaviour.
 * **Damaged baselines are fixtures, not logic.** `corruptEntry` flips the stored CRC field in
   both headers; the driver emits that archive with `"dump": false`, because its bytes are the
   test's own construction. What the module does with it (refuse reuse) is what the trace pins.

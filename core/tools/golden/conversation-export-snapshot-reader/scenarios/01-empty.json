@@ -1,0 +1,8 @@
+{
+  "seedSql": [],
+  "steps": [
+    {
+      "op": "readSnapshot"
+    }
+  ]
+}

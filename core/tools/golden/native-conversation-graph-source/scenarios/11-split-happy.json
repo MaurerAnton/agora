@@ -1,0 +1,17 @@
+{
+  "version": 5,
+  "entries": {
+    "conv/index.json": "{\"conversations\":[{\"id\":\"c1\",\"dataChangedAt\":7,\"entry\":\"conv/items/6331.json\"},{\"id\":\"c2\",\"dataChangedAt\":9,\"entry\":\"conv/items/6332.json\"}]}",
+    "conv/items/6331.json": "{\"conversations\":[{\"id\":\"c1\",\"title\":\"t\",\"lastUpdated\":1,\"dataChangedAt\":7,\"conversationSettings\":{\"temperature\":0.7,\"topP\":null,\"maxTokens\":512}}],\"runs\":[{\"id\":\"r1\",\"conversationId\":\"c1\",\"currentPass\":0}],\"messages\":[{\"id\":\"m1\",\"conversationId\":\"c1\",\"text\":\"Quote \\\\\\\" backslash \\\\\\\\ slash \\\\/ newline \\\\n tab \\\\t cafe é 😀\",\"tokenCount\":12,\"duration\":10000000000.0,\"ratio\":0.7,\"sci\":100000.0,\"huge\":99999999999999999999,\"negZero\":-0.0,\"small\":0.0001,\"frac\":123.456,\"floatOne\":1.0,\"rawDouble\":10000000000.0,\"unknownInside\":{\"deep\":[true,null,\"x\"]}}],\"loops\":[{\"conversationId\":\"c1\",\"intervalMs\":60000,\"prompt\":null}],\"tasks\":[{\"id\":\"ignored\",\"name\":\"dropped\"}],\"extra\":[[1,2],{\"skip\":[true,false]},\"stray\"],\"numbers\":{\"zero\":0,\"negZero\":0,\"seven\":-7,\"floatOne\":1.0,\"temp\":0.7,\"sci\":100000.0,\"big\":99999999999999999999,\"small\":0.0001,\"frac\":123.456,\"e10\":10000000000.0},\"conversationSettings\":{\"temperature\":0.7,\"topP\":null,\"maxTokens\":512},\"nested\":{\"deep\":[1,[2,[3,{\"leaf\":\"value\"}]]]}}",
+    "conv/items/6332.json": "{\"conversations\":[{\"id\":\"c2\",\"title\":\"t\",\"lastUpdated\":1,\"dataChangedAt\":9}],\"runs\":[],\"messages\":[{\"id\":\"m2\",\"conversationId\":\"c2\",\"text\":\"second\"}],\"loops\":[]}",
+    "conv/tasks.json": "{\"tasks\":[{\"id\":\"t1\",\"name\":\"Daily\"}],\"padding\":{\"ignored\":[1,2]}}"
+  },
+  "steps": [
+    {
+      "op": "open"
+    },
+    {
+      "op": "open-partial"
+    }
+  ]
+}

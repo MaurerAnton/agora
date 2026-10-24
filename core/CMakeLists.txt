@@ -72,6 +72,8 @@ add_library(agora_core_lib STATIC
     src/run_ui_projection.cpp
     src/portable_settings_archive.cpp
     src/data_exporter.cpp
+    src/android_json.cpp
+    src/native_conversation_graph_source.cpp
     src/run_branch_selection.cpp
     src/run_recovery.cpp
     src/conversation_runtime.cpp

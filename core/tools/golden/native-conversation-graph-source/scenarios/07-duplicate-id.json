@@ -1,0 +1,11 @@
+{
+  "version": 5,
+  "entries": {
+    "conv/index.json": "{\"conversations\":[{\"id\":\"c1\",\"dataChangedAt\":1,\"entry\":\"conv/items/6331.json\"},{\"id\":\"c1\",\"dataChangedAt\":2,\"entry\":\"conv/items/633178.json\"}]}"
+  },
+  "steps": [
+    {
+      "op": "open"
+    }
+  ]
+}

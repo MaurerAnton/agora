@@ -1,0 +1,1 @@
+{"steps":[{"op":"open","result":{"error":{"type":"IllegalStateException","message":"Expected BEGIN_OBJECT but was BEGIN_ARRAY"}},"cache":[]}]}

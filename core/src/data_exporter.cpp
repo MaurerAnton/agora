@@ -266,6 +266,117 @@ inline constexpr std::string_view kMemoryMetaEntry = "memories/memory_db/memory_
 inline constexpr std::string_view kSkillDbPrefix = "memories/skill_db/";
 inline constexpr std::string_view kSkillMetaEntry = "memories/skill_db/skill_meta.json";
 
+/** Kotlin Constants.PROVIDER_GOOGLE — ApiKeyEntry's default provider. */
+inline constexpr std::string_view kProviderGoogle = "Google";
+
+/** Writes a kotlinx map<string, string> object in insertion order. */
+void write_string_map(std::string& out, std::string_view key,
+                      const native_backup::StringMap& map, bool& first) {
+    if (map.empty()) return;
+    if (!first) out += ',';
+    out += '"';
+    json::escape_to(out, key);
+    out += "\":{";
+    bool first_entry = true;
+    for (const auto& [map_key, map_value] : map) {
+        if (!first_entry) out += ',';
+        first_entry = false;
+        out += '"';
+        json::escape_to(out, map_key);
+        out += "\":\"";
+        json::escape_to(out, map_value);
+        out += '"';
+    }
+    out += '}';
+    first = false;
+}
+
+/**
+ * kotlinx encoding of NativeBackupSecrets with encodeDefaults = false: every field has an empty
+ * default, so only non-empty members appear, in declaration order.
+ */
+std::string encode_native_backup_secrets(const native_backup::NativeBackupSecrets& secrets) {
+    std::string out = "{";
+    bool first = true;
+    if (!secrets.api_keys.empty()) {
+        if (!first) out += ',';
+        out += "\"apiKeys\":[";
+        for (size_t i = 0; i < secrets.api_keys.size(); ++i) {
+            if (i) out += ',';
+            const auto& entry = secrets.api_keys[i];
+            std::string item = "{";
+            bool item_first = true;
+            write_string_member(item, "id", entry.id, item_first);
+            write_string_member(item, "name", entry.name, item_first);
+            write_string_member(item, "key", entry.key, item_first);
+            if (entry.provider != kProviderGoogle) {
+                write_string_member(item, "provider", entry.provider, item_first);
+            }
+            item += "}";
+            out += item;
+        }
+        out += ']';
+        first = false;
+    }
+    write_string_map(out, "activeApiKeyIds", secrets.active_api_key_ids, first);
+    write_string_map(out, "webSearchApiKeys", secrets.web_search_api_keys, first);
+    if (!secrets.proxy_password.empty()) {
+        write_string_member(out, "proxyPassword", secrets.proxy_password, first);
+    }
+    if (!secrets.shell_devices.empty()) {
+        if (!first) out += ',';
+        out += "\"shellDevices\":{";
+        bool first_entry = true;
+        for (const auto& [device_id, device_secrets] : secrets.shell_devices) {
+            if (!first_entry) out += ',';
+            first_entry = false;
+            out += '"';
+            json::escape_to(out, device_id);
+            out += "\":{";
+            bool item_first = true;
+            if (!device_secrets.api_key.empty()) {
+                write_string_member(out, "apiKey", device_secrets.api_key, item_first);
+            }
+            if (!device_secrets.ssh_password.empty()) {
+                // sshPassword comes after apiKey; item_first tracks the inner object only.
+                write_string_member(out, "sshPassword", device_secrets.ssh_password, item_first);
+            }
+            out += '}';
+        }
+        out += '}';
+        first = false;
+    }
+    write_string_map(out, "shellApiKeys", secrets.shell_api_keys, first);
+    write_string_map(out, "embeddingApiKeys", secrets.embedding_api_keys, first);
+    if (!secrets.mcp_headers.empty()) {
+        if (!first) out += ',';
+        out += "\"mcpHeaders\":{";
+        bool first_entry = true;
+        for (const auto& [server_id, headers] : secrets.mcp_headers) {
+            if (!first_entry) out += ',';
+            first_entry = false;
+            out += '"';
+            json::escape_to(out, server_id);
+            out += "\":{";
+            bool header_first = true;
+            for (const auto& [header_name, header_value] : headers) {
+                if (!header_first) out += ',';
+                header_first = false;
+                out += '"';
+                json::escape_to(out, header_name);
+                out += "\":\"";
+                json::escape_to(out, header_value);
+                out += '"';
+            }
+            out += '}';
+        }
+        out += '}';
+        first = false;
+    }
+    out += "}";
+    return out;
+}
+
 /** Encodes ConversationSettings (export_extra_settings). */
 std::string encode_conversation_settings(const export_extra_settings::ConversationSettings& s) {
     std::string out = "{";
@@ -311,16 +422,178 @@ conversation_export_snapshot::LoopEntity sanitize_imported_loop(
     return out;
 }
 
+/**
+ * Strict kotlinx decoder for List<SelectedAttachment> (DataExporter's default Json — unknown
+ * keys, wrong types and missing required fields all throw, which the caller maps to nullopt the
+ * same way Kotlin's runCatching.getOrNull() does). localId defaults to a fresh UUID.
+ */
+std::optional<backup::SelectedAttachment> decode_selected_attachment(const json::Value& v,
+                                                                     const Platform& platform) {
+    if (v.kind != json::Kind::Object) return std::nullopt;
+    backup::SelectedAttachment a;
+    std::optional<std::string> uri, type;
+    bool local_id_seen = false;
+    std::vector<std::string> known = {
+        "localId", "uri", "type", "frameCount", "sliceIntervalMs", "pageCount",
+        "videoDurationMs", "fileName", "mimeType", "fileSize", "pixelWidth", "pixelHeight",
+        "processedFrames", "selectedPages", "preRenderedPaths", "localPath", "storage",
+        "sandboxPath", "importState", "preparedText", "unavailable",
+    };
+    try {
+        for (const auto& member : v.members) {
+            if (std::find(known.begin(), known.end(), member.key) == known.end()) {
+                return std::nullopt;  // kotlinx: unknown key throws
+            }
+            const json::Value& value = member.value;
+            auto str = [&](std::optional<std::string>& out) -> bool {
+                if (value.kind == json::Kind::String) { out = value.text; return true; }
+                if (value.kind == json::Kind::Literal && value.text == "null") return true;
+                return false;
+            };
+            auto opt_int = [&](std::optional<int>& out) -> bool {
+                if (value.kind == json::Kind::Literal && value.text == "null") return true;
+                if (value.kind != json::Kind::Literal) return false;
+                size_t pos = 0;
+                int parsed = std::stoi(value.text, &pos);
+                if (pos != value.text.size()) return false;
+                out = parsed;
+                return true;
+            };
+            auto opt_long = [&](std::optional<std::int64_t>& out) -> bool {
+                if (value.kind == json::Kind::Literal && value.text == "null") return true;
+                if (value.kind != json::Kind::Literal) return false;
+                size_t pos = 0;
+                long long parsed = std::stoll(value.text, &pos);
+                if (pos != value.text.size()) return false;
+                out = parsed;
+                return true;
+            };
+            auto string_list = [&](std::optional<std::vector<std::string>>& out) -> bool {
+                if (value.kind == json::Kind::Literal && value.text == "null") return true;
+                if (value.kind != json::Kind::Array) return false;
+                std::vector<std::string> list;
+                for (const auto& e : value.elements) {
+                    if (e.kind != json::Kind::String) return false;
+                    list.push_back(e.text);
+                }
+                out = list;
+                return true;
+            };
+            bool ok = true;
+            if (member.key == "localId") {
+                // Non-nullable String: only a JSON string decodes; explicit null/errors throw.
+                if (value.kind != json::Kind::String) return std::nullopt;
+                a.local_id = value.text;
+                local_id_seen = true;
+            }
+            else if (member.key == "uri") ok = str(uri);
+            else if (member.key == "type") ok = str(type);
+            else if (member.key == "frameCount") ok = opt_int(a.frame_count);
+            else if (member.key == "sliceIntervalMs") ok = opt_long(a.slice_interval_ms);
+            else if (member.key == "pageCount") ok = opt_int(a.page_count);
+            else if (member.key == "videoDurationMs") ok = opt_long(a.video_duration_ms);
+            else if (member.key == "fileName") ok = str(a.file_name);
+            else if (member.key == "mimeType") ok = str(a.mime_type);
+            else if (member.key == "fileSize") ok = opt_long(a.file_size);
+            else if (member.key == "pixelWidth") ok = opt_int(a.pixel_width);
+            else if (member.key == "pixelHeight") ok = opt_int(a.pixel_height);
+            else if (member.key == "processedFrames") ok = string_list(a.processed_frames);
+            else if (member.key == "selectedPages") {
+                if (value.kind == json::Kind::Literal && value.text == "null") ok = true;
+                else if (value.kind != json::Kind::Array) ok = false;
+                else {
+                    std::vector<int> pages;
+                    for (const auto& e : value.elements) {
+                        if (e.kind != json::Kind::Literal) { ok = false; break; }
+                        pages.push_back(std::stoi(e.text));
+                    }
+                    if (ok) a.selected_pages = pages;
+                }
+            }
+            else if (member.key == "preRenderedPaths") ok = string_list(a.pre_rendered_paths);
+            else if (member.key == "localPath") ok = str(a.local_path);
+            else if (member.key == "storage") {
+                std::optional<std::string> s; ok = str(s);
+                if (!ok || !s.has_value()) return std::nullopt;  // null -> kotlinx error
+                if (*s == "app_private") a.storage = backup::AttachmentStorage::app_private;
+                else if (*s == "local_sandbox_pending") a.storage = backup::AttachmentStorage::local_sandbox_pending;
+                else if (*s == "local_sandbox_runtime") a.storage = backup::AttachmentStorage::local_sandbox_runtime;
+                else return std::nullopt;
+            }
+            else if (member.key == "sandboxPath") ok = str(a.sandbox_path);
+            else if (member.key == "importState") {
+                std::optional<std::string> s; ok = str(s);
+                if (!ok || !s.has_value()) return std::nullopt;  // null -> kotlinx error
+                if (*s == "processing") a.import_state = backup::AttachmentImportState::processing;
+                else if (*s == "ready") a.import_state = backup::AttachmentImportState::ready;
+                else if (*s == "failed") a.import_state = backup::AttachmentImportState::failed;
+                else return std::nullopt;
+            }
+            else if (member.key == "preparedText") ok = str(a.prepared_text);
+            else if (member.key == "unavailable") {
+                if (value.kind == json::Kind::Literal &&
+                    (value.text == "true" || value.text == "false")) {
+                    a.unavailable = value.text == "true";
+                } else if (value.kind == json::Kind::Literal && value.text == "null") {
+                    ok = false;
+                } else {
+                    ok = false;
+                }
+            }
+            if (!ok) return std::nullopt;
+        }
+    } catch (const std::exception&) {
+        return std::nullopt;
+    }
+    if (!uri.has_value() || !type.has_value()) {
+        return std::nullopt;  // uri/type are required (missing -> kotlinx decode error)
+    }
+    if (!local_id_seen) {
+        a.local_id = platform.new_uuid();  // Kotlin: `= UUID.randomUUID().toString()` default
+    }
+    a.uri = *uri;
+    a.type = *type;
+    return a;
+}
+
+std::optional<std::vector<backup::SelectedAttachment>> decode_selected_attachments(
+    std::string_view raw, const Platform& platform) {
+    const json::ParseResult parsed = json::parse(raw);
+    if (!parsed.value || parsed.value->kind != json::Kind::Array) return std::nullopt;
+    std::vector<backup::SelectedAttachment> out;
+    for (const auto& element : parsed.value->elements) {
+        auto item = decode_selected_attachment(element, platform);
+        if (!item) return std::nullopt;
+        out.push_back(*item);
+    }
+    return out;
+}
+
+/** kotlinx List<SelectedAttachment> encoding (canonical). */
+std::string encode_selected_attachments(const std::vector<backup::SelectedAttachment>& list) {
+    std::string out = "[";
+    for (size_t i = 0; i < list.size(); ++i) {
+        if (i) out += ',';
+        out += backup::encode_selected_attachment(list[i]);
+    }
+    out += "]";
+    return out;
+}
+
 /** Rewrites a conversation's draftAttachments JSON for export. */
 std::optional<std::string> rewrite_draft_attachments(
     const std::optional<std::string>& raw,
+    const Platform& platform,
     const std::function<std::optional<std::string>(std::string_view)>& archive_entry,
     int& missing_resource_count) {
     if (!raw) return std::nullopt;
-    // TODO: Properly decode SelectedAttachment and rewrite using NativeBackupMediaPolicy
-    // For now, return raw (no rewrite) - this matches the behavior when JSON is invalid
-    // since decode_message_segments returns nullopt for non-MessageSegment JSON
-    return *raw;
+    auto attachments = decode_selected_attachments(*raw, platform);
+    if (!attachments) return std::nullopt;  // decode failed: Kotlin keeps the original value
+    auto rewritten = backup::NativeBackupMediaPolicy::rewrite_draft_attachments_for_export(
+        *attachments, archive_entry,
+        [&missing_resource_count]() { ++missing_resource_count; });
+    if (rewritten.empty()) return std::nullopt;  // empty: Kotlin falls back to the original
+    return encode_selected_attachments(rewritten);
 }
 
 /** Rewrites attachmentMeta JSON for export. */
@@ -343,7 +616,12 @@ std::vector<std::string> extract_tool_image_paths(const std::optional<std::strin
     return paths;
 }
 
-/** Encodes ExportChatEntity JSON. */
+/**
+ * Encodes ExportChatEntity JSON. Field order and defaults match the Kotlin declaration:
+ * id, title, lastUpdated, dataChangedAt, isPinned, selectedBranchesJson, systemPromptId,
+ * modelId, taskId, origin, graduated, selectedRunBranchesJson, draftText, draftAttachments,
+ * conversationSettings (encodeDefaults = false).
+ */
 std::string encode_export_chat_entity(
     const conversation_export_snapshot::ChatEntity& conv,
     const std::optional<export_extra_settings::ConversationSettings>& conv_settings,
@@ -353,20 +631,23 @@ std::string encode_export_chat_entity(
     write_string_member(out, "id", conv.id, first);
     write_string_member(out, "title", conv.title, first);
     write_optional_int_member(out, "lastUpdated", std::make_optional(conv.last_updated), first);
-    write_optional_int_member(out, "dataChangedAt", std::make_optional(conv.data_changed_at), first);
+    // dataChangedAt defaults to 0 and is omitted there (encodeDefaults = false).
+    if (conv.data_changed_at != 0) {
+        write_optional_int_member(out, "dataChangedAt", std::make_optional(conv.data_changed_at),
+                                  first);
+    }
+    if (conv.is_pinned) write_optional_bool_member(out, "isPinned", std::make_optional(true), first);
     write_optional_string_member(out, "selectedBranchesJson", conv.selected_branches_json, first);
     write_optional_string_member(out, "systemPromptId", conv.system_prompt_id, first);
     write_optional_string_member(out, "modelId", conv.model_id, first);
     write_optional_string_member(out, "taskId", conv.task_id, first);
     if (conv.origin != "user") write_string_member(out, "origin", conv.origin, first);
     if (conv.graduated) write_optional_bool_member(out, "graduated", std::make_optional(true), first);
+    write_optional_string_member(out, "selectedRunBranchesJson", conv.selected_run_branches_json, first);
     if (!conv.draft_text.empty()) write_string_member(out, "draftText", conv.draft_text, first);
     if (draft_attachments.has_value()) {
         write_string_member(out, "draftAttachments", *draft_attachments, first);
     }
-    write_optional_string_member(out, "selectedRunBranchesJson", conv.selected_run_branches_json, first);
-    if (conv.has_unread_generation) write_optional_bool_member(out, "hasUnreadGeneration", std::make_optional(true), first);
-    if (conv.is_pinned) write_optional_bool_member(out, "isPinned", std::make_optional(true), first);
     if (conv_settings.has_value() && !conv_settings->is_all_null()) {
         if (!first) out += ',';
         out += "\"conversationSettings\":";
@@ -377,7 +658,11 @@ std::string encode_export_chat_entity(
     return out;
 }
 
-/** Encodes ExportRunEntity JSON. */
+/**
+ * Encodes ExportRunEntity JSON: id, conversationId, parentRunId, status, startedAt,
+ * lastCheckpointAt, stopRequestedAt, endedAt, endReason, currentPass, legacyAmbiguous.
+ * status/startedAt/lastCheckpointAt have no default and are always encoded.
+ */
 std::string encode_export_run_entity(
     const conversation_export_snapshot::RunEntity& run) {
     std::string out = "{";
@@ -385,34 +670,31 @@ std::string encode_export_run_entity(
     write_string_member(out, "id", run.id, first);
     write_string_member(out, "conversationId", run.conversation_id, first);
     write_optional_string_member(out, "parentRunId", run.parent_run_id, first);
-    if (run.status != conversation_runtime::RunStatus::Active) {
-        write_string_member(out, "status", 
-            run.status == conversation_runtime::RunStatus::Stopping ? "STOPPING" :
-            run.status == conversation_runtime::RunStatus::Completed ? "COMPLETED" :
-            run.status == conversation_runtime::RunStatus::Stopped ? "STOPPED" : "FAILED", first);
-    }
-    if (run.active_slot.has_value()) {
-        write_optional_string_member(out, "activeSlot", 
-            std::make_optional(std::to_string(*run.active_slot)), first);
-    }
+    write_string_member(out, "status",
+        run.status == conversation_runtime::RunStatus::Active ? "ACTIVE" :
+        run.status == conversation_runtime::RunStatus::Stopping ? "STOPPING" :
+        run.status == conversation_runtime::RunStatus::Completed ? "COMPLETED" :
+        run.status == conversation_runtime::RunStatus::Stopped ? "STOPPED" : "FAILED", first);
     write_optional_int_member(out, "startedAt", std::make_optional(run.started_at), first);
     write_optional_int_member(out, "lastCheckpointAt", std::make_optional(run.last_checkpoint_at), first);
     write_optional_int_member(out, "stopRequestedAt", run.stop_requested_at, first);
     write_optional_int_member(out, "endedAt", run.ended_at, first);
-    if (run.end_reason.has_value()) {
-        write_optional_string_member(out, "endReason", std::make_optional(
-            *run.end_reason == conversation_runtime::RunEndReason::ModelCompleted ? "MODEL_COMPLETED" :
-            *run.end_reason == conversation_runtime::RunEndReason::UserStopped ? "USER_STOPPED" :
-            *run.end_reason == conversation_runtime::RunEndReason::ProcessRecovered ? "PROCESS_RECOVERED" :
-            "FAILED"), first);
-    }
+    write_optional_string_member(out, "endReason", run.end_reason ? std::make_optional(
+        *run.end_reason == conversation_runtime::RunEndReason::ModelCompleted ? "MODEL_COMPLETED" :
+        *run.end_reason == conversation_runtime::RunEndReason::UserStopped ? "USER_STOPPED" :
+        *run.end_reason == conversation_runtime::RunEndReason::ProcessRecovered ? "PROCESS_RECOVERED" :
+        "FAILED") : std::nullopt, first);
     if (run.current_pass != 0) write_optional_int_member(out, "currentPass", std::make_optional(run.current_pass), first);
     if (run.legacy_ambiguous) write_optional_bool_member(out, "legacyAmbiguous", std::make_optional(true), first);
     out += "}";
     return out;
 }
 
-/** Encodes ExportMessageEntity JSON. */
+/**
+ * Encodes ExportMessageEntity JSON in Kotlin declaration order. Required fields (id,
+ * conversationId, text, timestamp, runId, runSequence) are always encoded; defaults
+ * (empty images, tokenCount 0, status SUCCESS, participant MODEL) are omitted.
+ */
 std::string encode_export_message_entity(
     const conversation_export_snapshot::MessageEntity& msg) {
     std::string out = "{";
@@ -436,16 +718,24 @@ std::string encode_export_message_entity(
     write_optional_int_member(out, "generationDurationMs", msg.generation_duration_ms, first);
     if (msg.status != run_recovery::MessageStatus::success) {
         write_string_member(out, "status",
-            msg.status == run_recovery::MessageStatus::error ? "ERROR" : "SUCCESS", first);
+            msg.status == run_recovery::MessageStatus::error ? "ERROR"
+            : msg.status == run_recovery::MessageStatus::stopped ? "STOPPED"
+            : msg.status == run_recovery::MessageStatus::thinking ? "THINKING"
+            : msg.status == run_recovery::MessageStatus::tool_calling ? "TOOL_CALLING"
+            : msg.status == run_recovery::MessageStatus::transcribing ? "TRANSCRIBING"
+            : "SENDING", first);
     }
     if (msg.participant != run_recovery::Participant::model) {
         write_string_member(out, "participant",
-            msg.participant == run_recovery::Participant::user ? "USER" : "MODEL", first);
+            msg.participant == run_recovery::Participant::user ? "USER"
+            : msg.participant == run_recovery::Participant::error ? "ERROR" : "MODEL", first);
     }
     write_optional_int_member(out, "timestamp", std::make_optional(msg.timestamp), first);
+    write_optional_int_member(out, "thoughtTimeMs", msg.thought_time_ms, first);
     write_optional_string_member(out, "modelName", msg.model_name, first);
+    write_optional_string_member(out, "toolCallJson", msg.tool_call_json, first);
     write_optional_string_member(out, "attachmentMeta", msg.attachment_meta, first);
-    write_optional_string_member(out, "runId", msg.run_id, first);
+    write_string_member(out, "runId", msg.run_id, first);
     write_optional_int_member(out, "runSequence", std::make_optional(msg.run_sequence), first);
     write_optional_int_member(out, "consumedAtPass", msg.consumed_at_pass, first);
     write_optional_string_member(out, "sourceJson", msg.source_json, first);
@@ -453,26 +743,30 @@ std::string encode_export_message_entity(
     return out;
 }
 
-/** Encodes ExportLoopEntity JSON. */
+/**
+ * Encodes ExportLoopEntity JSON: conversationId, intervalMs, prompt, cycleCount, maxCycles.
+ * intervalMs has no default and is always encoded; maxCycles defaults to LoopPolicy's 10 and is
+ * omitted when it equals it.
+ */
 std::string encode_export_loop_entity(
     const conversation_export_snapshot::LoopEntity& loop) {
     std::string out = "{";
     bool first = true;
     write_string_member(out, "conversationId", loop.conversation_id, first);
-    if (loop.interval_ms != 0) write_optional_int_member(out, "intervalMs", std::make_optional(loop.interval_ms), first);
+    write_optional_int_member(out, "intervalMs", std::make_optional(loop.interval_ms), first);
     write_optional_string_member(out, "prompt", loop.prompt, first);
-    if (loop.next_fire_at != 0) write_optional_int_member(out, "nextFireAt", std::make_optional(loop.next_fire_at), first);
     if (loop.cycle_count != 0) write_optional_int_member(out, "cycleCount", std::make_optional(loop.cycle_count), first);
     if (loop.max_cycles.has_value() && *loop.max_cycles != 10) {
         write_optional_int_member(out, "maxCycles", loop.max_cycles, first);
     }
-    if (!loop.active) write_optional_bool_member(out, "active", std::make_optional(false), first);
-    if (loop.revision != 0) write_optional_int_member(out, "revision", std::make_optional(loop.revision), first);
     out += "}";
     return out;
 }
 
-/** Encodes ExportTaskEntity JSON. */
+/**
+ * Encodes ExportTaskEntity JSON: id, name, prompt, systemPrompt, systemPromptId, modelId,
+ * cronExpr, runAt, createdAt, lastRunAt. createdAt has no default and is always encoded.
+ */
 std::string encode_export_task_entity(
     const conversation_export_snapshot::TaskEntity& task) {
     std::string out = "{";
@@ -485,9 +779,7 @@ std::string encode_export_task_entity(
     write_optional_string_member(out, "modelId", task.model_id, first);
     write_string_member(out, "cronExpr", task.cron_expr, first);
     write_optional_int_member(out, "runAt", task.run_at, first);
-    if (task.next_run_at != 0) write_optional_int_member(out, "nextRunAt", std::make_optional(task.next_run_at), first);
-    if (!task.enabled) write_optional_bool_member(out, "enabled", std::make_optional(false), first);
-    if (task.created_at != 0) write_optional_int_member(out, "createdAt", std::make_optional(task.created_at), first);
+    write_optional_int_member(out, "createdAt", std::make_optional(task.created_at), first);
     write_optional_int_member(out, "lastRunAt", task.last_run_at, first);
     out += "}";
     return out;
@@ -496,7 +788,7 @@ std::string encode_export_task_entity(
 }  // namespace
 
 // -----------------------------------------------------------------------------------------------
-// Context for archive phase (holds platform callbacks and state)
+// Context for archive phase (holds platform callbacks and state shared across conversations)
 // -----------------------------------------------------------------------------------------------
 
 struct ArchiveContext {
@@ -505,25 +797,21 @@ struct ArchiveContext {
     export_spool::SpoolReader& spool;
     int& images_exported;
     int& missing_resource_count;
+    /** sourceKey -> archive entry, shared across conversations (Kotlin's sourceToArchiveEntry). */
     std::unordered_map<std::string, std::string>& source_to_archive_entry;
-    std::unordered_set<std::string>& referenced_media;
-    std::function<std::optional<std::string>(std::string_view)> archive_entry_lookup;
 
     ArchiveContext(const Platform& p, zip::Writer& z, export_spool::SpoolReader& s,
                    int& img_exp, int& miss_cnt,
-                   std::unordered_map<std::string, std::string>& src_map,
-                   std::unordered_set<std::string>& ref_media)
+                   std::unordered_map<std::string, std::string>& src_map)
         : platform(p), zip(z), spool(s),
           images_exported(img_exp), missing_resource_count(miss_cnt),
-          source_to_archive_entry(src_map), referenced_media(ref_media) {
-        archive_entry_lookup = [this](std::string_view entry) -> std::optional<std::string> {
-            auto it = this->source_to_archive_entry.find(std::string(entry));
-            return it != this->source_to_archive_entry.end() 
-                ? std::make_optional(it->second) 
-                : std::nullopt;
-        };
-    }
+          source_to_archive_entry(src_map) {}
 
+    /**
+     * Kotlin copySource: blank source -> nullopt; already-copied source -> existing entry;
+     * otherwise open + stream into the zip (open failure = nullopt = missing resource, a read
+     * failure after open propagates, like Kotlin's stream.copyTo throwing).
+     */
     std::optional<std::string> copy_source(std::string_view source, std::string_view prefix,
                                            std::unordered_set<std::string>* referenced = nullptr) {
         if (is_blank(source)) return std::nullopt;
@@ -539,8 +827,19 @@ struct ArchiveContext {
         zip.put_entry(entry, *bytes);
         source_to_archive_entry[key] = entry;
         if (referenced) referenced->insert(entry);
-        ++images_exported;
         return entry;
+    }
+
+    /** Kotlin trackedLookup: only finds an entry already copied, recording it as referenced. */
+    std::function<std::optional<std::string>(std::string_view)> tracked_lookup(
+        std::unordered_set<std::string>& referenced) {
+        return [this, &referenced](std::string_view source) -> std::optional<std::string> {
+            std::string key = media_source_key(source, platform);
+            auto it = source_to_archive_entry.find(key);
+            if (it == source_to_archive_entry.end()) return std::nullopt;
+            referenced.insert(it->second);
+            return it->second;
+        };
     }
 };
 
@@ -550,156 +849,295 @@ struct ArchiveContext {
 
 struct ConversationArchiveResult {
     native_backup_v5::ConversationIndexEntry index_entry;
-    std::vector<std::string> media_entries;
 };
 
+// --- kotlinx re-encode helpers: substitute members of a parsed entity, preserving the
+// --- declaration order kotlinx would re-emit them in (encodeDefaults = false already applied).
+
+static json::Value make_string_value(std::string text) {
+    json::Value v;
+    v.kind = json::Kind::String;
+    v.text = std::move(text);
+    return v;
+}
+
+static json::Value make_string_array_value(const std::vector<std::string>& items) {
+    json::Value v;
+    v.kind = json::Kind::Array;
+    for (const auto& item : items) v.elements.push_back(make_string_value(item));
+    return v;
+}
+
+/** ExportChatEntity's Kotlin declaration order (for member insertion). */
+static const std::vector<std::string>& chat_entity_key_order() {
+    static const std::vector<std::string> order = {
+        "id", "title", "lastUpdated", "dataChangedAt", "isPinned", "selectedBranchesJson",
+        "systemPromptId", "modelId", "taskId", "origin", "graduated",
+        "selectedRunBranchesJson", "draftText", "draftAttachments", "conversationSettings",
+    };
+    return order;
+}
+
+/** ExportMessageEntity's Kotlin declaration order (for member insertion). */
+static const std::vector<std::string>& message_entity_key_order() {
+    static const std::vector<std::string> order = {
+        "id", "conversationId", "parentId", "text", "images", "thoughts", "thoughtTitle",
+        "tokenCount", "inputTokenCount", "cachedInputTokenCount", "cacheWriteInputTokenCount",
+        "uncachedInputTokenCount", "outputTokenCount", "reasoningTokenCount",
+        "generationDurationMs", "status", "participant", "timestamp", "thoughtTimeMs",
+        "modelName", "toolCallJson", "attachmentMeta", "runId", "runSequence",
+        "consumedAtPass", "sourceJson",
+    };
+    return order;
+}
+
+static int declaration_index(const std::vector<std::string>& order, const std::string& key) {
+    for (size_t i = 0; i < order.size(); ++i) {
+        if (order[i] == key) return static_cast<int>(i);
+    }
+    return static_cast<int>(order.size());
+}
+
+/**
+ * Substitutes one member of a parsed entity: replaces it in place, erases it when the value is
+ * nullopt, or (value present, member absent) inserts it at the declaration position kotlinx's
+ * re-encode would emit it at.
+ */
+static void set_member(json::Value& object, const std::string& key,
+                       const std::optional<json::Value>& value,
+                       const std::vector<std::string>& order) {
+    int index = declaration_index(order, key);
+    for (size_t i = 0; i < object.members.size(); ++i) {
+        if (object.members[i].key == key) {
+            if (value.has_value()) object.members[i].value = *value;
+            else object.members.erase(object.members.begin() + static_cast<long>(i));
+            return;
+        }
+    }
+    if (!value.has_value()) return;
+    size_t insert_at = object.members.size();
+    for (size_t i = 0; i < object.members.size(); ++i) {
+        if (declaration_index(order, object.members[i].key) > index) {
+            insert_at = i;
+            break;
+        }
+    }
+    object.members.insert(object.members.begin() + static_cast<long>(insert_at),
+                          json::Member{key, *value});
+}
+
+static std::optional<std::string> get_string_member(const json::Value& object,
+                                                    const std::string& key) {
+    for (const auto& member : object.members) {
+        if (member.key == key && member.value.kind == json::Kind::String) {
+            return member.value.text;
+        }
+    }
+    return std::nullopt;
+}
+
+/**
+ * Writes one conversation's slice to the archive: the media stream pass runs first (drafts from
+ * the conversation record, videos and images per message, tool images), then the entry payload is
+ * assembled from the collected records with images/toolCallJson/attachmentMeta rewritten exactly
+ * like Kotlin's `entity.copy(...)` + re-encode.
+ */
 static ConversationArchiveResult write_conversation_archive(
     ArchiveContext& ctx,
     const export_spool::Slice& slice,
     const std::string& conversation_id,
-    int64_t data_changed_at,
-    const std::optional<std::string>& draft_attachments_raw) {
+    int64_t data_changed_at) {
 
     ConversationArchiveResult result;
-    result.index_entry.id = conversation_id;
-    result.index_entry.data_changed_at = data_changed_at;
 
+    std::optional<std::string> conv_json_raw;
     std::vector<std::string> runs_json;
     std::vector<std::string> messages_json;
     std::vector<std::string> loops_json;
-    std::unordered_set<std::string> referenced_media_local;
-    std::vector<std::string> original_image_sources;
-    std::map<int, int> old_to_new_image_index;
 
-    // Pass 1: read all records from spool, copy media, build maps
-    ctx.spool.read_records(slice, [&](const export_spool::SpoolReader::Record& record) {
-        if (record.type == "R") {
-            runs_json.push_back(record.json);
-        } else if (record.type == "M") {
-            // Parse message JSON to extract media and rewrite
-            auto parsed = json::parse(record.json);
-            if (!parsed.value) {
-                messages_json.push_back(record.json); // keep as-is if unparseable
-                return;
-            }
-            auto& obj = *parsed.value;
+    std::optional<std::string> archived_draft_attachments;      // nullopt -> keep original
+    std::unordered_map<std::string, std::vector<std::string>> archived_images_by_message;
+    std::unordered_map<std::string, std::optional<std::string>> attachment_meta_by_message;
+    std::unordered_set<std::string> referenced_media;  // per conversation (LinkedHashSet order)
 
-            // Extract images array
-            std::vector<std::string> images;
-            std::optional<std::string> attachment_meta;
-            std::optional<std::string> tool_call_json;
-            int msg_image_count = 0;
-
-            for (const auto& m : obj.members) {
-                if (m.key == "images" && m.value.kind == json::Kind::Array) {
-                    for (const auto& elem : m.value.elements) {
-                        if (elem.kind == json::Kind::String) {
-                            images.push_back(elem.text);
-                        }
-                    }
-                } else if (m.key == "attachmentMeta" && m.value.kind == json::Kind::String) {
-                    attachment_meta = m.value.text;
-                } else if (m.key == "toolCallJson" && m.value.kind == json::Kind::String) {
-                    tool_call_json = m.value.text;
-                }
-            }
-
-            // Copy images
-            for (const auto& source : images) {
-                if (is_blank(source)) continue;
-                auto entry = ctx.copy_source(source, native_backup::kImageMediaPrefix, &referenced_media_local);
-                if (entry) {
-                    // Rewrite image URL in the message JSON
-                    original_image_sources.push_back(source);
-                    int new_idx = static_cast<int>(referenced_media_local.size()) - 1;
-                    old_to_new_image_index[msg_image_count] = new_idx;
-                } else {
-                    old_to_new_image_index[msg_image_count] = -1; // missing
-                    ++ctx.missing_resource_count;
-                }
-                ++msg_image_count;
-            }
-
-            // Copy tool images
-            auto tool_images = extract_tool_image_paths(tool_call_json);
-            for (const auto& source : tool_images) {
-                ctx.copy_source(source, native_backup::kImageMediaPrefix, nullptr);
-            }
-
-            // Rewrite attachmentMeta
-            if (attachment_meta) {
-                auto rewritten = rewrite_attachment_meta(attachment_meta, original_image_sources,
-                                                        old_to_new_image_index, ctx.archive_entry_lookup,
-                                                        ctx.missing_resource_count);
-                // We need to replace attachmentMeta in the JSON
-                // For simplicity, we'll rebuild the message JSON in pass 2
-            }
-
-            messages_json.push_back(record.json); // keep original for now, will rewrite in pass 2
-        } else if (record.type == "L") {
-            loops_json.push_back(record.json);
-        }
-    });
-
-    // Pass 2: rewrite messages and draft attachments, then write conversation entry
-    std::vector<std::string> rewritten_messages;
-    for (const auto& msg_json : messages_json) {
-        auto parsed = json::parse(msg_json);
-        if (!parsed.value) {
-            rewritten_messages.push_back(msg_json);
-            continue;
-        }
-        auto& obj = *parsed.value;
-
-        // We need to rebuild the JSON with rewritten fields
-        // This is complex - instead, we'll parse into a structured form and re-encode
-        // For now, keep original (this is a simplification)
-        rewritten_messages.push_back(msg_json);
-    }
-
-    // Rewrite draft attachments
-    std::optional<std::string> rewritten_draft = rewrite_draft_attachments(
-        draft_attachments_raw, ctx.archive_entry_lookup, ctx.missing_resource_count);
-
-    // Build conversation JSON
-    // We need the ChatEntity to get the base fields - but we only have the spool data
-    // In Kotlin, the second pass reads from spool which has the original entity JSON
-    // We'll need to parse the conversation record from spool
-    // Actually, the spool has a "C" record for the conversation
-    // Let's re-read the slice to find it
-
-    std::string conv_json_raw;
+    // Single in-order read over the slice; the media pass work happens exactly where Kotlin's
+    // first pass does it, and the raw records are kept for the assembly pass.
     ctx.spool.read_records(slice, [&](const export_spool::SpoolReader::Record& record) {
         if (record.type == "C") {
             conv_json_raw = record.json;
+            auto parsed = json::parse(record.json);
+            if (!parsed.value || parsed.value->kind != json::Kind::Object) return;
+            auto draft = get_string_member(*parsed.value, "draftAttachments");
+            if (!draft) return;  // no draft: nothing to rewrite
+            archived_draft_attachments = rewrite_draft_attachments(
+                draft, ctx.platform,
+                [&](std::string_view source) {
+                    return ctx.copy_source(source, native_backup::kDraftMediaPrefix,
+                                           &referenced_media);
+                },
+                ctx.missing_resource_count);
+            // nullopt (decode failed or rewrote to empty) keeps the original in assembly.
+            return;
+        }
+        if (record.type == "R") {
+            runs_json.push_back(record.json);
+            return;
+        }
+        if (record.type == "L") {
+            loops_json.push_back(record.json);
+            return;
+        }
+        if (record.type != "M") return;
+
+        messages_json.push_back(record.json);
+        auto parsed = json::parse(record.json);
+        if (!parsed.value || parsed.value->kind != json::Kind::Object) return;
+        const json::Value& obj = *parsed.value;
+
+        std::vector<std::string> images;
+        if (auto img_member = [&]() -> const json::Member* {
+                for (const auto& m : obj.members) {
+                    if (m.key == "images") return &m;
+                }
+                return nullptr;
+            }()) {
+            if (img_member->value.kind == json::Kind::Array) {
+                for (const auto& e : img_member->value.elements) {
+                    if (e.kind == json::Kind::String) images.push_back(e.text);
+                }
+            }
+        }
+        std::optional<std::string> attachment_meta = get_string_member(obj, "attachmentMeta");
+        std::optional<std::string> tool_call_json = get_string_member(obj, "toolCallJson");
+        std::optional<std::string> message_id = get_string_member(obj, "id");
+
+        // Kotlin pass 1, message branch: videos first, then images, then tool images.
+        if (attachment_meta) {
+            if (auto meta = backup::decode_attachment_meta(*attachment_meta)) {
+                for (const auto& item : meta->items) {
+                    if (item.type == "video" && !item.unavailable && item.original_uri) {
+                        ctx.copy_source(*item.original_uri, native_backup::kVideoMediaPrefix,
+                                        nullptr);
+                    }
+                }
+            }
+        }
+
+        if (!images.empty() && message_id.has_value()) {
+            std::map<int, int> old_to_new_image_index;
+            std::vector<std::string> archived;
+            for (size_t i = 0; i < images.size(); ++i) {
+                auto entry = ctx.copy_source(images[i], native_backup::kImageMediaPrefix,
+                                             &referenced_media);
+                if (entry) {
+                    old_to_new_image_index[static_cast<int>(i)] =
+                        static_cast<int>(archived.size());
+                    archived.push_back(*entry);
+                    ++ctx.images_exported;
+                }
+            }
+            archived_images_by_message[*message_id] = archived;
+            attachment_meta_by_message[*message_id] =
+                backup::NativeBackupMediaPolicy::rewrite_attachment_meta_for_export(
+                    attachment_meta, images, old_to_new_image_index,
+                    ctx.tracked_lookup(referenced_media),
+                    [&ctx]() { ++ctx.missing_resource_count; });
+        } else if (attachment_meta) {
+            attachment_meta_by_message[message_id.value_or("")] =
+                backup::NativeBackupMediaPolicy::rewrite_attachment_meta_for_export(
+                    attachment_meta, {}, {},
+                    ctx.tracked_lookup(referenced_media),
+                    [&ctx]() { ++ctx.missing_resource_count; });
+        }
+
+        for (const std::string& source :
+             backup::NativeBackupMediaPolicy::tool_image_paths(tool_call_json)) {
+            if (ctx.copy_source(source, native_backup::kImageMediaPrefix, nullptr)) {
+                ++ctx.images_exported;
+            }
         }
     });
 
-    // Now we have the original conv JSON, we need to replace draftAttachments
-    if (rewritten_draft) {
-        auto parsed = json::parse(conv_json_raw);
-        if (parsed.value) {
-            // Replace draftAttachments field
-            // This is tricky with our simple JSON parser
-            // For now, just use the original and note the limitation
-            conv_json_raw = conv_json_raw; // TODO: proper replacement
+    // Assembly pass: rewrite the conversation's draftAttachments and each message's
+    // images/toolCallJson/attachmentMeta, then emit the entry.
+    std::string conversation_json;
+    if (conv_json_raw.has_value()) {
+        json::ParseResult parsed = json::parse(*conv_json_raw);
+        if (parsed.value && parsed.value->kind == json::Kind::Object) {
+            json::Value& obj = *parsed.value;
+            if (archived_draft_attachments.has_value()) {
+                set_member(obj, "draftAttachments",
+                           make_string_value(*archived_draft_attachments),
+                           chat_entity_key_order());
+            }
+            conversation_json = json::to_kotlin_string(obj);
+        } else {
+            conversation_json = *conv_json_raw;
         }
+    } else {
+        conversation_json = "{}";  // unreachable: every slice starts with its C record
     }
 
-    // Write conversation entry to zip
+    std::vector<std::string> rewritten_messages;
+    for (const auto& raw : messages_json) {
+        json::ParseResult parsed = json::parse(raw);
+        if (!parsed.value || parsed.value->kind != json::Kind::Object) {
+            rewritten_messages.push_back(raw);
+            continue;
+        }
+        json::Value& obj = *parsed.value;
+        std::optional<std::string> message_id = get_string_member(obj, "id");
+
+        auto images_it = archived_images_by_message.find(message_id.value_or(""));
+        if (images_it != archived_images_by_message.end()) {
+            if (images_it->second.empty()) {
+                set_member(obj, "images", std::nullopt, message_entity_key_order());
+            } else {
+                set_member(obj, "images", make_string_array_value(images_it->second),
+                           message_entity_key_order());
+            }
+        }
+
+        if (get_string_member(obj, "toolCallJson").has_value()) {
+            // Kotlin: rewriteToolImagePathsForExport(raw, trackedLookup) — unchanged when the
+            // raw is blank or undecodable, replaced otherwise; null raw stays absent.
+            std::optional<std::string> raw_tool = get_string_member(obj, "toolCallJson");
+            std::optional<std::string> rewritten;
+            if (raw_tool.has_value()) {
+                if (json::is_blank(*raw_tool)) {
+                    rewritten = *raw_tool;
+                } else {
+                    auto new_value = backup::NativeBackupMediaPolicy::rewrite_tool_image_paths_for_export(
+                        raw_tool, ctx.tracked_lookup(referenced_media));
+                    rewritten = new_value;
+                }
+            }
+            if (rewritten.has_value()) {
+                set_member(obj, "toolCallJson", make_string_value(*rewritten),
+                           message_entity_key_order());
+            } else {
+                set_member(obj, "toolCallJson", std::nullopt, message_entity_key_order());
+            }
+        }
+
+        auto meta_it = attachment_meta_by_message.find(message_id.value_or(""));
+        if (meta_it != attachment_meta_by_message.end()) {
+            if (meta_it->second.has_value()) {
+                set_member(obj, "attachmentMeta", make_string_value(*meta_it->second),
+                           message_entity_key_order());
+            } else {
+                set_member(obj, "attachmentMeta", std::nullopt, message_entity_key_order());
+            }
+        }
+
+        rewritten_messages.push_back(json::to_kotlin_string(obj));
+    }
+
+    // The conversation's media entries (sorted) go into the index entry.
+    std::vector<std::string> media_entries(referenced_media.begin(), referenced_media.end());
     result.index_entry = native_backup_v5::write_conversation_entry(
-        ctx.zip, conversation_id, data_changed_at,
-        conv_json_raw, runs_json, rewritten_messages, loops_json,
-        result.media_entries); // media_entries will be populated by write_conversation_entry
-
-    // Sort media entries as Kotlin does
-    std::sort(result.media_entries.begin(), result.media_entries.end());
-    result.index_entry.media_entries = result.media_entries;
-
-    // Merge referenced media into global set
-    for (const auto& m : referenced_media_local) {
-        ctx.referenced_media.insert(m);
-    }
+        ctx.zip, conversation_id, data_changed_at, conversation_json, runs_json,
+        rewritten_messages, loops_json, std::move(media_entries));
 
     return result;
 }
@@ -740,6 +1178,24 @@ static SpoolResult write_spool_phase(
     bool include_conversations = std::find(request.categories.begin(), request.categories.end(),
                                            ExportCategory::Conversations) != request.categories.end();
 
+    // Kotlin deletes the temp spool before rethrowing any capture failure; on success the caller
+    // owns the file and removes it after the archive phase.
+    bool capture_succeeded = false;
+    struct WriterCleanup {
+        export_spool::SpoolWriter& writer;
+        const std::string& path;
+        const bool& succeeded;
+        ~WriterCleanup() {
+            if (succeeded) return;
+            try {
+                writer.close();
+            } catch (...) {
+            }
+            std::error_code ignored;
+            std::filesystem::remove(path, ignored);
+        }
+    } writer_cleanup{writer, result.spool_path, capture_succeeded};
+
     store.begin_transaction();
     try {
         auto conversations = store.get_all_conversations_list();
@@ -755,19 +1211,13 @@ static SpoolResult write_spool_phase(
                 }
             }
 
-            ConversationSpoolData cdata;
-            cdata.id = conv.id;
-            cdata.data_changed_at = conv.data_changed_at;
-            cdata.in_spool = !reused;
-
-            if (cdata.in_spool) {
-                // Write conversation record
-                std::string conv_json = encode_export_chat_entity(conv,
-                    inputs.conversation_settings.count(conv.id) ? 
-                        std::make_optional(inputs.conversation_settings.at(conv.id)) : std::nullopt,
-                    conv.draft_attachments);
-                writer.write_conversation(conv.id, conv.data_changed_at, conv_json);
-            }
+            // The reader always emits the conversation header; only its body is gated by
+            // includeBody (which returns false for a reused conversation).
+            std::string conv_json = encode_export_chat_entity(conv,
+                inputs.conversation_settings.count(conv.id) ? 
+                    std::make_optional(inputs.conversation_settings.at(conv.id)) : std::nullopt,
+                conv.draft_attachments);
+            writer.write_conversation(conv.id, conv.data_changed_at, conv_json);
 
             if (!reused && include_conversations) {
                 // Write runs
@@ -820,16 +1270,17 @@ static SpoolResult write_spool_phase(
     result.index = writer.finish();
     writer.close();
 
-    // Match index conversations to our ConversationSpoolData
-    for (auto& cdata : result.conversations) {
-        for (const auto& idx_conv : result.index.conversations) {
-            if (idx_conv.id == cdata.id) {
-                cdata.slice = idx_conv.slice;
-                break;
-            }
-        }
+    // The writer's index is the spool layout: one slice per conversation header+body.
+    for (const auto& idx_conv : result.index.conversations) {
+        ConversationSpoolData cdata;
+        cdata.id = idx_conv.id;
+        cdata.data_changed_at = idx_conv.data_changed_at;
+        cdata.slice = idx_conv.slice;
+        cdata.in_spool = !result.reused_conversation_ids.count(idx_conv.id);
+        result.conversations.push_back(std::move(cdata));
     }
 
+    capture_succeeded = true;
     return result;
 }
 
@@ -843,13 +1294,6 @@ ExportResult export_data(conversation_export_snapshot::SnapshotStore& store,
                          const ExportRequest& request,
                          const ProgressCallback& on_progress) {
 
-    // Step callback for progress
-    auto step = [&](float progress) {
-        if (on_progress) on_progress(progress);
-    };
-
-    // Count total steps for progress
-    int total_steps = 1; // manifest
     bool has_conversations = std::find(request.categories.begin(), request.categories.end(),
                                        ExportCategory::Conversations) != request.categories.end();
     bool has_memories = std::find(request.categories.begin(), request.categories.end(),
@@ -860,212 +1304,192 @@ ExportResult export_data(conversation_export_snapshot::SnapshotStore& store,
                                   ExportCategory::Settings) != request.categories.end();
     bool has_api_keys = std::find(request.categories.begin(), request.categories.end(),
                                   ExportCategory::ApiKeys) != request.categories.end();
-    
-    if (has_conversations) ++total_steps;
-    if (has_memories) ++total_steps;
-    if (has_system_prompts) ++total_steps;
-    if (has_settings) ++total_steps;
-    if (has_api_keys) ++total_steps;
+    bool export_api_keys = has_api_keys && request.include_api_keys;
 
-    int current_step = 0;
-    auto do_step = [&]() {
-        ++current_step;
-        step(static_cast<float>(current_step) / total_steps);
+    // Kotlin: totalSteps = categories.size + 1; step() reports completed/totalSteps.
+    const int total_steps = static_cast<int>(request.categories.size()) + 1;
+    int completed = 0;
+    auto step = [&]() {
+        ++completed;
+        if (on_progress) {
+            on_progress(static_cast<float>(completed) / static_cast<float>(total_steps));
+        }
     };
 
-    // Open baseline if provided
+    // Kotlin opens the baseline only when the conversations category is selected.
     std::optional<native_backup_v5::Baseline> baseline;
-    if (request.baseline_file.has_value()) {
+    if (has_conversations && request.baseline_file.has_value()) {
         baseline = native_backup_v5::Baseline::open_or_null(*request.baseline_file);
     }
 
-    // Open output sink
+    // Kotlin captures the snapshot before opening the output stream; the spool file is deleted
+    // on every exit path (the `finally` block), and a capture failure just rethrows.
+    std::optional<SpoolResult> spool_result;
+    if (has_conversations) {
+        spool_result = write_spool_phase(platform, store, inputs, request, baseline);
+    }
+    struct SpoolCleanup {
+        std::optional<SpoolResult>& result;
+        ~SpoolCleanup() {
+            if (result.has_value() && !result->spool_path.empty()) {
+                std::error_code ignored;
+                std::filesystem::remove(result->spool_path, ignored);
+            }
+        }
+    } spool_cleanup{spool_result};
+
+    // Kotlin: openOutputStream(uri) ?: throw IOException("Could not open ...").
     auto output_sink = platform.open_output();
     if (!output_sink) {
         throw IOException("Could not open the selected backup destination");
     }
     zip::Writer zip;
 
-    // Phase 1: Write spool
-    SpoolResult spool_result = write_spool_phase(platform, store, inputs, request, baseline);
-    do_step(); // manifest
+    // ---- Manifest (first entry) ---------------------------------------------------------------
+    {
+        std::string manifest = "{";
+        manifest += "\"agora_export_version\":" + std::to_string(native_backup::kCurrentVersion);
+        {
+            std::string tmp;
+            json::escape_to(tmp, platform.app_version());
+            manifest += ",\"app_version\":\"" + tmp + "\"";
+        }
+        {
+            std::string tmp;
+            json::escape_to(tmp, platform.exported_at());
+            manifest += ",\"exported_at\":\"" + tmp + "\"";
+        }
+        manifest += ",\"categories\":[";
+        bool first_cat = true;
+        for (ExportCategory cat : request.categories) {
+            if (!first_cat) manifest += ',';
+            std::string tmp;
+            json::escape_to(tmp, manifest_key(cat));
+            manifest += "\"" + tmp + "\"";
+            first_cat = false;
+        }
+        manifest += "]";
+        if (export_api_keys) manifest += ",\"has_api_keys\":true";
+        // hasApiKeys (default false) and incrementalBaseline (default 1) are omitted otherwise:
+        // kotlinx Json.encodeToStream runs with encodeDefaults = false.
+        manifest += "}";
+        zip.put_entry(native_backup::kManifestEntry, manifest);
+    }
+    step();
 
-    // Phase 2: Write conversations to zip (if category selected)
-    std::vector<native_backup_v5::ConversationIndexEntry> index_entries;
-    std::vector<std::string> copied_baseline_media;
-
+    // ---- Conversations -------------------------------------------------------------------------
     if (has_conversations) {
-        export_spool::SpoolReader spool(spool_result.spool_path);
+        export_spool::SpoolReader spool(spool_result->spool_path);
+        ArchiveContext ctx(platform, zip, spool, spool_result->images_exported,
+                          spool_result->missing_resource_count,
+                          spool_result->source_to_archive_entry);
 
-        for (const auto& cdata : spool_result.conversations) {
+        std::vector<native_backup_v5::ConversationIndexEntry> index_entries;
+        std::vector<std::string> copied_baseline_media;
+
+        for (const auto& conv : spool_result->conversations) {
             platform.ensure_active();
 
-            if (baseline && spool_result.reused_conversation_ids.count(cdata.id)) {
-                // Reuse from baseline
-                auto* baseline_entry = baseline->index_entry(cdata.id);
+            if (baseline && spool_result->reused_conversation_ids.count(conv.id)) {
+                const native_backup_v5::ConversationIndexEntry* baseline_entry =
+                    baseline->index_entry(conv.id);
                 if (baseline_entry) {
-                    auto entry = native_backup_v5::copy_conversation_from_baseline(
-                        zip, *baseline, *baseline_entry, copied_baseline_media);
-                    index_entries.push_back(entry);
-                    for (const auto& m : entry.media_entries) {
-                        spool_result.referenced_media.insert(m);
-                    }
+                    index_entries.push_back(native_backup_v5::copy_conversation_from_baseline(
+                        zip, *baseline, *baseline_entry, copied_baseline_media));
                     continue;
                 }
             }
 
-            // Write conversation from spool
-            ArchiveContext ctx(platform, zip, spool,
-                              spool_result.images_exported, spool_result.missing_resource_count,
-                              spool_result.source_to_archive_entry, spool_result.referenced_media);
-
-            auto archive_result = write_conversation_archive(ctx, cdata.slice, cdata.id,
-                                                            cdata.data_changed_at,
-                                                            cdata.in_spool ? std::nullopt : std::optional<std::string>());
-            index_entries.push_back(archive_result.index_entry);
+            index_entries.push_back(
+                write_conversation_archive(ctx, conv.slice, conv.id, conv.data_changed_at)
+                    .index_entry);
         }
-        do_step();
-    }
 
-    // Phase 3: Write tasks entry
-    if (has_conversations) {
-        // Read tasks from spool
+        // Tasks entry, then the conversation index — both inside the conversations step.
         std::vector<std::string> tasks_json;
-        for (const auto& task_slice : spool_result.index.task_slices) {
-            export_spool::SpoolReader spool(spool_result.spool_path);
+        for (const auto& task_slice : spool_result->index.task_slices) {
             spool.read_records(task_slice, [&](const export_spool::SpoolReader::Record& record) {
                 if (record.type == "T") tasks_json.push_back(record.json);
             });
         }
         native_backup_v5::write_tasks_entry(zip, tasks_json);
+        native_backup_v5::write_conversation_index(zip, index_entries);
+        step();
     }
 
-    // Phase 4: Write conversation index
-    native_backup_v5::write_conversation_index(zip, index_entries);
-    // Note: tasks and index are part of the "conversations" step in Kotlin
-
-    // Phase 5: Memories
+    // ---- Memories (active memory, memory files, memory meta, skills, skill meta) ---------------
     if (has_memories) {
-        // Active memory
         std::string active = inputs.memory.get_active_memory();
         if (!active.empty()) {
             zip.put_entry(kActiveMemoryEntry, active);
         }
-        // Memory files
         for (const auto& file : inputs.memory.list_files()) {
-            std::string content = inputs.memory.read_file(file.name);
-            zip.put_entry(std::string(kMemoryDbPrefix) + file.name, content);
+            zip.put_entry(std::string(kMemoryDbPrefix) + file.name,
+                          inputs.memory.read_file(file.name));
         }
-        // Memory meta
         std::string meta = inputs.memory.get_meta_json();
         if (meta != "{}") {
             zip.put_entry(kMemoryMetaEntry, meta);
         }
-        do_step();
-    }
-
-    // Phase 5b: Skills (included in Memories category per Kotlin)
-    if (has_memories) {
-        // Skill files
         for (const auto& file : inputs.skill.list_files()) {
-            std::string content = inputs.skill.read_file(file.name);
-            zip.put_entry(std::string(kSkillDbPrefix) + file.name, content);
+            zip.put_entry(std::string(kSkillDbPrefix) + file.name,
+                          inputs.skill.read_file(file.name));
         }
-        // Skill meta
         std::string skill_meta = inputs.skill.get_meta_json();
         if (skill_meta != "{}") {
-            zip.put_entry(std::string(kSkillMetaEntry), skill_meta);
+            zip.put_entry(kSkillMetaEntry, skill_meta);
         }
+        step();
     }
 
-    // Phase 6: System prompts
+    // ---- System prompts ------------------------------------------------------------------------
     if (has_system_prompts) {
-        std::string prompts_json = encode_system_prompts(inputs.system_prompts);
-        zip.put_entry(native_backup::kSystemPromptsEntry, prompts_json);
-        do_step();
+        zip.put_entry(native_backup::kSystemPromptsEntry,
+                      encode_system_prompts(inputs.system_prompts));
+        step();
     }
 
-    // Phase 7: Settings
+    // ---- Settings (custom font first, then settings.json) --------------------------------------
     if (has_settings) {
-        // Custom font
-        std::string font_path = inputs.settings.custom_font_path;
         bool font_included = false;
-        if (!font_path.empty() && std::filesystem::exists(font_path)) {
-            std::ifstream font_file(font_path, std::ios::binary);
-            if (font_file) {
-                std::string font_content((std::istreambuf_iterator<char>(font_file)),
-                                         std::istreambuf_iterator<char>());
-                zip.put_entry(native_backup::kCustomFontEntry, font_content);
-                font_included = true;
+        const std::string& font_path = inputs.settings.custom_font_path;
+        if (!font_path.empty()) {
+            std::error_code ec;
+            if (std::filesystem::is_regular_file(font_path, ec)) {
+                std::ifstream font_file(font_path, std::ios::binary);
+                if (font_file) {
+                    std::string content((std::istreambuf_iterator<char>(font_file)),
+                                        std::istreambuf_iterator<char>());
+                    zip.put_entry(native_backup::kCustomFontEntry, content);
+                    font_included = true;
+                }
             }
         }
-        // Settings JSON
-        json::Value settings_json = settings_archive::to_json_object(inputs.settings, font_included);
-        std::string settings_str = json::to_kotlin_string(settings_json);
-        zip.put_entry(native_backup::kSettingsEntry, settings_str);
-        do_step();
+        zip.put_entry(native_backup::kSettingsEntry,
+                      json::to_kotlin_string(
+                          settings_archive::to_json_object(inputs.settings, font_included)));
+        step();
     }
 
-    // Phase 8: API keys
-    if (has_api_keys && request.include_api_keys) {
-        native_backup::SettingsStore* settings_store = nullptr; // We don't have a C++ SettingsStore
-        // The capture function needs a SettingsStore - we'll need to adapt
-        // For now, create a minimal capture from inputs.settings (but it doesn't have secrets)
-        // This is a limitation - the C++ API needs to provide secrets separately
-        // TODO: add secrets to Inputs
-        native_backup::NativeBackupSecrets secrets;
-        secrets.api_keys = {}; // would come from a secrets provider
-        // Encode and write
-        // TODO: implement secrets encoding
-    } else if (has_api_keys) {
-        // include_api_keys = false but category selected - write empty or skip?
-        // Kotlin writes api_keys.json only when includeApiKeys=true
-    }
-    if (has_api_keys) do_step();
-
-    // Phase 9: Manifest
-    std::string manifest = "{";
-    manifest += "\"agora_export_version\":" + std::to_string(native_backup::kCurrentVersion) + ",";
-    {
-        std::string tmp;
-        json::escape_to(tmp, platform.app_version());
-        manifest += "\"app_version\":\"" + tmp + "\",";
-    }
-    {
-        std::string tmp;
-        json::escape_to(tmp, platform.exported_at());
-        manifest += "\"exported_at\":\"" + tmp + "\",";
-    }
-    manifest += "\"categories\":[";
-    bool first_cat = true;
-    for (auto cat : request.categories) {
-        if (!first_cat) manifest += ",";
-        {
-            std::string tmp;
-            json::escape_to(tmp, manifest_key(cat));
-            manifest += "\"" + tmp + "\"";
+    // ---- API keys (opt-in: includeApiKeys && category) ------------------------------------------
+    if (export_api_keys) {
+        if (!inputs.secrets_store) {
+            throw std::logic_error(
+                "data_export: Inputs::secrets_store is required to export the api_keys category");
         }
-        first_cat = false;
+        zip.put_entry(native_backup::kSecretsEntry,
+                      encode_native_backup_secrets(native_backup::capture(*inputs.secrets_store)));
+        step();
     }
-    manifest += "]";
-    if (request.include_api_keys && has_api_keys) {
-        manifest += ",\"hasApiKeys\":true";
-    }
-    // incrementalBaseline default 1 - omit when 1 (encodeDefaults=false)
-    manifest += "}";
-    zip.put_entry(native_backup::kManifestEntry, manifest);
 
-    // Finish zip and write to output
+    // ---- Finish --------------------------------------------------------------------------------
     std::string archive_data = zip.finish();
     output_sink->write(archive_data);
 
-    // Cleanup spool
-    std::filesystem::remove(spool_result.spool_path);
+    if (on_progress) on_progress(1.0f);
 
-    // Final progress
-    step(1.0f);
-
-    return {spool_result.images_exported, spool_result.missing_resource_count};
+    return {spool_result ? spool_result->images_exported : 0,
+            spool_result ? spool_result->missing_resource_count : 0};
 }
 
 }  // namespace agora::core::data_export

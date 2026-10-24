@@ -301,7 +301,7 @@ def fixture(name, content, uri=None):
 
 def write(name, *, steps, settings=None, seed=None, media=None, memory=None,
           skills=None, font=None, conversation_settings=None, system_prompts=None,
-          app_version="9.9.9", **extra):
+          api_keys=None, app_version="9.9.9", **extra):
     scenario = {
         "appVersion": app_version,
         "settings": settings if settings is not None else base_settings(),
@@ -321,6 +321,8 @@ def write(name, *, steps, settings=None, seed=None, media=None, memory=None,
         scenario["conversationSettings"] = conversation_settings
     if system_prompts is not None:
         scenario["systemPrompts"] = system_prompts
+    if api_keys is not None:
+        scenario["apiKeys"] = api_keys
     scenario.update(extra)
     with open(os.path.join(OUT, name + ".json"), "w", encoding="utf-8") as handle:
         json.dump(scenario, handle, indent=2, ensure_ascii=False)

@@ -126,6 +126,12 @@ struct Inputs {
     const std::vector<SystemPromptEntry>& system_prompts;
     memory::MemoryManager& memory;
     skill::SkillManager& skill;
+    /**
+     * The SettingsManager read surface NativeBackupSecretsPolicy.capture drives; the caller
+     * supplies the real store (or the golden double) exactly like the Kotlin call site does.
+     * Read only when the api_keys category is actually exported with include_api_keys.
+     */
+    const native_backup::SettingsStore* secrets_store = nullptr;
 };
 
 /** Request parameters for a single export. */

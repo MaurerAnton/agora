@@ -215,7 +215,7 @@
       "content": "C"
     }
   ],
-  "api_keys": [
+  "apiKeys": [
     {
       "id": "k1",
       "name": "K",

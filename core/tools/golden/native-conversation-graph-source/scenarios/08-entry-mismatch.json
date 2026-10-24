@@ -1,0 +1,11 @@
+{
+  "version": 5,
+  "entries": {
+    "conv/index.json": "{\"conversations\":[{\"id\":\"c1\",\"dataChangedAt\":1,\"entry\":\"conv/items/dead.json\"}]}"
+  },
+  "steps": [
+    {
+      "op": "open"
+    }
+  ]
+}

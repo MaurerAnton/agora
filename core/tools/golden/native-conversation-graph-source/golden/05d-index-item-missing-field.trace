@@ -1,0 +1,1 @@
+{"steps":[{"op":"open","result":{"error":{"type":"MissingFieldException","message":"Fields [dataChangedAt, entry] are required for type with serial name 'com.newoether.agora.data.NativeConversationIndexEntry', but they were missing at path: $.conversations[0]"}},"cache":[]}]}

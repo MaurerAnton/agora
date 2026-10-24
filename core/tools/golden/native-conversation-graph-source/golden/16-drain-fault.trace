@@ -1,0 +1,1 @@
+{"steps":[{"op":"open","result":{"error":{"type":"IOException","message":"Read error: CRC mismatch"}},"cache":[]}]}

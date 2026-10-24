@@ -1,0 +1,1 @@
+{"steps":[{"op":"open","result":{"content":"{\"conversations\":[{\"id\":\"c1\"}],\"tasks\":[{\"id\":\"t1\"}]}","readAfterClose":"IOException: Stream Closed"},"cache":[]},{"op":"open-partial","result":{"firstByte":123,"readAfterClose":"IOException: Stream Closed"},"cache":[]}]}

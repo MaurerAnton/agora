@@ -1,0 +1,11 @@
+{
+  "version": 5,
+  "entries": {
+    "conv/index.json": "{\"conversations\": \"nope\"}"
+  },
+  "steps": [
+    {
+      "op": "open"
+    }
+  ]
+}

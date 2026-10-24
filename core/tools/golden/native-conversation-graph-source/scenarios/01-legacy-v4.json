@@ -1,0 +1,14 @@
+{
+  "version": 4,
+  "entries": {
+    "conversations.json": "{\"conversations\":[{\"id\":\"c1\"}],\"tasks\":[{\"id\":\"t1\"}]}"
+  },
+  "steps": [
+    {
+      "op": "open"
+    },
+    {
+      "op": "open-partial"
+    }
+  ]
+}

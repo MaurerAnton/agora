@@ -1,0 +1,20 @@
+{
+  "appVersion": "9.9.9",
+  "strategy": "MERGE",
+  "graphVersion": 4,
+  "semanticSnapshot": [
+    null,
+    []
+  ],
+  "steps": [
+    {
+      "op": "count"
+    },
+    {
+      "op": "headers"
+    }
+  ],
+  "entries": {
+    "conversations.json": "{\"conversations\":[{\"id\":\"c1\",\"title\":\"t\",\"lastUpdated\":1,\"taskId\":\"task-x\"}],\"runs\":[{\"id\":\"r1\",\"conversationId\":\"c1\",\"status\":\"COMPLETED\",\"startedAt\":1,\"lastCheckpointAt\":1,\"endedAt\":2,\"endReason\":\"MODEL_COMPLETED\"}],\"messages\":[],\"loops\":[],\"tasks\":[{\"id\":\"task-x\",\"name\":\"n\",\"prompt\":\"p\",\"cronExpr\":\"0 9 * * *\",\"createdAt\":1}]}"
+  }
+}

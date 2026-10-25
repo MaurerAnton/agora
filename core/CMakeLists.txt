@@ -72,6 +72,7 @@ add_library(agora_core_lib STATIC
     src/run_ui_projection.cpp
     src/portable_settings_archive.cpp
     src/data_exporter.cpp
+    src/data_importer.cpp
     src/android_json.cpp
     src/native_conversation_graph_source.cpp
     src/native_conversation_graph_importer.cpp

@@ -1,0 +1,23 @@
+{
+  "appVersion": "9.9.9",
+  "strategy": "MERGE",
+  "graphVersion": 5,
+  "semanticSnapshot": [
+    null,
+    []
+  ],
+  "steps": [
+    {
+      "op": "headers"
+    }
+  ],
+  "seedSql": [
+    "INSERT INTO conversations (id, title, lastUpdated, dataChangedAt, origin, graduated, draftText, hasUnreadGeneration, isPinned) VALUES ('keep', 'existing', 1, 1, 'user', 0, '', 0, 0)",
+    "INSERT INTO tasks (id, name, prompt, systemPrompt, systemPromptId, modelId, cronExpr, runAt, nextRunAt, enabled, createdAt, lastRunAt) VALUES ('existing-task', 'n', 'p', NULL, NULL, NULL, '0 9 * * *', NULL, 7, 1, 1, NULL)"
+  ],
+  "entries": {
+    "conv/index.json": "{\"conversations\":[{\"id\":\"c1\",\"entry\":\"conv/items/6331.json\",\"dataChangedAt\":1}]}",
+    "conv/items/6331.json": "{\"conversations\":[{\"id\":\"c1\",\"title\":\"t\",\"lastUpdated\":1,\"taskId\":\"existing-task\"}],\"runs\":[{\"id\":\"dup\",\"conversationId\":\"c1\",\"status\":\"COMPLETED\",\"startedAt\":1,\"lastCheckpointAt\":1,\"endedAt\":2,\"endReason\":\"MODEL_COMPLETED\"},{\"id\":\"dup\",\"conversationId\":\"c1\",\"status\":\"COMPLETED\",\"startedAt\":2,\"lastCheckpointAt\":2,\"endedAt\":3,\"endReason\":\"MODEL_COMPLETED\"}],\"messages\":[],\"loops\":[]}",
+    "conv/tasks.json": "{\"tasks\":[]}"
+  }
+}

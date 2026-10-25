@@ -1,0 +1,20 @@
+{
+  "appVersion": "9.9.9",
+  "strategy": "MERGE",
+  "graphVersion": 5,
+  "semanticSnapshot": [
+    null,
+    []
+  ],
+  "steps": [
+    {
+      "op": "count"
+    }
+  ],
+  "entries": {
+    "conv/index.json": "{\"conversations\":[{\"id\":\"c1\",\"entry\":\"conv/items/6331.json\",\"dataChangedAt\":1},{\"id\":\"c2\",\"entry\":\"conv/items/6332.json\",\"dataChangedAt\":1}]}",
+    "conv/items/6331.json": "{\"conversations\":[{\"id\":\"c1\",\"title\":\"t\",\"lastUpdated\":1}],\"runs\":[],\"messages\":[],\"loops\":[{\"conversationId\":\"c1\",\"intervalMs\":60000}]}",
+    "conv/items/6332.json": "{\"conversations\":[{\"id\":\"c2\",\"title\":\"t\",\"lastUpdated\":1}],\"runs\":[],\"messages\":[],\"loops\":[]}",
+    "conv/tasks.json": "{\"tasks\":[{\"id\":\"t1\",\"name\":\"n\",\"prompt\":\"p\",\"cronExpr\":\"0 9 * * *\",\"createdAt\":1}]}"
+  }
+}

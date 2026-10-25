@@ -1,0 +1,36 @@
+{
+  "appVersion": "9.9.9",
+  "strategy": "MERGE",
+  "graphVersion": 5,
+  "semanticSnapshot": [
+    null,
+    []
+  ],
+  "steps": [
+    {
+      "op": "import",
+      "archiveVersion": 3
+    }
+  ],
+  "seedSql": [
+    "INSERT INTO conversations (id, title, lastUpdated, dataChangedAt, origin, graduated, draftText, hasUnreadGeneration, isPinned) VALUES ('c1', 't', 1, 1, 'user', 0, '', 0, 0)"
+  ],
+  "entries": {
+    "conv/index.json": "{\"conversations\":[{\"id\":\"c1\",\"entry\":\"conv/items/6331.json\",\"dataChangedAt\":1}]}",
+    "conv/items/6331.json": "{\"conversations\":[{\"id\":\"c1\",\"title\":\"t\",\"lastUpdated\":1}],\"runs\":[{\"id\":\"r1\",\"conversationId\":\"c1\",\"status\":\"COMPLETED\",\"startedAt\":1,\"lastCheckpointAt\":1,\"endedAt\":2,\"endReason\":\"MODEL_COMPLETED\"}],\"messages\":[{\"id\":\"m1\",\"conversationId\":\"c1\",\"text\":\"t\",\"timestamp\":10,\"participant\":\"MODEL\",\"status\":\"SUCCESS\",\"runId\":\"r1\",\"runSequence\":0,\"images\":[],\"attachmentMeta\":\"{\\\"items\\\":[{\\\"originalUri\\\":\\\"archive/video0\\\",\\\"type\\\":\\\"video\\\",\\\"file_size\\\":9},{\\\"type\\\":\\\"image\\\",\\\"image_index\\\":0,\\\"page_count\\\":1,\\\"originalUri\\\":\\\"archive/image0\\\"}]}\"}],\"loops\":[]}",
+    "conv/tasks.json": "{\"tasks\":[]}"
+  },
+  "restoredMedia": {
+    "archiveFiles": {},
+    "legacyImagesByMessage": {
+      "m1": {
+        "0": "legacy://images/m1/0"
+      }
+    },
+    "legacyVideosByMessage": {
+      "m1": {
+        "0": "legacy://videos/m1/0"
+      }
+    }
+  }
+}

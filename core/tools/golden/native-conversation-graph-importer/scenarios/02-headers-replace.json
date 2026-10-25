@@ -1,0 +1,31 @@
+{
+  "appVersion": "9.9.9",
+  "strategy": "REPLACE",
+  "graphVersion": 5,
+  "semanticSnapshot": [
+    null,
+    []
+  ],
+  "steps": [
+    {
+      "op": "headers"
+    }
+  ],
+  "resolveSystemPromptIds": {
+    "old-p": "resolved-p"
+  },
+  "entries": {
+    "conv/index.json": "{\"conversations\":[{\"id\":\"c1\",\"entry\":\"conv/items/6331.json\",\"dataChangedAt\":1},{\"id\":\"c2\",\"entry\":\"conv/items/6332.json\",\"dataChangedAt\":1}]}",
+    "conv/items/6331.json": "{\"conversations\":[{\"id\":\"c1\",\"title\":\"t\",\"lastUpdated\":1,\"taskId\":\"task-missing\",\"systemPromptId\":\"old-p\",\"hasUnreadGeneration\":true,\"draftAttachments\":\"[{\\\"localId\\\":\\\"a1\\\",\\\"uri\\\":\\\"media/images/e.png\\\",\\\"type\\\":\\\"image\\\"}]\",\"conversationSettings\":{\"temperature\":0.7,\"maxTokens\":512}}],\"runs\":[{\"id\":\"r2\",\"conversationId\":\"c1\",\"status\":\"COMPLETED\",\"startedAt\":20,\"lastCheckpointAt\":20,\"endedAt\":21,\"endReason\":\"MODEL_COMPLETED\",\"parentRunId\":\"r1\"},{\"id\":\"r1\",\"conversationId\":\"c1\",\"status\":\"COMPLETED\",\"startedAt\":10,\"lastCheckpointAt\":10,\"endedAt\":11,\"endReason\":\"MODEL_COMPLETED\",\"parentRunId\":null}],\"messages\":[],\"loops\":[{\"conversationId\":\"c1\",\"intervalMs\":60000,\"prompt\":\"  keep  \",\"cycleCount\":-4,\"active\":true}]}",
+    "conv/items/6332.json": "{\"conversations\":[{\"id\":\"c2\",\"title\":\"t\",\"lastUpdated\":1}],\"runs\":[],\"messages\":[],\"loops\":[]}",
+    "conv/tasks.json": "{\"tasks\":[{\"id\":\"t1\",\"name\":\"  named  \",\"prompt\":\"  body  \",\"systemPromptId\":\"old-p\",\"cronExpr\":\" 0 9 * * * \",\"nextRunAt\":9,\"enabled\":true,\"createdAt\":1}]}"
+  },
+  "restoredMedia": {
+    "archiveFiles": {
+      "media/images/e.png": {
+        "absolutePath": "/restored/e.png",
+        "uri": "content://restored/e.png"
+      }
+    }
+  }
+}

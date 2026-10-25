@@ -91,6 +91,7 @@ add_executable(agora_core_tests
     shell_tools_parity_test.cpp
     data_exporter_parity_test.cpp
     native_conversation_graph_source_parity_test.cpp
+    native_conversation_graph_importer_parity_test.cpp
     parity_test.cpp
     fuzz_parity_test.cpp
 )
@@ -178,6 +179,7 @@ target_compile_definitions(agora_core_tests PRIVATE
     AGORA_FIXTURE_SKILL_MANAGER_DIR="${CMAKE_CURRENT_SOURCE_DIR}/../tools/golden/skill-manager"
     AGORA_FIXTURE_DATA_EXPORTER_DIR="${CMAKE_CURRENT_SOURCE_DIR}/../tools/golden/data-exporter"
     AGORA_FIXTURE_NATIVE_CONVERSATION_GRAPH_SOURCE_DIR="${CMAKE_CURRENT_SOURCE_DIR}/../tools/golden/native-conversation-graph-source"
+    AGORA_FIXTURE_NATIVE_CONVERSATION_GRAPH_IMPORTER_DIR="${CMAKE_CURRENT_SOURCE_DIR}/../tools/golden/native-conversation-graph-importer"
     AGORA_FIXTURE_NATIVE_BACKUP_ARCHIVE_DIR="${CMAKE_CURRENT_SOURCE_DIR}/../tools/golden/native-backup-archive"
     AGORA_FIXTURE_EMBEDDING_SELECTOR_DIR="${CMAKE_CURRENT_SOURCE_DIR}/../tools/golden/embedding-selector"
     AGORA_FIXTURE_CONCH_SSE_DIR="${CMAKE_CURRENT_SOURCE_DIR}/../tools/golden/conch-sse"

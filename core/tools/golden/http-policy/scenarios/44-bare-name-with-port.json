@@ -1,0 +1,4 @@
+{
+  "op": "isLocalHost",
+  "host": "localhost:8080"
+}

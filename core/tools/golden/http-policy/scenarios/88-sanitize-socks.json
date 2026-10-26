@@ -1,0 +1,11 @@
+{
+  "op": "sanitizeProxy",
+  "config": {
+    "type": "SOCKS",
+    "host": "proxy.test",
+    "port": 8080,
+    "username": "",
+    "password": "",
+    "bypass": []
+  }
+}

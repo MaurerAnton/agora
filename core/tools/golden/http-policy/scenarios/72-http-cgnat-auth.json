@@ -1,0 +1,10 @@
+{
+  "op": "guardCleartextCredentials",
+  "url": "http://100.64.0.1/v1",
+  "headers": [
+    [
+      "Authorization",
+      "Bearer secret"
+    ]
+  ]
+}

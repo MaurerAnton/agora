@@ -1,0 +1,1 @@
+{"op":"guardCleartextCredentials","url":"http://machine.tailnet.ts.net/v1","headers":[["Authorization","Bearer secret"]],"outcome":{"ok":true}}

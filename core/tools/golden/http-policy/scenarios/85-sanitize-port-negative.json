@@ -1,0 +1,11 @@
+{
+  "op": "sanitizeProxy",
+  "config": {
+    "type": "HTTP",
+    "host": "proxy.test",
+    "port": -1,
+    "username": "",
+    "password": "",
+    "bypass": []
+  }
+}

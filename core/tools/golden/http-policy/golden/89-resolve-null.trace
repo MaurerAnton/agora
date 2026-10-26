@@ -1,0 +1,1 @@
+{"op":"resolveProxy","host":"api.example.com","config":null,"outcome":{"proxy":{"type":"DIRECT"}}}

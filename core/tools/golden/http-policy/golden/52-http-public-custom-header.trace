@@ -1,0 +1,1 @@
+{"op":"guardCleartextCredentials","url":"http://api.example.com/v1","headers":[["X-Custom","1"]],"outcome":{"ok":true}}

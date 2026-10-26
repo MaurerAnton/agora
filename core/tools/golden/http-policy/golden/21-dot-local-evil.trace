@@ -1,0 +1,1 @@
+{"op":"isLocalHost","host":"foo.local.evil","outcome":{"local":false}}

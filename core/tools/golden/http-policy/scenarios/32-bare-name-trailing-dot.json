@@ -1,0 +1,4 @@
+{
+  "op": "isLocalHost",
+  "host": "foo."
+}

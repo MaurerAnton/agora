@@ -1,0 +1,1 @@
+{"op":"resolveProxy","host":"foo.local.evil","config":{"type":"HTTP","host":"proxy.test","port":8080,"username":"","password":"","bypass":["*.local"]},"outcome":{"proxy":{"type":"HTTP","host":"proxy.test","port":8080}}}

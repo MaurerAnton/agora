@@ -1,0 +1,1 @@
+{"op":"isProxyBypassed","host":"foo.","bypass":["*."],"outcome":{"bypassed":true}}

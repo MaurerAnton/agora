@@ -1,0 +1,7 @@
+{
+  "op": "isProxyBypassed",
+  "host": "api.example.com",
+  "bypass": [
+    "0.0.0.0/0"
+  ]
+}

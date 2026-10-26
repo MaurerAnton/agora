@@ -1,0 +1,1 @@
+{"op":"guardCleartextCredentials","url":"http://localhost/v1","headers":[["Authorization","Bearer secret"]],"outcome":{"ok":true}}

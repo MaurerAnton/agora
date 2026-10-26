@@ -1,0 +1,1 @@
+{"op":"glob","files":["\\a\\b.txt"],"pattern":"a/b.txt","outcome":{"files":["\\a\\b.txt"]}}

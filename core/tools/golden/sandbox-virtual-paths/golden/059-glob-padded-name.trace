@@ -1,0 +1,1 @@
+{"op":"glob","files":["/a.txt","/b.md","/dir/a.txt","/dir/b.md","/dir/sub/c.txt","/dir/sub/deep/d.md","/other/e.txt"],"pattern":"a.txt ","outcome":{"files":["/a.txt","/dir/a.txt"]}}

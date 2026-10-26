@@ -24,7 +24,7 @@ run, message, task, loop, search, media-reference, provider-context and New Chat
 | `platform/MiniRoom.kt` | reflective executor: declared `@Query` SQL against real SQLite, named-parameter binding in SQL-text appearance order, `@Insert`/`@Upsert`/`@Update` generation, collection inserts returning `LongArray`, and cold single-emission Flows |
 | `platform/Room.kt`, `platform/RoomDatabase.kt` | annotation shapes and the database surface |
 | `platform/schema.sql` | the Room-generated schema 36 DDL, copied from `app/schemas/.../36.json` |
-| `ChatDaoTraceDump.kt` | the driver: seeds through the DAO's own upserts, executes every member, and dumps the tables |
+| `ChatDaoTraceDump.kt`, `ChatDaoTraceSeeding.kt`, `ChatDaoTraceEntities.kt`, `ChatDaoTraceOperations.kt`, `ChatDaoTraceRendering.kt`, `ChatDaoTraceTableDump.kt` | the driver: seeds through the DAO's own upserts, executes every member, and dumps the tables |
 
 `RoomDatabase` executes real `BEGIN`/`COMMIT`/`ROLLBACK`, so failed `@Transaction` bodies are
 observable as rollbacks rather than simulated exceptions. The C++ port keeps the same rule through

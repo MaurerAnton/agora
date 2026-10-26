@@ -70,6 +70,11 @@ sources=(
     "$here/platform/MiniRoom.kt"
     "$here/platform/DebugLog.kt"
     "$here/ChatDaoTraceDump.kt"
+    "$here/ChatDaoTraceSeeding.kt"
+    "$here/ChatDaoTraceEntities.kt"
+    "$here/ChatDaoTraceOperations.kt"
+    "$here/ChatDaoTraceRendering.kt"
+    "$here/ChatDaoTraceTableDump.kt"
 )
 for source in "${sources[@]}"; do
     [[ -f "$source" ]] || { echo "error: missing source $source" >&2; exit 2; }

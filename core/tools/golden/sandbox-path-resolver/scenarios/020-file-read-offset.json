@@ -1,0 +1,11 @@
+{
+  "op": "file_read",
+  "path": "/test.txt",
+  "offset": 6,
+  "limit": 0,
+  "total_bytes": 11,
+  "content": "World",
+  "lines": 1,
+  "total_lines": 1,
+  "truncated": false
+}

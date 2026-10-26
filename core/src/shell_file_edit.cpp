@@ -5,7 +5,7 @@
 #include <stdexcept>
 
 #include "agora/core/sha256.hpp"
-#include "java_utf8.hpp"
+#include "agora/core/java_utf8.hpp"
 
 namespace agora::core::shell_file {
 namespace {

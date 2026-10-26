@@ -9,8 +9,8 @@
 #include <vector>
 
 #include "agora/core/unicode.hpp"
-#include "java_utf8.hpp"
-#include "utf16.hpp"
+#include "agora/core/java_utf8.hpp"
+#include "agora/core/utf16.hpp"
 
 // This translation follows java.net.URI (JDK 26) line by line: the parser, the string
 // construction, the escaping/encoding helpers and the path normalizer are direct ports, with

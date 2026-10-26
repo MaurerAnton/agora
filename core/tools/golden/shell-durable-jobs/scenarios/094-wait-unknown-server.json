@@ -1,0 +1,16 @@
+{
+  "op": "wait_for_job",
+  "arguments": "{\"job_id\":\"job-1\",\"timeout_ms\":\"5000\",\"server\":\"ghost\"}",
+  "devices": [
+    {
+      "name": "alpha",
+      "type": "conch"
+    },
+    {
+      "name": "beta",
+      "type": "conch"
+    }
+  ],
+  "tool_timeout_ms": 60000,
+  "polls": []
+}

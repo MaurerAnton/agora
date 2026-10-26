@@ -1,0 +1,1 @@
+{"op":"conch_not_found","scenario":{"op":"conch_not_found","server":"ghost","devices":[{"name":"alpha","type":"conch"},{"name":"beta","type":"conch"}]},"outcome":{"message":"Unknown Conch server \"ghost\". Available: alpha, beta."}}

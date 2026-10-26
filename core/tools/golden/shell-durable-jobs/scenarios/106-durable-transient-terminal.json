@@ -1,0 +1,24 @@
+{
+  "op": "durable_foreground",
+  "server": "home",
+  "devices": [
+    {
+      "name": "home",
+      "type": "conch"
+    }
+  ],
+  "command": "echo hi",
+  "workdir": "",
+  "wait_ms": 60000,
+  "polls": [
+    {
+      "throw": "connection reset"
+    },
+    {
+      "ok": "{\"state\":\"succeeded\",\"exit_code\":0}"
+    }
+  ],
+  "start": {
+    "ok": "{\"job_id\":\"job-1\"}"
+  }
+}

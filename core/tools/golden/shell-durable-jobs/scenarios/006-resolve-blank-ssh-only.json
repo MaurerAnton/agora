@@ -1,0 +1,10 @@
+{
+  "op": "resolve_conch_device",
+  "server": "",
+  "devices": [
+    {
+      "name": "rasp",
+      "type": "ssh"
+    }
+  ]
+}

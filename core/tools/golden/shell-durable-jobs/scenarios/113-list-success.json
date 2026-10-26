@@ -1,0 +1,13 @@
+{
+  "op": "list_jobs",
+  "arguments": "{\"server\":\"home\"}",
+  "devices": [
+    {
+      "name": "home",
+      "type": "conch"
+    }
+  ],
+  "list": {
+    "ok": "[{\"job_id\":\"job-1\",\"state\":\"running\"}]"
+  }
+}

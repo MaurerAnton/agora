@@ -1,0 +1,1 @@
+{"op":"list_jobs","scenario":{"op":"list_jobs","arguments":"{\"server\":\"home\"}","devices":[{"name":"home","type":"conch"}],"list":{"ok":"[{\"job_id\":\"job-1\",\"state\":\"running\"}]"}},"outcome":{"result":"[{\"job_id\":\"job-1\",\"state\":\"running\"}]","events":[{"op":"list"},{"op":"close"}]}}

@@ -1,0 +1,13 @@
+{
+  "op": "list_jobs",
+  "arguments": "not json",
+  "devices": [
+    {
+      "name": "home",
+      "type": "conch"
+    }
+  ],
+  "list": {
+    "ok": "[]"
+  }
+}

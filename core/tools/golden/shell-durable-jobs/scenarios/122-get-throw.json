@@ -1,0 +1,15 @@
+{
+  "op": "get_jobs",
+  "arguments": "{\"job_id\":\"job-1\",\"server\":\"home\"}",
+  "devices": [
+    {
+      "name": "home",
+      "type": "conch"
+    }
+  ],
+  "polls": [
+    {
+      "throw": "gone"
+    }
+  ]
+}

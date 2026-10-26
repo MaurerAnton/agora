@@ -1,0 +1,19 @@
+{
+  "op": "wait_for_job",
+  "arguments": "{\"job_id\":\"job-1\",\"timeout_ms\":\"30000\",\"server\":\"\"}",
+  "devices": [
+    {
+      "name": "home",
+      "type": "conch"
+    }
+  ],
+  "tool_timeout_ms": 60000,
+  "polls": [
+    {
+      "throw": "connection reset"
+    },
+    {
+      "ok": "{\"state\":\"failed\"}"
+    }
+  ]
+}

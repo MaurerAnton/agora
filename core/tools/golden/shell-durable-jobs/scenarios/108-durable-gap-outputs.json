@@ -1,0 +1,21 @@
+{
+  "op": "durable_foreground",
+  "server": "home",
+  "devices": [
+    {
+      "name": "home",
+      "type": "conch"
+    }
+  ],
+  "command": "echo hi",
+  "workdir": "",
+  "wait_ms": 0,
+  "polls": [
+    {
+      "ok": "{\"output\":\"def\",\"output_bytes\":6}"
+    }
+  ],
+  "start": {
+    "ok": "{\"job_id\":\"job-1\"}"
+  }
+}

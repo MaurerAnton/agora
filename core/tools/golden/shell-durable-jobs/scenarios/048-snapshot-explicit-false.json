@@ -1,0 +1,4 @@
+{
+  "op": "output_snapshot",
+  "raw": "{\"output\":\"hi\",\"output_bytes\":10,\"truncated\":false}"
+}

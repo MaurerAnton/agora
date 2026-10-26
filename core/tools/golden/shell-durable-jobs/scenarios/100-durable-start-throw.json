@@ -1,0 +1,17 @@
+{
+  "op": "durable_foreground",
+  "server": "home",
+  "devices": [
+    {
+      "name": "home",
+      "type": "conch"
+    }
+  ],
+  "command": "echo hi",
+  "workdir": "",
+  "wait_ms": 60000,
+  "polls": [],
+  "start": {
+    "throw": "unreachable host"
+  }
+}

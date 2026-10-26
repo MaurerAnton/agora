@@ -1,0 +1,4 @@
+{
+  "op": "is_terminal_payload",
+  "raw": "{\"error\":{\"code\":500}}"
+}

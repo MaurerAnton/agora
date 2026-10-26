@@ -1,0 +1,4 @@
+{
+  "op": "output_snapshot",
+  "raw": "{\"output\":\"héllo 世界\",\"output_bytes\":13}"
+}

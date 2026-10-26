@@ -1,0 +1,1 @@
+{"op":"terminal_acks","scenario":{"op":"terminal_acks","calls":[{"tool_name":"get_shell_job","arguments":"{\"server\":\"home\"}","result":"{\"job_id\":\"job-14\",\"state\":\"failed\",\"server\":\"home\"}"}]},"outcome":{"acks":[{"server_name":"home","job_id":"job-14"}]}}

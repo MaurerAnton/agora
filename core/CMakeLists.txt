@@ -114,6 +114,7 @@ add_library(agora_core_lib STATIC
     src/shell_file_edit.cpp
     src/sandbox_virtual_paths.cpp
     src/sandbox_path_resolver.cpp
+    src/shell_durable_jobs.cpp
     src/stream_normalization.cpp
     src/stream_normalization_normalizer.cpp
     src/stream_normalization_text_tools.cpp

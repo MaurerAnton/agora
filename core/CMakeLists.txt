@@ -72,6 +72,7 @@ add_library(agora_core_lib STATIC
     src/run_ui_projection.cpp
     src/portable_settings_archive.cpp
     src/data_exporter.cpp
+    src/data_importer.cpp
     src/android_json.cpp
     src/native_conversation_graph_source.cpp
     src/native_conversation_graph_importer.cpp
@@ -103,6 +104,10 @@ add_library(agora_core_lib STATIC
     src/sha256.cpp
     src/shell_tool_definitions.cpp
     src/shell_tools.cpp
+    src/shell_crypto.cpp
+    src/conch_handshake.cpp
+    src/shell_validation.cpp
+    src/crypto_primitives.cpp
     src/stream_normalization.cpp
     src/stream_normalization_normalizer.cpp
     src/stream_normalization_text_tools.cpp

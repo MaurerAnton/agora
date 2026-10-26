@@ -165,6 +165,9 @@ sources=(
     "$here/platform/ConversationRepository.kt"
     "$here/platform/SettingsRepository.kt"
     "$here/DataImporterTraceDump.kt"
+    "$here/DataImporterSettingsSnapshot.kt"
+    "$here/DataImporterSettingsView.kt"
+    "$here/DataImporterTableDump.kt"
 )
 for source in "${sources[@]}"; do
     [[ -f "$source" ]] || { echo "error: missing source $source" >&2; exit 2; }

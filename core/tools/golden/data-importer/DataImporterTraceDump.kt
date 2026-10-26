@@ -65,13 +65,13 @@ import kotlinx.serialization.json.jsonArray
 import kotlinx.serialization.json.jsonObject
 import kotlinx.serialization.json.put
 
-private val json = Json { ignoreUnknownKeys = true }
-private val scenarioJson = Json { ignoreUnknownKeys = true }
-private val UUID_PATTERN =
+internal val json = Json { ignoreUnknownKeys = true }
+internal val scenarioJson = Json { ignoreUnknownKeys = true }
+internal val UUID_PATTERN =
     Regex("[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}")
-private val EPOCH_MILLIS = Regex("(?<![0-9.])1[7-9][0-9]{11}(?![0-9])")
+internal val EPOCH_MILLIS = Regex("(?<![0-9.])1[7-9][0-9]{11}(?![0-9])")
 
-private val TRACED_SETTINGS_CALLS = setOf(
+internal val TRACED_SETTINGS_CALLS = setOf(
     "saveSystemPrompts",
     "saveEmbeddingModels",
     "setActiveEmbeddingModelId",
@@ -109,544 +109,33 @@ fun main(args: Array<String>) {
 
 // ---- scenario helpers --------------------------------------------------------------------------
 
-private fun required(root: JsonObject, key: String): JsonElement =
+internal fun required(root: JsonObject, key: String): JsonElement =
     root[key] ?: error("settings snapshot is missing `$key`")
 
-private inline fun <reified T> value(root: JsonObject, key: String): T =
+internal inline fun <reified T> value(root: JsonObject, key: String): T =
     json.decodeFromJsonElement(required(root, key))
 
-private inline fun <reified T> nullableValue(root: JsonObject, key: String): T? {
+internal inline fun <reified T> nullableValue(root: JsonObject, key: String): T? {
     val element = required(root, key)
     if (element === JsonNull) return null
     return json.decodeFromJsonElement<T>(element)
 }
 
-private fun JsonObject.string(name: String): String =
+internal fun JsonObject.string(name: String): String =
     (this[name] as? JsonPrimitive)?.content ?: error("missing string $name")
 
-private fun JsonObject.stringOrNull(name: String): String? =
+internal fun JsonObject.stringOrNull(name: String): String? =
     (this[name] as? JsonPrimitive)?.contentOrNull
 
-private fun JsonObject.stringList(name: String): List<String> =
+internal fun JsonObject.stringList(name: String): List<String> =
     (this[name] as? JsonArray)?.map { (it as JsonPrimitive).content } ?: emptyList()
 
-private fun JsonObject.stringJsonArray(name: String): JsonArray =
+internal fun JsonObject.stringJsonArray(name: String): JsonArray =
     this[name] as? JsonArray ?: JsonArray(emptyList())
-
-// ---- settings snapshot (the data-exporter stand's parser) --------------------------------------
-
-private fun buildSettings(
-    root: JsonObject,
-    conversationSettings: Map<String, ConversationSettings>,
-    systemPrompts: List<SystemPromptEntry>,
-    apiKeys: List<ApiKeyEntry>,
-    activeApiKeyIds: Map<String, String>,
-    webSearchApiKeys: Map<String, String>,
-    proxyPassword: String,
-): SettingsManager = SettingsManager(
-    strings = mapOf(
-        "selectedModel" to value<String>(root, "selectedModel"),
-        "contextCompactPrompt" to value<String>(root, "contextCompactPrompt"),
-        "thinkingLevel" to value<String>(root, "thinkingLevel"),
-        "openAiServiceTier" to value<String>(root, "openAiServiceTier"),
-        "anthropicCacheTtl" to value<String>(root, "anthropicCacheTtl"),
-        "titleGenerationPrompt" to value<String>(root, "titleGenerationPrompt"),
-        "modelSearchMethod" to value<String>(root, "modelSearchMethod"),
-        "manualSearchMethod" to value<String>(root, "manualSearchMethod"),
-        "appLanguage" to value<String>(root, "appLanguage"),
-        "webSearchProvider" to value<String>(root, "webSearchProvider"),
-        "webSearchBaseUrl" to value<String>(root, "webSearchBaseUrl"),
-        "imageGenSize" to value<String>(root, "imageGenSize"),
-        "imageTranscriptionPrompt" to value<String>(root, "imageTranscriptionPrompt"),
-        "themeMode" to value<String>(root, "themeMode"),
-        "colorScheme" to value<String>(root, "colorScheme"),
-        "schemeStyle" to value<String>(root, "schemeStyle"),
-        "fontPreference" to value<String>(root, "fontPreference"),
-        "proxyType" to value<String>(root, "proxyType"),
-        "proxyHost" to value<String>(root, "proxyHost"),
-        "proxyPort" to value<String>(root, "proxyPort"),
-        "proxyUsername" to value<String>(root, "proxyUsername"),
-        "proxyBypass" to value<String>(root, "proxyBypass"),
-        "toolCallDisplayMode" to value<String>(root, "toolCallDisplayMode"),
-        "thinkingSegmentDisplayMode" to value<String>(root, "thinkingSegmentDisplayMode"),
-        "activeEmbeddingModelId" to value<String>(root, "activeEmbeddingModelId"),
-        "customFontName" to value<String>(root, "customFontName"),
-        "customFontPath" to value<String>(root, "customFontPath"),
-    ),
-    nullableStrings = mapOf(
-        "contextCompactModel" to nullableValue<String>(root, "contextCompactModel"),
-        "titleGenerationModel" to nullableValue<String>(root, "titleGenerationModel"),
-        "imageGenModel" to nullableValue<String>(root, "imageGenModel"),
-        "imageTranscriptionModel" to nullableValue<String>(root, "imageTranscriptionModel"),
-        "activeSystemPromptId" to nullableValue<String>(root, "activeSystemPromptId"),
-    ),
-    booleans = mapOf(
-        "accessActiveMemory" to value<Boolean>(root, "accessActiveMemory"),
-        "accessPastConversations" to value<Boolean>(root, "accessPastConversations"),
-        "accessSavedMemories" to value<Boolean>(root, "accessSavedMemories"),
-        "accessSkills" to value<Boolean>(root, "accessSkills"),
-        "amoledEnabled" to value<Boolean>(root, "amoledEnabled"),
-        "anthropicCacheEnabled" to value<Boolean>(root, "anthropicCacheEnabled"),
-        "askUserEnabled" to value<Boolean>(root, "askUserEnabled"),
-        "autoCacheEnabled" to value<Boolean>(root, "autoCacheEnabled"),
-        "autoExpandActiveGroup" to value<Boolean>(root, "autoExpandActiveGroup"),
-        "automationToolsEnabled" to value<Boolean>(root, "automationToolsEnabled"),
-        "automationWakeLockEnabled" to value<Boolean>(root, "automationWakeLockEnabled"),
-        "autoUpdateCheck" to value<Boolean>(root, "autoUpdateCheck"),
-        "autoWrapCodeBlocks" to value<Boolean>(root, "autoWrapCodeBlocks"),
-        "blurEffectsEnabled" to value<Boolean>(root, "blurEffectsEnabled"),
-        "codeExecutionEnabled" to value<Boolean>(root, "codeExecutionEnabled"),
-        "contextCompactEnabled" to value<Boolean>(root, "contextCompactEnabled"),
-        "contextCompactPreserveSystemPrompt" to value<Boolean>(root, "contextCompactPreserveSystemPrompt"),
-        "detailedTokenUsage" to value<Boolean>(root, "detailedTokenUsage"),
-        "dynamicColor" to value<Boolean>(root, "dynamicColor"),
-        "exactExecutionEnabled" to value<Boolean>(root, "exactExecutionEnabled"),
-        "googleSearchEnabled" to value<Boolean>(root, "googleSearchEnabled"),
-        "hapticsEnabled" to value<Boolean>(root, "hapticsEnabled"),
-        "imageGenEnabled" to value<Boolean>(root, "imageGenEnabled"),
-        "imageTranscriptionEnabled" to value<Boolean>(root, "imageTranscriptionEnabled"),
-        "openAiResponsesApiEnabled" to value<Boolean>(root, "openAiResponsesApiEnabled"),
-        "openAiServiceTierEnabled" to value<Boolean>(root, "openAiServiceTierEnabled"),
-        "parseInlineDollarMath" to value<Boolean>(root, "parseInlineDollarMath"),
-        "proxyEnabled" to value<Boolean>(root, "proxyEnabled"),
-        "ragSearchEnabled" to value<Boolean>(root, "ragSearchEnabled"),
-        "reduceMotion" to value<Boolean>(root, "reduceMotion"),
-        "shellConfirmEnabled" to value<Boolean>(root, "shellConfirmEnabled"),
-        "shellEnabled" to value<Boolean>(root, "shellEnabled"),
-        "showDocumentationFab" to value<Boolean>(root, "showDocumentationFab"),
-        "showUncachedNotification" to value<Boolean>(root, "showUncachedNotification"),
-        "stickToBottom" to value<Boolean>(root, "stickToBottom"),
-        "thinkingBudgetEnabled" to value<Boolean>(root, "thinkingBudgetEnabled"),
-        "thinkingEnabled" to value<Boolean>(root, "thinkingEnabled"),
-        "titleGenerationEnabled" to value<Boolean>(root, "titleGenerationEnabled"),
-        "titleGenerationNotificationsEnabled" to value<Boolean>(root, "titleGenerationNotificationsEnabled"),
-        "visualizeContextRollout" to value<Boolean>(root, "visualizeContextRollout"),
-        "webSearchEnabled" to value<Boolean>(root, "webSearchEnabled"),
-    ),
-    ints = mapOf(
-        "contextCompactRetainCount" to value<Int>(root, "contextCompactRetainCount"),
-        "contextCompactThresholdPercent" to value<Int>(root, "contextCompactThresholdPercent"),
-        "imageTranscriptionBatchSize" to value<Int>(root, "imageTranscriptionBatchSize"),
-        "maxContextWindow" to value<Int>(root, "maxContextWindow"),
-        "searchContextWindow" to value<Int>(root, "searchContextWindow"),
-        "searchMatchLimit" to value<Int>(root, "searchMatchLimit"),
-        "thinkingBudgetTokens" to value<Int>(root, "thinkingBudgetTokens"),
-        "webSearchNumResults" to value<Int>(root, "webSearchNumResults"),
-    ),
-    nullableInts = mapOf(
-        "defaultMaxTokens" to nullableValue<Int>(root, "defaultMaxTokens"),
-    ),
-    floats = mapOf(
-        "ragThreshold" to value<Float>(root, "ragThreshold"),
-    ),
-    nullableFloats = mapOf(
-        "defaultTemperature" to nullableValue<Float>(root, "defaultTemperature"),
-        "defaultTopP" to nullableValue<Float>(root, "defaultTopP"),
-        "defaultFrequencyPenalty" to nullableValue<Float>(root, "defaultFrequencyPenalty"),
-        "defaultPresencePenalty" to nullableValue<Float>(root, "defaultPresencePenalty"),
-    ),
-    stringSets = mapOf(
-        "customModels" to value(root, "customModels"),
-        "enabledModels" to value(root, "enabledModels"),
-        "imageTranscriptionEnabledModels" to value(root, "imageTranscriptionEnabledModels"),
-    ),
-    stringMaps = mapOf(
-        "modelAliases" to value(root, "modelAliases"),
-        "providerBaseUrls" to value(root, "providerBaseUrls"),
-    ),
-    boolMaps = mapOf(
-        "modelProviderNames" to value(root, "modelProviderNames"),
-    ),
-    embeddingModels = value(root, "embeddingModels"),
-    shellDevices = value(root, "shellDevices"),
-    mcpServers = value(root, "mcpServers"),
-    customProviders = value<List<CustomProviderConfig>>(root, "customProviders"),
-    conversationSettings = conversationSettings,
-    systemPrompts = systemPrompts,
-    apiKeys = apiKeys,
-    activeApiKeyIds = activeApiKeyIds,
-    webSearchApiKeys = webSearchApiKeys,
-    proxyPassword = proxyPassword,
-)
-
-// ---- archive construction ----------------------------------------------------------------------
-
-private fun writeArchive(entries: JsonArray, target: File) {
-    target.parentFile?.mkdirs()
-    ZipOutputStream(target.outputStream().buffered()).use { zip ->
-        for (element in entries) {
-            val entry = element.jsonObject
-            val name = entry.string("name")
-            val bytes = entry["text"]?.let { (it as JsonPrimitive).content.toByteArray(Charsets.UTF_8) }
-                ?: entry["base64"]?.let { Base64.getDecoder().decode((it as JsonPrimitive).content) }
-                ?: error("archive entry $name needs text or base64")
-            zip.putNextEntry(ZipEntry(name))
-            zip.write(bytes)
-            zip.closeEntry()
-        }
-    }
-}
-
-// ---- settings view -----------------------------------------------------------------------------
-
-private fun EmbeddingModelConfig.toJson(): JsonObject = buildJsonObject {
-    put("id", id)
-    put("name", name)
-    put("type", type.name)
-    put("remoteModelName", remoteModelName)
-    put("remoteBaseUrl", remoteBaseUrl)
-    put("remoteApiKey", remoteApiKey)
-    put("localFilePath", localFilePath)
-    put("batchSize", batchSize)
-}
-
-private fun ShellDeviceConfig.toJson(): JsonObject = buildJsonObject {
-    put("id", id)
-    put("name", name)
-    put("description", description)
-    put("type", type)
-    put("serverUrl", serverUrl)
-    put("apiKey", apiKey)
-    put("conchPublicKey", conchPublicKey)
-    put("sshHost", sshHost)
-    put("sshPort", sshPort)
-    put("sshUser", sshUser)
-    put("sshPassword", sshPassword)
-    put("sshHostKey", sshHostKey)
-}
-
-private fun McpServerConfig.toJson(): JsonObject = buildJsonObject {
-    put("id", id)
-    put("name", name)
-    put("enabled", enabled)
-    put("url", url)
-    put("transport", transport.name)
-    put("headers", buildJsonObject { headers.forEach { (key, value) -> put(key, value) } })
-    put("disabledTools", buildJsonArray { disabledTools.forEach { add(it) } })
-}
-
-private fun CustomProviderConfig.toJson(): JsonObject = buildJsonObject {
-    put("name", name)
-    put("protocol", protocol.wireValue)
-    put("id", id)
-    put("legacyNames", buildJsonArray { legacyNames.forEach { add(it) } })
-    put("responsesApiEnabled", responsesApiEnabled)
-    put("anthropicCacheEnabled", anthropicCacheEnabled)
-    put("anthropicCacheTtl", anthropicCacheTtl)
-}
-
-private fun promptJson(prompt: SystemPromptEntry): JsonObject = buildJsonObject {
-    put("id", prompt.id)
-    put("title", prompt.title)
-    put("content", prompt.content)
-    fun items(name: String, values: List<com.newoether.agora.data.PromptTemplateItem>) {
-        put(name, buildJsonArray {
-            values.forEach { item ->
-                add(buildJsonObject {
-                    put("id", item.id)
-                    put("type", item.type.name)
-                    put("value", item.value)
-                })
-            }
-        })
-    }
-    items("systemItems", prompt.systemItems)
-    items("userItems", prompt.userItems)
-    items("assistantItems", prompt.assistantItems)
-    items("userPrependItems", prompt.userPrependItems)
-    items("userPostpendItems", prompt.userPostpendItems)
-}
-
-private fun conversationSettingsJson(settings: ConversationSettings): JsonObject = buildJsonObject {
-    put("contextWindow", settings.contextWindow)
-    put("temperature", settings.temperature?.toString())
-    put("maxTokens", settings.maxTokens)
-    put("topP", settings.topP?.toString())
-    put("frequencyPenalty", settings.frequencyPenalty?.toString())
-    put("presencePenalty", settings.presencePenalty?.toString())
-    put("codeExecutionEnabled", settings.codeExecutionEnabled)
-    put("googleSearchEnabled", settings.googleSearchEnabled)
-    put("openAiWebSearchEnabled", settings.openAiWebSearchEnabled)
-    put("thinkingEnabled", settings.thinkingEnabled)
-    put("thinkingLevel", settings.thinkingLevel)
-    put("thinkingBudgetEnabled", settings.thinkingBudgetEnabled)
-    put("thinkingBudgetTokens", settings.thinkingBudgetTokens)
-    put("openAiServiceTierEnabled", settings.openAiServiceTierEnabled)
-    put("openAiServiceTier", settings.openAiServiceTier)
-    put("webSearchEnabled", settings.webSearchEnabled)
-    put("shellEnabled", settings.shellEnabled)
-    put("lowContextModeEnabled", settings.lowContextModeEnabled)
-}
-
-private fun ApiKeyEntry.toJson(): JsonObject = buildJsonObject {
-    put("id", id)
-    put("name", name)
-    put("key", key)
-    put("provider", provider)
-}
-
-private fun settingsViewJson(settings: SettingsManager): JsonObject = buildJsonObject {
-    put("systemPrompts", buildJsonArray {
-        settings.systemPromptsSnapshot().forEach { add(promptJson(it)) }
-    })
-    put("embeddingModels", buildJsonArray {
-        settings.embeddingModelsSnapshot().forEach { add(it.toJson()) }
-    })
-    put("activeEmbeddingModelId", settings.stringSnapshot("activeEmbeddingModelId"))
-    put("fontPreference", settings.stringSnapshot("fontPreference"))
-    put("customFontPath", settings.stringSnapshot("customFontPath"))
-    put("customFontName", settings.stringSnapshot("customFontName"))
-    put("activeSystemPromptId", settings.nullableStringSnapshot("activeSystemPromptId"))
-    put("shellDevices", buildJsonArray {
-        settings.shellDevicesSnapshot().forEach { add(it.toJson()) }
-    })
-    put("mcpServers", buildJsonArray {
-        settings.mcpServersSnapshot().forEach { add(it.toJson()) }
-    })
-    put("customProviders", buildJsonArray {
-        settings.customProvidersSnapshot().forEach { add(it.toJson()) }
-    })
-    put("conversationSettings", buildJsonObject {
-        settings.conversationSettingsSnapshot().forEach { (id, value) ->
-            put(id, conversationSettingsJson(value))
-        }
-    })
-    put("apiKeys", buildJsonArray { settings.apiKeysSnapshot().forEach { add(it.toJson()) } })
-    put("activeApiKeyIds", buildJsonObject {
-        settings.activeApiKeyIdsSnapshot().forEach { (key, value) -> put(key, value) }
-    })
-    put("webSearchApiKeys", buildJsonObject {
-        settings.webSearchApiKeysSnapshot().forEach { (key, value) -> put(key, value) }
-    })
-    put("proxyPassword", settings.proxyPasswordSnapshot())
-}
-
-// ---- memory / skill / files --------------------------------------------------------------------
-
-private fun memoryJson(memory: MemoryManager): JsonObject = buildJsonObject {
-    put("active", memory.getActiveMemory())
-    put("meta", memory.getMetaJson())
-    put("files", buildJsonArray {
-        memory.listFiles().forEach { info ->
-            add(buildJsonObject {
-                put("name", info.name)
-                put("description", info.description)
-                put("content", memory.readFile(info.name))
-            })
-        }
-    })
-}
-
-private fun skillsJson(skills: SkillManager): JsonObject = buildJsonObject {
-    put("meta", skills.getMetaJson())
-    put("files", buildJsonArray {
-        skills.listFiles().forEach { info ->
-            add(buildJsonObject {
-                put("name", info.name)
-                put("description", info.description)
-                put("content", skills.readFile(info.name))
-            })
-        }
-    })
-}
-
-private fun filesJson(filesDir: File): JsonArray = buildJsonArray {
-    val rootPath = filesDir.toPath()
-    filesDir.walkTopDown()
-        .filter { it.isFile }
-        .sortedBy { it.relativeTo(filesDir).invariantSeparatorsPath }
-        .forEach { file ->
-            add(buildJsonObject {
-                put("name", rootPath.relativize(file.toPath()).toString().replace(File.separatorChar, '/'))
-                put("base64", Base64.getEncoder().encodeToString(file.readBytes()))
-            })
-        }
-}
-
-// ---- table dump --------------------------------------------------------------------------------
-
-private fun queryRows(
-    connection: Connection,
-    sql: String,
-    render: (ResultSet) -> JsonElement,
-): JsonArray = buildJsonArray {
-    connection.createStatement().use { statement ->
-        statement.executeQuery(sql).use { rows ->
-            while (rows.next()) add(render(rows))
-        }
-    }
-}
-
-private fun dumpTables(connection: Connection): JsonObject = buildJsonObject {
-    put("conversations", queryRows(
-        connection,
-        "SELECT id, title, lastUpdated, dataChangedAt, selectedBranchesJson, systemPromptId, " +
-            "modelId, taskId, origin, graduated, draftText, draftAttachments, " +
-            "selectedRunBranchesJson, hasUnreadGeneration, isPinned FROM conversations ORDER BY id",
-    ) { row ->
-        buildJsonObject {
-            put("id", row.getString(1))
-            put("title", row.getString(2))
-            put("lastUpdated", row.getLong(3))
-            put("dataChangedAt", row.getLong(4))
-            put("selectedBranchesJson", row.getString(5))
-            put("systemPromptId", row.getString(6))
-            put("modelId", row.getString(7))
-            put("taskId", row.getString(8))
-            put("origin", row.getString(9))
-            put("graduated", row.getInt(10) != 0)
-            put("draftText", row.getString(11))
-            put("draftAttachments", row.getString(12))
-            put("selectedRunBranchesJson", row.getString(13))
-            put("hasUnreadGeneration", row.getInt(14) != 0)
-            put("isPinned", row.getInt(15) != 0)
-        }
-    })
-    put("runs", queryRows(
-        connection,
-        "SELECT id, conversationId, parentRunId, status, activeSlot, startedAt, " +
-            "lastCheckpointAt, stopRequestedAt, endedAt, endReason, currentPass, legacyAmbiguous " +
-            "FROM runs ORDER BY id",
-    ) { row ->
-        buildJsonObject {
-            put("id", row.getString(1))
-            put("conversationId", row.getString(2))
-            put("parentRunId", row.getString(3))
-            put("status", row.getString(4))
-            put("activeSlot", (row.getObject(5) as? Number)?.toInt())
-            put("startedAt", row.getLong(6))
-            put("lastCheckpointAt", row.getLong(7))
-            put("stopRequestedAt", (row.getObject(8) as? Number)?.toLong())
-            put("endedAt", (row.getObject(9) as? Number)?.toLong())
-            put("endReason", row.getString(10))
-            put("currentPass", row.getInt(11))
-            put("legacyAmbiguous", row.getInt(12) != 0)
-        }
-    })
-    put("messages", queryRows(
-        connection,
-        "SELECT id, conversationId, parentId, text, images, tokenCount, status, participant, " +
-            "timestamp, modelName, attachmentMeta, runId, runSequence, consumedAtPass, " +
-            "sourceJson, toolCallJson FROM messages ORDER BY id",
-    ) { row ->
-        buildJsonObject {
-            put("id", row.getString(1))
-            put("conversationId", row.getString(2))
-            put("parentId", row.getString(3))
-            put("text", row.getString(4))
-            put("images", row.getString(5))
-            put("tokenCount", row.getInt(6))
-            put("status", row.getString(7))
-            put("participant", row.getString(8))
-            put("timestamp", row.getLong(9))
-            put("modelName", row.getString(10))
-            put("attachmentMeta", row.getString(11))
-            put("runId", row.getString(12))
-            put("runSequence", row.getLong(13))
-            put("consumedAtPass", (row.getObject(14) as? Number)?.toInt())
-            put("sourceJson", row.getString(15))
-            put("toolCallJson", row.getString(16))
-        }
-    })
-    put("tasks", queryRows(
-        connection,
-        "SELECT id, name, prompt, systemPrompt, systemPromptId, modelId, cronExpr, runAt, " +
-            "nextRunAt, enabled, createdAt, lastRunAt FROM tasks ORDER BY id",
-    ) { row ->
-        buildJsonObject {
-            put("id", row.getString(1))
-            put("name", row.getString(2))
-            put("prompt", row.getString(3))
-            put("systemPrompt", row.getString(4))
-            put("systemPromptId", row.getString(5))
-            put("modelId", row.getString(6))
-            put("cronExpr", row.getString(7))
-            put("runAt", (row.getObject(8) as? Number)?.toLong())
-            put("nextRunAt", row.getLong(9))
-            put("enabled", row.getInt(10) != 0)
-            put("createdAt", row.getLong(11))
-            put("lastRunAt", (row.getObject(12) as? Number)?.toLong())
-        }
-    })
-    put("loops", queryRows(
-        connection,
-        "SELECT conversationId, intervalMs, prompt, nextFireAt, cycleCount, maxCycles, active, " +
-            "revision FROM loops ORDER BY conversationId",
-    ) { row ->
-        buildJsonObject {
-            put("conversationId", row.getString(1))
-            put("intervalMs", row.getLong(2))
-            put("prompt", row.getString(3))
-            put("nextFireAt", row.getLong(4))
-            put("cycleCount", row.getInt(5))
-            put("maxCycles", (row.getObject(6) as? Number)?.toInt())
-            put("active", row.getInt(7) != 0)
-            put("revision", row.getLong(8))
-        }
-    })
-    put("embeddings", queryRows(
-        connection,
-        "SELECT id, messageId, modelId, chunkText, dimension FROM embeddings ORDER BY id",
-    ) { row ->
-        buildJsonObject {
-            put("id", row.getLong(1))
-            put("messageId", row.getString(2))
-            put("modelId", row.getString(3))
-            put("chunkText", row.getString(4))
-            put("dimension", row.getInt(5))
-        }
-    })
-    put("conversation_settings_transfer", queryRows(
-        connection,
-        "SELECT conversationId, settingsJson FROM conversation_settings_transfer ORDER BY conversationId",
-    ) { row ->
-        buildJsonObject {
-            put("conversationId", row.getString(1))
-            put("settingsJson", row.getString(2))
-        }
-    })
-    put("conversation_settings_import_transfer", queryRows(
-        connection,
-        "SELECT id, transferId, settingsJson, mode FROM conversation_settings_import_transfer ORDER BY id",
-    ) { row ->
-        buildJsonObject {
-            put("id", row.getInt(1))
-            put("transferId", row.getString(2))
-            put("settingsJson", row.getString(3))
-            put("mode", row.getString(4))
-        }
-    })
-    put("maintenance_debt", queryRows(
-        connection,
-        "SELECT kind, identity, state, revision, updatedAt FROM maintenance_debt ORDER BY kind, identity",
-    ) { row ->
-        buildJsonObject {
-            put("kind", row.getString(1))
-            put("identity", row.getString(2))
-            put("state", row.getString(3))
-            put("revision", row.getInt(4))
-            put("updatedAt", row.getLong(5))
-        }
-    })
-    put("semantic_index_ledger", queryRows(
-        connection,
-        "SELECT modelId, state, sourceRevision, completedRevision, reconcileRevision, updatedAt " +
-            "FROM semantic_index_ledger ORDER BY modelId",
-    ) { row ->
-        buildJsonObject {
-            put("modelId", row.getString(1))
-            put("state", row.getString(2))
-            put("sourceRevision", row.getInt(3))
-            put("completedRevision", row.getInt(4))
-            put("reconcileRevision", row.getInt(5))
-            put("updatedAt", row.getLong(6))
-        }
-    })
-}
 
 // ---- scenario runner ---------------------------------------------------------------------------
 
-private fun executeScript(connection: Connection, text: String) {
+internal fun executeScript(connection: Connection, text: String) {
     val statements = text.lines()
         .map { line -> line.substringBefore("--") }
         .joinToString("\n")
@@ -657,7 +146,7 @@ private fun executeScript(connection: Connection, text: String) {
     }
 }
 
-private fun maskTrace(text: String, root: File): String {
+internal fun maskTrace(text: String, root: File): String {
     val rooted = text.replace(root.absolutePath, "<root>")
     val ordinals = LinkedHashMap<String, String>()
     val maskedUuids = UUID_PATTERN.replace(rooted) { match ->
@@ -666,7 +155,7 @@ private fun maskTrace(text: String, root: File): String {
     return EPOCH_MILLIS.replace(maskedUuids, "\"<clock>\"")
 }
 
-private fun decisionsOf(step: JsonObject): Map<DataExporter.ExportCategory, DataImporter.ImportStrategy> {
+internal fun decisionsOf(step: JsonObject): Map<DataExporter.ExportCategory, DataImporter.ImportStrategy> {
     val root = step["decisions"] as? JsonObject ?: return emptyMap()
     val out = linkedMapOf<DataExporter.ExportCategory, DataImporter.ImportStrategy>()
     root.forEach { (key, value) ->
@@ -676,7 +165,7 @@ private fun decisionsOf(step: JsonObject): Map<DataExporter.ExportCategory, Data
     return out
 }
 
-private fun importResultJson(result: DataImporter.ImportResult): JsonObject = buildJsonObject {
+internal fun importResultJson(result: DataImporter.ImportResult): JsonObject = buildJsonObject {
     put("conversationsImported", result.conversationsImported)
     put("tasksImported", result.tasksImported)
     put("loopsImported", result.loopsImported)
@@ -687,7 +176,7 @@ private fun importResultJson(result: DataImporter.ImportResult): JsonObject = bu
     put("errors", buildJsonArray { result.errors.forEach { add(it) } })
 }
 
-private fun previewJson(preview: DataImporter.ImportPreview): JsonObject = buildJsonObject {
+internal fun previewJson(preview: DataImporter.ImportPreview): JsonObject = buildJsonObject {
     put("manifest", buildJsonObject {
         put("version", preview.manifest.version)
         put("appVersion", preview.manifest.appVersion)
@@ -706,7 +195,7 @@ private fun previewJson(preview: DataImporter.ImportPreview): JsonObject = build
     put("isSupportedVersion", preview.isSupportedVersion)
 }
 
-private fun render(scenarioFile: File): String = runBlocking {
+internal fun render(scenarioFile: File): String = runBlocking {
     val root = Files.createTempDirectory("agora-data-importer-").toFile()
     try {
         val scenario = scenarioJson.parseToJsonElement(scenarioFile.readText()).jsonObject

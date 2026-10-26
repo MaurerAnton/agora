@@ -1,0 +1,7 @@
+{
+  "op": "glob",
+  "files": [
+    "/héllo/世界.txt"
+  ],
+  "pattern": "*.txt"
+}

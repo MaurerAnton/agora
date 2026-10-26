@@ -5,6 +5,7 @@
 #include <charconv>
 #include <cmath>
 #include <cstdio>
+#include <cstdlib>
 #include <cstring>
 
 namespace agora::core::android_json {
@@ -106,10 +107,13 @@ std::string java_double_to_string(double value) {
 }
 
 double java_parse_double(std::string_view text) {
-    double value = 0.0;
-    const auto [ptr, ec] =
-        std::from_chars(text.data(), text.data() + text.size(), value, std::chars_format::general);
-    if (ec != std::errc() || ptr != text.data() + text.size()) {
+    // std::from_chars for floats is deleted in the NDK's libc++, so it cannot be used on Android;
+    // strtod is correctly rounded on both bionic and glibc. Native code keeps the C locale.
+    const std::string copy(text);
+    const char* const begin = copy.c_str();
+    char* end = nullptr;
+    const double value = std::strtod(begin, &end);
+    if (end != begin + copy.size()) {
         throw Exception("NumberFormatException", "For input string: \"" + std::string(text) + "\"");
     }
     return value;

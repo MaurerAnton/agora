@@ -1,0 +1,13 @@
+{
+  "op": "verify",
+  "api_key": "test-api-key-123",
+  "expected_challenge": "challenge456",
+  "handshake": {
+    "public_key": "dGVzdC1wdWJsaWMta2V5",
+    "nonce": "nonce123",
+    "signature": "abc",
+    "features": "hkdf-extract-v2,response-auth-v1,sse-sequence-v1,rejection-auth-v1",
+    "challenge": "challenge456",
+    "features_signature": "475aa20291f581e8ce5b32a036cd77e70b1087d0758421bab231e38602bf293a"
+  }
+}

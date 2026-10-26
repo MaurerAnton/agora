@@ -1,0 +1,5 @@
+{
+  "op": "resolveProxy",
+  "host": "api.example.com",
+  "config": null
+}

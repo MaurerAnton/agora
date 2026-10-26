@@ -1,0 +1,1 @@
+{"op":"isProxyBypassed","host":"+192.168.0.1","bypass":["192.168.0.0/16"],"outcome":{"bypassed":true}}

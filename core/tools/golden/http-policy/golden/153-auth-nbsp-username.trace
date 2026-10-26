@@ -1,0 +1,1 @@
+{"op":"proxyAuthorization","config":{"type":"HTTP","host":"proxy.test","port":8080,"username":" ","password":"","bypass":[]},"hasExistingHeader":false,"outcome":{"header":null}}

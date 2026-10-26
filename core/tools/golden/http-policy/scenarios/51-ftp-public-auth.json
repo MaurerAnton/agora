@@ -1,0 +1,10 @@
+{
+  "op": "guardCleartextCredentials",
+  "url": "ftp://api.example.com/v1",
+  "headers": [
+    [
+      "Authorization",
+      "Bearer secret"
+    ]
+  ]
+}

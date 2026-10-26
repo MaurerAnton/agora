@@ -1,0 +1,1 @@
+{"op":"resolveProxy","host":"api.example.com","config":{"type":"SOCKS","host":"proxy.test","port":8080,"username":"","password":"","bypass":[]},"outcome":{"proxy":{"type":"SOCKS","host":"proxy.test","port":8080}}}

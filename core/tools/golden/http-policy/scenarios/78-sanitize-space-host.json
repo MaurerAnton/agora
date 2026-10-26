@@ -1,0 +1,11 @@
+{
+  "op": "sanitizeProxy",
+  "config": {
+    "type": "HTTP",
+    "host": "   ",
+    "port": 8080,
+    "username": "",
+    "password": "",
+    "bypass": []
+  }
+}

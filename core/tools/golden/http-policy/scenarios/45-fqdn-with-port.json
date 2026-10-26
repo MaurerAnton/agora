@@ -1,0 +1,4 @@
+{
+  "op": "isLocalHost",
+  "host": "api.example.com:443"
+}

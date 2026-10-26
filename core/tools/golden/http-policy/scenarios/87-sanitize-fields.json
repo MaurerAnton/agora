@@ -1,0 +1,14 @@
+{
+  "op": "sanitizeProxy",
+  "config": {
+    "type": "HTTP",
+    "host": "proxy.test",
+    "port": 8080,
+    "username": "user",
+    "password": "pass",
+    "bypass": [
+      "localhost",
+      "10.0.0.0/8"
+    ]
+  }
+}

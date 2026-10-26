@@ -1,0 +1,1 @@
+{"op":"resolveProxy","host":"192.168.1.5","config":{"type":"HTTP","host":"proxy.test","port":8080,"username":"","password":"","bypass":["192.168.0.0/16"]},"outcome":{"proxy":{"type":"DIRECT"}}}

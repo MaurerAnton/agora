@@ -1,0 +1,7 @@
+{
+  "op": "isProxyBypassed",
+  "host": "[::1]",
+  "bypass": [
+    "::1"
+  ]
+}

@@ -1,0 +1,14 @@
+{
+  "op": "resolveProxy",
+  "host": "[::1]",
+  "config": {
+    "type": "HTTP",
+    "host": "proxy.test",
+    "port": 8080,
+    "username": "",
+    "password": "",
+    "bypass": [
+      "::1"
+    ]
+  }
+}

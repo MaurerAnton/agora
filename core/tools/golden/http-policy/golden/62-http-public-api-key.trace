@@ -1,0 +1,1 @@
+{"op":"guardCleartextCredentials","url":"http://api.example.com/v1","headers":[["api-key","k"]],"outcome":{"error":{"type":"IOException","message":"Refusing to send API credentials over cleartext HTTP to a non-local host. Use an https:// endpoint, or reach it over LAN/Tailscale."}}}

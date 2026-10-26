@@ -1,0 +1,10 @@
+{
+  "op": "guardCleartextCredentials",
+  "url": "http://foo.local.evil/v1",
+  "headers": [
+    [
+      "Authorization",
+      "Bearer secret"
+    ]
+  ]
+}

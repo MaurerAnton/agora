@@ -1,0 +1,1 @@
+{"op":"clientPolicy","outcome":{"connectTimeoutSeconds":30,"readTimeoutSeconds":300,"writeTimeoutSeconds":30,"retryOnConnectionFailure":true,"followRedirects":true,"followSslRedirects":true}}

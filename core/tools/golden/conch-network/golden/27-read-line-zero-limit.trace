@@ -1,0 +1,1 @@
+{"op":"readBoundedWireLine","limit":0,"source":{"bodyLength":3,"declaredSize":3},"outcome":{"error":{"type":"IllegalArgumentException","message":"Failed requirement."}}}

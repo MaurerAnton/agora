@@ -1,0 +1,5 @@
+{
+  "op": "readBoundedWireLine",
+  "limit": 3,
+  "body": "abcdef"
+}

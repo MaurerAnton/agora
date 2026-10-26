@@ -1,0 +1,1 @@
+{"op":"readBoundedWireText","limit":10,"source":{"bodyLength":3,"declaredSize":11},"outcome":{"error":{"type":"IOException","message":"Response exceeds the 10-byte transport limit"}}}

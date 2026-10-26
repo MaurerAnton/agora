@@ -1,0 +1,6 @@
+{
+  "op": "readBoundedWireText",
+  "limit": 10,
+  "body": "abc",
+  "declaredSize": 11
+}

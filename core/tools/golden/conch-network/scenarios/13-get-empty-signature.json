@@ -1,0 +1,10 @@
+{
+  "op": "getTextResponse",
+  "url": "https://conch.test/public-key",
+  "headers": [],
+  "response": {
+    "code": 200,
+    "body": "hello",
+    "headers": []
+  }
+}

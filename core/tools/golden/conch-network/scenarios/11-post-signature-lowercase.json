@@ -1,0 +1,16 @@
+{
+  "op": "postTextResponse",
+  "url": "https://conch.test/execute",
+  "body": "{}",
+  "headers": [],
+  "response": {
+    "code": 200,
+    "body": "ok",
+    "headers": [
+      [
+        "x-conch-response-signature",
+        "sig-lower"
+      ]
+    ]
+  }
+}

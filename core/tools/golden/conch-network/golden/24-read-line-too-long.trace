@@ -1,0 +1,1 @@
+{"op":"readBoundedWireLine","limit":3,"source":{"bodyLength":6,"declaredSize":6},"outcome":{"error":{"type":"IOException","message":"Event exceeds the 3-byte transport limit"}}}

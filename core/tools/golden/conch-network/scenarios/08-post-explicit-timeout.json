@@ -1,0 +1,12 @@
+{
+  "op": "postTextResponse",
+  "url": "https://conch.test/execute",
+  "body": "{\"a\":1}",
+  "headers": [],
+  "timeoutMillis": 1234,
+  "response": {
+    "code": 200,
+    "body": "ok",
+    "headers": []
+  }
+}

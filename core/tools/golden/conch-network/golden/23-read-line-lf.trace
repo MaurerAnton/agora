@@ -1,0 +1,1 @@
+{"op":"readBoundedWireLine","limit":10,"source":{"bodyLength":8,"declaredSize":8},"outcome":{"line":"abc"}}

@@ -108,6 +108,8 @@ add_library(agora_core_lib STATIC
     src/conch_handshake.cpp
     src/shell_validation.cpp
     src/crypto_primitives.cpp
+    src/bounded_wire_read.cpp
+    src/conch_network.cpp
     src/stream_normalization.cpp
     src/stream_normalization_normalizer.cpp
     src/stream_normalization_text_tools.cpp

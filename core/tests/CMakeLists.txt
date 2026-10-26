@@ -92,6 +92,7 @@ add_executable(agora_core_tests
     shell_validation_parity_test.cpp
     shell_crypto_parity_test.cpp
     conch_handshake_parity_test.cpp
+    conch_network_parity_test.cpp
     crypto_primitives_test.cpp
     data_exporter_parity_test.cpp
     native_conversation_graph_source_parity_test.cpp
@@ -182,6 +183,7 @@ target_compile_definitions(agora_core_tests PRIVATE
     AGORA_FIXTURE_SHELL_VALIDATION_DIR="${CMAKE_CURRENT_SOURCE_DIR}/../tools/golden/shell-command-validation"
     AGORA_FIXTURE_SHELL_CRYPTO_DIR="${CMAKE_CURRENT_SOURCE_DIR}/../tools/golden/shell-crypto"
     AGORA_FIXTURE_CONCH_HANDSHAKE_DIR="${CMAKE_CURRENT_SOURCE_DIR}/../tools/golden/conch-handshake"
+    AGORA_FIXTURE_CONCH_NETWORK_DIR="${CMAKE_CURRENT_SOURCE_DIR}/../tools/golden/conch-network"
     AGORA_FIXTURE_MEMORY_MANAGER_DIR="${CMAKE_CURRENT_SOURCE_DIR}/../tools/golden/memory-manager"
     AGORA_FIXTURE_SKILL_MANAGER_DIR="${CMAKE_CURRENT_SOURCE_DIR}/../tools/golden/skill-manager"
     AGORA_FIXTURE_DATA_EXPORTER_DIR="${CMAKE_CURRENT_SOURCE_DIR}/../tools/golden/data-exporter"

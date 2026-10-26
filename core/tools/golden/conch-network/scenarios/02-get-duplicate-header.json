@@ -1,0 +1,24 @@
+{
+  "op": "getTextResponse",
+  "url": "https://conch.test/public-key?challenge=abc",
+  "headers": [
+    [
+      "X-Test",
+      "1"
+    ],
+    [
+      "x-test",
+      "2"
+    ]
+  ],
+  "response": {
+    "code": 200,
+    "body": "hello",
+    "headers": [
+      [
+        "X-Conch-Response-Signature",
+        "sig-1"
+      ]
+    ]
+  }
+}

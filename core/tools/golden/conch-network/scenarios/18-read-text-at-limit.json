@@ -1,0 +1,5 @@
+{
+  "op": "readBoundedWireText",
+  "limit": 6,
+  "body": "héllo"
+}

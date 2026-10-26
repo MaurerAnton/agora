@@ -1,0 +1,1 @@
+{"op":"postTextResponse","config":{"retryOnConnectionFailure":false,"followRedirects":false,"followSslRedirects":false,"poolMaxIdle":5,"poolKeepAliveSeconds":45},"request":null,"outcome":{"error":{"type":"IllegalArgumentException","message":"Failed requirement."}},"closed":false}

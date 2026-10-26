@@ -1,0 +1,15 @@
+{
+  "op": "getTextResponse",
+  "url": "https://conch.test/public-key",
+  "headers": [],
+  "response": {
+    "code": 200,
+    "body": "héllo 😀",
+    "headers": [
+      [
+        "X-Conch-Response-Signature",
+        "sig-utf8"
+      ]
+    ]
+  }
+}

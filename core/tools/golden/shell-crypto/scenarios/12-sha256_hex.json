@@ -1,0 +1,4 @@
+{
+  "op": "sha256_hex",
+  "data": "hello world"
+}

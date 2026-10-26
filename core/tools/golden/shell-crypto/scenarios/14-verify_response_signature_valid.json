@@ -1,0 +1,7 @@
+{
+  "op": "verify_response_signature",
+  "session_key": "AAECAwQFBgcICQoLDA0ODxAREhMUFRYXGBkaGxwdHh8",
+  "status": 200,
+  "body": "{\"result\": \"ok\"}",
+  "signature": "PLACEHOLDER_WILL_BE_FILLED_BY_DRIVER"
+}

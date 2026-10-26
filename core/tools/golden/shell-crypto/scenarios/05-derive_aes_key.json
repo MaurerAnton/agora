@@ -1,0 +1,5 @@
+{
+  "op": "derive_aes_key",
+  "private_key_pkcs8": "MC4CAQAwBQYDK2VuBCIEIAAHDhUcIyoxOD9GTVRbYmlwd36FjJOaoaivtr3Ey9LZ",
+  "public_key_raw": "F32PIx9sq4nqA_kNLy1T3ZuhPHiUfV2FuD1JRRTgtxQ"
+}

@@ -104,6 +104,8 @@ add_library(agora_core_lib STATIC
     src/sha256.cpp
     src/shell_tool_definitions.cpp
     src/shell_tools.cpp
+    src/shell_crypto.cpp
+    src/crypto_primitives.cpp
     src/stream_normalization.cpp
     src/stream_normalization_normalizer.cpp
     src/stream_normalization_text_tools.cpp

@@ -1,0 +1,6 @@
+{
+  "op": "decrypt",
+  "key": "AQIDBAUGBwgJCgsMDQ4PEBESExQVFhcYGRobHB0eHyA",
+  "ciphertext": "PLACEHOLDER_WILL_BE_FILLED_BY_DRIVER",
+  "plaintext": "test"
+}

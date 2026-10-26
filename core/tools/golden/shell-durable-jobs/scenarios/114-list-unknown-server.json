@@ -1,0 +1,10 @@
+{
+  "op": "list_jobs",
+  "arguments": "{\"server\":\"ghost\"}",
+  "devices": [
+    {
+      "name": "home",
+      "type": "conch"
+    }
+  ]
+}

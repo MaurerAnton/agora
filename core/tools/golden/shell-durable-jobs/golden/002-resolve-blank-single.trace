@@ -1,0 +1,1 @@
+{"op":"resolve_conch_device","scenario":{"op":"resolve_conch_device","server":"","devices":[{"name":"home","type":"conch"}]},"outcome":{"device":{"name":"home","type":"conch"}}}

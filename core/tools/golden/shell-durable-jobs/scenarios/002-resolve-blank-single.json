@@ -1,0 +1,10 @@
+{
+  "op": "resolve_conch_device",
+  "server": "",
+  "devices": [
+    {
+      "name": "home",
+      "type": "conch"
+    }
+  ]
+}

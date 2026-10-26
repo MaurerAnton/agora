@@ -1,0 +1,1 @@
+{"op":"wait_for_job","scenario":{"op":"wait_for_job","arguments":"{\"job_id\":\"job-1\"}","devices":[{"name":"home","type":"conch"}],"tool_timeout_ms":60000,"polls":[]},"outcome":{"result":"{\"type\":\"wait_for_job\",\"error\":\"error\",\"message\":\"timeout_ms is required\",\"server\":\"\"}","snapshots":[]}}

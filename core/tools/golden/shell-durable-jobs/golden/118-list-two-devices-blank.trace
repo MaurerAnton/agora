@@ -1,0 +1,1 @@
+{"op":"list_jobs","scenario":{"op":"list_jobs","arguments":"{}","devices":[{"name":"alpha","type":"conch"},{"name":"beta","type":"conch"}]},"outcome":{"result":"{\"type\":\"list_shell_jobs\",\"error\":\"error\",\"message\":\"Multiple Conch servers are available. Specify one: alpha, beta.\",\"server\":\"\"}","events":[]}}

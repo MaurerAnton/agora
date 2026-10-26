@@ -1,0 +1,1 @@
+{"op":"output_snapshot","scenario":{"op":"output_snapshot","raw":"{\"output\":\"hi\",\"output_bytes\":10}"},"outcome":{"snapshot":{"text":"hi","output_bytes":10,"truncated":true}}}

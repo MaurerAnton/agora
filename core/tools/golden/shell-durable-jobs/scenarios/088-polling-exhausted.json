@@ -1,0 +1,11 @@
+{
+  "op": "wait_for_job_polling",
+  "job_id": "job-1",
+  "server": "srv",
+  "timeout_ms": 30000,
+  "clamped_from": null,
+  "ceiling_ms": 55000,
+  "start_clock": 1000000,
+  "polls": [],
+  "cancel_after_delay": null
+}

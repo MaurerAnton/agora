@@ -1,0 +1,10 @@
+{
+  "op": "conch_not_found",
+  "server": "",
+  "devices": [
+    {
+      "name": "rasp",
+      "type": "ssh"
+    }
+  ]
+}

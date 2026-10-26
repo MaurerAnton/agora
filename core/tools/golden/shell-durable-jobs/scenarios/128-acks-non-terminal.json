@@ -1,0 +1,10 @@
+{
+  "op": "terminal_acks",
+  "calls": [
+    {
+      "tool_name": "execute_shell_command",
+      "arguments": "{\"server\":\"home\"}",
+      "result": "{\"job_id\":\"job-4\",\"state\":\"running\"}"
+    }
+  ]
+}

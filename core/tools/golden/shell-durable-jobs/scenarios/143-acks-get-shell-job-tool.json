@@ -1,0 +1,10 @@
+{
+  "op": "terminal_acks",
+  "calls": [
+    {
+      "tool_name": "get_shell_job",
+      "arguments": "{\"server\":\"home\"}",
+      "result": "{\"job_id\":\"job-14\",\"state\":\"failed\",\"server\":\"home\"}"
+    }
+  ]
+}

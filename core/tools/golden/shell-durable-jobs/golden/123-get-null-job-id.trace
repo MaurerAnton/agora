@@ -1,0 +1,1 @@
+{"op":"get_jobs","scenario":{"op":"get_jobs","arguments":"{\"job_id\":null,\"server\":\"\"}","devices":[{"name":"home","type":"conch"}],"polls":[{"ok":"{\"state\":\"running\"}"}]},"outcome":{"result":"{\"state\":\"running\"}","events":[{"op":"get","job_id":"null"},{"op":"close"}]}}

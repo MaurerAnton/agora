@@ -1,0 +1,1 @@
+{"op":"terminal_acks","scenario":{"op":"terminal_acks","calls":[{"tool_name":"file_read","arguments":"{\"server\":\"home\"}","result":"{\"job_id\":\"job-6\",\"state\":\"succeeded\"}"}]},"outcome":{"acks":[]}}

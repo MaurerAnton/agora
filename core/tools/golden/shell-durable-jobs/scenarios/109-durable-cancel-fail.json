@@ -1,0 +1,21 @@
+{
+  "op": "durable_foreground",
+  "server": "home",
+  "devices": [
+    {
+      "name": "home",
+      "type": "conch"
+    }
+  ],
+  "command": "echo hi",
+  "workdir": "",
+  "wait_ms": 60000,
+  "polls": [
+    {
+      "cancel_throw": "stop requested"
+    }
+  ],
+  "start": {
+    "ok": "{\"job_id\":\"job-1\"}"
+  }
+}

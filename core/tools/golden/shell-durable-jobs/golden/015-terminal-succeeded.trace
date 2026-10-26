@@ -1,0 +1,1 @@
+{"op":"is_terminal_payload","scenario":{"op":"is_terminal_payload","raw":"{\"state\":\"succeeded\"}"},"outcome":{"terminal":true}}

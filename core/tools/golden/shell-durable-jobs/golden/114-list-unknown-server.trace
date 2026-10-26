@@ -1,0 +1,1 @@
+{"op":"list_jobs","scenario":{"op":"list_jobs","arguments":"{\"server\":\"ghost\"}","devices":[{"name":"home","type":"conch"}]},"outcome":{"result":"{\"type\":\"list_shell_jobs\",\"error\":\"error\",\"message\":\"Unknown Conch server \\\"ghost\\\". Available: home.\",\"server\":\"ghost\"}","events":[]}}

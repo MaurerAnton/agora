@@ -1,0 +1,14 @@
+{
+  "op": "list_jobs",
+  "arguments": "{}",
+  "devices": [
+    {
+      "name": "alpha",
+      "type": "conch"
+    },
+    {
+      "name": "beta",
+      "type": "conch"
+    }
+  ]
+}

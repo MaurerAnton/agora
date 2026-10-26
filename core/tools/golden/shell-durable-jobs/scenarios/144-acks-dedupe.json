@@ -1,0 +1,15 @@
+{
+  "op": "terminal_acks",
+  "calls": [
+    {
+      "tool_name": "execute_shell_command",
+      "arguments": "{\"server\":\"Home\"}",
+      "result": "{\"job_id\":\"job-15\",\"state\":\"stopped\",\"server\":\"Home\"}"
+    },
+    {
+      "tool_name": "execute_shell_command",
+      "arguments": "{\"server\":\"home\"}",
+      "result": "{\"job_id\":\"job-15\",\"state\":\"stopped\",\"server\":\"home\"}"
+    }
+  ]
+}

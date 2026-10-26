@@ -1,0 +1,12 @@
+{
+  "op": "wait_for_job",
+  "arguments": "{}",
+  "devices": [
+    {
+      "name": "home",
+      "type": "conch"
+    }
+  ],
+  "tool_timeout_ms": 60000,
+  "polls": []
+}

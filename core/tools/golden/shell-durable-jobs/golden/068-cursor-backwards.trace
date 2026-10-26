@@ -1,0 +1,1 @@
+{"op":"output_cursor","scenario":{"op":"output_cursor","payloads":["{\"output\":\"abcdefgh\",\"output_bytes\":8}","{\"output\":\"ab\",\"output_bytes\":2}"]},"outcome":{"updates":[{"delta":"abcdefgh","lost_bytes":0},{"delta":"","lost_bytes":0}]}}

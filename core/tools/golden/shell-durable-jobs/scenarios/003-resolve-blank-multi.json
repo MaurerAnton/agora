@@ -1,0 +1,14 @@
+{
+  "op": "resolve_conch_device",
+  "server": "",
+  "devices": [
+    {
+      "name": "alpha",
+      "type": "conch"
+    },
+    {
+      "name": "beta",
+      "type": "conch"
+    }
+  ]
+}

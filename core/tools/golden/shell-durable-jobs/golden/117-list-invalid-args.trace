@@ -1,0 +1,1 @@
+{"op":"list_jobs","scenario":{"op":"list_jobs","arguments":"not json","devices":[{"name":"home","type":"conch"}],"list":{"ok":"[]"}},"outcome":{"result":"[]","events":[{"op":"list"},{"op":"close"}]}}

@@ -1,0 +1,9 @@
+{
+  "op": "output_cursor",
+  "payloads": [
+    "{\"output\":\"abc\"}",
+    "not json",
+    "{\"output_bytes\":3}",
+    "{\"output\":\"\",\"output_bytes\":0}"
+  ]
+}

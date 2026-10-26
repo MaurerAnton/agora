@@ -1,0 +1,1 @@
+{"op":"get_jobs","scenario":{"op":"get_jobs","arguments":"{\"server\":\"home\"}","devices":[{"name":"home","type":"conch"}],"polls":[]},"outcome":{"result":"{\"type\":\"get_shell_job\",\"error\":\"error\",\"message\":\"job_id is required\"}","events":[]}}

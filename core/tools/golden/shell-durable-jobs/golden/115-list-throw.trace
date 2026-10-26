@@ -1,0 +1,1 @@
+{"op":"list_jobs","scenario":{"op":"list_jobs","arguments":"{\"server\":\"home\"}","devices":[{"name":"home","type":"conch"}],"list":{"throw":"maintenance window"}},"outcome":{"result":"{\"type\":\"list_shell_jobs\",\"error\":\"error\",\"message\":\"maintenance window\",\"server\":\"home\"}","events":[{"op":"list"},{"op":"close"}]}}

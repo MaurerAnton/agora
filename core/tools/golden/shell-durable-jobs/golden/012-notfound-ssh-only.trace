@@ -1,0 +1,1 @@
+{"op":"conch_not_found","scenario":{"op":"conch_not_found","server":"","devices":[{"name":"rasp","type":"ssh"}]},"outcome":{"message":"No Conch server is configured. Background jobs require Conch."}}

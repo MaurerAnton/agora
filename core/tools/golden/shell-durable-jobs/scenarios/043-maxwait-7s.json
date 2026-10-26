@@ -1,0 +1,4 @@
+{
+  "op": "max_wait_ms",
+  "tool_timeout_ms": 7000
+}

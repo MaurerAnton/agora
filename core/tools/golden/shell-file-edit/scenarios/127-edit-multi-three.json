@@ -1,0 +1,7 @@
+{
+  "op": "edit",
+  "content": "aaaa",
+  "oldString": "aa",
+  "newString": "X",
+  "replaceAll": true
+}

@@ -1,0 +1,1 @@
+{"op":"edit","content":"a\nb\nc","oldString":"b","newString":"x\r\ny","replaceAll":false,"outcome":{"content":"a\nx\ny\nc","result":{"replacements":1,"sha256":"","error":null}}}

@@ -1,0 +1,1 @@
+{"op":"matchRanges","content":"abababa","oldString":"aba","outcome":{"ranges":[[0,2],[4,6]]}}

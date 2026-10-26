@@ -1,0 +1,11 @@
+{
+  "op": "replaceMatches",
+  "content": "abc",
+  "matches": [
+    [
+      2,
+      2
+    ]
+  ],
+  "newString": "X"
+}

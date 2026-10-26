@@ -1,0 +1,1 @@
+{"op":"matchRanges","content":"a\r\nb","oldString":"a\nb","outcome":{"ranges":[[0,3]]}}

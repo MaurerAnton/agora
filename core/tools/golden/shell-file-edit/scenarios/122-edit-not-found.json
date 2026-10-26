@@ -1,0 +1,7 @@
+{
+  "op": "edit",
+  "content": "abc",
+  "oldString": "z",
+  "newString": "X",
+  "replaceAll": false
+}

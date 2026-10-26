@@ -1,0 +1,7 @@
+{
+  "op": "edit",
+  "content": "a\nb",
+  "oldString": "a\r\nb",
+  "newString": "x",
+  "replaceAll": false
+}

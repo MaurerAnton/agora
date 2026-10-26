@@ -1,0 +1,1 @@
+{"op":"readBoundedShellOutput","bytesHex":"68656c6c6f21","maxBytes":5,"chunks":[],"outcome":{"content":"hello","truncated":true}}

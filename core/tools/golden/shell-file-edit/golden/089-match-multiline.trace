@@ -1,0 +1,1 @@
+{"op":"matchRanges","content":"one\ntwo\none\ntwo","oldString":"one","outcome":{"ranges":[[0,2],[8,10]]}}

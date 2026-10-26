@@ -1,0 +1,1 @@
+{"op":"edit","content":"a\nb","oldString":"\n","newString":"X","replaceAll":false,"outcome":{"content":"aXb","result":{"replacements":1,"sha256":"","error":null}}}

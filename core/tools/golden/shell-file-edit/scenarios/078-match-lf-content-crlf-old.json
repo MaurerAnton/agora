@@ -1,0 +1,5 @@
+{
+  "op": "matchRanges",
+  "content": "a\nb",
+  "oldString": "a\r\nb"
+}

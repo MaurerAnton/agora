@@ -1,0 +1,1 @@
+{"op":"withLineEnding","text":"a\r\n\r\nb","lineEnding":"\n","outcome":{"content":"a\n\nb"}}

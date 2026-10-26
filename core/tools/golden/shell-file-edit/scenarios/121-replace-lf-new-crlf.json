@@ -1,0 +1,11 @@
+{
+  "op": "replaceMatches",
+  "content": "a\nb",
+  "matches": [
+    [
+      1,
+      1
+    ]
+  ],
+  "newString": "x\r\ny"
+}

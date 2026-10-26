@@ -94,6 +94,7 @@ add_executable(agora_core_tests
     conch_handshake_parity_test.cpp
     conch_network_parity_test.cpp
     http_policy_parity_test.cpp
+    shell_file_edit_parity_test.cpp
     crypto_primitives_test.cpp
     data_exporter_parity_test.cpp
     native_conversation_graph_source_parity_test.cpp
@@ -102,7 +103,7 @@ add_executable(agora_core_tests
     fuzz_parity_test.cpp
 )
 target_link_libraries(agora_core_tests PRIVATE agora_core_lib Threads::Threads SQLite::SQLite3)
-target_include_directories(agora_core_tests PRIVATE ${CMAKE_CURRENT_SOURCE_DIR})
+target_include_directories(agora_core_tests PRIVATE ${CMAKE_CURRENT_SOURCE_DIR} ${CMAKE_CURRENT_SOURCE_DIR}/../src)
 
 # Fixtures: the shipped vocabulary and the tiktoken reference set live in the app tree, two
 # levels up, so the port is always checked against exactly the files the app ships. The frozen
@@ -186,6 +187,7 @@ target_compile_definitions(agora_core_tests PRIVATE
     AGORA_FIXTURE_CONCH_HANDSHAKE_DIR="${CMAKE_CURRENT_SOURCE_DIR}/../tools/golden/conch-handshake"
     AGORA_FIXTURE_CONCH_NETWORK_DIR="${CMAKE_CURRENT_SOURCE_DIR}/../tools/golden/conch-network"
     AGORA_FIXTURE_HTTP_POLICY_DIR="${CMAKE_CURRENT_SOURCE_DIR}/../tools/golden/http-policy"
+    AGORA_FIXTURE_SHELL_FILE_EDIT_DIR="${CMAKE_CURRENT_SOURCE_DIR}/../tools/golden/shell-file-edit"
     AGORA_FIXTURE_MEMORY_MANAGER_DIR="${CMAKE_CURRENT_SOURCE_DIR}/../tools/golden/memory-manager"
     AGORA_FIXTURE_SKILL_MANAGER_DIR="${CMAKE_CURRENT_SOURCE_DIR}/../tools/golden/skill-manager"
     AGORA_FIXTURE_DATA_EXPORTER_DIR="${CMAKE_CURRENT_SOURCE_DIR}/../tools/golden/data-exporter"

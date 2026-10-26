@@ -1,0 +1,1 @@
+{"op":"replaceMatches","content":"a\r\nb","matches":[[0,2]],"newString":"x\ny","outcome":{"content":"x\r\nyb"}}

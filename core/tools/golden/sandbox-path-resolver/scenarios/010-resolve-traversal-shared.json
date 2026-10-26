@@ -1,0 +1,6 @@
+{
+  "op": "resolve",
+  "path": "/mnt/shared/../../../etc/passwd",
+  "home_mount_path": "/mnt/home",
+  "shared_storage_mount_path": "/mnt/shared"
+}

@@ -16,8 +16,9 @@ namespace agora::core::sandbox {
 std::string normalize_virtual_path(std::string_view path);
 
 /**
- * globMatch: trim/normalize the pattern, anchor it to the sandbox root ("/**", "/pattern",
- * "/dir/pattern" or "/**\/pattern"), then filter `files` through PortableGlobMatcher in order.
+ * globMatch: trim/normalize the pattern, anchor it to the sandbox root ("star-star-slash",
+ * "/pattern", "/dir/pattern" or "star-star-slash/pattern"), then filter `files`
+ * through PortableGlobMatcher in order.
  */
 std::vector<std::string> glob_match(const std::vector<std::string>& files,
                                     std::string_view pattern);

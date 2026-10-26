@@ -96,6 +96,7 @@ add_executable(agora_core_tests
     http_policy_parity_test.cpp
     shell_file_edit_parity_test.cpp
     sandbox_virtual_paths_parity_test.cpp
+    sandbox_path_resolver_parity_test.cpp
     crypto_primitives_test.cpp
     data_exporter_parity_test.cpp
     native_conversation_graph_source_parity_test.cpp

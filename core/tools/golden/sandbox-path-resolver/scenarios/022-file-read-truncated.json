@@ -1,0 +1,11 @@
+{
+  "op": "file_read",
+  "path": "/large.txt",
+  "offset": 0,
+  "limit": 100,
+  "total_bytes": 10000,
+  "content": "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA",
+  "lines": 1,
+  "total_lines": 1000,
+  "truncated": true
+}

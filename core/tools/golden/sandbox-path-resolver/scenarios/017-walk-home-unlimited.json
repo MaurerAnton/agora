@@ -1,0 +1,13 @@
+{
+  "op": "walk",
+  "files": [
+    "/mnt/home/a.txt",
+    "/mnt/home/b.md",
+    "/mnt/home/dir/mnt/home/c.txt",
+    "/mnt/home/dir/mnt/home/sub/mnt/home/d.txt",
+    "/mnt/home/other/mnt/home/e.txt"
+  ],
+  "physical_root": "/root/home",
+  "virtual_root": "/mnt/home",
+  "remaining": -1
+}

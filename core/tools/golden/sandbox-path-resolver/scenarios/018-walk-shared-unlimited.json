@@ -1,0 +1,13 @@
+{
+  "op": "walk",
+  "files": [
+    "/mnt/shared/a.txt",
+    "/mnt/shared/b.md",
+    "/mnt/shared/dir/mnt/shared/c.txt",
+    "/mnt/shared/dir/mnt/shared/sub/mnt/shared/d.txt",
+    "/mnt/shared/other/mnt/shared/e.txt"
+  ],
+  "physical_root": "/root/shared",
+  "virtual_root": "/mnt/shared",
+  "remaining": -1
+}

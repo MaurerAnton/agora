@@ -1,0 +1,5 @@
+{
+  "op": "matchRanges",
+  "content": "abababa",
+  "oldString": "aba"
+}

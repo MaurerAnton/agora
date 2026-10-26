@@ -1,0 +1,1 @@
+{"op":"replaceMatches","content":"abc","matches":[[0,3]],"newString":"X","outcome":{"error":{"type":"IllegalArgumentException","message":"Failed requirement."}}}

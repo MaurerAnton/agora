@@ -1,0 +1,1 @@
+{"op":"edit","content":"abcabc","oldString":"abc","newString":"X","replaceAll":false,"outcome":{"content":null,"result":{"replacements":0,"sha256":"","error":"found 2 matches of old_string; set replace_all=true or provide a unique match"}}}

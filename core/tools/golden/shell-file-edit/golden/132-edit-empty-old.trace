@@ -1,0 +1,1 @@
+{"op":"edit","content":"abc","oldString":"","newString":"X","replaceAll":false,"outcome":{"error":{"type":"IllegalArgumentException","message":"Failed requirement."}}}

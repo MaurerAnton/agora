@@ -1,0 +1,6 @@
+{
+  "op": "readBoundedShellOutput",
+  "bytesHex": "00010708",
+  "maxBytes": 4,
+  "chunks": []
+}

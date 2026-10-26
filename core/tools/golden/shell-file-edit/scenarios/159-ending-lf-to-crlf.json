@@ -1,0 +1,5 @@
+{
+  "op": "withLineEnding",
+  "text": "a\nb",
+  "lineEnding": "\r\n"
+}

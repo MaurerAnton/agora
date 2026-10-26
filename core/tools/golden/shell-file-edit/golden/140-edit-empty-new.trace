@@ -1,0 +1,1 @@
+{"op":"edit","content":"abc","oldString":"b","newString":"","replaceAll":false,"outcome":{"content":"ac","result":{"replacements":1,"sha256":"","error":null}}}

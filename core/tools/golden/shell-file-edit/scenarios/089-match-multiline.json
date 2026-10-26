@@ -1,0 +1,5 @@
+{
+  "op": "matchRanges",
+  "content": "one\ntwo\none\ntwo",
+  "oldString": "one"
+}

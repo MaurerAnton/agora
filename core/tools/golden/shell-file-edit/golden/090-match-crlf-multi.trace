@@ -1,0 +1,1 @@
+{"op":"matchRanges","content":"x\r\ny\r\nx","oldString":"x","outcome":{"ranges":[[0,0],[6,6]]}}

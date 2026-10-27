@@ -223,3 +223,25 @@ target_compile_definitions(agora_core_tests PRIVATE
 )
 
 add_test(NAME agora_core_tests COMMAND agora_core_tests)
+
+# Real-SSH integration suite for the libssh2 transport. Needs libssh2 (parent scope) plus
+# sshd/ssh-keygen to stand up a throwaway localhost server with pubkey auth.
+if(AGORA_CORE_HAVE_LIBSSH2)
+    find_program(AGORA_TEST_SSHD NAMES sshd)
+    find_program(AGORA_TEST_SSH_KEYGEN NAMES ssh-keygen)
+    if(AGORA_TEST_SSHD AND AGORA_TEST_SSH_KEYGEN)
+        add_executable(agora_ssh_transport_tests
+            test_main.cpp
+            ssh_libssh2_transport_test.cpp
+        )
+        target_link_libraries(agora_ssh_transport_tests PRIVATE agora_core_lib Threads::Threads)
+        target_include_directories(agora_ssh_transport_tests PRIVATE ${CMAKE_CURRENT_SOURCE_DIR})
+        target_compile_definitions(agora_ssh_transport_tests PRIVATE
+            AGORA_TEST_SSHD="${AGORA_TEST_SSHD}"
+            AGORA_TEST_SSH_KEYGEN="${AGORA_TEST_SSH_KEYGEN}"
+        )
+        add_test(NAME agora_ssh_transport_tests COMMAND agora_ssh_transport_tests)
+    else()
+        message(STATUS "agora core: sshd/ssh-keygen not found - SSH transport integration tests skipped")
+    endif()
+endif()

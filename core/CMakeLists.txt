@@ -144,6 +144,21 @@ if(NOT MSVC)
     target_compile_options(agora_core_lib PRIVATE -Wall -Wextra)
 endif()
 
+# Optional host-side SSH transport: the JSch surface SshClient.kt drives, backed by libssh2.
+# Android ships without libssh2 (JSch stays the Kotlin stack there), so the APK is untouched.
+find_path(AGORA_LIBSSH2_INCLUDE_DIR NAMES libssh2.h)
+find_library(AGORA_LIBSSH2_LIBRARY NAMES ssh2 libssh2)
+if(AGORA_LIBSSH2_INCLUDE_DIR AND AGORA_LIBSSH2_LIBRARY)
+    set(AGORA_CORE_HAVE_LIBSSH2 ON)
+    target_sources(agora_core_lib PRIVATE src/ssh_libssh2_transport.cpp)
+    target_compile_definitions(agora_core_lib PUBLIC AGORA_CORE_HAVE_LIBSSH2=1)
+    target_include_directories(agora_core_lib PRIVATE ${AGORA_LIBSSH2_INCLUDE_DIR})
+    target_link_libraries(agora_core_lib PUBLIC ${AGORA_LIBSSH2_LIBRARY})
+    message(STATUS "agora core: libssh2 SSH transport enabled (${AGORA_LIBSSH2_LIBRARY})")
+else()
+    set(AGORA_CORE_HAVE_LIBSSH2 OFF)
+endif()
+
 if(AGORA_CORE_BUILD_TESTS)
     enable_testing()
     add_subdirectory(tests)

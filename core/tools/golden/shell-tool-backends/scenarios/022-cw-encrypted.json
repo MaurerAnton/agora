@@ -1,0 +1,17 @@
+{
+  "op": "conch_file_write",
+  "device": {
+    "name": "conch-box",
+    "type": "conch",
+    "serverUrl": "http://conch.local:9",
+    "apiKey": "secret-api-key",
+    "conchPublicKey": "",
+    "description": "Conch host"
+  },
+  "response": {
+    "code": 200,
+    "body": "{}"
+  },
+  "path": "/data/b.txt",
+  "content": "payload"
+}

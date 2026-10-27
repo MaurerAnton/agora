@@ -1,0 +1,21 @@
+{
+  "op": "ssh_execute",
+  "device": {
+    "name": "pi",
+    "type": "ssh",
+    "sshHost": "10.0.0.5",
+    "sshPort": 22,
+    "sshUser": "pi",
+    "sshPassword": "pw",
+    "sshHostKey": "",
+    "description": "Lab Pi"
+  },
+  "command": "ls -la",
+  "workdir": "",
+  "timeout_ms": 500,
+  "jsch": {
+    "presented_key": "server-host-key",
+    "never_close": true,
+    "exit_status": 0
+  }
+}

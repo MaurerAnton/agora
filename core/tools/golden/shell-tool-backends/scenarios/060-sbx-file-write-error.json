@@ -1,0 +1,8 @@
+{
+  "op": "sandbox_file_write",
+  "path": "/mnt/home/b.txt",
+  "content": "x",
+  "sandbox": {
+    "file_write_error": "read-only mount"
+  }
+}

@@ -1,0 +1,23 @@
+{
+  "op": "ssh_file_write",
+  "device": {
+    "name": "pi",
+    "type": "ssh",
+    "sshHost": "10.0.0.5",
+    "sshPort": 22,
+    "sshUser": "pi",
+    "sshPassword": "pw",
+    "sshHostKey": "",
+    "description": "Lab Pi"
+  },
+  "jsch": {
+    "stats": {
+      "/home": {
+        "is_dir": true
+      }
+    },
+    "mkdir_failures": []
+  },
+  "path": "/home/pi/new/deep.txt",
+  "content": "data"
+}

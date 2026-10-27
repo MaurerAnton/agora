@@ -1,0 +1,19 @@
+{
+  "op": "conch_file_edit",
+  "device": {
+    "name": "conch-box",
+    "type": "conch",
+    "serverUrl": "http://conch.local:9",
+    "apiKey": "",
+    "conchPublicKey": "",
+    "description": "Conch host"
+  },
+  "response": {
+    "code": 200,
+    "body": "{\"replacements\":1,\"sha256\":\"aa\"}"
+  },
+  "path": "/data/c.txt",
+  "old_string": "foo",
+  "new_string": "baz",
+  "replace_all": false
+}

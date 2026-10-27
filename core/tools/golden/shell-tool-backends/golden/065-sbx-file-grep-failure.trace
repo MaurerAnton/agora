@@ -1,0 +1,1 @@
+{"op":"sandbox_file_grep","scenario":{"op":"sandbox_file_grep","pattern":"x","path":"","glob":"","sandbox":{"file_grep_failure":"grep unavailable"}},"outcome":{"result":null,"threw":"grep unavailable","sandbox_calls":["fileGrep:x"]}}

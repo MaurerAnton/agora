@@ -1,0 +1,14 @@
+{
+  "op": "sandbox_file_glob",
+  "pattern": "*.txt",
+  "path": "",
+  "depth": null,
+  "sandbox": {
+    "file_glob_result": {
+      "files": [
+        "/mnt/home/a.txt"
+      ],
+      "truncated": false
+    }
+  }
+}

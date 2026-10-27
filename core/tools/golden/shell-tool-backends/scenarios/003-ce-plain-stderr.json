@@ -1,0 +1,27 @@
+{
+  "op": "conch_execute",
+  "device": {
+    "name": "conch-box",
+    "type": "conch",
+    "serverUrl": "http://conch.local:9",
+    "apiKey": "",
+    "conchPublicKey": "",
+    "description": "Conch host"
+  },
+  "command": "ls -la",
+  "workdir": "",
+  "timeout_ms": 30000,
+  "stream": {
+    "code": 200,
+    "lines": [
+      "event: line",
+      "data: {\"line\":\"out1\",\"stream\":\"stdout\"}",
+      "event: line",
+      "data: {\"line\":\"out2\",\"stream\":\"stdout\"}",
+      "event: line",
+      "data: {\"line\":\"err1\",\"stream\":\"stderr\"}",
+      "event: result",
+      "data: {\"exit_code\":0}"
+    ]
+  }
+}

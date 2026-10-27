@@ -1,0 +1,1 @@
+{"op":"sandbox_file_edit","scenario":{"op":"sandbox_file_edit","path":"/mnt/home/c.txt","old_string":"foo","new_string":"baz","replace_all":false,"sandbox":{"file_edit_result":{"replacements":2,"sha256":"cafe"}}},"outcome":{"result":{"replacements":2,"sha256":"cafe","error":null},"sandbox_calls":["fileEdit:/mnt/home/c.txt"]}}

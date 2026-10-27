@@ -1,0 +1,1 @@
+{"op":"sandbox_execute","scenario":{"op":"sandbox_execute","command":"ls","workdir":"","timeout_ms":30000,"sandbox":{"available":false}},"outcome":{"result":"{\"type\":\"execute_shell_command\",\"error\":\"error\",\"message\":\"Local Sandbox is not installed.\"}","threw":null,"sandbox_calls":["isAvailable"]}}

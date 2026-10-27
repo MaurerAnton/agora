@@ -1,0 +1,23 @@
+{
+  "op": "conch_execute",
+  "device": {
+    "name": "conch-box",
+    "type": "conch",
+    "serverUrl": "http://conch.local:9",
+    "apiKey": "secret-api-key",
+    "conchPublicKey": "",
+    "description": "Conch host"
+  },
+  "command": "ls -la",
+  "workdir": "",
+  "timeout_ms": 30000,
+  "stream": {
+    "code": 200,
+    "lines": [
+      "event: line",
+      "data: {\"_conch_event\":\"line\",\"_conch_sequence\":0,\"line\":\"secret\",\"stream\":\"stdout\"}",
+      "event: result",
+      "data: {\"_conch_event\":\"result\",\"_conch_sequence\":1,\"exit_code\":0}"
+    ]
+  }
+}

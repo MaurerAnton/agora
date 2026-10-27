@@ -1,0 +1,1 @@
+{"op":"sandbox_execute","scenario":{"op":"sandbox_execute","command":"ls","workdir":"","timeout_ms":30000,"sandbox":{"execute_failure":"proot crashed"}},"outcome":{"result":"{\"type\":\"execute_shell_command\",\"error\":\"error\",\"message\":\"proot crashed\",\"server\":\"Local Sandbox\",\"command\":\"ls\"}","threw":null,"sandbox_calls":["isAvailable","executeCommand"]}}

@@ -1,0 +1,22 @@
+{
+  "op": "ssh_file_grep",
+  "device": {
+    "name": "pi",
+    "type": "ssh",
+    "sshHost": "10.0.0.5",
+    "sshPort": 22,
+    "sshUser": "pi",
+    "sshPassword": "pw",
+    "sshHostKey": "",
+    "description": "Lab Pi"
+  },
+  "jsch": {
+    "pwd": "/home/pi",
+    "exit_status": 0,
+    "stdout": "a.kt:3:hit line\nb.kt:7:12:hit two\njunk\nc.kt:nope:x\n",
+    "stderr": ""
+  },
+  "pattern": "it's",
+  "path": "",
+  "glob": "*.kt"
+}

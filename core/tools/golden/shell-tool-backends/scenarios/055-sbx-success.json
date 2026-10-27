@@ -1,0 +1,13 @@
+{
+  "op": "sandbox_execute",
+  "command": "ls",
+  "workdir": "",
+  "timeout_ms": 30000,
+  "sandbox": {
+    "execute_result": {
+      "stdout": "pkg list",
+      "stderr": "",
+      "exit_code": 0
+    }
+  }
+}

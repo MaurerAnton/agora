@@ -1,0 +1,1 @@
+{"op":"sandbox_file_read","scenario":{"op":"sandbox_file_read","path":"/mnt/home/a.txt","offset":0,"limit":500,"sandbox":{"file_read_failure":"rootfs vanished"}},"outcome":{"result":{"content":"","lines":0,"total_lines":0,"total_bytes":0,"returned_bytes":0,"offset":0,"limit":500,"truncated":false,"error":"rootfs vanished"},"sandbox_calls":["fileRead:/mnt/home/a.txt"]}}

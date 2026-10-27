@@ -1,0 +1,9 @@
+{
+  "op": "sandbox_file_read",
+  "path": "/mnt/home/a.txt",
+  "offset": 0,
+  "limit": 500,
+  "sandbox": {
+    "file_read_failure": "rootfs vanished"
+  }
+}

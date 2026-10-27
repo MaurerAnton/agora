@@ -1,0 +1,18 @@
+{
+  "op": "conch_file_read",
+  "device": {
+    "name": "conch-box",
+    "type": "conch",
+    "serverUrl": "http://conch.local:9",
+    "apiKey": "",
+    "conchPublicKey": "",
+    "description": "Conch host"
+  },
+  "response": {
+    "failure": "unknown_host",
+    "failure_detail": "db"
+  },
+  "path": "/data/a.txt",
+  "offset": 0,
+  "limit": 0
+}

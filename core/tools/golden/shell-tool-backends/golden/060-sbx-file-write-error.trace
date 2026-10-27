@@ -1,0 +1,1 @@
+{"op":"sandbox_file_write","scenario":{"op":"sandbox_file_write","path":"/mnt/home/b.txt","content":"x","sandbox":{"file_write_error":"read-only mount"}},"outcome":{"result":"{\"type\":\"file_write\",\"error\":\"error\",\"message\":\"read-only mount\",\"server\":\"Local Sandbox\"}","sandbox_calls":["fileWrite:/mnt/home/b.txt"]}}

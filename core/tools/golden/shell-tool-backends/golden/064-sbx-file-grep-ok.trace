@@ -1,0 +1,1 @@
+{"op":"sandbox_file_grep","scenario":{"op":"sandbox_file_grep","pattern":"x","path":"","glob":"","sandbox":{"file_grep_result":{"matches":[{"path":"/mnt/home/a.txt","line":1,"content":"xyz"}],"truncated":true}}},"outcome":{"result":{"matches":[{"path":"/mnt/home/a.txt","line":1,"content":"xyz"}],"truncated":true},"threw":null,"sandbox_calls":["fileGrep:x"]}}

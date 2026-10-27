@@ -1,0 +1,9 @@
+{
+  "op": "sandbox_execute",
+  "command": "ls",
+  "workdir": "",
+  "timeout_ms": 30000,
+  "sandbox": {
+    "available": false
+  }
+}

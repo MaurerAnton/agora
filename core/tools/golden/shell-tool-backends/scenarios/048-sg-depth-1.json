@@ -1,0 +1,37 @@
+{
+  "op": "ssh_file_glob",
+  "device": {
+    "name": "pi",
+    "type": "ssh",
+    "sshHost": "10.0.0.5",
+    "sshPort": 22,
+    "sshUser": "pi",
+    "sshPassword": "pw",
+    "sshHostKey": "",
+    "description": "Lab Pi"
+  },
+  "jsch": {
+    "pwd": "/home/pi",
+    "ls": {
+      "/home/pi": [
+        [
+          "a.txt",
+          "false"
+        ],
+        [
+          "dir",
+          "true"
+        ]
+      ],
+      "/home/pi/dir": [
+        [
+          "b.txt",
+          "false"
+        ]
+      ]
+    }
+  },
+  "pattern": "*.txt",
+  "path": "",
+  "depth": 1
+}

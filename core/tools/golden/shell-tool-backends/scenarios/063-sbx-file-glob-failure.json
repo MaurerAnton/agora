@@ -1,0 +1,9 @@
+{
+  "op": "sandbox_file_glob",
+  "pattern": "[",
+  "path": "",
+  "depth": null,
+  "sandbox": {
+    "file_glob_failure": "glob blew up"
+  }
+}

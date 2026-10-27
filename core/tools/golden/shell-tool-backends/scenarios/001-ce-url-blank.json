@@ -1,0 +1,21 @@
+{
+  "op": "conch_execute",
+  "device": {
+    "name": "conch-box",
+    "type": "conch",
+    "serverUrl": "",
+    "apiKey": "",
+    "conchPublicKey": "",
+    "description": "Conch host"
+  },
+  "command": "ls -la",
+  "workdir": "",
+  "timeout_ms": 30000,
+  "stream": {
+    "code": 200,
+    "lines": [
+      "event: result",
+      "data: {\"exit_code\":0}"
+    ]
+  }
+}

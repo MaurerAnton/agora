@@ -1,0 +1,1 @@
+{"op":"execute","context":{"conversationId":"conv-1","shellEnabled":true,"shellDevices":[],"sandboxEnabled":true,"sandboxSharedStorageEnabled":true,"toolTimeoutMs":60000},"tool_call":{"name":"file_write","arguments":"{\"path\":\"/mnt/shared/secret.txt\",\"content\":\"data\"}"},"confirm_allowed":false}

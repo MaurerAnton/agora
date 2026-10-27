@@ -100,6 +100,7 @@ add_executable(agora_core_tests
     shell_durable_jobs_parity_test.cpp
     shell_client_parity_test.cpp
     shell_tool_backends_parity_test.cpp
+    shell_tool_provider_parity_test.cpp
     crypto_primitives_test.cpp
     data_exporter_parity_test.cpp
     native_conversation_graph_source_parity_test.cpp
@@ -197,6 +198,7 @@ target_compile_definitions(agora_core_tests PRIVATE
     AGORA_FIXTURE_SHELL_DURABLE_JOBS_DIR="${CMAKE_CURRENT_SOURCE_DIR}/../tools/golden/shell-durable-jobs"
     AGORA_FIXTURE_SHELL_CLIENT_DIR="${CMAKE_CURRENT_SOURCE_DIR}/../tools/golden/shell-client"
     AGORA_FIXTURE_SHELL_TOOL_BACKENDS_DIR="${CMAKE_CURRENT_SOURCE_DIR}/../tools/golden/shell-tool-backends"
+    AGORA_FIXTURE_SHELL_TOOL_PROVIDER_DIR="${CMAKE_CURRENT_SOURCE_DIR}/../tools/golden/shell-tool-provider"
     AGORA_FIXTURE_MEMORY_MANAGER_DIR="${CMAKE_CURRENT_SOURCE_DIR}/../tools/golden/memory-manager"
     AGORA_FIXTURE_SKILL_MANAGER_DIR="${CMAKE_CURRENT_SOURCE_DIR}/../tools/golden/skill-manager"
     AGORA_FIXTURE_DATA_EXPORTER_DIR="${CMAKE_CURRENT_SOURCE_DIR}/../tools/golden/data-exporter"

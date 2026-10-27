@@ -117,6 +117,7 @@ add_library(agora_core_lib STATIC
     src/shell_durable_jobs.cpp
     src/shell_client.cpp
     src/shell_tool_backends.cpp
+    src/shell_tool_provider.cpp
     src/stream_normalization.cpp
     src/stream_normalization_normalizer.cpp
     src/stream_normalization_text_tools.cpp

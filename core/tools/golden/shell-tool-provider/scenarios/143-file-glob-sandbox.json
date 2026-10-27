@@ -1,0 +1,1 @@
+{"op":"execute","context":{"conversationId":"conv-1","shellEnabled":true,"shellDevices":[],"sandboxEnabled":true,"sandboxSharedStorageEnabled":false,"toolTimeoutMs":60000},"tool_call":{"name":"file_glob","arguments":"{\"pattern\":\"*.txt\",\"depth\":2}"},"sandbox":{"file_glob_result":{"files":["/mnt/home/a.txt"],"truncated":true}}}

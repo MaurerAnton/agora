@@ -47,8 +47,7 @@ std::string join(const std::vector<std::string>& values, const std::string& sepa
 }  // namespace
 
 std::int32_t max_wait_ms(const ShellDefinitionsConfig& config) {
-    const std::int64_t remaining =
-        static_cast<std::int64_t>(config.tool_timeout_ms) - kWaitJobOuterMarginMs;
+    const std::int64_t remaining = config.tool_timeout_ms - kWaitJobOuterMarginMs;
     return static_cast<std::int32_t>(std::max<std::int64_t>(remaining, kMinWaitJobMs));
 }
 

@@ -1,0 +1,1 @@
+{"op":"execute","context":{"conversationId":"conv-1","shellEnabled":true,"shellDevices":[],"sandboxEnabled":true,"sandboxSharedStorageEnabled":false,"toolTimeoutMs":60000},"tool_call":{"name":"file_grep","arguments":"{\"pattern\":\"needle\"}"},"sandbox":{"file_grep_failure":"grep failed"}}

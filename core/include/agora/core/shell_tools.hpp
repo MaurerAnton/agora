@@ -74,7 +74,7 @@ struct ShellDefinitionsConfig {
     bool shell_enabled = false;
     bool sandbox_enabled = false;
     std::vector<ShellDeviceConfig> devices;
-    std::int32_t tool_timeout_ms = 60000;
+    std::int64_t tool_timeout_ms = 60000;
 };
 
 /** ShellDurableJobExecutor.maxWaitMs: the timeout minus the outer margin, floored at 1s. */

@@ -1,0 +1,1 @@
+{"op":"execute","outcome":{"result":"{\"type\":\"execute_shell_command\",\"error\":\"error\",\"message\":\"Unknown server: Local Sandbox. Available: .\"}","threw":null},"definitions":[],"confirm_calls":[],"conch_requests":[],"http_calls":[],"http_closed":false,"sandbox_calls":[],"image_calls":[],"ssh_events":[]}

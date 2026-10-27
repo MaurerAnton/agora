@@ -1,0 +1,1 @@
+{"op":"events","context":{"conversationId":"conv-1","shellEnabled":true,"shellDevices":[],"sandboxEnabled":true,"sandboxSharedStorageEnabled":false,"toolTimeoutMs":60000},"tool_call":{"name":"execute_shell_command","arguments":"{\"command\":\"ls\",\"timeout_ms\":5000}"},"sandbox":{"execute_result":{"stdout":"bin\n","exit_code":0}}}

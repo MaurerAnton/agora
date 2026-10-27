@@ -1,0 +1,8 @@
+{
+  "op": "prepare_request",
+  "server_url": "http://conch.local:8080",
+  "api_key": "",
+  "command": "echo héllo 世界",
+  "timeout_ms": 5000,
+  "workdir": ""
+}

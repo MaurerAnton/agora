@@ -1,0 +1,12 @@
+{
+  "op": "file_grep",
+  "server_url": "http://conch.local:8080",
+  "api_key": "",
+  "pattern": "hit",
+  "path": "/src",
+  "glob": "*.kt",
+  "response": {
+    "code": 200,
+    "body": "{\"matches\":[{\"path\":\"/src/A.kt\",\"line\":1,\"content\":\"hit\"}]}"
+  }
+}

@@ -1,0 +1,9 @@
+{
+  "op": "prepare_request",
+  "server_url": "http://conch.local:8080",
+  "api_key": "secret-api-key",
+  "command": "ls -la",
+  "timeout_ms": 5000,
+  "workdir": "",
+  "run_fetch_first": true
+}

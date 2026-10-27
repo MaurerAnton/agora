@@ -1,0 +1,1 @@
+{"op":"decrypt_sse","scenario":{"op":"decrypt_sse","server_url":"http://conch.local:8080","api_key":"secret-api-key","command":"ls","timeout_ms":5000,"run_fetch_first":false,"prepare_first":false,"seal_for_session":false,"data":"x"},"outcome":{"result":null,"threw":"No session key","requests":[]}}

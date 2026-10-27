@@ -1,0 +1,12 @@
+{
+  "op": "job_start",
+  "server_url": "http://conch.local:8080",
+  "api_key": "secret-api-key",
+  "command": "ls",
+  "timeout_ms": 1000,
+  "workdir": "",
+  "response": {
+    "code": 200,
+    "body": "{\"job_id\":\"job-2\"}"
+  }
+}

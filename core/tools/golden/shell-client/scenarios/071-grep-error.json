@@ -1,0 +1,12 @@
+{
+  "op": "file_grep",
+  "server_url": "http://conch.local:8080",
+  "api_key": "",
+  "pattern": "x",
+  "path": "",
+  "glob": "",
+  "response": {
+    "code": 200,
+    "body": "{\"error\":\"regex broke\"}"
+  }
+}

@@ -1,0 +1,7 @@
+{
+  "op": "fetch_public_key",
+  "server_url": "http://conch.local:8080",
+  "api_key": "secret-api-key",
+  "transport_failure": "socket_timeout",
+  "transport_failure_detail": "read timed out"
+}

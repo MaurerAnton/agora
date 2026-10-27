@@ -1,0 +1,11 @@
+{
+  "op": "file_write",
+  "server_url": "http://conch.local:8080",
+  "api_key": "",
+  "path": "/tmp/b.txt",
+  "content": "data",
+  "response": {
+    "code": 200,
+    "body": "{}"
+  }
+}

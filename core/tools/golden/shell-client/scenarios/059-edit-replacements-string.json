@@ -1,0 +1,13 @@
+{
+  "op": "file_edit",
+  "server_url": "http://conch.local:8080",
+  "api_key": "",
+  "path": "/tmp/c.txt",
+  "old_string": "foo",
+  "new_string": "bar",
+  "replace_all": false,
+  "response": {
+    "code": 200,
+    "body": "{\"replacements\":\"3\",\"sha256\":\"deadbeef\"}"
+  }
+}

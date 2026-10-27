@@ -22,6 +22,10 @@ inline constexpr std::int64_t POOL_KEEP_ALIVE_SECONDS = 45;
 struct Header {
     std::string name;
     std::string value;
+
+    Header() = default;
+    Header(std::string n, std::string v) : name(std::move(n)), value(std::move(v)) {}
+    Header(const std::pair<std::string, std::string>& p) : name(p.first), value(p.second) {}
 };
 
 /**

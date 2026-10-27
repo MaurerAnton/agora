@@ -159,6 +159,20 @@ else()
     set(AGORA_CORE_HAVE_LIBSSH2 OFF)
 endif()
 
+# Optional host-side HTTP transport: the OkHttp surface HttpClient.kt drives, backed by libcurl+OpenSSL.
+# Android ships without libcurl (OkHttp stays the Kotlin stack there), so the APK is untouched.
+find_package(CURL REQUIRED)
+if(CURL_FOUND OR CURL_LIBRARY_RELEASE)
+    set(AGORA_CORE_HAVE_CURL ON)
+    target_sources(agora_core_lib PRIVATE src/curl_transport.cpp)
+    target_compile_definitions(agora_core_lib PUBLIC AGORA_CORE_HAVE_CURL=1)
+    target_include_directories(agora_core_lib PRIVATE ${CURL_INCLUDE_DIRS})
+    target_link_libraries(agora_core_lib PUBLIC ${CURL_LIBRARIES})
+    message(STATUS "agora core: libcurl HTTP transport enabled (${CURL_LIBRARIES})")
+else()
+    set(AGORA_CORE_HAVE_CURL OFF)
+endif()
+
 if(AGORA_CORE_BUILD_TESTS)
     enable_testing()
     add_subdirectory(tests)

@@ -1,0 +1,6 @@
+{
+  "op": "fetch_public_key",
+  "server_url": "http://conch.local:8080",
+  "api_key": "secret-api-key",
+  "handshake_sign_with": "other-key"
+}

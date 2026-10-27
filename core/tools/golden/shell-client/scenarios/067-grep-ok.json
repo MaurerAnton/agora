@@ -1,0 +1,12 @@
+{
+  "op": "file_grep",
+  "server_url": "http://conch.local:8080",
+  "api_key": "",
+  "pattern": "hit",
+  "path": "",
+  "glob": "",
+  "response": {
+    "code": 200,
+    "body": "{\"matches\":[{\"path\":\"/a\",\"line\":3,\"content\":\"hit me\"}],\"truncated\":true}"
+  }
+}

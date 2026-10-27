@@ -1,0 +1,11 @@
+{
+  "op": "job_stop",
+  "server_url": "http://conch.local:8080",
+  "api_key": "",
+  "job_id": "job-9",
+  "call_timeout_ms": 5000,
+  "response": {
+    "code": 200,
+    "body": "{}"
+  }
+}

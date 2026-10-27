@@ -1,0 +1,1 @@
+{"op":"fetch_public_key","scenario":{"op":"fetch_public_key","server_url":"http://conch.local:8080","api_key":"secret-api-key"},"outcome":{"result":true,"last_error":null,"server_public_key":"ChlxST1g8D4sd0DzZmQdk76qjaeoeyJxGaY7a-g1W3k","requests":[{"url":"http://conch.local:8080/public-key?challenge=<challenge>","method":"GET","body":"","headers":[],"call_timeout_ms":null}]}}

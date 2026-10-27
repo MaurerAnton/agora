@@ -1,0 +1,9 @@
+{
+  "op": "job_list",
+  "server_url": "http://conch.local:8080",
+  "api_key": "",
+  "response": {
+    "code": 500,
+    "body": "busy"
+  }
+}

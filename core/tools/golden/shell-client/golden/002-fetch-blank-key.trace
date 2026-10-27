@@ -1,0 +1,1 @@
+{"op":"fetch_public_key","scenario":{"op":"fetch_public_key","server_url":"http://conch.local:8080","api_key":""},"outcome":{"result":false,"last_error":"Conch authentication is disabled locally; no public-key exchange is needed","server_public_key":null,"requests":[]}}

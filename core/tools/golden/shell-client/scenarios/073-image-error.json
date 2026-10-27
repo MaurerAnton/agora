@@ -1,0 +1,10 @@
+{
+  "op": "file_image",
+  "server_url": "http://conch.local:8080",
+  "api_key": "",
+  "path": "/img.png",
+  "response": {
+    "code": 200,
+    "body": "{\"error\":\"not an image\"}"
+  }
+}

@@ -1,0 +1,12 @@
+{
+  "op": "file_read",
+  "server_url": "http://conch.local:8080",
+  "api_key": "",
+  "path": "/tmp/a.txt",
+  "offset": 6,
+  "limit": 5,
+  "response": {
+    "code": 200,
+    "body": "{\"content\":\"World\",\"size\":11}"
+  }
+}

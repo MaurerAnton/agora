@@ -1,0 +1,8 @@
+{
+  "op": "fetch_public_key",
+  "server_url": "http://conch.local:8080",
+  "api_key": "secret-api-key",
+  "handshake_http_failure": true,
+  "handshake_failure_code": 503,
+  "handshake_failure_body": "maintenance"
+}

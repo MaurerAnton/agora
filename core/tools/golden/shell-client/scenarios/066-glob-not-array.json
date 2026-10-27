@@ -1,0 +1,12 @@
+{
+  "op": "file_glob",
+  "server_url": "http://conch.local:8080",
+  "api_key": "",
+  "pattern": "*",
+  "path": "",
+  "depth": null,
+  "response": {
+    "code": 200,
+    "body": "{\"files\":\"oops\"}"
+  }
+}

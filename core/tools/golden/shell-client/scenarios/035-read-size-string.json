@@ -1,0 +1,12 @@
+{
+  "op": "file_read",
+  "server_url": "http://conch.local:8080",
+  "api_key": "",
+  "path": "/a",
+  "offset": 0,
+  "limit": 5,
+  "response": {
+    "code": 200,
+    "body": "{\"content\":\"abcde\",\"size\":\"12\"}"
+  }
+}

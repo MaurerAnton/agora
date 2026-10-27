@@ -1,0 +1,13 @@
+{
+  "op": "file_read",
+  "server_url": "http://conch.local:8080",
+  "api_key": "secret-api-key",
+  "path": "/a",
+  "offset": 0,
+  "limit": 0,
+  "response": {
+    "code": 200,
+    "body": "{\"content\":\"secret\"}",
+    "signature": "invalid"
+  }
+}

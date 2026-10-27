@@ -24,6 +24,10 @@ namespace agora::core::sandbox {
 /**
  * Fully resolve a path, including `..` and `.` components, even if the final
  * component doesn't exist. This mimics Java's `File.canonicalFile()` behavior.
+ *
+ * The existing prefix runs as far as components exist so `canonical()` resolves
+ * every symlink inside it (Java resolves symlinks in the existing part); only the
+ * missing tail is appended manually with `..`/`.` handling.
  */
 static std::filesystem::path fully_resolve_path(const std::filesystem::path& p) {
     std::error_code ec;
@@ -31,20 +35,20 @@ static std::filesystem::path fully_resolve_path(const std::filesystem::path& p) 
     
     // Split into existing prefix and non-existing suffix
     std::filesystem::path existing_prefix;
-    std::filesystem::path remaining = p;
+    std::filesystem::path remaining;
+    bool missing_tail = false;
     
     // Find the longest existing prefix
     for (auto it = p.begin(); it != p.end(); ++it) {
-        std::filesystem::path candidate = existing_prefix / *it;
-        if (std::filesystem::exists(candidate, ec)) {
-            existing_prefix = candidate;
-            remaining = std::filesystem::path();
-            for (auto it2 = std::next(it); it2 != p.end(); ++it2) {
-                remaining /= *it2;
+        if (!missing_tail) {
+            std::filesystem::path candidate = existing_prefix / *it;
+            if (std::filesystem::exists(candidate, ec)) {
+                existing_prefix = candidate;
+                continue;
             }
-            break;
+            missing_tail = true;
         }
-        existing_prefix /= *it;
+        remaining /= *it;
     }
     
     // If we didn't find any existing prefix, use the root

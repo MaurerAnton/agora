@@ -336,6 +336,10 @@ std::string inflate_raw(const std::string& input, std::size_t* consumed) {
 
 std::uint32_t crc32(std::string_view data) { return crc32_of(data); }
 
+std::string inflate_raw_stream(const std::string& input, std::size_t* consumed) {
+    return inflate_raw(input, consumed);
+}
+
 Reader::Reader(std::string path) {
     std::ifstream file(path, std::ios::binary);
     if (!file.is_open()) throw ZipException("cannot open archive");

@@ -12,6 +12,13 @@ namespace agora::core::zip {
 std::uint32_t crc32(std::string_view data);
 
 /**
+ * Inflates one raw DEFLATE (RFC 1951) stream; `consumed` receives the bytes the stream used
+ * (the partially used last byte counts, like zlib's bytes-read counter). Shared with the
+ * gzip reader for the Alpine APKINDEX.tar.gz package index.
+ */
+std::string inflate_raw_stream(const std::string& input, std::size_t* consumed);
+
+/**
  * A streaming ZIP reader for the archive surface the app uses to read a vendor export
  * (java.util.zip.ZipInputStream): local file headers, STORED and DEFLATED entries, data
  * descriptors and the JDK's failure messages.

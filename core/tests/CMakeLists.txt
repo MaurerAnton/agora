@@ -75,6 +75,7 @@ add_executable(agora_core_tests
     sqlite_executor_test.cpp
     font_utils_test.cpp
     diagnostic_redactor_test.cpp
+    scenario_builder_test.cpp
     migration_17_18_parity_test.cpp
     migration_18_19_parity_test.cpp
     migration_19_20_parity_test.cpp

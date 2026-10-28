@@ -48,6 +48,9 @@ struct GenerationContext {
 
     // AskUserToolProvider.kt (GenerationContracts.kt askUserEnabled).
     bool ask_user_enabled = false;
+
+    // AutomationToolProvider.kt (GenerationContracts.kt automationToolsEnabled).
+    bool automation_tools_enabled = false;
 };
 
 /** com.newoether.agora.model.ToolImageAttachment. */

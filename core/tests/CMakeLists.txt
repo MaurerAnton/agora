@@ -108,6 +108,7 @@ add_executable(agora_core_tests
     ask_user_tool_provider_test.cpp
     rag_tool_provider_test.cpp
     skill_tool_provider_test.cpp
+    image_gen_tool_provider_test.cpp
     sandbox_executor_test.cpp
     sandbox_manager_test.cpp
     alpine_package_test.cpp

@@ -77,6 +77,14 @@ struct GenerationContext {
     // default true in the Kotlin GenerationContext ctor).
     bool skill_read_access = true;
     bool skill_modify_access = true;
+
+    // ImageGenToolProvider.kt (GenerationContracts.kt imageGenEnabled / imageGenApiKey /
+    // imageGenBaseUrl / imageGenModel / imageGenSize; all defaults from the Kotlin ctor).
+    bool image_gen_enabled = false;
+    std::string image_gen_api_key;
+    std::string image_gen_base_url;
+    std::string image_gen_model = "gpt-image-1";
+    std::string image_gen_size = "1024x1024";
 };
 
 /** com.newoether.agora.model.ToolImageAttachment. */

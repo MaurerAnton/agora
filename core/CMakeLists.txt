@@ -125,6 +125,7 @@ add_library(agora_core_lib STATIC
     src/ask_user_tool_provider.cpp
     src/rag_tool_provider.cpp
     src/skill_tool_provider.cpp
+    src/image_gen_tool_provider.cpp
     src/sandbox_executor.cpp
     src/sandbox_manager.cpp
     src/alpine_package_index.cpp

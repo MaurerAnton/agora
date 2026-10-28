@@ -23,7 +23,7 @@ if [[ -z "$jars" ]]; then
     exit 2
 fi
 
-python3 "$here/extract_enums.py"
+"${AGORA_EXTRACT:-$root/core/build/agora_extract}" enums-legacy "$here"
 
 # Scratch lives under build/ so the whole stand's working state is git-ignored as a unit.
 classes="$here/build/classes"

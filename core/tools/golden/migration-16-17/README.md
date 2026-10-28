@@ -4,7 +4,7 @@ Parity pin for `data/local/migration/Migration16To17.kt` — the SQL half of the
 The migration and `LegacyRunBackfillPlanner.kt` compile **verbatim from the app tree**. The only
 substituted surface is the platform side: `androidx.room.migration.Migration` and
 `androidx.sqlite.db.SupportSQLiteDatabase/Cursor` are declared under `platform/` with the shapes the
-migration uses. The model enums are lifted declaration-for-declaration by `extract_enums.py`.
+migration uses. The model enums are lifted declaration-for-declaration by `agora_extract enums-16-17`.
 
 The shipped port (`core/src/migration_16_17.cpp`) must reproduce the frozen traces byte for byte
 (`core/tests/migration_16_17_parity_test.cpp`).

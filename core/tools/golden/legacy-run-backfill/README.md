@@ -3,7 +3,7 @@
 Parity pin for `data/local/migration/LegacyRunBackfillPlanner.kt` — the v16 message forest → v17
 Run conversion used by `Migration16To17`. The planner compiles **verbatim from the app tree**; the
 four model enums it needs (`Participant`, `MessageStatus`, `RunStatus`, `RunEndReason`) are lifted
-declaration-for-declaration by `extract_enums.py`. The shipped port must reproduce the frozen
+declaration-for-declaration by `agora_extract enums-legacy`. The shipped port must reproduce the frozen
 traces byte for byte (`core/tests/legacy_run_backfill_parity_test.cpp`).
 
 ## What it plans

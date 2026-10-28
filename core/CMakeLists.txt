@@ -201,4 +201,8 @@ if(AGORA_CORE_BUILD_TESTS)
     # Parity stand tool: mirrors core/tools/golden/GoldenDump.kt for the differentiation loop.
     add_executable(agora_core_dump tools/dump_pieces.cpp)
     target_link_libraries(agora_core_dump PRIVATE agora_core_lib)
+
+    # Golden-stand extractor: C++ replacement for the Python extract_*.py scripts
+    # (enum/marker family). Byte-parity is pinned by the committed extracted/*.kt files.
+    add_executable(agora_extract tools/extract_main.cpp)
 endif()

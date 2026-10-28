@@ -2,7 +2,7 @@
 # Generates or verifies the golden traces for the message-source codec.
 #
 # model/MessageSource.kt compiles VERBATIM from the app tree. It needs the Participant enum from
-# model/ChatMessage.kt (lifted declaration-for-declaration by extract_participant.py) and the
+# model/ChatMessage.kt (lifted declaration-for-declaration by agora_extract participant) and the
 # Compose stability annotation, which is a compile-only platform type supplied by stubs/ like the
 # other stands. The C++ core must reproduce the traces byte for byte
 # (core/tests/message_source_parity_test.cpp).
@@ -29,7 +29,7 @@ if [[ ! -f "$plugin" ]]; then
     exit 2
 fi
 
-python3 "$here/extract_participant.py"
+"${AGORA_EXTRACT:-$root/core/build/agora_extract}" participant "$here"
 
 # Scratch lives under build/ so the whole stand's working state is git-ignored as a unit.
 classes="$here/build/classes"

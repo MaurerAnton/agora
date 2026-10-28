@@ -11,7 +11,7 @@ it byte for byte (`core/tests/message_source_parity_test.cpp`).
 | File | Role |
 | --- | --- |
 | `model/MessageSource.kt` | data class, `Kind`/`AskUserItem`, encode/decode/sanitize |
-| `extracted/Participant.kt` | `Participant` only, lifted declaration-for-declaration from `ChatMessage.kt` by `extract_participant.py` |
+| `extracted/Participant.kt` | `Participant` only, lifted declaration-for-declaration from `ChatMessage.kt` by `agora_extract participant` |
 | `stubs/androidx/compose/runtime/Immutable.kt` | compile-only Compose stability annotation (same platform stub as the other stands) |
 
 `ChatMessage.kt` drags the Room entity graph, Compose and kotlinx.serialization along, but

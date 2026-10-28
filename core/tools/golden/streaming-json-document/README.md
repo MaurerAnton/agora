@@ -18,7 +18,7 @@ every trace byte for byte (`core/tests/streaming_json_parity_test.cpp`).
 | `ui/chat/message/ToolPresentation.kt` | `ToolKind` only, lifted by script |
 
 `ToolPresentation.kt` drags kotlinx.serialization and `ChatMessage` along, so the enum is not
-compiled whole. `extract_tool_kind.py` copies the `ToolKind` declaration verbatim into
+compiled whole. `agora_extract tool-kind` copies the `ToolKind` declaration verbatim into
 `extracted/ToolKind.kt` and `run_golden.sh` regenerates it before every compile — the enum is
 never retyped. The UI that consumes a `StreamingJsonDocument` (`MessageItemJson.kt`, Compose
 rendering) is out of scope; this stand pins the pure parser/hint logic beneath it.

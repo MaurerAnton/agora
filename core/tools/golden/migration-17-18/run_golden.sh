@@ -23,7 +23,7 @@ if [[ -z "$jars" ]]; then
     exit 2
 fi
 
-python3 "$here/extract_enums.py"
+"${AGORA_EXTRACT:-$root/core/build/agora_extract}" enums-17-18 "$here"
 
 classes="$here/build/classes"
 fresh="$here/build/golden"

@@ -7,7 +7,7 @@ The migration and `util/Constants.kt` compile **verbatim from the app tree**. On
 side is substituted: `androidx.room.migration.Migration` and
 `androidx.sqlite.db.SupportSQLiteDatabase` (`platform/`). `Migration19To20.kt` names exactly one
 symbol from `MessagePersistenceGuard` (`TRUNCATION_MARKER`); compiling that whole object would drag
-in `ChatMessage.kt` (Compose, Markdown, provider models), so `extract_marker.py` lifts the real
+in `ChatMessage.kt` (Compose, Markdown, provider models), so `agora_extract marker` lifts the real
 constant line into `extracted/` on every run. The generated file is never edited by hand.
 
 The shipped port (`core/src/migration_19_20.cpp`) must reproduce the frozen trace byte for byte

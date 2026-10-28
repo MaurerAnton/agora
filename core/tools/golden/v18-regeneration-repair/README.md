@@ -3,7 +3,7 @@
 Parity pin for `data/local/migration/V18RegenerationEdgeRepairPlanner.kt` — the forward repair for
 the rejected first v17 → v18 data migration. `V18RegenerationEdgeRepairPlanner.kt` and the real
 `util/Constants.kt` compile **verbatim from the app tree**; `Participant` is lifted
-declaration-for-declaration from `ChatMessage.kt` by `extract_participant.py`. The canonical trace
+declaration-for-declaration from `ChatMessage.kt` by `agora_extract participant`. The canonical trace
 is frozen under `golden/` and the shipped port must reproduce it byte for byte
 (`core/tests/v18_regeneration_repair_parity_test.cpp`).
 

@@ -6,7 +6,7 @@ only durable discriminator: sibling Runs with the same parent Run, parent messag
 fingerprint form one group; the earliest sibling is the shared user anchor, later siblings are
 inferred regenerations. `RegenerationTreeRepairPlanner.kt` compiles **verbatim from the app tree**;
 `Participant` is lifted declaration-for-declaration from `ChatMessage.kt` by
-`extract_participant.py`. The canonical trace is frozen under `golden/` and the shipped port must
+`agora_extract participant`. The canonical trace is frozen under `golden/` and the shipped port must
 reproduce it byte for byte (`core/tests/regeneration_tree_repair_parity_test.cpp`).
 
 ## What it repairs

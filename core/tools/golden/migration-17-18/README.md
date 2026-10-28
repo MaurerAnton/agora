@@ -4,7 +4,7 @@ Parity pin for `data/local/migration/Migration17To18.kt` — the v17→v18 data-
 migration and `RegenerationTreeRepairPlanner.kt` compile **verbatim from the app tree**. The only
 substituted surface is the platform side: `androidx.room.migration.Migration`,
 `androidx.sqlite.db.SupportSQLiteDatabase` and `android.database.Cursor` are declared under
-`platform/` with the shapes the migration uses. `Participant` is lifted by `extract_enums.py`.
+`platform/` with the shapes the migration uses. `Participant` is lifted by `agora_extract enums-17-18`.
 
 The shipped port (`core/src/migration_17_18.cpp`) must reproduce the frozen traces byte for byte
 (`core/tests/migration_17_18_parity_test.cpp`).

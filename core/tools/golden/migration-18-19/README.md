@@ -4,7 +4,7 @@ Parity pin for `data/local/migration/Migration18To19.kt` — the forward repair 
 opened the rejected first v18 build. The migration, `V18RegenerationEdgeRepairPlanner.kt` and
 `util/Constants.kt` compile **verbatim from the app tree**. The only substituted surface is the
 platform side: `androidx.room.migration.Migration`, `androidx.sqlite.db.SupportSQLiteDatabase` and
-`android.database.Cursor` (`platform/`). `Participant` is lifted by `extract_enums.py`.
+`android.database.Cursor` (`platform/`). `Participant` is lifted by `agora_extract enums-18-19`.
 
 The shipped port (`core/src/migration_18_19.cpp`) must reproduce the frozen traces byte for byte
 (`core/tests/migration_18_19_parity_test.cpp`).

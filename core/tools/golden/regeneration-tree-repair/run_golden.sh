@@ -22,7 +22,7 @@ if [[ -z "$jars" ]]; then
     exit 2
 fi
 
-python3 "$here/extract_participant.py"
+"${AGORA_EXTRACT:-$root/core/build/agora_extract}" participant "$here"
 
 # Scratch lives under build/ so the whole stand's working state is git-ignored as a unit.
 classes="$here/build/classes"

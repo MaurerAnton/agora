@@ -3,7 +3,7 @@
 #
 # ui/chat/message/StreamingJsonDocument.kt and ui/chat/message/StreamingToolArgumentHints.kt
 # compile VERBATIM from the app tree (both have zero imports). ToolKind comes from
-# ToolPresentation.kt, lifted declaration-for-declaration by extract_tool_kind.py into
+# ToolPresentation.kt, lifted declaration-for-declaration by agora_extract tool-kind into
 # extracted/ToolKind.kt. The C++ core must reproduce the traces byte for byte
 # (core/tests/streaming_json_parity_test.cpp).
 #
@@ -24,7 +24,7 @@ if [[ -z "$jars" ]]; then
     exit 2
 fi
 
-python3 "$here/extract_tool_kind.py"
+"${AGORA_EXTRACT:-$root/core/build/agora_extract}" tool-kind "$here"
 
 # Scratch lives under build/ so the whole stand's working state is git-ignored as a unit.
 classes="$here/build/classes"

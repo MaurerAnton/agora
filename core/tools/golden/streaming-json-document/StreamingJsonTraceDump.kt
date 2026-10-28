@@ -5,7 +5,7 @@
 //   ui/chat/message/ToolPresentation.kt           ToolKind enum only (extracted by script)
 //
 // StreamingJsonDocument.kt and StreamingToolArgumentHints.kt compile VERBATIM from the app tree
-// (zero imports); ToolKind is lifted declaration-for-declaration by extract_tool_kind.py because
+// (zero imports); ToolKind is lifted declaration-for-declaration by agora_extract tool-kind because
 // ToolPresentation.kt drags kotlinx.serialization and ChatMessage along.
 //
 // The document and hint results are printed with Kotlin's data-class `toString()`, so every node,

@@ -3,7 +3,7 @@
 #
 # data/local/migration/Migration19To20.kt and util/Constants.kt compile VERBATIM from the app
 # tree. MessagePersistenceGuard is represented by its real TRUNCATION_MARKER constant, extracted
-# line-for-line from model/MessagePersistenceGuard.kt (extract_marker.py). Only the
+# line-for-line from model/MessagePersistenceGuard.kt (agora_extract marker). Only the
 # androidx.room/androidx.sqlite platform surface is substituted (platform/). The C++ core must
 # reproduce the traces byte for byte (core/tests/migration_19_20_parity_test.cpp).
 #
@@ -24,7 +24,7 @@ if [[ -z "$jars" ]]; then
     exit 2
 fi
 
-python3 "$here/extract_marker.py"
+"${AGORA_EXTRACT:-$root/core/build/agora_extract}" marker "$here"
 
 classes="$here/build/classes"
 fresh="$here/build/golden"

@@ -72,6 +72,11 @@ struct GenerationContext {
     float rag_threshold = 0.5f;
     std::int32_t search_match_limit = 10;
     std::int32_t search_context_window = 8;
+
+    // SkillToolProvider.kt (GenerationContracts.kt skillReadAccess / skillModifyAccess; both
+    // default true in the Kotlin GenerationContext ctor).
+    bool skill_read_access = true;
+    bool skill_modify_access = true;
 };
 
 /** com.newoether.agora.model.ToolImageAttachment. */
@@ -87,9 +92,9 @@ struct ToolImageAttachment {
 /** Provider-neutral tool output (ToolExecutionResult in ToolProvider.kt). */
 struct ToolExecutionResult {
     std::string text;
-    std::vector<ToolImageAttachment> images;
-    std::optional<std::string> structured_content;
-    std::optional<std::string> display_text;
+    std::vector<ToolImageAttachment> images{};
+    std::optional<std::string> structured_content{};
+    std::optional<std::string> display_text{};
     bool is_error = false;
     bool transcribe_images = false;
 };

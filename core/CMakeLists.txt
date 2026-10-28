@@ -55,6 +55,7 @@ add_library(agora_core_lib STATIC
     src/mcp_protocol.cpp
     src/mcp_tool_provider.cpp
     src/automation_tool_provider.cpp
+    src/memory_tool_provider.cpp
     src/memory_manager.cpp
     src/skill_manager.cpp
     src/json.cpp

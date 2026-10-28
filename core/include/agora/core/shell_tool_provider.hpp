@@ -51,6 +51,10 @@ struct GenerationContext {
 
     // AutomationToolProvider.kt (GenerationContracts.kt automationToolsEnabled).
     bool automation_tools_enabled = false;
+
+    // MemoryToolProvider.kt (GenerationContracts.kt accessSavedMemories / accessActiveMemory).
+    bool access_saved_memories = false;
+    bool access_active_memory = false;
 };
 
 /** com.newoether.agora.model.ToolImageAttachment. */

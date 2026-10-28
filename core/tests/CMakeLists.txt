@@ -86,6 +86,7 @@ add_executable(agora_core_tests
     mcp_protocol_parity_test.cpp
     mcp_tool_provider_test.cpp
     automation_tool_provider_test.cpp
+    memory_tool_provider_test.cpp
     malformed_tool_call_parity_test.cpp
     memory_manager_parity_test.cpp
     skill_manager_parity_test.cpp

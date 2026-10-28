@@ -30,7 +30,16 @@ namespace agora::core::shell_provider {
 
 using ShellDeviceConfig = shell_backends::ShellDeviceConfig;
 
-/** The GenerationContext fields ShellToolProvider.kt / WebSearchToolProvider.kt read. */
+/** com.newoether.agora.data.EmbeddingModelConfig fields GenerationContext carries. */
+struct EmbeddingConfig {
+    std::string id;
+    bool local = false;  // EmbeddingModelType.LOCAL
+    std::string local_file_path;
+    std::string remote_model_name;
+    std::string remote_base_url;
+};
+
+/** The GenerationContext fields the tool providers read (ShellToolProvider.kt + friends). */
 struct GenerationContext {
     std::optional<std::string> conversation_id;
     bool shell_enabled = false;
@@ -52,9 +61,17 @@ struct GenerationContext {
     // AutomationToolProvider.kt (GenerationContracts.kt automationToolsEnabled).
     bool automation_tools_enabled = false;
 
-    // MemoryToolProvider.kt (GenerationContracts.kt accessSavedMemories / accessActiveMemory).
-    bool access_saved_memories = false;
-    bool access_active_memory = false;
+    // MemoryToolProvider.kt / RagToolProvider.kt (GenerationContracts.kt access* + RAG search
+    // settings; the access defaults follow the Kotlin GenerationContext ctor).
+    bool access_saved_memories = true;
+    bool access_active_memory = true;
+    bool access_past_conversations = true;
+    std::string model_search_method = "keyword";
+    std::optional<EmbeddingConfig> active_embedding_config;
+    std::string embedding_api_key;
+    float rag_threshold = 0.5f;
+    std::int32_t search_match_limit = 10;
+    std::int32_t search_context_window = 8;
 };
 
 /** com.newoether.agora.model.ToolImageAttachment. */

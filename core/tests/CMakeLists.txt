@@ -101,6 +101,7 @@ add_executable(agora_core_tests
     shell_client_parity_test.cpp
     shell_tool_backends_parity_test.cpp
     shell_tool_provider_parity_test.cpp
+    web_search_tool_provider_test.cpp
     sandbox_executor_test.cpp
     sandbox_manager_test.cpp
     alpine_package_test.cpp

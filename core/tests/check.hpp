@@ -53,8 +53,8 @@ inline std::string show(const std::string& value) { return value; }
 
 #define CHECK_EQ(expected, actual)                                              \
     do {                                                                        \
-        const auto& core_check_expected = (expected);                           \
-        const auto& core_check_actual = (actual);                               \
+        const auto core_check_expected = (expected);                           \
+        const auto core_check_actual = (actual);                               \
         if (!(core_check_expected == core_check_actual)) {                      \
             ::agora::core::test::fail(__FILE__, __LINE__,                       \
                 std::string("expected ") +                                      \

@@ -2,6 +2,7 @@
 
 #include <cstdint>
 #include <functional>
+#include <map>
 #include <memory>
 #include <optional>
 #include <string>
@@ -29,7 +30,7 @@ namespace agora::core::shell_provider {
 
 using ShellDeviceConfig = shell_backends::ShellDeviceConfig;
 
-/** The GenerationContext fields ShellToolProvider.kt reads. */
+/** The GenerationContext fields ShellToolProvider.kt / WebSearchToolProvider.kt read. */
 struct GenerationContext {
     std::optional<std::string> conversation_id;
     bool shell_enabled = false;
@@ -37,6 +38,13 @@ struct GenerationContext {
     bool sandbox_enabled = false;
     bool sandbox_shared_storage_enabled = false;
     std::int64_t tool_timeout_ms = 60'000;
+
+    // WebSearchToolProvider.kt (GenerationContracts.kt webSearch fields).
+    bool web_search_enabled = false;
+    std::map<std::string, std::string> web_search_api_keys;
+    std::string web_search_provider = "duckduckgo";
+    std::int32_t web_search_num_results = 5;
+    std::string web_search_base_url;
 };
 
 /** com.newoether.agora.model.ToolImageAttachment. */

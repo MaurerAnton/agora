@@ -118,6 +118,7 @@ add_library(agora_core_lib STATIC
     src/shell_client.cpp
     src/shell_tool_backends.cpp
     src/shell_tool_provider.cpp
+    src/web_search_tool_provider.cpp
     src/sandbox_executor.cpp
     src/sandbox_manager.cpp
     src/alpine_package_index.cpp

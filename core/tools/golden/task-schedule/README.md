@@ -12,14 +12,14 @@ is frozen under `golden/`; the C++ port (`agora::core::schedule`, test
 | `scenarios/*.json` | One case per file, 87 frozen edge cases |
 | `golden/*.trace` | Frozen canonical output, one per scenario |
 | `TaskScheduleTraceDump.kt` | The stand driver (builds a schedule, calls one operation) |
-| `extract_task_entity.py` | Lifts `TaskEntity` out of `data/local/ChatEntities.kt` |
+| `agora_extract task-entity` | Lifts `TaskEntity` out of `data/local/ChatEntities.kt` |
 | `PlatformStubs.kt` | The `@Entity` / `@PrimaryKey` Room markers |
 | `run_golden.sh` | Extracts, compiles and regenerates or verifies the traces |
 | `gen_scenarios.py` | Generates the scenarios (deterministic; rerun after editing) |
 
 `TaskSchedule.kt` itself needs **no stubs** — it only imports `java.util.Calendar`. Its
 `hasSchedule()` extension is declared on the Room entity `TaskEntity`, which lives in a file full
-of other entities that cannot compile host-side, so `extract_task_entity.py` copies that one
+of other entities that cannot compile host-side, so `agora_extract task-entity` copies that one
 declaration out verbatim and only the two Room markers are redirected at stand-local stubs. Room is
 persistence, not logic, which is what makes that a platform-type substitution.
 

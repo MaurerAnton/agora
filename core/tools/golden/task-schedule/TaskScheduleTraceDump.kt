@@ -17,7 +17,7 @@ import java.util.TimeZone
  *
  * TaskSchedule.kt itself is pure -- it only imports java.util.Calendar. Its `hasSchedule()`
  * extension is declared on the Room entity TaskEntity, which lives in a file full of other
- * entities and cannot compile host-side, so extract_task_entity.py lifts that one declaration out
+ * entities and cannot compile host-side, so agora_extract task-entity lifts that one declaration out
  * verbatim and PlatformStubs.kt supplies the two Room markers.
  *
  * Determinism: the default time zone and locale are pinned here, at the JVM level, because

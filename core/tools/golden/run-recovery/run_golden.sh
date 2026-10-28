@@ -4,7 +4,7 @@
 # RunRecoveryPolicy.kt compiles VERBATIM from the app tree. It needs the model declarations that
 # live in model/ChatMessage.kt (MessageSegment, Participant, MessageStatus, ToolExecutionStates,
 # plus MessageSegment's ToolImageAttachment/StreamingTextDelta field types). ChatMessage.kt cannot
-# compile host-side (Compose @Immutable, Room, UI state), so extract_model_types.py copies those
+# compile host-side (Compose @Immutable, Room, UI state), so agora_extract run-recovery-models copies those
 # declarations out verbatim instead of retyping them. The Compose marker is the only substituted
 # surface, supplied by a stand-local stub. The C++ core must reproduce the traces byte for byte
 # (core/tests/run_recovery_parity_test.cpp).
@@ -39,7 +39,7 @@ rm -rf "$here/build"
 mkdir -p "$classes" "$fresh"
 
 echo "Extracting the model declarations from ChatMessage.kt verbatim..."
-python3 "$here/extract_model_types.py" "$app/model/ChatMessage.kt" "$here/build/RunRecoveryModel.kt"
+"${AGORA_EXTRACT:-$root/core/build/agora_extract}" run-recovery-models "$app/model/ChatMessage.kt" "$here/build/RunRecoveryModel.kt"
 
 echo "Compiling the Kotlin reference sources..."
 "$kotlinc_bin" -Xplugin="$plugin" -cp "$jars" -d "$classes" \

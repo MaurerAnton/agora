@@ -6,7 +6,7 @@ package androidx.room
  * TaskSchedule.kt defines `hasSchedule()` as an extension on TaskEntity, so the file will not
  * compile without that type. TaskEntity itself lives in data/local/ChatEntities.kt alongside the
  * whole entity catalogue, which pulls in androidx.room.* and the model types; it cannot compile
- * host-side. extract_task_entity.py therefore copies just that one declaration out verbatim and
+ * host-side. agora_extract task-entity therefore copies just that one declaration out verbatim and
  * points its markers here.
  *
  * Room is a persistence framework, i.e. a platform concern: neither annotation has any runtime

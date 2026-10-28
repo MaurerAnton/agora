@@ -10,6 +10,8 @@
 //   stand_dir is core/tools/golden/<stand>; the repo root is derived like the Python HERE/ROOT.
 
 #include <algorithm>
+#include <array>
+#include <cctype>
 #include <cstdlib>
 #include <filesystem>
 #include <fstream>
@@ -248,9 +250,302 @@ void profile_tool_kind(const fs::path& model_root, const fs::path& target) {
               << " lines) to " << target << "\n";
 }
 
+// ---- declaration-walker family -------------------------------------------------------------
+//
+// task-schedule/extract_task_entity.py, backup-media-policy/extract_message_segment.py and
+// run-recovery/extract_model_types.py share one algorithm: regex-ish declaration match at a line
+// start, walk back over the annotation/KDoc block, then scan forward to the declaration end.
+
+std::size_t skip_literal(const std::string& text, std::size_t at) {
+    const char quote = text[at];
+    at += 1;
+    while (at < text.size()) {
+        if (text[at] == '\\') {
+            at += 2;
+            continue;
+        }
+        if (text[at] == quote) return at + 1;
+        at += 1;
+    }
+    return at;
+}
+
+// style_newline: probe after ')' skips only " \t", stops at newline/EOF (task-schedule and
+// backup-media-policy). style_brace: probe skips " \t\r\n" and only stops unless a `{` follows
+// (run-recovery — keeps scanning through a body brace that starts on the next line).
+[[noreturn]] void unterminated_declaration(const std::string& message) { fail(message); }
+
+std::size_t declaration_end(const std::string& text, std::size_t start,
+                            bool style_brace_follows, const std::string& unterminated) {
+    int paren = 0;
+    int brace = 0;
+    std::size_t at = start;
+    while (at < text.size()) {
+        const char ch = text[at];
+        if (ch == '"') {
+            at = skip_literal(text, at);
+            continue;
+        }
+        if (text.compare(at, 2, "//") == 0) {
+            const std::size_t newline = text.find('\n', at);
+            at = newline == std::string::npos ? text.size() : newline;
+            continue;
+        }
+        if (text.compare(at, 2, "/*") == 0) {
+            const std::size_t close = text.find("*/", at + 2);
+            at = close == std::string::npos ? text.size() : close + 2;
+            continue;
+        }
+        if (ch == '(') {
+            paren += 1;
+        } else if (ch == ')') {
+            paren -= 1;
+            if (paren == 0 && brace == 0) {
+                std::size_t probe = at + 1;
+                if (style_brace_follows) {
+                    while (probe < text.size() &&
+                           (text[probe] == ' ' || text[probe] == '\t' || text[probe] == '\r' ||
+                            text[probe] == '\n')) {
+                        probe += 1;
+                    }
+                    if (probe >= text.size() || text[probe] != '{') return at + 1;
+                    // A class body follows: keep scanning so its closing brace is included.
+                } else {
+                    while (probe < text.size() && (text[probe] == ' ' || text[probe] == '\t')) {
+                        probe += 1;
+                    }
+                    if (probe >= text.size() || text[probe] == '\n') return at + 1;
+                }
+            }
+        } else if (ch == '{') {
+            brace += 1;
+        } else if (ch == '}') {
+            brace -= 1;
+            if (brace == 0) return at + 1;
+        }
+        at += 1;
+    }
+    unterminated_declaration(unterminated);
+}
+
+std::size_t trim_right_end(std::size_t to, const std::string& text) {
+    while (to > 0 && (text[to - 1] == ' ' || text[to - 1] == '\t' || text[to - 1] == '\r' ||
+                      text[to - 1] == '\n' || text[to - 1] == '\f' || text[to - 1] == '\v')) {
+        to -= 1;
+    }
+    return to;
+}
+
+// Python OWNED_BY_HEADER on candidate.strip(): ^(?:@|/\*\*|\*/|\*|//) — plus the (redundant)
+// lstrip().startswith("*") check.
+bool owned_annotation_line(std::string_view candidate) {
+    std::size_t start = 0;
+    while (start < candidate.size() &&
+           (candidate[start] == ' ' || candidate[start] == '\t' || candidate[start] == '\r' ||
+            candidate[start] == '\n' || candidate[start] == '\f' || candidate[start] == '\v')) {
+        start += 1;
+    }
+    if (start >= candidate.size()) return false;
+    const std::string_view stripped = candidate.substr(start);
+    return stripped.rfind("@", 0) == 0 || stripped.rfind("/**", 0) == 0 ||
+           stripped.rfind("//", 0) == 0 || stripped.rfind("*", 0) == 0;
+}
+
+struct DeclMatch {
+    std::size_t start = 0;
+    std::size_t end = 0;
+};
+
+// re.search(r"^(<prefix alternatives>) NAME\b", text, re.MULTILINE): the prefix must sit at a
+// line start, NAME must follow, and a word boundary must close it.
+std::optional<DeclMatch> find_declaration(const std::string& text, const std::string& name,
+                                           const std::vector<std::string>& prefixes) {
+    std::size_t line_start = 0;
+    while (line_start < text.size()) {
+        for (const std::string& prefix : prefixes) {
+            if (text.compare(line_start, prefix.size(), prefix) == 0) {
+                const std::size_t name_at = line_start + prefix.size();
+                if (name_at > text.size()) continue;
+                if (text.compare(name_at, name.size(), name) == 0) {
+                    const std::size_t after = name_at + name.size();
+                    const bool boundary =
+                        after >= text.size() ||
+                        !(std::isalnum(static_cast<unsigned char>(text[after])) ||
+                          text[after] == '_');
+                    if (boundary) return DeclMatch{line_start, after};
+                }
+            }
+        }
+        const std::size_t newline = text.find('\n', line_start);
+        if (newline == std::string::npos) break;
+        line_start = newline + 1;
+    }
+    return std::nullopt;
+}
+
+std::string extract_declaration(const std::string& text, const std::string& name,
+                                const std::vector<std::string>& prefixes,
+                                bool require_annotation, bool style_brace_follows,
+                                const std::string& not_found, const std::string& no_annotation,
+                                const std::string& unterminated) {
+    const std::optional<DeclMatch> match = find_declaration(text, name, prefixes);
+    if (!match) fail(not_found);
+
+    // lines = text[:match.start].split("\n"); a trailing "" (the newline that terminates the
+    // preceding line) is dropped, so lines[-1] is the line directly above the declaration.
+    std::vector<std::string_view> lines;
+    {
+        std::size_t pos = 0;
+        while (pos < match->start) {
+            const std::size_t newline = text.find('\n', pos);
+            const std::size_t stop = newline == std::string::npos ? match->start : newline;
+            lines.push_back(std::string_view(text).substr(pos, stop - pos));
+            if (newline == std::string::npos) break;
+            pos = newline + 1;
+        }
+        if (!lines.empty() && lines.back().empty()) lines.pop_back();
+    }
+
+    // Walk back over the annotation/KDoc block that belongs to THIS declaration.
+    std::size_t owned = 0;
+    while (!lines.empty() && owned_annotation_line(lines.back())) {
+        lines.pop_back();
+        owned += 1;
+    }
+    if (require_annotation && owned == 0) fail(no_annotation);
+
+    // Walk back `owned` newlines in the original text; re-joining the split would lose a
+    // character and silently slice the wrong range. Python: text.rfind("\n", 0, start - 1) + 1
+    // (exclusive end — the newline at start-1 itself is outside the range, so each step lands
+    // on the previous line's start).
+    std::size_t start = match->start;
+    for (std::size_t i = 0; i < owned; ++i) {
+        if (start < 2) {
+            start = 0;
+            break;
+        }
+        const std::size_t newline = text.rfind('\n', start - 2);
+        start = newline == std::string::npos ? 0 : newline + 1;
+    }
+
+    return text.substr(start, declaration_end(text, match->end, style_brace_follows,
+                                              unterminated) - start);
+}
+
+// ---- batch-2 profiles -----------------------------------------------------------------------
+// Each writes HEADER + extracted declarations; the GENERATED provenance line names the C++
+// profile instead of the deleted Python script (the only intended byte difference).
+
+// task-schedule/extract_task_entity.py
+void profile_task_entity(const fs::path& source, const fs::path& out) {
+    static constexpr const char* kHeader =
+        "package com.newoether.agora.data.local\n"
+        "\n"
+        "// GENERATED by agora_extract task-entity from\n"
+        "// app/src/main/java/com/newoether/agora/data/local/ChatEntities.kt -- do not edit. The "
+        "declaration\n"
+        "// below is copied verbatim; only the Room markers are pointed at the stand-local "
+        "stubs.\n"
+        "import androidx.room.Entity\n"
+        "import androidx.room.PrimaryKey\n"
+        "\n";
+    const std::string text = read_file(source);
+    const std::string block = extract_declaration(
+        text, "TaskEntity",
+        {"class ", "data class ", "internal data class ", "public data class "},
+        /*require_annotation=*/true, /*style_brace_follows=*/false,
+        "error: declaration `TaskEntity` not found in ChatEntities.kt",
+        "error: `TaskEntity` has no annotation block; the extractor would drift",
+        "error: unterminated declaration in ChatEntities.kt");
+
+    const std::size_t trimmed = trim_right_end(block.size(), block);
+    write_file(out, std::string(kHeader) + block.substr(0, trimmed) + "\n");
+    std::cout << "extracted TaskEntity into " << out.string() << "\n";
+}
+
+std::string join_blocks(const std::string& header, const std::vector<std::string>& blocks) {
+    std::string joined = header;
+    for (const std::string& block : blocks) joined += block + "\n\n";
+    const std::size_t trimmed = trim_right_end(joined.size(), joined);
+    return joined.substr(0, trimmed) + "\n";
+}
+
+// backup-media-policy/extract_message_segment.py (also invoked by message-persistence-guard)
+void profile_message_segment(const fs::path& source, const fs::path& out) {
+    static constexpr const char* kHeader =
+        "package com.newoether.agora.model\n"
+        "\n"
+        "// GENERATED by agora_extract message-segment from "
+        "app/src/main/java/com/newoether/agora/model/\n"
+        "// ChatMessage.kt -- do not edit. The declarations below are copied verbatim.\n"
+        "import kotlinx.serialization.Serializable\n"
+        "import kotlinx.serialization.Transient\n"
+        "import kotlinx.serialization.json.JsonObject\n"
+        "\n";
+    static constexpr std::array<const char*, 3> kWanted = {"ToolImageAttachment",
+                                                           "StreamingTextDelta", "MessageSegment"};
+    const std::string text = read_file(source);
+    std::vector<std::string> blocks;
+    for (const char* name : kWanted) {
+        std::string block = extract_declaration(
+            text, name, {"class ", "data class ", "internal data class ", "public data class "},
+            /*require_annotation=*/true, /*style_brace_follows=*/false,
+            std::string("error: declaration `") + name + "` not found in ChatMessage.kt",
+            std::string("error: `") + name +
+                "` has no annotation block; the extractor would drift",
+            std::string("error: unterminated declaration `") + name + "` in ChatMessage.kt");
+        // The Compose marker is substituted by a stand-local stub; nothing else may change.
+        const std::string from = "@Immutable\n";
+        const std::string to = "@androidx.compose.runtime.Immutable\n";
+        std::size_t at = 0;
+        while ((at = block.find(from, at)) != std::string::npos) {
+            block.replace(at, from.size(), to);
+            at += to.size();
+        }
+        blocks.push_back(std::move(block));
+    }
+    write_file(out, join_blocks(kHeader, blocks));
+    std::cout << "extracted ToolImageAttachment, StreamingTextDelta, MessageSegment into "
+              << out.string() << "\n";
+}
+
+// run-recovery/extract_model_types.py
+void profile_run_recovery_models(const fs::path& source, const fs::path& out) {
+    static constexpr const char* kHeader =
+        "package com.newoether.agora.model\n"
+        "\n"
+        "// GENERATED by agora_extract run-recovery-models from "
+        "app/src/main/java/com/newoether/agora/model/\n"
+        "// ChatMessage.kt -- do not edit. The declarations below are copied verbatim.\n"
+        "import androidx.compose.runtime.Immutable\n"
+        "import kotlinx.serialization.Serializable\n"
+        "import kotlinx.serialization.Transient\n"
+        "import kotlinx.serialization.json.JsonObject\n"
+        "\n";
+    static constexpr std::array<const char*, 6> kWanted = {
+        "ToolImageAttachment", "StreamingTextDelta", "MessageSegment",
+        "ToolExecutionStates", "Participant",        "MessageStatus"};
+    const std::string text = read_file(source);
+    std::vector<std::string> blocks;
+    for (const char* name : kWanted) {
+        blocks.push_back(extract_declaration(
+            text, name,
+            {"class ", "data class ", "internal data class ", "public data class ", "object ",
+             "enum class "},
+            /*require_annotation=*/false, /*style_brace_follows=*/true,
+            std::string("error: declaration `") + name + "` not found in ChatMessage.kt", "",
+            std::string("error: unterminated declaration `") + name + "` in ChatMessage.kt"));
+    }
+    write_file(out, join_blocks(kHeader, blocks));
+    std::cout << "extracted ToolImageAttachment, StreamingTextDelta, MessageSegment, "
+                 "ToolExecutionStates, Participant, MessageStatus into "
+              << out.string() << "\n";
+}
+
 void usage() {
     std::cerr << "usage: agora_extract <profile> <stand_dir>\n"
-              << "profiles:\n"
+                 "       agora_extract <profile> <source.kt> <out.kt>\n"
+              << "profiles (stand_dir):\n"
               << "  enums-16-17     migration-16-17 extract_enums.py\n"
               << "  enums-17-18     migration-17-18 extract_enums.py\n"
               << "  enums-18-19     migration-18-19 extract_enums.py\n"
@@ -258,15 +553,37 @@ void usage() {
               << "  participant     message-source/v18/regeneration-tree-repair "
                  "extract_participant.py\n"
               << "  marker          migration-19-20 extract_marker.py\n"
-              << "  tool-kind       streaming-json-document extract_tool_kind.py\n";
+              << "  tool-kind       streaming-json-document extract_tool_kind.py\n"
+              << "profiles (source, out):\n"
+              << "  task-entity         task-schedule extract_task_entity.py\n"
+              << "  message-segment     backup-media-policy extract_message_segment.py\n"
+              << "  run-recovery-models run-recovery extract_model_types.py\n";
     std::exit(2);
 }
 
 }  // namespace
 
 int main(int argc, char** argv) {
+    const std::string profile = argc >= 2 ? argv[1] : "";
+
+    // Source/out profiles: agora_extract <profile> <source.kt> <out.kt>
+    if (argc == 4) {
+        const fs::path source = argv[2];
+        const fs::path out = argv[3];
+        if (profile == "task-entity") {
+            profile_task_entity(source, out);
+        } else if (profile == "message-segment") {
+            profile_message_segment(source, out);
+        } else if (profile == "run-recovery-models") {
+            profile_run_recovery_models(source, out);
+        } else {
+            usage();
+        }
+        return 0;
+    }
+
+    // Stand profiles: agora_extract <profile> <stand_dir>
     if (argc != 3) usage();
-    const std::string profile = argv[1];
     const fs::path stand = fs::path(argv[2]).lexically_normal();
     // stand_dir = <root>/core/tools/golden/<stand> → root is four levels up (Python's HERE/ROOT).
     const fs::path root = (stand / ".." / ".." / ".." / "..").lexically_normal();

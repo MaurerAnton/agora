@@ -11,7 +11,7 @@ Compiled verbatim from the app tree:
 
 `MessageSegment`, `ToolImageAttachment` and `StreamingTextDelta` live in `model/ChatMessage.kt`,
 which cannot compile host-side (Compose marker plus UI state). They are lifted out byte for byte by
-the sibling `backup-media-policy/extract_message_segment.py`; only the `@Immutable` marker is a
+the sibling `backup-media-policy` message-segment profile; only the `@Immutable` marker is a
 stand-local platform stub. The generated declarations are decoded and re-encoded with the real
 kotlinx serializer, so the guard is exercised on the exact model the app persists.
 

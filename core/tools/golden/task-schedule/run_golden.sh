@@ -3,7 +3,7 @@
 #
 # TaskSchedule.kt compiles VERBATIM from the app tree and needs no stubs: it only imports
 # java.util.Calendar. Its hasSchedule() extension is declared on the Room entity TaskEntity, which
-# extract_task_entity.py lifts out of data/local/ChatEntities.kt verbatim (that file cannot compile
+# agora_extract task-entity lifts out of data/local/ChatEntities.kt verbatim (that file cannot compile
 # host-side) while PlatformStubs.kt supplies the two Room markers. The C++ core must reproduce the
 # traces byte for byte (core/tests/task_schedule_parity_test.cpp).
 #
@@ -31,7 +31,7 @@ rm -rf "$here/build"
 mkdir -p "$classes" "$fresh"
 
 echo "Extracting TaskEntity verbatim from ChatEntities.kt..."
-python3 "$here/extract_task_entity.py" "$app/data/local/ChatEntities.kt" "$here/build/TaskEntity.kt"
+"${AGORA_EXTRACT:-$root/core/build/agora_extract}" task-entity "$app/data/local/ChatEntities.kt" "$here/build/TaskEntity.kt"
 
 echo "Compiling the Kotlin reference sources..."
 "$kotlinc_bin" -cp "$jars" -d "$classes" \

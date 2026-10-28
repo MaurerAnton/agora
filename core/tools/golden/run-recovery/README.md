@@ -5,7 +5,7 @@ segments, and persisted tool segments in raw JSON.
 
 `RunRecoveryPolicy.kt` compiles **verbatim** from the app tree. Its model types live in
 `model/ChatMessage.kt`, which cannot compile host-side because the file also pulls in Compose, Room
-and the whole UI model. `extract_model_types.py` copies the six needed declarations
+and the whole UI model. `agora_extract run-recovery-models` copies the six needed declarations
 (`ToolImageAttachment`, `StreamingTextDelta`, `MessageSegment`, `ToolExecutionStates`, `Participant`,
 `MessageStatus`) out **byte for byte**; the only stand-local surface is the `@Immutable` Compose
 marker in `stubs/`, a compile-time annotation with no runtime behavior. The extracted file is

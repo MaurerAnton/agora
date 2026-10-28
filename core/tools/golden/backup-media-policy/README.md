@@ -13,7 +13,7 @@ canonical trace is frozen under `golden/`; the C++ port
 | `scenarios/*.json` | One case per file, 112 frozen edge cases |
 | `golden/*.trace` | Frozen canonical output, one per scenario |
 | `BackupMediaTraceDump.kt` | The stand driver (decodes a scenario, calls the policy, prints the trace) |
-| `extract_message_segment.py` | Lifts `MessageSegment`, `ToolImageAttachment` and `StreamingTextDelta` out of `model/ChatMessage.kt` |
+| `agora_extract message-segment` | Lifts `MessageSegment`, `ToolImageAttachment` and `StreamingTextDelta` out of `model/ChatMessage.kt` |
 | `PlatformStubs.kt` | The `@Immutable` Compose marker annotation |
 | `run_golden.sh` | Extracts, compiles and regenerates or verifies the traces |
 | `gen_scenarios.py` | Generates the scenarios (deterministic; rerun after editing) |
@@ -108,7 +108,7 @@ Escaping: `\` `|` `;` `\n` `\r` `\t` → `\\\\` `\\p` `\\s` `\\n` `\\r` `\\t`; a
 
 * `NativeBackupMediaPolicy.kt` and `model/AttachmentMeta.kt` compile **verbatim**. `MessageSegment`,
   `ToolImageAttachment` and `StreamingTextDelta` live in `model/ChatMessage.kt`, which cannot compile
-  host-side (Compose's `@Immutable`, UI state, Room), so `extract_message_segment.py` copies those
+  host-side (Compose's `@Immutable`, UI state, Room), so `agora_extract message-segment` copies those
   three declarations out **verbatim** rather than retyping them — retyping would pin the
   transcription instead of the implementation. The extractor fails loudly if any of the three
   changes shape, and the stand README records that the blocks are byte-identical to the source.

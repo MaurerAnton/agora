@@ -4,7 +4,7 @@
 # NativeBackupMediaPolicy.kt and model/AttachmentMeta.kt compile VERBATIM from the app tree.
 # MessageSegment, ToolImageAttachment and StreamingTextDelta live in model/ChatMessage.kt, which
 # cannot compile host-side (androidx.compose.runtime.Immutable, UI state), so they are lifted out
-# verbatim by extract_message_segment.py rather than retyped. The C++ core must reproduce the
+# verbatim by agora_extract message-segment rather than retyped. The C++ core must reproduce the
 # traces byte for byte (core/tests/backup_media_policy_parity_test.cpp).
 #
 # Usage:
@@ -51,7 +51,7 @@ rm -rf "$here/build"
 mkdir -p "$classes" "$fresh"
 
 echo "Extracting MessageSegment / ToolImageAttachment / StreamingTextDelta verbatim..."
-python3 "$here/extract_message_segment.py" "$app/model/ChatMessage.kt" "$here/build/MessageSegment.kt"
+"${AGORA_EXTRACT:-$root/core/build/agora_extract}" message-segment "$app/model/ChatMessage.kt" "$here/build/MessageSegment.kt"
 
 echo "Compiling the Kotlin reference sources..."
 "$kotlinc_bin" -Xplugin="$plugin" -cp "$classpath" -d "$classes" \

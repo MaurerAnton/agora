@@ -35,7 +35,7 @@ rm -rf "$here/build"
 mkdir -p "$classes" "$fresh"
 
 echo "Extracting MessageSegment / ToolImageAttachment / StreamingTextDelta verbatim..."
-python3 "$here/../backup-media-policy/extract_message_segment.py" \
+"${AGORA_EXTRACT:-$root/core/build/agora_extract}" message-segment \
     "$app/model/ChatMessage.kt" "$here/build/MessageSegment.kt"
 
 echo "Compiling the Kotlin reference sources..."

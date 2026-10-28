@@ -45,6 +45,9 @@ struct GenerationContext {
     std::string web_search_provider = "duckduckgo";
     std::int32_t web_search_num_results = 5;
     std::string web_search_base_url;
+
+    // AskUserToolProvider.kt (GenerationContracts.kt askUserEnabled).
+    bool ask_user_enabled = false;
 };
 
 /** com.newoether.agora.model.ToolImageAttachment. */

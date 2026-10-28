@@ -101,6 +101,7 @@ add_library(agora_core_lib STATIC
     src/migration_19_20.cpp
     src/migration_20_35.cpp
     src/sqlite_platform.cpp
+    src/sqlite_executor.cpp
     src/uuid_v3.cpp
     src/provider_identity.cpp
     src/provider_support.cpp
@@ -179,6 +180,16 @@ if(CURL_FOUND OR CURL_LIBRARY_RELEASE)
     message(STATUS "agora core: libcurl HTTP transport enabled (${CURL_LIBRARIES})")
 else()
     set(AGORA_CORE_HAVE_CURL OFF)
+endif()
+
+# SQLite3 for the database layer (replaces Room on host).
+find_package(SQLite3 REQUIRED)
+if(SQLite3_FOUND)
+    target_compile_definitions(agora_core_lib PUBLIC AGORA_CORE_HAVE_SQLITE3=1)
+    target_link_libraries(agora_core_lib PUBLIC ${SQLite3_LIBRARIES})
+    message(STATUS "agora core: SQLite3 enabled (${SQLite3_LIBRARIES})")
+else()
+    set(AGORA_CORE_HAVE_SQLITE3 OFF)
 endif()
 
 if(AGORA_CORE_BUILD_TESTS)

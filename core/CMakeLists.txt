@@ -103,6 +103,7 @@ add_library(agora_core_lib STATIC
     src/sqlite_platform.cpp
     src/sqlite_executor.cpp
     src/uuid_v3.cpp
+    src/font_utils.cpp
     src/provider_identity.cpp
     src/provider_support.cpp
     src/sha256.cpp
@@ -138,6 +139,7 @@ add_library(agora_core_lib STATIC
     src/text_counter.cpp
     src/token_count.cpp
     src/unicode.cpp
+    src/diagnostic_redactor.cpp
     src/zip_reader.cpp
     src/zip_writer.cpp
     src/native_backup_v5.cpp

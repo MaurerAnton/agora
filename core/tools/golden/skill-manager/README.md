@@ -16,7 +16,7 @@ Kotlin sources compiled verbatim from the app tree** and the canonical trace is 
 | `PlatformStub.kt` | `android.content.Context` reduced to `filesDir` |
 | `StateFlowStub.kt` | `kotlinx.coroutines.flow.StateFlow` as an aliasing counter |
 | `run_golden.sh` | Compiles the app sources and regenerates or verifies the traces |
-| `gen_scenarios.py` | Generates the scenarios (deterministic; rerun after editing) |
+| `agora_scenarios skill-manager` | Generates the scenarios (deterministic; rerun after editing) |
 
 ## What is pinned
 
@@ -106,7 +106,7 @@ Escaping: `\` `|` `;` `\n` `\r` `\t` → `\\` `\p` `\s` `\n` `\r` `\t`.
 ```bash
 KOTLINC=/path/to/kotlinc KOTLINX_JARS=core.jar:json.jar ./run_golden.sh          # verify
 KOTLINC=/path/to/kotlinc KOTLINX_JARS=core.jar:json.jar ./run_golden.sh --freeze # regenerate
-python3 gen_scenarios.py                                                          # rewrite scenarios
+core/build/agora_scenarios skill-manager core/tools/golden/skill-manager                                                          # rewrite scenarios
 ```
 
 The Kotlin reference is compiled from the app tree on every run; `run_golden.sh` wipes the

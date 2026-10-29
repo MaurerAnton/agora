@@ -16,7 +16,7 @@ driver calls `matches` directly — **no transcription anywhere in this stand**.
 | `golden/*.trace` | Frozen canonical output, one per scenario |
 | `GlobMatcherTraceDump.kt` | The stand driver (one `match\|0/1` line) |
 | `run_golden.sh` | Compiles the Kotlin source and regenerates or verifies the traces |
-| `gen_scenarios.py` | Generates the scenarios (deterministic; rerun after editing) |
+| `agora_scenarios glob-matcher` | Generates the scenarios (deterministic; rerun after editing) |
 
 ## Scenario format
 
@@ -58,7 +58,7 @@ repository scans) stay in Kotlin for now — see `core/README.md`.
 ```
 KOTLINC=/path/to/kotlinc KOTLINX_JARS=core.jar:json.jar ./run_golden.sh          # verify
 KOTLINC=/path/to/kotlinc KOTLINX_JARS=core.jar:json.jar ./run_golden.sh --freeze # regenerate
-python3 gen_scenarios.py                                                          # rewrite scenarios
+core/build/agora_scenarios glob-matcher core/tools/golden/glob-matcher                                                          # rewrite scenarios
 ```
 
 The Kotlin reference is compiled from the app tree on every run.

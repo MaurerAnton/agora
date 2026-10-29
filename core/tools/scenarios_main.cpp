@@ -1402,6 +1402,455 @@ void profile_sandbox_path_resolver(const fs::path& scenarios) {
     std::cout << "wrote " << entries.size() << " scenarios to " << scenarios.string() << "\n";
 }
 
+
+// loop-policy/gen_scenarios.py — indent=2, ensure_ascii=False.
+void profile_loop_policy(const fs::path& scenarios) {
+    constexpr std::int64_t kLongMax = 9223372036854775807LL;
+    constexpr std::int64_t kLongMin = (-9223372036854775807LL - 1);
+    constexpr std::int64_t kIntMax = 2147483647LL;
+    constexpr std::int64_t kIntMin = -2147483648LL;
+    const std::string nbsp = "\u00a0";
+    const std::string zwsp = "\u200b";
+    std::vector<json::Value> all;
+    auto add = [&](const char* name, const char* op,
+                   std::vector<std::pair<std::string, json::Value>> extra) {
+        std::vector<std::pair<std::string, json::Value>> members = {{"name", str(name)},
+                                                                    {"op", str(op)}};
+        for (auto& member : extra) members.push_back(std::move(member));
+        all.push_back(object(std::move(members)));
+    };
+    auto validate = [&](const char* name, std::int64_t interval, std::int64_t cycles) {
+        add(name, "validate",
+            {{"intervalMs", number(interval)}, {"maxCycles", number(cycles)}});
+    };
+    auto normalize = [&](const char* name, json::Value prompt) {
+        add(name, "normalizePrompt", {{"prompt", std::move(prompt)}});
+    };
+    auto execution = [&](const char* name, json::Value prompt) {
+        add(name, "promptForExecution", {{"prompt", std::move(prompt)}});
+    };
+    auto fire = [&](const char* name, std::int64_t now, std::int64_t interval) {
+        add(name, "nextFireAt", {{"now", number(now)}, {"intervalMs", number(interval)}});
+    };
+    auto revision = [&](const char* name, std::int64_t current) {
+        add(name, "nextRevision", {{"current", number(current)}});
+    };
+
+    validate("validate_accepts_defaults", 60000, 10);
+    validate("validate_accepts_min_interval", 10000, 10);
+    validate("validate_accepts_max_interval", 604800000, 10);
+    validate("validate_rejects_below_min_interval", 9999, 10);
+    validate("validate_rejects_above_max_interval", 604800001, 10);
+    validate("validate_rejects_zero_interval", 0, 10);
+    validate("validate_rejects_negative_interval", -1, 10);
+    validate("validate_rejects_long_min_interval", kLongMin, 10);
+    validate("validate_rejects_long_max_interval", kLongMax, 10);
+
+    validate("validate_accepts_min_cycles", 60000, 1);
+    validate("validate_accepts_max_cycles", 60000, 100);
+    validate("validate_rejects_zero_cycles", 60000, 0);
+    validate("validate_rejects_101_cycles", 60000, 101);
+    validate("validate_rejects_negative_cycles", 60000, -1);
+    validate("validate_rejects_int_min_cycles", 60000, kIntMin);
+    validate("validate_rejects_int_max_cycles", 60000, kIntMax);
+
+    validate("validate_interval_error_wins", 0, 0);
+    validate("validate_interval_error_wins_above_max", 604800001, 101);
+
+    normalize("normalize_null", null_value());
+    normalize("normalize_empty", str(""));
+    normalize("normalize_spaces", str("   "));
+    normalize("normalize_tabs_and_newlines", str("\t\n\r "));
+    normalize("normalize_trims", str("  hello  "));
+    normalize("normalize_keeps_inner_spaces", str(" a  b "));
+    normalize("normalize_keeps_inner_newline", str("a\nb"));
+    normalize("normalize_keeps_inner_tab_between_words", str(" a \t b "));
+    normalize("normalize_unicode_text", str("  \u041f\u0440\u0438\u0432\u0435\u0442  "));
+    normalize("normalize_nbsp_only_collapses", str(nbsp));
+    normalize("normalize_nbsp_is_trimmed", str(nbsp + "x" + nbsp));
+    normalize("normalize_zero_width_space_is_content", str(zwsp));
+
+    execution("execution_null_falls_back", null_value());
+    execution("execution_blank_falls_back", str("   "));
+    execution("execution_nbsp_falls_back", str(nbsp));
+    execution("execution_trims", str("  keep going  "));
+
+    fire("fire_normal", 1000, 60000);
+    fire("fire_exact_max", kLongMax - 60000, 60000);
+    fire("fire_clamps_on_overflow", kLongMax - 60000 + 1, 60000);
+    fire("fire_zero_interval", 123, 0);
+    fire("fire_negative_now", -5, 10);
+    fire("fire_max_now_zero_interval", kLongMax, 0);
+    fire("fire_negative_interval_wraps_threshold", 0, -10);
+    fire("fire_negative_interval_at_long_min_wraps_sum", kLongMin, -10);
+    fire("fire_negative_interval_at_long_max", kLongMax, -10);
+
+    revision("revision_from_zero", 0);
+    revision("revision_from_forty_two", 42);
+    revision("revision_from_max_minus_one", kLongMax - 1);
+    revision("revision_at_max_wraps_to_zero", kLongMax);
+
+    remove_stale(scenarios);
+    std::vector<std::string> seen;
+    const FormatOptions pretty{Format::Pretty2, false};
+    for (const json::Value& item : all) {
+        std::string name;
+        for (const json::Member& member : item.members) {
+            if (member.key == "name") name = member.value.text;
+        }
+        if (std::find(seen.begin(), seen.end(), name) != seen.end()) {
+            fail("duplicate scenario name: " + name);
+        }
+        seen.push_back(name);
+        write_scenario(scenarios, name, item, pretty);
+    }
+    std::cout << "Wrote " << all.size() << " scenarios\n";
+}
+
+// sandbox-virtual-paths/gen_scenarios.py — indent=2, numbered file names.
+void profile_sandbox_virtual_paths(const fs::path& scenarios) {
+    std::vector<std::pair<std::string, json::Value>> entries;
+    auto add = [&](const char* name, json::Value value) {
+        entries.emplace_back(name, std::move(value));
+    };
+    auto norm = [&](const char* name, const char* path) {
+        add(name, object({{"op", str("normalize")}, {"path", str(path)}}));
+    };
+    auto glob = [&](const char* name, std::vector<std::string> files, const char* pattern) {
+        std::vector<json::Value> items;
+        for (auto& file : files) items.push_back(str(std::move(file)));
+        add(name, object({{"op", str("glob")},
+                          {"files", array(std::move(items))},
+                          {"pattern", str(pattern)}}));
+    };
+
+    const std::vector<std::string> files = {"/a.txt",
+                                            "/b.md",
+                                            "/dir/a.txt",
+                                            "/dir/b.md",
+                                            "/dir/sub/c.txt",
+                                            "/dir/sub/deep/d.md",
+                                            "/other/e.txt"};
+
+    norm("norm-empty", "");
+    norm("norm-spaces", "   ");
+    norm("norm-tabs", "\t\n");
+    norm("norm-nbsp", "\u00a0");
+    norm("norm-zero-width-space", "\u200b");
+    norm("norm-relative", "foo");
+    norm("norm-absolute", "/foo");
+    norm("norm-relative-nested", "foo/bar");
+    norm("norm-backslashes", "foo\\bar");
+    norm("norm-unc", "\\\\server\\share");
+    norm("norm-repeated-slashes", "/foo//bar///");
+    norm("norm-root", "/");
+    norm("norm-all-slashes", "///");
+    norm("norm-trailing-slash", "/foo/");
+    norm("norm-relative-trailing-slash", "foo/");
+    norm("norm-padded", "  /foo/bar  ");
+    norm("norm-dot-segment", "a/../b");
+    norm("norm-dot", ".");
+    norm("norm-dotdot", "..");
+    norm("norm-tilde", "~");
+    norm("norm-drive", "C:\\foo\\bar");
+    norm("norm-unicode", "h\u00e9llo/\u4e16\u754c");
+    norm("norm-internal-space", "a b");
+    norm("norm-space-slash", " / ");
+    norm("norm-double-leading-trailing", "//foo//");
+    norm("norm-relative-double-trailing", "foo//");
+    norm("norm-backslash-only", "\\");
+    norm("norm-double-backslash", "a\\\\b");
+    norm("norm-dot-segment-inner", "a/./b");
+    norm("norm-two-slashes", "//");
+
+    glob("glob-blank", files, "");
+    glob("glob-space", files, " ");
+    glob("glob-star-txt", files, "*.txt");
+    glob("glob-doublestar-txt", files, "**/*.txt");
+    glob("glob-dir-txt", files, "dir/*.txt");
+    glob("glob-absolute-dir-txt", files, "/dir/*.txt");
+    glob("glob-dir-doublestar-txt", files, "dir/**/*.txt");
+    glob("glob-doublestar-md", files, "**/*.md");
+    glob("glob-question-txt", files, "?.txt");
+    glob("glob-a-star-txt", files, "a*.txt");
+    glob("glob-class", files, "[ab].txt");
+    glob("glob-negated-class", files, "[!a].txt");
+    glob("glob-dir-class", files, "dir/[ab].txt");
+    glob("glob-trailing-slash", files, "dir/");
+    glob("glob-root", files, "/");
+    glob("glob-doublestar", files, "**");
+    glob("glob-star", files, "*");
+    glob("glob-backslash-txt", files, "\\*.txt");
+    glob("glob-dir-backslash-txt", files, "dir\\*.txt");
+    glob("glob-no-match", files, "nope/*.txt");
+    glob("glob-dir-sub-txt", files, "dir/sub/*.txt");
+    glob("glob-dir-doublestar", files, "dir/**");
+    glob("glob-deep-md", files, "**/deep/*.md");
+    glob("glob-sub-doublestar", files, "**/sub/**");
+    glob("glob-backslash-path", {"\\a\\b.txt"}, "a/b.txt");
+    glob("glob-unicode", {"/h\u00e9llo/\u4e16\u754c.txt"}, "*.txt");
+    glob("glob-empty-files", {}, "*.txt");
+    glob("glob-padded-absolute", files, " /a.txt ");
+    glob("glob-padded-name", files, "a.txt ");
+    glob("glob-dir-star", files, "dir/*");
+    glob("glob-exact", files, "/dir/sub/deep/d.md");
+    glob("glob-exact-miss", files, "/dir/sub/deep/x.md");
+
+    remove_stale(scenarios);
+    const FormatOptions pretty{Format::Pretty2, false};
+    for (std::size_t i = 0; i < entries.size(); ++i) {
+        char prefix[16];
+        std::snprintf(prefix, sizeof(prefix), "%03zu-", i + 1);
+        write_scenario(scenarios, std::string(prefix) + entries[i].first, entries[i].second,
+                       pretty);
+    }
+    std::cout << "wrote " << entries.size() << " scenarios to " << scenarios.string() << "\n";
+}
+
+// glob-matcher/gen_scenarios.py — indent=2, ensure_ascii=False.
+void profile_glob_matcher(const fs::path& scenarios) {
+    std::vector<json::Value> all;
+    auto match = [&](const char* name, const char* pattern, const char* path) {
+        all.push_back(object({{"name", str(name)},
+                              {"mode", str("match")},
+                              {"pattern", str(pattern)},
+                              {"path", str(path)}}));
+    };
+
+    match("literal_exact", "a/b.txt", "a/b.txt");
+    match("literal_mismatch", "a/b.txt", "a/c.txt");
+    match("literal_prefix_only", "a", "ab");
+    match("empty_both", "", "");
+    match("empty_pattern_path", "", "a");
+    match("pattern_empty_path", "a", "");
+    match("literal_metacharacters", "a.b+c(d)", "a.b+c(d)");
+    match("literal_dot_does_not_match_star", "a.b", "axb");
+
+    match("star_suffix", "*.txt", "a.txt");
+    match("star_suffix_empty_stem", "*.txt", ".txt");
+    match("star_crosses_separator", "a*b", "a/b");
+    match("star_middle", "a*c", "abc");
+    match("star_newline_is_in_class", "a*b", "a\nb");
+    match("star_repeated", "a*b*c", "abc");
+    match("star_alone", "*", "anything");
+    match("star_alone_empty", "*", "");
+
+    match("globstar_leading_optional_dir", "**/foo", "foo");
+    match("globstar_leading_deep", "**/foo", "a/b/foo");
+    match("globstar_middle_collapse", "a/**/foo", "a/foo");
+    match("globstar_middle_deep", "a/**/foo", "a/x/y/foo");
+    match("globstar_whole", "**", "a/b/c");
+    match("globstar_empty", "**", "");
+    match("globstar_adjacent_stars", "a**b", "a/b");
+    match("globstar_adjacent_newline_blocked", "a**b", "a\nb");
+    match("globstar_trailing", "a/**", "a/");
+    match("globstar_trailing_deep", "a/**", "a/b/c");
+    match("globstar_prefix_globstar_suffix", "src/**/build", "src/main/build");
+    match("globstar_star_mix", "**/*.kt", "a/b/c.kt");
+    match("globstar_star_mix_no_dir", "**/*.kt", "c.kt");
+
+    match("question_one_char", "a?c", "abc");
+    match("question_requires_char", "a?c", "ac");
+    match("question_excludes_separator", "a?c", "a/c");
+    match("question_astral_is_one_code_point", "a?c", "a\U0001F600c");
+    match("question_matches_newline", "a?c", "a\nc");
+    match("question_alone", "?", "x");
+    match("question_alone_separator", "?", "/");
+
+    match("class_simple", "[abc]", "b");
+    match("class_miss", "[abc]", "d");
+    match("class_negated", "[!abc]", "d");
+    match("class_negated_hit", "[!abc]", "a");
+    match("class_empty_is_invalid_pattern", "[]", "]");
+    match("class_bang_only_is_invalid_pattern", "[!]", "x");
+    match("class_literal_open_bracket", "[[]", "[");
+    match("class_literal_close_bracket", "[]a]", "]");
+    match("class_escaped_backslash", "[\\\\]", "\\");
+    match("class_caret_escaped_at_zero", "[^]", "^");
+    match("class_caret_inside", "[a^]", "^");
+    match("class_range", "[a-c]", "b");
+    match("class_range_miss", "[a-c]", "d");
+    match("class_with_separator_member", "[/a]", "/");
+    match("class_unclosed_is_literal", "[abc", "[abc");
+    match("class_in_middle", "a[0-9]z", "a5z");
+    match("class_after_star", "*[0-9]", "abc7");
+    match("class_bang_inside", "[a!b]", "!");
+    match("class_multibyte", "[\u00e9\u00fc]", "\u00e9");
+    match("class_trailing_dash", "[a-]", "-");
+    match("class_leading_dash", "[-a]", "-");
+    match("class_double_dash_literals", "[--a]", "b");
+    match("class_double_dash_dash", "[--a]", "-");
+    match("class_intersection", "[a&&b]", "a");
+    match("class_intersection_empty_operand", "[a&&]", "a");
+    match("class_intersection_leading", "[&&a]", "a");
+    match("class_nested_open_is_invalid", "[a[b]", "a");
+    match("class_negated_with_intersection", "[!a&&b]", "c");
+
+    match("normalize_pattern_backslash", "src\\main", "src/main");
+    match("normalize_path_backslash", "src/main", "src\\main");
+    match("normalize_both_backslashes", "a\\b\\**\\c", "a/b/x/c");
+    match("normalize_backslash_not_special", "\\*", "*");
+
+    match("backtrack_multiple_stars", "a*a*a*a*b", "aa/a/a/b");
+    match("backtrack_no_match", "a*a*a*a*b", "aa/a/a/c");
+    match("backtrack_star_then_globstar", "*/**/x", "a/b/x");
+    match("backtrack_empty_prefix", "*a", "a");
+    match("deep_path", "**/node_modules/**/package.json",
+          "a/node_modules/b/node_modules/package.json");
+
+    const FormatOptions pretty{Format::Pretty2, false};
+    for (const json::Value& item : all) {
+        std::string name;
+        for (const json::Member& member : item.members) {
+            if (member.key == "name") name = member.value.text;
+        }
+        write_scenario(scenarios, name, item, pretty);
+    }
+    std::cout << "Wrote " << all.size() << " scenarios\n";
+}
+
+// skill-manager/gen_scenarios.py — indent=2, ensure_ascii=False.
+void profile_skill_manager(const fs::path& scenarios) {
+    std::vector<json::Value> all;
+    auto add = [&](const char* name, const char* mode,
+                   std::vector<std::pair<std::string, json::Value>> extra) {
+        std::vector<std::pair<std::string, json::Value>> members = {{"name", str(name)},
+                                                                    {"mode", str(mode)}};
+        for (auto& member : extra) members.push_back(std::move(member));
+        all.push_back(object(std::move(members)));
+    };
+
+    add("description_get_missing", "description_get", {{"file_name", str("missing.md")}});
+    add("description_get_existing", "description_get",
+        {{"file_name", str("guide.md")},
+         {"setup_content", str("# Guide")},
+         {"setup_description", str("Guide for agents")}});
+
+    add("list_empty", "list", {});
+    add("list_sorted", "list",
+        {{"file_name", str("beta")},
+         {"setup_content", str("beta")},
+         {"setup_target_name", str("alpha.md")},
+         {"setup_target_content", str("alpha")}});
+    add("list_filters_non_md", "list",
+        {{"file_name", str("keep.md")},
+         {"setup_content", str("keep")},
+         {"setup_raw_name", str("notes.txt")},
+         {"setup_raw_content", str("not a skill")}});
+    add("list_with_description", "list",
+        {{"file_name", str("guide")},
+         {"setup_content", str("# Guide")},
+         {"setup_description", str("Guide for agents")}});
+
+    add("catalog_empty", "catalog", {});
+    add("catalog_with_files", "catalog",
+        {{"file_name", str("guide")},
+         {"setup_content", str("# Guide")},
+         {"setup_description", str("Guide for agents")},
+         {"setup_target_name", str("notes")},
+         {"setup_target_content", str("scratch")}});
+    add("catalog_description_newline", "catalog",
+        {{"file_name", str("guide")},
+         {"setup_content", str("# Guide")},
+         {"setup_description", str("line one\n  line two  ")}});
+
+    add("meta_empty", "meta", {});
+    add("meta_save_restore", "meta_save",
+        {{"meta_json", str("{\"guide.md\": \"Guide for agents\", \"notes.md\": \"\"}")}});
+    add("meta_save_invalid", "meta_save", {{"meta_json", str("not json")}});
+    add("meta_corrupt_list", "list", {{"setup_raw_meta", str("{")}});
+
+    add("read_missing", "read", {{"file_name", str("missing.md")}});
+    add("read_existing", "read",
+        {{"file_name", str("guide.md")}, {"setup_content", str("Hello world")}});
+    add("read_adds_md_extension", "read",
+        {{"file_name", str("guide")}, {"setup_content", str("Hello world")}});
+
+    add("create_basic", "create",
+        {{"file_name", str("new.md")}, {"content_param", str("# Hello")}});
+    add("create_adds_md_extension", "create",
+        {{"file_name", str("notes")}, {"content_param", str("# Notes")}});
+    add("create_with_description", "create",
+        {{"file_name", str("guide.md")},
+         {"content_param", str("Content")},
+         {"description", str("Guide for agents")}});
+    add("create_existing", "create",
+        {{"file_name", str("existing.md")},
+         {"setup_content", str("Original")},
+         {"content_param", str("Duplicate")}});
+    add("create_sanitizes_separators", "create",
+        {{"file_name", str("nested/thing")}, {"content_param", str("# Nested")}});
+
+    add("edit_replace", "edit",
+        {{"file_name", str("guide.md")},
+         {"setup_content", str("Original")},
+         {"content_param", str("New content")}});
+    add("edit_rename", "edit",
+        {{"file_name", str("old.md")},
+         {"setup_content", str("Original")},
+         {"new_name", str("renamed.md")}});
+    add("edit_rename_and_content", "edit",
+        {{"file_name", str("old.md")},
+         {"setup_content", str("Original")},
+         {"content_param", str("New content")},
+         {"new_name", str("renamed.md")}});
+    add("edit_description", "edit",
+        {{"file_name", str("guide.md")},
+         {"setup_content", str("Original")},
+         {"description", str("New description")}});
+    add("edit_description_unchanged", "edit",
+        {{"file_name", str("guide.md")},
+         {"setup_content", str("Original")},
+         {"setup_description", str("Same description")},
+         {"description", str("Same description")}});
+    add("edit_patch", "edit",
+        {{"file_name", str("guide.md")},
+         {"setup_content", str("Hello old world")},
+         {"old_string", str("old")},
+         {"new_string", str("new")}});
+    add("edit_patch_not_found", "edit",
+        {{"file_name", str("guide.md")},
+         {"setup_content", str("Hello world")},
+         {"old_string", str("missing")},
+         {"new_string", str("found")}});
+    add("edit_patch_multiple", "edit",
+        {{"file_name", str("guide.md")},
+         {"setup_content", str("foo bar foo")},
+         {"old_string", str("foo")},
+         {"new_string", str("bar")}});
+    add("edit_patch_no_match", "edit",
+        {{"file_name", str("guide.md")},
+         {"setup_content", str("Hello world")},
+         {"old_string", str("")},
+         {"new_string", str("new")}});
+    add("edit_rename_conflict", "edit",
+        {{"file_name", str("guide.md")},
+         {"setup_content", str("Original")},
+         {"new_name", str("existing.md")},
+         {"setup_target_name", str("existing.md")},
+         {"setup_target_content", str("Target")}});
+    add("edit_no_changes", "edit",
+        {{"file_name", str("guide.md")}, {"setup_content", str("Original")}});
+
+    add("delete_existing", "delete",
+        {{"file_name", str("guide.md")},
+         {"setup_content", str("Content to delete")},
+         {"setup_description", str("Guide for agents")}});
+    add("delete_missing", "delete", {{"file_name", str("missing.md")}});
+
+    add("revision_check", "revision", {});
+
+    const FormatOptions pretty{Format::Pretty2, false};
+    for (const json::Value& item : all) {
+        std::string name;
+        for (const json::Member& member : item.members) {
+            if (member.key == "name") name = member.value.text;
+        }
+        write_scenario(scenarios, name, item, pretty);
+    }
+    std::cout << "Wrote " << all.size() << " scenarios\n";
+}
+
 }  // namespace
 
 int main(int argc, char** argv) {
@@ -1423,7 +1872,11 @@ int main(int argc, char** argv) {
                   << "  provider-support      provider-support/gen_scenarios.py\n"
                   << "  run-branch-selection  run-branch-selection/gen_scenarios.py\n"
                   << "  custom-model-references custom-model-references/gen_scenarios.py\n"
-                  << "  sandbox-path-resolver sandbox-path-resolver/gen_scenarios.py\n";
+                  << "  sandbox-path-resolver sandbox-path-resolver/gen_scenarios.py\n"
+                  << "  loop-policy           loop-policy/gen_scenarios.py\n"
+                  << "  sandbox-virtual-paths sandbox-virtual-paths/gen_scenarios.py\n"
+                  << "  glob-matcher          glob-matcher/gen_scenarios.py\n"
+                  << "  skill-manager         skill-manager/gen_scenarios.py\n";
         return 2;
     }
     const std::string profile = argv[1];
@@ -1462,6 +1915,14 @@ int main(int argc, char** argv) {
         profile_custom_model_references(scenarios);
     } else if (profile == "sandbox-path-resolver") {
         profile_sandbox_path_resolver(scenarios);
+    } else if (profile == "loop-policy") {
+        profile_loop_policy(scenarios);
+    } else if (profile == "sandbox-virtual-paths") {
+        profile_sandbox_virtual_paths(scenarios);
+    } else if (profile == "glob-matcher") {
+        profile_glob_matcher(scenarios);
+    } else if (profile == "skill-manager") {
+        profile_skill_manager(scenarios);
     } else {
         std::cerr << "unknown profile: " << profile << "\n";
         return 2;

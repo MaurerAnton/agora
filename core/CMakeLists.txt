@@ -210,6 +210,7 @@ if(AGORA_CORE_BUILD_TESTS)
     # zlib is only needed by the tool (zip-reader builds raw deflate archives); the core
     # library itself stays dependency-free.
     find_package(ZLIB REQUIRED)
+    find_package(OpenSSL REQUIRED)
     add_executable(agora_scenarios tools/scenarios_main.cpp)
-    target_link_libraries(agora_scenarios PRIVATE agora_core_lib ZLIB::ZLIB)
+    target_link_libraries(agora_scenarios PRIVATE agora_core_lib ZLIB::ZLIB OpenSSL::Crypto)
 endif()

@@ -108,7 +108,7 @@ result prints `-`/`null`, while an empty string is escaped as itself.
 ```bash
 JAVA_HOME=/path/to/jdk17 KOTLINC=/path/to/kotlinc KOTLINX_JARS=core.jar:json.jar ./run_golden.sh          # verify
 JAVA_HOME=/path/to/jdk17 KOTLINC=/path/to/kotlinc KOTLINX_JARS=core.jar:json.jar ./run_golden.sh --freeze # regenerate
-python3 gen_scenarios.py                                                                                  # rewrite scenarios
+core/build/agora_scenarios thinking-capability core/tools/golden/thinking-capability                                                                                  # rewrite scenarios
 ```
 
 `run_golden.sh` wipes the stand's git-ignored `build/` before each run, so runs are idempotent. The

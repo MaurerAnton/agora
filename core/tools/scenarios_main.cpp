@@ -10,6 +10,7 @@
 #include <charconv>
 #include <cstdint>
 #include <cstdio>
+#include <openssl/evp.h>
 #include <optional>
 #include <zlib.h>
 #include <cstdlib>
@@ -5895,6 +5896,374 @@ void profile_mcp_protocol(const fs::path& scenarios) {
     std::cout << "Wrote " << all.size() << " scenarios to " << scenarios.string() << "\n";
 }
 
+
+// thinking-capability/gen_scenarios.py — compact, ensure_ascii=False.
+void profile_thinking_capability(const fs::path& scenarios) {
+    std::vector<json::Value> all;
+    auto case_add = [&](const char* name,
+                        std::vector<std::pair<std::string, json::Value>> fields) {
+        std::vector<std::pair<std::string, json::Value>> members = {{"name", str(name)}};
+        for (auto& field : fields) members.push_back(std::move(field));
+        all.push_back(object(std::move(members)));
+    };
+    auto cap = [&](const char* name, const char* family, const char* model) {
+        case_add(name, {{"op", str("capability")},
+                        {"family", str(family)},
+                        {"modelId", str(model)}});
+    };
+    auto nearest = [&](const char* name, const char* family, const char* model,
+                       const char* effort) {
+        case_add(name, {{"op", str("nearest")},
+                        {"family", str(family)},
+                        {"modelId", str(model)},
+                        {"effort", str(effort)}});
+    };
+    auto clamp = [&](const char* name, const char* family, const char* model,
+                     std::int64_t tokens) {
+        case_add(name, {{"op", str("clamp")},
+                        {"family", str(family)},
+                        {"modelId", str(model)},
+                        {"tokens", number(tokens)}});
+    };
+    auto resolve = [&](const char* name, const char* family, const char* model, bool enabled,
+                       const char* effort, bool budget_enabled = false,
+                       std::int64_t budget_tokens = 0) {
+        case_add(name, {{"op", str("resolve")},
+                        {"family", str(family)},
+                        {"modelId", str(model)},
+                        {"enabled", boolean(enabled)},
+                        {"effort", str(effort)},
+                        {"budgetEnabled", boolean(budget_enabled)},
+                        {"budgetTokens", number(budget_tokens)}});
+    };
+
+    case_add("normalize_null", {{"op", str("normalize")}, {"raw", null_value()}});
+    case_add("normalize_blank", {{"op", str("normalize")}, {"raw", str("   ")}});
+    case_add("normalize_nbsp",
+             {{"op", str("normalize")}, {"raw", str("\u00a0\u00a0")}});
+    case_add("normalize_auto", {{"op", str("normalize")}, {"raw", str("auto")}});
+    case_add("normalize_budget_dynamic",
+             {{"op", str("normalize")}, {"raw", str("budget:dynamic")}});
+    case_add("normalize_budget_legacy",
+             {{"op", str("normalize")}, {"raw", str("budget:8192")}});
+    case_add("normalize_alias_xhigh",
+             {{"op", str("normalize")}, {"raw", str("  X-High ")}});
+    case_add("normalize_alias_fast", {{"op", str("normalize")}, {"raw", str("FAST")}});
+    case_add("normalize_none", {{"op", str("normalize")}, {"raw", str("NONE")}});
+    case_add("normalize_unknown", {{"op", str("normalize")}, {"raw", str("ultra")}});
+    case_add("normalize_alias_balance",
+             {{"op", str("normalize")}, {"raw", str("Balanced")}});
+
+    case_add("legacy_budget_null", {{"op", str("legacyBudget")}, {"raw", null_value()}});
+    case_add("legacy_budget_plain",
+             {{"op", str("legacyBudget")}, {"raw", str("budget:2048")}});
+    case_add("legacy_budget_case_space",
+             {{"op", str("legacyBudget")}, {"raw", str(" BUDGET:4096 ")}});
+    case_add("legacy_budget_zero",
+             {{"op", str("legacyBudget")}, {"raw", str("budget:0")}});
+    case_add("legacy_budget_negative",
+             {{"op", str("legacyBudget")}, {"raw", str("budget:-3")}});
+    case_add("legacy_budget_text",
+             {{"op", str("legacyBudget")}, {"raw", str("budget:abc")}});
+    case_add("legacy_budget_inner_space",
+             {{"op", str("legacyBudget")}, {"raw", str("budget: 2048")}});
+    case_add("legacy_budget_empty",
+             {{"op", str("legacyBudget")}, {"raw", str("budget:")}});
+
+    case_add("effort_for_index_negative",
+             {{"op", str("effortForIndex")}, {"index", number(-1)}});
+    case_add("effort_for_index_first",
+             {{"op", str("effortForIndex")}, {"index", number(0)}});
+    case_add("effort_for_index_middle",
+             {{"op", str("effortForIndex")}, {"index", number(3)}});
+    case_add("effort_for_index_last",
+             {{"op", str("effortForIndex")}, {"index", number(5)}});
+    case_add("effort_for_index_past_end",
+             {{"op", str("effortForIndex")}, {"index", number(6)}});
+    case_add("index_for_effort_minimal",
+             {{"op", str("indexForEffort")}, {"effort", str("minimal")}});
+    case_add("index_for_effort_alias_min",
+             {{"op", str("indexForEffort")}, {"effort", str("MIN")}});
+    case_add("index_for_effort_none",
+             {{"op", str("indexForEffort")}, {"effort", str("none")}});
+    case_add("index_for_effort_auto",
+             {{"op", str("indexForEffort")}, {"effort", str("auto")}});
+    case_add("index_for_effort_alias_xhigh",
+             {{"op", str("indexForEffort")}, {"effort", str("x-high")}});
+    case_add("index_for_effort_trim_case",
+             {{"op", str("indexForEffort")}, {"effort", str("  HIGH ")}});
+    case_add("index_for_effort_alias_maximum",
+             {{"op", str("indexForEffort")}, {"effort", str("maximum")}});
+    case_add("index_for_effort_unknown",
+             {{"op", str("indexForEffort")}, {"effort", str("bogus")}});
+
+    case_add("family_null", {{"op", str("family")},
+                             {"providerName", null_value()},
+                             {"customProtocol", null_value()}});
+    case_add("family_anthropic",
+             {{"op", str("family")}, {"providerName", str("anthropic")}});
+    case_add("family_trim_case",
+             {{"op", str("family")}, {"providerName", str("  Anthropic ")}});
+    case_add("family_open_router",
+             {{"op", str("family")}, {"providerName", str("open router")}});
+    case_add("family_openrouter",
+             {{"op", str("family")}, {"providerName", str("openrouter")}});
+    case_add("family_deepseek",
+             {{"op", str("family")}, {"providerName", str("deepseek")}});
+    case_add("family_qwen", {{"op", str("family")}, {"providerName", str("qwen")}});
+    case_add("family_groq", {{"op", str("family")}, {"providerName", str("groq")}});
+    case_add("family_google", {{"op", str("family")}, {"providerName", str("google")}});
+    case_add("family_gemini", {{"op", str("family")}, {"providerName", str("gemini")}});
+    case_add("family_ollama", {{"op", str("family")}, {"providerName", str("ollama")}});
+    case_add("family_local", {{"op", str("family")}, {"providerName", str("local")}});
+    case_add("family_unknown", {{"op", str("family")}, {"providerName", str("unknown")}});
+    case_add("family_protocol_wins", {{"op", str("family")},
+                                      {"providerName", str("anthropic")},
+                                      {"customProtocol", str("google")}});
+    case_add("family_protocol_claude", {{"op", str("family")},
+                                        {"providerName", str("openai")},
+                                        {"customProtocol", str(" claude ")}});
+    case_add("family_protocol_unknown", {{"op", str("family")},
+                                         {"providerName", str("deepseek")},
+                                         {"customProtocol", str("wat")}});
+    case_add("family_protocol_openai_is_compatible",
+             {{"op", str("family")},
+              {"providerName", str("anthropic")},
+              {"customProtocol", str("openai")}});
+    case_add("family_protocol_blank_falls_back",
+             {{"op", str("family")},
+              {"providerName", str("qwen")},
+              {"customProtocol", str("   ")}});
+
+    for (const char* family : {"ANTHROPIC", "OPENAI", "OPENAI_COMPATIBLE", "OPENROUTER",
+                               "DEEPSEEK", "QWEN", "GROQ", "GEMINI", "OLLAMA", "LOCAL"}) {
+        std::string lower(family);
+        std::transform(lower.begin(), lower.end(), lower.begin(), [](unsigned char character) {
+            return static_cast<char>(std::tolower(character));
+        });
+        case_add(("family_default_" + lower).c_str(),
+                 {{"op", str("familyDefault")}, {"family", str(family)}});
+    }
+
+    cap("cap_anthropic_legacy3", "ANTHROPIC", "claude-3-opus-20240229");
+    cap("cap_anthropic_legacy35", "ANTHROPIC", "claude-3-5-sonnet-20241022");
+    cap("cap_anthropic_37", "ANTHROPIC", "claude-3-7-sonnet-20250219");
+    cap("cap_anthropic_40", "ANTHROPIC", "claude-opus-4-0");
+    cap("cap_anthropic_45", "ANTHROPIC", "claude-sonnet-4-5");
+    cap("cap_anthropic_46", "ANTHROPIC", "claude-opus-4-6");
+    cap("cap_anthropic_46_dot", "ANTHROPIC", "claude-sonnet-4.6");
+    cap("cap_anthropic_4_2025", "ANTHROPIC", "claude-opus-4-2025-01-01");
+    cap("cap_anthropic_undocumented", "ANTHROPIC", "claude-opus-5");
+    cap("cap_anthropic_non_claude", "ANTHROPIC", "my-claude");
+    cap("cap_anthropic_trim_case", "ANTHROPIC", "  CLAUDE-OPUS-4-6  ");
+    cap("cap_openai_default", "OPENAI", "gpt-9");
+    cap("cap_openai_astra", "OPENAI", "gpt-6-astra");
+    cap("cap_openai_sol", "OPENAI", "gpt-6-sol");
+    cap("cap_openai_luna_trim", "OPENAI", " GPT-6-Luna ");
+    cap("cap_ollama_gpt_oss", "OLLAMA", "gpt-oss:20b");
+    cap("cap_ollama_library", "OLLAMA", "library/gpt-oss:latest");
+    cap("cap_ollama_llama", "OLLAMA", "llama3.2");
+    cap("cap_qwen38_max", "QWEN", "qwen3.8-max");
+    cap("cap_qwen38_max_dated", "QWEN", "qwen3.8-max-2026-01-01");
+    cap("cap_qwen38_flash", "QWEN", "qwen3.8-flash");
+    cap("cap_qwen38_27b", "QWEN", "qwen3.8-27b");
+    cap("cap_qwen38_24t", "QWEN", "qwen3.8-2.4t-a95b");
+    cap("cap_glm53", "QWEN", "glm-5.3");
+    cap("cap_glm53_zhipu", "QWEN", "zhipu/glm-5.3-air");
+    cap("cap_deepseek_v4", "QWEN", "deepseek-v4-pro");
+    cap("cap_kimi_k3", "QWEN", "kimi-k3");
+    cap("cap_kimi_path", "QWEN", "kimi/kimi-k3-latest");
+    cap("cap_qwen_thinking_only", "QWEN", "qwen3-next-80b-a3b-thinking");
+    cap("cap_qwq_plus_prefix", "QWEN", "qwq-plus-2025-01-01");
+    cap("cap_qwen_hybrid", "QWEN", "qwen-plus");
+    cap("cap_qwen_third_party", "QWEN", "some-third-party");
+    cap("cap_groq_gpt_oss", "GROQ", "openai/gpt-oss-120b");
+    cap("cap_groq_qwen36", "GROQ", "qwen/qwen3.6-27b");
+    cap("cap_groq_qwen38", "GROQ", "qwen/qwen3.8-27b");
+    cap("cap_groq_unknown", "GROQ", "llama-3.3-70b");
+    cap("cap_gemini", "GEMINI", "gemini-2.5-pro");
+    cap("cap_openrouter", "OPENROUTER", "openai/gpt-5");
+    cap("cap_deepseek_family", "DEEPSEEK", "deepseek-chat");
+    cap("cap_compatible", "OPENAI_COMPATIBLE", "custom-model");
+    cap("cap_local", "LOCAL", "local-model");
+
+    case_add("provider_capability_protocol_wins",
+             {{"op", str("providerCapability")},
+              {"providerName", str("anthropic")},
+              {"customProtocol", str("google")},
+              {"modelId", str("gemini-2.5-pro")}});
+    case_add("provider_capability_name_openai",
+             {{"op", str("providerCapability")},
+              {"providerName", str("openai")},
+              {"modelId", str("gpt-6-astra")}});
+    case_add("provider_capability_custom_relay",
+             {{"op", str("providerCapability")},
+              {"providerName", str("My Relay")},
+              {"customProtocol", str("anthropic")},
+              {"modelId", str("claude-opus-4-6")}});
+
+    nearest("nearest_anthropic_minimal", "ANTHROPIC", "claude-opus-4-6", "minimal");
+    nearest("nearest_anthropic_medium", "ANTHROPIC", "claude-opus-4-6", "medium");
+    nearest("nearest_anthropic_xhigh", "ANTHROPIC", "claude-opus-4-6", "xhigh");
+    nearest("nearest_anthropic_max", "ANTHROPIC", "claude-opus-4-6", "max");
+    nearest("nearest_anthropic_none", "ANTHROPIC", "claude-opus-4-6", "none");
+    nearest("nearest_qwen_hybrid", "QWEN", "qwen-plus", "high");
+    nearest("nearest_qwen38_high", "QWEN", "qwen3.8-max", "high");
+    nearest("nearest_qwen38_medium", "QWEN", "qwen3.8-max", "medium");
+    nearest("nearest_deepseek_medium", "DEEPSEEK", "deepseek-chat", "medium");
+    nearest("nearest_groq_qwen36_high", "GROQ", "qwen/qwen3.6-27b", "high");
+    nearest("nearest_openrouter_none", "OPENROUTER", "anything", "none");
+    nearest("nearest_openai_sol_minimal", "OPENAI", "gpt-6-sol", "minimal");
+    nearest("nearest_ollama_levels_minimal", "OLLAMA", "gpt-oss", "minimal");
+    nearest("nearest_gemini_max", "GEMINI", "gemini-2.5-pro", "max");
+    nearest("nearest_unknown_effort", "OPENAI", "gpt-9", "ultra");
+
+    clamp("clamp_qwen_low", "QWEN", "qwen-plus", 1);
+    clamp("clamp_qwen_high", "QWEN", "qwen-plus", 100000);
+    clamp("clamp_qwen_zero", "QWEN", "qwen-plus", 0);
+    clamp("clamp_anthropic_below", "ANTHROPIC", "claude-opus-4-6", 999);
+    clamp("clamp_anthropic_min", "ANTHROPIC", "claude-opus-4-6", 1024);
+    clamp("clamp_permissive_max", "OPENAI_COMPATIBLE", "anything", 2147483647);
+    clamp("clamp_groq_no_ceiling", "GROQ", "llama-3.3-70b", 999999);
+
+    resolve("resolve_disabled_disableable", "OPENAI", "gpt-9", false, "high");
+    resolve("resolve_disabled_forced_astra", "OPENAI", "gpt-6-astra", false, "high");
+    resolve("resolve_disabled_forced_no_effort", "QWEN", "qwq-plus", false, "high");
+    resolve("resolve_enabled_plain", "OPENAI", "gpt-9", true, "high");
+    resolve("resolve_enabled_unknown_effort", "OPENAI", "gpt-9", true, "ultra");
+    resolve("resolve_budget_unsupported", "OPENAI", "gpt-9", true, "low", true, 4096);
+    resolve("resolve_budget_qwen", "QWEN", "qwen-plus", true, "high", true, 99999);
+    resolve("resolve_budget_qwen_min", "QWEN", "qwen-plus", true, "high", true, 0);
+    resolve("resolve_budget_anthropic", "ANTHROPIC", "claude-opus-4-6", true, "high", true,
+            8000);
+    resolve("resolve_budget_anthropic_clamped", "ANTHROPIC", "claude-opus-4-6", true, "high",
+            true, 100);
+    resolve("resolve_budget_openrouter", "OPENROUTER", "anything", true, "high", true, 5000);
+    resolve("resolve_effort_qwen38", "QWEN", "qwen3.8-max", true, "high");
+    resolve("resolve_budget_qwen38", "QWEN", "qwen3.8-max", true, "high", true, 50000);
+    resolve("resolve_ollama_max", "OLLAMA", "gpt-oss", true, "max");
+    resolve("resolve_forced_off_openrouter", "OPENROUTER", "anything", false, "max");
+
+    remove_stale(scenarios);
+    const FormatOptions compact{Format::Compact, false};
+    for (const json::Value& item : all) {
+        std::string name;
+        for (const json::Member& member : item.members) {
+            if (member.key == "name") name = member.value.text;
+        }
+        write_scenario(scenarios, name, item, compact);
+    }
+    std::cout << "wrote " << all.size() << " scenarios to " << scenarios.string() << "\n";
+}
+
+// conch-handshake/gen_scenarios.py — indent=2 with the default ensure_ascii=True.
+std::string hmac_sha256_hex(const std::string& key, const std::string& data) {
+    EVP_PKEY* pkey = EVP_PKEY_new_raw_private_key(
+        EVP_PKEY_HMAC, nullptr, reinterpret_cast<const unsigned char*>(key.data()),
+        key.size());
+    if (pkey == nullptr) fail("error: cannot create HMAC key");
+    EVP_MD_CTX* context = EVP_MD_CTX_new();
+    if (context == nullptr) {
+        EVP_PKEY_free(pkey);
+        fail("error: cannot create digest context");
+    }
+    const auto cleanup = [&]() {
+        EVP_MD_CTX_free(context);
+        EVP_PKEY_free(pkey);
+    };
+    if (EVP_DigestSignInit(context, nullptr, EVP_sha256(), nullptr, pkey) != 1) {
+        cleanup();
+        fail("error: EVP_DigestSignInit failed");
+    }
+    if (EVP_DigestSignUpdate(context, data.data(), data.size()) != 1) {
+        cleanup();
+        fail("error: EVP_DigestSignUpdate failed");
+    }
+    std::size_t length = 0;
+    if (EVP_DigestSignFinal(context, nullptr, &length) != 1) {
+        cleanup();
+        fail("error: EVP_DigestSignFinal size failed");
+    }
+    std::string signature(length, '\0');
+    if (EVP_DigestSignFinal(context, reinterpret_cast<unsigned char*>(signature.data()),
+                            &length) != 1) {
+        cleanup();
+        fail("error: EVP_DigestSignFinal failed");
+    }
+    signature.resize(length);
+    cleanup();
+    return hex_encode(signature);
+}
+
+void profile_conch_handshake(const fs::path& scenarios) {
+    const std::string api_key = "test-api-key-123";
+    const std::string nonce = "nonce123";
+    const std::string challenge = "challenge456";
+    const std::string public_key = "dGVzdC1wdWJsaWMta2V5";
+    const std::string features =
+        "hkdf-extract-v2,response-auth-v1,sse-sequence-v1,rejection-auth-v1";
+    const std::string security_payload =
+        "conch-handshake-v2|" + public_key + "|" + challenge + "|" + features;
+    const std::string signature = hmac_sha256_hex(api_key, nonce + "|" + public_key);
+    const std::string features_signature =
+        hmac_sha256_hex(api_key, nonce + "|" + security_payload);
+    const std::string zero_signature(64, '0');
+
+    auto handshake = [&](const std::string& handshake_nonce, const std::string& sig,
+                         const std::string& features_value, const std::string& handshake_challenge,
+                         const std::string& features_sig) {
+        return object({{"public_key", str(public_key)},
+                       {"nonce", str(handshake_nonce)},
+                       {"signature", str(sig)},
+                       {"features", str(features_value)},
+                       {"challenge", str(handshake_challenge)},
+                       {"features_signature", str(features_sig)}});
+    };
+    auto write = [&](const char* name, const std::string& key, const std::string& expected,
+                     json::Value handshake_value) {
+        write_scenario(scenarios, name,
+                       object({{"op", str("verify")},
+                               {"api_key", str(key)},
+                               {"expected_challenge", str(expected)},
+                               {"handshake", std::move(handshake_value)}}),
+                       FormatOptions{Format::Pretty2, true});
+    };
+
+    remove_stale(scenarios);
+    write("01-valid_full", api_key, challenge,
+          handshake(nonce, signature, features, challenge, features_signature));
+    write("02-empty_challenge", api_key, challenge,
+          handshake(nonce, signature, features, "", features_signature));
+    write("03-wrong_challenge", api_key, "different_challenge",
+          handshake(nonce, signature, features, challenge, features_signature));
+    write("04-empty_nonce", api_key, challenge,
+          handshake("", signature, features, challenge, features_signature));
+    write("05-wrong_signature", api_key, challenge,
+          handshake(nonce, zero_signature, features, challenge, features_signature));
+    write("06-wrong_features_signature", api_key, challenge,
+          handshake(nonce, signature, features, challenge, zero_signature));
+    write("07-missing_feature", api_key, challenge,
+          handshake(nonce, signature, "hkdf-extract-v2,response-auth-v1", challenge,
+                    features_signature));
+    {
+        const std::string features08 = features + ",extra-feature";
+        const std::string payload08 =
+            "conch-handshake-v2|" + public_key + "|" + challenge + "|" + features08;
+        const std::string features_signature08 =
+            hmac_sha256_hex(api_key, nonce + "|" + payload08);
+        write("08-extra_feature", api_key, challenge,
+              handshake(nonce, signature, features08, challenge, features_signature08));
+    }
+    write("09-signature_wrong_length", api_key, challenge,
+          handshake(nonce, "abc", features, challenge, features_signature));
+    write("10-empty_features_signature", api_key, challenge,
+          handshake(nonce, signature, features, challenge, ""));
+    write("11-wrong_api_key", "different-api-key", challenge,
+          handshake(nonce, signature, features, challenge, features_signature));
+
+    std::cout << "wrote 11 scenarios to " << scenarios.string() << "\n";
+}
+
 }  // namespace
 
 int main(int argc, char** argv) {
@@ -5942,7 +6311,9 @@ int main(int argc, char** argv) {
                   << "  run-ui-projection     run-ui-projection/gen_scenarios.py\n"
                   << "  v18-regeneration-repair v18-regeneration-repair/gen_scenarios.py\n"
                   << "  cron-expression       cron-expression/gen_scenarios.py\n"
-                  << "  mcp-protocol          mcp-protocol/gen_scenarios.py\n";
+                  << "  mcp-protocol          mcp-protocol/gen_scenarios.py\n"
+                  << "  thinking-capability   thinking-capability/gen_scenarios.py\n"
+                  << "  conch-handshake       conch-handshake/gen_scenarios.py\n";
         return 2;
     }
     const std::string profile = argv[1];
@@ -6033,6 +6404,10 @@ int main(int argc, char** argv) {
         profile_cron_expression(scenarios);
     } else if (profile == "mcp-protocol") {
         profile_mcp_protocol(scenarios);
+    } else if (profile == "thinking-capability") {
+        profile_thinking_capability(scenarios);
+    } else if (profile == "conch-handshake") {
+        profile_conch_handshake(scenarios);
     } else {
         std::cerr << "unknown profile: " << profile << "\n";
         return 2;

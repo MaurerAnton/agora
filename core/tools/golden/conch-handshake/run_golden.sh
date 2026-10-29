@@ -36,7 +36,7 @@ rm -rf "$here/build"
 mkdir -p "$classes" "$fresh" "$android_classes"
 
 echo "Generating scenarios..."
-python3 "$here/gen_scenarios.py"
+"${AGORA_SCENARIOS:-$root/core/build/agora_scenarios}" conch-handshake "$here"
 
 echo "Compiling the vendored Charsets platform type..."
 "$kotlinc_bin" -Xjvm-default=all -d "$android_classes" "$here/platform/Charsets.kt" 2>&1 | grep -v "^warning:" || true

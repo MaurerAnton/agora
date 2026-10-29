@@ -13,7 +13,7 @@ test `core/tests/conch_handshake_parity_test.cpp`) must reproduce every trace by
 | `scenarios/*.json` | One case per file, 11 frozen scenarios |
 | `golden/*.trace` | Frozen canonical output, one per scenario |
 | `ConchHandshakeTraceDump.kt` | The stand driver (decodes the handshake JSON, calls `verify`) |
-| `gen_scenarios.py` | Generates the scenarios (HMACs computed with Python's `hmac`) |
+| `agora_scenarios conch-handshake` | Generates the scenarios (HMACs computed with OpenSSL) |
 | `platform/Charsets.kt` | The substituted `java.nio.charset.Charsets` surface (stand-local) |
 | `run_golden.sh` | Compiles the stand-local platform type and regenerates or verifies |
 
@@ -79,7 +79,7 @@ output, one line per scenario, `\n` terminated.
 ```bash
 JAVA_HOME=/path/to/jdk17 KOTLINC=/path/to/kotlinc KOTLINX_JARS=core.jar:json.jar ./run_golden.sh          # verify
 JAVA_HOME=/path/to/jdk17 KOTLINC=/path/to/kotlinc KOTLINX_JARS=core.jar:json.jar ./run_golden.sh --freeze # regenerate
-python3 gen_scenarios.py                                                                                  # rewrite scenarios
+core/build/agora_scenarios conch-handshake core/tools/golden/conch-handshake                                                                                  # rewrite scenarios
 ```
 
 `run_golden.sh` wipes the stand's `build/` (git-ignored scratch) before each run, so runs are

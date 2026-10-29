@@ -1,7 +1,7 @@
 // Golden trace driver for the DuckDuckGo scraper, used to pin the C++ port.
 //
 // Runs the REAL Kotlin parsing pieces compiled from the app sources (extracted verbatim by
-// extract_scraper.py: WebResult, the parsing regexes, parseResults, extractUrl, stripHtml and
+// `agora_extract duckduckgo`: WebResult, the parsing regexes, parseResults, extractUrl, stripHtml and
 // the loop constants) over canned page HTML and prints a canonical trace. The search loop
 // itself is a line-for-line transcription of DuckDuckGoScraper.search() with fetchPage replaced
 // by scenario-supplied pages (the fetch — query/offset/vqd form values and OkHttp — is the

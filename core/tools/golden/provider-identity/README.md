@@ -13,7 +13,7 @@ Parity pin for the native port of `data/CustomProviderIdentity.kt` and the
 | `scenarios/*.json` | One case per file, 58 frozen cases |
 | `golden/*.trace` | Frozen canonical output, one per scenario |
 | `ProviderIdentityTraceDump.kt` | The stand driver |
-| `extract_identity.py` | Lifts the identity policy out of `CustomProviderIdentity.kt` |
+| ``agora_extract provider-identity`` | Lifts the identity policy out of `CustomProviderIdentity.kt` |
 | `PlatformStubs.kt` | Platform-type stand-ins the extracted sources need |
 | `run_golden.sh` | Extracts, compiles and regenerates or verifies the traces |
 | `gen_scenarios.py` | Generates the scenarios (deterministic; rerun after editing) |

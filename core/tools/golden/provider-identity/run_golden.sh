@@ -39,7 +39,7 @@ rm -rf "$classes" "$fresh"
 mkdir -p "$classes" "$fresh" "$here/build"
 
 echo "Extracting the identity policy from CustomProviderIdentity.kt..."
-python3 "$here/extract_identity.py" "$app/data/CustomProviderIdentity.kt" "$here/build/IdentityPolicy.kt"
+"${AGORA_EXTRACT:-$root/core/build/agora_extract}" provider-identity "$app/data/CustomProviderIdentity.kt" "$here/build/IdentityPolicy.kt"
 
 sources=(
     "$app/util/Constants.kt"

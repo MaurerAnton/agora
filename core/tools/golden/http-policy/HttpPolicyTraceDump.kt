@@ -1,6 +1,6 @@
 // Golden trace driver for the transport-neutral policy extracted from HttpClient.kt.
 //
-// HttpClient.kt is a 608-line OkHttp/Android transport object. extract_policy.py copies the pure
+// HttpClient.kt is a 608-line OkHttp/Android transport object. `agora_extract http-policy` copies the pure
 // policy declarations out of it verbatim (visibility widened, dedented) and the stand exercises
 // host locality, the cleartext credential guard, proxy sanitisation, bypass/CIDR matching,
 // proxy authorization and the base client policy.

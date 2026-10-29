@@ -1,6 +1,6 @@
 // Golden trace driver for the custom provider identity policy, used to pin the C++ port.
 //
-// The identity half of CustomProviderIdentity.kt is extracted verbatim (extract_identity.py) and
+// The identity half of CustomProviderIdentity.kt is extracted verbatim (`agora_extract provider-identity`) and
 // CustomProviderConfig.kt / CustomProviderNamePolicy.kt compile verbatim from the app tree, so the
 // driver calls the real code — no transcription. normalize() takes its id generator as a
 // parameter, which keeps every scenario deterministic.

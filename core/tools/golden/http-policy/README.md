@@ -5,7 +5,7 @@ credential guard, proxy sanitisation, proxy bypass/CIDR matching, proxy authoriz
 base client timeouts/redirect policy. The actual OkHttp client (sockets, TLS, calls, streaming,
 diagnostics) stays on the platform side.
 
-`HttpClient.kt` is a 608-line OkHttp/Android object. `extract_policy.py` copies the pure
+`HttpClient.kt` is a 608-line OkHttp/Android object. ``agora_extract http-policy`` copies the pure
 declarations out of it verbatim, changes only their visibility (`private` -> `internal`) and
 dedents them out of `object HttpClient`. The derived wrappers at the bottom parameterise the
 stored `proxyConfig` field; the extractor asserts the source snippets they rely on are still
@@ -18,7 +18,7 @@ present, so a shape change in `HttpClient.kt` fails the stand instead of driftin
 | `scenarios/*.json` | One case per file, 158 frozen scenarios |
 | `golden/*.trace` | Frozen canonical output, one per scenario |
 | `HttpPolicyTraceDump.kt` | The stand driver |
-| `extract_policy.py` | Lifts the policy declarations out of `HttpClient.kt` |
+| ``agora_extract http-policy`` | Lifts the policy declarations out of `HttpClient.kt` |
 | `gen_scenarios.py` | Generates the scenarios (deterministic; rerun after editing) |
 | `run_golden.sh` | Extracts, compiles and regenerates or verifies the traces |
 
@@ -78,7 +78,7 @@ the test compares the bytes, including the trailing newline.
 
 ## Scope and boundaries
 
-- `extract_policy.py` copies `CREDENTIAL_HEADERS`, `isLocalHost`, `guardCleartextCredentials`,
+- ``agora_extract http-policy`` copies `CREDENTIAL_HEADERS`, `isLocalHost`, `guardCleartextCredentials`,
   `ProxyType`, `ProxyConfig`, `isProxyBypassed`, `ipv4ToLong` and `ipv4InCidr` from
   `HttpClient.kt`, changing only visibility and indentation. `sanitizedProxyConfig`,
   `resolveProxy`, `proxyAuthorizationHeader` and `clientPolicy` are small derived wrappers; the

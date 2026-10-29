@@ -6,7 +6,7 @@
 # CustomProviderNamePolicy.kt, SettingsDefaults.kt, EmbeddingModelConfig.kt,
 # ThinkingControl.kt and OpenAiServiceTiers.kt. The identity policy inside
 # CustomProviderIdentity.kt is lifted byte-for-byte by the provider-identity stand's
-# documented extractor (extract_identity.py). DataStore SettingsManager is replaced by an
+# documented extractor (`agora_extract provider-identity`). DataStore SettingsManager is replaced by an
 # in-memory recording double (platform/) that serves scenario-seeded flows and records saves.
 #
 # Usage:
@@ -42,7 +42,7 @@ rm -rf "$here/build"
 mkdir -p "$classes" "$fresh"
 
 echo "Extracting the identity policy from CustomProviderIdentity.kt..."
-python3 "$identity_stand/extract_identity.py" "$app/data/CustomProviderIdentity.kt" "$identity"
+"${AGORA_EXTRACT:-$root/core/build/agora_extract}" provider-identity "$app/data/CustomProviderIdentity.kt" "$identity"
 
 sources=(
     "$app/util/Constants.kt"

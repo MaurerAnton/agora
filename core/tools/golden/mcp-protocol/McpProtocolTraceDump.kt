@@ -1,6 +1,6 @@
 // Golden trace driver for the MCP protocol core, used to pin the C++ port.
 //
-// McpModels.kt compiles VERBATIM from the app tree; extract_mcp_pieces.py copies the private
+// McpModels.kt compiles VERBATIM from the app tree; `agora_extract mcp-pieces` copies the private
 // schema projections, the protocol constants, the version classifier and parseCallPayload
 // verbatim (visibility widened). The JSON-RPC response validation, the negotiation candidate
 // order and the tools/list page mapping are inline in transport-coupled functions — the driver

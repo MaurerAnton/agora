@@ -9,7 +9,7 @@ allowlist used by native backup v4+: `toJsonObject` (the `settings.json` payload
 `DefaultSystemPrompt.kt`, `SettingsPreferenceSchema.kt`, `EmbeddingModelConfig.kt`,
 `ThinkingControl.kt` and `OpenAiServiceTiers.kt` compile **verbatim from the app tree**. The
 identity policy inside `CustomProviderIdentity.kt` is lifted byte-for-byte by the documented
-extractor of the `provider-identity` stand (`extract_identity.py`).
+extractor of the `provider-identity` stand (`agora_extract provider-identity`).
 
 ## Layout
 

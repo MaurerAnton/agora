@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 # Generates or verifies the golden traces for the MCP protocol core.
 #
-# McpModels.kt compiles VERBATIM from the app tree; extract_mcp_pieces.py copies the private schema
+# McpModels.kt compiles VERBATIM from the app tree; `agora_extract mcp-pieces` copies the private schema
 # projections, the protocol constants, the version classifier and parseCallPayload verbatim. The
 # C++ port must reproduce the traces byte for byte (core/tests/mcp_protocol_parity_test.cpp).
 #
@@ -38,7 +38,7 @@ rm -rf "$classes" "$fresh"
 mkdir -p "$classes" "$fresh" "$here/build"
 
 echo "Extracting the MCP pieces from McpModels.kt + McpProtocolClient.kt..."
-python3 "$here/extract_mcp_pieces.py" \
+"${AGORA_EXTRACT:-$root/core/build/agora_extract}" mcp-pieces \
     "$app/mcp/McpModels.kt" "$app/mcp/McpProtocolClient.kt" "$pieces"
 
 sources=(

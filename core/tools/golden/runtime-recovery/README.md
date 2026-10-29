@@ -15,7 +15,7 @@ touching the export watermark exactly once.
 | `model/ConversationRuntimeReducer.kt` + the Kotlin cluster (`ConversationCommand`, `RunState`, `RunEffect`, `RuntimeTransition`) | the reducer the body drives |
 | `model/RunRecoveryPolicy.kt` | `recoverMessageStatus` / `stopIncompleteToolsJson` |
 | `model/ChatMessage.kt` and its model dependencies | `MessageStatus`, `Participant`, `MessageSegment`, `ToolExecutionStates` |
-| `extract_recovery_sources.py` output | `MessageEntity`, `MessageStreamCheckpoint`, `encodeSelectionMap` lifted byte for byte from `ChatEntities.kt` / `ChatDao.kt` |
+| ``agora_extract recovery-sources`` output | `MessageEntity`, `MessageStreamCheckpoint`, `encodeSelectionMap` lifted byte for byte from `ChatEntities.kt` / `ChatDao.kt` |
 
 ## The platform boundary
 
@@ -37,7 +37,7 @@ only the logging stub, so **every trace here is deterministic without clock mask
 | `scenarios/*.json` | 9 scenarios, 15 steps |
 | `golden/*.trace` | Frozen Kotlin output, one per scenario |
 | `RuntimeRecoveryTraceDump.kt` | Driver: seeds SQLite, runs `recoverConversationRuntime`, dumps the tables |
-| `extract_recovery_sources.py` | Lifts `MessageEntity`, `MessageStreamCheckpoint`, `encodeSelectionMap` and the recovery body |
+| ``agora_extract recovery-sources`` | Lifts `MessageEntity`, `MessageStreamCheckpoint`, `encodeSelectionMap` and the recovery body |
 | `gen_scenarios.py` | Deterministic scenario generator |
 | `run_golden.sh` | Extracts, compiles, freezes (`--freeze`) or verifies the traces |
 

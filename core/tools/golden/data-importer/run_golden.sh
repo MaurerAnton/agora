@@ -67,7 +67,7 @@ echo "Extracting DataExporter.ExportCategory from DataExporter.kt..."
 "${AGORA_EXTRACT:-$root/core/build/agora_extract}" export-category "$app/data/DataExporter.kt" "$export_category"
 
 echo "Extracting the identity policy from CustomProviderIdentity.kt..."
-python3 "$identity_stand/extract_identity.py" "$app/data/CustomProviderIdentity.kt" "$identity"
+"${AGORA_EXTRACT:-$root/core/build/agora_extract}" provider-identity "$app/data/CustomProviderIdentity.kt" "$identity"
 
 sources=(
     "$export_category"

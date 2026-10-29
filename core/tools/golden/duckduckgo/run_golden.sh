@@ -39,7 +39,7 @@ rm -rf "$classes" "$fresh"
 mkdir -p "$classes" "$fresh" "$here/build"
 
 echo "Extracting the parsing pieces from DuckDuckGoScraper.kt..."
-python3 "$here/extract_scraper.py" "$app/api/DuckDuckGoScraper.kt" "$helpers"
+"${AGORA_EXTRACT:-$root/core/build/agora_extract}" duckduckgo "$app/api/DuckDuckGoScraper.kt" "$helpers"
 
 sources=(
     "$helpers"

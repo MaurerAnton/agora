@@ -13,7 +13,7 @@ trace byte for byte.
 | `scenarios/*.json` | One case per file, 29 frozen edge cases across two modes |
 | `golden/*.trace` | Frozen canonical output, one per scenario |
 | `DuckDuckGoTraceDump.kt` | The stand driver: `search()` transcription over the real pieces |
-| `extract_scraper.py` | Verbatim extraction of the parsing pieces of the scraper |
+| ``agora_extract duckduckgo`` | Verbatim extraction of the parsing pieces of the scraper |
 | `run_golden.sh` | Extracts, compiles and regenerates or verifies the traces |
 | `gen_scenarios.py` | Generates the scenarios (deterministic; rerun after editing) |
 
@@ -22,7 +22,7 @@ trace byte for byte.
 `DuckDuckGoScraper.kt` wires OkHttp through `HttpClient` and cannot compile standalone, so the
 stand pins it in two halves:
 
-* `extract_scraper.py` copies the parsing pieces **verbatim** into the generated
+* ``agora_extract duckduckgo`` copies the parsing pieces **verbatim** into the generated
   `build/ScraperHelpers.kt`: `WebResult`, the nine parsing/pagination regexes, the loop
   constants, `parseResults`, `extractUrl` and `stripHtml`. The only transformation is lifting
   class members to file level (member indentation removed) and widening `private` to

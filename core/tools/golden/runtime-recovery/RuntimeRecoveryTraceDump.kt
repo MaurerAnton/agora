@@ -2,7 +2,7 @@
 //
 // The recovery body, RunBranchSelectionIntegrity.kt, RunEntity.kt, RuntimeIdentity.kt and the
 // lifted MessageEntity/MessageStreamCheckpoint/encodeSelectionMap compile from the app tree
-// (extract_recovery_sources.py). Room's generated DAO is replaced by the stand-local MiniRoom,
+// (`agora_extract recovery-sources`). Room's generated DAO is replaced by the stand-local MiniRoom,
 // which executes the ChatDao query text on a real SQLite database over the stand schema.
 //
 // Documented boundaries: platform/ChatDao.kt transcribes the nine ChatDao queries the body calls,

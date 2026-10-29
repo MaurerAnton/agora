@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 # Generates or verifies the golden traces for the transport-neutral policy in HttpClient.kt.
 #
-# HttpClient.kt is a 608-line OkHttp/Android transport object. extract_policy.py copies the pure
+# HttpClient.kt is a 608-line OkHttp/Android transport object. `agora_extract http-policy` copies the pure
 # policy declarations out of it verbatim (visibility widened, dedented) so the stand can exercise
 # host locality, the cleartext credential guard, proxy sanitisation/bypass/CIDR matching, proxy
 # authorization and the base client policy without opening a socket.
@@ -39,7 +39,7 @@ echo "Generating scenarios..."
 python3 "$here/gen_scenarios.py"
 
 echo "Extracting the policy declarations from HttpClient.kt..."
-python3 "$here/extract_policy.py" "$app/api/HttpClient.kt" "$here/build/HttpPolicy.kt"
+"${AGORA_EXTRACT:-$root/core/build/agora_extract}" http-policy "$app/api/HttpClient.kt" "$here/build/HttpPolicy.kt"
 
 sources=(
     "$here/build/HttpPolicy.kt"

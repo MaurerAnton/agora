@@ -2304,6 +2304,716 @@ void profile_ollama_models(const fs::path& source, const fs::path& out) {
     write_file(out, std::string(kHeader) + joined + "\n");
 }
 
+// ---- final batch: shared scanner + the five remaining extractors ------------------------------
+
+struct ScanOptions {
+    bool track_paren = true;
+    bool brace_seen_flag = true;  // else: end when depth <= 0 and i > start (http-policy)
+    std::vector<std::string> suffixes;
+    std::vector<std::string> next_prefixes;
+    bool colon_suffix = false;           // provider-identity: `.endswith(":")` continues
+    bool indent_continuation = false;    // provider-identity: 8-space continuation lines
+    bool negative_brace_error = false;
+};
+
+struct WidenOptions {
+    bool fun = false;
+    bool val = false;
+    bool const_val = false;
+    bool bare_fun = false;
+};
+
+std::optional<std::size_t> scan_region_end(const std::vector<std::string_view>& lines,
+                                           std::size_t start, const ScanOptions& opts) {
+    int paren = 0;
+    int brace = 0;
+    bool seen_brace = false;
+    for (std::size_t i = start; i < lines.size(); ++i) {
+        for (const char ch : lines[i]) {
+            if (ch == '{') {
+                brace += 1;
+                if (opts.brace_seen_flag) seen_brace = true;
+            } else if (ch == '}') {
+                brace -= 1;
+            } else if (opts.track_paren && (ch == '(' || ch == '[')) {
+                paren += 1;
+            } else if (opts.track_paren && (ch == ')' || ch == ']')) {
+                paren -= 1;
+            }
+        }
+        if (opts.brace_seen_flag) {
+            if (seen_brace) {
+                if (brace == 0) return i;
+                continue;
+            }
+        } else {
+            // http-policy style: depth only; no suffix/continuation heuristics.
+            if (i > start && brace <= 0) return i;
+            continue;
+        }
+        if (opts.track_paren && paren != 0) continue;
+        const std::string stripped = trim_right_copy(lines[i]);
+        if (opts.colon_suffix && !stripped.empty() && stripped.back() == ':') continue;
+        bool continues = ends_with_any(stripped, {"=", ",", "&&", "||", "+", "->"});
+        if (!continues) {
+            for (const std::string& suffix : opts.suffixes) {
+                if (ends_with_any(stripped, {suffix.c_str()})) {
+                    continues = true;
+                    break;
+                }
+            }
+        }
+        if (continues) continue;
+        if (i + 1 < lines.size()) {
+            const std::string next = trim_left_copy(lines[i + 1]);
+            for (const std::string& prefix : opts.next_prefixes) {
+                if (starts_with(next, prefix)) {
+                    continues = true;
+                    break;
+                }
+            }
+            if (!continues && opts.indent_continuation && starts_with(lines[i + 1], "        ") &&
+                !starts_with(next, "}") && !starts_with(next, "fun") &&
+                !starts_with(next, "val") && !starts_with(next, "var") &&
+                !starts_with(next, "const") && !starts_with(next, "data") &&
+                !starts_with(next, "class") && !starts_with(next, "interface") &&
+                !starts_with(next, "object") && !starts_with(next, "sealed") &&
+                !starts_with(next, "enum") && !starts_with(next, "annotation") &&
+                !starts_with(next, "typealias") && !starts_with(next, "@")) {
+                continues = true;
+            }
+        }
+        if (continues) continue;
+        return i;
+    }
+    return std::nullopt;
+}
+
+std::string render_region(const std::vector<std::string_view>& lines, std::size_t start,
+                          std::size_t end, std::size_t indent, const WidenOptions& widen) {
+    std::string out;
+    const std::string prefix(indent, ' ');
+    for (std::size_t i = start; i <= end; ++i) {
+        std::string line(lines[i]);
+        if (indent > 0 && starts_with(line, prefix)) line = line.substr(indent);
+        if (widen.const_val && starts_with(line, "private const val ")) {
+            line = "internal const val " +
+                   line.substr(std::string("private const val ").size());
+        } else if (widen.val && starts_with(line, "private val ")) {
+            line = "internal val " + line.substr(std::string("private val ").size());
+        } else if (widen.fun && starts_with(line, "private fun ")) {
+            line = "internal fun " + line.substr(std::string("private fun ").size());
+        } else if (widen.bare_fun && starts_with(line, "fun ")) {
+            line = "internal fun " + line.substr(std::string("fun ").size());
+        }
+        if (i > start) out += "\n";
+        out += line;
+    }
+    return out;
+}
+
+std::string extract_region_text(const std::vector<std::string_view>& lines,
+                                std::string_view marker, std::size_t indent,
+                                const WidenOptions& widen, const ScanOptions& opts) {
+    const std::optional<std::size_t> start = find_line_start(lines, marker);
+    if (!start) fail("error: " + std::string(marker) + " not found");
+    const std::optional<std::size_t> end = scan_region_end(lines, *start, opts);
+    if (!end) fail("error: end of " + std::string(marker) + " not found");
+    return render_region(lines, *start, *end, indent, widen);
+}
+
+// duckduckgo/extract_scraper.py
+void profile_duckduckgo(const fs::path& source, const fs::path& out) {
+    static constexpr const char* kHeader =
+        "// GENERATED by agora_extract duckduckgo from DuckDuckGoScraper.kt -- do not edit.\n"
+        "//\n"
+        "// The result model, the parsing regexes, parseResults, extractUrl and stripHtml are "
+        "copied\n"
+        "// verbatim from the scraper file (which wires OkHttp and cannot compile standalone); "
+        "the member\n"
+        "// bodies are lifted to file level and visibility is widened private -> internal. The "
+        "search\n"
+        "// loop itself is transcribed by the stand driver over these real pieces.\n"
+        "package com.newoether.agora.api\n"
+        "\n"
+        "import java.net.URLDecoder\n"
+        "\n";
+    struct Region {
+        const char* marker;
+        std::size_t indent;
+        bool widen;
+    };
+    static constexpr std::array<Region, 16> kRegions = {{
+        {"    data class WebResult(", 4, false},
+        {"        private const val DEFAULT_MAX_RESULTS", 8, true},
+        {"        private const val PAGE_SIZE", 8, true},
+        {"        private const val MAX_PAGES", 8, true},
+        {"        private val LINK_TAG_REGEX", 8, true},
+        {"        private val LINK_TEXT_REGEX", 8, true},
+        {"        private val HREF_REGEX", 8, true},
+        {"        private val SNIPPET_REGEX", 8, true},
+        {"        private val UDDG_REGEX", 8, true},
+        {"        private val HTML_TAG_REGEX", 8, true},
+        {"        private val CAPTCHA_REGEX", 8, true},
+        {"        private val VQD_REGEX", 8, true},
+        {"        private val OFFSET_REGEX", 8, true},
+        {"    internal fun parseResults(", 4, false},
+        {"    private fun extractUrl(", 4, true},
+        {"    private fun String.stripHtml()", 4, true},
+    }};
+    static constexpr std::array<const char*, 10> kExpected = {
+        "WebResult", "parseResults", "extractUrl", "stripHtml", "CAPTCHA_REGEX", "VQD_REGEX",
+        "OFFSET_REGEX", "DEFAULT_MAX_RESULTS", "PAGE_SIZE", "MAX_PAGES"};
+
+    ScanOptions opts;
+    opts.suffixes = {};
+    opts.next_prefixes = {"?:", "?.", "&&", "||", "+", "."};
+
+    const std::string text = read_file(source);
+    const std::vector<std::string_view> lines = split_lines(text);
+    std::vector<std::string> blocks;
+    for (const Region& region : kRegions) {
+        WidenOptions widen;
+        widen.fun = region.widen;
+        widen.val = region.widen;
+        widen.const_val = region.widen;
+        blocks.push_back(extract_region_text(lines, region.marker, region.indent, widen, opts));
+    }
+    const std::string joined = join_blocks_sep(blocks, "\n\n");
+    for (const char* name : kExpected) {
+        if (joined.find(name) == std::string::npos) {
+            fail(std::string("error: ") + name + " missing from the extracted region");
+        }
+    }
+    write_file(out, std::string(kHeader) + joined + "\n");
+}
+
+// http-policy/extract_policy.py
+void profile_http_policy(const fs::path& source, const fs::path& out) {
+    static constexpr const char* kHeader =
+        "// GENERATED by agora_extract http-policy -- do not edit.\n"
+        "//\n"
+        "// Pure policy declarations copied verbatim from api/HttpClient.kt. The private helpers "
+        "were\n"
+        "// widened to internal so the golden driver can call them; every declaration was "
+        "dedented out\n"
+        "// of `object HttpClient` by four spaces. The derived wrappers at the bottom "
+        "parameterise the\n"
+        "// stored `proxyConfig` field and are checked against their source snippets by the "
+        "extractor.\n"
+        "package com.newoether.agora.api\n"
+        "\n"
+        "import java.io.IOException\n"
+        "\n";
+    static constexpr std::array<const char*, 9> kRequiredSnippets = {
+        "config?.takeIf { it.host.isNotBlank() && it.port in 1..65535 }",
+        "if (cfg == null || cfg.username.isBlank() || cfg.type != ProxyType.HTTP) return null",
+        "if (response.request.header(\"Proxy-Authorization\") != null) return null",
+        "okhttp3.Credentials.basic(cfg.username, cfg.password)",
+        "val type = if (cfg.type == ProxyType.SOCKS) java.net.Proxy.Type.SOCKS else "
+        "java.net.Proxy.Type.HTTP",
+        "java.net.InetSocketAddress.createUnresolved(cfg.host, cfg.port)",
+        ".connectTimeout(30, TimeUnit.SECONDS)",
+        ".readTimeout(5, TimeUnit.MINUTES)",
+        ".writeTimeout(30, TimeUnit.SECONDS)"};
+    static constexpr const char* kDerived =
+        "// -- derived wrappers "
+        "---------------------------------------------------------------------------\n"
+        "\n"
+        "// setProxy's takeIf (the right-hand side of the assignment), with the field as a "
+        "parameter.\n"
+        "internal fun sanitizedProxyConfig(config: ProxyConfig?): ProxyConfig? =\n"
+        "    config?.takeIf { it.host.isNotBlank() && it.port in 1..65535 }\n"
+        "\n"
+        "// resolveProxy with the stored proxyConfig field as a parameter. The caller passes the "
+        "result of\n"
+        "// sanitizedProxyConfig, exactly as setProxy stores it before the selector reads it.\n"
+        "internal fun resolveProxy(host: String, config: ProxyConfig?): java.net.Proxy {\n"
+        "    val cfg = config ?: return java.net.Proxy.NO_PROXY\n"
+        "    if (isProxyBypassed(host, cfg.bypass)) return java.net.Proxy.NO_PROXY\n"
+        "    val type = if (cfg.type == ProxyType.SOCKS) java.net.Proxy.Type.SOCKS else "
+        "java.net.Proxy.Type.HTTP\n"
+        "    return java.net.Proxy(type, "
+        "java.net.InetSocketAddress.createUnresolved(cfg.host, cfg.port))\n"
+        "}\n"
+        "\n"
+        "// proxyAuthenticator's decision plus OkHttp Credentials.basic. Credentials.basic is\n"
+        "// ISO-8859-1 + standard Base64; the platform substitution is documented in the stand "
+        "README.\n"
+        "internal fun proxyAuthorizationHeader(config: ProxyConfig?, hasExistingHeader: Boolean): "
+        "String? {\n"
+        "    if (config == null || config.username.isBlank() || config.type != ProxyType.HTTP) "
+        "return null\n"
+        "    if (hasExistingHeader) return null\n"
+        "    return \"Basic \" + java.util.Base64.getEncoder().encodeToString(\n"
+        "        (config.username + \":\" + config.password).toByteArray(Charsets.ISO_8859_1),\n"
+        "    )\n"
+        "}\n"
+        "\n"
+        "// HttpClient.client's builder: connect 30s, read 5min, write 30s, and the OkHttp 5 "
+        "defaults for\n"
+        "// retry/redirects (all true). The extractor checks the three timeout lines above.\n"
+        "internal data class ClientPolicy(\n"
+        "    val connectTimeoutSeconds: Long,\n"
+        "    val readTimeoutSeconds: Long,\n"
+        "    val writeTimeoutSeconds: Long,\n"
+        "    val retryOnConnectionFailure: Boolean,\n"
+        "    val followRedirects: Boolean,\n"
+        "    val followSslRedirects: Boolean,\n"
+        ")\n"
+        "\n"
+        "internal fun clientPolicy(): ClientPolicy = ClientPolicy(\n"
+        "    connectTimeoutSeconds = 30,\n"
+        "    readTimeoutSeconds = 300,\n"
+        "    writeTimeoutSeconds = 30,\n"
+        "    retryOnConnectionFailure = true,\n"
+        "    followRedirects = true,\n"
+        "    followSslRedirects = true,\n"
+        ")\n";
+
+    const std::string source_text = read_file(source);
+    for (const char* snippet : kRequiredSnippets) {
+        if (source_text.find(snippet) == std::string::npos) {
+            fail(std::string("error: source snippet not found: ") + snippet);
+        }
+    }
+
+    const std::vector<std::string_view> lines = split_lines(source_text);
+    ScanOptions function_opts;
+    function_opts.track_paren = false;
+    function_opts.brace_seen_flag = false;
+
+    auto find_lstripped = [&](std::string_view marker) -> std::optional<std::size_t> {
+        for (std::size_t i = 0; i < lines.size(); ++i) {
+            if (starts_with(trim_left_copy(lines[i]), marker)) return i;
+        }
+        return std::nullopt;
+    };
+    auto extract_function = [&](std::string_view marker) -> std::string {
+        const std::optional<std::size_t> start = find_lstripped(marker);
+        if (!start) fail("error: marker not found: " + std::string(marker));
+        const std::optional<std::size_t> end = scan_region_end(lines, *start, function_opts);
+        if (!end) fail("error: closing brace not found for " + std::string(marker));
+        return render_region(lines, *start, *end, 0, WidenOptions{});
+    };
+    auto extract_data_class = [&](std::string_view marker) -> std::string {
+        const std::optional<std::size_t> start = find_lstripped(marker);
+        if (!start) fail("error: marker not found: " + std::string(marker));
+        for (std::size_t i = *start; i < lines.size(); ++i) {
+            if (trim_right_copy(lines[i]) == "    )") {
+                return render_region(lines, *start, i, 0, WidenOptions{});
+            }
+        }
+        fail("error: closing parenthesis not found for " + std::string(marker));
+    };
+
+    std::vector<std::string> blocks;
+    {
+        const std::optional<std::size_t> at = find_lstripped("private val CREDENTIAL_HEADERS");
+        if (!at) fail("error: marker not found: private val CREDENTIAL_HEADERS");
+        std::string line(lines[*at]);
+        const std::size_t pos = line.find("private val");
+        if (pos != std::string::npos) {
+            line.replace(pos, std::string("private val").size(), "internal val");
+        }
+        blocks.push_back(line);
+    }
+    blocks.push_back(extract_function("internal fun isLocalHost("));
+    blocks.push_back(extract_function("internal fun guardCleartextCredentials("));
+    {
+        const std::optional<std::size_t> at = find_lstripped("enum class ProxyType");
+        if (!at) fail("error: marker not found: enum class ProxyType");
+        blocks.push_back(std::string(lines[*at]));
+    }
+    blocks.push_back(extract_data_class("data class ProxyConfig("));
+    blocks.push_back(extract_function("private fun isProxyBypassed("));
+    blocks.push_back(extract_function("private fun ipv4ToLong("));
+    blocks.push_back(extract_function("private fun ipv4InCidr("));
+
+    std::vector<std::string> rendered;
+    for (std::string block : blocks) {
+        // dedent(block) then first "private fun" -> "internal fun", then rstrip + "\n".
+        std::string dedented;
+        {
+            std::size_t pos = 0;
+            bool first = true;
+            while (true) {
+                const std::size_t newline = block.find('\n', pos);
+                const std::size_t stop = newline == std::string::npos ? block.size() : newline;
+                std::string line = block.substr(pos, stop - pos);
+                if (starts_with(line, "    ")) line = line.substr(4);
+                if (!first) dedented += "\n";
+                dedented += line;
+                first = false;
+                if (newline == std::string::npos) break;
+                pos = newline + 1;
+            }
+        }
+        const std::size_t at = dedented.find("private fun");
+        if (at != std::string::npos) {
+            dedented.replace(at, std::string("private fun").size(), "internal fun");
+        }
+        rendered.push_back(trim_right_copy(dedented) + "\n");
+    }
+
+    write_file(out, std::string(kHeader) + join_blocks_sep(rendered, "\n\n") + "\n" + kDerived);
+}
+
+// mcp-protocol/extract_mcp_pieces.py
+void profile_mcp_pieces(const fs::path& models_source, const fs::path& client_source,
+                        const fs::path& out) {
+    static constexpr const char* kHeader =
+        "// GENERATED by agora_extract mcp-pieces from McpModels.kt and McpProtocolClient.kt -- "
+        "do not edit.\n"
+        "//\n"
+        "// The schema projections, the protocol constants, the version classifier and "
+        "parseCallPayload are\n"
+        "// copied verbatim; only visibility (private -> internal) and the class-member "
+        "indentation are\n"
+        "// changed so the mcp-protocol golden stand can pin them.\n"
+        "package com.newoether.agora.mcp\n"
+        "\n"
+        "import com.newoether.agora.api.ToolDefinition\n"
+        "import com.newoether.agora.api.ToolFunction\n"
+        "import com.newoether.agora.api.ToolParameters\n"
+        "import com.newoether.agora.api.ToolProperty\n"
+        "import kotlinx.serialization.json.JsonArray\n"
+        "import kotlinx.serialization.json.JsonElement\n"
+        "import kotlinx.serialization.json.JsonNull\n"
+        "import kotlinx.serialization.json.JsonObject\n"
+        "import kotlinx.serialization.json.JsonPrimitive\n"
+        "import kotlinx.serialization.json.contentOrNull\n"
+        "import kotlinx.serialization.json.jsonObject\n"
+        "import java.security.MessageDigest\n"
+        "\n";
+    struct Region {
+        const char* marker;
+        std::size_t indent;
+        bool widen;
+    };
+    static constexpr std::array<Region, 11> kModels = {{
+        {"enum class McpConnectionStatus {", 0, false},
+        {"data class McpRemoteTool(", 0, false},
+        {"data class McpToolDescriptor(", 0, false},
+        {"data class McpImagePayload(", 0, false},
+        {"data class McpCallPayload(", 0, false},
+        {"internal fun publicMcpToolName(serverId: String, remoteName: String): String {", 0,
+         false},
+        {"private fun JsonObject.toToolParameters(): ToolParameters {", 0, true},
+        {"private fun JsonObject.toWireSchema(type: String): JsonObject {", 0, true},
+        {"private fun JsonObject?.toToolProperty(): ToolProperty {", 0, true},
+        {"private fun inferSchemaType(schema: JsonObject): String =", 0, true},
+        {"internal fun JsonElement.asObjectOrNull(): JsonObject? =", 0, false},
+    }};
+    static constexpr std::array<Region, 7> kClient = {{
+        {"internal fun isUnsupportedMcpProtocolVersion(error: Throwable): Boolean {", 0, false},
+        {"        private const val STREAMABLE_HTTP_PROTOCOL_VERSION", 8, true},
+        {"        private const val LEGACY_SSE_PROTOCOL_VERSION", 8, true},
+        {"        private const val MAX_TOOL_PAGES", 8, true},
+        {"        internal val STREAMABLE_HTTP_PROTOCOL_VERSIONS = listOf(", 8, false},
+        {"        private val SUPPORTED_PROTOCOL_VERSIONS", 8, true},
+        {"    private fun parseCallPayload(result: JsonObject): McpCallPayload {", 4, true},
+    }};
+    static constexpr std::array<const char*, 7> kExpected = {
+        "toToolParameters", "toWireSchema", "toToolProperty", "inferSchemaType",
+        "isUnsupportedMcpProtocolVersion", "STREAMABLE_HTTP_PROTOCOL_VERSIONS",
+        "parseCallPayload"};
+
+    ScanOptions opts;
+    opts.suffixes = {"("};
+    opts.next_prefixes = {"?:", "?.", "&&", "||", "+", "."};
+
+    const std::string models_text = read_file(models_source);
+    const std::vector<std::string_view> models = split_lines(models_text);
+    const std::string client_text = read_file(client_source);
+    const std::vector<std::string_view> client = split_lines(client_text);
+
+    std::vector<std::string> blocks;
+    for (const Region& region : kModels) {
+        WidenOptions widen;
+        widen.fun = region.widen;
+        widen.val = region.widen;
+        widen.const_val = region.widen;
+        blocks.push_back(extract_region_text(models, region.marker, region.indent, widen, opts));
+    }
+    for (const Region& region : kClient) {
+        WidenOptions widen;
+        widen.fun = region.widen;
+        widen.val = region.widen;
+        widen.const_val = region.widen;
+        blocks.push_back(extract_region_text(client, region.marker, region.indent, widen, opts));
+    }
+    const std::string joined = join_blocks_sep(blocks, "\n\n");
+    for (const char* name : kExpected) {
+        if (joined.find(name) == std::string::npos) {
+            fail(std::string("error: ") + name + " missing from the extracted region");
+        }
+    }
+    write_file(out, std::string(kHeader) + joined + "\n");
+}
+
+// provider-identity's scanner ignores the seen-brace flag: while the brace depth is positive the
+// region continues; a zero depth falls through to the continuation heuristics (a braced function
+// ends on the closing brace line because nothing continues it).
+std::string extract_region_provider_identity(const std::vector<std::string_view>& lines,
+                                             std::string_view marker) {
+    const std::optional<std::size_t> start = find_line_start(lines, marker);
+    if (!start) fail("error: " + std::string(marker) + " not found");
+    int paren = 0;
+    int brace = 0;
+    std::optional<std::size_t> end;
+    for (std::size_t i = *start; i < lines.size(); ++i) {
+        for (const char ch : lines[i]) {
+            if (ch == '{') {
+                brace += 1;
+            } else if (ch == '}') {
+                brace -= 1;
+            } else if (ch == '(' || ch == '[') {
+                paren += 1;
+            } else if (ch == ')' || ch == ']') {
+                paren -= 1;
+            }
+        }
+        if (brace > 0) continue;
+        if (brace < 0) fail("error: negative brace count in " + std::string(marker));
+        if (paren != 0) continue;
+        const std::string stripped = trim_right_copy(lines[i]);
+        if (!stripped.empty() && stripped.back() == ':') continue;
+        if (ends_with_any(stripped, {"=", ",", "&&", "||", "+", "->"})) continue;
+        if (i + 1 < lines.size()) {
+            const std::string next = trim_left_copy(lines[i + 1]);
+            if (starts_with(next, "?") || starts_with(next, "+") || starts_with(next, ".") ||
+                starts_with(next, "-") || starts_with(next, "\"") || starts_with(next, ":")) {
+                continue;
+            }
+            if (starts_with(lines[i + 1], "        ") && !starts_with(next, "}") &&
+                !starts_with(next, "fun") && !starts_with(next, "val") &&
+                !starts_with(next, "var") && !starts_with(next, "const") &&
+                !starts_with(next, "data") && !starts_with(next, "class") &&
+                !starts_with(next, "interface") && !starts_with(next, "object") &&
+                !starts_with(next, "sealed") && !starts_with(next, "enum") &&
+                !starts_with(next, "annotation") && !starts_with(next, "typealias") &&
+                !starts_with(next, "@")) {
+                continue;
+            }
+        }
+        end = i;
+        break;
+    }
+    if (!end) fail("error: end of " + std::string(marker) + " not found");
+    // The Python extractor dedents by four spaces for EVERY region (the tuple indent is unused).
+    std::string out;
+    for (std::size_t i = *start; i <= *end; ++i) {
+        std::string line(lines[i]);
+        if (starts_with(line, "    ")) line = line.substr(4);
+        if (starts_with(line, "private const val ")) {
+            line = "internal const val " +
+                   line.substr(std::string("private const val ").size());
+        } else if (starts_with(line, "private val ")) {
+            line = "internal val " + line.substr(std::string("private val ").size());
+        } else if (starts_with(line, "private fun ")) {
+            line = "internal fun " + line.substr(std::string("private fun ").size());
+        } else if (starts_with(line, "fun ")) {
+            line = "internal fun " + line.substr(std::string("fun ").size());
+        }
+        if (i > *start) out += "\n";
+        out += line;
+    }
+    return out;
+}
+
+// provider-identity/extract_identity.py
+void profile_provider_identity(const fs::path& source, const fs::path& out) {
+    static constexpr const char* kHeader =
+        "// GENERATED by agora_extract provider-identity from CustomProviderIdentity.kt -- do not "
+        "edit.\n"
+        "//\n"
+        "// The identity policy (id patterns, legacyId, isStableId, replaceStableIdsForDisplay, "
+        "normalize,\n"
+        "// generateUniqueId and the remap helpers) is copied verbatim; only `private` is "
+        "widened and the\n"
+        "// object members are lifted out of their 4-space indentation.\n"
+        "package com.newoether.agora.data\n"
+        "\n"
+        "import java.util.Locale\n"
+        "import java.util.UUID\n"
+        "import java.nio.charset.StandardCharsets\n"
+        "\n";
+    static constexpr std::array<const char*, 10> kMembers = {
+        "    private const val PREFIX =",
+        "    private const val STABLE_ID_PATTERN =",
+        "    private val stableIdPattern = Regex(",
+        "    private val stableIdInTextPattern = Regex(",
+        "    fun legacyId(name: String): String =",
+        "    fun isStableId(value: String): Boolean = stableIdPattern.matches(value.trim())",
+        "    fun replaceStableIdsForDisplay(",
+        "    fun normalize(",
+        "    private fun generateUniqueId(",
+        "    fun newId(): String ="};
+    static constexpr std::array<const char*, 5> kTopLevel = {
+        "internal data class CustomProviderIdentityMigration(",
+        "internal data class CustomProviderIdentityNormalization(",
+        "internal fun String.remapProviderReference(",
+        "internal fun <T> remapModelPreferenceKeys(",
+        "internal fun canonicalCustomModelId("};
+    static constexpr std::array<const char*, 12> kExpected = {
+        "normalize", "generateUniqueId", "legacyId", "isStableId", "replaceStableIdsForDisplay",
+        "CustomProviderIdentityNormalization", "CustomProviderIdentityMigration",
+        "remapProviderReference", "remapModelPreferenceKeys", "canonicalCustomModelId", "PREFIX",
+        "newId"};
+
+    const std::string text = read_file(source);
+    const std::vector<std::string_view> lines = split_lines(text);
+
+    std::vector<std::string> blocks;
+    for (const char* marker : kMembers) {
+        blocks.push_back(extract_region_provider_identity(lines, marker));
+    }
+    std::vector<std::string> top_blocks;
+    for (const char* marker : kTopLevel) {
+        top_blocks.push_back(extract_region_provider_identity(lines, marker));
+    }
+
+    std::string combined = "internal object CustomProviderIdentityPolicy {\n" +
+                           join_blocks_sep(blocks, "\n\n") + "\n}\n\n" +
+                           join_blocks_sep(top_blocks, "\n\n");
+    // Fix the normalize function's default parameter — rename parameter to avoid shadowing.
+    const std::string from_param = "newId: (CustomProviderConfig) -> String = { newId() }";
+    const std::string to_param = "idGenerator: (CustomProviderConfig) -> String = { newId() }";
+    const std::size_t param_at = combined.find(from_param);
+    if (param_at != std::string::npos) {
+        combined.replace(param_at, from_param.size(), to_param);
+    }
+    const std::string from_call = "generateUniqueId(raw, usedIds, newId)";
+    const std::string to_call = "generateUniqueId(raw, usedIds, idGenerator)";
+    const std::size_t call_at = combined.find(from_call);
+    if (call_at != std::string::npos) {
+        combined.replace(call_at, from_call.size(), to_call);
+    }
+
+    for (const char* name : kExpected) {
+        if (combined.find(name) == std::string::npos) {
+            fail(std::string("error: ") + name + " missing from the extracted region");
+        }
+    }
+    write_file(out, std::string(kHeader) + combined + "\n");
+}
+
+// runtime-recovery/extract_recovery_sources.py — three generated files.
+int profile_recovery_sources(int argc, char** argv) {
+    if (argc != 4) usage();
+    const fs::path app_dir = argv[2];
+    const fs::path out_dir = argv[3];
+    static constexpr const char* kEntityHeader =
+        "// GENERATED by agora_extract recovery-sources from data/local/ChatEntities.kt -- do not "
+        "edit.\n"
+        "//\n"
+        "// MessageEntity and MessageStreamCheckpoint are copied verbatim; the Room annotations "
+        "are\n"
+        "// satisfied by the stand-local stubs (Room is a persistence framework: the annotations "
+        "have no\n"
+        "// runtime behaviour the recovery body can observe).\n"
+        "package com.newoether.agora.data.local\n"
+        "\n"
+        "import androidx.room.Entity\n"
+        "import androidx.room.ForeignKey\n"
+        "import androidx.room.Index\n"
+        "import androidx.room.PrimaryKey\n"
+        "import com.newoether.agora.model.MessageStatus\n"
+        "import com.newoether.agora.model.Participant\n"
+        "\n";
+    static constexpr const char* kDaoHeader =
+        "// GENERATED by agora_extract recovery-sources from data/local/ChatDao.kt -- do not "
+        "edit.\n"
+        "package com.newoether.agora.data.local\n"
+        "\n"
+        "import kotlinx.serialization.encodeToString\n"
+        "import kotlinx.serialization.json.Json\n"
+        "\n";
+    static constexpr std::array<const char*, 2> kClasses = {"MessageEntity",
+                                                            "MessageStreamCheckpoint"};
+
+    std::error_code error;
+    fs::create_directories(out_dir, error);
+    if (error) fail("error: cannot create " + out_dir.string());
+
+    const std::string entities = read_file(app_dir / "data/local/ChatEntities.kt");
+    const std::vector<std::string_view> entity_lines = split_lines(entities);
+    std::vector<std::string> class_blocks;
+    for (const char* name : kClasses) {
+        const std::string declaration = std::string("data class ") + name + "(";
+        std::optional<std::size_t> declaration_index;
+        for (std::size_t i = 0; i < entity_lines.size(); ++i) {
+            if (starts_with(entity_lines[i], declaration)) {
+                declaration_index = i;
+                break;
+            }
+        }
+        if (!declaration_index) fail(std::string("error: ") + name + " not found");
+        std::size_t probe = *declaration_index;
+        while (probe > 0) {
+            const std::string_view previous = entity_lines[probe - 1];
+            const std::string stripped = trim_copy(previous);
+            if (stripped.empty() || stripped == "}") break;
+            if (starts_with(previous, "@") || starts_with(previous, "    ") ||
+                stripped == ")" || stripped == "],") {
+                probe -= 1;
+                continue;
+            }
+            break;
+        }
+        std::optional<std::size_t> end;
+        for (std::size_t i = *declaration_index + 1; i < entity_lines.size(); ++i) {
+            if (entity_lines[i] == "}" || entity_lines[i] == ")") {
+                end = i;
+                break;
+            }
+        }
+        if (!end) fail(std::string("error: end of ") + name + " not found");
+        class_blocks.push_back(join_lines(entity_lines, probe, *end));
+    }
+    write_file(out_dir / "MessageEntities.kt",
+               std::string(kEntityHeader) + join_blocks_sep(class_blocks, "\n\n") + "\n");
+
+    const std::string dao = read_file(app_dir / "data/local/ChatDao.kt");
+    const std::vector<std::string_view> dao_lines = split_lines(dao);
+    const std::string signature = "internal fun encodeSelectionMap(";
+    std::optional<std::size_t> start;
+    for (std::size_t i = 0; i < dao_lines.size(); ++i) {
+        if (starts_with(dao_lines[i], signature)) {
+            start = i;
+            break;
+        }
+    }
+    if (!start) fail("error: encodeSelectionMap not found");
+    std::optional<std::size_t> end;
+    if (ends_with_any(trim_right_copy(dao_lines[*start]), {"="})) {
+        // Expression body: the continuation is the indented block up to the next blank line.
+        end = *start + 1;
+        while (*end + 1 < dao_lines.size() && !trim_copy(dao_lines[*end + 1]).empty()) {
+            *end += 1;
+        }
+    } else {
+        for (std::size_t i = *start; i < dao_lines.size(); ++i) {
+            if (dao_lines[i] == "}") {
+                end = i;
+                break;
+            }
+        }
+    }
+    if (!end) fail("error: end of encodeSelectionMap not found");
+    write_file(out_dir / "EncodeSelectionMap.kt",
+               std::string(kDaoHeader) + join_lines(dao_lines, *start, *end) + "\n");
+
+    const std::string recovery =
+        read_file(app_dir / "data/local/ChatDaoRuntimeRecovery.kt");
+    write_file(out_dir / "ChatDaoRuntimeRecovery.kt", recovery);
+
+    std::cout << "Extracted MessageEntity, MessageStreamCheckpoint, encodeSelectionMap and the "
+                 "recovery body\n";
+    return 0;
+}
+
 void usage() {
     std::cerr << "usage: agora_extract <profile> <stand_dir>\n"
                  "       agora_extract <profile> <source.kt> <out.kt>\n"
@@ -2346,6 +3056,11 @@ void usage() {
               << "  gemini-request      gemini-request extract_gemini_helpers.py\n"
               << "  gemini-stream       gemini-stream extract_gemini_stream_helpers.py\n"
               << "  ollama-models       ollama extract_ollama_models.py\n"
+              << "  duckduckgo          duckduckgo extract_scraper.py\n"
+              << "  http-policy         http-policy extract_policy.py\n"
+              << "  provider-identity   provider-identity extract_identity.py\n"
+              << "  mcp-pieces <models.kt> <client.kt> <out.kt>  mcp-protocol\n"
+              << "  recovery-sources <app_dir> <out_dir>          runtime-recovery\n"
               << "profiles (dirs):\n"
               << "  widen <src_dir> <out_dir> <file>...\n";
     std::exit(2);
@@ -2360,11 +3075,19 @@ int main(int argc, char** argv) {
     if (profile == "widen") return profile_widen(argc, argv);
     // Clone-policy: agora_extract clone-policy <app_dir> <out_dir>
     if (profile == "clone-policy") return profile_clone_policy(argc, argv);
+    // Recovery-sources: agora_extract recovery-sources <app_dir> <out_dir>
+    if (profile == "recovery-sources") return profile_recovery_sources(argc, argv);
     // Shell-validation: agora_extract shell-validation <ShellToolProvider.kt> <ShellClient.kt>
     // <out.kt>
     if (profile == "shell-validation") {
         if (argc != 5) usage();
         profile_shell_validation(argv[2], argv[3], argv[4]);
+        return 0;
+    }
+    // Mcp-pieces: agora_extract mcp-pieces <McpModels.kt> <McpProtocolClient.kt> <out.kt>
+    if (profile == "mcp-pieces") {
+        if (argc != 5) usage();
+        profile_mcp_pieces(argv[2], argv[3], argv[4]);
         return 0;
     }
 
@@ -2422,6 +3145,12 @@ int main(int argc, char** argv) {
             profile_gemini_stream(source, out);
         } else if (profile == "ollama-models") {
             profile_ollama_models(source, out);
+        } else if (profile == "duckduckgo") {
+            profile_duckduckgo(source, out);
+        } else if (profile == "http-policy") {
+            profile_http_policy(source, out);
+        } else if (profile == "provider-identity") {
+            profile_provider_identity(source, out);
         } else {
             usage();
         }

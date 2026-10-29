@@ -3,7 +3,7 @@
 #
 # The recovery body, RunBranchSelectionIntegrity.kt, RunEntity.kt, RuntimeIdentity.kt and the
 # model files behind the runtime reducer compile VERBATIM from the app tree. MessageEntity,
-# MessageStreamCheckpoint and encodeSelectionMap are lifted verbatim by extract_recovery_sources.py.
+# MessageStreamCheckpoint and encodeSelectionMap are lifted verbatim by `agora_extract recovery-sources`.
 # The platform boundary is Room: platform/ChatDao.kt transcribes the nine ChatDao queries the body
 # calls, platform/MiniRoom.kt executes them on a real SQLite database over platform/schema.sql,
 # and platform/DebugLog.kt drops the Android logging sink.
@@ -34,7 +34,7 @@ rm -rf "$here/build"
 mkdir -p "$classes" "$fresh"
 
 echo "Extracting the recovery sources..."
-python3 "$here/extract_recovery_sources.py"
+"${AGORA_EXTRACT:-$root/core/build/agora_extract}" recovery-sources "$app" "$here/build"
 
 sources=(
     "$app/data/local/RunBranchSelectionIntegrity.kt"

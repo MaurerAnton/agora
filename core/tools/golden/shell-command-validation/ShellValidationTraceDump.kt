@@ -2,7 +2,7 @@
 //
 // ShellToolProvider.kt is a 763-line transport-coupled object. Only the pure-logic
 // shellCommandValidationError function and its two constants are extracted verbatim
-// by extract_validation.py. The stand exercises the validation with deterministic inputs.
+// by `agora_extract shell-validation`. The stand exercises the validation with deterministic inputs.
 package shell.validation.golden
 
 import com.newoether.agora.tool.shellCommandValidationError

@@ -60,7 +60,7 @@ echo "Compiling the vendored Android JSON platform types..."
 javac -nowarn -d "$android_classes" "$vendor_src"/*.java
 
 echo "Extracting ImportStrategy + sanitizeImported* from DataImporter.kt..."
-python3 "$here/extract_import_pieces.py" "$app/data/DataImporter.kt" "$import_pieces"
+"${AGORA_EXTRACT:-$root/core/build/agora_extract}" import-pieces "$app/data/DataImporter.kt" "$import_pieces"
 
 sources=(
     "$import_pieces"

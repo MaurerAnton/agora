@@ -7,7 +7,7 @@ orchestrations (`withSemanticSourceMutation`, `withSemanticGraphMutation`,
 
 `SemanticIndexLedger.kt` and `util/Constants.kt` compile **verbatim from the app tree**;
 `data/local/ChatEntities.kt` contributes `EmbeddingEntity` byte for byte (lifted by
-`extract_entities.py`).
+`agora_extract embedding-entity`).
 
 ## The platform boundary
 
@@ -36,7 +36,7 @@ unmarked level rolls the whole stack back) and `platform/StandChatDatabase.kt` (
 | `scenarios/*.json` | 13 scenarios, 115 steps |
 | `golden/*.trace` | Frozen Kotlin output, one per scenario |
 | `SemanticIndexLedgerTraceDump.kt` | Driver: seeds SQLite, runs the steps, dumps the tables |
-| `extract_entities.py` | Lifts `EmbeddingEntity` out of `ChatEntities.kt` |
+| `agora_extract embedding-entity` | Lifts `EmbeddingEntity` out of `ChatEntities.kt` |
 | `gen_scenarios.py` | Deterministic scenario generator |
 | `run_golden.sh` | Extracts, compiles, freezes (`--freeze`) or verifies the traces |
 

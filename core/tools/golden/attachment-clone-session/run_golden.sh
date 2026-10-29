@@ -31,7 +31,7 @@ rm -rf "$here/build"
 mkdir -p "$classes" "$fresh"
 
 echo "Extracting the clone policy and the message entity..."
-python3 "$here/extract_clone_policy.py"
+"${AGORA_EXTRACT:-$root/core/build/agora_extract}" clone-policy "$app" "$here/build"
 
 sources=(
     "$app/model/ChatMessage.kt"

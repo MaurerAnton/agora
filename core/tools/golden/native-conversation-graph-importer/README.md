@@ -15,7 +15,7 @@ The importer plus everything it touches, assembled from the existing stands' rec
   the settings/format models;
 - `sanitizeImportedTask`/`sanitizeImportedLoop`/`sanitizeImportedConversation` and the nested
   `DataImporter.ImportStrategy` enum are lifted byte-for-byte from `DataImporter.kt` by
-  `extract_import_pieces.py` (the full class drags in the restore composition root this module
+  `agora_extract import-pieces` (the full class drags in the restore composition root this module
   never touches).
 
 ## Platform substitutes

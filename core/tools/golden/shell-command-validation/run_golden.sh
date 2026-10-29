@@ -3,7 +3,7 @@
 #
 # ShellToolProvider.kt is a 763-line transport-coupled object. Only the pure-logic
 # shellCommandValidationError function and its two constants are extracted verbatim
-# by extract_validation.py. The stand exercises the validation with deterministic inputs.
+# by `agora_extract shell-validation`. The stand exercises the validation with deterministic inputs.
 #
 # Usage:
 #   JAVA_HOME=<jdk17> KOTLINC=<kotlinc> KOTLINX_JARS=<kotlinx jars> ./run_golden.sh            # verify
@@ -38,7 +38,7 @@ echo "Generating scenarios..."
 python3 "$here/gen_scenarios.py"
 
 echo "Extracting shellCommandValidationError from ShellToolProvider.kt..."
-python3 "$here/extract_validation.py" "$app/tool/ShellToolProvider.kt" "$app/util/ShellClient.kt" "$here/build/ShellValidation.kt"
+"${AGORA_EXTRACT:-$root/core/build/agora_extract}" shell-validation "$app/tool/ShellToolProvider.kt" "$app/util/ShellClient.kt" "$here/build/ShellValidation.kt"
 
 sources=(
     "$here/build/ShellValidation.kt"

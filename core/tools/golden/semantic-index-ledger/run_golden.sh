@@ -2,7 +2,7 @@
 # Generates or verifies the golden traces for data/local/SemanticIndexLedger.kt.
 #
 # SemanticIndexLedger.kt and util/Constants.kt compile VERBATIM from the app tree. EmbeddingEntity
-# is lifted out of data/local/ChatEntities.kt by extract_entities.py. Room's annotation processor
+# is lifted out of data/local/ChatEntities.kt by `agora_extract embedding-entity`. Room's annotation processor
 # is the platform boundary: platform/MiniRoom.kt executes the declared @Query SQL on a real SQLite
 # database instead of Room's generated DAO, and platform/schema.sql carries the generated DDL.
 #
@@ -30,7 +30,7 @@ rm -rf "$here/build"
 mkdir -p "$classes" "$fresh"
 
 echo "Extracting the embedding entity..."
-python3 "$here/extract_entities.py"
+"${AGORA_EXTRACT:-$root/core/build/agora_extract}" embedding-entity "$app/data/local/ChatEntities.kt" "$here/build/EmbeddingEntity.kt"
 
 sources=(
     "$app/data/local/SemanticIndexLedger.kt"

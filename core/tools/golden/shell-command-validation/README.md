@@ -13,7 +13,7 @@ test `core/tests/shell_validation_parity_test.cpp`) must reproduce every trace b
 | `scenarios/*.json` | One case per file, 10 frozen scenarios |
 | `golden/*.trace` | Frozen canonical output, one per scenario |
 | `ShellValidationTraceDump.kt` | The stand driver (reads command/workdir, prints result) |
-| `extract_validation.py` | Lifts `shellCommandValidationError` + its two constants out of the transport-coupled sources |
+| `agora_extract shell-validation` | Lifts `shellCommandValidationError` + its two constants out of the transport-coupled sources |
 | `gen_scenarios.py` | Generates the scenarios (deterministic; rerun after editing) |
 | `run_golden.sh` | Extracts, compiles and regenerates or verifies the traces |
 
@@ -44,7 +44,7 @@ The error message itself (`command exceeds 64KB limit` / `workdir exceeds 32KB l
 
 ## Scope and boundaries
 
-* `extract_validation.py` copies `shellCommandValidationError` out of `ShellToolProvider.kt`
+* `agora_extract shell-validation` copies `shellCommandValidationError` out of `ShellToolProvider.kt`
   (763 lines of transport-coupled provider code) and the two limits out of `ShellClient.kt`,
   changing only two things, both recorded in the generated header: the function's visibility
   (`private` → `internal`, so the driver can call it) and the file/package of the constants

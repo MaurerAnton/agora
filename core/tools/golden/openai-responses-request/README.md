@@ -7,7 +7,7 @@ the local wire-format gate — together with `api/util/SafeWireNames.kt` and
 The validator, the wire-name grammars and the request-format gate compile **verbatim from the app
 tree**. The four Responses request models (`OpenAiResponsesRequest`, `OpenAiResponseInputItem`,
 `OpenAiResponseInputContent`, `OpenAiResponseTool`) are lifted byte-for-byte out of
-`api/LlmProvider.kt` by `extract_responses_models.py`: that file is the provider abstraction and
+`api/LlmProvider.kt` by `agora_extract responses-models`: that file is the provider abstraction and
 pulls in the message-preparation and cost-model clusters, none of which these models need.
 
 ## Layout
@@ -17,7 +17,7 @@ pulls in the message-preparation and cost-model clusters, none of which these mo
 | `scenarios/*.json` | 54 cases: the input builder, the tool conversion and the wire-format gate |
 | `golden/*.trace` | Frozen Kotlin output, one per scenario |
 | `OpenAiResponsesRequestTraceDump.kt` | Driver: builds the chat messages / tools / request and renders the result |
-| `extract_responses_models.py` | Lifts the four request models out of `api/LlmProvider.kt` |
+| `agora_extract responses-models` | Lifts the four request models out of `api/LlmProvider.kt` |
 | `gen_scenarios.py` | Deterministic scenario generator |
 | `run_golden.sh` | Extracts, compiles, freezes (`--freeze`) or verifies the traces |
 

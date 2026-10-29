@@ -10,7 +10,7 @@ Compiled verbatim from the app tree:
 
 `CustomProviderIdentity.kt` contains Room/model-migration code and cannot compile host-side.
 `CustomProviderConfig.providerId` only needs `CustomProviderIdentityPolicy.isStableId`, so the
-sibling `model-thinking-resolver` stand's `extract_identity_policy.py` regenerates that object slice
+sibling `model-thinking-resolver` stand's `agora_extract identity-policy` regenerates that object slice
 from the real file on every run. The full identity policy is pinned separately by the
 `provider-identity` stand.
 

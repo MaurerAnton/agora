@@ -50,7 +50,7 @@ echo "Compiling the vendored Android JSON platform types..."
 javac -nowarn -d "$android_classes" "$vendor_src"/*.java
 
 echo "Extracting InputStream.readToEnd()..."
-python3 "$here/extract_read_to_end.py" \
+"${AGORA_EXTRACT:-$root/core/build/agora_extract}" read-to-end \
     "$app/data/NativeBackupArchive.kt" "$read_to_end"
 
 classpath="$jars:$android_classes"

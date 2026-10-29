@@ -8,7 +8,7 @@
 # cluster. Four boundaries are substituted:
 #  1. android.util.JsonReader/JsonWriter/JsonScope/MalformedJsonException + StringPool — vendored
 #     verbatim from AOSP by the native-conversation-graph-source stand and compiled with javac;
-#  2. DataExporter.ExportCategory — lifted byte-for-byte by extract_export_category.py (the enum
+#  2. DataExporter.ExportCategory — lifted byte-for-byte by agora_extract export-category (the enum
 #     is DataImporter's decision-map key; the export root is not pulled in);
 #  3. the Android/Room surface — Context/ContentResolver (with the archive descriptor path),
 #     ParcelFileDescriptor, FileProvider, MaintenanceDebtWorker.schedule, and the stand
@@ -64,7 +64,7 @@ echo "Compiling the vendored Android JSON platform types..."
 javac -nowarn -d "$android_classes" "$vendor_src"/*.java
 
 echo "Extracting DataExporter.ExportCategory from DataExporter.kt..."
-python3 "$here/extract_export_category.py" "$app/data/DataExporter.kt" "$export_category"
+"${AGORA_EXTRACT:-$root/core/build/agora_extract}" export-category "$app/data/DataExporter.kt" "$export_category"
 
 echo "Extracting the identity policy from CustomProviderIdentity.kt..."
 python3 "$identity_stand/extract_identity.py" "$app/data/CustomProviderIdentity.kt" "$identity"

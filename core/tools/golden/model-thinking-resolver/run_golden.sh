@@ -3,7 +3,7 @@
 #
 # The resolver, ModelId, CustomProviderConfig and the whole thinking-capability cluster compile
 # VERBATIM from the app tree. CustomProviderIdentity.kt cannot compile host-side (Room/model
-# migration + UI imports); extract_identity_policy.py copies the stable-id slice used by
+# migration + UI imports); agora_extract identity-policy copies the stable-id slice used by
 # CustomProviderConfig.providerId out of it byte for byte on every run.
 #
 # Usage:
@@ -35,7 +35,7 @@ rm -rf "$here/build"
 mkdir -p "$classes" "$fresh"
 
 echo "Extracting the identity-policy stable-id slice..."
-python3 "$here/extract_identity_policy.py" \
+"${AGORA_EXTRACT:-$root/core/build/agora_extract}" identity-policy \
     "$app/data/CustomProviderIdentity.kt" "$here/build/CustomProviderIdentityPolicy.kt"
 
 echo "Compiling the Kotlin reference sources..."

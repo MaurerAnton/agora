@@ -3,7 +3,7 @@
 #
 # The validator, the wire-name grammars, the request-format gate and the request models compile
 # VERBATIM from the app tree; the four Responses model declarations are lifted byte-for-byte out of
-# api/LlmProvider.kt by extract_responses_models.py (that file is the provider abstraction and
+# api/LlmProvider.kt by agora_extract responses-models (that file is the provider abstraction and
 # pulls in the message-preparation and cost-model clusters).
 #
 # Usage:
@@ -32,7 +32,7 @@ rm -rf "$here/build"
 mkdir -p "$classes" "$fresh"
 
 echo "Extracting the Responses request models from LlmProvider.kt..."
-python3 "$here/extract_responses_models.py" "$app/api/LlmProvider.kt" "$models"
+"${AGORA_EXTRACT:-$root/core/build/agora_extract}" responses-models "$app/api/LlmProvider.kt" "$models"
 
 sources=(
     "$app/model/ChatMessage.kt"

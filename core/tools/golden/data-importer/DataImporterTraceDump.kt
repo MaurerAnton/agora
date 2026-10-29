@@ -6,7 +6,7 @@
 // The substituted boundaries are the Android/Room surface (Context/ContentResolver with the
 // archive descriptor path, ParcelFileDescriptor, FileProvider, Room database) and the DataStore
 // SettingsManager/SettingsRepository doubles. DataExporter.ExportCategory is lifted byte-for-byte
-// by extract_export_category.py so the export root is not pulled in.
+// by `agora_extract export-category` so the export root is not pulled in.
 //
 // Each step runs preview(uri), import(uri, decisions) or a direct FontUtils read against a ZIP
 // built from the scenario's ordered entry list. After an import the trace records the filtered

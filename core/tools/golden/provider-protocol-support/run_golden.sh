@@ -34,7 +34,7 @@ rm -rf "$here/build"
 mkdir -p "$classes" "$fresh"
 
 echo "Extracting the identity-policy stable-id slice..."
-python3 "$here/../model-thinking-resolver/extract_identity_policy.py" \
+"${AGORA_EXTRACT:-$root/core/build/agora_extract}" identity-policy \
     "$app/data/CustomProviderIdentity.kt" "$here/build/CustomProviderIdentityPolicy.kt"
 
 echo "Compiling the Kotlin reference sources..."

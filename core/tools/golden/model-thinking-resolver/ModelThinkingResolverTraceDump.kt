@@ -2,7 +2,7 @@
 //
 // Compiles the real resolver, ModelId, the thinking-capability cluster and CustomProviderConfig
 // from the app tree. CustomProviderIdentityPolicy.isStableId is generated from the real file by
-// extract_identity_policy.py (the rest of that file is Room/model-migration code).
+// `agora_extract identity-policy` (the rest of that file is Room/model-migration code).
 //
 // The trace pins the parsed provider/model pair, the first matching custom provider, its
 // normalized protocol, and every field of the resulting ModelThinkingCapability.

@@ -10,7 +10,7 @@ through.
 - `NativeBackupFormat.kt` — the `NativeConversationIndex` decode and entry vocabulary, with the
   same settings model cluster the `native-backup-format`/`native-backup-archive` stands use
 - `InputStream.readToEnd()` — the four-line drain helper, lifted byte-for-byte from
-  `NativeBackupArchive.kt` by `extract_read_to_end.py` (compiling the whole archive class would
+  `NativeBackupArchive.kt` by `agora_extract read-to-end` (compiling the whole archive class would
   drag in the `Context`/`Uri`/`ParcelFileDescriptor` surface this stand does not substitute)
 
 ## Platform substitutes

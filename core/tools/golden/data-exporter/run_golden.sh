@@ -47,7 +47,7 @@ mkdir -p "$classes" "$fresh"
 
 echo "Extracting the identity policy and sanitizeImportedLoop..."
 python3 "$identity_stand/extract_identity.py" "$app/data/CustomProviderIdentity.kt" "$identity"
-python3 "$here/extract_sanitize_imported_loop.py" "$app/data/DataImporter.kt" "$sanitize"
+"${AGORA_EXTRACT:-$root/core/build/agora_extract}" sanitize-loop "$app/data/DataImporter.kt" "$sanitize"
 
 sources=(
     "$app/data/DataExporter.kt"

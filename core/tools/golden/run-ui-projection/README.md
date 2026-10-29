@@ -13,7 +13,7 @@ compile-only Compose/markdown annotations use the `citations` stand's documented
 | `scenarios/*.json` | 26 cases: boundaries, branches, protocol rows, run groups, selection, fuzz |
 | `golden/*.trace` | Frozen Kotlin output, one per scenario |
 | `RunUiProjectionTraceDump.kt` | Driver: resolves the boundaries and renders the presentation map |
-| `gen_scenarios.py` | Deterministic scenario generator |
+| `agora_scenarios run-ui-projection` | Deterministic scenario generator |
 | `run_golden.sh` | Compiles, freezes (`--freeze`) or verifies the traces |
 
 ## What is pinned

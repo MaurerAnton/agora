@@ -5012,6 +5012,367 @@ void profile_provider_identity(const fs::path& scenarios) {
     std::cout << "Wrote " << all.size() << " scenarios\n";
 }
 
+
+// run-ui-projection/gen_scenarios.py — indent=2, ensure_ascii=False; the fuzz cases use
+// random.Random(15000 + index).
+void profile_run_ui_projection(const fs::path& scenarios) {
+    std::vector<std::pair<std::string, json::Value>> entries;
+    auto message = [](const char* id, const char* participant,
+                      std::optional<std::string> parent, const char* text,
+                      std::optional<std::string> run, std::int64_t timestamp,
+                      const char* status) {
+        std::vector<std::pair<std::string, json::Value>> members = {
+            {"id", str(id)},
+            {"participant", str(participant)},
+            {"text", str(text)},
+            {"timestamp", number(timestamp)},
+            {"status", str(status)},
+        };
+        if (parent) members.emplace_back("parentId", str(*parent));
+        if (run) members.emplace_back("runId", str(*run));
+        return object(std::move(members));
+    };
+    auto write = [&](const char* name, std::vector<json::Value> visible,
+                     std::vector<json::Value> all_messages) {
+        entries.emplace_back(name,
+                             object({{"visibleMessages", array(std::move(visible))},
+                                     {"allMessages", array(std::move(all_messages))}}));
+    };
+
+    write("01-single-user", {message("m1", "USER", std::nullopt, "hi", std::nullopt, 0,
+                                     "SUCCESS")},
+          {message("m1", "USER", std::nullopt, "hi", std::nullopt, 0, "SUCCESS")});
+    write("02-user-assistant",
+          {message("m1", "USER", std::nullopt, "hi", std::nullopt, 1, "SUCCESS"),
+           message("m2", "MODEL", std::string("m1"), "hello", std::nullopt, 2, "SUCCESS")},
+          {message("m1", "USER", std::nullopt, "hi", std::nullopt, 1, "SUCCESS"),
+           message("m2", "MODEL", std::string("m1"), "hello", std::nullopt, 2, "SUCCESS")});
+    write("03-edited-branches",
+          {message("m1", "USER", std::nullopt, "question", std::nullopt, 1, "SUCCESS"),
+           message("m2", "USER", std::string("m0"), "edited question", std::nullopt, 2,
+                   "SUCCESS"),
+           message("m3", "MODEL", std::string("m2"), "answer", std::nullopt, 3, "SUCCESS")},
+          {message("m0", "USER", std::nullopt, "question", std::nullopt, 1, "SUCCESS"),
+           message("m1", "USER", std::string("m0"), "edited question", std::nullopt, 2,
+                   "SUCCESS"),
+           message("m2", "MODEL", std::string("m1"), "answer", std::nullopt, 3, "SUCCESS")});
+    write("04-regenerated-branches",
+          {message("m1", "USER", std::nullopt, "question", std::nullopt, 1, "SUCCESS"),
+           message("m2", "MODEL", std::string("m1"), "first", std::nullopt, 2, "SUCCESS"),
+           message("m3", "MODEL", std::string("m1"), "second", std::nullopt, 3, "SUCCESS")},
+          {message("m1", "USER", std::nullopt, "question", std::nullopt, 1, "SUCCESS"),
+           message("m2", "MODEL", std::string("m1"), "first", std::nullopt, 2, "SUCCESS"),
+           message("m3", "MODEL", std::string("m1"), "second", std::nullopt, 3, "SUCCESS")});
+    write("05-protocol-rows",
+          {message("m1", "USER", std::nullopt, "question", std::nullopt, 1, "SUCCESS"),
+           message("tool_1", "MODEL", std::string("m1"), "tool call", std::nullopt, 2,
+                   "SUCCESS"),
+           message("result_1", "MODEL", std::string("tool_1"), "tool result", std::nullopt, 3,
+                   "SUCCESS"),
+           message("m2", "MODEL", std::string("m1"), "answer", std::nullopt, 4, "SUCCESS")},
+          {message("m1", "USER", std::nullopt, "question", std::nullopt, 1, "SUCCESS"),
+           message("tool_1", "MODEL", std::string("m1"), "tool call", std::nullopt, 2,
+                   "SUCCESS"),
+           message("result_1", "MODEL", std::string("tool_1"), "tool result", std::nullopt, 3,
+                   "SUCCESS"),
+           message("m2", "MODEL", std::string("m1"), "answer", std::nullopt, 4, "SUCCESS")});
+    write("06-compact-row",
+          {message("m1", "USER", std::nullopt, "question", std::nullopt, 1, "SUCCESS"),
+           message("compact_1", "MODEL", std::string("m1"), "summary", std::nullopt, 2,
+                   "SUCCESS"),
+           message("m2", "MODEL", std::string("m1"), "answer", std::nullopt, 3, "SUCCESS")},
+          {message("m1", "USER", std::nullopt, "question", std::nullopt, 1, "SUCCESS"),
+           message("compact_1", "MODEL", std::string("m1"), "summary", std::nullopt, 2,
+                   "SUCCESS"),
+           message("m2", "MODEL", std::string("m1"), "answer", std::nullopt, 3, "SUCCESS")});
+    write("07-run-groups",
+          {message("m1", "USER", std::nullopt, "question", std::nullopt, 1, "SUCCESS"),
+           message("m2", "MODEL", std::string("m1"), "a", std::string("run-1"), 2, "SUCCESS"),
+           message("m3", "MODEL", std::string("m1"), "b", std::string("run-2"), 3, "SUCCESS"),
+           message("m4", "MODEL", std::string("m1"), "c", std::string("run-2"), 4, "SUCCESS")},
+          {message("m1", "USER", std::nullopt, "question", std::nullopt, 1, "SUCCESS"),
+           message("m2", "MODEL", std::string("m1"), "a", std::string("run-1"), 2, "SUCCESS"),
+           message("m3", "MODEL", std::string("m1"), "b", std::string("run-2"), 3, "SUCCESS"),
+           message("m4", "MODEL", std::string("m1"), "c", std::string("run-2"), 4, "SUCCESS")});
+    write("08-duplicate-ids",
+          {message("m1", "USER", std::nullopt, "question", std::nullopt, 1, "SUCCESS"),
+           message("m1", "USER", std::nullopt, "question", std::nullopt, 1, "SUCCESS")},
+          {message("m1", "USER", std::nullopt, "question", std::nullopt, 1, "SUCCESS")});
+    write("09-empty-text",
+          {message("m1", "USER", std::nullopt, "", std::nullopt, 1, "SUCCESS"),
+           message("m2", "MODEL", std::string("m1"), "", std::nullopt, 2, "SUCCESS")},
+          {message("m1", "USER", std::nullopt, "", std::nullopt, 1, "SUCCESS"),
+           message("m2", "MODEL", std::string("m1"), "", std::nullopt, 2, "SUCCESS")});
+    write("10-visible-subset",
+          {message("m2", "MODEL", std::string("m1"), "answer", std::nullopt, 2, "SUCCESS")},
+          {message("m1", "USER", std::nullopt, "question", std::nullopt, 1, "SUCCESS"),
+           message("m2", "MODEL", std::string("m1"), "answer", std::nullopt, 2, "SUCCESS")});
+    write("11-current-node-path",
+          {message("m1", "USER", std::nullopt, "question", std::nullopt, 1, "SUCCESS"),
+           message("m2", "MODEL", std::string("m1"), "first", std::nullopt, 2, "SUCCESS"),
+           message("m3", "MODEL", std::string("m1"), "second", std::nullopt, 3, "SUCCESS")},
+          {message("m1", "USER", std::nullopt, "question", std::nullopt, 1, "SUCCESS"),
+           message("m2", "MODEL", std::string("m1"), "first", std::nullopt, 2, "SUCCESS"),
+           message("m3", "MODEL", std::string("m1"), "second", std::nullopt, 3, "SUCCESS")});
+    write("12-orphan-parent",
+          {message("m1", "USER", std::string("missing"), "question", std::nullopt, 1,
+                   "SUCCESS"),
+           message("m2", "MODEL", std::string("m1"), "answer", std::nullopt, 2, "SUCCESS")},
+          {message("m1", "USER", std::string("missing"), "question", std::nullopt, 1,
+                   "SUCCESS"),
+           message("m2", "MODEL", std::string("m1"), "answer", std::nullopt, 2, "SUCCESS")});
+    write("13-error-participant",
+          {message("m1", "USER", std::nullopt, "question", std::nullopt, 1, "SUCCESS"),
+           message("m2", "ERROR", std::string("m1"), "failed", std::nullopt, 2, "ERROR")},
+          {message("m1", "USER", std::nullopt, "question", std::nullopt, 1, "SUCCESS"),
+           message("m2", "ERROR", std::string("m1"), "failed", std::nullopt, 2, "ERROR")});
+    write("14-stopped-assistant",
+          {message("m1", "USER", std::nullopt, "question", std::nullopt, 1, "SUCCESS"),
+           message("m2", "MODEL", std::string("m1"), "partial", std::nullopt, 2, "STOPPED")},
+          {message("m1", "USER", std::nullopt, "question", std::nullopt, 1, "SUCCESS"),
+           message("m2", "MODEL", std::string("m1"), "partial", std::nullopt, 2, "STOPPED")});
+    write("15-empty-visible", {},
+          {message("m1", "USER", std::nullopt, "hi", std::nullopt, 0, "SUCCESS")});
+    {
+        std::vector<json::Value> visible = {
+            message("m1", "USER", std::nullopt, "question", std::nullopt, 1, "SUCCESS")};
+        std::vector<json::Value> all_messages = visible;
+        for (int index = 2; index < 6; ++index) {
+            visible.push_back(message(("m" + std::to_string(index)).c_str(), "MODEL",
+                                      std::string("m1"),
+                                      ("answer " + std::to_string(index)).c_str(),
+                                      std::nullopt, index + 1, "SUCCESS"));
+        }
+        all_messages = visible;
+        write("16-many-branches", std::move(visible), std::move(all_messages));
+    }
+    write("17-unicode",
+          {message("m1", "USER", std::nullopt, "\u0432\u043e\u043f\u0440\u043e\u0441 \U0001F642",
+                   std::nullopt, 1, "SUCCESS"),
+           message("m2", "MODEL", std::string("m1"), "\u043e\u0442\u0432\u0435\u0442",
+                   std::nullopt, 2, "SUCCESS")},
+          {message("m1", "USER", std::nullopt, "\u0432\u043e\u043f\u0440\u043e\u0441 \U0001F642",
+                   std::nullopt, 1, "SUCCESS"),
+           message("m2", "MODEL", std::string("m1"), "\u043e\u0442\u0432\u0435\u0442",
+                   std::nullopt, 2, "SUCCESS")});
+    write("18-timestamps-equal",
+          {message("m1", "USER", std::nullopt, "question", std::nullopt, 5, "SUCCESS"),
+           message("m2", "MODEL", std::string("m1"), "a", std::nullopt, 5, "SUCCESS"),
+           message("m3", "MODEL", std::string("m1"), "b", std::nullopt, 5, "SUCCESS")},
+          {message("m1", "USER", std::nullopt, "question", std::nullopt, 5, "SUCCESS"),
+           message("m2", "MODEL", std::string("m1"), "a", std::nullopt, 5, "SUCCESS"),
+           message("m3", "MODEL", std::string("m1"), "b", std::nullopt, 5, "SUCCESS")});
+
+    for (int index = 0; index < 8; ++index) {
+        PythonRandom rng(static_cast<std::uint32_t>(15000 + index));
+        std::vector<json::Value> messages;
+        const int count = 1 + static_cast<int>(rng.randbelow(8));
+        for (int position = 0; position < count; ++position) {
+            const std::string message_id = "m" + std::to_string(position);
+            std::optional<std::string> parent;
+            if (position > 0 && rng.random() < 0.8) {
+                parent = "m" + std::to_string(rng.randbelow(static_cast<std::uint32_t>(position)));
+            }
+            static constexpr const char* kParticipants[] = {"USER", "MODEL", "MODEL", "ERROR"};
+            static constexpr const char* kTexts[] = {"", "text", "text \U0001F642"};
+            static constexpr const char* kStatuses[] = {"SUCCESS", "STOPPED", "ERROR",
+                                                        "THINKING"};
+            static constexpr std::int64_t kTimestamps[] = {0, 1, 2, 5};
+            const char* participant = kParticipants[rng.randbelow(4)];
+            const char* text = kTexts[rng.randbelow(3)];
+            const std::uint32_t run_choice = rng.randbelow(4);
+            std::optional<std::string> run;
+            if (run_choice == 2) {
+                run = "run-1";
+            } else if (run_choice == 3) {
+                run = "run-2";
+            }
+            const std::int64_t timestamp = kTimestamps[rng.randbelow(4)];
+            const char* status = kStatuses[rng.randbelow(4)];
+            messages.push_back(message(message_id.c_str(), participant, parent, text, run,
+                                       timestamp, status));
+        }
+        std::vector<json::Value> visible = messages;
+        if (rng.random() < 0.4 && !visible.empty()) {
+            const std::size_t start = rng.randbelow(static_cast<std::uint32_t>(visible.size()));
+            visible = std::vector<json::Value>(visible.begin() + static_cast<std::ptrdiff_t>(start),
+                                               visible.end());
+        }
+        if (rng.random() < 0.3 && !messages.empty()) {
+            messages.push_back(messages[rng.randbelow(static_cast<std::uint32_t>(messages.size()))]);
+        }
+        char name[32];
+        std::snprintf(name, sizeof(name), "90-fuzz-%02d", index);
+        write(name, std::move(visible), std::move(messages));
+    }
+
+    remove_stale(scenarios);
+    const FormatOptions pretty{Format::Pretty2, false};
+    for (const auto& [name, value] : entries) {
+        write_scenario(scenarios, name, value, pretty);
+    }
+    std::cout << "Wrote " << entries.size() << " scenarios to " << scenarios.string() << "\n";
+}
+
+// v18-regeneration-repair/gen_scenarios.py — compact, ensure_ascii=False.
+void profile_v18_regeneration_repair(const fs::path& scenarios) {
+    std::vector<json::Value> all;
+    auto run = [](const char* rid, json::Value parent, bool legacy) {
+        return object({{"id", str(rid)},
+                       {"parentRunId", std::move(parent)},
+                       {"legacyAmbiguous", boolean(legacy)}});
+    };
+    auto msg = [](const char* mid, json::Value parent, const char* participant,
+                  const char* run_id, std::int64_t seq) {
+        return object({{"id", str(mid)},
+                       {"parentId", std::move(parent)},
+                       {"participant", str(participant)},
+                       {"runId", str(run_id)},
+                       {"runSequence", number(seq)}});
+    };
+    auto plan = [&](const char* name, std::vector<json::Value> runs,
+                    std::vector<json::Value> messages) {
+        all.push_back(object({{"name", str(name)},
+                              {"op", str("plan")},
+                              {"runs", array(std::move(runs))},
+                              {"messages", array(std::move(messages))}}));
+    };
+
+    plan("plan_empty", {}, {});
+    plan("no_legacy_run", {run("p", null_value(), true), run("r2", str("p"), false)},
+         {msg("u", null_value(), "USER", "p", 0),
+          msg("root", str("u"), "MODEL", "r2", 1),
+          msg("d", str("gone"), "MODEL", "r2", 2)});
+    plan("legacy_without_parent", {run("r2", null_value(), true)},
+         {msg("root", str("u"), "MODEL", "r2", 1),
+          msg("d", str("gone"), "MODEL", "r2", 2)});
+    plan("parent_run_missing_but_messages_exist", {run("r2", str("px"), true)},
+         {msg("ux", null_value(), "USER", "px", 0),
+          msg("root", str("ux"), "MODEL", "r2", 1),
+          msg("d", str("gone"), "MODEL", "r2", 2)});
+    plan("parent_present_no_user", {run("p", null_value(), true), run("r2", str("p"), true)},
+         {msg("m0", null_value(), "MODEL", "p", 0),
+          msg("root", str("m0"), "MODEL", "r2", 1),
+          msg("d", str("gone"), "MODEL", "r2", 2)});
+    plan("canonical_user_sequence_nonzero",
+         {run("p", null_value(), true), run("r2", str("p"), true)},
+         {msg("u", null_value(), "USER", "p", 2),
+          msg("root", str("u"), "MODEL", "r2", 1),
+          msg("d", str("gone"), "MODEL", "r2", 2)});
+    plan("canonical_user_tool_prefix",
+         {run("p", null_value(), true), run("r2", str("p"), true)},
+         {msg("tool_u", null_value(), "USER", "p", 0),
+          msg("root", str("tool_u"), "MODEL", "r2", 1),
+          msg("d", str("gone"), "MODEL", "r2", 2)});
+    plan("canonical_user_result_prefix",
+         {run("p", null_value(), true), run("r2", str("p"), true)},
+         {msg("result_u", null_value(), "USER", "p", 0),
+          msg("root", str("result_u"), "MODEL", "r2", 1),
+          msg("d", str("gone"), "MODEL", "r2", 2)});
+    plan("no_repaired_root", {run("p", null_value(), true), run("r2", str("p"), true)},
+         {msg("u", null_value(), "USER", "p", 0),
+          msg("d", str("gone"), "MODEL", "r2", 2)});
+    plan("repaired_root_present", {run("p", null_value(), true), run("r2", str("p"), true)},
+         {msg("u", null_value(), "USER", "p", 0),
+          msg("root", str("u"), "MODEL", "r2", 1),
+          msg("d", str("gone"), "MODEL", "r2", 2)});
+    plan("sibling_parent_exists", {run("p", null_value(), true), run("r2", str("p"), true)},
+         {msg("u", null_value(), "USER", "p", 0),
+          msg("m0", str("u"), "MODEL", "p", 1),
+          msg("root", str("u"), "MODEL", "r2", 1),
+          msg("kept", str("m0"), "MODEL", "r2", 2),
+          msg("d", str("gone"), "MODEL", "r2", 3)});
+    plan("sibling_parent_null", {run("p", null_value(), true), run("r2", str("p"), true)},
+         {msg("u", null_value(), "USER", "p", 0),
+          msg("root", str("u"), "MODEL", "r2", 1),
+          msg("d", null_value(), "MODEL", "r2", 2)});
+    plan("sibling_tool_prefix", {run("p", null_value(), true), run("r2", str("p"), true)},
+         {msg("u", null_value(), "USER", "p", 0),
+          msg("root", str("u"), "MODEL", "r2", 1),
+          msg("tool_d", str("gone"), "MODEL", "r2", 2)});
+    plan("sibling_result_prefix", {run("p", null_value(), true), run("r2", str("p"), true)},
+         {msg("u", null_value(), "USER", "p", 0),
+          msg("root", str("u"), "MODEL", "r2", 1),
+          msg("result_d", str("gone"), "MODEL", "r2", 2)});
+    plan("sibling_user", {run("p", null_value(), true), run("r2", str("p"), true)},
+         {msg("u", null_value(), "USER", "p", 0),
+          msg("root", str("u"), "MODEL", "r2", 1),
+          msg("u2", str("gone"), "USER", "r2", 2)});
+    plan("multiple_siblings_order", {run("p", null_value(), true), run("r2", str("p"), true)},
+         {msg("u", null_value(), "USER", "p", 0),
+          msg("root", str("u"), "MODEL", "r2", 0),
+          msg("d3", str("gone"), "MODEL", "r2", 3),
+          msg("d1", str("gone"), "MODEL", "r2", 1),
+          msg("d2", str("gone"), "MODEL", "r2", 2)});
+    plan("tie_sequence_id_order", {run("p", null_value(), true), run("r2", str("p"), true)},
+         {msg("u", null_value(), "USER", "p", 0),
+          msg("root", str("u"), "MODEL", "r2", 0),
+          msg("d_b", str("gone"), "MODEL", "r2", 5),
+          msg("d_a", str("gone"), "MODEL", "r2", 5)});
+    plan("multiple_runs_order",
+         {run("p3", null_value(), true), run("p2", null_value(), true),
+          run("r3", str("p3"), true), run("r2", str("p2"), true)},
+         {msg("u3", null_value(), "USER", "p3", 0),
+          msg("u2", null_value(), "USER", "p2", 0),
+          msg("root3", str("u3"), "MODEL", "r3", 0),
+          msg("root2", str("u2"), "MODEL", "r2", 0),
+          msg("d3", str("gone"), "MODEL", "r3", 1),
+          msg("d2", str("gone"), "MODEL", "r2", 1)});
+    plan("duplicate_run_ids_last_wins",
+         {run("p", null_value(), true), run("r2", str("p"), true),
+          run("r2", str("p"), false)},
+         {msg("u", null_value(), "USER", "p", 0),
+          msg("root", str("u"), "MODEL", "r2", 1),
+          msg("d", str("gone"), "MODEL", "r2", 2)});
+    plan("duplicate_message_id_across_runs",
+         {run("pA", null_value(), true), run("pB", null_value(), true),
+          run("rA", str("pA"), true), run("rB", str("pB"), true)},
+         {msg("uA", null_value(), "USER", "pA", 0),
+          msg("uB", null_value(), "USER", "pB", 0),
+          msg("rootA", str("uA"), "MODEL", "rA", 0),
+          msg("rootB", str("uB"), "MODEL", "rB", 0),
+          msg("d", str("gone"), "MODEL", "rA", 1),
+          msg("d", str("gone"), "MODEL", "rB", 1)});
+    plan("canonical_user_min_id", {run("p", null_value(), true), run("r2", str("p"), true)},
+         {msg("u2", null_value(), "USER", "p", 0),
+          msg("u1", null_value(), "USER", "p", 0),
+          msg("root1", str("u1"), "MODEL", "r2", 1),
+          msg("root2", str("u2"), "MODEL", "r2", 2),
+          msg("d", str("gone"), "MODEL", "r2", 3)});
+    plan("canonical_user_model_ignored",
+         {run("p", null_value(), true), run("r2", str("p"), true)},
+         {msg("a1", null_value(), "MODEL", "p", 0),
+          msg("u9", null_value(), "USER", "p", 0),
+          msg("root", str("u9"), "MODEL", "r2", 1),
+          msg("d", str("gone"), "MODEL", "r2", 2)});
+    plan("repaired_root_tool_prefix",
+         {run("p", null_value(), true), run("r2", str("p"), true)},
+         {msg("u", null_value(), "USER", "p", 0),
+          msg("tool_root", str("u"), "MODEL", "r2", 1),
+          msg("d", str("gone"), "MODEL", "r2", 2)});
+    plan("repaired_root_is_user", {run("p", null_value(), true), run("r2", str("p"), true)},
+         {msg("u", null_value(), "USER", "p", 0),
+          msg("u2", str("u"), "USER", "r2", 1),
+          msg("d", str("gone"), "MODEL", "r2", 2)});
+    plan("repaired_root_parent_null",
+         {run("p", null_value(), true), run("r2", str("p"), true)},
+         {msg("u", null_value(), "USER", "p", 0),
+          msg("root", null_value(), "MODEL", "r2", 1),
+          msg("d", str("gone"), "MODEL", "r2", 2)});
+    all.push_back(object({{"name", str("constants")}, {"op", str("constants")}}));
+
+    remove_stale(scenarios);
+    const FormatOptions compact{Format::Compact, false};
+    for (const json::Value& item : all) {
+        std::string name;
+        for (const json::Member& member : item.members) {
+            if (member.key == "name") name = member.value.text;
+        }
+        write_scenario(scenarios, name, item, compact);
+    }
+    std::cout << "wrote " << all.size() << " scenarios to " << scenarios.string() << "\n";
+}
+
 }  // namespace
 
 int main(int argc, char** argv) {
@@ -5055,7 +5416,9 @@ int main(int argc, char** argv) {
                   << "  message-source        message-source/gen_scenarios.py\n"
                   << "  zip-reader            zip-reader/gen_scenarios.py\n"
                   << "  conch-network         conch-network/gen_scenarios.py\n"
-                  << "  provider-identity     provider-identity/gen_scenarios.py\n";
+                  << "  provider-identity     provider-identity/gen_scenarios.py\n"
+                  << "  run-ui-projection     run-ui-projection/gen_scenarios.py\n"
+                  << "  v18-regeneration-repair v18-regeneration-repair/gen_scenarios.py\n";
         return 2;
     }
     const std::string profile = argv[1];
@@ -5138,6 +5501,10 @@ int main(int argc, char** argv) {
         profile_conch_network(scenarios);
     } else if (profile == "provider-identity") {
         profile_provider_identity(scenarios);
+    } else if (profile == "run-ui-projection") {
+        profile_run_ui_projection(scenarios);
+    } else if (profile == "v18-regeneration-repair") {
+        profile_v18_regeneration_repair(scenarios);
     } else {
         std::cerr << "unknown profile: " << profile << "\n";
         return 2;

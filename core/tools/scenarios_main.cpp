@@ -2337,6 +2337,295 @@ void profile_shell_tools(const fs::path& scenarios) {
     std::cout << "Wrote " << all.size() << " scenarios\n";
 }
 
+
+// attachment-clone-session/gen_scenarios.py — indent=2, ensure_ascii=False, rmtree.
+void profile_attachment_clone_session(const fs::path& scenarios) {
+    const json::Value meta = object({{"items", array({
+        object({{"type", str("image")},
+                {"file_name", str("a.png")},
+                {"originalUri", str("file://platform_clone_workspace/sources/a.png")}}),
+        object({{"type", str("file")},
+                {"file_name", str("b.txt")},
+                {"originalUri", str("https://example.com/b.txt")}}),
+        object({{"type", str("file")}, {"file_name", str("c.txt")}}),
+    })}});
+    // json.dumps with the default separators, exactly what the Python generator embeds.
+    const std::string meta_text = serialize(meta, FormatOptions{Format::Spaced, false});
+    auto source = [](const char* name, const char* content) {
+        return object({{"name", str(name)}, {"content", str(content)}});
+    };
+    const FormatOptions pretty{Format::Pretty2, false};
+    auto write = [&](const char* name, json::Value scenario) {
+        write_scenario(scenarios, name, scenario, pretty);
+    };
+
+    remove_stale(scenarios);
+    write("01-clone-images-and-meta",
+          object({{"sources", array({source("a.png", "png-bytes"),
+                                     source("b.txt", "text-bytes")})},
+                  {"messages", array({object({{"id", str("m1")},
+                                              {"conversationId", str("c1")},
+                                              {"text", str("with attachments")},
+                                              {"images", array({str("platform_clone_workspace/"
+                                                                    "sources/a.png")})},
+                                              {"attachmentMeta", str(meta_text)}})})}}));
+
+    write("02-clone-same-owner-shares-file",
+          object({{"sources", array({source("a.png", "png-bytes")})},
+                  {"messages", array({
+                      object({{"id", str("m1")},
+                              {"conversationId", str("c1")},
+                              {"images", array({str("platform_clone_workspace/sources/a.png")})}}),
+                      object({{"id", str("m2")},
+                              {"conversationId", str("c1")},
+                              {"ownerKey", str("owner-1")},
+                              {"images", array({str("platform_clone_workspace/sources/a.png")})}}),
+                      object({{"id", str("m3")},
+                              {"conversationId", str("c1")},
+                              {"ownerKey", str("owner-1")},
+                              {"images", array({str("platform_clone_workspace/sources/a.png")})}}),
+                  })}}));
+
+    write("03-clone-different-owner-separates-file",
+          object({{"sources", array({source("a.png", "png-bytes")})},
+                  {"messages", array({
+                      object({{"id", str("m1")},
+                              {"conversationId", str("c1")},
+                              {"ownerKey", str("owner-1")},
+                              {"images", array({str("platform_clone_workspace/sources/a.png")})}}),
+                      object({{"id", str("m2")},
+                              {"conversationId", str("c1")},
+                              {"ownerKey", str("owner-2")},
+                              {"images", array({str("platform_clone_workspace/sources/a.png")})}}),
+                  })}}));
+
+    write("04-clone-missing-source-keeps-path",
+          object({{"sources", array({})},
+                  {"messages", array({object({{"id", str("m1")},
+                                              {"conversationId", str("c1")},
+                                              {"images", array({str("platform_clone_workspace/"
+                                                                    "sources/missing.png")})}})})}}));
+
+    write("05-clone-rollback-removes-files",
+          object({{"sources", array({source("a.png", "png-bytes")})},
+                  {"messages", array({object({{"id", str("m1")},
+                                              {"conversationId", str("c1")},
+                                              {"images", array({str("platform_clone_workspace/"
+                                                                    "sources/a.png")})}})})},
+                  {"commit", str("false")}}));
+
+    write("06-clone-commit-keeps-files",
+          object({{"sources", array({source("a.png", "png-bytes")})},
+                  {"messages", array({object({{"id", str("m1")},
+                                              {"conversationId", str("c1")},
+                                              {"images", array({str("platform_clone_workspace/"
+                                                                    "sources/a.png")})}})})},
+                  {"commit", str("true")}}));
+
+    write("07-clone-standalone-meta",
+          object({{"sources", array({source("a.png", "png-bytes")})},
+                  {"messages", array({})},
+                  {"standaloneMeta", object({{"raw", str(meta_text)}})}}));
+
+    write("08-clone-no-attachments",
+          object({{"sources", array({})},
+                  {"messages", array({object({{"id", str("m1")},
+                                              {"conversationId", str("c1")},
+                                              {"text", str("plain")},
+                                              {"images", array({})}})})}}));
+    std::cout << "Wrote 8 scenarios to " << scenarios.string() << "\n";
+}
+
+// duckduckgo/gen_scenarios.py — indent=2, ensure_ascii=False.
+void profile_duckduckgo(const fs::path& scenarios) {
+    std::vector<json::Value> all;
+    auto parse_case = [&](const char* name, std::string html, std::int64_t max_results) {
+        all.push_back(object({{"name", str(name)},
+                              {"mode", str("parse")},
+                              {"html", str(std::move(html))},
+                              {"maxResults", number(max_results)}}));
+    };
+    auto search_case = [&](const char* name, std::vector<json::Value> pages,
+                           std::int64_t max_results) {
+        all.push_back(object({{"name", str(name)},
+                              {"mode", str("search")},
+                              {"maxResults", number(max_results)},
+                              {"pages", array(std::move(pages))}}));
+    };
+    auto page_html = [](std::string html) { return object({{"html", str(std::move(html))}}); };
+    auto row = [](const std::string& url, const std::string& title,
+                  std::optional<std::string> snippet, const std::string& quote) {
+        std::string anchor = "<a " + quote + "class=" + quote + "result-link" + quote + " href=" +
+                             quote + url + quote + ">" + title + "</a>";
+        if (snippet) {
+            anchor += "<td " + quote + "class=" + quote + "result-snippet" + quote + ">" +
+                      *snippet + "</td>";
+        }
+        return anchor;
+    };
+    auto page = [&](std::vector<std::string> rows, std::optional<std::string> vqd,
+                    std::optional<std::string> offset, bool captcha,
+                    const std::string& extra) {
+        std::string html = "<html><table>";
+        for (const std::string& item : rows) html += item;
+        html += "</table>";
+        if (vqd) html += "<form><input name=\"vqd\" value=\"" + *vqd + "\"></form>";
+        if (offset) html += "<form><input name=\"s\" value=\"" + *offset + "\"></form>";
+        if (captcha) html += "<div class=\"anomaly-modal\">challenge-form</div>";
+        return html + extra;
+    };
+    auto redirect = [](const std::string& href) {
+        return std::string("//duckduckgo.com/l/?") + href;
+    };
+    const std::string quote = "\"";
+
+    parse_case("parse_single_result",
+               page({row("https://example.com/a", "Alpha", "First snippet.", quote)},
+                    std::nullopt, std::nullopt, false, ""),
+               5);
+    parse_case("parse_entities_sequential",
+               page({row("http://x/",
+                         "Fish &amp; Chips &lt;hot&gt; &quot;q&quot; &#x27;s&#39;&nbsp;x",
+                         "A &amp;lt; B &amp;amp; C &gt; D", quote)},
+                    std::nullopt, std::nullopt, false, ""),
+               5);
+    parse_case("parse_double_unescape",
+               page({row("http://x/", "A &amp;lt; B", std::nullopt, quote)}, std::nullopt,
+                    std::nullopt, false, ""),
+               5);
+    parse_case("parse_tags_stripped",
+               page({row("http://x/", "<b>Bold</b> plain <i>it</i>", "<span>snip</span> tail",
+                         quote)},
+                    std::nullopt, std::nullopt, false, ""),
+               5);
+    parse_case("parse_nested_anchor_text",
+               page({row("http://x/", "A<span>B</span>", std::nullopt, quote)}, std::nullopt,
+                    std::nullopt, false, ""),
+               5);
+    parse_case("parse_mismatched_class_quotes",
+               "<a class='result-link\" href=\"http://odd.example/\">Odd</a>", 5);
+    parse_case("parse_missing_href", "<a class=\"result-link\">No href here</a>", 5);
+    parse_case("parse_blank_title_filtered",
+               "<a class=\"result-link\" href=\"http://x/\">&nbsp;   </a>", 5);
+    parse_case("parse_max_results_cap",
+               page({row("http://x/1", "One", std::nullopt, quote),
+                     row("http://x/2", "Two", std::nullopt, quote),
+                     row("http://x/3", "Three", std::nullopt, quote)},
+                    std::nullopt, std::nullopt, false, ""),
+               1);
+    parse_case("parse_uddg_percent_encoded",
+               page({row(redirect("uddg=https%3A%2F%2Fexample.com%2Fa%20b&rut=xyz"), "Wrapped",
+                         std::nullopt, quote)},
+                    std::nullopt, std::nullopt, false, ""),
+               5);
+    parse_case("parse_uddg_plus_decoded",
+               page({row(redirect("uddg=https%3A%2F%2Fx.example%2Fa+b"), "Plus", std::nullopt,
+                         quote)},
+                    std::nullopt, std::nullopt, false, ""),
+               5);
+    parse_case("parse_protocol_relative",
+               page({row("//example.org/path", "Proto", std::nullopt, quote)}, std::nullopt,
+                    std::nullopt, false, ""),
+               5);
+    parse_case("parse_absolute_unchanged",
+               page({row("https://keep.example/path?q=1", "Kept", std::nullopt, quote)},
+                    std::nullopt, std::nullopt, false, ""),
+               5);
+    parse_case("parse_snippet_missing_pair",
+               row("http://x/1", "One", "Snip one", quote) +
+                   row("http://x/2", "Two", std::nullopt, quote),
+               5);
+    parse_case("parse_single_quotes_everywhere",
+               "<a class='result-link' href='http://sq.example/'>Single</a>"
+               "<td class='result-snippet'>Snip sq</td>",
+               5);
+
+    search_case("search_no_results",
+                {page_html(page({"<p>nothing here</p>"}, std::nullopt, std::nullopt, false, ""))},
+                5);
+    search_case("search_first_page_no_vqd",
+                {page_html(page({row("http://x/1", "One", std::nullopt, quote)}, std::nullopt,
+                                std::nullopt, false, ""))},
+                5);
+    search_case("search_success_single_page",
+                {page_html(page({row("http://x/1", "One", "s1", quote),
+                                 row("http://x/2", "Two", "s2", quote)},
+                                "vqd-token", "10", false, ""))},
+                5);
+    search_case("search_captcha_first_page",
+                {page_html(page({row("http://x/1", "One", std::nullopt, quote)}, std::nullopt,
+                                std::nullopt, true, ""))},
+                5);
+    search_case("search_captcha_partial",
+                {page_html(page({row("http://x/1", "One", "s1", quote),
+                                 row("http://x/2", "Two", "s2", quote)},
+                                "tok", "10", false, "")),
+                 page_html(page({row("http://x/9", "Nine", std::nullopt, quote)}, std::nullopt,
+                                std::nullopt, true, ""))},
+                5);
+    search_case("search_network_first_missing_page", {}, 5);
+    search_case("search_network_explicit",
+                {object({{"error", str("DuckDuckGo returned HTTP 503.")}})}, 5);
+    search_case("search_network_partial",
+                {page_html(page({row("http://x/1", "One", "s1", quote)}, "tok", "10", false, "")),
+                 object({{"error", str("Network error: timeout")}})},
+                5);
+    search_case("search_pagination_two_pages",
+                {page_html(page({row("http://x/1", "One", std::nullopt, quote),
+                                 row("http://x/2", "Two", std::nullopt, quote)},
+                                "tok", "10", false, "")),
+                 page_html(page({row("http://x/3", "Three", std::nullopt, quote),
+                                 row("http://x/4", "Four", std::nullopt, quote)},
+                                "tok", "20", false, ""))},
+                20);
+    search_case("search_dedup_overlap_and_missing_offset",
+                {page_html(page({row("http://x/1", "One", std::nullopt, quote),
+                                 row("http://x/2", "Two", std::nullopt, quote)},
+                                "tok", "10", false, "")),
+                 page_html(page({row("http://x/2", "Two again", std::nullopt, quote),
+                                 row("http://x/3", "Three", std::nullopt, quote)},
+                                std::nullopt, std::nullopt, false, ""))},
+                20);
+    search_case("search_no_new_results_breaks",
+                {page_html(page({row("http://x/1", "One", std::nullopt, quote),
+                                 row("http://x/2", "Two", std::nullopt, quote)},
+                                "tok", "10", false, "")),
+                 page_html(page({row("http://x/1", "One", std::nullopt, quote),
+                                 row("http://x/2", "Two", std::nullopt, quote)},
+                                std::nullopt, std::nullopt, false, ""))},
+                20);
+    search_case("search_offset_malformed_breaks",
+                {page_html(page({row("http://x/1", "One", std::nullopt, quote)}, "tok",
+                                "not-a-number", false, ""))},
+                5);
+    search_case("search_max_results_top_break",
+                {page_html(page({row("http://x/1", "One", std::nullopt, quote),
+                                 row("http://x/2", "Two", std::nullopt, quote),
+                                 row("http://x/3", "Three", std::nullopt, quote)},
+                                "tok", "10", false, "")),
+                 page_html(page({row("http://x/4", "Four", std::nullopt, quote)}, std::nullopt,
+                                std::nullopt, false, ""))},
+                1);
+    search_case("search_vqd_only_from_first_page",
+                {page_html(page({row("http://x/1", "One", std::nullopt, quote)}, "first-token",
+                                "10", false, "")),
+                 page_html(page({row("http://x/2", "Two", std::nullopt, quote)}, std::nullopt,
+                                "20", false, "")),
+                 page_html(page({row("http://x/3", "Three", std::nullopt, quote)}, std::nullopt,
+                                "30", false, ""))},
+                20);
+
+    const FormatOptions pretty{Format::Pretty2, false};
+    for (const json::Value& item : all) {
+        std::string name;
+        for (const json::Member& member : item.members) {
+            if (member.key == "name") name = member.value.text;
+        }
+        write_scenario(scenarios, name, item, pretty);
+    }
+    std::cout << "Wrote " << all.size() << " scenarios\n";
+}
+
 }  // namespace
 
 int main(int argc, char** argv) {
@@ -2366,7 +2655,9 @@ int main(int argc, char** argv) {
                   << "  provider-protocol-support provider-protocol-support/gen_scenarios.py\n"
                   << "  new-chat-persist-dao  new-chat-persist-dao/gen_scenarios.py\n"
                   << "  model-thinking-resolver model-thinking-resolver/gen_scenarios.py\n"
-                  << "  shell-tools           shell-tools/gen_scenarios.py\n";
+                  << "  shell-tools           shell-tools/gen_scenarios.py\n"
+                  << "  attachment-clone-session attachment-clone-session/gen_scenarios.py\n"
+                  << "  duckduckgo            duckduckgo/gen_scenarios.py\n";
         return 2;
     }
     const std::string profile = argv[1];
@@ -2421,6 +2712,10 @@ int main(int argc, char** argv) {
         profile_model_thinking_resolver(scenarios);
     } else if (profile == "shell-tools") {
         profile_shell_tools(scenarios);
+    } else if (profile == "attachment-clone-session") {
+        profile_attachment_clone_session(scenarios);
+    } else if (profile == "duckduckgo") {
+        profile_duckduckgo(scenarios);
     } else {
         std::cerr << "unknown profile: " << profile << "\n";
         return 2;

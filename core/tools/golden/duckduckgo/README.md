@@ -15,7 +15,7 @@ trace byte for byte.
 | `DuckDuckGoTraceDump.kt` | The stand driver: `search()` transcription over the real pieces |
 | ``agora_extract duckduckgo`` | Verbatim extraction of the parsing pieces of the scraper |
 | `run_golden.sh` | Extracts, compiles and regenerates or verifies the traces |
-| `gen_scenarios.py` | Generates the scenarios (deterministic; rerun after editing) |
+| `agora_scenarios duckduckgo` | Generates the scenarios (deterministic; rerun after editing) |
 
 ## How the stand works
 
@@ -79,7 +79,7 @@ Escaping is the shared `\\` `\p` `\s` `\n` `\r` `\t` set.
 ```
 KOTLINC=/path/to/kotlinc KOTLINX_JARS=core.jar:json.jar ./run_golden.sh          # verify
 KOTLINC=/path/to/kotlinc KOTLINX_JARS=core.jar:json.jar ./run_golden.sh --freeze # regenerate
-python3 gen_scenarios.py                                                          # rewrite scenarios
+core/build/agora_scenarios duckduckgo core/tools/golden/duckduckgo                                                          # rewrite scenarios
 ```
 
 The Kotlin reference is compiled from the app tree on every run; the extractor fails loudly

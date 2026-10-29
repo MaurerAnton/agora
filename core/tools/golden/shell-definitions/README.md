@@ -57,7 +57,7 @@ parser, the per-tool result formatting) stay in Kotlin.
 ```
 KOTLINC=/path/to/kotlinc KOTLINX_JARS=core.jar:json.jar ./run_golden.sh          # verify
 KOTLINC=/path/to/kotlinc KOTLINX_JARS=core.jar:json.jar ./run_golden.sh --freeze # regenerate
-python3 gen_scenarios.py                                                          # rewrite scenarios
+core/build/agora_scenarios shell-definitions core/tools/golden/shell-definitions                                                          # rewrite scenarios
 ```
 
 The Kotlin reference is compiled from the app tree on every run; the extractor fails loudly if

@@ -14,7 +14,7 @@ trace is frozen under `golden/`; the C++ port (`agora::core::embedding`, test
 | `EmbeddingTraceDump.kt` | The stand driver (parsing transcription over the real models) |
 | ``agora_extract embedding-models`` | Verbatim extraction of the request models |
 | `run_golden.sh` | Extracts, compiles and regenerates or verifies the traces |
-| `gen_scenarios.py` | Generates the scenarios (deterministic; rerun after editing) |
+| `agora_scenarios embedding` | Generates the scenarios (deterministic; rerun after editing) |
 
 ## How the stand works
 
@@ -65,7 +65,7 @@ the `DebugLog` calls. Only the pure encode/parse halves are pinned.
 ```
 KOTLINC=/path/to/kotlinc KOTLINX_JARS=core.jar:json.jar ./run_golden.sh          # verify
 KOTLINC=/path/to/kotlinc KOTLINX_JARS=core.jar:json.jar ./run_golden.sh --freeze # regenerate
-python3 gen_scenarios.py                                                          # rewrite scenarios
+core/build/agora_scenarios embedding core/tools/golden/embedding                                                          # rewrite scenarios
 ```
 
 The Kotlin reference is compiled from the app tree on every run; the extractor fails loudly

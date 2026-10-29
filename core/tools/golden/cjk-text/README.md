@@ -16,7 +16,7 @@ this stand needs no stubs and no source extraction. The whole file compiles as w
 | `golden/*.trace` | Frozen canonical output, one per scenario |
 | `CjkTextTraceDump.kt` | The stand driver |
 | `run_golden.sh` | Compiles and regenerates or verifies the traces |
-| `gen_scenarios.py` | Generates the scenarios (deterministic; rerun after editing) |
+| `agora_scenarios cjk-text` | Generates the scenarios (deterministic; rerun after editing) |
 
 ## What is pinned
 
@@ -71,7 +71,7 @@ raw UTF-8, not escaped.
 ```bash
 JAVA_HOME=/path/to/jdk17 KOTLINC=/path/to/kotlinc KOTLINX_JARS=core.jar:json.jar ./run_golden.sh          # verify
 JAVA_HOME=/path/to/jdk17 KOTLINC=/path/to/kotlinc KOTLINX_JARS=core.jar:json.jar ./run_golden.sh --freeze # regenerate
-python3 gen_scenarios.py                                                                                  # rewrite scenarios
+core/build/agora_scenarios cjk-text core/tools/golden/cjk-text                                                                                  # rewrite scenarios
 ```
 
 `run_golden.sh` wipes the stand's git-ignored `build/` before each run, so runs are idempotent.

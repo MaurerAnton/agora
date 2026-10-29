@@ -13,7 +13,7 @@ surface is stubbed, because the shared settings contract imports it.
 | `golden/*.trace` | Frozen Kotlin output |
 | `NativeBackupFormatTraceDump.kt` | Driver |
 | `platform/` | DataStore key factory, crypto/debug shims |
-| `gen_scenarios.py` | Deterministic scenario generator |
+| `agora_scenarios native-backup-format` | Deterministic scenario generator |
 | `run_golden.sh` | Compile, freeze (`--freeze`) or verify |
 
 ## What is pinned

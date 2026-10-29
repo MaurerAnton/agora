@@ -205,4 +205,8 @@ if(AGORA_CORE_BUILD_TESTS)
     # Golden-stand extractor: C++ replacement for the Python extract_*.py scripts
     # (enum/marker family). Byte-parity is pinned by the committed extracted/*.kt files.
     add_executable(agora_extract tools/extract_main.cpp)
+
+    # Golden-stand scenario generator: C++ replacement for the gen_scenarios.py scripts.
+    add_executable(agora_scenarios tools/scenarios_main.cpp)
+    target_link_libraries(agora_scenarios PRIVATE agora_core_lib)
 endif()

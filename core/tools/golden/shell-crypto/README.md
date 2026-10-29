@@ -14,7 +14,7 @@ every trace byte for byte **after the same non-determinism mask** is applied to 
 | `scenarios/*.json` | One case per file, 27 frozen scenarios |
 | `golden/*.trace` | Frozen canonical output, one per scenario (already masked) |
 | `ShellCryptoTraceDump.kt` | The stand driver (exercises every public function) |
-| `gen_scenarios.py` | Generates the scenarios (deterministic; rerun after editing) |
+| `agora_scenarios shell-crypto` | Generates the scenarios (deterministic; rerun after editing) |
 | `platform/Base64.java` | The substituted `android.util.Base64` surface (vendored) |
 | `mask_trace.py` | Masks non-deterministic trace fields **with their length** on both sides |
 | `run_golden.sh` | Extracts nothing, compiles and regenerates or verifies the traces |
@@ -102,7 +102,7 @@ is why the mask distinguishes them).
 ```bash
 JAVA_HOME=/path/to/jdk17 KOTLINC=/path/to/kotlinc KOTLINX_JARS=core.jar:json.jar ./run_golden.sh          # verify
 JAVA_HOME=/path/to/jdk17 KOTLINC=/path/to/kotlinc KOTLINX_JARS=core.jar:json.jar ./run_golden.sh --freeze # regenerate
-python3 gen_scenarios.py                                                                                  # rewrite scenarios
+core/build/agora_scenarios shell-crypto core/tools/golden/shell-crypto                # rewrite scenarios
 ```
 
 `run_golden.sh` wipes the stand's `build/` (git-ignored scratch) before each run, so runs are

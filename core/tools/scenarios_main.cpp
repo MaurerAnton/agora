@@ -7378,6 +7378,369 @@ void profile_task_schedule(const fs::path& scenarios) {
     std::cout << "Wrote " << entries.size() << " scenarios to " << scenarios.string() << "\n";
 }
 
+void profile_shell_crypto(const fs::path& scenarios) {
+    std::vector<std::pair<std::string, json::Value>> entries;
+    auto write = [&](const char* name, std::vector<std::pair<std::string, json::Value>> members) {
+        entries.emplace_back(name, object(std::move(members)));
+    };
+    // base64.urlsafe_b64encode(...).decode('ascii').rstrip('=') — url alphabet, no padding.
+    auto b64url = [](std::string_view raw) {
+        static constexpr char kAlphabet[] =
+            "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789-_";
+        std::string out;
+        std::size_t index = 0;
+        for (; index + 3 <= raw.size(); index += 3) {
+            const std::uint32_t value =
+                (static_cast<std::uint32_t>(static_cast<unsigned char>(raw[index])) << 16) |
+                (static_cast<std::uint32_t>(static_cast<unsigned char>(raw[index + 1])) << 8) |
+                static_cast<std::uint32_t>(static_cast<unsigned char>(raw[index + 2]));
+            out.push_back(kAlphabet[(value >> 18) & 63]);
+            out.push_back(kAlphabet[(value >> 12) & 63]);
+            out.push_back(kAlphabet[(value >> 6) & 63]);
+            out.push_back(kAlphabet[value & 63]);
+        }
+        const std::size_t rest = raw.size() - index;
+        if (rest == 1) {
+            const std::uint32_t value =
+                static_cast<std::uint32_t>(static_cast<unsigned char>(raw[index])) << 16;
+            out.push_back(kAlphabet[(value >> 18) & 63]);
+            out.push_back(kAlphabet[(value >> 12) & 63]);
+        } else if (rest == 2) {
+            const std::uint32_t value =
+                (static_cast<std::uint32_t>(static_cast<unsigned char>(raw[index])) << 16) |
+                (static_cast<std::uint32_t>(static_cast<unsigned char>(raw[index + 1])) << 8);
+            out.push_back(kAlphabet[(value >> 18) & 63]);
+            out.push_back(kAlphabet[(value >> 12) & 63]);
+            out.push_back(kAlphabet[(value >> 6) & 63]);
+        }
+        return out;
+    };
+    // AESGCM.encrypt(nonce, plaintext, None): ciphertext with the 16-byte tag appended.
+    auto aes_gcm_encrypt = [](const std::string& key, const std::string& iv,
+                              const std::string& plaintext) {
+        EVP_CIPHER_CTX* context = EVP_CIPHER_CTX_new();
+        if (context == nullptr) fail("error: EVP_CIPHER_CTX_new failed");
+        std::string out(plaintext.size() + 16, '\0');
+        int length = 0;
+        if (EVP_EncryptInit_ex(context, EVP_aes_256_gcm(), nullptr,
+                               reinterpret_cast<const unsigned char*>(key.data()),
+                               reinterpret_cast<const unsigned char*>(iv.data())) != 1) {
+            EVP_CIPHER_CTX_free(context);
+            fail("error: EVP_EncryptInit_ex failed");
+        }
+        if (EVP_EncryptUpdate(context, reinterpret_cast<unsigned char*>(out.data()), &length,
+                              reinterpret_cast<const unsigned char*>(plaintext.data()),
+                              static_cast<int>(plaintext.size())) != 1) {
+            EVP_CIPHER_CTX_free(context);
+            fail("error: EVP_EncryptUpdate failed");
+        }
+        int total = length;
+        if (EVP_EncryptFinal_ex(context,
+                                reinterpret_cast<unsigned char*>(out.data()) + total,
+                                &length) != 1) {
+            EVP_CIPHER_CTX_free(context);
+            fail("error: EVP_EncryptFinal_ex failed");
+        }
+        total += length;
+        if (EVP_CIPHER_CTX_ctrl(context, EVP_CTRL_GCM_GET_TAG, 16, out.data() + total) != 1) {
+            EVP_CIPHER_CTX_free(context);
+            fail("error: EVP_CTRL_GCM_GET_TAG failed");
+        }
+        EVP_CIPHER_CTX_free(context);
+        total += 16;
+        out.resize(static_cast<std::size_t>(total));
+        return out;
+    };
+
+    static constexpr const char* kPrivateKeyPkcs8 =
+        "MC4CAQAwBQYDK2VuBCIEIAAHDhUcIyoxOD9GTVRbYmlwd36FjJOaoaivtr3Ey9LZ";
+    static constexpr const char* kPublicKeyRaw =
+        "F32PIx9sq4nqA_kNLy1T3ZuhPHiUfV2FuD1JRRTgtxQ";
+
+    std::string key_bytes(32, '\0');
+    std::string key_bytes_alt(32, '\0');
+    for (int index = 0; index < 32; ++index) {
+        key_bytes[static_cast<std::size_t>(index)] = static_cast<char>(index);
+        key_bytes_alt[static_cast<std::size_t>(index)] = static_cast<char>(index + 1);
+    }
+    const std::string aes_key = b64url(key_bytes);
+    const std::string aes_key_alt = b64url(key_bytes_alt);
+    const std::string session_key = aes_key;
+
+    // ===== Key Generation =====
+    write("01-generate_ephemeral_keypair", {{"op", str("generate_ephemeral_keypair")}});
+
+    // ===== Public Key Encoding/Decoding =====
+    write("02-encode_public_key", {{"op", str("encode_public_key")},
+                                   {"public_key_raw", str(kPublicKeyRaw)}});
+    write("03-decode_public_key_valid", {{"op", str("decode_public_key")},
+                                         {"base64url_key", str(kPublicKeyRaw)}});
+    write("04-decode_public_key_invalid_length",
+          {{"op", str("decode_public_key")},
+           {"base64url_key", str(b64url(std::string(16, 'x')))}});
+
+    // ===== ECDH + HKDF =====
+    write("05-derive_aes_key", {{"op", str("derive_aes_key")},
+                                {"private_key_pkcs8", str(kPrivateKeyPkcs8)},
+                                {"public_key_raw", str(kPublicKeyRaw)}});
+
+    // ===== AES-256-GCM Encrypt/Decrypt =====
+    write("06-encrypt_decrypt_roundtrip", {{"op", str("encrypt_decrypt")},
+                                           {"key", str(aes_key)},
+                                           {"plaintext", str("Hello, Conch!")}});
+    write("07-encrypt_empty_plaintext", {{"op", str("encrypt_decrypt")},
+                                         {"key", str(aes_key)},
+                                         {"plaintext", str("")}});
+    write("08-encrypt_large_plaintext", {{"op", str("encrypt_decrypt")},
+                                         {"key", str(aes_key)},
+                                         {"plaintext", str(std::string(10000, 'x'))}});
+    write("09-decrypt_ciphertext_too_short", {{"op", str("decrypt")},
+                                              {"key", str(aes_key)},
+                                              {"ciphertext", str(b64url("short"))}});
+    write("10-decrypt_wrong_key", {{"op", str("decrypt")},
+                                   {"key", str(aes_key_alt)},
+                                   {"ciphertext", str("PLACEHOLDER_WILL_BE_FILLED_BY_DRIVER")},
+                                   {"plaintext", str("test")}});
+
+    // ===== HMAC-SHA256 Sign =====
+    write("11-sign", {{"op", str("sign")},
+                      {"api_key", str("test-api-key-123")},
+                      {"timestamp", number(1234567890)},
+                      {"method", str("POST")},
+                      {"path", str("/execute")},
+                      {"body_sha256",
+                       str("e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855")},
+                      {"nonce", str("nonce123")},
+                      {"client_pub_key", str("client-pub-key")}});
+
+    // ===== SHA-256 =====
+    write("12-sha256_hex", {{"op", str("sha256_hex")}, {"data", str("hello world")}});
+
+    // ===== Response Auth =====
+    write("13-response_signature", {{"op", str("response_signature")},
+                                    {"session_key", str(session_key)},
+                                    {"status", number(200)},
+                                    {"body", str("{\"result\": \"ok\"}")}});
+    write("14-verify_response_signature_valid",
+          {{"op", str("verify_response_signature")},
+           {"session_key", str(session_key)},
+           {"status", number(200)},
+           {"body", str("{\"result\": \"ok\"}")},
+           {"signature", str("PLACEHOLDER_WILL_BE_FILLED_BY_DRIVER")}});
+    write("15-verify_response_signature_invalid",
+          {{"op", str("verify_response_signature")},
+           {"session_key", str(session_key)},
+           {"status", number(200)},
+           {"body", str("{\"result\": \"ok\"}")},
+           {"signature", str(std::string(64, '0'))}});
+
+    // ===== Nonce Generation =====
+    write("16-generate_nonce", {{"op", str("generate_nonce")}});
+
+    // ===== Base64 URL-safe encode/decode =====
+    write("17-base64_url_encode", {{"op", str("base64_url_encode")},
+                                   {"input", str("hello world")}});
+    write("18-base64_url_decode", {{"op", str("base64_url_decode")},
+                                   {"input", str("aGVsbG8gd29ybGQ")}});
+    write("19-base64_url_decode_with_padding", {{"op", str("base64_url_decode")},
+                                                {"input", str("aGVsbG8gd29ybGQ=")}});
+    write("20-base64_url_encode_url_safe_chars",
+          // Python source "\xfb\xef\xbe\xde": four code points U+00FB U+00EF U+00BE U+00DE,
+          // stored here as their UTF-8 encoding so ensure_ascii emits \u00xx per code point.
+          {{"op", str("base64_url_encode")},
+           {"input", str(std::string("\xc3\xbb\xc3\xaf\xc2\xbe\xc3\x9e", 8))}});
+
+    // ===== Failure-mode pins =====
+    const std::string nonce(12, '\x11');
+    const std::string combined = nonce + aes_gcm_encrypt(key_bytes, nonce, "test");
+    write("21-decrypt_auth_failure", {{"op", str("decrypt")},
+                                      {"key", str(aes_key_alt)},
+                                      {"ciphertext", str(b64url(combined))}});
+    write("27-decrypt_cross_implementation", {{"op", str("decrypt")},
+                                              {"key", str(aes_key)},
+                                              {"ciphertext", str(b64url(combined))}});
+    write("22-decrypt_body_shorter_than_tag",
+          {{"op", str("decrypt")},
+           {"key", str(aes_key)},
+           {"ciphertext", str(b64url(std::string(12, '\0') + "abc"))}});
+    write("25-decrypt_body_15_bytes",
+          {{"op", str("decrypt")},
+           {"key", str(aes_key)},
+           {"ciphertext", str(b64url(std::string(12, '\0') + std::string(15, 'b')))}});
+    write("26-decrypt_body_16_bytes_bad_tag",
+          {{"op", str("decrypt")},
+           {"key", str(aes_key)},
+           {"ciphertext", str(b64url(std::string(12, '\0') + std::string(16, 'b')))}});
+    write("23-decrypt_invalid_base64", {{"op", str("decrypt")},
+                                        {"key", str(aes_key)},
+                                        {"ciphertext", str("!!!")}});
+    write("24-decode_public_key_invalid_base64",
+          {{"op", str("decode_public_key")}, {"base64url_key", str("!!")}});
+
+    remove_stale(scenarios);
+    const FormatOptions pretty{Format::Pretty2, true}; // json.dump default ensure_ascii=True
+    for (const auto& [name, value] : entries) {
+        write_scenario(scenarios, name, value, pretty);
+    }
+    std::cout << "Wrote " << entries.size() << " scenarios to " << scenarios.string() << "\n";
+}
+
+void profile_migration_17_18(const fs::path& scenarios) {
+    std::vector<std::pair<std::string, json::Value>> entries;
+    auto conversation = [](const char* cid, std::optional<std::string> selections = std::nullopt,
+                           std::optional<std::string> run_selections = std::nullopt) {
+        std::vector<std::pair<std::string, json::Value>> members = {{"id", str(cid)}};
+        if (selections) members.emplace_back("selectedBranchesJson", str(*selections));
+        if (run_selections) members.emplace_back("selectedRunBranchesJson", str(*run_selections));
+        return object(std::move(members));
+    };
+    auto run = [](const char* cid, const char* rid, const char* parent, std::int64_t started) {
+        return object({{"conversationId", str(cid)},
+                       {"id", str(rid)},
+                       {"parentRunId", parent ? str(parent) : null_value()},
+                       {"startedAt", number(started)}});
+    };
+    auto message = [](const char* cid, const char* mid, const char* parent, const char* participant,
+                      std::int64_t timestamp, const char* rid, std::int64_t sequence,
+                      const std::string& text = "hello", const std::string& images = "",
+                      std::optional<std::string> attachment = std::nullopt) {
+        std::vector<std::pair<std::string, json::Value>> members = {
+            {"conversationId", str(cid)},
+            {"id", str(mid)},
+            {"parentId", str(parent)},
+            {"text", str(text)},
+            {"images", str(images)},
+            {"participant", str(participant)},
+            {"timestamp", number(timestamp)},
+            {"runId", str(rid)},
+            {"runSequence", number(sequence)},
+        };
+        if (attachment) members.emplace_back("attachmentMeta", str(*attachment));
+        return object(std::move(members));
+    };
+    auto add_case = [&](const char* name, std::vector<json::Value> convs,
+                        std::vector<json::Value> runs, std::vector<json::Value> msgs) {
+        entries.emplace_back(name, object({{"name", str(name)},
+                                           {"op", str("migrate")},
+                                           {"conversations", array(std::move(convs))},
+                                           {"runs", array(std::move(runs))},
+                                           {"messages", array(std::move(msgs))}}));
+    };
+    auto compact_json = [](const std::string& inner) { return inner; };
+    auto repair_case = [&](const char* name, std::optional<std::string> selections = std::nullopt,
+                           std::optional<std::string> run_selections = std::nullopt,
+                           const std::string& text1 = "hello", const std::string& text2 = "hello",
+                           const std::string& images1 = "", const std::string& images2 = "",
+                           std::optional<std::string> attachment1 = std::nullopt,
+                           std::optional<std::string> attachment2 = std::nullopt,
+                           std::int64_t started1 = 100, std::int64_t started2 = 200,
+                           const char* participant2 = "USER") {
+        add_case(name,
+                 {conversation("c1", std::move(selections), std::move(run_selections))},
+                 {run("c1", "r1", nullptr, started1), run("c1", "r2", nullptr, started2)},
+                 {message("c1", "u1", "p0", "USER", 10, "r1", 0, text1, images1,
+                          std::move(attachment1)),
+                  message("c1", "m1", "u1", "MODEL", 11, "r1", 1),
+                  message("c1", "u2", "p0", participant2, 12, "r2", 0, text2, images2,
+                          std::move(attachment2)),
+                  message("c1", "m2", "u2", "MODEL", 13, "r2", 1)});
+    };
+
+    add_case("m17_empty", {}, {}, {});
+    add_case("m17_no_repair",
+             {conversation("c1")},
+             {run("c1", "r1", nullptr, 100)},
+             {message("c1", "u1", "p0", "USER", 10, "r1", 0),
+              message("c1", "m1", "u1", "MODEL", 11, "r1", 1)});
+    repair_case("m17_repair_pair");
+    repair_case("m17_repair_selected_boundary",
+                compact_json("{\"p0\":\"u2\"}"));
+    repair_case("m17_repair_selected_run",
+                std::nullopt, compact_json("{\"null\":\"r2\"}"));
+    repair_case("m17_repair_anchor_selected_stale",
+                compact_json("{\"p0\":\"u1\"}"));
+    repair_case("m17_different_text", std::nullopt, std::nullopt, "hello", "hello!");
+    repair_case("m17_attachment_uri_ignored", std::nullopt, std::nullopt, "hello", "hello",
+                "", "", "{\"originalUri\":\"file:///a\",\"mime\":\"image/png\"}",
+                "{\"originalUri\":\"file:///b\",\"mime\":\"image/png\"}");
+    repair_case("m17_attachment_differs", std::nullopt, std::nullopt, "hello", "hello",
+                "", "", "{\"originalUri\":\"file:///a\",\"mime\":\"image/png\"}",
+                "{\"originalUri\":\"file:///b\",\"mime\":\"image/jpeg\"}");
+    repair_case("m17_images_json", std::nullopt, std::nullopt, "hello", "hello",
+                "[\"a\",\"b\"]", "[\"a\",\"b\"]");
+    repair_case("m17_images_fallback", std::nullopt, std::nullopt, "hello", "hello",
+                "a|||b", "a|||b");
+    repair_case("m17_images_paths_agree", std::nullopt, std::nullopt, "hello", "hello",
+                "[\"a\",\"b\"]", "a|||b");
+    repair_case("m17_images_empty_vs_empty_array", std::nullopt, std::nullopt, "hello", "hello",
+                "", "[]");
+    repair_case("m17_images_differ", std::nullopt, std::nullopt, "hello", "hello",
+                "[]", "[\"a\"]");
+    repair_case("m17_invalid_selections", "{bad", "{\"a\":1}");
+    add_case("m17_two_conversations",
+             {conversation("c2", compact_json("{\"p0\":\"u2\"}")), conversation("c1")},
+             {run("c2", "r1", nullptr, 100), run("c2", "r2", nullptr, 200),
+              run("c1", "r3", nullptr, 300)},
+             {message("c2", "u1", "p0", "USER", 10, "r1", 0),
+              message("c2", "m1", "u1", "MODEL", 11, "r1", 1),
+              message("c2", "u2", "p0", "USER", 12, "r2", 0),
+              message("c2", "m2", "u2", "MODEL", 13, "r2", 1),
+              message("c1", "u3", "p0", "USER", 20, "r3", 0),
+              message("c1", "m3", "u3", "MODEL", 21, "r3", 1)});
+    repair_case("m17_unknown_participant", std::nullopt, std::nullopt, "hello", "hello",
+                "", "", std::nullopt, std::nullopt, 100, 200, "BOGUS");
+    add_case("m17_three_runs",
+             {conversation("c1")},
+             {run("c1", "r1", nullptr, 100), run("c1", "r2", nullptr, 200),
+              run("c1", "r3", nullptr, 300)},
+             {message("c1", "u1", "p0", "USER", 10, "r1", 0),
+              message("c1", "m1", "u1", "MODEL", 11, "r1", 1),
+              message("c1", "u2", "p0", "USER", 12, "r2", 0),
+              message("c1", "m2", "u2", "MODEL", 13, "r2", 1),
+              message("c1", "u3", "p0", "USER", 14, "r3", 0),
+              message("c1", "m3", "u3", "MODEL", 15, "r3", 1)});
+    add_case("m17_started_tie",
+             {conversation("c1")},
+             {run("c1", "r2", nullptr, 100), run("c1", "r1", nullptr, 100)},
+             {message("c1", "u2", "p0", "USER", 12, "r2", 0),
+              message("c1", "m2", "u2", "MODEL", 13, "r2", 1),
+              message("c1", "u1", "p0", "USER", 10, "r1", 0),
+              message("c1", "m1", "u1", "MODEL", 11, "r1", 1)});
+    add_case("m17_synthetic_boundary",
+             {conversation("c1")},
+             {run("c1", "r1", nullptr, 100), run("c1", "r2", nullptr, 200)},
+             {message("c1", "u1", "p0", "USER", 10, "r1", 0),
+              message("c1", "m1", "u1", "MODEL", 11, "r1", 1),
+              message("c1", "tool_u2", "p0", "USER", 12, "r2", 0),
+              message("c1", "m2", "tool_u2", "MODEL", 13, "r2", 1)});
+    add_case("m17_no_inferred_with_selections",
+             {conversation("c1", compact_json("{\"p0\":\"u1\"}"))},
+             {run("c1", "r1", nullptr, 100)},
+             {message("c1", "u1", "p0", "USER", 10, "r1", 0),
+              message("c1", "m1", "u1", "MODEL", 11, "r1", 1)});
+    repair_case("m17_selection_to_retained", compact_json("{\"p0\":\"m2\"}"));
+    add_case("m17_no_root_output",
+             {conversation("c1")},
+             {run("c1", "r1", nullptr, 100), run("c1", "r2", nullptr, 200)},
+             {message("c1", "u1", "p0", "USER", 10, "r1", 0),
+              message("c1", "m1", "u1", "MODEL", 11, "r1", 1),
+              message("c1", "u2", "p0", "USER", 12, "r2", 0)});
+    add_case("m17_no_leading_inputs",
+             {conversation("c1")},
+             {run("c1", "r1", nullptr, 100), run("c1", "r2", nullptr, 200)},
+             {message("c1", "u1", "p0", "USER", 10, "r1", 0),
+              message("c1", "m1", "u1", "MODEL", 11, "r1", 1),
+              message("c1", "u2", "p0", "USER", 12, "r2", 0),
+              message("c1", "m2", "u2", "MODEL", 13, "r2", 0)});
+
+    remove_stale(scenarios);
+    const FormatOptions pretty{Format::Compact, false}; // separators=(",", ":"), ensure_ascii=False
+    for (const auto& [name, value] : entries) {
+        write_scenario(scenarios, name, value, pretty);
+    }
+    std::cout << "Wrote " << entries.size() << " scenarios to " << scenarios.string() << "\n";
+}
+
 }  // namespace
 
 int main(int argc, char** argv) {
@@ -7431,7 +7794,9 @@ int main(int argc, char** argv) {
                   << "  generation-policies   generation-policies/gen_scenarios.py\n"
                   << "  claude-chat-importer  claude-chat-importer/gen_scenarios.py\n"
                   << "  chat-media-references-dao chat-media-references-dao/gen_scenarios.py\n"
-                  << "  task-schedule         task-schedule/gen_scenarios.py\n";
+                  << "  task-schedule         task-schedule/gen_scenarios.py\n"
+                  << "  shell-crypto          shell-crypto/gen_scenarios.py\n"
+                  << "  migration-17-18       migration-17-18/gen_scenarios.py\n";
         return 2;
     }
     const std::string profile = argv[1];
@@ -7534,6 +7899,10 @@ int main(int argc, char** argv) {
         profile_chat_media_references_dao(scenarios);
     } else if (profile == "task-schedule") {
         profile_task_schedule(scenarios);
+    } else if (profile == "shell-crypto") {
+        profile_shell_crypto(scenarios);
+    } else if (profile == "migration-17-18") {
+        profile_migration_17_18(scenarios);
     } else {
         std::cerr << "unknown profile: " << profile << "\n";
         return 2;

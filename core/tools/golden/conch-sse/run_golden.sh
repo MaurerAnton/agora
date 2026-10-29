@@ -3,7 +3,7 @@
 #
 # ConchSseParser.kt compiles VERBATIM from the app tree. Its two dependencies from ShellClient.kt
 # (which cannot compile host-side: ShellCrypto/ConchNetwork/DebugLog) are lifted out verbatim by
-# extract_shell_prefix.py rather than retyped. The C++ core must reproduce the traces byte for
+# agora_extract shell-prefix rather than retyped. The C++ core must reproduce the traces byte for
 # byte (core/tests/conch_sse_parity_test.cpp).
 #
 # Usage:
@@ -43,7 +43,7 @@ rm -rf "$here/build"
 mkdir -p "$classes" "$fresh" "$here/build"
 
 echo "Extracting the shell byte-budget helpers verbatim from ShellClient.kt..."
-python3 "$here/extract_shell_prefix.py" "$app/util/ShellClient.kt" "$extracted"
+"${AGORA_EXTRACT:-$root/core/build/agora_extract}" shell-prefix "$app/util/ShellClient.kt" "$extracted"
 
 echo "Compiling the Kotlin reference sources..."
 "$kotlinc_bin" -Xplugin="$plugin" -cp "$classpath" -d "$classes" \

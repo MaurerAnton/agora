@@ -2,7 +2,7 @@
 # Generates or verifies the golden traces for viewmodel/GenerationPolicies.kt and
 # viewmodel/AutomaticMessageApiProjection.kt.
 #
-# The two policy files are lifted verbatim by extract_policies.py, which only widens `internal` to
+# The two policy files are lifted verbatim by agora_extract widen, which only widens `internal` to
 # the default visibility so the driver can call them; ChatMessage.kt, MessageSource.kt,
 # PromptTemplateItem.kt (PredefinedVariables) and Constants.kt compile VERBATIM from the app tree.
 #
@@ -33,7 +33,7 @@ rm -rf "$here/build"
 mkdir -p "$classes" "$fresh"
 
 echo "Extracting the generation policies..."
-python3 "$here/extract_policies.py"
+"${AGORA_EXTRACT:-$root/core/build/agora_extract}" widen "$app/viewmodel" "$here/build" GenerationPolicies.kt AutomaticMessageApiProjection.kt
 
 sources=(
     "$app/model/ChatMessage.kt"

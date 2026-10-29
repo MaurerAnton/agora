@@ -13,7 +13,7 @@ the file will not compile without that type. `data/local/RunEntity.kt` also carr
 `@Entity` catalogue entry, whose `ForeignKey(entity = ChatEntity::class)` pulls in another entity
 that cannot compile host-side.
 
-* `extract_run_entity.py` copies the `data class RunEntity` declaration — **including its `init`
+* `agora_extract run-entity` copies the `data class RunEntity` declaration — **including its `init`
   invariants** — byte for byte into `build/RunEntity.kt`, and fails loudly if the declaration
   changes shape.
 * `PlatformStubs.kt` supplies the single Room marker (`@PrimaryKey`) the declaration uses. Room is
@@ -33,7 +33,7 @@ The driver builds every Run as a terminal `COMPLETED` entity, which satisfies th
 | `scenarios/*.json` | One case per file, 27 frozen cases |
 | `golden/*.trace` | Frozen canonical output, one per scenario |
 | `RunBranchSelectionTraceDump.kt` | The stand driver |
-| `extract_run_entity.py` | Lifts `RunEntity` out of `RunEntity.kt` verbatim |
+| `agora_extract run-entity` | Lifts `RunEntity` out of `RunEntity.kt` verbatim |
 | `PlatformStubs.kt` | Stand-local Room `@PrimaryKey` marker |
 | `run_golden.sh` | Compiles and regenerates or verifies the traces |
 | `gen_scenarios.py` | Generates the scenarios (deterministic; rerun after editing) |

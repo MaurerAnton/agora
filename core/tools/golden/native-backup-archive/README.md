@@ -15,7 +15,7 @@ extraction and the storage preflight. The archive source and its collaborators c
 | `fixtures/*.zip` | The archives both ports read (24 committed, byte-exact) |
 | `NativeBackupArchiveTraceDump.kt` | The stand driver (calls the real archive) |
 | `gen_scenarios.py` | Builds fixtures + scenarios deterministically |
-| `extract_graph_interface.py` | Lifts `NativeGraphEntrySource` verbatim from `NativeConversationGraphSource.kt` |
+| `agora_extract graph-interface` | Lifts `NativeGraphEntrySource` verbatim from `NativeConversationGraphSource.kt` |
 | `platform/Uri.kt`, `platform/AndroidContext.kt`, `platform/ParcelFileDescriptor.kt` | The Android open-path surface |
 | `platform/SettingsManager.kt`, `Preferences.kt`, `SecretCrypto.kt`, `DebugLog.kt` | The DataStore storage double needed so `SettingsContracts.kt` compiles (same files as the secrets stand) |
 | `run_golden.sh` | Generates fixtures/scenarios, compiles, freezes or verifies the traces |
@@ -105,7 +105,7 @@ masked as `<dir>` because the C++ test runs from a different working directory.
   fails when it is read.
 * **The Android open-path surface** (`Context`, `Uri`, `ParcelFileDescriptor`) is substituted by
   three small platform files; `NativeGraphEntrySource` is lifted verbatim by
-  `extract_graph_interface.py` because the rest of `NativeConversationGraphSource.kt` needs
+  `agora_extract graph-interface` because the rest of `NativeConversationGraphSource.kt` needs
   `android.util.JsonReader`.
 * **`usableSpace` defaults**: the driver passes `Long.MAX_VALUE` for the `availableBytes`
   default lambda; every scenario whose outcome depends on the value passes it explicitly, so the

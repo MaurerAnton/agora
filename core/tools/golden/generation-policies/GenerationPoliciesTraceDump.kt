@@ -1,7 +1,7 @@
 // Golden trace driver for viewmodel/GenerationPolicies.kt and
 // viewmodel/AutomaticMessageApiProjection.kt.
 //
-// The two policy files are lifted verbatim by extract_policies.py, which only widens `internal`
+// The two policy files are lifted verbatim by `agora_extract widen`, which only widens `internal`
 // to the default visibility so the driver can call them; no logic is changed.
 //
 // Every policy of the two files is exercised: the terminal-disposition rules, the two throttle

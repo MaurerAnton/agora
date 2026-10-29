@@ -2,7 +2,7 @@
 // the app tree.
 //
 // The policy is declared over RunEntity; the declaration is lifted out verbatim by
-// extract_run_entity.py (RunEntity.kt cannot compile host-side). Every Run built here is a terminal
+// `agora_extract run-entity` (RunEntity.kt cannot compile host-side). Every Run built here is a terminal
 // COMPLETED Run, which satisfies the entity's own `init` invariants; the policy itself reads only
 // `id` and `parentRunId`.
 package run.branch.selection.golden

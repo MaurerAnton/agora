@@ -4,7 +4,7 @@ Parity pin for `viewmodel/GenerationStreamingSegments.kt` — the live segment t
 generation: the thought timing, the segment merge, the live-segment builder, the citation rebase,
 the bounded output transform and the final snapshot.
 
-The policy file is lifted **verbatim** by `extract_policy.py`, which only widens `internal` to the
+The policy file is lifted **verbatim** by `agora_extract widen`, which only widens `internal` to the
 default visibility so the driver can call it; `ChatMessage.kt`, `MessagePersistenceGuard.kt`,
 `Citation.kt`, `TokenUsage.kt` and `Constants.kt` compile verbatim from the app tree.
 
@@ -15,7 +15,7 @@ default visibility so the driver can call it; `ChatMessage.kt`, `MessagePersiste
 | `scenarios/*.json` | 14 cases: the timing, the merges, the live builder, the rebase, the transform, the snapshot |
 | `golden/*.trace` | Frozen Kotlin output, one per scenario |
 | `GenerationStreamingSegmentsTraceDump.kt` | Driver: runs every policy of the file |
-| `extract_policy.py` | Lifts the policy file with a widened visibility |
+| `agora_extract widen` | Lifts the policy file with a widened visibility |
 | `gen_scenarios.py` | Deterministic scenario generator |
 | `run_golden.sh` | Extracts, compiles, freezes (`--freeze`) or verifies the traces |
 

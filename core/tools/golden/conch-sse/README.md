@@ -12,7 +12,7 @@ trace is frozen under `golden/`; the C++ port (`agora::core::conch::parse_conch_
 | `scenarios/*.json` | One case per file, 42 frozen edge cases |
 | `golden/*.trace` | Frozen canonical output, one per scenario |
 | `ConchSseTraceDump.kt` | The stand driver (feeds the parser raw SSE lines) |
-| `extract_shell_prefix.py` | Lifts `shellUtf8Prefix` + its byte budget out of `ShellClient.kt` |
+| `agora_extract shell-prefix` | Lifts `shellUtf8Prefix` + its byte budget out of `ShellClient.kt` |
 | `run_golden.sh` | Extracts, compiles and regenerates or verifies the traces |
 | `gen_scenarios.py` | Generates the scenarios (deterministic; rerun after editing) |
 
@@ -73,7 +73,7 @@ Escaping: `\` `|` `;` `\n` `\r` `\t` → `\\` `\p` `\s` `\n` `\r` `\t`.
 
 * `ConchSseParser.kt` compiles verbatim. Its two dependencies in `ShellClient.kt` —
   `shellUtf8Prefix` and `SHELL_COMMAND_OUTPUT_MAX_BYTES` — are lifted out verbatim by
-  `extract_shell_prefix.py`, because that file as a whole pulls in `ShellCrypto`,
+  `agora_extract shell-prefix`, because that file as a whole pulls in `ShellCrypto`,
   `ConchNetwork`, `ConchHandshake` and `DebugLog` (transport and Android-only logging).
   The extractor fails loudly if either declaration changes shape.
 * **Cancellation is not exercised**: the parser's `currentCoroutineContext().isActive` and

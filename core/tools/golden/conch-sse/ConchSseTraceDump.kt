@@ -1,7 +1,7 @@
 // Golden trace driver for parseConchSseLines, used to pin the C++ port.
 //
 // ConchSseParser.kt compiles VERBATIM from the app tree; shellUtf8Prefix and its byte budget are
-// lifted verbatim out of ShellClient.kt by extract_shell_prefix.py (that file as a whole pulls in
+// lifted verbatim out of ShellClient.kt by `agora_extract shell-prefix` (that file as a whole pulls in
 // transport and Android-only logging). The driver calls the REAL parser — no transcription —
 // feeding it the scenario's raw SSE lines and recording everything it emitted along the way.
 //

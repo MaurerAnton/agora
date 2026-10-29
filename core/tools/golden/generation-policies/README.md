@@ -4,7 +4,7 @@ Parity pin for `viewmodel/GenerationPolicies.kt` and `viewmodel/AutomaticMessage
 the rules that decide how a provider generation ends, how the UI is throttled and which history
 the provider actually receives.
 
-The two policy files are lifted **verbatim** by `extract_policies.py`, which only widens `internal`
+The two policy files are lifted **verbatim** by `agora_extract widen`, which only widens `internal`
 to the default visibility so the driver can call them; no logic is changed. `ChatMessage.kt`,
 `MessageSource.kt`, `PromptTemplateItem.kt` (PredefinedVariables), `RuntimeIdentity.kt`,
 `api/util/ToolMessages.kt` and `Constants.kt` compile verbatim from the app tree.
@@ -16,7 +16,7 @@ to the default visibility so the driver can call them; no logic is changed. `Cha
 | `scenarios/*.json` | 11 cases: the policy matrix, the templates, the automatic sources, the compactor, fuzz |
 | `golden/*.trace` | Frozen Kotlin output, one per scenario |
 | `GenerationPoliciesTraceDump.kt` | Driver: runs every policy of the two files |
-| `extract_policies.py` | Lifts the two policy files with a widened visibility |
+| `agora_extract widen` | Lifts the two policy files with a widened visibility |
 | `gen_scenarios.py` | Deterministic scenario generator |
 | `run_golden.sh` | Extracts, compiles, freezes (`--freeze`) or verifies the traces |
 

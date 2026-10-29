@@ -39,7 +39,7 @@ echo "Generating scenarios and fixtures..."
 python3 "$here/gen_scenarios.py"
 
 echo "Extracting the graph entry-source interface..."
-python3 "$here/extract_graph_interface.py" \
+"${AGORA_EXTRACT:-$root/core/build/agora_extract}" graph-interface \
     "$app/data/NativeConversationGraphSource.kt" "$graph"
 
 classpath="$jars"

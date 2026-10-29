@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 # Generates or verifies the golden traces for viewmodel/GenerationStreamingSegments.kt.
 #
-# The policy file is lifted verbatim by extract_policy.py (only the visibility is widened so the
+# The policy file is lifted verbatim by agora_extract widen (only the visibility is widened so the
 # driver can call it); ChatMessage.kt, MessagePersistenceGuard.kt, Citation.kt, TokenUsage.kt and
 # Constants.kt compile VERBATIM from the app tree.
 #
@@ -30,7 +30,7 @@ rm -rf "$here/build"
 mkdir -p "$classes" "$fresh"
 
 echo "Extracting the streaming segment policy..."
-python3 "$here/extract_policy.py"
+"${AGORA_EXTRACT:-$root/core/build/agora_extract}" widen "$app/viewmodel" "$here/build" GenerationStreamingSegments.kt
 
 sources=(
     "$app/model/ChatMessage.kt"

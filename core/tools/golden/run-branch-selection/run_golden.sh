@@ -2,7 +2,7 @@
 # Generates or verifies the golden traces for data/local/RunBranchSelectionIntegrity.kt.
 #
 # RunBranchSelectionIntegrity.kt compiles VERBATIM from the app tree. It is declared over RunEntity,
-# so the stand needs that type: extract_run_entity.py lifts the data class out of RunEntity.kt
+# so the stand needs that type: agora_extract run-entity lifts the data class out of RunEntity.kt
 # verbatim (that file's Room catalogue entry cannot compile host-side) and PlatformStubs.kt
 # supplies the single Room marker. model/RuntimeIdentity.kt is compiled verbatim for RunStatus and
 # RunEndReason. The C++ core must reproduce the traces byte for byte
@@ -32,7 +32,7 @@ rm -rf "$here/build"
 mkdir -p "$classes" "$fresh"
 
 echo "Extracting RunEntity verbatim from RunEntity.kt..."
-python3 "$here/extract_run_entity.py" "$app/data/local/RunEntity.kt" "$here/build/RunEntity.kt"
+"${AGORA_EXTRACT:-$root/core/build/agora_extract}" run-entity "$app/data/local/RunEntity.kt" "$here/build/RunEntity.kt"
 
 echo "Compiling the Kotlin reference sources..."
 "$kotlinc_bin" -cp "$jars" -d "$classes" \

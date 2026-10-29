@@ -3,7 +3,7 @@
 Parity pin for `api/util/MalformedToolCall.kt` — the stand-in for a tool call the model emitted in a
 form that cannot be executed or paired.
 
-The policy file is lifted **verbatim** by `extract_policy.py`, which only widens `internal` to the
+The policy file is lifted **verbatim** by `agora_extract widen`, which only widens `internal` to the
 default visibility so the driver can call it; `api/StreamEvent.kt` and its models compile verbatim
 from the app tree.
 
@@ -14,7 +14,7 @@ from the app tree.
 | `scenarios/*.json` | 5 cases: the stand-in request and the error text the model receives |
 | `golden/*.trace` | Frozen Kotlin output, one per scenario |
 | `MalformedToolCallTraceDump.kt` | Driver: builds the stand-in and renders it |
-| `extract_policy.py` | Lifts the policy file with a widened visibility |
+| `agora_extract widen` | Lifts the policy file with a widened visibility |
 | `gen_scenarios.py` | Deterministic scenario generator |
 | `run_golden.sh` | Extracts, compiles, freezes (`--freeze`) or verifies the traces |
 

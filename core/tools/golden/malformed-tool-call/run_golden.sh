@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 # Generates or verifies the golden traces for api/util/MalformedToolCall.kt.
 #
-# The policy file is lifted verbatim by extract_policy.py (only the visibility is widened so the
+# The policy file is lifted verbatim by agora_extract widen (only the visibility is widened so the
 # driver can call it); api/StreamEvent.kt compiles VERBATIM from the app tree.
 #
 # Usage:
@@ -28,7 +28,7 @@ rm -rf "$here/build"
 mkdir -p "$classes" "$fresh"
 
 echo "Extracting the malformed tool call policy..."
-python3 "$here/extract_policy.py"
+"${AGORA_EXTRACT:-$root/core/build/agora_extract}" widen "$app/api/util" "$here/build" MalformedToolCall.kt
 
 sources=(
     "$app/api/StreamEvent.kt"

@@ -5,7 +5,7 @@ package androidx.room
  *
  * RunBranchSelectionIntegrity.kt is declared over RunEntity, so the stand needs that type.
  * RunEntity.kt lives next to the rest of the Room catalogue and cannot compile host-side; its
- * `data class` declaration is lifted out verbatim by extract_run_entity.py, and the `@PrimaryKey`
+ * `data class` declaration is lifted out verbatim by `agora_extract run-entity`, and the `@PrimaryKey`
  * marker on its `id` points here.
  *
  * Room is a persistence framework, i.e. a platform concern: the marker has no runtime behaviour the

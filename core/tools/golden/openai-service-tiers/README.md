@@ -63,5 +63,5 @@ KOTLINX_JARS=...core.jar:...json.jar ./run_golden.sh           # verify
 KOTLINX_JARS=... ./run_golden.sh --freeze                      # refreeze traces
 ```
 
-`python3 gen_scenarios.py` rewrites `scenarios/` deterministically (92 cases); rerun
+`core/build/agora_scenarios openai-service-tiers core/tools/golden/openai-service-tiers` rewrites `scenarios/` deterministically (92 cases); rerun
 `./run_golden.sh --freeze` afterwards.

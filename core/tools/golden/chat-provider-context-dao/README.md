@@ -61,7 +61,7 @@ All four members are operations, so no query text goes unpinned.
 ```
 
 Message fields default like the stand driver: `text=''`, `images='[]'`, `status=SUCCESS`,
-`participant=MODEL`, `timestamp=0`, `tokenCount=0`, `runSequence=-1`. `gen_scenarios.py` writes
+`participant=MODEL`, `timestamp=0`, `tokenCount=0`, `runSequence=-1`. `agora_scenarios chat-provider-context-dao` writes
 five scenarios over purpose-built seeds.
 
 ## Trace format (`golden/*.trace`)

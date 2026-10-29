@@ -2978,6 +2978,320 @@ void profile_migration_16_17(const fs::path& scenarios) {
     std::cout << "wrote " << all.size() << " scenarios to " << scenarios.string() << "\n";
 }
 
+
+// chat-provider-context-dao/gen_scenarios.py — indent=2, ensure_ascii=False.
+void profile_chat_provider_context_dao(const fs::path& scenarios) {
+    auto conversation = [](const char* identifier, const char* selected_branches) {
+        return object({{"id", str(identifier)},
+                       {"selectedBranchesJson",
+                        selected_branches == nullptr ? null_value() : str(selected_branches)}});
+    };
+    auto run = [](const std::string& conversation_id) {
+        return object({{"id", str("run-" + conversation_id)},
+                       {"conversationId", str(conversation_id)},
+                       {"status", str("COMPLETED")},
+                       {"startedAt", number(100)},
+                       {"lastCheckpointAt", number(100)},
+                       {"endedAt", number(200)},
+                       {"endReason", str("MODEL_COMPLETED")},
+                       {"currentPass", number(0)},
+                       {"legacyAmbiguous", boolean(false)}});
+    };
+    struct MessageOptions {
+        std::int64_t timestamp = 0;
+        const char* status = "SUCCESS";
+        const char* participant = "MODEL";
+        std::int64_t token_count = 0;
+        const char* parent_id = nullptr;
+        const char* model_name = nullptr;
+        std::int64_t run_sequence = -1;
+        std::optional<std::int64_t> consumed_at_pass;
+    };
+    auto message = [](const char* identifier, const std::string& conversation_id,
+                      const MessageOptions& options) {
+        std::vector<std::pair<std::string, json::Value>> row = {
+            {"id", str(identifier)},
+            {"conversationId", str(conversation_id)},
+            {"status", str(options.status)},
+            {"participant", str(options.participant)},
+            {"timestamp", number(options.timestamp)},
+            {"tokenCount", number(options.token_count)},
+            {"runId", str("run-" + conversation_id)},
+            {"runSequence", number(options.run_sequence)},
+        };
+        if (options.parent_id != nullptr) row.emplace_back("parentId", str(options.parent_id));
+        if (options.model_name != nullptr) row.emplace_back("modelName", str(options.model_name));
+        if (options.consumed_at_pass) {
+            row.emplace_back("consumedAtPass", number(*options.consumed_at_pass));
+        }
+        return object(std::move(row));
+    };
+    auto seed = [&](std::vector<json::Value> conversations, std::vector<json::Value> messages) {
+        std::vector<json::Value> runs;
+        for (const json::Value& row : conversations) {
+            std::string id;
+            for (const json::Member& member : row.members) {
+                if (member.key == "id") id = member.value.text;
+            }
+            runs.push_back(run(id));
+        }
+        return object({{"conversations", array(std::move(conversations))},
+                       {"runs", array(std::move(runs))},
+                       {"messages", array(std::move(messages))}});
+    };
+    auto op = [](const char* name, const char* conversation_id) {
+        return object({{"op", str(name)}, {"conversationId", str(conversation_id)}});
+    };
+    const FormatOptions pretty{Format::Pretty2, false};
+    auto write = [&](const char* name, json::Value scenario) {
+        write_scenario(scenarios, name, scenario, pretty);
+    };
+
+    write("01-provider-context-state",
+          object({{"seed",
+                   seed({conversation("c-1", "{\"m-1\":\"m-2\"}"), conversation("c-2", nullptr),
+                         conversation("c-3", ""), conversation("c-4", "[]")},
+                        {})},
+                  {"steps", array({op("getProviderContextState", "c-1"),
+                                   op("getProviderContextState", "c-2"),
+                                   op("getProviderContextState", "c-3"),
+                                   op("getProviderContextState", "c-4"),
+                                   op("getProviderContextState", "missing")})}}));
+
+    write("02-message-topology",
+          object({{"seed",
+                   seed({conversation("c-1", nullptr), conversation("c-2", nullptr)},
+                        {message("m-02", "c-1",
+                                 MessageOptions{10, "THINKING", "USER", 0, nullptr, nullptr, -1,
+                                                std::nullopt}),
+                         message("m-03", "c-1",
+                                 MessageOptions{10, "ERROR", "ERROR", 7, "m-02", "o3", 0, 0}),
+                         message("m-04", "c-1",
+                                 MessageOptions{20, "STOPPED", "MODEL", 3, "m-03", "gpt-5", 1,
+                                                1}),
+                         message("m-10", "c-1",
+                                 MessageOptions{30, "SUCCESS", "MODEL", 5, "m-04", "gpt-5", 2,
+                                                2}),
+                         message("m-05", "c-1",
+                                 MessageOptions{40, "SENDING", "USER", 0, nullptr, nullptr, -1,
+                                                std::nullopt}),
+                         message("m-06", "c-1",
+                                 MessageOptions{50, "TRANSCRIBING", "USER", 0, nullptr, nullptr,
+                                                -1, std::nullopt}),
+                         message("m-07", "c-1",
+                                 MessageOptions{60, "TOOL_CALLING", "MODEL", 0, nullptr, nullptr,
+                                                -1, std::nullopt}),
+                         message("m-01", "c-2",
+                                 MessageOptions{5, "SUCCESS", "MODEL", 0, nullptr, nullptr, -1,
+                                                std::nullopt})})},
+                  {"steps", array({op("getMessageContextTopology", "c-1"),
+                                   op("getMessageContextTopology", "c-2"),
+                                   op("getMessageContextTopology", "missing"),
+                                   op("getMessageContextTopology", "")})}}));
+
+    write("03-observe-topology",
+          object({{"seed",
+                   seed({conversation("c-1", nullptr), conversation("c-2", nullptr)},
+                        {message("m-02", "c-1",
+                                 MessageOptions{1, "STOPPED", "USER", 0, nullptr, nullptr, -1,
+                                                std::nullopt}),
+                         message("m-01", "c-1",
+                                 MessageOptions{2, "SUCCESS", "MODEL", 0, nullptr, nullptr, -1,
+                                                std::nullopt}),
+                         message("m-03", "c-2",
+                                 MessageOptions{0, "SUCCESS", "MODEL", 0, nullptr, nullptr, -1,
+                                                std::nullopt})})},
+                  {"steps", array({op("observeMessageContextTopology", "c-1"),
+                                   op("observeMessageContextTopology", "c-2"),
+                                   op("observeMessageContextTopology", "missing")})}}));
+
+    write("04-topology-snapshot",
+          object({{"seed",
+                   seed({conversation("c-01", "{\"m-1\":\"m-2\"}"),
+                         conversation("c-02", nullptr), conversation("c-03", ""),
+                         conversation("c-04", "[]")},
+                        {message("m-02", "c-01",
+                                 MessageOptions{20, "SUCCESS", "MODEL", 0, nullptr, nullptr, -1,
+                                                std::nullopt}),
+                         message("m-01", "c-01",
+                                 MessageOptions{10, "THINKING", "USER", 0, nullptr, nullptr, -1,
+                                                std::nullopt}),
+                         message("m-03", "c-02",
+                                 MessageOptions{5, "SUCCESS", "MODEL", 0, nullptr, nullptr, -1,
+                                                std::nullopt}),
+                         message("m-04", "c-03",
+                                 MessageOptions{6, "SUCCESS", "MODEL", 0, nullptr, nullptr, -1,
+                                                std::nullopt})})},
+                  {"steps", array({op("getProviderContextTopologySnapshot", "c-01"),
+                                   op("getProviderContextTopologySnapshot", "c-02"),
+                                   op("getProviderContextTopologySnapshot", "c-03"),
+                                   op("getProviderContextTopologySnapshot", "c-04"),
+                                   op("getProviderContextTopologySnapshot", "missing")})}}));
+
+    write("05-invalid-enums",
+          object({{"seed",
+                   seed({conversation("c-1", nullptr), conversation("c-2", nullptr)},
+                        {message("m-01", "c-1",
+                                 MessageOptions{0, "SUCCESS", "BOGUS", 0, nullptr, nullptr, -1,
+                                                std::nullopt}),
+                         message("m-02", "c-2",
+                                 MessageOptions{0, "BOGUS", "MODEL", 0, nullptr, nullptr, -1,
+                                                std::nullopt})})},
+                  {"steps", array({op("getMessageContextTopology", "c-1"),
+                                   op("getMessageContextTopology", "c-2"),
+                                   op("getProviderContextTopologySnapshot", "c-1")})}}));
+}
+
+// openai-service-tiers/gen_scenarios.py — compact, ensure_ascii=False.
+void profile_openai_service_tiers(const fs::path& scenarios) {
+    std::vector<json::Value> all;
+    auto case_add = [&](const char* name,
+                        std::vector<std::pair<std::string, json::Value>> fields) {
+        std::vector<std::pair<std::string, json::Value>> members = {{"name", str(name)}};
+        for (auto& field : fields) members.push_back(std::move(field));
+        all.push_back(object(std::move(members)));
+    };
+    auto normalize = [&](const char* name, json::Value value) {
+        case_add(name, {{"op", str("normalize")}, {"value", std::move(value)}});
+    };
+    auto available = [&](const char* name, json::Value model, bool official) {
+        case_add(name, {{"op", str("available")},
+                        {"model", std::move(model)},
+                        {"official", boolean(official)}});
+    };
+    auto mapped = [&](const char* name, json::Value value, json::Value model, bool official) {
+        case_add(name, {{"op", str("mapped")},
+                        {"value", std::move(value)},
+                        {"model", std::move(model)},
+                        {"official", boolean(official)}});
+    };
+    auto index = [&](const char* name, json::Value value) {
+        case_add(name, {{"op", str("index")}, {"value", std::move(value)}});
+    };
+    auto tier = [&](const char* name, std::int64_t index_value) {
+        case_add(name, {{"op", str("tier")}, {"index", number(index_value)}});
+    };
+    auto request = [&](const char* name, bool enabled, json::Value value, bool responses,
+                       json::Value model, bool official) {
+        case_add(name, {{"op", str("request")},
+                        {"enabled", boolean(enabled)},
+                        {"value", std::move(value)},
+                        {"responses", boolean(responses)},
+                        {"model", std::move(model)},
+                        {"official", boolean(official)}});
+    };
+
+    normalize("normalize_null", null_value());
+    normalize("normalize_empty", str(""));
+    normalize("normalize_blank", str("   "));
+    normalize("normalize_auto", str("auto"));
+    normalize("normalize_default", str("default"));
+    normalize("normalize_flex", str("flex"));
+    normalize("normalize_fast", str("fast"));
+    normalize("normalize_ultrafast", str("ultrafast"));
+    normalize("normalize_uppercase", str("DEFAULT"));
+    normalize("normalize_padded", str(" Flex "));
+    normalize("normalize_tabs", str("\tFAST\n"));
+    normalize("normalize_nbsp_padded", str("\u00a0flex\u00a0"));
+    normalize("normalize_scale_alias", str("scale"));
+    normalize("normalize_scale_alias_upper", str(" SCALE "));
+    normalize("normalize_priority_alias", str("priority"));
+    normalize("normalize_priority_alias_mixed", str("PRIORITY"));
+    normalize("normalize_unknown", str("bogus"));
+    normalize("normalize_partial", str("flexx"));
+
+    available("available_all_null", null_value(), true);
+    available("available_empty_model", str(""), true);
+    available("available_gpt54", str("gpt-5.4"), true);
+    available("available_gpt54mini", str("gpt-5.4-mini"), true);
+    available("available_gpt41mini", str("gpt-4.1-mini"), true);
+    available("available_o3pro", str("o3-pro"), true);
+    available("available_gpt55pro", str("gpt-5.5-pro"), true);
+    available("available_gpt4o", str("gpt-4o"), true);
+    available("available_gpt52pro", str("gpt-5.2-pro"), true);
+    available("available_gpt5pro", str("gpt-5-pro"), true);
+    available("available_gpt56sol", str("gpt-5.6-sol"), true);
+    available("available_gpt56luna", str("gpt-5.6-luna"), true);
+    available("available_codex", str("gpt-5.3-codex"), true);
+    available("available_o3", str("o3"), true);
+    available("available_o4mini", str("o4-mini"), true);
+    available("available_gpt41", str("gpt-4.1"), true);
+    available("available_unknown", str("gpt-x"), true);
+    available("available_case_padded", str(" GPT-5-PRO "), true);
+    available("available_gpt6astra", str("GPT-6-ASTRA"), true);
+    available("available_o1pro", str("o1-pro"), true);
+    available("available_davinci", str("davinci-002"), true);
+    available("available_custom_provider", str("gpt-5-pro"), false);
+    available("available_custom_provider_unknown", str("whatever"), false);
+
+    mapped("mapped_null", null_value(), str("gpt-5-pro"), true);
+    mapped("mapped_auto", str("auto"), str("gpt-5-pro"), true);
+    mapped("mapped_default", str("default"), str("gpt-5-pro"), true);
+    mapped("mapped_flex_supported", str("flex"), str("gpt-5.5"), true);
+    mapped("mapped_flex_unsupported", str("flex"), str("gpt-4o"), true);
+    mapped("mapped_fast_supported", str("fast"), str("gpt-4o"), true);
+    mapped("mapped_fast_unsupported", str("fast"), str("gpt-5-pro"), true);
+    mapped("mapped_ultrafast_supported", str("ultrafast"), str("gpt-5.6-sol"), true);
+    mapped("mapped_ultrafast_to_fast_luna", str("ultrafast"), str("gpt-5.6-luna"), true);
+    mapped("mapped_ultrafast_to_fast_54", str("ultrafast"), str("gpt-5.4"), true);
+    mapped("mapped_ultrafast_unknown_model", str("ultrafast"), str("unknown-model"), true);
+    mapped("mapped_fast_on_sol", str("fast"), str("gpt-5.6-sol"), true);
+    mapped("mapped_priority_gpt5pro", str("PRIORITY"), str("gpt-5-pro"), true);
+    mapped("mapped_priority_gpt4o", str("PRIORITY"), str("gpt-4o"), true);
+    mapped("mapped_scale", str("scale"), str("gpt-5-pro"), true);
+    mapped("mapped_flex_custom_provider", str("flex"), str("gpt-5-pro"), false);
+    mapped("mapped_ultrafast_custom_provider", str("ultrafast"), str("gpt-5-pro"), false);
+    mapped("mapped_flex_gpt56sol", str("flex"), str("gpt-5.6-sol"), true);
+    mapped("mapped_fast_standard_model", str("fast"), str("gpt-3.5-turbo"), true);
+    mapped("mapped_padded_value", str(" Fast "), str("gpt-5-pro"), true);
+    mapped("mapped_null_model", str("flex"), null_value(), true);
+
+    index("index_null", null_value());
+    index("index_empty", str(""));
+    index("index_auto", str("auto"));
+    index("index_default", str("default"));
+    index("index_flex", str("flex"));
+    index("index_fast", str("fast"));
+    index("index_ultrafast", str("ultrafast"));
+    index("index_priority", str("PRIORITY"));
+    index("index_scale", str("SCALE"));
+    index("index_unknown", str("nope"));
+    index("index_padded", str(" FLEX "));
+    index("index_uppercase", str("FLEX"));
+
+    tier("tier_negative", -5);
+    tier("tier_zero", 0);
+    tier("tier_one", 1);
+    tier("tier_two", 2);
+    tier("tier_three", 3);
+    tier("tier_four", 4);
+    tier("tier_large", 99);
+
+    request("request_disabled", false, str("flex"), true, str("gpt-5.5"), true);
+    request("request_responses_off", true, str("flex"), false, str("gpt-5.5"), true);
+    request("request_enabled_flex", true, str("flex"), true, str("gpt-5.5"), true);
+    request("request_mapped_ultrafast", true, str("ultrafast"), true, str("gpt-5.4"), true);
+    request("request_null_value", true, null_value(), true, str("gpt-5.4"), true);
+    request("request_both_off", false, str("ultrafast"), false, str("gpt-5.6-sol"), true);
+    request("request_flex_standard_model", true, str("flex"), true, str("gpt-5-pro"), true);
+    request("request_custom_provider", true, str("flex"), true, str("gpt-5-pro"), false);
+    request("request_priority_gpt4o", true, str("PRIORITY"), true, str("gpt-4o"), true);
+    request("request_disabled_but_null_model", false, str("fast"), true, null_value(), true);
+    request("request_enabled_ultrafast_sol", true, str("ultrafast"), true, str("gpt-5.6-sol"),
+            true);
+
+    remove_stale(scenarios);
+    const FormatOptions compact{Format::Compact, false};
+    for (const json::Value& item : all) {
+        std::string name;
+        for (const json::Member& member : item.members) {
+            if (member.key == "name") name = member.value.text;
+        }
+        write_scenario(scenarios, name, item, compact);
+    }
+    std::cout << "wrote " << all.size() << " scenarios to " << scenarios.string() << "\n";
+}
+
 }  // namespace
 
 int main(int argc, char** argv) {
@@ -3011,7 +3325,9 @@ int main(int argc, char** argv) {
                   << "  attachment-clone-session attachment-clone-session/gen_scenarios.py\n"
                   << "  duckduckgo            duckduckgo/gen_scenarios.py\n"
                   << "  embedding-selector    embedding-selector/gen_scenarios.py\n"
-                  << "  migration-16-17       migration-16-17/gen_scenarios.py\n";
+                  << "  migration-16-17       migration-16-17/gen_scenarios.py\n"
+                  << "  chat-provider-context-dao chat-provider-context-dao/gen_scenarios.py\n"
+                  << "  openai-service-tiers  openai-service-tiers/gen_scenarios.py\n";
         return 2;
     }
     const std::string profile = argv[1];
@@ -3074,6 +3390,10 @@ int main(int argc, char** argv) {
         profile_embedding_selector(scenarios);
     } else if (profile == "migration-16-17") {
         profile_migration_16_17(scenarios);
+    } else if (profile == "chat-provider-context-dao") {
+        profile_chat_provider_context_dao(scenarios);
+    } else if (profile == "openai-service-tiers") {
+        profile_openai_service_tiers(scenarios);
     } else {
         std::cerr << "unknown profile: " << profile << "\n";
         return 2;

@@ -3710,6 +3710,321 @@ void profile_native_run_archive(const fs::path& scenarios) {
     std::cout << "wrote " << cases.size() << " scenarios\n";
 }
 
+
+// migration-18-19/gen_scenarios.py — compact, ensure_ascii=False.
+void profile_migration_18_19(const fs::path& scenarios) {
+    std::vector<json::Value> all;
+    auto run = [](const char* rid, json::Value parent, std::int64_t legacy) {
+        return object({{"id", str(rid)},
+                       {"parentRunId", std::move(parent)},
+                       {"legacyAmbiguous", number(legacy)}});
+    };
+    auto msg = [](const char* mid, json::Value parent, const char* participant,
+                  const char* run_id, std::int64_t seq) {
+        return object({{"id", str(mid)},
+                       {"parentId", std::move(parent)},
+                       {"participant", str(participant)},
+                       {"runId", str(run_id)},
+                       {"runSequence", number(seq)}});
+    };
+    auto case_add = [&](const char* name, std::vector<json::Value> runs,
+                        std::vector<json::Value> messages) {
+        all.push_back(object({{"name", str(name)},
+                              {"op", str("migrate")},
+                              {"runs", array(std::move(runs))},
+                              {"messages", array(std::move(messages))}}));
+    };
+    auto base = [&](const char* name, std::int64_t legacy, const char* canonical_id,
+                    const char* canonical_participant, const char* root_parent,
+                    std::optional<std::tuple<const char*, const char*, std::int64_t>> dangling) {
+        std::vector<json::Value> runs = {run("p", null_value(), 1),
+                                         run("r2", str("p"), legacy)};
+        std::vector<json::Value> messages = {
+            msg(canonical_id, null_value(), canonical_participant, "p", 0),
+            msg("root", str(root_parent), "MODEL", "r2", 1),
+        };
+        if (dangling) {
+            messages.push_back(msg(std::get<0>(*dangling), str(std::get<1>(*dangling)), "MODEL",
+                                   "r2", std::get<2>(*dangling)));
+        }
+        case_add(name, std::move(runs), std::move(messages));
+    };
+
+    case_add("m18_empty", {}, {});
+    case_add("m18_no_repair", {run("p", null_value(), 1)},
+             {msg("u", null_value(), "USER", "p", 0)});
+    base("m18_repair_one", 1, "u", "USER", "u",
+         std::make_tuple("d", "gone", std::int64_t{2}));
+    case_add("m18_two_updates_sorted",
+             {run("p", null_value(), 1), run("r2", str("p"), 1)},
+             {msg("u", null_value(), "USER", "p", 0),
+              msg("root", str("u"), "MODEL", "r2", 1),
+              msg("d2", str("gone"), "MODEL", "r2", 3),
+              msg("d1", str("gone"), "MODEL", "r2", 2)});
+    base("m18_legacy_zero", 0, "u", "USER", "u",
+         std::make_tuple("d", "gone", std::int64_t{2}));
+    case_add("m18_parent_missing", {run("r2", str("px"), 1)},
+             {msg("ux", null_value(), "USER", "px", 0),
+              msg("root", str("ux"), "MODEL", "r2", 1),
+              msg("d", str("gone"), "MODEL", "r2", 2)});
+    case_add("m18_parent_null", {run("r2", null_value(), 1)},
+             {msg("u", null_value(), "USER", "p", 0),
+              msg("root", str("u"), "MODEL", "r2", 1),
+              msg("d", str("gone"), "MODEL", "r2", 2)});
+    case_add("m18_no_canonical_user",
+             {run("p", null_value(), 1), run("r2", str("p"), 1)},
+             {msg("m0", null_value(), "MODEL", "p", 0),
+              msg("root", str("m0"), "MODEL", "r2", 1),
+              msg("d", str("gone"), "MODEL", "r2", 2)});
+    case_add("m18_canonical_user_min_id",
+             {run("p", null_value(), 1), run("r2", str("p"), 1)},
+             {msg("u2", null_value(), "USER", "p", 0),
+              msg("u1", null_value(), "USER", "p", 0),
+              msg("root", str("u1"), "MODEL", "r2", 1),
+              msg("d", str("gone"), "MODEL", "r2", 2)});
+    case_add("m18_canonical_sequence_nonzero",
+             {run("p", null_value(), 1), run("r2", str("p"), 1)},
+             {msg("u", null_value(), "USER", "p", 2),
+              msg("root", str("u"), "MODEL", "r2", 1),
+              msg("d", str("gone"), "MODEL", "r2", 2)});
+    base("m18_no_repaired_root", 1, "u", "USER", "other",
+         std::make_tuple("d", "gone", std::int64_t{2}));
+    case_add("m18_repaired_root_tool",
+             {run("p", null_value(), 1), run("r2", str("p"), 1)},
+             {msg("u", null_value(), "USER", "p", 0),
+              msg("tool_root", str("u"), "MODEL", "r2", 1),
+              msg("d", str("gone"), "MODEL", "r2", 2)});
+    base("m18_unknown_participant", 1, "u", "BOGUS", "u",
+         std::make_tuple("d", "gone", std::int64_t{2}));
+    base("m18_dangling_present_parent", 1, "u", "USER", "u",
+         std::make_tuple("d", "root", std::int64_t{2}));
+    base("m18_dangling_tool_prefix", 1, "u", "USER", "u",
+         std::make_tuple("tool_d", "gone", std::int64_t{2}));
+    case_add("m18_duplicate_dangling_id",
+             {run("pA", null_value(), 1), run("pB", null_value(), 1),
+              run("rA", str("pA"), 1), run("rB", str("pB"), 1)},
+             {msg("uA", null_value(), "USER", "pA", 0),
+              msg("uB", null_value(), "USER", "pB", 0),
+              msg("rootA", str("uA"), "MODEL", "rA", 0),
+              msg("rootB", str("uB"), "MODEL", "rB", 0),
+              msg("d", str("gone"), "MODEL", "rA", 1),
+              msg("d", str("gone"), "MODEL", "rB", 1)});
+    case_add("m18_multiple_runs_order",
+             {run("p", null_value(), 1), run("r3", str("p"), 1), run("r2", str("p"), 1)},
+             {msg("u", null_value(), "USER", "p", 0),
+              msg("d3", str("gone"), "MODEL", "r3", 1),
+              msg("root3", str("u"), "MODEL", "r3", 2),
+              msg("root2", str("u"), "MODEL", "r2", 1),
+              msg("d2", str("gone"), "MODEL", "r2", 2)});
+    base("m18_legacy_two", 2, "u", "USER", "u",
+         std::make_tuple("d", "gone", std::int64_t{2}));
+    base("m18_legacy_negative", -1, "u", "USER", "u",
+         std::make_tuple("d", "gone", std::int64_t{2}));
+    case_add("m18_self_parent",
+             {run("p", null_value(), 1), run("r2", str("r2"), 1)},
+             {msg("u", null_value(), "USER", "p", 0),
+              msg("root", str("u"), "MODEL", "r2", 1),
+              msg("d", str("gone"), "MODEL", "r2", 2)});
+    case_add("m18_runs_without_messages",
+             {run("p", null_value(), 1), run("r2", str("p"), 1)}, {});
+
+    remove_stale(scenarios);
+    const FormatOptions compact{Format::Compact, false};
+    for (const json::Value& item : all) {
+        std::string name;
+        for (const json::Member& member : item.members) {
+            if (member.key == "name") name = member.value.text;
+        }
+        write_scenario(scenarios, name, item, compact);
+    }
+    std::cout << "wrote " << all.size() << " scenarios to " << scenarios.string() << "\n";
+}
+
+// streaming-json-document/gen_scenarios.py — compact, ensure_ascii=False.
+void profile_streaming_json_document(const fs::path& scenarios) {
+    std::vector<json::Value> all;
+    auto parse = [&](const char* name, const char* source) {
+        all.push_back(object(
+            {{"name", str(name)}, {"op", str("parse")}, {"source", str(source)}}));
+    };
+    auto hints = [&](const char* name, const char* kind, json::Value raw) {
+        all.push_back(object({{"name", str(name)},
+                              {"op", str("hints")},
+                              {"kind", str(kind)},
+                              {"rawArguments", std::move(raw)}}));
+    };
+    auto normalize = [&](const char* name, json::Value value, std::int64_t max_chars) {
+        all.push_back(object({{"name", str(name)},
+                              {"op", str("normalize")},
+                              {"value", std::move(value)},
+                              {"max", number(max_chars)}}));
+    };
+
+    parse("doc_empty", "");
+    parse("doc_space_only", " ");
+    parse("doc_ws_only_multichar", "\t\n ");
+    parse("doc_ws_then_value", "  42  ");
+    parse("doc_crlf_whitespace", "{\r\n\"a\":\r\n1\r\n}");
+    parse("doc_object_complete", R"json({"a":1})json");
+    parse("doc_object_empty", "{}");
+    parse("doc_object_empty_trailing_ws", "{} ");
+    parse("doc_object_partial_key", R"json({")json");
+    parse("doc_object_partial_value_null", R"json({"a":)json");
+    parse("doc_object_partial_value", R"json({"a":1)json");
+    parse("doc_object_after_comma", R"json({"a":1,)json");
+    parse("doc_object_trailing_comma", R"json({"a":1,})json");
+    parse("doc_object_key_not_string", "{a:1}");
+    parse("doc_object_no_colon", R"json({"a" 1})json");
+    parse("doc_object_missing_comma", R"json({"a":1 "b":2})json");
+    parse("doc_object_bad_after_value", R"json({"a":1 2})json");
+    parse("doc_object_key_with_escape", R"json({"a\"b":1})json");
+    parse("doc_object_key_only", R"json({"a")json");
+    parse("doc_object_nested_partial", R"json({"a":{"b":)json");
+    parse("doc_object_keyword_value_partial", R"json({"a":nul)json");
+    parse("doc_object_deep_nest", R"json([1,{"b":[2,{"c":)json");
+    parse("doc_array_complete", "[1,2,3]");
+    parse("doc_array_empty", "[]");
+    parse("doc_array_after_comma", "[1,");
+    parse("doc_array_trailing_comma", "[1,]");
+    parse("doc_array_missing_comma", "[1 2]");
+    parse("doc_array_mixed", R"json([1,"a",true,null,{},[]])json");
+    parse("doc_array_nested_partial", R"json([["a)json");
+    parse("doc_string_root", R"json("abc")json");
+    parse("doc_string_partial", R"json("abc)json");
+    parse("doc_string_empty", R"json("")json");
+    parse("doc_string_escapes", R"json("\"\\\/\b\f\n\r\t")json");
+    parse("doc_string_unicode_escape", R"json("\u0041\u00e9")json");
+    parse("doc_string_unicode_surrogate_pair", R"json("\ud83d\ude42")json");
+    parse("doc_string_trailing_backslash", R"json("abc\)json");
+    parse("doc_string_bad_escape", R"json("\q")json");
+    parse("doc_string_bad_unicode", R"json("\u12g4")json");
+    parse("doc_string_short_unicode_truncated", R"json("\u12)json");
+    parse("doc_string_control_char", "{\"a\":\"x\x01y\"}");
+    parse("doc_string_non_ascii", "\"h\u00e9llo \U0001f642\"");
+    parse("doc_error_offset_after_emoji", "\"\U0001f642\\q\"");
+    parse("doc_error_offset_after_accent", "\"\u00e9\\q\"");
+    parse("doc_keyword_true", "true");
+    parse("doc_keyword_false", "false");
+    parse("doc_keyword_null", "null");
+    parse("doc_keyword_partial", "tru");
+    parse("doc_keyword_mismatch", "trX");
+    parse("doc_number_int", "42");
+    parse("doc_number_negative", "-42");
+    parse("doc_number_fraction", "4.25");
+    parse("doc_number_exponent", "1e10");
+    parse("doc_number_exponent_sign", "-0.5e-10");
+    parse("doc_number_partial_fraction", "12.");
+    parse("doc_number_partial_exponent", "1e");
+    parse("doc_number_partial_exponent_sign", "1e+");
+    parse("doc_number_leading_zero", "01");
+    parse("doc_number_bad_fraction", "1.x");
+    parse("doc_number_bad_exponent", "1ex");
+    parse("doc_number_minus_only", "-");
+    parse("doc_number_minus_garbage", "-x");
+    parse("doc_multi_roots_ws", "1 2");
+    parse("doc_multi_roots_cr", "1\r\n2");
+    parse("doc_multi_roots_ws_objects", "{} []");
+    parse("doc_multi_roots_no_ws", "{}[]");
+    parse("doc_multi_roots_then_garbage", "{} x");
+    parse("doc_bom_not_whitespace", "\ufeff{}");
+
+    hints("hints_memory_read_single", "MEMORY_READ", str(R"json({"names":["note.md"]})json"));
+    hints("hints_memory_read_partial_name", "MEMORY_READ", str(R"json({"names":["no)json"));
+    hints("hints_memory_read_two_names", "MEMORY_READ",
+          str(R"json({"names":["a.md","b.md"]})json"));
+    hints("hints_memory_read_empty_name", "MEMORY_READ", str(R"json({"names":[""]})json"));
+    hints("hints_memory_read_blank_name", "MEMORY_READ", str(R"json({"names":["  "]})json"));
+    hints("hints_memory_read_empty_array", "MEMORY_READ", str(R"json({"names":[]})json"));
+    hints("hints_memory_read_names_truncated", "MEMORY_READ", str(R"json({"names":[)json"));
+    hints("hints_memory_read_fallback_name", "MEMORY_READ", str(R"json({"name":"x.md"})json"));
+    hints("hints_skill_read_single", "SKILL_READ", str(R"json({"names":["skill.md"]})json"));
+    hints("hints_skill_read_blank", "SKILL_READ", str(R"json({"names":[" "]})json"));
+    hints("hints_memory_list", "MEMORY_LIST", str(R"json({"names":["a","b"]})json"));
+    hints("hints_skill_list", "SKILL_LIST", str(R"json({"names":["s1"]})json"));
+    hints("hints_memory_create", "MEMORY_CREATE",
+          str(R"json({"name":"x.md","content":"hi"})json"));
+    hints("hints_memory_edit", "MEMORY_EDIT", str(R"json({"name":"y.md"})json"));
+    hints("hints_memory_delete", "MEMORY_DELETE", str(R"json({"name":"z.md"})json"));
+    hints("hints_skill_create", "SKILL_CREATE", str(R"json({"name":"s.md"})json"));
+    hints("hints_skill_edit", "SKILL_EDIT", str(R"json({"name":"s2.md"})json"));
+    hints("hints_skill_delete", "SKILL_DELETE", str(R"json({"name":"s3.md"})json"));
+    hints("hints_web_search", "WEB_SEARCH", str(R"json({"query":"cats"})json"));
+    hints("hints_conversation_search", "CONVERSATION_SEARCH",
+          str(R"json({"query":"hello"})json"));
+    hints("hints_web_fetch", "WEB_FETCH", str(R"json({"url":"https://example.com"})json"));
+    hints("hints_conversation_read", "CONVERSATION_READ",
+          str(R"json({"conversation_id":"c7"})json"));
+    hints("hints_shell_execute", "SHELL_EXECUTE",
+          str(R"json({"command":"ls -la","cwd":"/tmp"})json"));
+    hints("hints_shell_job_get", "SHELL_JOB_GET", str(R"json({"job_id":"j1"})json"));
+    hints("hints_shell_job_wait", "SHELL_JOB_WAIT", str(R"json({"job_id":"j2"})json"));
+    hints("hints_shell_job_stop", "SHELL_JOB_STOP", str(R"json({"job_id":"j3"})json"));
+    hints("hints_file_read", "FILE_READ", str(R"json({"path":"/etc/hosts"})json"));
+    hints("hints_file_write", "FILE_WRITE", str(R"json({"path":"/tmp/x.txt"})json"));
+    hints("hints_file_edit", "FILE_EDIT", str(R"json({"path":"a/b.kt"})json"));
+    hints("hints_image_view", "IMAGE_VIEW", str(R"json({"path":"img.png"})json"));
+    hints("hints_file_glob", "FILE_GLOB", str(R"json({"pattern":"**/*.kt"})json"));
+    hints("hints_file_grep", "FILE_GREP", str(R"json({"pattern":"TODO"})json"));
+    hints("hints_image_generate", "IMAGE_GENERATE", str(R"json({"prompt":"a cat"})json"));
+    hints("hints_task_create", "TASK_CREATE", str(R"json({"name":"task one"})json"));
+    hints("hints_task_delete_id", "TASK_DELETE", str(R"json({"id_or_name":"t1"})json"));
+    hints("hints_task_delete_name", "TASK_DELETE", str(R"json({"name":"t2"})json"));
+    hints("hints_task_delete_task_id", "TASK_DELETE", str(R"json({"task_id":"t3"})json"));
+    hints("hints_task_delete_none", "TASK_DELETE", str(R"json({"other":1})json"));
+    hints("hints_task_list", "TASK_LIST", str(R"json({"names":["a"]})json"));
+    hints("hints_loop_start", "LOOP_START", str(R"json({"name":"x"})json"));
+    hints("hints_ask_user", "ASK_USER", str(R"json({"question":"q?"})json"));
+    hints("hints_unknown_kind", "UNKNOWN", str(R"json({"name":"x"})json"));
+    hints("hints_server_operation_destination", "MEMORY_CREATE",
+          str(R"json({"name":"a","server":"srv","operation":"PUT","new_name":"b"})json"));
+    hints("hints_operation_shell", "SHELL_EXECUTE",
+          str(R"json({"command":"pwd","operation":"run"})json"));
+    hints("hints_raw_null", "FILE_READ", null_value());
+    hints("hints_raw_blank", "FILE_READ", str("   "));
+    hints("hints_raw_not_json", "FILE_READ", str("hello world"));
+    hints("hints_raw_open_brace", "FILE_READ", str("{"));
+    hints("hints_prefix_fits", "MEMORY_CREATE",
+          str("{\"name\":\"" + std::string(4084, 'a') + "\"}"));
+    hints("hints_prefix_cut_mid_string", "MEMORY_CREATE",
+          str("{\"name\":\"" + std::string(4086, 'a') + "\"}"));
+    hints("hints_prefix_boundary_excludes_tail", "MEMORY_CREATE",
+          str("{\"name\":\"x\",\"content\":\"" + std::string(4071, 'A') +
+              "\",\"new_name\":\"dst\"}"));
+    hints("hints_prefix_boundary_includes_tail", "MEMORY_CREATE",
+          str("{\"name\":\"x\",\"content\":\"" + std::string(4055, 'A') +
+              "\",\"new_name\":\"dst\"}"));
+
+    normalize("normalize_null", null_value(), 120);
+    normalize("normalize_empty", str(""), 120);
+    normalize("normalize_blank", str("   "), 120);
+    normalize("normalize_collapse", str("  a b  "), 120);
+    normalize("normalize_newline_tab", str("a\n\tb   c"), 120);
+    normalize("normalize_nbsp_trimmed", str("\u00a0x\u00a0"), 120);
+    normalize("normalize_nbsp_only", str("\u00a0"), 120);
+    normalize("normalize_vertical_tab_form_feed", str("a\x0b" "b\f" "c"), 120);
+    normalize("normalize_exact_120", str(std::string(120, 'x')), 120);
+    normalize("normalize_over_120", str(std::string(121, 'x')), 120);
+    {
+        std::string value;
+        for (int i = 0; i < 59; ++i) value += "\U0001f642";
+        normalize("normalize_unicode_length_120", str(value + "xy"), 120);
+        normalize("normalize_unicode_length_121", str(value + "xyz"), 120);
+    }
+    normalize("normalize_small_max", str("abcdefg"), 5);
+    normalize("normalize_single_char_max", str("ab"), 1);
+
+    remove_stale(scenarios);
+    const FormatOptions compact{Format::Compact, false};
+    for (const json::Value& item : all) {
+        std::string name;
+        for (const json::Member& member : item.members) {
+            if (member.key == "name") name = member.value.text;
+        }
+        write_scenario(scenarios, name, item, compact);
+    }
+    std::cout << "wrote " << all.size() << " scenarios to " << scenarios.string() << "\n";
+}
+
 }  // namespace
 
 int main(int argc, char** argv) {
@@ -3747,7 +4062,9 @@ int main(int argc, char** argv) {
                   << "  chat-provider-context-dao chat-provider-context-dao/gen_scenarios.py\n"
                   << "  openai-service-tiers  openai-service-tiers/gen_scenarios.py\n"
                   << "  conch-sse             conch-sse/gen_scenarios.py\n"
-                  << "  native-run-archive    native-run-archive/gen_scenarios.py\n";
+                  << "  native-run-archive    native-run-archive/gen_scenarios.py\n"
+                  << "  migration-18-19       migration-18-19/gen_scenarios.py\n"
+                  << "  streaming-json-document streaming-json-document/gen_scenarios.py\n";
         return 2;
     }
     const std::string profile = argv[1];
@@ -3818,6 +4135,10 @@ int main(int argc, char** argv) {
         profile_conch_sse(scenarios);
     } else if (profile == "native-run-archive") {
         profile_native_run_archive(scenarios);
+    } else if (profile == "migration-18-19") {
+        profile_migration_18_19(scenarios);
+    } else if (profile == "streaming-json-document") {
+        profile_streaming_json_document(scenarios);
     } else {
         std::cerr << "unknown profile: " << profile << "\n";
         return 2;

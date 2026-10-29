@@ -14,7 +14,7 @@ compiles the file **unchanged** against two stand-only leaf stubs and one real h
 * `stubs/…/viewmodel/GenerationContext.kt` — `shellEnabled`, `shellDevices`, `sandboxEnabled`,
   `toolTimeoutMs` (the builder touches no other context field);
 * `stubs/…/data/ShellDeviceConfig.kt` — the `name`/`type` pair (`"conch" | "ssh"`);
-* `extract_wait_job.py` — copies `ShellDurableJobExecutor.maxWaitMs` and its two constants
+* ``agora_extract wait-job`` — copies `ShellDurableJobExecutor.maxWaitMs` and its two constants
   **verbatim** (the executor itself is a 500-line transport-coupled object whose only relevant
   piece is the ceiling embedded in the `wait_for_job` description).
 

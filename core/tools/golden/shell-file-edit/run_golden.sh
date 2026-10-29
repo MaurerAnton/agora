@@ -3,7 +3,7 @@
 #
 # ShellClient.kt is the Conch shell transport object. The top of the file holds transport-free
 # policy: the file-edit matcher/replacer, line counting, SHA-256, line-ending preference and the
-# bounded shell-output reader. extract_shell_file_edit.py copies those declarations out verbatim;
+# bounded shell-output reader. `agora_extract shell-file-edit` copies those declarations out verbatim;
 # only the three private helpers are widened to internal. ShellFileReadResult/shellFileLineCount
 # are also extracted here for the cross-check, but their C++ port lives in shell_tools.hpp and is
 # pinned by the separate shell-tools stand.
@@ -41,7 +41,7 @@ echo "Generating scenarios..."
 python3 "$here/gen_scenarios.py"
 
 echo "Extracting the pure file helpers from ShellClient.kt..."
-python3 "$here/extract_shell_file_edit.py" "$app/util/ShellClient.kt" "$here/build/ShellFileEdit.kt"
+"${AGORA_EXTRACT:-$root/core/build/agora_extract}" shell-file-edit "$app/util/ShellClient.kt" "$here/build/ShellFileEdit.kt"
 
 sources=(
     "$here/build/ShellFileEdit.kt"

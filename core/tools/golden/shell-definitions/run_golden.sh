@@ -39,7 +39,7 @@ rm -rf "$classes" "$fresh"
 mkdir -p "$classes" "$fresh" "$here/build"
 
 echo "Extracting maxWaitMs from ShellDurableJobExecutor.kt..."
-python3 "$here/extract_wait_job.py" "$app/tool/ShellDurableJobExecutor.kt" "$wait_job"
+"${AGORA_EXTRACT:-$root/core/build/agora_extract}" wait-job "$app/tool/ShellDurableJobExecutor.kt" "$wait_job"
 
 sources=(
     "$app/api/ProviderRequestModels.kt"

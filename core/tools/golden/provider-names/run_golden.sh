@@ -40,7 +40,7 @@ mkdir -p "$classes" "$fresh" "$here/build"
 identity="$here/build/IdentityPolicy.kt"
 mkdir -p "$here/build"
 echo "Extracting the stable-id check from CustomProviderIdentity.kt..."
-python3 "$here/extract_identity.py" "$app/data/CustomProviderIdentity.kt" "$identity"
+"${AGORA_EXTRACT:-$root/core/build/agora_extract}" provider-names "$app/data/CustomProviderIdentity.kt" "$identity"
 
 sources=(
     "$app/util/Constants.kt"

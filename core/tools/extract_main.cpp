@@ -958,6 +958,15 @@ std::string trim_right_copy(std::string_view value) {
     return std::string(value.substr(0, end));
 }
 
+std::string trim_left_copy(std::string_view value) {
+    std::size_t start = 0;
+    while (start < value.size() && (value[start] == ' ' || value[start] == '\t' ||
+                                    value[start] == '\n' || value[start] == '\r')) {
+        start += 1;
+    }
+    return std::string(value.substr(start));
+}
+
 std::vector<std::string_view> split_lines(const std::string& text) {
     std::vector<std::string_view> lines;
     std::size_t pos = 0;
@@ -1005,7 +1014,8 @@ void profile_embedding_models(const fs::path& source, const fs::path& out) {
     static constexpr std::array<const char*, 2> kExpected = {"EmbeddingRequest",
                                                              "BatchEmbeddingRequest"};
 
-    const std::vector<std::string_view> lines = split_lines(read_file(source));
+    const std::string text = read_file(source);
+    const std::vector<std::string_view> lines = split_lines(text);
     std::optional<std::size_t> start;
     for (std::size_t i = 0; i < lines.size(); ++i) {
         if (lines[i].find(kStartClass) != std::string_view::npos) {
@@ -1060,7 +1070,8 @@ void profile_shell_models(const fs::path& source, const fs::path& out) {
     static constexpr const char* kClass = "data class ShellFileReadResult(";
     static constexpr const char* kFunction = "internal fun shellFileLineCount(content: String): Int =";
 
-    const std::vector<std::string_view> lines = split_lines(read_file(source));
+    const std::string text = read_file(source);
+    const std::vector<std::string_view> lines = split_lines(text);
 
     std::optional<std::size_t> class_start;
     for (std::size_t i = 0; i < lines.size(); ++i) {
@@ -1099,14 +1110,14 @@ void profile_shell_models(const fs::path& source, const fs::path& out) {
         }
     }
 
-    const std::string text =
+    const std::string joined =
         join_lines(lines, *class_start, *class_end) + "\n\n" + function_block;
     for (const char* name : {"ShellFileReadResult", "shellFileLineCount"}) {
-        if (text.find(name) == std::string::npos) {
+        if (joined.find(name) == std::string::npos) {
             fail(std::string("error: ") + name + " missing from the extracted region");
         }
     }
-    write_file(out, std::string(kHeader) + text + "\n");
+    write_file(out, std::string(kHeader) + joined + "\n");
 }
 
 // model-aliases/extract_aliases.py — the alias region with `private` widened to `internal`.
@@ -1130,7 +1141,8 @@ void profile_aliases(const fs::path& source, const fs::path& out) {
         "inferModelAlias", "formatAliasToken", "humanizeModelAlias", "aliasSeparators",
         "claudeFamilyFirstAliasPattern", "exactAliasTokenDisplayNames", "isValidSnapshotDate"};
 
-    const std::vector<std::string_view> lines = split_lines(read_file(source));
+    const std::string text = read_file(source);
+    const std::vector<std::string_view> lines = split_lines(text);
     std::optional<std::size_t> start;
     for (std::size_t i = 0; i < lines.size(); ++i) {
         if (starts_with(lines[i], kStart)) {
@@ -1161,7 +1173,7 @@ void profile_aliases(const fs::path& source, const fs::path& out) {
         }
     }
 
-    std::string text;
+    std::string joined;
     for (std::size_t i = *start; i <= end; ++i) {
         std::string line(lines[i]);
         if (starts_with(line, "private val ")) {
@@ -1169,15 +1181,15 @@ void profile_aliases(const fs::path& source, const fs::path& out) {
         } else if (starts_with(line, "private fun ")) {
             line = "internal fun " + line.substr(std::string("private fun ").size());
         }
-        if (i > *start) text += "\n";
-        text += line;
+        if (i > *start) joined += "\n";
+        joined += line;
     }
     for (const char* name : kExpected) {
-        if (text.find(name) == std::string::npos) {
+        if (joined.find(name) == std::string::npos) {
             fail(std::string("error: ") + name + " missing from the extracted region");
         }
     }
-    write_file(out, std::string(kHeader) + text + "\n");
+    write_file(out, std::string(kHeader) + joined + "\n");
 }
 
 // context-compact/extract_message_entity.py — MessageEntity with its annotation block.
@@ -1202,7 +1214,8 @@ void profile_message_entity(const fs::path& source, const fs::path& out) {
         "\n";
     static constexpr const char* kDeclaration = "data class MessageEntity(";
 
-    const std::vector<std::string_view> lines = split_lines(read_file(source));
+    const std::string text = read_file(source);
+    const std::vector<std::string_view> lines = split_lines(text);
     std::optional<std::size_t> declaration_index;
     for (std::size_t i = 0; i < lines.size(); ++i) {
         if (starts_with(lines[i], kDeclaration)) {
@@ -1262,7 +1275,8 @@ void profile_anthropic_models(const fs::path& source, const fs::path& out) {
         "AnthropicStreamEvent", "AnthropicStreamError", "AnthropicDelta",
         "AnthropicContentBlock", "AnthropicMessageInfo", "AnthropicUsage"};
 
-    const std::vector<std::string_view> lines = split_lines(read_file(source));
+    const std::string text = read_file(source);
+    const std::vector<std::string_view> lines = split_lines(text);
     std::optional<std::size_t> start;
     for (std::size_t i = 0; i < lines.size(); ++i) {
         if (lines[i].find(kStartClass) != std::string_view::npos) {
@@ -1318,7 +1332,8 @@ void profile_embedding_entity(const fs::path& source, const fs::path& out) {
         "\n";
     static constexpr const char* kDeclaration = "data class EmbeddingEntity(";
 
-    const std::vector<std::string_view> lines = split_lines(read_file(source));
+    const std::string text = read_file(source);
+    const std::vector<std::string_view> lines = split_lines(text);
     std::optional<std::size_t> start;
     for (std::size_t i = 0; i < lines.size(); ++i) {
         if (starts_with(lines[i], kDeclaration)) {
@@ -1619,6 +1634,297 @@ int profile_clone_policy(int argc, char** argv) {
     return 0;
 }
 
+// ---- batch-7 profiles ------------------------------------------------------------------------
+
+// shell-definitions/extract_wait_job.py — the maxWaitMs helper and its two constants.
+void profile_wait_job(const fs::path& source, const fs::path& out) {
+    static constexpr const char* kHeader =
+        "// GENERATED by agora_extract wait-job from ShellDurableJobExecutor.kt -- do not edit.\n"
+        "//\n"
+        "// maxWaitMs and its two constants are copied verbatim; only the member indentation is "
+        "removed so\n"
+        "// ShellToolDefinitions.kt (which embeds the value in a tool description) compiles "
+        "unchanged.\n"
+        "package com.newoether.agora.tool\n"
+        "\n"
+        "import com.newoether.agora.viewmodel.GenerationContext\n"
+        "\n"
+        "object ShellDurableJobExecutor {\n"
+        "\n";
+    struct Region {
+        const char* marker;
+        std::size_t indent;
+        bool widen;
+    };
+    static constexpr std::array<Region, 3> kRegions = {{
+        {"        private const val MIN_WAIT_JOB_MS", 8, true},
+        {"        private const val WAIT_JOB_OUTER_MARGIN_MS", 8, true},
+        {"        internal fun maxWaitMs(ctx: GenerationContext): Int =", 8, false},
+    }};
+
+    const std::string text = read_file(source);
+    const std::vector<std::string_view> lines = split_lines(text);
+    std::vector<std::string> blocks;
+    for (const Region& region : kRegions) {
+        std::optional<std::size_t> start;
+        for (std::size_t i = 0; i < lines.size(); ++i) {
+            if (starts_with(lines[i], region.marker)) {
+                start = i;
+                break;
+            }
+        }
+        if (!start) fail(std::string("error: ") + region.marker + " not found");
+
+        std::optional<std::size_t> end;
+        for (std::size_t i = *start; i < lines.size(); ++i) {
+            const std::string stripped = trim_right_copy(lines[i]);
+            const bool ends_eq_or_comma =
+                !stripped.empty() && (stripped.back() == '=' || stripped.back() == ',');
+            const bool comparison = stripped.size() >= 2 &&
+                                    (stripped.compare(stripped.size() - 2, 2, "==") == 0 ||
+                                     stripped.compare(stripped.size() - 2, 2, "<=") == 0 ||
+                                     stripped.compare(stripped.size() - 2, 2, ">=") == 0 ||
+                                     stripped.compare(stripped.size() - 2, 2, "!=") == 0);
+            if (ends_eq_or_comma && !comparison) continue;
+            const std::string next = i + 1 < lines.size()
+                                         ? std::string(trim_left_copy(lines[i + 1]))
+                                         : std::string();
+            if (!next.empty() &&
+                (next[0] == '?' || next[0] == '+' || next[0] == '.' || next[0] == '-')) {
+                continue;
+            }
+            end = i;
+            break;
+        }
+        if (!end) fail(std::string("error: end of ") + region.marker + " not found");
+
+        std::string block;
+        const std::string prefix(region.indent, ' ');
+        for (std::size_t i = *start; i <= *end; ++i) {
+            std::string line(lines[i]);
+            if (starts_with(line, prefix)) line = line.substr(region.indent);
+            if (region.widen && starts_with(line, "private const val ")) {
+                line = "internal const val " +
+                       line.substr(std::string("private const val ").size());
+            }
+            if (i > *start) block += "\n";
+            block += line;
+        }
+        blocks.push_back(std::move(block));
+    }
+
+    std::string joined;
+    for (std::size_t i = 0; i < blocks.size(); ++i) {
+        if (i > 0) joined += "\n\n";
+        joined += blocks[i];
+    }
+    for (const char* name : {"MIN_WAIT_JOB_MS", "WAIT_JOB_OUTER_MARGIN_MS", "maxWaitMs"}) {
+        if (joined.find(name) == std::string::npos) {
+            fail(std::string("error: ") + name + " missing from the extracted region");
+        }
+    }
+    write_file(out, std::string(kHeader) + joined + "\n}\n");
+}
+
+// provider-names/extract_identity.py — pattern + regex + isStableId, indentation removed.
+void profile_provider_names(const fs::path& source, const fs::path& out) {
+    static constexpr const char* kHeader =
+        "// GENERATED by agora_extract provider-names from CustomProviderIdentity.kt -- do not "
+        "edit.\n"
+        "//\n"
+        "// The stable-id pattern and isStableId are copied verbatim (visibility widened, member\n"
+        "// indentation removed) so CustomProviderConfig.kt compiles unchanged against them.\n"
+        "package com.newoether.agora.data\n"
+        "\n"
+        "object CustomProviderIdentityPolicy {\n"
+        "\n";
+    static constexpr std::array<const char*, 3> kRegions = {
+        "    private const val STABLE_ID_PATTERN",
+        "    private val stableIdPattern = Regex(",
+        "    fun isStableId(value: String): Boolean = stableIdPattern.matches(value.trim())"};
+
+    const std::string text = read_file(source);
+    const std::vector<std::string_view> lines = split_lines(text);
+    std::vector<std::string> blocks;
+    for (const char* marker : kRegions) {
+        std::optional<std::size_t> start;
+        for (std::size_t i = 0; i < lines.size(); ++i) {
+            if (starts_with(lines[i], marker)) {
+                start = i;
+                break;
+            }
+        }
+        if (!start) fail(std::string("error: ") + marker + " not found");
+
+        int paren = 0;
+        int brace = 0;
+        bool seen_brace = false;
+        std::optional<std::size_t> end;
+        for (std::size_t i = *start; i < lines.size(); ++i) {
+            for (const char ch : lines[i]) {
+                if (ch == '{') {
+                    brace += 1;
+                    seen_brace = true;
+                } else if (ch == '}') {
+                    brace -= 1;
+                } else if (ch == '(' || ch == '[') {
+                    paren += 1;
+                } else if (ch == ')' || ch == ']') {
+                    paren -= 1;
+                }
+            }
+            if (seen_brace) {
+                if (brace == 0) {
+                    end = i;
+                    break;
+                }
+                continue;
+            }
+            if (paren != 0) continue;
+            const std::string stripped = trim_right_copy(lines[i]);
+            if (!stripped.empty() &&
+                (stripped.back() == '=' || stripped.back() == ',')) {
+                continue;
+            }
+            const std::string next =
+                i + 1 < lines.size() ? trim_left_copy(lines[i + 1]) : std::string();
+            if (!next.empty() && (next[0] == '?' || next[0] == '+' || next[0] == '.' ||
+                                  next[0] == '-' || next[0] == '"')) {
+                continue;
+            }
+            end = i;
+            break;
+        }
+        if (!end) fail(std::string("error: end of ") + marker + " not found");
+
+        std::string block;
+        for (std::size_t i = *start; i <= *end; ++i) {
+            std::string line(lines[i]);
+            if (starts_with(line, "    ")) line = line.substr(4);
+            if (starts_with(line, "private const val ")) {
+                line = "internal const val " +
+                       line.substr(std::string("private const val ").size());
+            } else if (starts_with(line, "private val ")) {
+                line = "internal val " + line.substr(std::string("private val ").size());
+            }
+            if (i > *start) block += "\n";
+            block += line;
+        }
+        blocks.push_back(std::move(block));
+    }
+
+    std::string joined;
+    for (std::size_t i = 0; i < blocks.size(); ++i) {
+        if (i > 0) joined += "\n\n";
+        joined += blocks[i];
+    }
+    for (const char* name : {"STABLE_ID_PATTERN", "stableIdPattern", "isStableId"}) {
+        if (joined.find(name) == std::string::npos) {
+            fail(std::string("error: ") + name + " missing from the extracted region");
+        }
+    }
+    write_file(out, std::string(kHeader) + joined + "\n}\n");
+}
+
+// shell-file-edit/extract_shell_file_edit.py — the pure file helpers from ShellClient.kt.
+void profile_shell_file_edit(const fs::path& source, const fs::path& out) {
+    static constexpr const char* kHeader =
+        "// GENERATED by agora_extract shell-file-edit -- do not edit.\n"
+        "//\n"
+        "// Pure file helpers copied verbatim from util/ShellClient.kt. The three private "
+        "helpers were\n"
+        "// widened to internal so the golden driver can call them; every declaration is "
+        "otherwise\n"
+        "// byte-identical to the app source.\n"
+        "package com.newoether.agora.util\n"
+        "\n"
+        "import java.io.ByteArrayOutputStream\n"
+        "import java.io.InputStream\n"
+        "\n";
+    struct Target {
+        const char* marker;
+        char kind;  // 'l' line, 'd' data, 'f' function
+    };
+    static constexpr std::array<Target, 12> kTargets = {{
+        {"internal const val SHELL_COMMAND_OUTPUT_MAX_BYTES", 'l'},
+        {"data class ShellFileReadResult(", 'd'},
+        {"data class ShellFileEditResult(", 'd'},
+        {"internal fun shellFileLineCount(", 'f'},
+        {"internal fun InputStream.readBoundedShellOutput(", 'f'},
+        {"private fun completeUtf8PrefixLength(", 'f'},
+        {"internal fun fileEditMatchRanges(", 'f'},
+        {"internal fun replaceFileEditMatches(", 'f'},
+        {"internal fun editShellFileContent(", 'f'},
+        {"internal fun shellFileSha256(", 'f'},
+        {"private fun preferredFileEditLineEnding(", 'f'},
+        {"private fun String.withFileEditLineEnding(", 'f'},
+    }};
+
+    const std::string text = read_file(source);
+    const std::vector<std::string_view> lines = split_lines(text);
+    std::vector<std::string> blocks;
+    for (const Target& target : kTargets) {
+        std::optional<std::size_t> start;
+        for (std::size_t i = 0; i < lines.size(); ++i) {
+            if (starts_with(lines[i], target.marker)) {
+                start = i;
+                break;
+            }
+        }
+        if (!start) fail(std::string("error: marker not found: ") + target.marker);
+
+        std::optional<std::size_t> end;
+        if (target.kind == 'l') {
+            end = *start;
+        } else if (target.kind == 'd') {
+            for (std::size_t i = *start; i < lines.size(); ++i) {
+                if (trim_right_copy(lines[i]) == ")") {
+                    end = i;
+                    break;
+                }
+            }
+            if (!end) {
+                fail(std::string("error: closing parenthesis not found for ") + target.marker);
+            }
+        } else {
+            int depth = 0;
+            bool seen_open = false;
+            for (std::size_t i = *start; i < lines.size(); ++i) {
+                depth += static_cast<int>(std::count(lines[i].begin(), lines[i].end(), '{')) -
+                         static_cast<int>(std::count(lines[i].begin(), lines[i].end(), '}'));
+                if (lines[i].find('{') != std::string_view::npos) seen_open = true;
+                if (seen_open && depth <= 0) {
+                    end = i;
+                    break;
+                }
+            }
+            if (!end) fail(std::string("error: closing brace not found for ") + target.marker);
+        }
+
+        std::string block;
+        for (std::size_t i = *start; i <= *end; ++i) {
+            std::string line(lines[i]);
+            const std::size_t at = line.find("private fun");
+            if (at != std::string::npos) {
+                line.replace(at, std::string("private fun").size(), "internal fun");
+            }
+            if (i > *start) block += "\n";
+            block += line;
+        }
+        // Python: "".join(block).rstrip() + "\n" — blocks end with exactly one newline.
+        block = trim_right_copy(block) + "\n";
+        blocks.push_back(std::move(block));
+    }
+
+    std::string joined;
+    for (std::size_t i = 0; i < blocks.size(); ++i) {
+        if (i > 0) joined += "\n\n";
+        joined += blocks[i];
+    }
+    write_file(out, std::string(kHeader) + joined + "\n");
+    std::cout << "extracted shell file-edit helpers into " << out.string() << "\n";
+}
+
 void usage() {
     std::cerr << "usage: agora_extract <profile> <stand_dir>\n"
                  "       agora_extract <profile> <source.kt> <out.kt>\n"
@@ -1654,6 +1960,9 @@ void usage() {
               << "  import-pieces       native-conversation-graph-importer "
                  "extract_import_pieces.py\n"
               << "  clone-policy <app_dir> <out_dir>  attachment-clone-session\n"
+              << "  wait-job            shell-definitions extract_wait_job.py\n"
+              << "  provider-names      provider-names extract_identity.py\n"
+              << "  shell-file-edit     shell-file-edit extract_shell_file_edit.py\n"
               << "profiles (dirs):\n"
               << "  widen <src_dir> <out_dir> <file>...\n";
     std::exit(2);
@@ -1716,6 +2025,12 @@ int main(int argc, char** argv) {
             profile_embedding_entity(source, out);
         } else if (profile == "import-pieces") {
             profile_import_pieces(source, out);
+        } else if (profile == "wait-job") {
+            profile_wait_job(source, out);
+        } else if (profile == "provider-names") {
+            profile_provider_names(source, out);
+        } else if (profile == "shell-file-edit") {
+            profile_shell_file_edit(source, out);
         } else {
             usage();
         }

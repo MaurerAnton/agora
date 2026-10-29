@@ -13,7 +13,7 @@ reproduce every trace byte for byte.
 tree (they only need `Constants.kt`), so the driver calls them directly — no transcription. The
 config model reaches its identity through
 `CustomProviderIdentityPolicy::isStableId`, and that policy's file also owns conversation-model
-helpers; `extract_identity.py` therefore copies the **stable-id pattern and the check verbatim**
+helpers; ``agora_extract provider-names`` therefore copies the **stable-id pattern and the check verbatim**
 into a stand-alone object, keeping the real regex in the loop.
 
 ## Scenario format and trace

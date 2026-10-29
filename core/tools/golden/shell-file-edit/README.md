@@ -4,7 +4,7 @@ Parity pin for the pure file helpers at the top of `util/ShellClient.kt`: the fi
 and replacer, line-ending preservation, line counting, SHA-256 and the bounded shell-output
 reader. The Conch/SSH transport, file IO and the process stream stay on the platform side.
 
-`ShellClient.kt` is the Conch shell transport object. `extract_shell_file_edit.py` copies the
+`ShellClient.kt` is the Conch shell transport object. ``agora_extract shell-file-edit`` copies the
 declarations out of it verbatim; only the three private helpers are widened to `internal` so the
 golden driver can call them. `ShellFileReadResult` and `shellFileLineCount` are also extracted
 for the cross-check, but their C++ port already lives in `shell_tools.hpp` and is pinned by the
@@ -17,7 +17,7 @@ separate `shell-tools` stand, so this stand does not duplicate the C++ model or 
 | `scenarios/*.json` | One case per file, 171 frozen scenarios |
 | `golden/*.trace` | Frozen canonical output, one per scenario |
 | `ShellFileEditTraceDump.kt` | The stand driver |
-| `extract_shell_file_edit.py` | Lifts the declarations out of `ShellClient.kt` |
+| ``agora_extract shell-file-edit`` | Lifts the declarations out of `ShellClient.kt` |
 | `gen_scenarios.py` | Generates the scenarios (deterministic; rerun after editing) |
 | `run_golden.sh` | Extracts, compiles and regenerates or verifies the traces |
 

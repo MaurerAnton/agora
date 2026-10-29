@@ -39,7 +39,7 @@ rm -rf "$classes" "$fresh" "$here/build/helpers"
 mkdir -p "$classes" "$fresh" "$here/build/helpers"
 
 echo "Extracting the stream-side helpers from GeminiProvider.kt..."
-python3 "$here/extract_gemini_stream_helpers.py" "$app/api/gemini/GeminiProvider.kt" "$helpers"
+"${AGORA_EXTRACT:-$root/core/build/agora_extract}" gemini-stream "$app/api/gemini/GeminiProvider.kt" "$helpers"
 
 sources=(
     "$app/model/ChatMessage.kt"

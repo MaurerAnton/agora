@@ -12,6 +12,7 @@
 #include <algorithm>
 #include <array>
 #include <cctype>
+#include <cstring>
 #include <cstdlib>
 #include <filesystem>
 #include <fstream>
@@ -1925,6 +1926,384 @@ void profile_shell_file_edit(const fs::path& source, const fs::path& out) {
     std::cout << "extracted shell file-edit helpers into " << out.string() << "\n";
 }
 
+// ---- batch-8 profiles ------------------------------------------------------------------------
+
+std::optional<std::size_t> find_line_start(const std::vector<std::string_view>& lines,
+                                           std::string_view marker) {
+    for (std::size_t i = 0; i < lines.size(); ++i) {
+        if (starts_with(lines[i], marker)) return i;
+    }
+    return std::nullopt;
+}
+
+bool ends_with_any(const std::string& value, std::initializer_list<const char*> suffixes) {
+    for (const char* suffix : suffixes) {
+        const std::size_t size = std::strlen(suffix);
+        if (value.size() >= size && value.compare(value.size() - size, size, suffix) == 0) {
+            return true;
+        }
+    }
+    return false;
+}
+
+// The shared function-region scanner (gemini-request / gemini-stream / ollama).
+std::vector<std::string> extract_function_region(const std::vector<std::string_view>& lines,
+                                                 std::string_view marker, bool widen_private,
+                                                 bool next_line_check) {
+    const std::optional<std::size_t> start = find_line_start(lines, marker);
+    if (!start) fail("error: " + std::string(marker) + " not found");
+
+    int paren = 0;
+    int brace = 0;
+    bool seen_brace = false;
+    std::optional<std::size_t> end;
+    for (std::size_t i = *start; i < lines.size(); ++i) {
+        for (const char ch : lines[i]) {
+            if (ch == '{') {
+                brace += 1;
+                seen_brace = true;
+            } else if (ch == '}') {
+                brace -= 1;
+            } else if (ch == '(' || ch == '[') {
+                paren += 1;
+            } else if (ch == ')' || ch == ']') {
+                paren -= 1;
+            }
+        }
+        if (seen_brace) {
+            if (brace == 0) {
+                end = i;
+                break;
+            }
+            continue;
+        }
+        if (paren != 0) continue;
+        const std::string stripped = trim_right_copy(lines[i]);
+        if (ends_with_any(stripped, {"=", ",", "&&", "||", "+", "->"})) continue;
+        if (next_line_check) {
+            const std::string next =
+                i + 1 < lines.size() ? trim_left_copy(lines[i + 1]) : std::string();
+            if (starts_with(next, "?:") || starts_with(next, "?.") ||
+                starts_with(next, "&&") || starts_with(next, "||") ||
+                starts_with(next, "+") || starts_with(next, ".")) {
+                continue;
+            }
+        }
+        end = i;
+        break;
+    }
+    if (!end) fail("error: end of " + std::string(marker) + " not found");
+
+    std::vector<std::string> region;
+    for (std::size_t i = *start; i <= *end; ++i) {
+        std::string line(lines[i]);
+        if (widen_private && starts_with(line, "private fun ")) {
+            line = "internal fun " + line.substr(std::string("private fun ").size());
+        }
+        region.push_back(std::move(line));
+    }
+    return region;
+}
+
+// The brace-only variant (anthropic-request): no paren accounting.
+std::vector<std::string> extract_brace_function(const std::vector<std::string_view>& lines,
+                                                std::string_view marker) {
+    const std::optional<std::size_t> start = find_line_start(lines, marker);
+    if (!start) fail("error: " + std::string(marker) + " not found");
+
+    int depth = 0;
+    bool seen_open = false;
+    std::optional<std::size_t> end;
+    for (std::size_t i = *start; i < lines.size(); ++i) {
+        for (const char ch : lines[i]) {
+            if (ch == '{') {
+                depth += 1;
+                seen_open = true;
+            } else if (ch == '}') {
+                depth -= 1;
+            }
+        }
+        if (seen_open && depth == 0) {
+            end = i;
+            break;
+        }
+    }
+    if (!end) fail("error: end of " + std::string(marker) + " not found");
+
+    std::vector<std::string> region;
+    for (std::size_t i = *start; i <= *end; ++i) {
+        std::string line(lines[i]);
+        if (starts_with(line, "private fun ")) {
+            line = "internal fun " + line.substr(std::string("private fun ").size());
+        }
+        region.push_back(std::move(line));
+    }
+    return region;
+}
+
+std::string join_region(const std::vector<std::string>& region) {
+    std::string out;
+    for (std::size_t i = 0; i < region.size(); ++i) {
+        if (i > 0) out += "\n";
+        out += region[i];
+    }
+    return out;
+}
+
+std::string join_blocks_sep(const std::vector<std::string>& blocks, std::string_view sep) {
+    std::string out;
+    for (std::size_t i = 0; i < blocks.size(); ++i) {
+        if (i > 0) out += sep;
+        out += blocks[i];
+    }
+    return out;
+}
+
+// The `@Serializable` model region shared by anthropic-request and ollama.
+std::string extract_models_region(const std::vector<std::string_view>& lines,
+                                  std::string_view start_marker, std::string_view end_marker,
+                                  const std::vector<std::string>& expected, bool require_serializable) {
+    std::optional<std::size_t> start;
+    for (std::size_t i = 0; i < lines.size(); ++i) {
+        if (lines[i].find(start_marker) != std::string_view::npos) {
+            if (require_serializable &&
+                (i == 0 || trim_copy(lines[i - 1]) != "@Serializable")) {
+                fail("error: no @Serializable directly above " + std::string(start_marker));
+            }
+            start = require_serializable ? i - 1 : i;
+            break;
+        }
+    }
+    if (!start) fail("error: " + std::string(start_marker) + " not found");
+
+    std::optional<std::size_t> end;
+    for (std::size_t i = *start; i < lines.size(); ++i) {
+        if (lines[i].find(end_marker) != std::string_view::npos) {
+            for (std::size_t j = i; j < lines.size(); ++j) {
+                if (trim_copy(lines[j]) == ")") {
+                    end = j;
+                    break;
+                }
+            }
+            break;
+        }
+    }
+    if (!end) fail("error: closing paren of " + std::string(end_marker) + " not found");
+
+    const std::string text = join_lines(lines, *start, *end);
+    for (const std::string& cls : expected) {
+        if (text.find("internal data class " + cls + "(") == std::string::npos) {
+            fail("error: " + cls + " is not inside the extracted model region");
+        }
+    }
+    return text;
+}
+
+// anthropic-request/extract_request_models.py
+void profile_anthropic_request(const fs::path& source, const fs::path& out) {
+    static constexpr const char* kHeader =
+        "// GENERATED by agora_extract anthropic-request from AnthropicProvider.kt -- do not "
+        "edit.\n"
+        "//\n"
+        "// The request wire model declarations and the thought-signature compatibility helpers "
+        "are copied\n"
+        "// verbatim from the provider file, which cannot be compiled standalone (Android-only "
+        "imports); the\n"
+        "// validator and the request golden stand pin them here. The helpers' visibility is "
+        "widened from\n"
+        "// private to internal so the stand driver can call them; bodies are unchanged.\n"
+        "package com.newoether.agora.api.anthropic\n"
+        "\n"
+        "import com.newoether.agora.model.ChatMessage\n"
+        "import com.newoether.agora.model.MessageSegment\n"
+        "import com.newoether.agora.model.ModelId\n"
+        "import kotlinx.serialization.SerialName\n"
+        "import kotlinx.serialization.Serializable\n"
+        "import kotlinx.serialization.json.JsonElement\n"
+        "import kotlinx.serialization.json.JsonObject\n"
+        "\n";
+    static constexpr const char* kStartClass = "internal data class AnthropicRequest(";
+    static constexpr const char* kEndClass = "internal data class AnthropicUsage(";
+    static const std::vector<std::string> kExpected = {
+        "AnthropicRequest",    "AnthropicCacheControl",  "AnthropicTool",
+        "AnthropicThinking",   "AnthropicOutputConfig",  "AnthropicMessage",
+        "AnthropicContentPart", "AnthropicImageSource",   "AnthropicUsage"};
+    static constexpr const char* kStartHelper =
+        "private fun MessageSegment.signatureIsCompatibleWithAnthropic(";
+    static constexpr const char* kSecondHelper =
+        "private fun ChatMessage.isAnthropicToolRoundCompatible(";
+
+    const std::string text = read_file(source);
+    const std::vector<std::string_view> lines = split_lines(text);
+
+    const std::string models =
+        extract_models_region(lines, kStartClass, kEndClass, kExpected, true);
+    const std::vector<std::string> first = extract_brace_function(lines, kStartHelper);
+    const std::vector<std::string> second = extract_brace_function(lines, kSecondHelper);
+
+    std::string helpers = join_region(first) + "\n\n" + join_region(second);
+    write_file(out, std::string(kHeader) + models + "\n\n" + helpers + "\n");
+}
+
+// gemini-request/extract_gemini_helpers.py
+void profile_gemini_request(const fs::path& source, const fs::path& out) {
+    static constexpr const char* kHeader =
+        "// GENERATED by agora_extract gemini-request from GeminiProvider.kt -- do not edit.\n"
+        "//\n"
+        "// The request-side helpers are copied verbatim from the provider file, which cannot "
+        "be compiled\n"
+        "// standalone (Android-only imports); the request golden stand pins them here. The only "
+        "change is\n"
+        "// widening `private fun JsonObject.stringContent` to `internal fun`.\n"
+        "package com.newoether.agora.api.gemini\n"
+        "\n"
+        "import com.newoether.agora.model.ChatMessage\n"
+        "import com.newoether.agora.model.MessageSegment\n"
+        "import com.newoether.agora.model.ModelId\n"
+        "import kotlinx.serialization.json.Json\n"
+        "import kotlinx.serialization.json.JsonObject\n"
+        "import kotlinx.serialization.json.JsonPrimitive\n"
+        "\n";
+    static constexpr std::array<const char*, 3> kMarkers = {
+        "internal fun ChatMessage.isGeminiToolRoundCompatible(",
+        "private fun JsonObject.stringContent(", "internal fun geminiModelMessageParts("};
+    static constexpr std::array<const char*, 3> kExpected = {
+        "isGeminiToolRoundCompatible", "stringContent", "geminiModelMessageParts"};
+
+    const std::string text = read_file(source);
+    const std::vector<std::string_view> lines = split_lines(text);
+
+    std::vector<std::string> blocks;
+    for (const char* marker : kMarkers) {
+        blocks.push_back(join_region(
+            extract_function_region(lines, marker, /*widen_private=*/true,
+                                    /*next_line_check=*/false)));
+    }
+    const std::string joined = join_blocks_sep(blocks, "\n\n");
+    for (const char* name : kExpected) {
+        if (joined.find(name) == std::string::npos) {
+            fail(std::string("error: ") + name + " missing from the extracted region");
+        }
+    }
+    write_file(out, std::string(kHeader) + joined + "\n");
+}
+
+// gemini-stream/extract_gemini_stream_helpers.py
+void profile_gemini_stream(const fs::path& source, const fs::path& out) {
+    static constexpr const char* kHeader =
+        "// GENERATED by agora_extract gemini-stream from GeminiProvider.kt -- do not edit.\n"
+        "//\n"
+        "// The stream-side helpers (thought-title extraction, finish-reason normalization, "
+        "termination,\n"
+        "// hosted-tool projections) are copied verbatim from the provider file, which cannot "
+        "be compiled\n"
+        "// standalone (Android-only imports); the stream golden stand pins them here. The only "
+        "change is\n"
+        "// widening `extractThoughtTitle` and `JsonObject.stringContent` from private to "
+        "internal.\n"
+        "package com.newoether.agora.api.gemini\n"
+        "\n"
+        "import com.newoether.agora.api.GenerationError\n"
+        "import com.newoether.agora.api.StreamEvent\n"
+        "import com.newoether.agora.api.util.StreamTermination\n"
+        "import kotlinx.serialization.json.JsonArray\n"
+        "import kotlinx.serialization.json.JsonElement\n"
+        "import kotlinx.serialization.json.JsonObject\n"
+        "import kotlinx.serialization.json.JsonPrimitive\n"
+        "\n";
+    static constexpr std::array<const char*, 1> kValMarkers = {"private val THOUGHT_TITLE_BOLD"};
+    static constexpr std::array<const char*, 7> kFunctionMarkers = {
+        "private fun extractThoughtTitle(",
+        "private fun JsonObject.stringContent(",
+        "internal fun normalizeGeminiFinishReason(",
+        "internal fun geminiStreamTermination(",
+        "internal fun JsonObject.toGoogleSearchHostedUpdate(",
+        "internal fun ApiExecutableCode.toCodeExecutionStart(",
+        "internal fun ApiCodeExecutionResult.toCodeExecutionCompletion("};
+    static constexpr std::array<const char*, 5> kExpected = {
+        "THOUGHT_TITLE_BOLD", "extractThoughtTitle", "normalizeGeminiFinishReason",
+        "geminiStreamTermination", "toGoogleSearchHostedUpdate"};
+
+    const std::string text = read_file(source);
+    const std::vector<std::string_view> lines = split_lines(text);
+
+    std::vector<std::string> blocks;
+    for (const char* marker : kValMarkers) {
+        const std::optional<std::size_t> at = find_line_start(lines, marker);
+        if (!at) fail(std::string("error: ") + marker + " not found");
+        if (*at + 1 >= lines.size() ||
+            lines[*at + 1].find("THOUGHT_TITLE_HEADING") == std::string_view::npos) {
+            fail(std::string("error: expected the heading regex after ") + marker);
+        }
+        blocks.push_back(std::string(lines[*at]) + "\n" + std::string(lines[*at + 1]));
+    }
+    for (const char* marker : kFunctionMarkers) {
+        blocks.push_back(join_region(
+            extract_function_region(lines, marker, /*widen_private=*/true,
+                                    /*next_line_check=*/true)));
+    }
+    const std::string joined = join_blocks_sep(blocks, "\n\n");
+    for (const char* name : kExpected) {
+        if (joined.find(name) == std::string::npos) {
+            fail(std::string("error: ") + name + " missing from the extracted region");
+        }
+    }
+    write_file(out, std::string(kHeader) + joined + "\n");
+}
+
+// ollama/extract_ollama_models.py
+void profile_ollama_models(const fs::path& source, const fs::path& out) {
+    static constexpr const char* kHeader =
+        "// GENERATED by agora_extract ollama-models from OllamaProvider.kt -- do not edit.\n"
+        "//\n"
+        "// The wire models and the loop helpers are copied verbatim from the provider file, "
+        "which cannot\n"
+        "// be compiled standalone (Android-only imports); the request/stream golden stand "
+        "pins them here.\n"
+        "package com.newoether.agora.api.ollama\n"
+        "\n"
+        "import com.newoether.agora.api.GenerationError\n"
+        "import com.newoether.agora.api.OpenAiToolCall\n"
+        "import com.newoether.agora.api.ToolDefinition\n"
+        "import com.newoether.agora.api.util.StreamTermination\n"
+        "import com.newoether.agora.model.TokenUsage\n"
+        "import kotlinx.serialization.SerialName\n"
+        "import kotlinx.serialization.Serializable\n"
+        "import kotlinx.serialization.json.JsonElement\n"
+        "import kotlinx.serialization.json.JsonObject\n"
+        "\n";
+    static constexpr const char* kStartClass = "internal data class OllamaChatRequest(";
+    static constexpr const char* kEndClass = "internal data class OllamaStreamResponse(";
+    static const std::vector<std::string> kExpected = {"OllamaChatRequest", "OllamaMessage",
+                                                       "OllamaStreamResponse"};
+    static constexpr std::array<const char*, 2> kFunctionMarkers = {
+        "internal fun ollamaStreamTermination(",
+        "internal fun OllamaStreamResponse.toTokenUsage(): TokenUsage {"};
+
+    const std::string text = read_file(source);
+    const std::vector<std::string_view> lines = split_lines(text);
+
+    std::vector<std::string> blocks;
+    blocks.push_back(extract_models_region(lines, kStartClass, kEndClass, kExpected, true));
+    for (const char* marker : kFunctionMarkers) {
+        blocks.push_back(join_region(
+            extract_function_region(lines, marker, /*widen_private=*/false,
+                                    /*next_line_check=*/true)));
+    }
+    const std::string joined = join_blocks_sep(blocks, "\n\n");
+    for (const std::string& name : kExpected) {
+        if (joined.find(name) == std::string::npos) {
+            fail("error: " + name + " missing from the extracted region");
+        }
+    }
+    for (const char* name : {"ollamaStreamTermination", "toTokenUsage"}) {
+        if (joined.find(name) == std::string::npos) {
+            fail(std::string("error: ") + name + " missing from the extracted region");
+        }
+    }
+    write_file(out, std::string(kHeader) + joined + "\n");
+}
+
 void usage() {
     std::cerr << "usage: agora_extract <profile> <stand_dir>\n"
                  "       agora_extract <profile> <source.kt> <out.kt>\n"
@@ -1963,6 +2342,10 @@ void usage() {
               << "  wait-job            shell-definitions extract_wait_job.py\n"
               << "  provider-names      provider-names extract_identity.py\n"
               << "  shell-file-edit     shell-file-edit extract_shell_file_edit.py\n"
+              << "  anthropic-request   anthropic-request extract_request_models.py\n"
+              << "  gemini-request      gemini-request extract_gemini_helpers.py\n"
+              << "  gemini-stream       gemini-stream extract_gemini_stream_helpers.py\n"
+              << "  ollama-models       ollama extract_ollama_models.py\n"
               << "profiles (dirs):\n"
               << "  widen <src_dir> <out_dir> <file>...\n";
     std::exit(2);
@@ -2031,6 +2414,14 @@ int main(int argc, char** argv) {
             profile_provider_names(source, out);
         } else if (profile == "shell-file-edit") {
             profile_shell_file_edit(source, out);
+        } else if (profile == "anthropic-request") {
+            profile_anthropic_request(source, out);
+        } else if (profile == "gemini-request") {
+            profile_gemini_request(source, out);
+        } else if (profile == "gemini-stream") {
+            profile_gemini_stream(source, out);
+        } else if (profile == "ollama-models") {
+            profile_ollama_models(source, out);
         } else {
             usage();
         }

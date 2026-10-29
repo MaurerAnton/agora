@@ -42,7 +42,7 @@ split), the break conditions and the termination summary.
 | `scenarios/*.json` | One transcript per file, 69 frozen edge cases across four modes |
 | `golden/*.trace` | Frozen canonical output, one per scenario |
 | `OllamaTraceDump.kt` | The stand driver (see "How the driver works") |
-| `extract_ollama_models.py` | Verbatim extraction of the wire models and loop helpers |
+| ``agora_extract ollama-models`` | Verbatim extraction of the wire models and loop helpers |
 | `run_golden.sh` | Extracts, compiles and regenerates or verifies the traces |
 | `gen_scenarios.py` | Generates the scenarios (deterministic; rerun after editing) |
 | `files/` | Attachment fixtures for the base64 registry |

@@ -3,7 +3,7 @@
 #
 # The traces are produced by the REAL Kotlin declarations: the wire models and the validator are
 # compiled from the app sources, and the request-side provider helpers are extracted verbatim by
-# extract_gemini_helpers.py. The C++ port must reproduce them byte for byte
+# `agora_extract gemini-request`. The C++ port must reproduce them byte for byte
 # (core/tests/gemini_request_parity_test.cpp).
 #
 # Requirements: identical to core/tools/golden/openai-request/run_golden.sh (kotlinc with the
@@ -76,7 +76,7 @@ rm -rf "$classes" "$fresh"
 mkdir -p "$classes" "$fresh"
 
 echo "Extracting the request-side helpers from GeminiProvider.kt..."
-python3 "$here/extract_gemini_helpers.py" "$app/api/gemini/GeminiProvider.kt" "$here/build/GeminiRequestHelpers.kt"
+"${AGORA_EXTRACT:-$root/core/build/agora_extract}" gemini-request "$app/api/gemini/GeminiProvider.kt" "$here/build/GeminiRequestHelpers.kt"
 
 for source in "${stand_sources[@]}"; do
     [[ -f "$source" ]] || { echo "error: missing stand source $source" >&2; exit 2; }

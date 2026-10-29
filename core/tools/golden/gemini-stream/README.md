@@ -44,7 +44,7 @@ The loop semantics, in provider order:
 | `scenarios/*.json` | One transcript per file (`name`, `providerName`, `ops`), 36 frozen edge cases |
 | `golden/*.trace` | Frozen canonical output of the Kotlin reference, one per transcript |
 | `GeminiStreamTraceDump.kt` | The stand driver (see "How the driver works") |
-| `extract_gemini_stream_helpers.py` | Verbatim extraction of the stream-side provider helpers |
+| ``agora_extract gemini-stream`` | Verbatim extraction of the stream-side provider helpers |
 | `run_golden.sh` | Extracts, compiles and regenerates or verifies the traces |
 | `gen_scenarios.py` | Generates the transcripts (deterministic; rerun after editing) |
 | `stubs/` | Leaf stubs for Android-only types the reference sources touch |

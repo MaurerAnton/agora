@@ -47,7 +47,7 @@ prompt resolution (`prepareMessages`) are pinned by the message-preparation stan
 | `scenarios/*.json` | One request per file, 95 frozen edge cases |
 | `golden/*.trace` | Frozen canonical output, one per scenario |
 | `AnthropicRequestTraceDump.kt` | The stand driver (see "How the driver works") |
-| `extract_request_models.py` | Verbatim extraction of the wire models and the two thought-signature compatibility helpers from `AnthropicProvider.kt` |
+| ``agora_extract anthropic-request`` | Verbatim extraction of the wire models and the two thought-signature compatibility helpers from `AnthropicProvider.kt` |
 | `run_golden.sh` | Extracts, compiles and regenerates or verifies the traces |
 | `gen_scenarios.py` | Generates the scenarios (deterministic; rerun after editing) |
 | `files/` | Attachment fixtures for the base64 registry (same bytes as the openai-request stand) |

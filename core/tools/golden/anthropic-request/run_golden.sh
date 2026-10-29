@@ -75,7 +75,7 @@ rm -rf "$classes" "$fresh"
 mkdir -p "$classes" "$fresh"
 
 echo "Extracting the request wire model declarations from AnthropicProvider.kt..."
-python3 "$here/extract_request_models.py" "$app/api/anthropic/AnthropicProvider.kt" "$here/build/AnthropicRequestModels.kt"
+"${AGORA_EXTRACT:-$root/core/build/agora_extract}" anthropic-request "$app/api/anthropic/AnthropicProvider.kt" "$here/build/AnthropicRequestModels.kt"
 
 for source in "${stand_sources[@]}"; do
     [[ -f "$source" ]] || { echo "error: missing stand source $source" >&2; exit 2; }

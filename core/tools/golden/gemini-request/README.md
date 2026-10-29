@@ -48,7 +48,7 @@ signature-compatibility check.
 | `scenarios/*.json` | One request per file, 73 frozen edge cases |
 | `golden/*.trace` | Frozen canonical output, one per scenario |
 | `GeminiRequestTraceDump.kt` | The stand driver (see "How the driver works") |
-| `extract_gemini_helpers.py` | Verbatim extraction of the request-side provider helpers |
+| ``agora_extract gemini-request`` | Verbatim extraction of the request-side provider helpers |
 | `run_golden.sh` | Extracts, compiles and regenerates or verifies the traces |
 | `gen_scenarios.py` | Generates the scenarios (deterministic; rerun after editing) |
 | `files/` | Attachment fixtures for the base64 registry |

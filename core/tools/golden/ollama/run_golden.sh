@@ -83,7 +83,7 @@ rm -rf "$classes" "$fresh"
 mkdir -p "$classes" "$fresh" "$here/build"
 
 echo "Extracting the wire models and loop helpers from OllamaProvider.kt..."
-python3 "$here/extract_ollama_models.py" "$app/api/ollama/OllamaProvider.kt" "$here/build/OllamaModels.kt"
+"${AGORA_EXTRACT:-$root/core/build/agora_extract}" ollama-models "$app/api/ollama/OllamaProvider.kt" "$here/build/OllamaModels.kt"
 
 for source in "${stand_sources[@]}"; do
     [[ -f "$source" ]] || { echo "error: missing stand source $source" >&2; exit 2; }

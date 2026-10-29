@@ -6828,6 +6828,556 @@ void profile_claude_chat_importer(const fs::path& scenarios) {
     std::cout << "Wrote " << entries.size() << " scenarios to " << scenarios.string() << "\n";
 }
 
+void profile_chat_media_references_dao(const fs::path& scenarios) {
+    std::vector<std::pair<std::string, json::Value>> entries;
+    auto conversation = [](const char* identifier, const char* draft_attachments = nullptr) {
+        std::vector<std::pair<std::string, json::Value>> members = {
+            {"id", str(identifier)},
+            {"draftAttachments", draft_attachments ? str(draft_attachments) : null_value()},
+        };
+        return object(std::move(members));
+    };
+    auto run = [](const char* conversation_id) {
+        std::vector<std::pair<std::string, json::Value>> members = {
+            {"id", str("run-" + std::string(conversation_id))},
+            {"conversationId", str(conversation_id)},
+            {"status", str("COMPLETED")},
+            {"startedAt", number(100)},
+            {"lastCheckpointAt", number(100)},
+            {"endedAt", number(200)},
+            {"endReason", str("MODEL_COMPLETED")},
+            {"currentPass", number(0)},
+            {"legacyAmbiguous", boolean(false)},
+        };
+        return object(std::move(members));
+    };
+    // Keyword-arg variant matching Python's message(**kwargs).
+    struct MsgOpts {
+        std::optional<json::Value> images;
+        std::optional<std::string> images_raw;
+        std::optional<std::string> attachment_meta;
+        std::optional<std::string> tool_call_json;
+    };
+    auto msg = [&](const char* identifier, const char* conversation_id, MsgOpts opts = {}) {
+        std::vector<std::pair<std::string, json::Value>> members = {
+            {"id", str(identifier)},
+            {"conversationId", str(conversation_id)},
+            {"runId", str("run-" + std::string(conversation_id))},
+        };
+        if (opts.images_raw) {
+            members.emplace_back("imagesRaw", str(*opts.images_raw));
+        } else {
+            members.emplace_back("images", opts.images.value_or(array({})));
+        }
+        if (opts.attachment_meta) members.emplace_back("attachmentMeta", str(*opts.attachment_meta));
+        if (opts.tool_call_json) members.emplace_back("toolCallJson", str(*opts.tool_call_json));
+        return object(std::move(members));
+    };
+    auto seed = [&](std::vector<json::Value> conversations,
+                    std::vector<json::Value> messages = {},
+                    std::vector<json::Value> new_chat_persist = {}) {
+        std::vector<json::Value> runs;
+        for (const auto& conv : conversations) {
+            for (const auto& m : conv.members) {
+                if (m.key == "id" && m.value.kind == json::Kind::String) {
+                    runs.push_back(run(m.value.text.c_str()));
+                    break;
+                }
+            }
+        }
+        return object({
+            {"conversations", array(std::move(conversations))},
+            {"runs", array(std::move(runs))},
+            {"messages", array(std::move(messages))},
+            {"newChatPersist", array(std::move(new_chat_persist))},
+        });
+    };
+    auto op = [](const char* name, std::vector<std::pair<std::string, json::Value>> arguments) {
+        std::vector<std::pair<std::string, json::Value>> members = {{"op", str(name)}};
+        for (auto& arg : arguments) members.push_back(std::move(arg));
+        return object(std::move(members));
+    };
+    auto attachments = [&](std::optional<std::string> after_id, int limit,
+                           std::optional<std::string> path_token = std::nullopt) {
+        std::vector<std::pair<std::string, json::Value>> arguments = {
+            {"afterId", after_id ? str(*after_id) : null_value()},
+            {"limit", number(limit)},
+        };
+        if (path_token) arguments.emplace_back("pathToken", str(*path_token));
+        return op("getMessageAttachmentReferencesPage", std::move(arguments));
+    };
+    auto conversation_attachments = [&](const char* conversation_id,
+                                        std::optional<std::string> after_id, int limit) {
+        return op("getConversationMessageAttachmentReferencesPage", {
+            {"conversationId", str(conversation_id)},
+            {"afterId", after_id ? str(*after_id) : null_value()},
+            {"limit", number(limit)},
+        });
+    };
+    auto tool_media = [&](std::optional<std::string> after_id, int limit) {
+        return op("getMessageToolMediaReferencesPage", {
+            {"afterId", after_id ? str(*after_id) : null_value()},
+            {"limit", number(limit)},
+        });
+    };
+    auto draft_attachments = [&](std::optional<std::string> after_id, int limit,
+                                 std::optional<std::string> path_token = std::nullopt) {
+        std::vector<std::pair<std::string, json::Value>> arguments = {
+            {"afterId", after_id ? str(*after_id) : null_value()},
+            {"limit", number(limit)},
+        };
+        if (path_token) arguments.emplace_back("pathToken", str(*path_token));
+        return op("getConversationDraftAttachmentReferencesPage", std::move(arguments));
+    };
+    auto new_chat = [&](std::optional<std::string> path_token = std::nullopt) {
+        if (!path_token) {
+            return op("getNewChatDraftAttachmentReference", {});
+        }
+        return op("getNewChatDraftAttachmentReference", {{"pathToken", str(*path_token)}});
+    };
+    auto write = [&](const char* name, json::Value seed_val, std::vector<json::Value> steps) {
+        entries.emplace_back(name, object({
+            {"seed", std::move(seed_val)},
+            {"steps", array(std::move(steps))},
+        }));
+    };
+
+    // 01-message-attachment-pages
+    write("01-message-attachment-pages", seed(
+        {conversation("c-1")},
+        {
+            msg("m-01", "c-1", {.images = array({str("a.png")})}),
+            msg("m-02", "c-1", {.images = array({}), .attachment_meta = std::string("{\"files\":[{\"path\":\"b.png\"}]}")}),
+            msg("m-03", "c-1", {.images = array({})}),
+            msg("m-04", "c-1", {.images = array({}), .attachment_meta = std::string("")}),
+            msg("m-05", "c-1", {.images_raw = std::string("")}),
+            msg("m-06", "c-1", {.images_raw = std::string("[]"), .attachment_meta = std::string("{}")}),
+            msg("m-07", "c-1", {.images = array({str("c.png"), str("d.png")}), .attachment_meta = std::string("")}),
+            msg("m-08", "c-1", {.images_raw = std::string("legacy1|||legacy2")}),
+            msg("m-09", "c-1", {.images = array({str("e.png")}), .attachment_meta = std::string("  ")}),
+            msg("m-10", "c-1", {.images = array({str("f.png")})}),
+        }, {}),
+        {
+            attachments(std::nullopt, 100),
+            attachments(std::nullopt, 3),
+            attachments(std::string("m-02"), 100),
+            attachments(std::string("m-10"), 100),
+            attachments(std::string(""), 100),
+            attachments(std::nullopt, 0),
+            attachments(std::nullopt, 100, std::string("c.png")),
+            attachments(std::nullopt, 100, std::string("b.png")),
+            attachments(std::nullopt, 100, std::string("legacy2")),
+            attachments(std::nullopt, 100, std::string("missing")),
+            attachments(std::nullopt, 100, std::string("c")),
+            attachments(std::nullopt, 100, std::string("A.PNG")),
+            attachments(std::nullopt, 100, std::string("  ")),
+            attachments(std::nullopt, 100, std::string("[")),
+        });
+
+    // 02-conversation-attachment-pages
+    write("02-conversation-attachment-pages", seed(
+        {conversation("c-1"), conversation("c-2")},
+        {
+            msg("m-01", "c-1", {.images = array({str("a.png")})}),
+            msg("m-02", "c-1", {.images = array({}), .attachment_meta = std::string("{}")}),
+            msg("m-03", "c-1", {.images = array({})}),
+            msg("m-04", "c-1", {.images = array({str("b.png")})}),
+            msg("m-05", "c-2", {.images = array({str("c.png")})}),
+            msg("m-06", "c-2", {.images = array({}), .attachment_meta = std::string("{}")}),
+        }, {}),
+        {
+            conversation_attachments("c-1", std::nullopt, 100),
+            conversation_attachments("c-1", std::string("m-02"), 100),
+            conversation_attachments("c-1", std::nullopt, 1),
+            conversation_attachments("c-2", std::nullopt, 100),
+            conversation_attachments("c-3", std::nullopt, 100),
+            conversation_attachments("c-1", std::string("m-04"), 100),
+            conversation_attachments("c-1", std::string(""), 100),
+        });
+
+    // 03-tool-media-pages
+    write("03-tool-media-pages", seed(
+        {conversation("c-1")},
+        {
+            msg("m-01", "c-1", {.tool_call_json = std::string("{\"segments\":[{\"type\":\"citation\"}]}")}),
+            msg("m-02", "c-1"),
+            msg("m-03", "c-1", {.tool_call_json = std::string("")}),
+            msg("m-04", "c-1", {.tool_call_json = std::string("{\"tool\":\"x\"}")}),
+            msg("m-05", "c-1", {.tool_call_json = std::string("   ")}),
+        }, {}),
+        {
+            tool_media(std::nullopt, 100),
+            tool_media(std::string("m-01"), 100),
+            tool_media(std::nullopt, 1),
+            tool_media(std::string("m-05"), 100),
+            tool_media(std::nullopt, 0),
+            tool_media(std::string(""), 100),
+        });
+
+    // 04-conversation-draft-pages
+    write("04-conversation-draft-pages", seed(
+        {conversation("c-01", "[\"a.png\"]"),
+         conversation("c-02"),
+         conversation("c-03", ""),
+         conversation("c-04", "{\"draft\":\"b.png\"}"),
+         conversation("c-05", "legacy|||format")},
+        {}, {}),
+        {
+            draft_attachments(std::nullopt, 100),
+            draft_attachments(std::nullopt, 100, std::string("a.png")),
+            draft_attachments(std::nullopt, 100, std::string("b.png")),
+            draft_attachments(std::nullopt, 100, std::string("legacy")),
+            draft_attachments(std::nullopt, 100, std::string("A.png")),
+            draft_attachments(std::string("c-01"), 100),
+            draft_attachments(std::nullopt, 2),
+            draft_attachments(std::nullopt, 0),
+            draft_attachments(std::string(""), 100),
+        });
+
+    // 05-new-chat-draft
+    write("05-new-chat-draft", seed(
+        {conversation("c-1")}, {},
+        {object({
+            {"id", number(0)},
+            {"draftAttachments", str("[\"new.png\"]")},
+            {"modelId", str("mdl-1")},
+            {"systemPromptId", str("sp-1")},
+            {"conversationSettingsJson", str("{\"temperature\":0.2}")},
+            {"draftText", str("hello")},
+        })}),
+        {
+            new_chat(),
+            new_chat(std::string("new.png")),
+            new_chat(std::string("NEW.PNG")),
+            new_chat(std::string("missing")),
+            new_chat(std::string("")),
+        });
+
+    // 06-new-chat-draft-empty
+    write("06-new-chat-draft-empty", seed(
+        {conversation("c-1")}, {},
+        {object({{"id", number(0)}, {"draftAttachments", str("")}})}),
+        {
+            new_chat(),
+            new_chat(std::string("x")),
+        });
+
+    // 07-new-chat-draft-null
+    write("07-new-chat-draft-null", seed(
+        {conversation("c-1")}, {},
+        {object({{"id", number(0)}, {"draftAttachments", null_value()}})}),
+        {
+            new_chat(),
+        });
+
+    // 08-new-chat-draft-absent
+    write("08-new-chat-draft-absent", seed(
+        {conversation("c-1")}, {}, {}),
+        {
+            new_chat(),
+            new_chat(std::string("x")),
+        });
+
+    remove_stale(scenarios);
+    const FormatOptions pretty{Format::Pretty2, false};
+    for (const auto& [name, value] : entries) {
+        write_scenario(scenarios, name, value, pretty);
+    }
+    std::cout << "Wrote " << entries.size() << " scenarios to " << scenarios.string() << "\n";
+}
+
+void profile_task_schedule(const fs::path& scenarios) {
+    std::vector<std::pair<std::string, json::Value>> entries;
+    auto schedule = [](const char* type, int hour = 0, int minute = 0,
+                       std::optional<std::vector<int>> days = std::nullopt,
+                       int day = 1, int month = 1, long long once = 0) {
+        std::vector<std::pair<std::string, json::Value>> members = {
+            {"type", str(type)},
+            {"hour", number(hour)},
+            {"minute", number(minute)},
+            {"dayOfMonth", number(day)},
+            {"month", number(month)},
+            {"onceAtMillis", number(once)},
+        };
+        if (days) {
+            std::vector<json::Value> d;
+            for (int v : *days) d.push_back(number(v));
+            members.emplace_back("daysOfWeek", array(std::move(d)));
+        }
+        return object(std::move(members));
+    };
+    auto case_obj = [&](const char* name, const char* op,
+                        std::optional<json::Value> schedule_opt = std::nullopt,
+                        const char* tz = "UTC", const char* locale = "en-US",
+                        std::optional<long long> runAt = std::nullopt,
+                        std::optional<const char*> newType = std::nullopt,
+                        std::optional<int> newHour = std::nullopt,
+                        std::optional<int> newMinute = std::nullopt,
+                        std::optional<int> year = std::nullopt,
+                        std::optional<int> month = std::nullopt,
+                        std::optional<int> day = std::nullopt) {
+        std::vector<std::pair<std::string, json::Value>> members = {
+            {"name", str(name)},
+            {"op", str(op)},
+            {"tz", str(tz)},
+            {"locale", str(locale)},
+        };
+        if (schedule_opt) members.emplace_back("schedule", std::move(*schedule_opt));
+        if (runAt) members.emplace_back("runAt", number(*runAt));
+        if (newType) members.emplace_back("newType", str(*newType));
+        if (newHour) members.emplace_back("newHour", number(*newHour));
+        if (newMinute) members.emplace_back("newMinute", number(*newMinute));
+        if (year) members.emplace_back("year", number(*year));
+        if (month) members.emplace_back("month", number(*month));
+        if (day) members.emplace_back("day", number(*day));
+        entries.emplace_back(name, object(std::move(members)));
+    };
+
+    // toCron
+    case_obj("cron_daily", "toCron", schedule("DAILY", 9, 0));
+    case_obj("cron_daily_with_zero_minute", "toCron", schedule("DAILY", 0, 0));
+    case_obj("cron_daily_ignores_a_stale_day_selection", "toCron",
+             schedule("DAILY", 9, 0, std::vector<int>{3, 1}));
+    case_obj("cron_once_is_empty", "toCron", schedule("ONCE", 14, 30));
+    case_obj("cron_weekly", "toCron", schedule("WEEKLY", 8, 45, std::vector<int>{1, 3, 5}));
+    case_obj("cron_weekly_sorts_its_days", "toCron", schedule("WEEKLY", 8, 45, std::vector<int>{5, 1, 3}));
+    case_obj("cron_weekly_with_no_days_falls_back_to_daily", "toCron", schedule("WEEKLY", 8, 45));
+    case_obj("cron_weekly_on_sunday", "toCron", schedule("WEEKLY", 6, 0, std::vector<int>{0}));
+    case_obj("cron_weekly_on_saturday", "toCron", schedule("WEEKLY", 6, 0, std::vector<int>{6}));
+    case_obj("cron_monthly", "toCron", schedule("MONTHLY", 3, 15, std::nullopt, 23));
+    case_obj("cron_monthly_ignores_its_day_selection", "toCron",
+             schedule("MONTHLY", 3, 15, std::vector<int>{2}, 23));
+    case_obj("cron_yearly", "toCron", schedule("YEARLY", 0, 0, std::nullopt, 29, 2));
+    case_obj("cron_daily_keeps_a_two_digit_minute", "toCron", schedule("DAILY", 13, 45));
+
+    // toRunAt
+    case_obj("run_at_only_for_a_positive_one_shot", "toRunAt",
+             schedule("ONCE", 14, 30, std::nullopt, 10, 6, 1780000000000LL));
+    case_obj("run_at_none_for_a_recurring_schedule", "toRunAt", schedule("DAILY", 9, 0));
+    case_obj("run_at_none_for_a_zero_epoch", "toRunAt",
+             schedule("ONCE", 14, 30, std::nullopt, 10, 6, 0));
+    case_obj("run_at_none_for_a_negative_epoch", "toRunAt",
+             schedule("ONCE", 14, 30, std::nullopt, 10, 6, -5));
+
+    // parse
+    auto case_parse = [&](const char* name, const char* cronExpr,
+                          std::optional<long long> runAt = std::nullopt,
+                          const char* tz = "UTC", const char* locale = "en-US",
+                          bool run_at_null = false) {
+        std::vector<std::pair<std::string, json::Value>> members = {
+            {"name", str(name)},
+            {"op", str("parse")},
+            {"tz", str(tz)},
+            {"locale", str(locale)},
+            {"cronExpr", str(cronExpr)},
+        };
+        if (run_at_null) members.emplace_back("runAt", null_value());
+        else if (runAt) members.emplace_back("runAt", number(*runAt));
+        entries.emplace_back(name, object(std::move(members)));
+    };
+
+    case_parse("parse_daily", "30 9 * * *");
+    case_parse("parse_daily_with_surrounding_whitespace", "  30   9  *  *  *  ");
+    case_parse("parse_weekly_single_day", "0 8 * * 3");
+    case_parse("parse_weekly_several_days", "45 8 * * 1,3,5");
+    case_parse("parse_weekly_sunday_as_seven_folds_to_zero", "0 6 * * 7");
+    case_parse("parse_weekly_with_both_sunday_spellings", "0 6 * * 0,7");
+    case_parse("parse_weekly_days_are_not_sorted", "0 6 * * 5,1");
+    case_parse("parse_weekly_with_spaces_after_commas", "0 6 * * 1, 3");
+    case_parse("parse_monthly", "15 3 23 * *");
+    case_parse("parse_yearly", "0 0 29 2 *");
+    case_parse("parse_once_wins_over_a_cron", "30 9 * * *", 1780000000000LL);
+    case_parse("parse_once_with_a_zero_run_at_falls_back_to_the_cron", "30 9 * * *", 0LL);
+    case_parse("parse_null_run_at_falls_back_to_the_cron", "30 9 * * *", std::nullopt,
+               "UTC", "en-US", true);
+
+    case_parse("parse_rejects_an_hourly_preset", "0 * * * *");
+    case_parse("parse_rejects_a_step_expression", "*/15 * * * *");
+    case_parse("parse_rejects_a_range_expression", "0 9-17 * * *");
+    case_parse("parse_rejects_a_list_of_minutes", "0,30 * * * *");
+    case_parse("parse_rejects_both_day_fields_restricted", "0 0 13 * 5");
+    case_parse("parse_rejects_a_restricted_month_with_wildcard_day", "0 0 * 3 *");
+    case_parse("parse_rejects_four_fields", "30 9 * *");
+    case_parse("parse_rejects_six_fields", "30 9 * * * *");
+    case_parse("parse_rejects_a_blank_expression", "");
+    case_parse("parse_rejects_a_non_numeric_minute", "x 9 * * *");
+    case_parse("parse_rejects_a_minute_above_max", "60 9 * * *");
+    case_parse("parse_rejects_a_hour_above_max", "30 24 * * *");
+    case_parse("parse_rejects_a_day_above_max", "0 0 32 * *");
+    case_parse("parse_rejects_a_day_below_min", "0 0 0 * *");
+    case_parse("parse_rejects_a_month_above_max", "0 0 1 13 *");
+    case_parse("parse_rejects_a_weekday_above_max", "0 0 * * 8");
+    case_parse("parse_rejects_an_empty_weekly_selection", "0 6 * * ");
+    case_parse("parse_rejects_a_weekly_day_that_is_not_a_number", "0 6 * * 1,x");
+    case_parse("parse_rejects_a_step_in_the_day_of_week", "0 6 * * */2");
+
+    // switchedTo
+    auto case_switchedTo = [&](const char* name,
+                               json::Value schedule_val,
+                               const char* newType,
+                               const char* tz = "UTC", const char* locale = "en-US") {
+        std::vector<std::pair<std::string, json::Value>> members = {
+            {"name", str(name)},
+            {"op", str("switchedTo")},
+            {"tz", str(tz)},
+            {"locale", str(locale)},
+            {"schedule", std::move(schedule_val)},
+            {"newType", str(newType)},
+        };
+        entries.emplace_back(name, object(std::move(members)));
+    };
+
+    case_switchedTo("switched_to_the_same_type_is_a_no_op",
+                    schedule("MONTHLY", 3, 15, std::nullopt, 23), "MONTHLY");
+    case_switchedTo("switched_monthly_to_daily_keeps_the_date_fields",
+                    schedule("MONTHLY", 3, 15, std::vector<int>{2, 4}, 23, 11), "DAILY");
+    case_switchedTo("switched_monthly_to_weekly_keeps_the_day_selection",
+                    schedule("MONTHLY", 3, 15, std::vector<int>{4, 2}, 23), "WEEKLY");
+    case_switchedTo("switched_yearly_to_weekly_keeps_the_day_selection",
+                    schedule("YEARLY", 0, 0, std::vector<int>{1}, 29, 2), "WEEKLY");
+    case_switchedTo("switched_once_to_daily_clears_the_one_shot_epoch",
+                    schedule("ONCE", 14, 30, std::vector<int>{3}, 10, 6, 1780000000000LL), "DAILY");
+    case_switchedTo("switched_once_to_weekly_clears_the_one_shot_epoch",
+                    schedule("ONCE", 14, 30, std::vector<int>{3}, 10, 6, 1780000000000LL), "WEEKLY");
+
+    // withOnceAt
+    auto case_withOnceAt = [&](const char* name,
+                               json::Value schedule_val,
+                               int year, int month, int day,
+                               const char* tz = "UTC", const char* locale = "en-US") {
+        std::vector<std::pair<std::string, json::Value>> members = {
+            {"name", str(name)},
+            {"op", str("withOnceAt")},
+            {"tz", str(tz)},
+            {"locale", str(locale)},
+            {"schedule", std::move(schedule_val)},
+            {"year", number(year)},
+            {"month", number(month)},
+            {"day", number(day)},
+        };
+        entries.emplace_back(name, object(std::move(members)));
+    };
+
+    case_withOnceAt("once_at_builds_an_exact_instant",
+                    schedule("ONCE", 9, 30), 2027, 5, 10);
+    case_withOnceAt("once_at_in_a_standard_time_zone",
+                    schedule("ONCE", 9, 30), 2027, 1, 10, "Europe/Berlin");
+    case_withOnceAt("once_at_in_a_summer_time_zone",
+                    schedule("ONCE", 9, 30), 2027, 7, 10, "Europe/Berlin");
+    case_withOnceAt("once_at_in_a_half_hour_zone",
+                    schedule("ONCE", 9, 30), 2027, 7, 10, "Asia/Kolkata");
+    case_withOnceAt("once_at_feb_29_in_a_leap_year",
+                    schedule("ONCE", 0, 0), 2028, 2, 29);
+    case_withOnceAt("once_at_feb_29_in_a_common_year_normalizes",
+                    schedule("ONCE", 0, 0), 2027, 2, 29);
+    case_withOnceAt("once_at_a_day_past_the_end_of_the_month_normalizes",
+                    schedule("ONCE", 0, 0), 2027, 4, 31);
+    case_withOnceAt("once_at_dec_31",
+                    schedule("ONCE", 23, 59), 2027, 12, 31);
+    case_withOnceAt("once_at_rewrites_the_stored_date",
+                    schedule("MONTHLY", 9, 30, std::nullopt, 2, 2), 2030, 8, 21);
+
+    // withTime
+    auto case_withTime = [&](const char* name,
+                             json::Value schedule_val,
+                             int newHour, int newMinute,
+                             const char* tz = "UTC", const char* locale = "en-US") {
+        std::vector<std::pair<std::string, json::Value>> members = {
+            {"name", str(name)},
+            {"op", str("withTime")},
+            {"tz", str(tz)},
+            {"locale", str(locale)},
+            {"schedule", std::move(schedule_val)},
+            {"newHour", number(newHour)},
+            {"newMinute", number(newMinute)},
+        };
+        entries.emplace_back(name, object(std::move(members)));
+    };
+
+    case_withTime("with_time_on_a_recurring_schedule_keeps_the_date",
+                  schedule("MONTHLY", 3, 15, std::nullopt, 23, 11), 7, 5);
+    case_withTime("with_time_on_a_daily_schedule",
+                  schedule("DAILY", 9, 0), 23, 59);
+    case_withTime("with_time_on_a_one_shot_rebuilds_the_instant",
+                  schedule("ONCE", 14, 30, std::nullopt, 10, 6, 1780000000000LL), 7, 5);
+    case_withTime("with_time_on_a_one_shot_keeps_its_date",
+                  schedule("ONCE", 14, 30, std::nullopt, 10, 6, 1780000000000LL), 9, 0);
+    case_withTime("with_time_across_a_dst_change_moves_the_instant",
+                  schedule("ONCE", 14, 30, std::nullopt, 28, 3, 1775000000000LL), 3, 0, "Europe/Berlin");
+
+    // formatOnDate
+    auto case_formatOnDate = [&](const char* name,
+                                 json::Value schedule_val,
+                                 const char* tz = "UTC", const char* locale = "en-US") {
+        std::vector<std::pair<std::string, json::Value>> members = {
+            {"name", str(name)},
+            {"op", str("formatOnDate")},
+            {"tz", str(tz)},
+            {"locale", str(locale)},
+            {"schedule", std::move(schedule_val)},
+        };
+        entries.emplace_back(name, object(std::move(members)));
+    };
+
+    case_formatOnDate("format_on_date_daily_is_yearless",
+                      schedule("DAILY", 9, 0, std::nullopt, 14, 3));
+    case_formatOnDate("format_on_date_monthly_is_yearless",
+                      schedule("MONTHLY", 9, 0, std::nullopt, 23, 11));
+    case_formatOnDate("format_on_date_yearly_omits_the_year",
+                      schedule("YEARLY", 9, 0, std::nullopt, 29, 2));
+    case_formatOnDate("format_on_date_once_shows_the_full_date",
+                      schedule("ONCE", 9, 0, std::nullopt, 10, 6, 1780000000000LL));
+    case_formatOnDate("format_on_date_once_in_another_zone",
+                      schedule("ONCE", 9, 0, std::nullopt, 10, 6, 1780000000000LL), "Asia/Kolkata");
+    case_formatOnDate("format_on_date_feb_29_uses_a_leap_year",
+                      schedule("MONTHLY", 9, 0, std::nullopt, 29, 2));
+    case_formatOnDate("format_on_date_the_first_of_january",
+                      schedule("MONTHLY", 9, 0, std::nullopt, 1, 1));
+    case_formatOnDate("format_on_date_feb_30_still_normalizes",
+                      schedule("MONTHLY", 9, 0, std::nullopt, 30, 2));
+    case_formatOnDate("format_on_date_april_31_still_normalizes",
+                      schedule("MONTHLY", 9, 0, std::nullopt, 31, 4));
+    case_formatOnDate("format_on_date_the_last_day_of_february",
+                      schedule("MONTHLY", 9, 0, std::nullopt, 28, 2));
+    case_formatOnDate("format_on_date_in_german",
+                      schedule("MONTHLY", 9, 0, std::nullopt, 14, 3), "UTC", "de-DE");
+    case_formatOnDate("format_on_date_in_french",
+                      schedule("YEARLY", 9, 0, std::nullopt, 14, 3), "UTC", "fr-FR");
+
+    // hasSchedule
+    auto case_hasSchedule = [&](const char* name,
+                                const char* cronExpr,
+                                std::optional<long long> runAt = std::nullopt,
+                                const char* tz = "UTC", const char* locale = "en-US",
+                                bool run_at_null = false) {
+        std::vector<std::pair<std::string, json::Value>> members = {
+            {"name", str(name)},
+            {"op", str("hasSchedule")},
+            {"tz", str(tz)},
+            {"locale", str(locale)},
+            {"cronExpr", str(cronExpr)},
+        };
+        if (run_at_null) members.emplace_back("runAt", null_value());
+        else if (runAt) members.emplace_back("runAt", number(*runAt));
+        entries.emplace_back(name, object(std::move(members)));
+    };
+
+    case_hasSchedule("has_schedule_for_a_cron", "30 9 * * *");
+    case_hasSchedule("has_schedule_for_a_one_shot", "", 1780000000000LL);
+    case_hasSchedule("has_schedule_needs_a_positive_epoch", "", 0LL);
+    case_hasSchedule("has_schedule_rejects_a_negative_epoch", "", -1LL);
+    case_hasSchedule("has_schedule_false_when_nothing_is_set", "   ", std::nullopt,
+                     "UTC", "en-US", true);
+    case_hasSchedule("has_schedule_blank_cron_with_a_valid_one_shot", "  ", 1780000000000LL);
+
+    remove_stale(scenarios);
+    const FormatOptions pretty{Format::Pretty2, false, true}; // ensure_ascii=False, sort_keys=True
+    for (const auto& [name, value] : entries) {
+        write_scenario(scenarios, name, value, pretty);
+    }
+    std::cout << "Wrote " << entries.size() << " scenarios to " << scenarios.string() << "\n";
+}
+
 }  // namespace
 
 int main(int argc, char** argv) {
@@ -6879,7 +7429,9 @@ int main(int argc, char** argv) {
                   << "  thinking-capability   thinking-capability/gen_scenarios.py\n"
                   << "  conch-handshake       conch-handshake/gen_scenarios.py\n"
                   << "  generation-policies   generation-policies/gen_scenarios.py\n"
-                  << "  claude-chat-importer  claude-chat-importer/gen_scenarios.py\n";
+                  << "  claude-chat-importer  claude-chat-importer/gen_scenarios.py\n"
+                  << "  chat-media-references-dao chat-media-references-dao/gen_scenarios.py\n"
+                  << "  task-schedule         task-schedule/gen_scenarios.py\n";
         return 2;
     }
     const std::string profile = argv[1];
@@ -6978,6 +7530,10 @@ int main(int argc, char** argv) {
         profile_generation_policies(scenarios);
     } else if (profile == "claude-chat-importer") {
         profile_claude_chat_importer(scenarios);
+    } else if (profile == "chat-media-references-dao") {
+        profile_chat_media_references_dao(scenarios);
+    } else if (profile == "task-schedule") {
+        profile_task_schedule(scenarios);
     } else {
         std::cerr << "unknown profile: " << profile << "\n";
         return 2;

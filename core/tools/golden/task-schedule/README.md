@@ -15,7 +15,7 @@ is frozen under `golden/`; the C++ port (`agora::core::schedule`, test
 | `agora_extract task-entity` | Lifts `TaskEntity` out of `data/local/ChatEntities.kt` |
 | `PlatformStubs.kt` | The `@Entity` / `@PrimaryKey` Room markers |
 | `run_golden.sh` | Extracts, compiles and regenerates or verifies the traces |
-| `gen_scenarios.py` | Generates the scenarios (deterministic; rerun after editing) |
+| `agora_scenarios task-schedule` | Generates the scenarios (deterministic; rerun after editing) |
 
 `TaskSchedule.kt` itself needs **no stubs** — it only imports `java.util.Calendar`. Its
 `hasSchedule()` extension is declared on the Room entity `TaskEntity`, which lives in a file full
@@ -114,7 +114,7 @@ Escaping: `\` `|` `;` `\n` `\r` `\t` → `\\\\` `\\p` `\\s` `\\n` `\\r` `\\t`.
 ```bash
 JAVA_HOME=/path/to/jdk17 KOTLINC=/path/to/kotlinc KOTLINX_JARS=core.jar:json.jar ./run_golden.sh          # verify
 JAVA_HOME=/path/to/jdk17 KOTLINC=/path/to/kotlinc KOTLINX_JARS=core.jar:json.jar ./run_golden.sh --freeze # regenerate
-python3 gen_scenarios.py                                                                                  # rewrite scenarios
+core/build/agora_scenarios task-schedule core/tools/golden/task-schedule              # rewrite scenarios
 ```
 
 `run_golden.sh` wipes the stand's `build/` (its git-ignored scratch, including the extracted

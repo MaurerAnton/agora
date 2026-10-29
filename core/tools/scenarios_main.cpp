@@ -4591,6 +4591,427 @@ void profile_zip_reader(const fs::path& scenarios) {
     std::cout << "Wrote " << entries.size() << " scenarios to " << scenarios.string() << "\n";
 }
 
+
+// conch-network/gen_scenarios.py — indent=2, ensure_ascii=False.
+void profile_conch_network(const fs::path& scenarios) {
+    constexpr std::int64_t kControlLimit = 64 << 10;
+    constexpr std::int64_t kResponseLimit = 40 << 20;
+    std::vector<std::pair<std::string, json::Value>> entries;
+    auto response = [](std::int64_t code, const char* body,
+                       std::vector<std::vector<std::string>> headers,
+                       std::optional<std::int64_t> declared_size) {
+        std::vector<json::Value> header_values;
+        for (const auto& header : headers) {
+            std::vector<json::Value> pair;
+            for (const std::string& value : header) pair.push_back(str(value));
+            header_values.push_back(array(std::move(pair)));
+        }
+        std::vector<std::pair<std::string, json::Value>> members = {
+            {"code", number(code)},
+            {"body", str(body)},
+            {"headers", array(std::move(header_values))},
+        };
+        if (declared_size) members.emplace_back("declaredSize", number(*declared_size));
+        return object(std::move(members));
+    };
+    auto write = [&](const char* name,
+                     std::vector<std::pair<std::string, json::Value>> members) {
+        entries.emplace_back(name, object(std::move(members)));
+    };
+
+    write("01-get-success",
+          {{"op", str("getTextResponse")},
+           {"url", str("https://conch.test/public-key?challenge=abc")},
+           {"headers", array({array({str("X-Test"), str("1")})})},
+           {"response", response(200, "hello",
+                                 {{"X-Conch-Response-Signature", "sig-1"}}, std::nullopt)}});
+    write("02-get-duplicate-header",
+          {{"op", str("getTextResponse")},
+           {"url", str("https://conch.test/public-key?challenge=abc")},
+           {"headers", array({array({str("X-Test"), str("1")}),
+                              array({str("x-test"), str("2")})})},
+           {"response", response(200, "hello",
+                                 {{"X-Conch-Response-Signature", "sig-1"}}, std::nullopt)}});
+    write("03-get-error-body-over-control",
+          {{"op", str("getTextResponse")},
+           {"url", str("https://conch.test/public-key")},
+           {"headers", array({})},
+           {"response", response(500, "", {}, kControlLimit + 1)}});
+    write("04-get-error-body-at-control",
+          {{"op", str("getTextResponse")},
+           {"url", str("https://conch.test/public-key")},
+           {"headers", array({})},
+           {"response", response(500, "", {}, kControlLimit)}});
+    write("05-get-success-control-plus-one",
+          {{"op", str("getTextResponse")},
+           {"url", str("https://conch.test/public-key")},
+           {"headers", array({})},
+           {"response", response(200, "", {}, kControlLimit + 1)}});
+    write("06-get-success-over-response",
+          {{"op", str("getTextResponse")},
+           {"url", str("https://conch.test/public-key")},
+           {"headers", array({})},
+           {"response", response(200, "", {}, kResponseLimit + 1)}});
+    write("07-post-default-timeout",
+          {{"op", str("postTextResponse")},
+           {"url", str("https://conch.test/execute")},
+           {"body", str(R"json({"a":1})json")},
+           {"headers", array({array({str("Content-Type"), str("text/plain")})})},
+           {"response", response(200, "ok",
+                                 {{"X-Conch-Response-Signature", "sig-2"}}, std::nullopt)}});
+    write("08-post-explicit-timeout",
+          {{"op", str("postTextResponse")},
+           {"url", str("https://conch.test/execute")},
+           {"body", str(R"json({"a":1})json")},
+           {"headers", array({})},
+           {"timeoutMillis", number(1234)},
+           {"response", response(200, "ok", {}, std::nullopt)}});
+    write("09-post-zero-timeout",
+          {{"op", str("postTextResponse")},
+           {"url", str("https://conch.test/execute")},
+           {"body", str("{}")},
+           {"headers", array({})},
+           {"timeoutMillis", number(0)},
+           {"response", response(200, "ok", {}, std::nullopt)}});
+    write("10-post-negative-timeout",
+          {{"op", str("postTextResponse")},
+           {"url", str("https://conch.test/execute")},
+           {"body", str("{}")},
+           {"headers", array({})},
+           {"timeoutMillis", number(-1)},
+           {"response", response(200, "ok", {}, std::nullopt)}});
+    write("11-post-signature-lowercase",
+          {{"op", str("postTextResponse")},
+           {"url", str("https://conch.test/execute")},
+           {"body", str("{}")},
+           {"headers", array({})},
+           {"response", response(200, "ok",
+                                 {{"x-conch-response-signature", "sig-lower"}},
+                                 std::nullopt)}});
+    write("12-post-duplicate-signature",
+          {{"op", str("postTextResponse")},
+           {"url", str("https://conch.test/execute")},
+           {"body", str("{}")},
+           {"headers", array({})},
+           {"response",
+            response(200, "ok",
+                     {{"X-Conch-Response-Signature", "first"},
+                      {"x-conch-response-signature", "second"}},
+                     std::nullopt)}});
+    write("13-get-empty-signature",
+          {{"op", str("getTextResponse")},
+           {"url", str("https://conch.test/public-key")},
+           {"headers", array({})},
+           {"response", response(200, "hello", {}, std::nullopt)}});
+    write("14-post-utf8-body",
+          {{"op", str("postTextResponse")},
+           {"url", str("https://conch.test/execute")},
+           {"body", str("{\"text\":\"h\u00e9llo \U0001F600\"}")},
+           {"headers", array({array({str("X-Encryption"), str("v2")})})},
+           {"response", response(200, "ok", {}, std::nullopt)}});
+    write("15-post-error-at-response-limit",
+          {{"op", str("postTextResponse")},
+           {"url", str("https://conch.test/execute")},
+           {"body", str("{}")},
+           {"headers", array({})},
+           {"response", response(500, "", {}, kResponseLimit)}});
+    write("16-get-utf8-response",
+          {{"op", str("getTextResponse")},
+           {"url", str("https://conch.test/public-key")},
+           {"headers", array({})},
+           {"response", response(200, "h\u00e9llo \U0001F600",
+                                 {{"X-Conch-Response-Signature", "sig-utf8"}},
+                                 std::nullopt)}});
+
+    write("17-read-text-small",
+          {{"op", str("readBoundedWireText")}, {"limit", number(8)}, {"body", str("h\u00e9llo")}});
+    write("18-read-text-at-limit",
+          {{"op", str("readBoundedWireText")}, {"limit", number(6)}, {"body", str("h\u00e9llo")}});
+    write("19-read-text-over-limit",
+          {{"op", str("readBoundedWireText")}, {"limit", number(5)}, {"body", str("h\u00e9llo")}});
+    write("20-read-text-zero-limit",
+          {{"op", str("readBoundedWireText")}, {"limit", number(0)}, {"body", str("abc")}});
+    write("21-read-text-declared-over",
+          {{"op", str("readBoundedWireText")},
+           {"limit", number(10)},
+           {"body", str("abc")},
+           {"declaredSize", number(11)}});
+    write("22-read-line-crlf",
+          {{"op", str("readBoundedWireLine")}, {"limit", number(10)},
+           {"body", str("abc\r\nrest")}});
+    write("23-read-line-lf",
+          {{"op", str("readBoundedWireLine")}, {"limit", number(10)},
+           {"body", str("abc\nrest")}});
+    write("24-read-line-too-long",
+          {{"op", str("readBoundedWireLine")}, {"limit", number(3)}, {"body", str("abcdef")}});
+    write("25-read-line-incomplete",
+          {{"op", str("readBoundedWireLine")}, {"limit", number(10)}, {"body", str("abc")}});
+    write("26-read-line-empty",
+          {{"op", str("readBoundedWireLine")}, {"limit", number(10)}, {"body", str("")}});
+    write("27-read-line-zero-limit",
+          {{"op", str("readBoundedWireLine")}, {"limit", number(0)}, {"body", str("abc")}});
+    write("28-post-success-control-plus-one",
+          {{"op", str("postTextResponse")},
+           {"url", str("https://conch.test/execute")},
+           {"body", str("{}")},
+           {"headers", array({})},
+           {"response", response(200, "", {}, kControlLimit + 1)}});
+    write("29-post-success-over-response",
+          {{"op", str("postTextResponse")},
+           {"url", str("https://conch.test/execute")},
+           {"body", str("{}")},
+           {"headers", array({})},
+           {"response", response(200, "", {}, kResponseLimit + 1)}});
+    write("30-post-success-at-response",
+          {{"op", str("postTextResponse")},
+           {"url", str("https://conch.test/execute")},
+           {"body", str("{}")},
+           {"headers", array({})},
+           {"response", response(200, "", {}, kResponseLimit)}});
+
+    remove_stale(scenarios);
+    const FormatOptions pretty{Format::Pretty2, false};
+    for (const auto& [name, value] : entries) {
+        write_scenario(scenarios, name, value, pretty);
+    }
+    std::cout << "Wrote " << entries.size() << " scenarios to " << scenarios.string() << "\n";
+}
+
+// provider-identity/gen_scenarios.py — indent=2, ensure_ascii=False.
+void profile_provider_identity(const fs::path& scenarios) {
+    auto uid = [](int n) {
+        char buffer[80];
+        std::snprintf(buffer, sizeof(buffer),
+                      "custom-provider-%08x-%04x-4%03x-8%03x-%012x", n, n, n, n, n);
+        return std::string(buffer);
+    };
+    auto provider = [](const char* name, const char* type, const char* identifier,
+                       std::optional<std::vector<std::string>> legacy) {
+        std::vector<std::pair<std::string, json::Value>> members = {
+            {"name", str(name)}, {"type", str(type)}};
+        if (identifier[0] != '\0') members.emplace_back("id", str(identifier));
+        if (legacy) {
+            std::vector<json::Value> names;
+            for (const std::string& item : *legacy) names.push_back(str(item));
+            members.emplace_back("legacyNames", array(std::move(names)));
+        }
+        return object(std::move(members));
+    };
+    auto case_add = [&](const char* name, const char* mode,
+                        std::vector<std::pair<std::string, json::Value>> fields) {
+        std::vector<std::pair<std::string, json::Value>> members = {
+            {"name", str(name)}, {"mode", str(mode)}};
+        for (auto& field : fields) members.push_back(std::move(field));
+        return object(std::move(members));
+    };
+    auto migrations = [](std::vector<std::pair<std::string, std::string>> pairs) {
+        std::vector<std::pair<std::string, json::Value>> members;
+        for (const auto& [key, value] : pairs) members.emplace_back(key, str(value));
+        return object(std::move(members));
+    };
+    std::vector<json::Value> all;
+
+    for (const char* name : {"plain", "uppercase", "with_spaces", "unicode", "special_chars",
+                             "very_long", "blank"}) {
+        all.push_back(case_add((std::string("legacyId_") + name).c_str(), "legacyId",
+                               {{"providerName", str(std::string("test ") + name)}}));
+    }
+
+    all.push_back(case_add("replaceIds_basic", "replaceIds",
+                           {{"text", str(uid(1) + " called")}, {"replacement", str("PROV")}}));
+    all.push_back(case_add("replaceIds_multiple", "replaceIds",
+                           {{"text", str("a->" + uid(1) + " b->" + uid(2))},
+                            {"replacement", str("PROV")}}));
+    all.push_back(case_add("replaceIds_no_ids", "replaceIds",
+                           {{"text", str("no ids here")}, {"replacement", str("X")}}));
+    all.push_back(case_add("replaceIds_multiple_in_word", "replaceIds",
+                           {{"text", str("id" + uid(1) + "id")}, {"replacement", str("X")}}));
+    all.push_back(case_add("replaceIds_overlapping", "replaceIds",
+                           {{"text", str(uid(1) + uid(2))}, {"replacement", str("PROV")}}));
+    all.push_back(case_add("replaceIds_empty", "replaceIds",
+                           {{"text", str("")}, {"replacement", str("X")}}));
+    {
+        std::string upper = uid(3);
+        for (char& ch : upper) ch = static_cast<char>(std::toupper(static_cast<unsigned char>(ch)));
+        all.push_back(case_add("replaceIds_uppercase", "replaceIds",
+                               {{"text", str(upper + " tail")}, {"replacement", str("PROV")}}));
+    }
+    all.push_back(case_add(
+        "replaceIds_keeps_near_misses", "replaceIds",
+        {{"text", str("custom-provider-abc123 def45600-0000-4000-8000-000000000000")},
+         {"replacement", str("X")}}));
+    all.push_back(case_add(
+        "replaceIds_skips_wrong_version", "replaceIds",
+        {{"text", str("custom-provider-00000001-0001-6000-8000-000000000001")},
+         {"replacement", str("X")}}));
+
+    all.push_back(case_add("remap_no_change", "remap",
+                           {{"modelId", str("custom-provider-abc123:model")},
+                            {"migrations", migrations({})}}));
+    all.push_back(case_add("remap_exact", "remap",
+                           {{"modelId", str("custom-provider-abc123:model")},
+                            {"migrations",
+                             migrations({{"custom-provider-abc123", "new-id"}})}}));
+    all.push_back(case_add("remap_longest_prefix", "remap",
+                           {{"modelId", str("custom-provider-abc123:model")},
+                            {"migrations", migrations({{"custom-provider-abc", "x"},
+                                                       {"custom-provider-abc123", "y"}})}}));
+    all.push_back(case_add("remap_no_prefix", "remap",
+                           {{"modelId", str("custom-provider-abc123:model")},
+                            {"migrations", migrations({{"other", "x"}})}}));
+    all.push_back(case_add("remap_empty", "remap",
+                           {{"modelId", str("model")}, {"migrations", migrations({})}}));
+    all.push_back(case_add("remap_provider_prefix_only", "remap",
+                           {{"modelId", str("custom-provider-abc123")},
+                            {"migrations", migrations({{"custom-provider-abc123", "new"}})}}));
+    all.push_back(case_add(
+        "remap_requires_separator", "remap",
+        {{"modelId", str("custom-provider-abc123extra:model")},
+         {"migrations", migrations({{"custom-provider-abc123", "new"}})}}));
+    all.push_back(case_add("remap_ignores_empty_legacy", "remap",
+                           {{"modelId", str(":model")},
+                            {"migrations", migrations({{"", "new"}})}}));
+
+    all.push_back(case_add(
+        "canonical_plain", "canonical",
+        {{"modelId", str("custom-provider-abc:model")},
+         {"providers", array({object({{"name", str("A")},
+                                      {"id", str("custom-provider-abc")},
+                                      {"legacyNames", array({str("old-a")})}})})}}));
+    all.push_back(case_add(
+        "canonical_legacy_remap", "canonical",
+        {{"modelId", str("custom-provider-old:model")},
+         {"providers", array({object({{"name", str("A")},
+                                      {"id", str("custom-provider-new")},
+                                      {"legacyNames", array({str("custom-provider-old")})}})})}}));
+    all.push_back(case_add(
+        "canonical_no_match", "canonical",
+        {{"modelId", str("custom-provider-x:model")},
+         {"providers", array({object({{"name", str("A")},
+                                      {"id", str("custom-provider-abc")},
+                                      {"legacyNames", array({str("old-a")})}})})}}));
+    all.push_back(case_add(
+        "canonical_provider_name", "canonical",
+        {{"modelId", str("providerA:model")},
+         {"providers", array({object({{"name", str("providerA")},
+                                      {"id", str("id-A")},
+                                      {"legacyNames", array({})}})})}}));
+    all.push_back(case_add(
+        "canonical_legacy_preferred", "canonical",
+        {{"modelId", str("custom-provider-old:model")},
+         {"providers", array({object({{"name", str("A")},
+                                      {"id", str("new-id")},
+                                      {"legacyNames", array({str("custom-provider-old")})}})})}}));
+
+    all.push_back(case_add("prefs_no_migration", "preferenceKeys",
+                           {{"aliases", migrations({{"model1", "a"}})},
+                            {"migrations", migrations({})}}));
+    all.push_back(case_add("prefs_migration", "preferenceKeys",
+                           {{"aliases", migrations({{"custom-provider-a:model1", "a"}})},
+                            {"migrations", migrations({{"custom-provider-a", "new-id"}})}}));
+    all.push_back(case_add("prefs_partial_overlap", "preferenceKeys",
+                           {{"aliases", migrations({{"custom-provider-a:model1", "a"},
+                                                    {"custom-provider-b:model2", "b"}})},
+                            {"migrations", migrations({{"custom-provider-a", "new-a"}})}}));
+    all.push_back(case_add("prefs_collision_keeps_existing", "preferenceKeys",
+                           {{"aliases", migrations({{"custom-provider-old:model1", "a"},
+                                                    {"new-a:model1", "b"}})},
+                            {"migrations", migrations({{"custom-provider-old", "new-a"}})}}));
+    all.push_back(case_add("prefs_chain", "preferenceKeys",
+                           {{"aliases", migrations({{"custom-provider-old:model", "a"}})},
+                            {"migrations", migrations({{"custom-provider-old", "mid"},
+                                                       {"mid", "new"}})}}));
+
+    auto normalize = [&](const char* name, std::vector<json::Value> providers,
+                         std::vector<std::string> occupied, std::vector<std::string> new_ids) {
+        std::vector<json::Value> occupied_values;
+        for (const std::string& item : occupied) occupied_values.push_back(str(item));
+        std::vector<json::Value> id_values;
+        for (const std::string& item : new_ids) id_values.push_back(str(item));
+        all.push_back(case_add(name, "normalize",
+                               {{"providers", array(std::move(providers))},
+                                {"occupiedIds", array(std::move(occupied_values))},
+                                {"newIds", array(std::move(id_values))}}));
+    };
+
+    normalize("normalize_new_empty", {}, {}, {});
+    normalize("normalize_no_change", {object({{"name", str("A")}, {"id", str(uid(1))}})}, {},
+              {});
+    normalize("normalize_blank_id_generated", {provider("A", "conch", "", std::nullopt)}, {},
+              {uid(1)});
+    normalize("normalize_unstable_id_generated",
+              {provider("A", "conch", "unstable", std::nullopt)}, {}, {uid(2)});
+    normalize("normalize_blank_name", {provider("   ", "conch", "id1", std::nullopt)}, {}, {});
+    normalize("normalize_legacy_name_carry",
+              {provider("A", "conch", "", std::vector<std::string>{"old-a"})}, {}, {});
+    normalize("normalize_legacy_names_filtered",
+              {provider("A", "conch", "stable-id",
+                        std::vector<std::string>{"old-a", "stable-id"})},
+              {}, {});
+    normalize("normalize_occupied_skips",
+              {provider("A", "conch", "id-in-use", std::nullopt)}, {"id-in-use"}, {uid(1)});
+    normalize("normalize_two_providers",
+              {provider("A", "conch", "", std::nullopt),
+               provider("B", "ssh", "", std::nullopt)},
+              {}, {uid(1), uid(2)});
+    normalize("normalize_conch_and_ssh",
+              {provider("Conch", "conch", "", std::nullopt),
+               provider("SSH", "ssh", "", std::nullopt)},
+              {}, {uid(1), uid(2)});
+    normalize("normalize_empty_name_conch", {provider("", "conch", "", std::nullopt)}, {}, {});
+    normalize("normalize_ssh_only", {provider("SSH", "ssh", "", std::nullopt)}, {}, {});
+    normalize("normalize_occupied_stable_id",
+              {provider("A", "conch", "stable-id", std::nullopt)}, {"stable-id"}, {uid(1)});
+    normalize("normalize_new_id_in_occupied", {provider("A", "conch", "", std::nullopt)},
+              {uid(1)}, {uid(2)});
+    normalize("normalize_three_providers",
+              {provider("A", "conch", "", std::nullopt),
+               provider("B", "ssh", "", std::nullopt),
+               provider("C", "conch", "", std::nullopt)},
+              {}, {uid(1), uid(2), uid(3)});
+    normalize("normalize_legacy_name_carry_with_id",
+              {provider("A", "conch", "id1", std::vector<std::string>{"old-a"})}, {}, {});
+    normalize("normalize_unicode_name",
+              {provider("\u041f\u0440\u043e\u0432\u0430\u0439\u0434\u0435\u0440", "conch", "",
+                        std::nullopt)},
+              {}, {uid(1)});
+    normalize("normalize_name_with_special_chars",
+              {provider("a,b c;d", "conch", "", std::nullopt)}, {}, {uid(1)});
+    {
+        std::string upper = uid(4);
+        for (char& ch : upper) ch = static_cast<char>(std::toupper(static_cast<unsigned char>(ch)));
+        normalize("normalize_uppercase_stable_id_retained",
+                  {provider("A", "conch", upper.c_str(), std::nullopt)}, {}, {});
+    }
+    normalize("normalize_stable_id_is_trimmed",
+              {provider("A", "conch", ("  " + uid(5) + "  ").c_str(), std::nullopt)}, {}, {});
+    normalize("normalize_wrong_version_regenerated",
+              {provider("A", "conch",
+                        "custom-provider-00000001-0001-6000-8000-000000000001", std::nullopt)},
+              {}, {uid(6)});
+    normalize("normalize_wrong_variant_regenerated",
+              {provider("A", "conch",
+                        "custom-provider-00000001-0001-4000-c000-000000000001", std::nullopt)},
+              {}, {uid(7)});
+    normalize("normalize_malformed_occupied_is_ignored",
+              {provider("A", "conch", "", std::nullopt)}, {"custom-provider-abc123"}, {uid(8)});
+    normalize("normalize_duplicate_id_regenerated",
+              {provider("A", "conch", uid(9).c_str(), std::nullopt),
+               provider("B", "ssh", uid(9).c_str(), std::nullopt)},
+              {}, {uid(10)});
+
+    remove_stale(scenarios);
+    const FormatOptions pretty{Format::Pretty2, false};
+    for (const json::Value& item : all) {
+        std::string name;
+        for (const json::Member& member : item.members) {
+            if (member.key == "name") name = member.value.text;
+        }
+        write_scenario(scenarios, name, item, pretty);
+    }
+    std::cout << "Wrote " << all.size() << " scenarios\n";
+}
+
 }  // namespace
 
 int main(int argc, char** argv) {
@@ -4632,7 +5053,9 @@ int main(int argc, char** argv) {
                   << "  migration-18-19       migration-18-19/gen_scenarios.py\n"
                   << "  streaming-json-document streaming-json-document/gen_scenarios.py\n"
                   << "  message-source        message-source/gen_scenarios.py\n"
-                  << "  zip-reader            zip-reader/gen_scenarios.py\n";
+                  << "  zip-reader            zip-reader/gen_scenarios.py\n"
+                  << "  conch-network         conch-network/gen_scenarios.py\n"
+                  << "  provider-identity     provider-identity/gen_scenarios.py\n";
         return 2;
     }
     const std::string profile = argv[1];
@@ -4711,6 +5134,10 @@ int main(int argc, char** argv) {
         profile_message_source(scenarios);
     } else if (profile == "zip-reader") {
         profile_zip_reader(scenarios);
+    } else if (profile == "conch-network") {
+        profile_conch_network(scenarios);
+    } else if (profile == "provider-identity") {
+        profile_provider_identity(scenarios);
     } else {
         std::cerr << "unknown profile: " << profile << "\n";
         return 2;

@@ -16,7 +16,7 @@ Parity pin for the native port of `data/CustomProviderIdentity.kt` and the
 | ``agora_extract provider-identity`` | Lifts the identity policy out of `CustomProviderIdentity.kt` |
 | `PlatformStubs.kt` | Platform-type stand-ins the extracted sources need |
 | `run_golden.sh` | Extracts, compiles and regenerates or verifies the traces |
-| `gen_scenarios.py` | Generates the scenarios (deterministic; rerun after editing) |
+| `agora_scenarios provider-identity` | Generates the scenarios (deterministic; rerun after editing) |
 
 ## What is pinned
 
@@ -89,7 +89,7 @@ fails `isStableId` or is already taken. An earlier revision of this corpus fed i
 `custom-provider-aaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa`, which **do not match the pattern**. Every one of
 those scenarios therefore fell through to the random generator, and the frozen traces recorded one
 lucky draw each: the stand could never be re-verified, and did not test what its names claimed.
-`gen_scenarios.py` now emits only pattern-valid ids via `uid()`, and the traces are reproducible —
+`agora_scenarios provider-identity` now emits only pattern-valid ids via `uid()`, and the traces are reproducible —
 `run_golden.sh` is run twice in CI-adjacent verification precisely because that property is not
 self-evident.
 
@@ -118,8 +118,8 @@ six scenarios used to assert nothing at all.
 ```bash
 JAVA_HOME=/path/to/jdk17 KOTLINC=/path/to/kotlinc KOTLINX_JARS=core.jar:json.jar ./run_golden.sh          # verify
 JAVA_HOME=/path/to/jdk17 KOTLINC=/path/to/kotlinc KOTLINX_JARS=core.jar:json.jar ./run_golden.sh --freeze # regenerate
-python3 gen_scenarios.py                                                                                  # rewrite scenarios
+core/build/agora_scenarios provider-identity core/tools/golden/provider-identity                        # rewrite scenarios
 ```
 
-`gen_scenarios.py` deletes stale scenario files first, so a removed case cannot leave a trace behind
+`agora_scenarios provider-identity` deletes stale scenario files first, so a removed case cannot leave a trace behind
 that silently keeps passing.

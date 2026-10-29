@@ -18,7 +18,7 @@ and by the endpoint configuration path, so one stand pins them once for all of t
 | `golden/*.trace` | Frozen canonical output, one per scenario |
 | `ProviderSupportTraceDump.kt` | The stand driver (renders one line per function call) |
 | `run_golden.sh` | Compiles the app sources and regenerates or verifies the traces |
-| `gen_scenarios.py` | Generates the scenarios (deterministic; rerun after editing) |
+| `agora_scenarios provider-support` | Generates the scenarios (deterministic; rerun after editing) |
 
 No extraction step: all three Kotlin files compile standalone (only `GenerationError.kt` and
 `Constants.kt` ride along), so the reference is always the real thing.
@@ -83,7 +83,7 @@ Escaping is the shared `\\` `\p` `\s` `\n` `\r` `\t` set.
 ```
 KOTLINC=/path/to/kotlinc KOTLINX_JARS=core.jar:json.jar ./run_golden.sh          # verify
 KOTLINC=/path/to/kotlinc KOTLINX_JARS=core.jar:json.jar ./run_golden.sh --freeze # regenerate
-python3 gen_scenarios.py                                                          # rewrite scenarios
+core/build/agora_scenarios provider-support core/tools/golden/provider-support                                                          # rewrite scenarios
 ```
 
 The Kotlin reference is compiled straight from the app tree on every run.

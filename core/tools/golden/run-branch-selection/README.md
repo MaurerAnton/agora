@@ -36,7 +36,7 @@ The driver builds every Run as a terminal `COMPLETED` entity, which satisfies th
 | `agora_extract run-entity` | Lifts `RunEntity` out of `RunEntity.kt` verbatim |
 | `PlatformStubs.kt` | Stand-local Room `@PrimaryKey` marker |
 | `run_golden.sh` | Compiles and regenerates or verifies the traces |
-| `gen_scenarios.py` | Generates the scenarios (deterministic; rerun after editing) |
+| `agora_scenarios run-branch-selection` | Generates the scenarios (deterministic; rerun after editing) |
 
 ## What is pinned
 
@@ -95,7 +95,7 @@ spelled `n` cannot collide. Escaping: `\` `|` `;` `=` `\n` `\r` `\t` →
 ```bash
 JAVA_HOME=/path/to/jdk17 KOTLINC=/path/to/kotlinc KOTLINX_JARS=core.jar:json.jar ./run_golden.sh          # verify
 JAVA_HOME=/path/to/jdk17 KOTLINC=/path/to/kotlinc KOTLINX_JARS=core.jar:json.jar ./run_golden.sh --freeze # regenerate
-python3 gen_scenarios.py                                                                                  # rewrite scenarios
+core/build/agora_scenarios run-branch-selection core/tools/golden/run-branch-selection                                                                                  # rewrite scenarios
 ```
 
 `run_golden.sh` wipes the stand's git-ignored `build/` (including the extracted `RunEntity.kt`)

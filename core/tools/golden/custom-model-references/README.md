@@ -17,7 +17,7 @@ so this stand needs no stubs and no source extraction. The whole file compiles a
 | `golden/*.trace` | Frozen canonical output, one per scenario |
 | `CustomModelReferencesTraceDump.kt` | The stand driver |
 | `run_golden.sh` | Compiles and regenerates or verifies the traces |
-| `gen_scenarios.py` | Generates the scenarios (deterministic; rerun after editing) |
+| `agora_scenarios custom-model-references` | Generates the scenarios (deterministic; rerun after editing) |
 
 ## What is pinned
 
@@ -94,7 +94,7 @@ the map's `key=>value` separator cannot be confused with an id that contains an 
 ```bash
 JAVA_HOME=/path/to/jdk17 KOTLINC=/path/to/kotlinc KOTLINX_JARS=core.jar:json.jar ./run_golden.sh          # verify
 JAVA_HOME=/path/to/jdk17 KOTLINC=/path/to/kotlinc KOTLINX_JARS=core.jar:json.jar ./run_golden.sh --freeze # regenerate
-python3 gen_scenarios.py                                                                                  # rewrite scenarios
+core/build/agora_scenarios custom-model-references core/tools/golden/custom-model-references                                                                                  # rewrite scenarios
 ```
 
 `run_golden.sh` wipes the stand's git-ignored `build/` before each run, so runs are idempotent.

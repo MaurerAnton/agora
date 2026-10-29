@@ -1019,6 +1019,389 @@ void profile_memory_manager(const fs::path& scenarios) {
     std::cout << "Wrote " << all.size() << " scenarios\n";
 }
 
+
+// provider-support/gen_scenarios.py — indent=2, ensure_ascii=False.
+void profile_provider_support(const fs::path& scenarios) {
+    std::vector<json::Value> all;
+    auto http_error = [&](const char* name, std::int64_t status, json::Value body) {
+        all.push_back(object({{"name", str(name)},
+                              {"mode", str("httpError")},
+                              {"statusCode", number(status)},
+                              {"rawBody", std::move(body)}}));
+    };
+    auto base_url = [&](const char* name, const char* url) {
+        all.push_back(object(
+            {{"name", str(name)}, {"mode", str("baseUrl")}, {"url", str(url)}}));
+    };
+    auto defaults = [&](const char* name, const char* embedding, const char* compatible,
+                        std::vector<std::pair<std::string, json::Value>> openai_map) {
+        all.push_back(object({{"name", str(name)},
+                              {"mode", str("defaults")},
+                              {"embeddingProvider", str(embedding)},
+                              {"compatibleName", str(compatible)},
+                              {"openAiMap", object(std::move(openai_map))}}));
+    };
+
+    http_error("http_null_body", 404, null_value());
+    http_error("http_blank_body", 404, str("   "));
+    http_error("http_free_text", 503, str("upstream exploded"));
+    http_error("http_primitive_string", 429, str("\"quota exceeded\""));
+    http_error("http_primitive_blank_string", 500, str("\"   \""));
+    http_error("http_primitive_number", 502, str("42"));
+    http_error("http_primitive_true", 500, str("true"));
+    http_error("http_json_null_literal", 500, str("null"));
+    http_error("http_array_root", 500, str("[1, 2]"));
+    http_error("http_object_nested_full", 429,
+               str("{\"error\": {\"code\": \"rate_limit\", \"type\": \"overloaded\", "
+                   "\"message\": \"slow down\"}}"));
+    http_error("http_object_nested_status_detail", 401,
+               str("{\"error\": {\"status\": \"InvalidApiKey\", \"detail\": \"bad key\"}}"));
+    http_error("http_object_error_string", 500, str("{\"error\": \"quota hit\"}"));
+    http_error("http_object_root_message", 500, str("{\"message\": \"root msg\"}"));
+    http_error("http_object_root_detail", 500, str("{\"detail\": \"root detail\"}"));
+    http_error("http_object_root_reason", 500, str("{\"reason\": \"root reason\"}"));
+    http_error("http_object_root_error_description", 500,
+               str("{\"error_description\": \"oauth failed\"}"));
+    http_error("http_object_no_message", 500, str("{\"code\": 500}"));
+    http_error("http_nested_number_code", 429,
+               str("{\"error\": {\"code\": 429, \"message\": \"rl\"}}"));
+    http_error("http_nested_trimmed_message", 500,
+               str("{\"error\": {\"message\": \"  padded  \"}}"));
+    http_error("http_nested_null_message_falls_back", 500,
+               str("{\"error\": {\"message\": null, \"detail\": \"detail wins\"}}"));
+    http_error("http_status_fallback_code", 502,
+               str("{\"error\": {\"message\": \"bad gateway\"}}"));
+    http_error("http_quoted_null_string_message", 500, str("{\"error\": \"null\"}"));
+
+    base_url("base_url_plain", "https://api.example.com");
+    base_url("base_url_blank", "");
+    base_url("base_url_slash_only", "/");
+    base_url("base_url_version", "https://api.example.com/v1");
+    base_url("base_url_version_trailing_slash", "https://api.example.com/v1/");
+    base_url("base_url_version_multislash", "https://api.example.com/v1///");
+    base_url("base_url_version_beta", "https://api.example.com/v1beta");
+    base_url("base_url_version_midpath", "https://api.example.com/v1/proxy");
+    base_url("base_url_version_v2", "https://api.example.com/v2");
+    base_url("base_url_version_upper", "https://api.example.com/V1BETA");
+    base_url("base_url_no_slash_prefix", "v1");
+    base_url("base_url_only_version", "/v1");
+    base_url("base_url_double_slash_v", "https://v1.example.com/x");
+    base_url("base_url_version_trailing_newline", "https://api.example.com/v1beta\n");
+    base_url("base_url_digit_run", "https://api.example.com/v1x_9");
+
+    defaults("defaults_openai", "OpenAI", "OpenAI",
+             {{"OpenAI", str("https://custom.openai/v1")}});
+    defaults("defaults_openai_empty_map", "openai", "openai", {});
+    defaults("defaults_openai_empty_value", "", "OpenAI", {{"OpenAI", str("")}});
+    defaults("defaults_openai_other_key", "", "Google",
+             {{"Google", str("https://elsewhere/v1")}});
+    defaults("defaults_open_router", "open router", "Open Router", {});
+    defaults("defaults_openrouter_compact", "OpenRouter", "", {});
+    defaults("defaults_mistral_upper", "MISTRAL", "", {});
+    defaults("defaults_voyage_variants", "voyage ai", "", {});
+    defaults("defaults_voyage_compact", "VOYAGE", "", {});
+    defaults("defaults_siliconflow", "siliconflow", "", {});
+    defaults("defaults_ollama", "ollama", "", {});
+    defaults("defaults_unknown", "deepseek", "", {});
+
+    const FormatOptions pretty{Format::Pretty2, false};
+    for (const json::Value& item : all) {
+        std::string name;
+        for (const json::Member& member : item.members) {
+            if (member.key == "name") name = member.value.text;
+        }
+        write_scenario(scenarios, name, item, pretty);
+    }
+    std::cout << "Wrote " << all.size() << " scenarios\n";
+}
+
+// run-branch-selection/gen_scenarios.py — default separators.
+void profile_run_branch_selection(const fs::path& scenarios) {
+    struct Selection {
+        const char* parent;
+        const char* child;
+    };
+    struct Run {
+        const char* id;
+        const char* parent;
+    };
+    struct Case {
+        const char* name;
+        std::vector<Selection> selections;
+        std::vector<Run> runs;
+    };
+    const std::vector<Case> cases = {
+        {"keeps_valid_edge", {{"p", "c"}}, {{"p", nullptr}, {"c", "p"}}},
+        {"keeps_root_child", {{nullptr, "c"}}, {{"c", nullptr}}},
+        {"chain_keeps_every_valid_edge",
+         {{nullptr, "root"}, {"root", "a"}, {"a", "b"}},
+         {{"root", nullptr}, {"a", "root"}, {"b", "a"}}},
+        {"drops_missing_child", {{"p", "c"}}, {{"p", nullptr}}},
+        {"drops_root_selection_for_missing_child", {{nullptr, "c"}}, {}},
+        {"drops_root_child_that_has_a_parent", {{nullptr, "c"}}, {{"c", "p"}}},
+        {"drops_non_root_selection_for_root_child", {{"p", "c"}},
+         {{"p", nullptr}, {"c", nullptr}}},
+        {"drops_child_with_another_parent", {{"p", "c"}},
+         {{"p", nullptr}, {"q", nullptr}, {"c", "q"}}},
+        {"child_repeated_under_two_parents", {{"p", "c"}, {"q", "c"}},
+         {{"p", nullptr}, {"q", nullptr}, {"c", "p"}}},
+        {"drops_missing_parent", {{"p", "c"}}, {{"c", "p"}}},
+        {"drops_self_edge", {{"c", "c"}}, {{"c", "c"}}},
+        {"drops_self_edge_for_root_child", {{"c", "c"}}, {{"c", nullptr}}},
+        {"empty_selections", {}, {{"a", nullptr}}},
+        {"empty_runs", {{"p", "c"}}, {}},
+        {"preserves_selection_order",
+         {{"p1", "c1"}, {nullptr, "c3"}, {"p2", "c2"}},
+         {{"p1", nullptr}, {"c1", "p1"}, {"p2", nullptr}, {"c2", "p2"}, {"c3", nullptr}}},
+        {"keeps_valid_and_drops_invalid_in_order",
+         {{nullptr, "root"}, {"p", "c"}, {"q", "c"}, {nullptr, "missing"}},
+         {{"root", nullptr}, {"p", nullptr}, {"q", nullptr}, {"c", "p"}}},
+        {"duplicate_run_ids_last_wins", {{"p1", "c"}, {"p2", "c"}},
+         {{"p1", nullptr}, {"p2", nullptr}, {"c", "p1"}, {"c", "p2"}}},
+        {"duplicate_run_ids_last_is_root", {{nullptr, "c"}},
+         {{"c", "p"}, {"c", nullptr}}},
+        {"duplicate_run_ids_last_has_parent", {{nullptr, "c"}},
+         {{"c", nullptr}, {"c", "p"}}},
+        {"duplicate_run_ids_last_root_drops_parent_edge",
+         {{nullptr, "x"}, {"p2", "x"}},
+         {{"x", "p1"}, {"x", "p2"}, {"x", nullptr}}},
+        {"duplicate_selection_key_last_value_wins", {{"p1", "c1"}, {"p1", "c2"}},
+         {{"p1", nullptr}, {"c1", "p1"}, {"c2", "p1"}}},
+        {"duplicate_null_key_last_value_wins", {{nullptr, "c1"}, {nullptr, "c2"}},
+         {{"c1", nullptr}, {"c2", nullptr}}},
+        {"empty_string_parent_id", {{"", "c"}}, {{"", nullptr}, {"c", ""}}},
+        {"empty_string_child_id", {{"p", ""}}, {{"p", nullptr}, {"", "p"}}},
+        {"null_parent_is_not_empty_string", {{nullptr, "c"}}, {{"c", ""}}},
+        {"separators_are_escaped", {{"a=b|c;d", "c"}},
+         {{"a=b|c;d", nullptr}, {"c", "a=b|c;d"}}},
+        {"unrelated_runs_are_ignored", {{"p", "c"}},
+         {{"x", nullptr}, {"y", "x"}, {"p", nullptr}, {"c", "p"}}},
+    };
+
+    remove_stale(scenarios);
+    for (const Case& item : cases) {
+        std::vector<json::Value> selections;
+        for (const Selection& selection : item.selections) {
+            selections.push_back(array({selection.parent == nullptr ? null_value()
+                                                                    : str(selection.parent),
+                                        str(selection.child)}));
+        }
+        std::vector<json::Value> runs;
+        for (const Run& run : item.runs) {
+            runs.push_back(object({{"id", str(run.id)},
+                                   {"parentRunId", run.parent == nullptr
+                                                       ? null_value()
+                                                       : str(run.parent)}}));
+        }
+        write_scenario(scenarios, item.name,
+                       object({{"name", str(item.name)},
+                               {"op", str("retainValidEdges")},
+                               {"selections", array(std::move(selections))},
+                               {"runs", array(std::move(runs))}}),
+                       Format::Spaced);
+    }
+    std::cout << "wrote " << cases.size() << " scenarios to " << scenarios.string() << "\n";
+}
+
+// custom-model-references/gen_scenarios.py — default separators.
+void profile_custom_model_references(const fs::path& scenarios) {
+    const std::string nbsp = "\u00a0";
+    const std::string zwsp = "\u200b";
+    std::vector<json::Value> all;
+    auto case_set = [&](const char* name, const char* old_model, json::Value new_model,
+                        std::vector<std::string> items) {
+        std::vector<json::Value> values;
+        for (auto& item : items) values.push_back(str(std::move(item)));
+        all.push_back(object({{"name", str(name)},
+                              {"op", str("set")},
+                              {"oldModelId", str(old_model)},
+                              {"newModelId", std::move(new_model)},
+                              {"items", array(std::move(values))}}));
+    };
+    auto case_string = [&](const char* name, json::Value value, const char* old_model,
+                           json::Value new_model) {
+        all.push_back(object({{"name", str(name)},
+                              {"op", str("string")},
+                              {"value", std::move(value)},
+                              {"oldModelId", str(old_model)},
+                              {"newModelId", std::move(new_model)}}));
+    };
+    auto case_map = [&](const char* name, const char* old_model, json::Value new_model,
+                        const std::string& alias,
+                        std::vector<std::pair<std::string, std::string>> entries) {
+        std::vector<json::Value> pairs;
+        for (const auto& [key, value] : entries) {
+            pairs.push_back(array({str(key), str(value)}));
+        }
+        all.push_back(object({{"name", str(name)},
+                              {"op", str("map")},
+                              {"oldModelId", str(old_model)},
+                              {"newModelId", std::move(new_model)},
+                              {"alias", str(alias)},
+                              {"entries", array(std::move(pairs))}}));
+    };
+
+    case_set("set_replaces_existing", "a", str("b"), {"a", "c"});
+    case_set("set_removes_when_new_is_null", "a", null_value(), {"a", "b"});
+    case_set("set_absent_old_is_unchanged", "x", str("y"), {"a", "b"});
+    case_set("set_absent_old_with_null_new_is_unchanged", "x", null_value(), {"a", "b"});
+    case_set("set_old_equals_new_keeps_place", "a", str("a"), {"a", "b"});
+    case_set("set_new_already_present_dedupes", "a", str("c"), {"a", "c"});
+    case_set("set_new_present_before_old_dedupes", "a", str("c"), {"c", "a"});
+    case_set("set_removes_only_element", "a", null_value(), {"a"});
+    case_set("set_empty_input", "a", str("b"), {});
+    case_set("set_empty_old_matches_empty_element", "", str("x"), {"", "a"});
+    case_set("set_new_is_empty_string", "a", str(""), {"a", "b"});
+    case_set("set_duplicate_input_entries_dedupe", "x", str("y"), {"a", "a", "b"});
+    case_set("set_unicode_ids", "\u043c\u043e\u0434\u0435\u043b\u044c",
+             str("\u043c\u043e\u0434\u0435\u043b\u044c2"),
+             {"\u043c\u043e\u0434\u0435\u043b\u044c", "b"});
+    case_set("set_separators_are_escaped", "a=b|c;d", str("x=y"), {"a=b|c;d", "e"});
+
+    case_string("string_null_stays_null", null_value(), "a", str("b"));
+    case_string("string_match_replaces", str("a"), "a", str("b"));
+    case_string("string_match_to_null", str("a"), "a", null_value());
+    case_string("string_no_match_is_unchanged", str("b"), "a", str("c"));
+    case_string("string_old_equals_new", str("a"), "a", str("a"));
+    case_string("string_empty_matches_empty", str(""), "", str("x"));
+    case_string("string_empty_value_other_old", str(""), "a", str("x"));
+    case_string("string_separators_are_escaped", str("a|b;c"), "a|b;c", str("d|e;f"));
+
+    case_map("map_renames_to_absent_key_appends", "a", str("b"), "x", {{"a", "1"}});
+    case_map("map_replaces_value_in_place", "a", str("c"), "x", {{"a", "1"}, {"b", "2"}});
+    case_map("map_removes_when_new_is_null", "a", null_value(), "x", {{"a", "1"}, {"b", "2"}});
+    case_map("map_old_equals_new_moves_to_end", "a", str("a"), "3", {{"a", "1"}, {"b", "2"}});
+    case_map("map_existing_target_value_overwritten_in_place", "a", str("b"), "3",
+             {{"a", "1"}, {"b", "2"}});
+    case_map("map_existing_target_before_old", "a", str("b"), "3", {{"b", "2"}, {"a", "1"}});
+    case_map("map_blank_alias_removes_only", "a", str("b"), "", {{"a", "1"}});
+    case_map("map_space_alias_is_blank", "a", str("b"), "   ", {{"a", "1"}});
+    case_map("map_nbsp_alias_is_blank", "a", str("b"), nbsp, {{"a", "1"}});
+    case_map("map_zwsp_alias_is_content", "a", str("b"), zwsp, {{"a", "1"}});
+    case_map("map_nbsp_padded_alias_is_trimmed", "a", str("b"), nbsp + "x" + nbsp,
+             {{"a", "1"}});
+    case_map("map_zwsp_padded_alias_is_kept", "a", str("b"), zwsp + "x" + zwsp, {{"a", "1"}});
+    case_map("map_alias_is_trimmed", "a", str("b"), "  x  ", {{"a", "1"}});
+    case_map("map_inner_spaces_are_kept", "a", str("b"), "  x  y  ", {{"a", "1"}});
+    case_map("map_absent_old_still_adds_alias", "x", str("b"), "y", {{"a", "1"}});
+    case_map("map_absent_old_with_null_new_is_unchanged", "x", null_value(), "y", {{"a", "1"}});
+    case_map("map_empty_input_adds_alias", "a", str("b"), "x", {});
+    case_map("map_old_equals_new_blank_alias_removes", "a", str("a"), "",
+             {{"a", "1"}, {"b", "2"}});
+    case_map("map_newline_alias_is_escaped", "a", str("b"), "x\ny", {{"a", "1"}});
+    case_map("map_unicode_ids", "\u043c\u043e\u0434\u0435\u043b\u044c",
+             str("\u043d\u043e\u0432\u0430\u044f"),
+             "\u043f\u0441\u0435\u0432\u0434\u043e\u043d\u0438\u043c",
+             {{"\u043c\u043e\u0434\u0435\u043b\u044c", "1"}, {"b", "2"}});
+
+    remove_stale(scenarios);
+    for (const json::Value& item : all) {
+        std::string name;
+        for (const json::Member& member : item.members) {
+            if (member.key == "name") name = member.value.text;
+        }
+        write_scenario(scenarios, name, item, Format::Spaced);
+    }
+    std::cout << "wrote " << all.size() << " scenarios to " << scenarios.string() << "\n";
+}
+
+// sandbox-path-resolver/gen_scenarios.py — indent=2, numbered file names.
+void profile_sandbox_path_resolver(const fs::path& scenarios) {
+    std::vector<std::pair<std::string, json::Value>> entries;
+    auto add = [&](const char* name, json::Value value) {
+        entries.emplace_back(name, std::move(value));
+    };
+    auto resolve = [&](const char* name, const char* path, const char* home,
+                       const char* shared) {
+        add(name, object({{"op", str("resolve")},
+                          {"path", str(path)},
+                          {"home_mount_path", str(home)},
+                          {"shared_storage_mount_path", str(shared)}}));
+    };
+    auto walk = [&](const char* name, std::vector<std::string> files, const char* physical,
+                    const char* virtual_root, std::int64_t remaining) {
+        std::vector<json::Value> items;
+        for (auto& file : files) items.push_back(str(std::move(file)));
+        add(name, object({{"op", str("walk")},
+                          {"files", array(std::move(items))},
+                          {"physical_root", str(physical)},
+                          {"virtual_root", str(virtual_root)},
+                          {"remaining", number(remaining)}}));
+    };
+    auto file_read = [&](const char* name, const char* path, std::int64_t offset,
+                         std::int64_t limit, std::int64_t total_bytes, std::string content,
+                         std::int64_t lines, std::int64_t total_lines, bool truncated) {
+        add(name, object({{"op", str("file_read")},
+                          {"path", str(path)},
+                          {"offset", number(offset)},
+                          {"limit", number(limit)},
+                          {"total_bytes", number(total_bytes)},
+                          {"content", str(std::move(content))},
+                          {"lines", number(lines)},
+                          {"total_lines", number(total_lines)},
+                          {"truncated", boolean(truncated)}}));
+    };
+
+    const char* kHome = "/mnt/home";
+    const char* kShared = "/mnt/shared";
+
+    resolve("resolve-rootfs-simple", "foo.txt", kHome, kShared);
+    resolve("resolve-rootfs-nested", "dir/bar.txt", kHome, kShared);
+    resolve("resolve-rootfs-absolute", "/baz.txt", kHome, kShared);
+    resolve("resolve-home-mount", "/mnt/home/foo.txt", kHome, kShared);
+    resolve("resolve-home-nested", "/mnt/home/dir/bar.txt", kHome, kShared);
+    resolve("resolve-shared-mount", "/mnt/shared/foo.txt", kHome, kShared);
+    resolve("resolve-shared-nested", "/mnt/shared/dir/bar.txt", kHome, kShared);
+    resolve("resolve-traversal-rootfs", "../../../etc/passwd", kHome, kShared);
+    resolve("resolve-traversal-home", "/mnt/home/../../../etc/passwd", kHome, kShared);
+    resolve("resolve-traversal-shared", "/mnt/shared/../../../etc/passwd", kHome, kShared);
+    resolve("resolve-normalize-backslashes", "foo\\bar.txt", kHome, kShared);
+    resolve("resolve-normalize-repeated-slashes", "/foo//bar///baz.txt", kHome, kShared);
+    resolve("resolve-normalize-dot-segments", "foo/./bar/../baz.txt", kHome, kShared);
+
+    const std::vector<std::string> walk_files = {"/a.txt",   "/b.md",        "/dir/c.txt",
+                                                 "/dir/sub/d.txt", "/other/e.txt"};
+    auto prefixed = [](const std::vector<std::string>& files, const std::string& prefix) {
+        std::vector<std::string> result;
+        for (const std::string& file : files) {
+            std::string replaced;
+            for (const char ch : file) {
+                if (ch == '/') {
+                    replaced += prefix;
+                } else {
+                    replaced.push_back(ch);
+                }
+            }
+            result.push_back(std::move(replaced));
+        }
+        return result;
+    };
+
+    walk("walk-root-unlimited", walk_files, "/root", "/", -1);
+    walk("walk-root-depth1", walk_files, "/root", "/", 1);
+    walk("walk-root-depth2", walk_files, "/root", "/", 2);
+    walk("walk-home-unlimited", prefixed(walk_files, "/mnt/home/"), "/root/home", "/mnt/home",
+         -1);
+    walk("walk-shared-unlimited", prefixed(walk_files, "/mnt/shared/"), "/root/shared",
+         "/mnt/shared", -1);
+
+    file_read("file-read-simple", "/test.txt", 0, 0, 11, "Hello World", 1, 1, false);
+    file_read("file-read-offset", "/test.txt", 6, 0, 11, "World", 1, 1, false);
+    file_read("file-read-limit", "/test.txt", 0, 5, 11, "Hello", 1, 1, false);
+    file_read("file-read-truncated", "/large.txt", 0, 100, 10000, std::string(100, 'A'), 1,
+              1000, true);
+
+    remove_stale(scenarios);
+    const FormatOptions pretty{Format::Pretty2, false};
+    for (std::size_t i = 0; i < entries.size(); ++i) {
+        char prefix[16];
+        std::snprintf(prefix, sizeof(prefix), "%03zu-", i + 1);
+        write_scenario(scenarios, std::string(prefix) + entries[i].first, entries[i].second,
+                       pretty);
+    }
+    std::cout << "wrote " << entries.size() << " scenarios to " << scenarios.string() << "\n";
+}
+
 }  // namespace
 
 int main(int argc, char** argv) {
@@ -1036,7 +1419,11 @@ int main(int argc, char** argv) {
                   << "  shell-command-validation shell-command-validation/gen_scenarios.py\n"
                   << "  database-compatibility database-compatibility/gen_scenarios.py\n"
                   << "  context-budget        context-budget/gen_scenarios.py\n"
-                  << "  memory-manager        memory-manager/gen_scenarios.py\n";
+                  << "  memory-manager        memory-manager/gen_scenarios.py\n"
+                  << "  provider-support      provider-support/gen_scenarios.py\n"
+                  << "  run-branch-selection  run-branch-selection/gen_scenarios.py\n"
+                  << "  custom-model-references custom-model-references/gen_scenarios.py\n"
+                  << "  sandbox-path-resolver sandbox-path-resolver/gen_scenarios.py\n";
         return 2;
     }
     const std::string profile = argv[1];
@@ -1067,6 +1454,14 @@ int main(int argc, char** argv) {
         profile_context_budget(scenarios);
     } else if (profile == "memory-manager") {
         profile_memory_manager(scenarios);
+    } else if (profile == "provider-support") {
+        profile_provider_support(scenarios);
+    } else if (profile == "run-branch-selection") {
+        profile_run_branch_selection(scenarios);
+    } else if (profile == "custom-model-references") {
+        profile_custom_model_references(scenarios);
+    } else if (profile == "sandbox-path-resolver") {
+        profile_sandbox_path_resolver(scenarios);
     } else {
         std::cerr << "unknown profile: " << profile << "\n";
         return 2;

@@ -16,7 +16,7 @@ involved: this is the platform archive layer the vendor importers sit on.
 | `golden/*.trace` | Frozen Kotlin output, one per scenario |
 | `fixtures/*.zip` | The archives the driver built (committed so the C++ port reads the same bytes) |
 | `ZipReaderTraceDump.kt` | Driver: builds/reads the archive and renders the entries |
-| `gen_scenarios.py` | Deterministic scenario generator (raw archives are assembled byte by byte) |
+| `agora_scenarios zip-reader` | Deterministic scenario generator (raw archives are assembled byte by byte) |
 | `run_golden.sh` | Compiles, freezes (`--freeze`) or verifies the traces |
 
 ## What is pinned

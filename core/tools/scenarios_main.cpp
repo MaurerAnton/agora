@@ -9,6 +9,8 @@
 #include <algorithm>
 #include <charconv>
 #include <cstdint>
+#include <optional>
+#include <zlib.h>
 #include <cstdlib>
 #include <filesystem>
 #include <fstream>
@@ -4025,6 +4027,570 @@ void profile_streaming_json_document(const fs::path& scenarios) {
     std::cout << "wrote " << all.size() << " scenarios to " << scenarios.string() << "\n";
 }
 
+
+// message-source/gen_scenarios.py — compact, ensure_ascii=False.
+void profile_message_source(const fs::path& scenarios) {
+    std::vector<json::Value> all;
+    auto case_add = [&](const char* name,
+                        std::vector<std::pair<std::string, json::Value>> fields) {
+        std::vector<std::pair<std::string, json::Value>> members = {{"name", str(name)}};
+        for (auto& field : fields) members.push_back(std::move(field));
+        all.push_back(object(std::move(members)));
+    };
+    auto decode = [&](const char* name, json::Value raw) {
+        case_add(name, {{"op", str("decode")}, {"raw", std::move(raw)}});
+    };
+    auto encode = [&](const char* name, json::Value raw) {
+        case_add(name, {{"op", str("encode")}, {"raw", std::move(raw)}});
+    };
+    auto sanitize = [&](const char* name, json::Value raw, const char* participant) {
+        case_add(name,
+                 {{"op", str("sanitize")},
+                  {"raw", std::move(raw)},
+                  {"participant", str(participant)}});
+    };
+    auto readable = [&](const char* name, std::vector<json::Value> items) {
+        case_add(name, {{"op", str("readable")}, {"items", array(std::move(items))}});
+    };
+    auto automation = [&](const char* name, json::Value request_kind) {
+        case_add(name,
+                 {{"op", str("automation")}, {"requestKind", std::move(request_kind)}});
+    };
+    auto stored = [](const char* kind,
+                     std::optional<std::vector<std::pair<std::string, std::optional<std::string>>>>
+                         items) {
+        std::vector<std::pair<std::string, json::Value>> members = {{"kind", str(kind)}};
+        if (items) {
+            std::vector<json::Value> rows;
+            for (auto& [question, answer] : *items) {
+                std::vector<std::pair<std::string, json::Value>> entry = {
+                    {"question", str(question)}};
+                if (answer) entry.emplace_back("answer", str(*answer));
+                rows.push_back(object(std::move(entry)));
+            }
+            members.emplace_back("askUser", array(std::move(rows)));
+        }
+        return serialize(object(std::move(members)), FormatOptions{Format::Compact, false});
+    };
+    auto qa = [&](const char* question, std::optional<std::string> answer) {
+        return std::make_pair(std::string(question), std::move(answer));
+    };
+    auto item = [&](const char* question, std::optional<std::string> answer) {
+        std::vector<std::pair<std::string, json::Value>> members = {
+            {"question", str(question)}};
+        if (answer) members.emplace_back("answer", str(*answer));
+        return object(std::move(members));
+    };
+
+    decode("decode_null", null_value());
+    decode("decode_empty", str(""));
+    decode("decode_blank", str("   "));
+    decode("decode_task", str(R"json({"kind":"task"})json"));
+    decode("decode_loop", str(R"json({"kind":"loop"})json"));
+    decode("decode_ask_user_empty", str(R"json({"kind":"ask_user"})json"));
+    decode("decode_ask_user_one", str(stored("ask_user", std::vector<std::pair<
+                                                           std::string, std::optional<std::string>>>{
+                                                       qa("What now?", std::string("Continue"))})));
+    decode("decode_ask_user_two",
+           str(stored("ask_user",
+                      std::vector<std::pair<std::string, std::optional<std::string>>>{
+                          qa("Q1", std::string("A1")), qa("Q2", std::string("A2"))})));
+    decode("decode_answer_missing",
+           str(stored("ask_user",
+                      std::vector<std::pair<std::string, std::optional<std::string>>>{
+                          qa("Q", std::nullopt)})));
+    decode("decode_answer_null",
+           str(R"json({"kind":"ask_user","askUser":[{"question":"Q","answer":null}]})json"));
+    decode("decode_answer_empty",
+           str(stored("ask_user",
+                      std::vector<std::pair<std::string, std::optional<std::string>>>{
+                          qa("Q", std::string(""))})));
+    decode("decode_question_empty",
+           str(stored("ask_user",
+                      std::vector<std::pair<std::string, std::optional<std::string>>>{
+                          qa("", std::string("A"))})));
+    decode("decode_unknown_top_key", str(R"json({"kind":"task","x":1})json"));
+    decode("decode_unknown_nested_key",
+           str(R"json({"kind":"ask_user","askUser":[{"question":"Q","answer":"A","x":[1,2]}]})json"));
+    decode("decode_serial_task_upper", str(R"json({"kind":"TASK"})json"));
+    decode("decode_kind_missing", str(R"json({"x":1})json"));
+    decode("decode_kind_null", str(R"json({"kind":null})json"));
+    decode("decode_kind_number", str(R"json({"kind":3})json"));
+    decode("decode_kind_unknown", str(R"json({"kind":"bogus"})json"));
+    decode("decode_ask_user_null", str(R"json({"kind":"ask_user","askUser":null})json"));
+    decode("decode_ask_user_object", str(R"json({"kind":"ask_user","askUser":{}})json"));
+    decode("decode_item_not_object", str(R"json({"kind":"ask_user","askUser":[1]})json"));
+    decode("decode_item_question_missing",
+           str(R"json({"kind":"ask_user","askUser":[{"answer":"A"}]})json"));
+    decode("decode_item_question_number",
+           str(R"json({"kind":"ask_user","askUser":[{"question":5}]})json"));
+    decode("decode_item_question_null",
+           str(R"json({"kind":"ask_user","askUser":[{"question":null}]})json"));
+    decode("decode_item_answer_number",
+           str(R"json({"kind":"ask_user","askUser":[{"question":"Q","answer":5}]})json"));
+    decode("decode_item_answer_bool",
+           str(R"json({"kind":"ask_user","askUser":[{"question":"Q","answer":true}]})json"));
+    decode("decode_task_with_items",
+           str(stored("task", std::vector<std::pair<std::string, std::optional<std::string>>>{
+                                  qa("What now?", std::string("Continue"))})));
+    decode("decode_loop_with_items",
+           str(stored("loop", std::vector<std::pair<std::string, std::optional<std::string>>>{
+                                  qa("What now?", std::string("Continue"))})));
+    decode("decode_extra_whitespace", str(R"json(  { "kind" : "task" }  )json"));
+    decode("decode_trailing_junk", str(R"json({"kind":"task"}x)json"));
+    decode("decode_two_values", str(R"json({"kind":"task"}{"kind":"loop"})json"));
+    decode("decode_bom", str("\ufeff{\"kind\":\"task\"}"));
+    decode("decode_escaped_text",
+           str(stored("ask_user", std::vector<std::pair<std::string, std::optional<std::string>>>{
+                                      qa("a\"b\\c\nd\te", std::string("\u00e9\U0001f642"))})));
+    decode("decode_literal_control",
+           str("{\"kind\":\"ask_user\",\"askUser\":[{\"question\":\"a\x01" "b\"}]}"));
+    decode("decode_task_empty_items", str(R"json({"kind":"task","askUser":[]})json"));
+    decode("decode_single_quotes", str("{'kind':'task'}"));
+    decode("decode_unclosed", str(R"json({"kind":"task")json"));
+    decode("decode_deep_nested_unknown",
+           str(R"json({"kind":"loop","meta":{"a":[1,{"b":null}]}})json"));
+
+    encode("encode_null", null_value());
+    encode("encode_invalid", str("not json"));
+    encode("encode_task", str(R"json({"kind":"task"})json"));
+    encode("encode_loop", str(R"json({"kind":"loop"})json"));
+    encode("encode_ask_user_empty", str(R"json({"kind":"ask_user"})json"));
+    encode("encode_ask_user_one", str(stored("ask_user", std::vector<std::pair<
+                                                           std::string, std::optional<std::string>>>{
+                                                       qa("What now?", std::string("Continue"))})));
+    encode("encode_answer_missing",
+           str(stored("ask_user",
+                      std::vector<std::pair<std::string, std::optional<std::string>>>{
+                          qa("Q", std::nullopt)})));
+    encode("encode_answer_null",
+           str(R"json({"kind":"ask_user","askUser":[{"question":"Q","answer":null}]})json"));
+    encode("encode_answer_empty",
+           str(stored("ask_user",
+                      std::vector<std::pair<std::string, std::optional<std::string>>>{
+                          qa("Q", std::string(""))})));
+    encode("encode_question_escapes",
+           str(stored("ask_user", std::vector<std::pair<std::string, std::optional<std::string>>>{
+                                      qa("a\"b\\c\nd\te", std::string("tab\there"))})));
+    encode("encode_unicode",
+           str(stored("ask_user", std::vector<std::pair<std::string, std::optional<std::string>>>{
+                                      qa("h\u00e9llo \U0001f642",
+                                         std::string("\u65e5\u672c\u8a9e"))})));
+    encode("encode_control_chars",
+           str(stored("ask_user", std::vector<std::pair<std::string, std::optional<std::string>>>{
+                                      qa("\x01\x07\x0b\x1f", std::string("ok"))})));
+    encode("encode_input_whitespace",
+           str(R"json( { "kind" : "ask_user" , "askUser" : [ { "question" : "Q" } ] } )json"));
+    encode("encode_task_empty_items", str(R"json({"kind":"task","askUser":[]})json"));
+    encode("encode_unknown_keys", str(R"json({"kind":"task","x":1,"askUser":[]})json"));
+    encode("encode_multi_items",
+           str(stored("ask_user",
+                      std::vector<std::pair<std::string, std::optional<std::string>>>{
+                          qa("Q1", std::string("A1")), qa("Q2", std::nullopt),
+                          qa("Q3", std::string(""))})));
+    encode("encode_task_with_items",
+           str(stored("task", std::vector<std::pair<std::string, std::optional<std::string>>>{
+                                  qa("What now?", std::string("Continue"))})));
+    encode("encode_question_only_spaces",
+           str(stored("ask_user", std::vector<std::pair<std::string, std::optional<std::string>>>{
+                                      qa("  ", std::nullopt)})));
+
+    sanitize("sanitize_user_task", str(R"json({"kind":"task"})json"), "USER");
+    sanitize("sanitize_user_invalid", str("not json"), "USER");
+    sanitize("sanitize_user_null", null_value(), "USER");
+    sanitize("sanitize_user_blank", str("  "), "USER");
+    sanitize("sanitize_model_task", str(R"json({"kind":"task"})json"), "MODEL");
+    sanitize("sanitize_error_task", str(R"json({"kind":"task"})json"), "ERROR");
+    sanitize("sanitize_user_ask_user",
+             str(stored("ask_user", std::vector<std::pair<std::string, std::optional<std::string>>>{
+                                        qa("What now?", std::string("Continue"))})),
+             "USER");
+    sanitize("sanitize_user_ask_user_empty", str(R"json({"kind":"ask_user","askUser":[]})json"),
+             "USER");
+    sanitize("sanitize_user_unknown_keys", str(R"json({"kind":"loop","x":1})json"), "USER");
+    sanitize("sanitize_user_task_with_items",
+             str(stored("task", std::vector<std::pair<std::string, std::optional<std::string>>>{
+                                    qa("What now?", std::string("Continue"))})),
+             "USER");
+    sanitize("sanitize_user_padded", str(R"json(  {"kind":"task"}  )json"), "USER");
+
+    readable("readable_one", {item("Q", std::string("A"))});
+    readable("readable_answer_missing", {item("Q", std::nullopt)});
+    readable("readable_answer_empty", {item("Q", std::string(""))});
+    readable("readable_two", {item("Q1", std::string("A1")), item("Q2", std::string("A2"))});
+    readable("readable_three",
+             {item("Q1", std::string("A1")), item("Q2", std::nullopt),
+              item("Q3", std::string("A3"))});
+    readable("readable_question_newline", {item("line1\nline2", std::string("A"))});
+    readable("readable_question_blank", {item("", std::string("A"))});
+    readable("readable_answer_newline", {item("Q", std::string("a\nb"))});
+    readable("readable_emoji", {item("\U0001f642?", std::string("\u00e9"))});
+    readable("readable_pipes", {item("a|b", std::string("c;d"))});
+
+    automation("automation_task", str("task"));
+    automation("automation_loop", str("loop"));
+    automation("automation_other", str("other"));
+    automation("automation_empty", str(""));
+    automation("automation_null", null_value());
+    automation("automation_uppercase", str("TASK"));
+    automation("automation_padded", str(" task "));
+    case_add("constants", {{"op", str("constants")}});
+
+    remove_stale(scenarios);
+    const FormatOptions compact{Format::Compact, false};
+    for (const json::Value& item_value : all) {
+        std::string name;
+        for (const json::Member& member : item_value.members) {
+            if (member.key == "name") name = member.value.text;
+        }
+        write_scenario(scenarios, name, item_value, compact);
+    }
+    std::cout << "wrote " << all.size() << " scenarios to " << scenarios.string() << "\n";
+}
+
+// ---------------------------------------------------------------------------------------------
+// zip-reader/gen_scenarios.py — indent=2, ensure_ascii=False; the raw archives need zlib's raw
+// deflate and CPython's Mersenne Twister (random.Random(9000)) to reproduce byte-for-byte.
+
+class PythonRandom {
+  public:
+    explicit PythonRandom(std::uint32_t seed) {
+        const std::uint32_t key[1] = {seed};
+        init_by_array(key, 1);
+    }
+
+    std::uint32_t randbelow(std::uint32_t n) {
+        if (n == 0) return 0;
+        int bits = 0;
+        for (std::uint32_t value = n; value != 0; value >>= 1) ++bits;
+        std::uint32_t result = getrandbits(bits);
+        while (result >= n) result = getrandbits(bits);
+        return result;
+    }
+
+    double random() {
+        const std::uint32_t a = genrand_uint32() >> 5;
+        const std::uint32_t b = genrand_uint32() >> 6;
+        return (static_cast<double>(a) * 67108864.0 + static_cast<double>(b)) *
+               (1.0 / 9007199254740992.0);
+    }
+
+  private:
+    static constexpr int kSize = 624;
+
+    std::uint32_t getrandbits(int bits) { return genrand_uint32() >> (32 - bits); }
+
+    void init_genrand(std::uint32_t seed) {
+        mt_[0] = seed;
+        for (int i = 1; i < kSize; ++i) {
+            mt_[i] = 1812433253U * (mt_[i - 1] ^ (mt_[i - 1] >> 30)) +
+                     static_cast<std::uint32_t>(i);
+        }
+        index_ = kSize;
+    }
+
+    void init_by_array(const std::uint32_t* key, int key_length) {
+        init_genrand(19650218U);
+        int i = 1;
+        int j = 0;
+        int k = kSize > key_length ? kSize : key_length;
+        for (; k != 0; --k) {
+            mt_[i] = (mt_[i] ^ ((mt_[i - 1] ^ (mt_[i - 1] >> 30)) * 1664525U)) + key[j] +
+                     static_cast<std::uint32_t>(j);
+            ++i;
+            ++j;
+            if (i >= kSize) {
+                mt_[0] = mt_[kSize - 1];
+                i = 1;
+            }
+            if (j >= key_length) j = 0;
+        }
+        for (k = kSize - 1; k != 0; --k) {
+            mt_[i] = (mt_[i] ^ ((mt_[i - 1] ^ (mt_[i - 1] >> 30)) * 1566083941U)) -
+                     static_cast<std::uint32_t>(i);
+            ++i;
+            if (i >= kSize) {
+                mt_[0] = mt_[kSize - 1];
+                i = 1;
+            }
+        }
+        mt_[0] = 0x80000000U;
+    }
+
+    std::uint32_t genrand_uint32() {
+        if (index_ >= kSize) {
+            for (int i = 0; i < kSize; ++i) {
+                const std::uint32_t y =
+                    (mt_[i] & 0x80000000U) | (mt_[(i + 1) % kSize] & 0x7FFFFFFFU);
+                mt_[i] = mt_[(i + 397) % kSize] ^ (y >> 1);
+                if ((y & 1U) != 0) mt_[i] ^= 0x9908B0DFU;
+            }
+            index_ = 0;
+        }
+        std::uint32_t y = mt_[index_++];
+        y ^= y >> 11;
+        y ^= (y << 7) & 0x9D2C5680U;
+        y ^= (y << 15) & 0xEFC60000U;
+        y ^= y >> 18;
+        return y;
+    }
+
+    std::uint32_t mt_[kSize];
+    int index_ = kSize;
+};
+
+std::string raw_deflate(const std::string& payload) {
+    z_stream stream{};
+    if (deflateInit2(&stream, 9, Z_DEFLATED, -15, 8, Z_DEFAULT_STRATEGY) != Z_OK) {
+        fail("error: deflateInit2 failed");
+    }
+    stream.next_in = reinterpret_cast<Bytef*>(const_cast<char*>(payload.data()));
+    stream.avail_in = static_cast<uInt>(payload.size());
+    std::string output;
+    char buffer[16384];
+    int result = Z_OK;
+    do {
+        stream.next_out = reinterpret_cast<Bytef*>(buffer);
+        stream.avail_out = sizeof(buffer);
+        result = deflate(&stream, Z_FINISH);
+        output.append(buffer, sizeof(buffer) - stream.avail_out);
+    } while (result == Z_OK);
+    deflateEnd(&stream);
+    if (result != Z_STREAM_END) fail("error: deflate failed");
+    return output;
+}
+
+std::string hex_encode(const std::string& bytes) {
+    static constexpr char kDigits[] = "0123456789abcdef";
+    std::string out;
+    out.reserve(bytes.size() * 2);
+    for (const unsigned char byte : bytes) {
+        out.push_back(kDigits[(byte >> 4) & 0xF]);
+        out.push_back(kDigits[byte & 0xF]);
+    }
+    return out;
+}
+
+void append_le16(std::string& out, std::uint32_t value) {
+    out.push_back(static_cast<char>(value & 0xFF));
+    out.push_back(static_cast<char>((value >> 8) & 0xFF));
+}
+
+void append_le32(std::string& out, std::uint32_t value) {
+    out.push_back(static_cast<char>(value & 0xFF));
+    out.push_back(static_cast<char>((value >> 8) & 0xFF));
+    out.push_back(static_cast<char>((value >> 16) & 0xFF));
+    out.push_back(static_cast<char>((value >> 24) & 0xFF));
+}
+
+std::uint32_t crc32_of(const std::string& data) {
+    return static_cast<std::uint32_t>(
+        crc32(0L, reinterpret_cast<const Bytef*>(data.data()), static_cast<uInt>(data.size())));
+}
+
+std::string local_header(
+    const std::string& name, const std::string& data, std::uint32_t method = 0,
+    std::uint32_t flags = 0, std::optional<std::uint32_t> crc = std::nullopt,
+    std::optional<std::uint32_t> size = std::nullopt,
+    std::optional<std::uint32_t> compressed_size = std::nullopt,
+    const std::string& extra = std::string(),
+    std::optional<std::uint32_t> descriptor_crc = std::nullopt,
+    std::optional<std::uint32_t> descriptor_size = std::nullopt) {
+    const std::uint32_t crc_value = crc ? *crc : crc32_of(data);
+    const std::uint32_t size_value =
+        size ? *size : static_cast<std::uint32_t>(data.size());
+    const std::uint32_t compressed_value =
+        compressed_size ? *compressed_size : static_cast<std::uint32_t>(data.size());
+    std::string header;
+    append_le32(header, 0x04034B50U);
+    append_le16(header, 20);
+    append_le16(header, flags);
+    append_le16(header, method);
+    append_le16(header, 0);
+    append_le16(header, 0);
+    append_le32(header, crc_value);
+    append_le32(header, compressed_value);
+    append_le32(header, size_value);
+    append_le16(header, static_cast<std::uint32_t>(name.size()));
+    append_le16(header, static_cast<std::uint32_t>(extra.size()));
+    header += name;
+    header += extra;
+    if (!descriptor_crc && !descriptor_size && (flags & 0x08U) == 0) {
+        return header + data;
+    }
+    std::string descriptor;
+    append_le32(descriptor, descriptor_crc ? *descriptor_crc : crc_value);
+    append_le32(descriptor,
+                descriptor_size ? *descriptor_size
+                                : static_cast<std::uint32_t>(data.size()));
+    append_le32(descriptor, size_value);
+    return header + data + descriptor;
+}
+
+void profile_zip_reader(const fs::path& scenarios) {
+    std::vector<std::pair<std::string, json::Value>> entries;
+    auto entry = [](const char* name, const std::string& content, const char* method,
+                    const char* extra) {
+        std::vector<std::pair<std::string, json::Value>> members = {
+            {"name", str(name)}, {"content", str(content)}, {"method", str(method)}};
+        if (extra != nullptr) members.emplace_back("extra", str(extra));
+        return object(std::move(members));
+    };
+    auto write_entries = [&](const char* name, std::vector<json::Value> items) {
+        entries.emplace_back(
+            name, object({{"entries", array(std::move(items))}}));
+    };
+    auto write_raw = [&](const char* name, const std::string& bytes) {
+        entries.emplace_back(name, object({{"raw", str(hex_encode(bytes))}}));
+    };
+
+    write_entries("01-single-deflate",
+                  {entry("conversations.json", R"json({"conversations":[]})json", "deflate",
+                         nullptr)});
+    write_entries("02-multiple-entries",
+                  {entry("a.json", R"json({"a":1})json", "deflate", nullptr),
+                   entry("b/c.json", R"json({"b":2})json", "stored", nullptr),
+                   entry("d.txt", "plain text", "stored", nullptr)});
+    write_entries("03-empty-entry", {entry("empty.json", "", "deflate", nullptr)});
+    write_entries("04-utf8-name-and-content",
+                  {entry("\u0434\u0438\u0430\u043b\u043e\u0433\u0438/\u65e5\u672c\u8a9e.json",
+                         R"json({"title":"юникод 🙂"})json", "deflate", nullptr)});
+    write_entries("05-binary-content",
+                  {entry("bin.dat", std::string("\x00\x01\x02\u00ff", 5), "deflate",
+                         nullptr)});
+    write_entries("06-extra-field",
+                  {entry("with-extra.json", R"json({"x":1})json", "deflate",
+                         "EXTRA-INFO-BYTES")});
+    {
+        std::vector<json::Value> items;
+        for (int index = 0; index < 20; ++index) {
+            items.push_back(entry(("part-" + std::to_string(index) + ".json").c_str(),
+                                  ("{\"i\":" + std::to_string(index) + "}").c_str(), "deflate",
+                                  nullptr));
+        }
+        write_entries("07-many-entries", std::move(items));
+    }
+    {
+        std::string content;
+        for (int i = 0; i < 20000; ++i) content += "abcdefgh";
+        write_entries("08-large-repetitive",
+                      {entry("big.txt", content.c_str(), "deflate", nullptr)});
+    }
+    {
+        std::string content;
+        for (int index = 0; index < 20000; ++index) {
+            const int code_point = 0x4E00 + (index * 7919) % 0x1000;
+            content += static_cast<char>(0xE0 | (code_point >> 12));
+            content += static_cast<char>(0x80 | ((code_point >> 6) & 0x3F));
+            content += static_cast<char>(0x80 | (code_point & 0x3F));
+        }
+        write_entries("09-large-incompressible",
+                      {entry("noise.bin", content.c_str(), "deflate", nullptr)});
+    }
+    write_entries("10-mixed-methods",
+                  {entry("one.json", R"json({"one":1})json", "stored", nullptr),
+                   entry("two.json", R"json({"two":2})json", "deflate", nullptr),
+                   entry("three.json", R"json({"three":3})json", "stored", nullptr)});
+    write_entries("11-single-byte-content", {entry("tiny.txt", "x", "deflate", nullptr)});
+    write_entries("12-tab-and-newline-content",
+                  {entry("lines.txt", "a\tb\nc\rd\n", "deflate", nullptr)});
+
+    const std::string payload = R"json({"raw":true})json";
+    write_raw("20-raw-valid-stored", local_header("a.json", payload));
+    {
+        std::string broken = std::string("PK\x03\x05", 4) + local_header("a.json", payload).substr(4);
+        write_raw("21-raw-bad-signature", broken);
+    }
+    write_raw("22-raw-bad-method", local_header("a.json", payload, 12));
+    {
+        const std::string full = local_header("a.json", payload);
+        write_raw("23-raw-truncated", full.substr(0, full.size() - 4));
+    }
+    write_raw("24-raw-crc-mismatch", local_header("a.json", payload, 0, 0, 0xDEADBEEFU));
+    write_raw("25-raw-size-mismatch",
+              local_header("a.json", payload, 0, 0, std::nullopt,
+                           static_cast<std::uint32_t>(payload.size() + 5)));
+    write_raw("26-raw-garbage", "not a zip at all, just bytes");
+    write_raw("27-raw-empty", "");
+    {
+        std::string central;
+        append_le32(central, 0x02014B50U);
+        append_le16(central, 20);
+        append_le16(central, 20);
+        for (int i = 0; i < 4; ++i) append_le16(central, 0);
+        append_le32(central, 0);
+        append_le32(central, 0);
+        append_le32(central, 0);
+        for (int i = 0; i < 5; ++i) append_le16(central, 0);
+        append_le32(central, 0);
+        append_le32(central, 0);
+        write_raw("28-raw-central-directory-only", central);
+    }
+    {
+        std::string repeated;
+        for (int i = 0; i < 40; ++i) repeated += payload;
+        write_raw("29-raw-damaged-deflate", local_header("a.json", raw_deflate(repeated), 8));
+    }
+    {
+        // _damaged_deflate(payload * 40) multiplies by another 40 internally.
+        std::string compressed;
+        for (int i = 0; i < 1600; ++i) compressed += payload;
+        std::string data = raw_deflate(compressed);
+        if (data.size() > 6) data[6] = static_cast<char>(data[6] ^ 0xFF);
+        write_raw("30-raw-damaged-deflate-byte", local_header("a.json", data, 8));
+    }
+    write_raw("31-raw-descriptor-wrong-crc",
+              local_header("a.json", payload, 0, 0x08, std::nullopt, std::nullopt,
+                           std::nullopt, std::string(), 0x12345678U));
+    write_raw("32-raw-descriptor-wrong-size",
+              local_header("a.json", payload, 0, 0x08, std::nullopt, std::nullopt,
+                           std::nullopt, std::string(), std::nullopt, 999U));
+    write_raw("33-raw-directory-entry", local_header("dir/", ""));
+    write_raw("34-raw-invalid-utf8-content",
+              local_header("a.bin", std::string("\xff\xfe\x00" "abc", 6)));
+    write_raw("35-raw-zero-length-name", local_header("", payload));
+    write_raw("36-raw-deflate-empty", local_header("a.json", raw_deflate(""), 8));
+    write_raw("37-raw-stored-empty", local_header("a.json", ""));
+    write_raw("38-raw-two-entries-second-broken",
+              local_header("a.json", payload) + local_header("b.json", payload, 0, 0, 1U));
+
+    PythonRandom rng(9000);
+    for (int index = 0; index < 8; ++index) {
+        std::string archive;
+        const int chunk_count = 1 + static_cast<int>(rng.randbelow(3));
+        for (int chunk = 0; chunk < chunk_count; ++chunk) {
+            const std::string name =
+                "f" + std::to_string(rng.randbelow(10)) + ".bin";
+            const int size = static_cast<int>(rng.randbelow(65));
+            std::string data;
+            for (int byte = 0; byte < size; ++byte) {
+                data.push_back(static_cast<char>(rng.randbelow(256)));
+            }
+            const bool deflated = rng.randbelow(2) == 1;
+            std::string header;
+            if (deflated) {
+                header = local_header(name, raw_deflate(data), 8);
+            } else {
+                header = local_header(name, data, 0);
+            }
+            if (rng.random() < 0.3) {
+                header[4] = static_cast<char>(rng.randbelow(256));
+            }
+            archive += header;
+        }
+        char name[32];
+        std::snprintf(name, sizeof(name), "90-fuzz-%02d", index);
+        write_raw(name, archive);
+    }
+
+    remove_stale(scenarios);
+    const FormatOptions pretty{Format::Pretty2, false};
+    for (const auto& [name, value] : entries) {
+        write_scenario(scenarios, name, value, pretty);
+    }
+    std::cout << "Wrote " << entries.size() << " scenarios to " << scenarios.string() << "\n";
+}
+
 }  // namespace
 
 int main(int argc, char** argv) {
@@ -4064,7 +4630,9 @@ int main(int argc, char** argv) {
                   << "  conch-sse             conch-sse/gen_scenarios.py\n"
                   << "  native-run-archive    native-run-archive/gen_scenarios.py\n"
                   << "  migration-18-19       migration-18-19/gen_scenarios.py\n"
-                  << "  streaming-json-document streaming-json-document/gen_scenarios.py\n";
+                  << "  streaming-json-document streaming-json-document/gen_scenarios.py\n"
+                  << "  message-source        message-source/gen_scenarios.py\n"
+                  << "  zip-reader            zip-reader/gen_scenarios.py\n";
         return 2;
     }
     const std::string profile = argv[1];
@@ -4139,6 +4707,10 @@ int main(int argc, char** argv) {
         profile_migration_18_19(scenarios);
     } else if (profile == "streaming-json-document") {
         profile_streaming_json_document(scenarios);
+    } else if (profile == "message-source") {
+        profile_message_source(scenarios);
+    } else if (profile == "zip-reader") {
+        profile_zip_reader(scenarios);
     } else {
         std::cerr << "unknown profile: " << profile << "\n";
         return 2;

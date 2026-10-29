@@ -67,6 +67,6 @@ KOTLINX_JARS=...core.jar:...json.jar ./run_golden.sh           # verify
 KOTLINX_JARS=... ./run_golden.sh --freeze                      # refreeze traces
 ```
 
-`python3 gen_scenarios.py` rewrites `scenarios/` deterministically (86 cases); rerun
+`core/build/agora_scenarios message-source core/tools/golden/message-source` rewrites `scenarios/` deterministically (86 cases); rerun
 `./run_golden.sh --freeze` afterwards. The stand needs the kotlinx-serialization compiler plugin
 (found next to `kotlinc` by default).

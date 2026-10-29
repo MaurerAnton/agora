@@ -207,6 +207,9 @@ if(AGORA_CORE_BUILD_TESTS)
     add_executable(agora_extract tools/extract_main.cpp)
 
     # Golden-stand scenario generator: C++ replacement for the gen_scenarios.py scripts.
+    # zlib is only needed by the tool (zip-reader builds raw deflate archives); the core
+    # library itself stays dependency-free.
+    find_package(ZLIB REQUIRED)
     add_executable(agora_scenarios tools/scenarios_main.cpp)
-    target_link_libraries(agora_scenarios PRIVATE agora_core_lib)
+    target_link_libraries(agora_scenarios PRIVATE agora_core_lib ZLIB::ZLIB)
 endif()

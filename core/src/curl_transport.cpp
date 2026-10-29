@@ -44,11 +44,6 @@ void ensure_curl_global_init() {
     std::call_once(once, [] { curl_global_init(CURL_GLOBAL_ALL); });
 }
 
-Deadline deadline_from(std::int32_t timeout_ms) {
-    return std::chrono::steady_clock::now() +
-           std::chrono::milliseconds(std::max<std::int32_t>(timeout_ms, 1));
-}
-
 Deadline deadline_from_ms(std::int64_t timeout_ms) {
     return std::chrono::steady_clock::now() +
            std::chrono::milliseconds(std::max<std::int64_t>(timeout_ms, 1));

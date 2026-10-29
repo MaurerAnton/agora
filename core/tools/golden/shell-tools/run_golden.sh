@@ -38,7 +38,7 @@ rm -rf "$classes" "$fresh"
 mkdir -p "$classes" "$fresh" "$here/build"
 
 echo "Extracting ShellFileReadResult + shellFileLineCount from ShellClient.kt..."
-python3 "$here/extract_shell_models.py" "$app/util/ShellClient.kt" "$models"
+"${AGORA_EXTRACT:-$root/core/build/agora_extract}" shell-models "$app/util/ShellClient.kt" "$models"
 
 sources=(
     "$app/util/Constants.kt"

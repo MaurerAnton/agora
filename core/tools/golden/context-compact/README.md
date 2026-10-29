@@ -14,7 +14,7 @@ projections).
 | `data/local/RunEntity.kt`, `model/RuntimeIdentity.kt` | the run row both transactions validate against |
 | `model/ChatMessage.kt` and its model dependencies | `MessageStatus`, `Participant` |
 | `util/Constants.kt` | `COMPACT_MSG_PREFIX` |
-| `extract_message_entity.py` output | `MessageEntity` lifted byte for byte from `ChatEntities.kt` |
+| ``agora_extract message-entity`` output | `MessageEntity` lifted byte for byte from `ChatEntities.kt` |
 
 ## The platform boundary
 
@@ -43,7 +43,7 @@ projections).
 | `scenarios/*.json` | 14 scenarios, 67 steps |
 | `golden/*.trace` | Frozen Kotlin output, one per scenario |
 | `ContextCompactTraceDump.kt` | Driver: seeds SQLite, runs every interface member, dumps the tables |
-| `extract_message_entity.py` | Lifts `MessageEntity` out of `ChatEntities.kt` |
+| ``agora_extract message-entity`` | Lifts `MessageEntity` out of `ChatEntities.kt` |
 | `gen_scenarios.py` | Deterministic scenario generator |
 | `run_golden.sh` | Extracts, compiles, freezes (`--freeze`) or verifies the traces |
 

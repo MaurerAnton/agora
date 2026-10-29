@@ -11,7 +11,7 @@ must reproduce every trace byte for byte.
 The identity file also owns provider-id normalization and the conversation display helpers. The
 alias block (the regexes, the display-name tables, `inferModelAlias` and its Gemini / Claude /
 Nova branches, `formatAliasToken` and `isValidSnapshotDate`) is one self-contained top-level
-region with no Android or viewmodel dependencies, so `extract_aliases.py` copies it verbatim —
+region with no Android or viewmodel dependencies, so ``agora_extract aliases`` copies it verbatim —
 only `private` is widened to `internal`. The driver calls `inferModelAlias` directly, so there is
 **no transcription**.
 

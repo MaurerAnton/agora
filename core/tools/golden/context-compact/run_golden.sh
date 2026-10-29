@@ -4,7 +4,7 @@
 # ChatContextCompactDao.kt compiles VERBATIM from the app tree — no extraction is needed for it,
 # because every member is public. data/local/RunEntity.kt, model/RuntimeIdentity.kt and the
 # ChatMessage model cluster also compile verbatim; MessageEntity is lifted out of ChatEntities.kt
-# by extract_message_entity.py. The platform boundary is Room: platform/MiniRoom.kt executes the
+# by `agora_extract message-entity`. The platform boundary is Room: platform/MiniRoom.kt executes the
 # declared @Query SQL on a real SQLite database over platform/schema.sql, and both @Transaction
 # bodies run under Room's begin/set-success/end stack.
 #
@@ -34,7 +34,7 @@ rm -rf "$here/build"
 mkdir -p "$classes" "$fresh"
 
 echo "Extracting the message entity..."
-python3 "$here/extract_message_entity.py"
+"${AGORA_EXTRACT:-$root/core/build/agora_extract}" message-entity "$app/data/local/ChatEntities.kt" "$here/build/MessageEntity.kt"
 
 sources=(
     "$app/data/local/ChatContextCompactDao.kt"

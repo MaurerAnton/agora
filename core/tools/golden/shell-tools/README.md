@@ -12,7 +12,7 @@ canonical trace is frozen under `golden/`; the C++ port (`agora::core::shell_too
 | `scenarios/*.json` | One case per file, 37 frozen edge cases across three modes |
 | `golden/*.trace` | Frozen canonical output, one per scenario |
 | `ShellToolsTraceDump.kt` | The stand driver (calls the real functions) |
-| `extract_shell_models.py` | Verbatim extraction of `ShellFileReadResult` + `shellFileLineCount` |
+| ``agora_extract shell-models`` | Verbatim extraction of `ShellFileReadResult` + `shellFileLineCount` |
 | `run_golden.sh` | Extracts, compiles and regenerates or verifies the traces |
 | `gen_scenarios.py` | Generates the scenarios (deterministic; rerun after editing) |
 

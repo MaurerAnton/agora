@@ -39,7 +39,7 @@ rm -rf "$classes" "$fresh"
 mkdir -p "$classes" "$fresh" "$here/build"
 
 echo "Extracting the alias block from CustomProviderIdentity.kt..."
-python3 "$here/extract_aliases.py" "$app/data/CustomProviderIdentity.kt" "$aliases"
+"${AGORA_EXTRACT:-$root/core/build/agora_extract}" aliases "$app/data/CustomProviderIdentity.kt" "$aliases"
 
 sources=(
     "$aliases"

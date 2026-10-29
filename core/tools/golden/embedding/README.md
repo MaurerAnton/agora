@@ -12,7 +12,7 @@ trace is frozen under `golden/`; the C++ port (`agora::core::embedding`, test
 | `scenarios/*.json` | One case per file, 29 frozen edge cases across four modes |
 | `golden/*.trace` | Frozen canonical output, one per scenario |
 | `EmbeddingTraceDump.kt` | The stand driver (parsing transcription over the real models) |
-| `extract_embedding_models.py` | Verbatim extraction of the request models |
+| ``agora_extract embedding-models`` | Verbatim extraction of the request models |
 | `run_golden.sh` | Extracts, compiles and regenerates or verifies the traces |
 | `gen_scenarios.py` | Generates the scenarios (deterministic; rerun after editing) |
 
@@ -21,7 +21,7 @@ trace is frozen under `golden/`; the C++ port (`agora::core::embedding`, test
 `EmbeddingClient.kt` wires coroutines, `HttpClient` and `DebugLog` and cannot compile
 standalone, so the stand pins it in two halves:
 
-* `extract_embedding_models.py` copies the `@Serializable` request models
+* ``agora_extract embedding-models`` copies the `@Serializable` request models
   (`EmbeddingRequest`, `BatchEmbeddingRequest`) **verbatim** (visibility widened `private` →
   `internal`); the request modes serialize them with the real kotlinx serializers.
 * The response parsing (`computeEmbedding` / `computeEmbeddingResponse` halves) is a

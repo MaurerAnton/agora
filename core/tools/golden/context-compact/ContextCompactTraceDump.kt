@@ -1,7 +1,7 @@
 // Golden trace driver for data/local/ChatContextCompactDao.kt.
 //
 // The compact-graph interface, the lifted MessageEntity, RunEntity.kt, RuntimeIdentity.kt and the
-// ChatMessage model cluster compile from the app tree (extract_message_entity.py). Room's
+// ChatMessage model cluster compile from the app tree (`agora_extract message-entity`). Room's
 // generated DAO is replaced by the stand-local MiniRoom, which executes the declared @Query SQL on
 // a real SQLite database over the stand schema; both @Transaction bodies run under Room's
 // begin/set-success/end stack.

@@ -3,7 +3,7 @@
 #
 # The traces are produced by the REAL Kotlin sources compiled straight from the app tree (see
 # SOURCES below); the event model declarations are extracted verbatim from AnthropicProvider.kt
-# by extract_models.py, and a leaf stub replaces the Android-only Compose annotation. The C++ port
+# by `agora_extract anthropic-models`, and a leaf stub replaces the Android-only Compose annotation. The C++ port
 # must reproduce them byte for byte (core/tests/anthropic_stream_parity_test.cpp).
 #
 # Requirements: identical to the other golden stands (kotlinc with the serialization compiler
@@ -39,7 +39,7 @@ rm -rf "$classes" "$fresh" "$here/build/models"
 mkdir -p "$classes" "$fresh" "$here/build/models"
 
 echo "Extracting the stream-event model declarations from AnthropicProvider.kt..."
-python3 "$here/extract_models.py" "$app/api/anthropic/AnthropicProvider.kt" "$models"
+"${AGORA_EXTRACT:-$root/core/build/agora_extract}" anthropic-models "$app/api/anthropic/AnthropicProvider.kt" "$models"
 
 sources=(
     "$app/model/ChatMessage.kt"

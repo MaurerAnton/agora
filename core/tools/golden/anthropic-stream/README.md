@@ -14,7 +14,7 @@ under `golden/`. The C++ port (`agora::core::anthropic_stream`, test
 | `scenarios/*.txt` | One transcript per file, 185 frozen edge cases |
 | `golden/*.trace` | Frozen canonical output of the Kotlin reference, one per transcript |
 | `AnthropicStreamTraceDump.kt` | The reference driver: wires the Kotlin router to the trace format |
-| `extract_models.py` | Copies the stream-event model declarations out of `AnthropicProvider.kt` verbatim |
+| ``agora_extract anthropic-models`` | Copies the stream-event model declarations out of `AnthropicProvider.kt` verbatim |
 | `run_golden.sh` | Compiles the reference and regenerates or verifies the traces |
 | `gen_scenarios.py` | Generates the transcripts (deterministic; rerun after editing) |
 | `stubs/` | Leaf stubs for Android-only types the reference sources touch |
@@ -87,5 +87,5 @@ KOTLINC=/path/to/kotlinc KOTLINX_JARS=core.jar:json.jar ./run_golden.sh --freeze
 python3 gen_scenarios.py                                                          # rewrite scenarios
 ```
 
-The Kotlin reference is compiled from the app tree on every run; `extract_models.py` fails
+The Kotlin reference is compiled from the app tree on every run; ``agora_extract anthropic-models`` fails
 loudly if the stream-event model declarations move or change shape.

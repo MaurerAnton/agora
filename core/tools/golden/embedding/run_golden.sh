@@ -39,7 +39,7 @@ rm -rf "$classes" "$fresh"
 mkdir -p "$classes" "$fresh" "$here/build"
 
 echo "Extracting the request models from EmbeddingClient.kt..."
-python3 "$here/extract_embedding_models.py" "$app/api/EmbeddingClient.kt" "$models"
+"${AGORA_EXTRACT:-$root/core/build/agora_extract}" embedding-models "$app/api/EmbeddingClient.kt" "$models"
 
 sources=(
     "$models"

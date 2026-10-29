@@ -3292,6 +3292,424 @@ void profile_openai_service_tiers(const fs::path& scenarios) {
     std::cout << "wrote " << all.size() << " scenarios to " << scenarios.string() << "\n";
 }
 
+
+// conch-sse/gen_scenarios.py — indent=2, ensure_ascii=False; frame data uses json.dumps defaults.
+void profile_conch_sse(const fs::path& scenarios) {
+    constexpr std::int64_t kBudget = 1 << 20;
+    std::vector<json::Value> all;
+    auto add = [&](const char* name, std::vector<std::string> lines, bool encrypted,
+                   const char* decrypt_error) {
+        std::vector<json::Value> items;
+        for (auto& line : lines) items.push_back(str(std::move(line)));
+        std::vector<std::pair<std::string, json::Value>> members = {
+            {"name", str(name)},
+            {"encrypted", boolean(encrypted)},
+            {"lines", array(std::move(items))},
+        };
+        if (decrypt_error != nullptr) members.emplace_back("decrypt_error", str(decrypt_error));
+        all.push_back(object(std::move(members)));
+    };
+    auto frame_data = [](std::vector<std::pair<std::string, json::Value>> members) {
+        return object(std::move(members));
+    };
+    auto frames = [&](bool encrypted,
+                      std::vector<std::pair<std::string, json::Value>> pairs) {
+        std::vector<std::string> out;
+        std::int64_t sequence = 0;
+        for (auto& [event, data] : pairs) {
+            json::Value payload = data;
+            if (encrypted) {
+                payload.members.push_back(json::Member{"_conch_event", str(event)});
+                payload.members.push_back(
+                    json::Member{"_conch_sequence", number(sequence)});
+                sequence += 1;
+            }
+            out.push_back("event: " + event);
+            out.push_back("data: " + serialize(payload, FormatOptions{Format::Spaced, false}));
+        }
+        return out;
+    };
+    auto long_line = [&](const std::string& text) {
+        return frames(false, {{"line", frame_data({{"line", str(text)},
+                                                    {"stream", str("stdout")}})},
+                              {"line", frame_data({{"line", str("tail")},
+                                                    {"stream", str("stdout")}})},
+                              {"result", frame_data({{"exit_code", number(0)}})}});
+    };
+
+    add("single_line_then_result",
+        frames(false, {{"line", frame_data({{"line", str("hello")},
+                                             {"stream", str("stdout")}})},
+                       {"result", frame_data({{"exit_code", number(0)}})}}),
+        false, nullptr);
+    add("stdout_and_stderr_interleave",
+        frames(false, {{"line", frame_data({{"line", str("out")},
+                                             {"stream", str("stdout")}})},
+                       {"line", frame_data({{"line", str("err")},
+                                             {"stream", str("stderr")}})},
+                       {"result", frame_data({{"exit_code", number(3)}})}}),
+        false, nullptr);
+    add("blank_line_between_frames_is_ignored",
+        {"event: line", "data: {\"line\": \"hi\", \"stream\": \"stdout\"}", "", "event: result",
+         "data: {\"exit_code\": 0}"},
+        false, nullptr);
+    add("empty_line_text_is_allowed",
+        frames(false, {{"line", frame_data({{"line", str("")},
+                                             {"stream", str("stdout")}})},
+                       {"result", frame_data({{"exit_code", number(0)}})}}),
+        false, nullptr);
+    add("embedded_newlines_are_preserved",
+        frames(false, {{"line", frame_data({{"line", str("one\ntwo")},
+                                             {"stream", str("stdout")}})},
+                       {"result", frame_data({{"exit_code", number(0)}})}}),
+        false, nullptr);
+    add("unknown_fields_are_ignored",
+        {"event: line", "data: {\"line\": \"hi\", \"stream\": \"stdout\", \"future_key\": [1, 2]}",
+         "event: result", "data: {\"exit_code\": 0, \"elapsed_ms\": 12}"},
+        false, nullptr);
+    add("warning_is_recorded",
+        frames(false, {{"warning", frame_data({{"message", str("careful")}})},
+                       {"result", frame_data({{"exit_code", number(0)}})}}),
+        false, nullptr);
+    add("multiple_warnings_are_joined",
+        frames(false, {{"warning", frame_data({{"message", str("first")}})},
+                       {"warning", frame_data({{"message", str("second")}})},
+                       {"result", frame_data({{"exit_code", number(0)}})}}),
+        false, nullptr);
+    add("error_event_times_out",
+        frames(false, {{"error", frame_data({{"message", str("killed")},
+                                              {"timed_out", boolean(true)}})}}),
+        false, nullptr);
+    add("error_event_does_not_time_out",
+        frames(false, {{"error", frame_data({{"message", str("refused")},
+                                              {"timed_out", boolean(false)}})}}),
+        false, nullptr);
+    add("error_event_without_timeout_field",
+        frames(false, {{"error", frame_data({{"message", str("refused")}})}}), false, nullptr);
+    add("no_terminal_frame_keeps_the_streamed_output",
+        frames(false, {{"line", frame_data({{"line", str("partial")},
+                                             {"stream", str("stdout")}})}}),
+        false, nullptr);
+
+    add("encrypted_handshake_and_sequence",
+        frames(true, {{"line", frame_data({{"line", str("secure")},
+                                            {"stream", str("stdout")}})},
+                      {"result", frame_data({{"exit_code", number(0)}})}}),
+        true, nullptr);
+    add("encrypted_sequence_mismatch",
+        {"event: line",
+         "data: {\"line\": \"x\", \"stream\": \"stdout\", \"_conch_event\": \"line\", "
+         "\"_conch_sequence\": 1}"},
+        true, nullptr);
+    add("encrypted_sequence_repeated",
+        {"event: line",
+         "data: {\"line\": \"x\", \"stream\": \"stdout\", \"_conch_event\": \"line\", "
+         "\"_conch_sequence\": 0}",
+         "event: result",
+         "data: {\"exit_code\": 0, \"_conch_event\": \"result\", \"_conch_sequence\": 0}"},
+        true, nullptr);
+    add("encrypted_sequence_is_a_string",
+        {"event: line",
+         "data: {\"line\": \"x\", \"stream\": \"stdout\", \"_conch_event\": \"line\", "
+         "\"_conch_sequence\": \"0\"}"},
+        true, nullptr);
+    add("encrypted_missing_event_field",
+        {"event: line",
+         "data: {\"line\": \"x\", \"stream\": \"stdout\", \"_conch_sequence\": 0}"},
+        true, nullptr);
+    add("encrypted_event_field_mismatch",
+        {"event: line",
+         "data: {\"line\": \"x\", \"stream\": \"stdout\", \"_conch_event\": \"result\", "
+         "\"_conch_sequence\": 0}"},
+        true, nullptr);
+    add("decrypt_failure_fails_closed",
+        {"event: line",
+         "data: {\"line\": \"x\", \"stream\": \"stdout\", \"_conch_event\": \"line\", "
+         "\"_conch_sequence\": 0}"},
+        true, "bad padding");
+
+    add("event_without_data_frame",
+        {"event: line", "event: result", "data: {\"exit_code\": 0}"}, false, nullptr);
+    add("empty_line_with_pending_event", {"event: line", ""}, false, nullptr);
+    {
+        std::vector<std::string> lines =
+            frames(false, {{"result", frame_data({{"exit_code", number(0)}})}});
+        lines.push_back("event: line");
+        add("event_after_terminal_frame", std::move(lines), false, nullptr);
+    }
+    {
+        std::vector<std::string> lines =
+            frames(false, {{"result", frame_data({{"exit_code", number(0)}})}});
+        lines.push_back("data: {}");
+        add("data_after_terminal_frame", std::move(lines), false, nullptr);
+    }
+    add("data_without_event", {"data: {\"line\": \"x\", \"stream\": \"stdout\"}"}, false,
+        nullptr);
+    add("unsupported_event", {"event: meta", "{}"}, false, nullptr);
+    add("unexpected_line", {"this is not sse"}, false, nullptr);
+    add("event_without_space_is_unexpected", {"event:line", "data: {}"}, false, nullptr);
+    add("stream_ends_with_pending_event", {"event: result"}, false, nullptr);
+
+    add("invalid_json_payload", {"event: line", "data: {oops"}, false, nullptr);
+    add("line_event_missing_text", {"event: line", "data: {\"stream\": \"stdout\"}"}, false,
+        nullptr);
+    add("line_event_missing_stream", {"event: line", "data: {\"line\": \"x\"}"}, false,
+        nullptr);
+    add("line_event_blank_stream",
+        {"event: line", "data: {\"line\": \"x\", \"stream\": \"\"}"}, false, nullptr);
+    add("line_event_unsupported_stream",
+        {"event: line", "data: {\"line\": \"x\", \"stream\": \"tty\"}"}, false, nullptr);
+    add("result_event_missing_exit_code", {"event: result", "data: {}"}, false, nullptr);
+    add("result_event_exit_code_is_a_string",
+        {"event: result", "data: {\"exit_code\": \"0\"}"}, false, nullptr);
+    add("warning_event_missing_message", {"event: warning", "data: {}"}, false, nullptr);
+    add("error_event_missing_message",
+        {"event: error", "data: {\"timed_out\": true}"}, false, nullptr);
+    add("error_event_timeout_is_a_string",
+        {"event: error", "data: {\"message\": \"slow\", \"timed_out\": \"true\"}"}, false,
+        nullptr);
+    add("error_event_timeout_is_not_a_boolean",
+        {"event: error", "data: {\"message\": \"slow\", \"timed_out\": \"yes\"}"}, false,
+        nullptr);
+
+    add("ascii_output_is_truncated_at_the_byte_budget",
+        long_line(std::string(kBudget + 64, 'a')), false, nullptr);
+    add("multibyte_character_is_never_split",
+        long_line(std::string(kBudget - 2, 'a') + "\u20ac"), false, nullptr);
+
+    const FormatOptions pretty{Format::Pretty2, false};
+    for (const json::Value& item : all) {
+        std::string name;
+        for (const json::Member& member : item.members) {
+            if (member.key == "name") name = member.value.text;
+        }
+        write_scenario(scenarios, name, item, pretty);
+    }
+    std::cout << "Wrote " << all.size() << " scenarios\n";
+}
+
+// native-run-archive/gen_scenarios.py — indent=2, ensure_ascii=False.
+void profile_native_run_archive(const fs::path& scenarios) {
+    struct Overrides {
+        const char* status = "COMPLETED";
+        json::Value parent_run_id = null_value();
+        std::int64_t started_at = 10;
+        std::int64_t last_checkpoint_at = 20;
+        json::Value stop_requested_at = null_value();
+        json::Value ended_at = null_value();
+        json::Value end_reason = null_value();
+        std::int64_t current_pass = 0;
+        bool legacy_ambiguous = false;
+    };
+    auto snapshot = [](const char* name, const Overrides& overrides) {
+        return object({{"name", str(name)},
+                       {"op", str("terminalize")},
+                       {"id", str("r1")},
+                       {"conversationId", str("conv-a")},
+                       {"parentRunId", overrides.parent_run_id},
+                       {"status", str(overrides.status)},
+                       {"startedAt", number(overrides.started_at)},
+                       {"lastCheckpointAt", number(overrides.last_checkpoint_at)},
+                       {"stopRequestedAt", overrides.stop_requested_at},
+                       {"endedAt", overrides.ended_at},
+                       {"endReason", overrides.end_reason},
+                       {"currentPass", number(overrides.current_pass)},
+                       {"legacyAmbiguous", boolean(overrides.legacy_ambiguous)}});
+    };
+    auto run = [](const char* run_id, json::Value parent, std::int64_t started,
+                  const char* conversation, bool ambiguous) {
+        return object({{"id", str(run_id)},
+                       {"conversationId", str(conversation)},
+                       {"parentRunId", std::move(parent)},
+                       {"startedAt", number(started)},
+                       {"legacyAmbiguous", boolean(ambiguous)}});
+    };
+    auto ownership = [](const char* message_id, const char* run_id, std::int64_t sequence,
+                        const char* conversation, std::optional<std::int64_t> consumed) {
+        std::vector<std::pair<std::string, json::Value>> members = {
+            {"messageId", str(message_id)},
+            {"conversationId", str(conversation)},
+            {"runId", str(run_id)},
+            {"runSequence", number(sequence)},
+        };
+        if (consumed) members.emplace_back("consumedAtPass", number(*consumed));
+        return object(std::move(members));
+    };
+    auto ownership_case = [](const char* name, std::vector<json::Value> runs,
+                             std::vector<json::Value> rows, bool unique) {
+        return object({{"name", str(name)},
+                       {"op", str("hasCompleteOwnership")},
+                       {"sourceRunIdsWereUnique", boolean(unique)},
+                       {"runs", array(std::move(runs))},
+                       {"ownership", array(std::move(rows))}});
+    };
+    auto order_case = [](const char* name, std::vector<json::Value> runs) {
+        return object({{"name", str(name)},
+                       {"op", str("orderByParent")},
+                       {"runs", array(std::move(runs))}});
+    };
+
+    std::vector<json::Value> cases;
+    {
+        Overrides overrides;
+        overrides.status = "ACTIVE";
+        overrides.parent_run_id = str("r-parent");
+        overrides.current_pass = 2;
+        cases.push_back(snapshot("terminalize_active", overrides));
+    }
+    {
+        Overrides overrides;
+        overrides.status = "STOPPING";
+        overrides.stop_requested_at = number(15);
+        cases.push_back(snapshot("terminalize_stopping", overrides));
+    }
+    cases.push_back(snapshot("terminalize_completed", Overrides{}));
+    {
+        Overrides overrides;
+        overrides.status = "STOPPED";
+        cases.push_back(snapshot("terminalize_stopped", overrides));
+    }
+    {
+        Overrides overrides;
+        overrides.status = "FAILED";
+        cases.push_back(snapshot("terminalize_failed", overrides));
+    }
+    {
+        Overrides overrides;
+        overrides.status = "PAUSED";
+        cases.push_back(snapshot("terminalize_invalid_status", overrides));
+    }
+    {
+        Overrides overrides;
+        overrides.status = "";
+        cases.push_back(snapshot("terminalize_missing_status", overrides));
+    }
+    {
+        Overrides overrides;
+        overrides.end_reason = str("DONE");
+        cases.push_back(snapshot("terminalize_invalid_end_reason", overrides));
+    }
+    {
+        Overrides overrides;
+        overrides.status = "ACTIVE";
+        overrides.end_reason = str("USER_STOPPED");
+        overrides.ended_at = number(99);
+        overrides.legacy_ambiguous = true;
+        cases.push_back(snapshot("terminalize_nonterminal_recovery", overrides));
+    }
+    {
+        Overrides overrides;
+        overrides.status = "STOPPED";
+        overrides.started_at = 100;
+        overrides.last_checkpoint_at = 50;
+        overrides.stop_requested_at = number(90);
+        overrides.ended_at = number(30);
+        cases.push_back(snapshot("terminalize_timestamps_clamp", overrides));
+    }
+    {
+        Overrides overrides;
+        overrides.ended_at = number(99);
+        cases.push_back(snapshot("terminalize_timestamps_preserve", overrides));
+    }
+    {
+        Overrides overrides;
+        overrides.current_pass = -5;
+        cases.push_back(snapshot("terminalize_pass_clamp", overrides));
+    }
+    {
+        Overrides overrides;
+        overrides.status = "NOPE";
+        overrides.end_reason = str("USER_STOPPED");
+        cases.push_back(snapshot("terminalize_invalid_status_valid_reason", overrides));
+    }
+
+    cases.push_back(ownership_case(
+        "ownership_valid",
+        {run("r1", null_value(), 1, "conv-a", false),
+         run("r2", null_value(), 1, "conv-a", false)},
+        {ownership("m1", "r1", 0, "conv-a", 0), ownership("m2", "r2", 1, "conv-a", 3)},
+        true));
+    cases.push_back(ownership_case("ownership_empty_ownership",
+                                   {run("r1", null_value(), 1, "conv-a", false)}, {}, true));
+    cases.push_back(ownership_case("ownership_empty_runs", {}, {}, true));
+    cases.push_back(ownership_case(
+        "ownership_duplicate_message",
+        {run("r1", null_value(), 1, "conv-a", false),
+         run("r2", null_value(), 1, "conv-a", false)},
+        {ownership("m1", "r1", 0, "conv-a", std::nullopt),
+         ownership("m1", "r2", 1, "conv-a", std::nullopt)},
+        true));
+    cases.push_back(ownership_case(
+        "ownership_duplicate_sequence", {run("r1", null_value(), 1, "conv-a", false)},
+        {ownership("m1", "r1", 2, "conv-a", std::nullopt),
+         ownership("m2", "r1", 2, "conv-a", std::nullopt)},
+        true));
+    cases.push_back(ownership_case("ownership_missing_run",
+                                   {run("r1", null_value(), 1, "conv-a", false)},
+                                   {ownership("m1", "r9", 0, "conv-a", std::nullopt)}, true));
+    cases.push_back(ownership_case(
+        "ownership_wrong_conversation", {run("r1", null_value(), 1, "conv-a", false)},
+        {ownership("m1", "r1", 0, "conv-b", std::nullopt)}, true));
+    cases.push_back(ownership_case("ownership_negative_sequence",
+                                   {run("r1", null_value(), 1, "conv-a", false)},
+                                   {ownership("m1", "r1", -1, "conv-a", std::nullopt)}, true));
+    cases.push_back(ownership_case(
+        "ownership_null_sequence", {run("r1", null_value(), 1, "conv-a", false)},
+        {object({{"messageId", str("m1")},
+                 {"conversationId", str("conv-a")},
+                 {"runId", str("r1")},
+                 {"runSequence", null_value()}})},
+        true));
+    cases.push_back(ownership_case("ownership_nonunique_source",
+                                   {run("r1", null_value(), 1, "conv-a", false)},
+                                   {ownership("m1", "r1", 0, "conv-a", std::nullopt)}, false));
+    cases.push_back(ownership_case(
+        "ownership_duplicate_run_ids_last_wins",
+        {run("r1", null_value(), 1, "conv-a", false),
+         run("r1", null_value(), 1, "conv-b", false)},
+        {ownership("m1", "r1", 0, "conv-b", std::nullopt)}, true));
+
+    cases.push_back(order_case("order_normal_chain",
+                               {run("c", str("b"), 30, "conv-a", false),
+                                run("b", str("a"), 20, "conv-a", false),
+                                run("a", null_value(), 10, "conv-a", false)}));
+    cases.push_back(order_case("order_missing_parent",
+                               {run("orphan", str("ghost"), 5, "conv-a", false),
+                                run("root", null_value(), 1, "conv-a", false),
+                                run("orphan-child", str("orphan"), 6, "conv-a", false)}));
+    cases.push_back(order_case("order_cycle",
+                               {run("a", str("c"), 3, "conv-a", false),
+                                run("b", str("a"), 1, "conv-a", false),
+                                run("c", str("b"), 2, "conv-a", false)}));
+    cases.push_back(order_case("order_cycle_equal_timestamps",
+                               {run("a", str("c"), 0, "conv-a", false),
+                                run("b", str("a"), 0, "conv-a", false),
+                                run("c", str("b"), 0, "conv-a", false)}));
+    cases.push_back(order_case("order_duplicate_ids",
+                               {run("r1", null_value(), 3, "conv-a", false),
+                                run("r1", str("r2"), 1, "conv-a", false),
+                                run("r2", null_value(), 2, "conv-a", false),
+                                run("c", str("r1"), 4, "conv-a", false)}));
+    cases.push_back(order_case("order_duplicate_missing_parent",
+                               {run("r1", null_value(), 2, "conv-a", false),
+                                run("r1", str("ghost"), 1, "conv-a", false)}));
+    cases.push_back(order_case("order_equal_timestamps",
+                               {run("b", null_value(), 0, "conv-a", false),
+                                run("a", null_value(), 0, "conv-a", false),
+                                run("c", str("a"), 0, "conv-a", false)}));
+    cases.push_back(order_case("order_empty", {}));
+
+    const FormatOptions pretty{Format::Pretty2, false};
+    for (const json::Value& item : cases) {
+        std::string name;
+        for (const json::Member& member : item.members) {
+            if (member.key == "name") name = member.value.text;
+        }
+        write_scenario(scenarios, name, item, pretty);
+    }
+    std::cout << "wrote " << cases.size() << " scenarios\n";
+}
+
 }  // namespace
 
 int main(int argc, char** argv) {
@@ -3327,7 +3745,9 @@ int main(int argc, char** argv) {
                   << "  embedding-selector    embedding-selector/gen_scenarios.py\n"
                   << "  migration-16-17       migration-16-17/gen_scenarios.py\n"
                   << "  chat-provider-context-dao chat-provider-context-dao/gen_scenarios.py\n"
-                  << "  openai-service-tiers  openai-service-tiers/gen_scenarios.py\n";
+                  << "  openai-service-tiers  openai-service-tiers/gen_scenarios.py\n"
+                  << "  conch-sse             conch-sse/gen_scenarios.py\n"
+                  << "  native-run-archive    native-run-archive/gen_scenarios.py\n";
         return 2;
     }
     const std::string profile = argv[1];
@@ -3394,6 +3814,10 @@ int main(int argc, char** argv) {
         profile_chat_provider_context_dao(scenarios);
     } else if (profile == "openai-service-tiers") {
         profile_openai_service_tiers(scenarios);
+    } else if (profile == "conch-sse") {
+        profile_conch_sse(scenarios);
+    } else if (profile == "native-run-archive") {
+        profile_native_run_archive(scenarios);
     } else {
         std::cerr << "unknown profile: " << profile << "\n";
         return 2;

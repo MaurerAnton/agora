@@ -14,7 +14,7 @@ trace is frozen under `golden/`; the C++ port (`agora::core::conch::parse_conch_
 | `ConchSseTraceDump.kt` | The stand driver (feeds the parser raw SSE lines) |
 | `agora_extract shell-prefix` | Lifts `shellUtf8Prefix` + its byte budget out of `ShellClient.kt` |
 | `run_golden.sh` | Extracts, compiles and regenerates or verifies the traces |
-| `gen_scenarios.py` | Generates the scenarios (deterministic; rerun after editing) |
+| `agora_scenarios conch-sse` | Generates the scenarios (deterministic; rerun after editing) |
 
 ## What is pinned
 
@@ -91,7 +91,7 @@ Escaping: `\` `|` `;` `\n` `\r` `\t` → `\\` `\p` `\s` `\n` `\r` `\t`.
 ```bash
 JAVA_HOME=/path/to/jdk17 KOTLINC=/path/to/kotlinc KOTLINX_JARS=core.jar:json.jar ./run_golden.sh          # verify
 JAVA_HOME=/path/to/jdk17 KOTLINC=/path/to/kotlinc KOTLINX_JARS=core.jar:json.jar ./run_golden.sh --freeze # regenerate
-python3 gen_scenarios.py                                                                                  # rewrite scenarios
+core/build/agora_scenarios conch-sse core/tools/golden/conch-sse                                                                                  # rewrite scenarios
 ```
 
 `run_golden.sh` wipes the stand's `build/` (its git-ignored scratch, including the extracted

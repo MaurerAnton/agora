@@ -14,7 +14,7 @@ and the canonical trace is frozen under `golden/`; the C++ port
 | `golden/*.trace` | Frozen canonical output, one per scenario |
 | `SelectorTraceDump.kt` | The stand driver (calls the real selector through its suspend entry point) |
 | `run_golden.sh` | Compiles the app sources and regenerates or verifies the traces |
-| `gen_scenarios.py` | Generates the scenarios (deterministic; rerun after editing) |
+| `agora_scenarios embedding-selector` | Generates the scenarios (deterministic; rerun after editing) |
 
 ## What is pinned
 
@@ -84,7 +84,7 @@ Floats are spelled exactly as Kotlin's `Float.toString()`; the C++ side reuses
 ```bash
 JAVA_HOME=/path/to/jdk17 KOTLINC=/path/to/kotlinc KOTLINX_JARS=core.jar:json.jar ./run_golden.sh          # verify
 JAVA_HOME=/path/to/jdk17 KOTLINC=/path/to/kotlinc KOTLINX_JARS=core.jar:json.jar ./run_golden.sh --freeze # regenerate
-python3 gen_scenarios.py                                                                                  # rewrite scenarios
+core/build/agora_scenarios embedding-selector core/tools/golden/embedding-selector                                                                                  # rewrite scenarios
 ```
 
 `run_golden.sh` wipes the stand's `build/` (its git-ignored scratch) before each run, so runs are

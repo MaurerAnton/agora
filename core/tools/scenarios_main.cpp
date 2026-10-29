@@ -7,6 +7,7 @@
 //   stand_dir is core/tools/golden/<stand>; scenarios are written to <stand>/scenarios.
 
 #include <algorithm>
+#include <charconv>
 #include <cstdint>
 #include <cstdlib>
 #include <filesystem>
@@ -47,6 +48,20 @@ json::Value literal(std::string text) {
 }
 
 json::Value number(std::int64_t value) { return literal(std::to_string(value)); }
+
+// Python's float repr (json.dump uses it): shortest round-trip form, with ".0" kept on integral
+// values and a lowercase "e+NN" exponent, exactly what std::to_chars(general) produces.
+json::Value float_number(double value) {
+    char buffer[64];
+    const std::to_chars_result result =
+        std::to_chars(buffer, buffer + sizeof(buffer), value, std::chars_format::general);
+    std::string text(buffer, result.ptr);
+    if (text.find('.') == std::string::npos && text.find('e') == std::string::npos &&
+        text.find("inf") == std::string::npos && text.find("nan") == std::string::npos) {
+        text += ".0";
+    }
+    return literal(std::move(text));
+}
 
 json::Value boolean(bool value) { return literal(value ? "true" : "false"); }
 
@@ -2626,6 +2641,343 @@ void profile_duckduckgo(const fs::path& scenarios) {
     std::cout << "Wrote " << all.size() << " scenarios\n";
 }
 
+
+// embedding-selector/gen_scenarios.py — indent=2, ensure_ascii=False.
+void profile_embedding_selector(const fs::path& scenarios) {
+    constexpr double kFloatMax = 3.4028235e38;
+    std::vector<json::Value> all;
+    auto add = [&](const char* name,
+                   std::vector<std::pair<std::string, json::Value>> fields) {
+        std::vector<std::pair<std::string, json::Value>> members = {{"name", str(name)}};
+        for (auto& field : fields) members.push_back(std::move(field));
+        all.push_back(object(std::move(members)));
+    };
+    auto floats = [](std::vector<double> values) {
+        std::vector<json::Value> items;
+        for (const double value : values) items.push_back(float_number(value));
+        return array(std::move(items));
+    };
+    auto row = [&](std::int64_t id, std::vector<double> embedding, const char* message_id,
+                   std::int64_t dimension) {
+        return object({{"id", number(id)},
+                       {"message_id", str(message_id)},
+                       {"embedding", floats(std::move(embedding))},
+                       {"dimension", number(dimension)}});
+    };
+    auto raw_page = [&](std::vector<json::Value> rows) { return array(std::move(rows)); };
+
+    add("empty_query", {{"query", floats({})}, {"rows", array({row(1, {1.0, 0.0}, "m", -1)})}});
+    add("non_positive_limit", {{"query", floats({1.0, 0.0})},
+                               {"limit", number(0)},
+                               {"rows", array({row(1, {1.0, 0.0}, "m", -1)})}});
+    add("negative_limit", {{"query", floats({1.0, 0.0})},
+                           {"limit", number(-3)},
+                           {"rows", array({row(1, {1.0, 0.0}, "m", -1)})}});
+    add("empty_rows", {{"query", floats({1.0, 0.0})}, {"rows", array({})}});
+    add("non_positive_page_size_is_rejected",
+        {{"page_size", number(0)},
+         {"query", floats({1.0, 0.0})},
+         {"rows", array({row(1, {1.0, 0.0}, "m", -1)})}});
+
+    add("identical_vector", {{"query", floats({1.0, 0.0})},
+                             {"threshold", float_number(0.5)},
+                             {"limit", number(5)},
+                             {"rows", array({row(1, {1.0, 0.0}, "exact", -1)})}});
+    add("orthogonal_vector", {{"query", floats({1.0, 0.0})},
+                              {"threshold", float_number(-1.0)},
+                              {"limit", number(5)},
+                              {"rows", array({row(1, {0.0, 1.0}, "perp", -1)})}});
+    add("opposite_vector", {{"query", floats({1.0, 0.0})},
+                            {"threshold", float_number(-2.0)},
+                            {"limit", number(5)},
+                            {"rows", array({row(1, {-1.0, 0.0}, "negated", -1)})}});
+    add("three_dimensional", {{"query", floats({1.0, 1.0, 0.0})},
+                              {"threshold", float_number(0.5)},
+                              {"limit", number(5)},
+                              {"rows", array({row(1, {1.0, 1.0, 0.0}, "same", -1),
+                                              row(2, {1.0, 0.0, 0.0}, "half", -1)})}});
+    add("scale_is_irrelevant", {{"query", floats({2.0, 0.0})},
+                                {"threshold", float_number(0.99)},
+                                {"limit", number(5)},
+                                {"rows", array({row(1, {50.0, 0.0}, "scaled", -1)})}});
+
+    add("threshold_excludes_row", {{"query", floats({1.0, 0.0})},
+                                   {"threshold", float_number(0.9)},
+                                   {"limit", number(5)},
+                                   {"rows", array({row(1, {1.0, 1.0}, "below", -1)})}});
+    add("threshold_is_exclusive", {{"query", floats({1.0, 0.0})},
+                                   {"threshold", float_number(0.70710677)},
+                                   {"limit", number(5)},
+                                   {"rows", array({row(1, {1.0, 1.0}, "at", -1)})}});
+    add("best_score_counts_sub_threshold_rows",
+        {{"query", floats({1.0, 0.0})},
+         {"threshold", float_number(0.99)},
+         {"limit", number(5)},
+         {"rows", array({row(1, {1.0, 1.0}, "below", -1), row(2, {1.0, 0.0}, "exact", -1)})}});
+
+    add("dimension_mismatch_is_skipped",
+        {{"query", floats({1.0, 0.0, 0.0})},
+         {"threshold", float_number(-1.0)},
+         {"limit", number(5)},
+         {"rows", array({row(1, {1.0, 0.0}, "short", 2),
+                         row(2, {1.0, 0.0, 0.0}, "good", -1)})}});
+    add("non_positive_dimension_is_skipped",
+        {{"query", floats({1.0, 0.0})},
+         {"threshold", float_number(-1.0)},
+         {"limit", number(5)},
+         {"rows", array({row(1, {1.0, 0.0}, "zero", 0), row(2, {1.0, 0.0}, "good", -1)})}});
+    add("negative_dimension_is_skipped",
+        {{"query", floats({1.0, 0.0})},
+         {"threshold", float_number(-1.0)},
+         {"limit", number(5)},
+         {"rows", array({row(1, {1.0, 0.0}, "negative", -5),
+                         row(2, {1.0, 0.0}, "good", -1)})}});
+    add("byte_length_mismatch_is_skipped",
+        {{"query", floats({1.0, 0.0})},
+         {"threshold", float_number(-1.0)},
+         {"limit", number(5)},
+         {"rows", array({row(1, {1.0}, "truncated", 2), row(2, {1.0, 0.0}, "good", -1)})}});
+    add("all_rows_invalid",
+        {{"query", floats({1.0, 0.0})},
+         {"threshold", float_number(-1.0)},
+         {"limit", number(5)},
+         {"rows", array({row(1, {1.0}, "a", 2), row(2, {1.0}, "b", 2)})}});
+
+    add("overflowed_query_scores_zero",
+        {{"query", floats({kFloatMax, 0.0})},
+         {"threshold", float_number(-1.0)},
+         {"limit", number(5)},
+         {"rows", array({row(1, {1.0, 0.0}, "normal", -1)})}});
+    add("overflowed_row_scores_zero",
+        {{"query", floats({1.0, 0.0})},
+         {"threshold", float_number(-1.0)},
+         {"limit", number(5)},
+         {"rows", array({row(1, {kFloatMax, 0.0}, "huge", -1)})}});
+    add("overflowed_row_and_query_score_non_finite",
+        {{"query", floats({kFloatMax, 0.0})},
+         {"threshold", float_number(-1.0)},
+         {"limit", number(5)},
+         {"rows", array({row(1, {kFloatMax, 0.0}, "huge", -1),
+                         row(2, {1.0, 0.0}, "normal", -1)})}});
+
+    add("zero_row_scores_zero", {{"query", floats({1.0, 0.0})},
+                                 {"threshold", float_number(-1.0)},
+                                 {"limit", number(5)},
+                                 {"rows", array({row(1, {0.0, 0.0}, "null-vector", -1)})}});
+    add("zero_query_scores_zero", {{"query", floats({0.0, 0.0})},
+                                   {"threshold", float_number(-1.0)},
+                                   {"limit", number(5)},
+                                   {"rows", array({row(1, {1.0, 0.0}, "any", -1)})}});
+
+    add("limit_keeps_the_best_rows",
+        {{"query", floats({1.0, 0.0})},
+         {"threshold", float_number(-1.0)},
+         {"limit", number(2)},
+         {"rows", array({row(1, {1.0, 0.0}, "best", -1),
+                         row(2, {1.0, 1.0}, "mid", -1),
+                         row(3, {-1.0, 0.0}, "worst", -1)})}});
+    add("tie_break_prefers_the_lower_row_id",
+        {{"query", floats({1.0, 0.0})},
+         {"threshold", float_number(-1.0)},
+         {"limit", number(1)},
+         {"rows", array({row(2, {1.0, 0.0}, "earlier", -1),
+                         row(5, {1.0, 0.0}, "later", -1)})}});
+    add("equal_scores_keep_the_lowest_ids",
+        {{"query", floats({1.0, 0.0})},
+         {"threshold", float_number(-1.0)},
+         {"limit", number(2)},
+         {"rows", array({row(7, {1.0, 0.0}, "seven", -1),
+                         row(8, {1.0, 0.0}, "eight", -1),
+                         row(9, {1.0, 0.0}, "nine", -1)})}});
+    add("candidates_are_ordered_by_score_then_id",
+        {{"query", floats({1.0, 0.0})},
+         {"threshold", float_number(-1.0)},
+         {"limit", number(10)},
+         {"rows", array({row(1, {1.0, 0.0}, "one", -1),
+                         row(2, {1.0, 1.0}, "half", -1),
+                         row(3, {-1.0, 0.0}, "minus", -1),
+                         row(4, {0.0, 1.0}, "zero", -1)})}});
+    add("max_retained_tracks_the_high_water_mark",
+        {{"query", floats({1.0, 0.0})},
+         {"threshold", float_number(-1.0)},
+         {"limit", number(3)},
+         {"rows", array({row(1, {1.0, 0.0}, "a", -1),
+                         row(2, {1.0, 0.0}, "b", -1),
+                         row(3, {1.0, 0.0}, "c", -1),
+                         row(4, {1.0, 0.0}, "d", -1)})}});
+
+    add("pages_are_followed_until_one_is_short",
+        {{"query", floats({1.0, 0.0})},
+         {"threshold", float_number(-1.0)},
+         {"limit", number(10)},
+         {"page_size", number(2)},
+         {"rows", array({row(1, {1.0, 0.0}, "a", -1),
+                         row(2, {1.0, 0.0}, "b", -1),
+                         row(3, {1.0, 0.0}, "c", -1)})}});
+    add("full_final_page_still_terminates",
+        {{"query", floats({1.0, 0.0})},
+         {"threshold", float_number(-1.0)},
+         {"limit", number(10)},
+         {"page_size", number(2)},
+         {"rows", array({row(1, {1.0, 0.0}, "a", -1),
+                         row(2, {1.0, 0.0}, "b", -1)})}});
+    add("page_size_larger_than_the_catalog",
+        {{"query", floats({1.0, 0.0})},
+         {"threshold", float_number(-1.0)},
+         {"limit", number(10)},
+         {"page_size", number(64)},
+         {"rows", array({row(1, {1.0, 0.0}, "a", -1),
+                         row(2, {1.0, 0.0}, "b", -1)})}});
+
+    add("unordered_page_is_rejected",
+        {{"query", floats({1.0, 0.0})},
+         {"threshold", float_number(-1.0)},
+         {"limit", number(5)},
+         {"loader", str("raw")},
+         {"raw_pages", array({raw_page({row(5, {1.0, 0.0}, "five", -1),
+                                        row(3, {1.0, 0.0}, "three", -1)})})}});
+    add("repeated_id_is_rejected",
+        {{"query", floats({1.0, 0.0})},
+         {"threshold", float_number(-1.0)},
+         {"limit", number(5)},
+         {"loader", str("raw")},
+         {"raw_pages", array({raw_page({row(4, {1.0, 0.0}, "a", -1),
+                                        row(4, {1.0, 0.0}, "b", -1)})})}});
+    add("page_moving_backwards_is_rejected",
+        {{"query", floats({1.0, 0.0})},
+         {"threshold", float_number(-1.0)},
+         {"limit", number(5)},
+         {"page_size", number(1)},
+         {"loader", str("raw")},
+         {"raw_pages", array({raw_page({row(7, {1.0, 0.0}, "seven", -1)}),
+                              raw_page({row(2, {1.0, 0.0}, "two", -1)})})}});
+    add("oversized_page_is_rejected",
+        {{"query", floats({1.0, 0.0})},
+         {"threshold", float_number(-1.0)},
+         {"limit", number(5)},
+         {"page_size", number(2)},
+         {"loader", str("oversized")},
+         {"rows", array({row(1, {1.0, 0.0}, "a", -1),
+                         row(2, {1.0, 0.0}, "b", -1),
+                         row(3, {1.0, 0.0}, "c", -1)})}});
+
+    const FormatOptions pretty{Format::Pretty2, false};
+    for (const json::Value& item : all) {
+        std::string name;
+        for (const json::Member& member : item.members) {
+            if (member.key == "name") name = member.value.text;
+        }
+        write_scenario(scenarios, name, item, pretty);
+    }
+    std::cout << "Wrote " << all.size() << " scenarios\n";
+}
+
+// migration-16-17/gen_scenarios.py — compact, ensure_ascii=False.
+void profile_migration_16_17(const fs::path& scenarios) {
+    std::vector<json::Value> all;
+    auto conversation = [](const char* cid, const char* selections) {
+        std::vector<std::pair<std::string, json::Value>> members = {{"id", str(cid)}};
+        if (selections != nullptr) {
+            members.emplace_back("selectedBranchesJson", str(selections));
+        }
+        return object(std::move(members));
+    };
+    auto message = [](const char* cid, const char* mid, const char* parent,
+                      const char* participant, const char* status, std::int64_t timestamp) {
+        return object({{"conversationId", str(cid)},
+                       {"id", str(mid)},
+                       {"parentId", parent == nullptr ? null_value() : str(parent)},
+                       {"participant", str(participant)},
+                       {"status", str(status)},
+                       {"timestamp", number(timestamp)}});
+    };
+    auto user = [&](const char* cid, const char* mid, const char* parent, std::int64_t ts,
+                    const char* status) {
+        return message(cid, mid, parent, "USER", status, ts);
+    };
+    auto model = [&](const char* cid, const char* mid, const char* parent, std::int64_t ts,
+                     const char* status) {
+        return message(cid, mid, parent, "MODEL", status, ts);
+    };
+    auto case_add = [&](const char* name, std::vector<json::Value> conversations,
+                        std::vector<json::Value> messages) {
+        all.push_back(object({{"name", str(name)},
+                              {"op", str("migrate")},
+                              {"conversations", array(std::move(conversations))},
+                              {"messages", array(std::move(messages))}}));
+    };
+
+    case_add("m16_empty", {}, {});
+    case_add("m16_no_messages", {conversation("c1", nullptr)}, {});
+    case_add("m16_single_user", {conversation("c1", nullptr)},
+             {user("c1", "u", nullptr, 10, "SUCCESS")});
+    case_add("m16_user_model", {conversation("c1", nullptr)},
+             {user("c1", "u", nullptr, 10, "SUCCESS"),
+              model("c1", "m", "u", 11, "SUCCESS")});
+    case_add("m16_two_boundaries", {conversation("c1", "{\"null\":\"u2\"}")},
+             {user("c1", "u1", nullptr, 10, "SUCCESS"),
+              model("c1", "m1", "u1", 11, "SUCCESS"),
+              user("c1", "u2", "m1", 12, "SUCCESS"),
+              model("c1", "m2", "u2", 13, "SUCCESS")});
+    case_add("m16_two_conversations",
+             {conversation("c1", "{\"null\":\"u1\"}"), conversation("c2", nullptr)},
+             {user("c1", "u1", nullptr, 10, "SUCCESS"),
+              model("c1", "m1", "u1", 11, "SUCCESS"),
+              user("c2", "u2", nullptr, 20, "SUCCESS")});
+    case_add("m16_orphan_model", {conversation("c1", nullptr)},
+             {model("c1", "m", "gone", 10, "SUCCESS")});
+    case_add("m16_selection_valid", {conversation("c1", "{\"m1\":\"u2\"}")},
+             {user("c1", "u1", nullptr, 10, "SUCCESS"),
+              model("c1", "m1", "u1", 11, "SUCCESS"),
+              user("c1", "u2", "m1", 12, "SUCCESS"),
+              model("c1", "m2", "u2", 13, "SUCCESS")});
+    case_add("m16_selection_null_key", {conversation("c1", "{\"null\":\"u2\"}")},
+             {user("c1", "u1", nullptr, 10, "SUCCESS"),
+              user("c1", "u2", nullptr, 20, "SUCCESS")});
+    case_add("m16_selection_null_key_first", {conversation("c1", "{\"null\":\"u1\"}")},
+             {user("c1", "u1", nullptr, 10, "SUCCESS"),
+              user("c1", "u2", nullptr, 20, "SUCCESS")});
+    case_add("m16_selection_invalid_json", {conversation("c1", "not json")},
+             {user("c1", "u", nullptr, 10, "SUCCESS")});
+    case_add("m16_selection_blank", {conversation("c1", "   ")},
+             {user("c1", "u", nullptr, 10, "SUCCESS")});
+    case_add("m16_selection_non_string", {conversation("c1", "{\"a\":1}")},
+             {user("c1", "u", nullptr, 10, "SUCCESS")});
+    case_add("m16_selection_non_string_known", {conversation("c1", "{\"null\":1}")},
+             {user("c1", "1", nullptr, 10, "SUCCESS"),
+              user("c1", "u1", nullptr, 20, "SUCCESS")});
+    case_add("m16_selection_unknown_id", {conversation("c1", "{\"ghost\":\"u\"}")},
+             {user("c1", "u", nullptr, 10, "SUCCESS")});
+    case_add("m16_unknown_enum_values", {conversation("c1", nullptr)},
+             {message("c1", "u", nullptr, "USER", "SUCCESS", 10),
+              message("c1", "m", "u", "BOGUS", "BOGUS", 11)});
+    case_add("m16_unknown_status_only", {conversation("c1", nullptr)},
+             {user("c1", "u", nullptr, 10, "SUCCESS"),
+              message("c1", "m", "u", "MODEL", "BOGUS", 11)});
+    case_add("m16_blank_conversation_id", {conversation("", nullptr)},
+             {user("", "u", nullptr, 10, "SUCCESS")});
+    case_add("m16_duplicate_ids", {conversation("c1", nullptr)},
+             {user("c1", "u", nullptr, 10, "SUCCESS"),
+              model("c1", "u", "u", 11, "SUCCESS")});
+    case_add("m16_unvisited_message", {},
+             {user("c1", "u", nullptr, 10, "SUCCESS")});
+    case_add("m16_conversation_order",
+             {conversation("c2", "{\"null\":\"u2\"}"), conversation("c1", "{\"null\":\"u1\"}")},
+             {user("c2", "u2", nullptr, 20, "SUCCESS"),
+              user("c1", "u1", nullptr, 10, "SUCCESS")});
+
+    remove_stale(scenarios);
+    const FormatOptions compact{Format::Compact, false};
+    for (const json::Value& item : all) {
+        std::string name;
+        for (const json::Member& member : item.members) {
+            if (member.key == "name") name = member.value.text;
+        }
+        write_scenario(scenarios, name, item, compact);
+    }
+    std::cout << "wrote " << all.size() << " scenarios to " << scenarios.string() << "\n";
+}
+
 }  // namespace
 
 int main(int argc, char** argv) {
@@ -2657,7 +3009,9 @@ int main(int argc, char** argv) {
                   << "  model-thinking-resolver model-thinking-resolver/gen_scenarios.py\n"
                   << "  shell-tools           shell-tools/gen_scenarios.py\n"
                   << "  attachment-clone-session attachment-clone-session/gen_scenarios.py\n"
-                  << "  duckduckgo            duckduckgo/gen_scenarios.py\n";
+                  << "  duckduckgo            duckduckgo/gen_scenarios.py\n"
+                  << "  embedding-selector    embedding-selector/gen_scenarios.py\n"
+                  << "  migration-16-17       migration-16-17/gen_scenarios.py\n";
         return 2;
     }
     const std::string profile = argv[1];
@@ -2716,6 +3070,10 @@ int main(int argc, char** argv) {
         profile_attachment_clone_session(scenarios);
     } else if (profile == "duckduckgo") {
         profile_duckduckgo(scenarios);
+    } else if (profile == "embedding-selector") {
+        profile_embedding_selector(scenarios);
+    } else if (profile == "migration-16-17") {
+        profile_migration_16_17(scenarios);
     } else {
         std::cerr << "unknown profile: " << profile << "\n";
         return 2;

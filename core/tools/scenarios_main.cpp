@@ -9,6 +9,7 @@
 #include <algorithm>
 #include <charconv>
 #include <cstdint>
+#include <cstdio>
 #include <optional>
 #include <zlib.h>
 #include <cstdlib>
@@ -93,6 +94,8 @@ struct FormatOptions {
     Format format = Format::Compact;
     // Python json.dump(ensure_ascii=True) escapes every non-ASCII code point as \uXXXX.
     bool ensure_ascii = false;
+    // Python json.dump(sort_keys=True) orders object keys by code point (UTF-8 byte order).
+    bool sort_keys = false;
 };
 
 // Python's json encoder string escaping: quote, backslash, the short control escapes, \u00XX
@@ -207,18 +210,27 @@ void serialize_to(std::string& out, const json::Value& value, const FormatOption
                 out += "{}";
                 return;
             }
+            std::vector<const json::Member*> members;
+            members.reserve(value.members.size());
+            for (const json::Member& member : value.members) members.push_back(&member);
+            if (opts.sort_keys) {
+                std::sort(members.begin(), members.end(),
+                          [](const json::Member* left, const json::Member* right) {
+                              return left->key < right->key;
+                          });
+            }
             out += '{';
-            for (std::size_t i = 0; i < value.members.size(); ++i) {
+            for (std::size_t i = 0; i < members.size(); ++i) {
                 if (i > 0) out += (format == Format::Spaced) ? ", " : ",";
                 if (format == Format::Pretty2) {
                     out += "\n";
                     out.append(static_cast<std::size_t>((depth + 1) * 2), ' ');
                 }
                 out += '"';
-                append_escaped(out, value.members[i].key, opts.ensure_ascii);
+                append_escaped(out, members[i]->key, opts.ensure_ascii);
                 out += '"';
                 out += (format == Format::Compact) ? ":" : ": ";
-                serialize_to(out, value.members[i].value, opts, depth + 1);
+                serialize_to(out, members[i]->value, opts, depth + 1);
             }
             if (format == Format::Pretty2) {
                 out += "\n";
@@ -5373,6 +5385,516 @@ void profile_v18_regeneration_repair(const fs::path& scenarios) {
     std::cout << "wrote " << all.size() << " scenarios to " << scenarios.string() << "\n";
 }
 
+
+// cron-expression/gen_scenarios.py — indent=2, ensure_ascii=False, sort_keys=True.
+std::int64_t days_from_civil(int year, unsigned month, unsigned day) {
+    year -= month <= 2 ? 1 : 0;
+    const int era = (year >= 0 ? year : year - 399) / 400;
+    const unsigned year_of_era = static_cast<unsigned>(year - era * 400);
+    const unsigned day_of_year =
+        (153U * (month + (month > 2 ? static_cast<unsigned>(-3) : 9U)) + 2U) / 5U + day - 1U;
+    const unsigned day_of_era =
+        year_of_era * 365U + year_of_era / 4U - year_of_era / 100U + day_of_year;
+    return static_cast<std::int64_t>(era) * 146097 + static_cast<std::int64_t>(day_of_era) -
+           719468;
+}
+
+std::int64_t epoch_millis(const char* iso) {
+    int year = 0;
+    int month = 0;
+    int day = 0;
+    int hour = 0;
+    int minute = 0;
+    int second = 0;
+    int millis = 0;
+    if (std::sscanf(iso, "%d-%d-%dT%d:%d:%d.%d", &year, &month, &day, &hour, &minute, &second,
+                    &millis) != 7) {
+        fail(std::string("error: cannot parse instant ") + iso);
+    }
+    const std::int64_t days = days_from_civil(year, static_cast<unsigned>(month),
+                                              static_cast<unsigned>(day));
+    return ((days * 24 + hour) * 60 + minute) * 60000 + second * 1000 + millis;
+}
+
+void profile_cron_expression(const fs::path& scenarios) {
+    std::vector<json::Value> all;
+    auto parse_case = [&](const char* name, const char* expr) {
+        all.push_back(object({{"name", str(name)}, {"expr", str(expr)}}));
+    };
+    auto next_case = [&](const char* name, const char* expr, const char* after,
+                         const char* zone = "UTC") {
+        all.push_back(object({{"name", str(name)},
+                              {"expr", str(expr)},
+                              {"next", boolean(true)},
+                              {"after_millis", number(epoch_millis(after))},
+                              {"zone", str(zone)}}));
+    };
+
+    parse_case("wildcards_expand_to_every_value", "* * * * *");
+    parse_case("single_values", "0 12 1 6 *");
+    parse_case("step_on_wildcard", "*/15 * * * *");
+    parse_case("step_that_is_wider_than_the_range", "*/60 * * * *");
+    parse_case("step_of_one_is_the_identity", "*/1 * * * *");
+    parse_case("range_with_a_step", "0-30/10 * * * *");
+    parse_case("bare_value_with_a_step_runs_to_the_field_max", "5/10 * * * *");
+    parse_case("bare_value_without_a_step_is_a_single_value", "5 * * * *");
+    parse_case("list", "1,2,3 * * * *");
+    parse_case("list_with_a_step", "1,3,5/2 * * * *");
+    parse_case("overlapping_list_entries_union", "1,2,1 * * * *");
+    parse_case("leading_plus_is_accepted_by_to_int_or_null", "+5/10 * * * *");
+    parse_case("leading_zeros_are_accepted", "05 * * * *");
+    parse_case("dom_range_with_a_step", "0 0 1-7/2 * *");
+    parse_case("dom_range_that_ends_on_the_max", "0 0 28-31 * *");
+    parse_case("month_range", "0 0 1 1-6 *");
+    parse_case("month_range_with_a_step", "0 0 1 1-12/11 *");
+    parse_case("leap_day_schedule", "0 0 29 2 *");
+    parse_case("sunday_as_zero", "0 0 * * 0");
+    parse_case("sunday_as_seven", "0 0 * * 7");
+    parse_case("sunday_as_both_collapses_to_one_value", "0 0 * * 0,7");
+    parse_case("sunday_as_seven_with_a_step", "0 0 * * 7/2");
+    parse_case("weekday_range_with_a_step", "0 0 * * 1-7/3");
+    parse_case("weekday_range_with_an_even_step_never_reaches_seven", "0 0 * * 0-7/2");
+    parse_case("weekday_range_with_a_wide_step", "0 0 * * 1-5/2");
+    parse_case("weekday_step_from_six", "0 0 * * 6/2");
+    parse_case("restricted_dom_and_dow", "0 0 13 * 5");
+    parse_case("restricted_dom_only", "0 0 13 * *");
+    parse_case("restricted_dow_only", "0 0 * * 5");
+    parse_case("wildcard_with_a_step_is_restricted", "0 0 */2 * */2");
+    parse_case("extra_internal_whitespace_collapses", "  \t 0   12  *  *  * \n ");
+    parse_case("newlines_and_tabs_are_whitespace", "0\t12\n*\r*\v*");
+
+    parse_case("empty_expression", "");
+    parse_case("whitespace_only", "     ");
+    parse_case("too_few_fields", "* * * *");
+    parse_case("too_many_fields", "* * * * * *");
+    parse_case("minute_above_max", "60 * * * *");
+    parse_case("minute_below_min", "-1 * * * *");
+    parse_case("hour_above_max", "0 24 * * *");
+    parse_case("dom_below_min", "0 0 0 * *");
+    parse_case("dom_above_max", "0 0 32 * *");
+    parse_case("month_below_min", "0 0 * 0 *");
+    parse_case("month_above_max", "0 0 * 13 *");
+    parse_case("dow_above_max", "0 0 * * 8");
+    parse_case("non_numeric_value", "x * * * *");
+    parse_case("step_of_zero", "*/0 * * * *");
+    parse_case("negative_step", "*/-1 * * * *");
+    parse_case("non_numeric_step", "*/x * * * *");
+    parse_case("step_with_a_space", "*/ 5 * * * *");
+    parse_case("two_slashes", "1/2/3 * * * *");
+    parse_case("empty_list_element", "1,,2 * * * *");
+    parse_case("trailing_comma", "1, * * * *");
+    parse_case("leading_comma", ",1 * * * *");
+    parse_case("three_part_range", "1-2-3 * * * *");
+    parse_case("range_with_a_missing_start", "-5 * * * *");
+    parse_case("range_with_a_missing_end", "1- * * * *");
+    parse_case("range_whose_start_is_above_its_end", "10-5 * * * *");
+    parse_case("stepped_value_whose_start_is_above_its_end", "10/2 * * * *");
+    parse_case("bare_minus_sign", "- * * * *");
+    parse_case("asterisk_with_a_bogus_step", "*/ * * * *");
+    parse_case("non_breaking_space_is_not_whitespace_to_the_cron_splitter",
+               "1\u00a02 3 4 5");
+
+    next_case("every_minute_from_an_exact_minute", "* * * * *", "2026-03-14T12:00:00.000");
+    next_case("every_minute_from_a_nonzero_second", "* * * * *", "2026-03-14T12:00:30.000");
+    next_case("every_minute_from_nonzero_millis", "* * * * *", "2026-03-14T12:00:00.500");
+    next_case("every_minute_from_a_nonzero_second_and_millis", "* * * * *",
+              "2026-03-14T12:00:30.500");
+    next_case("zeroing_seconds_moves_backwards_before_advancing", "30 12 * * *",
+              "2026-03-14T12:29:59.999");
+    next_case("a_second_past_the_match_moves_to_the_next_day", "30 12 * * *",
+              "2026-03-14T12:30:00.001");
+    next_case("every_quarter_hour", "*/15 * * * *", "2026-03-14T12:07:00.000");
+    next_case("top_of_the_hour", "0 * * * *", "2026-03-14T12:30:00.000");
+    next_case("midnight_from_mid_afternoon", "0 0 * * *", "2026-03-14T12:34:56.789");
+    next_case("midnight_from_midnight_moves_to_the_next_day", "0 0 * * *",
+              "2026-03-14T00:00:00.000");
+    next_case("a_moment_that_just_passed_moves_strictly_after", "0 12 * * *",
+              "2026-03-14T12:00:00.000");
+    next_case("the_same_day_still_matches_later", "0 12 * * *", "2026-03-14T12:00:00.001");
+    next_case("year_end_wrap", "0 0 1 1 *", "2026-06-01T00:00:00.000");
+    next_case("leap_day_is_four_years_out", "0 0 29 2 *", "2026-01-01T00:00:00.000");
+    next_case("leap_day_just_passed_waits_for_the_next_one", "0 0 29 2 *",
+              "2028-02-29T00:00:00.001");
+    next_case("leap_day_exactly_now_moves_on", "0 0 29 2 *", "2028-02-29T00:00:00.000");
+    next_case("non_leap_year_rejects_the_29th", "0 0 29 2 *", "2026-02-28T12:00:00.000");
+    next_case("sunday_matches_zero", "0 0 * * 0", "2026-03-14T12:00:00.000");
+    next_case("sunday_matches_seven", "0 0 * * 7", "2026-03-14T12:00:00.000");
+    next_case("weekday_monday_to_friday", "0 9 * * 1-5", "2026-03-14T12:00:00.000");
+    next_case("vixie_or_matches_a_friday_before_the_thirteenth", "0 0 13 * 5",
+              "2026-03-01T00:00:00.000");
+    next_case("vixie_or_matches_the_thirteenth_before_any_friday", "0 0 13 * 5",
+              "2026-04-01T00:00:00.000");
+    next_case("dom_only_requires_the_day", "0 0 13 * *", "2026-03-01T00:00:00.000");
+    next_case("dow_only_requires_the_weekday", "0 0 * * 5", "2026-03-01T00:00:00.000");
+    next_case("vixie_or_with_a_weekend_day", "0 0 1 * 0", "2026-03-02T00:00:00.000");
+    next_case("half_hour_offset_zone", "0 12 * * *", "2026-03-14T00:00:00.000", "GMT+05:30");
+    next_case("negative_eight_offset_zone", "0 0 * * *", "2026-03-14T00:00:00.000",
+              "Etc/GMT+8");
+    next_case("positive_twelve_offset_zone", "0 0 * * *", "2026-03-14T00:00:00.000",
+              "Etc/GMT-12");
+    next_case("unknown_zone_falls_back_to_gmt", "0 0 * * *", "2026-03-14T12:00:00.000",
+              "Not/AZone");
+    next_case("unknown_zone_every_minute", "* * * * *", "2026-03-14T12:00:30.000",
+              "Not/AZone");
+    next_case("berlin_spring_forward_the_missing_hour_is_never_reached", "30 2 * * *",
+              "2026-03-28T12:00:00.000", "Europe/Berlin");
+    next_case("berlin_spring_forward_every_minute", "* * * * *", "2026-03-29T00:59:30.000",
+              "Europe/Berlin");
+    next_case("berlin_spring_forward_the_hour_that_replaces_it", "0 3 * * *",
+              "2026-03-28T12:00:00.000", "Europe/Berlin");
+    next_case("berlin_fall_back_resolves_the_repeated_hour_to_standard_time", "30 2 * * *",
+              "2026-10-24T12:00:00.000", "Europe/Berlin");
+    next_case("berlin_fall_back_every_minute", "* * * * *", "2026-10-25T00:59:30.000",
+              "Europe/Berlin");
+    next_case("berlin_the_hour_before_the_change", "0 2 * * *", "2026-10-24T12:00:00.000",
+              "Europe/Berlin");
+    next_case("berlin_a_normal_day_in_standard_time", "0 12 * * *",
+              "2026-01-15T00:00:00.000", "Europe/Berlin");
+    next_case("berlin_a_normal_day_in_summer_time", "0 12 * * *", "2026-07-15T00:00:00.000",
+              "Europe/Berlin");
+    next_case("new_york_spring_forward_the_missing_hour_is_never_reached", "30 2 * * *",
+              "2026-03-07T12:00:00.000", "America/New_York");
+    next_case("new_york_spring_forward_every_minute", "* * * * *", "2026-03-08T06:59:30.000",
+              "America/New_York");
+    next_case("new_york_fall_back_resolves_the_repeated_hour_to_standard_time", "30 1 * * *",
+              "2026-10-31T12:00:00.000", "America/New_York");
+    next_case("new_york_fall_back_every_minute", "* * * * *", "2026-11-01T05:59:30.000",
+              "America/New_York");
+    next_case("new_york_half_hour_offset_in_standard_time", "0 9 * * 1-5",
+              "2026-01-15T00:00:00.000", "America/New_York");
+    next_case("sydney_southern_autumn", "0 2 * * *", "2026-04-04T12:00:00.000",
+              "Australia/Sydney");
+    next_case("sydney_southern_spring_forward_the_missing_hour_is_never_reached", "30 2 * * *",
+              "2026-10-03T12:00:00.000", "Australia/Sydney");
+    next_case("utc_has_no_transitions", "30 2 * * *", "2026-03-29T00:00:00.000", "UTC");
+    next_case("asia_colombo_is_a_fixed_offset", "0 12 * * *", "2026-03-14T00:00:00.000",
+              "Asia/Colombo");
+    next_case("asia_kolkata_half_hour_offset", "0 12 * * *", "2026-03-14T00:00:00.000",
+              "Asia/Kolkata");
+    next_case("a_weekday_schedule_crosses_a_transition", "0 3 * * 1",
+              "2026-03-02T00:00:00.000", "Europe/Berlin");
+
+    remove_stale(scenarios);
+    const FormatOptions options{Format::Pretty2, false, true};
+    for (const json::Value& item : all) {
+        std::string name;
+        for (const json::Member& member : item.members) {
+            if (member.key == "name") name = member.value.text;
+        }
+        write_scenario(scenarios, name, item, options);
+    }
+    std::cout << "wrote " << all.size() << " scenarios to " << scenarios.string() << "\n";
+}
+
+// mcp-protocol/gen_scenarios.py — indent=2, ensure_ascii=False.
+void profile_mcp_protocol(const fs::path& scenarios) {
+    std::vector<json::Value> all;
+    auto scenario = [&](const char* name, const char* mode,
+                        std::vector<std::pair<std::string, json::Value>> fields) {
+        std::vector<std::pair<std::string, json::Value>> members = {
+            {"name", str(name)}, {"mode", str(mode)}};
+        for (auto& field : fields) members.push_back(std::move(field));
+        all.push_back(object(std::move(members)));
+    };
+    auto empty_schema = []() {
+        return object({{"type", str("object")}, {"properties", object({})}});
+    };
+    auto str_array = [](std::vector<const char*> values) {
+        std::vector<json::Value> elements;
+        for (const char* value : values) elements.push_back(str(value));
+        return array(std::move(elements));
+    };
+
+    scenario("name_plain", "toolName", {{"serverId", str("srv1")}, {"remoteName", str("search")}});
+    scenario("name_filtered_server", "toolName",
+             {{"serverId", str("srv!!-1__")}, {"remoteName", str("search")}});
+    scenario("name_blank_server_fallback", "toolName",
+             {{"serverId", str("!!!")}, {"remoteName", str("search")}});
+    scenario("name_symbols_mapped", "toolName",
+             {{"serverId", str("s1")}, {"remoteName", str("fs.read_file!@#")}});
+    scenario("name_underscore_trimmed", "toolName",
+             {{"serverId", str("s1")}, {"remoteName", str("__tool__")}});
+    scenario("name_blank_tool_fallback", "toolName",
+             {{"serverId", str("s1")}, {"remoteName", str("***")}});
+    scenario("name_long_remote_truncation", "toolName",
+             {{"serverId", str("s1")}, {"remoteName", str(std::string(80, 'a') + "z")}});
+    scenario("name_long_server_truncation", "toolName",
+             {{"serverId", str(std::string(40, 's'))}, {"remoteName", str("read")}});
+    scenario("name_unicode_kept", "toolName",
+             {{"serverId", str("\u0441\u0435\u0440\u0432\u0435\u0440")},
+              {"remoteName", str("\u043f\u043e\u0438\u0441\u043a")}});
+    scenario("name_emoji_tool", "toolName",
+             {{"serverId", str("s1")}, {"remoteName", str("a\U0001F600b")}});
+    scenario("name_spaces", "toolName",
+             {{"serverId", str("my server")}, {"remoteName", str("my tool")}});
+
+    scenario("definition_empty_schema", "toolDefinition",
+             {{"remoteName", str("noop")},
+              {"description", str("")},
+              {"inputSchema", empty_schema()}});
+    scenario("definition_blank_description_default", "toolDefinition",
+             {{"remoteName", str("noop")},
+              {"description", str("   ")},
+              {"serverName", str("Box")},
+              {"inputSchema", empty_schema()}});
+    scenario("definition_sorted_properties", "toolDefinition",
+             {{"remoteName", str("t")},
+              {"inputSchema",
+               object({{"type", str("object")},
+                       {"properties", object({{"zeta", object({{"type", str("string")}})},
+                                              {"alpha", object({{"type", str("number")}})},
+                                              {"mid", object({{"type", str("boolean")}})}})},
+                       {"required", str_array({"zeta", "alpha", "missing"})}})}});
+    scenario("definition_required_non_primitives", "toolDefinition",
+             {{"remoteName", str("t")},
+              {"inputSchema",
+               object({{"type", str("object")},
+                       {"properties", object({{"a", object({{"type", str("string")}})}})},
+                       {"required", array({str("a"),
+                                           object({{"x", number(1)}}),
+                                           array({number(1), number(2)}),
+                                           number(7),
+                                           null_value(),
+                                           str("zz")})}})}});
+    scenario("definition_type_array_union", "toolDefinition",
+             {{"remoteName", str("t")},
+              {"inputSchema",
+               object({{"type", str_array({"null", "string"})},
+                       {"properties",
+                        object({{"a", object({{"type", str_array({"null", "integer"})},
+                                              {"description", str("A")}})},
+                                {"b", object({{"type", str_array({"string"})}})},
+                                {"c", object({})},
+                                {"d", object({{"type", number(5)}})}})}})}});
+    scenario("definition_nested_items", "toolDefinition",
+             {{"remoteName", str("t")},
+              {"inputSchema",
+               object({{"type", str("object")},
+                       {"properties",
+                        object({{"list", object({{"type", str("array")},
+                                                 {"items", object({{"type", str("integer")},
+                                                                   {"description", str("n")}})}})},
+                                {"obj", object({{"properties",
+                                                 object({{"inner",
+                                                          object({{"type", str("string")}})}})}})},
+                                {"deep", object({{"items",
+                                                  object({{"items",
+                                                           object({{"type", str("boolean")}})}})}})},
+                                {"none", null_value()},
+                                {"arr_prop",
+                                 object({{"type", str("string")},
+                                         {"properties",
+                                          object({{"p", object({{"type", str("string")}})}})},
+                                         {"required", str_array({"p"})}})}})}})}});
+    scenario("definition_schema_marker_dropped", "toolDefinition",
+             {{"remoteName", str("t")},
+              {"inputSchema",
+               object({{"$schema", str("https://json-schema.org/draft/2020-12/schema")},
+                       {"title", str("T")},
+                       {"type", str("object")},
+                       {"properties", object({{"a", object({{"type", str("string")}})}})},
+                       {"required", str_array({"a", "ghost"})}})}});
+    scenario("definition_type_missing_defaults_object", "toolDefinition",
+             {{"remoteName", str("t")},
+              {"inputSchema",
+               object({{"properties", object({{"a", object({{"type", str("string")}})}})}})}});
+    scenario("definition_required_absent", "toolDefinition",
+             {{"remoteName", str("t")},
+              {"inputSchema",
+               object({{"type", str("object")},
+                       {"required", str("a")},
+                       {"properties", object({{"a", object({{"type", str("string")}})}})}})}});
+    scenario("definition_properties_not_object", "toolDefinition",
+             {{"remoteName", str("t")},
+              {"inputSchema",
+               object({{"type", str("object")},
+                       {"properties", array({number(1), number(2)})},
+                       {"required", str_array({"a"})}})}});
+    scenario("definition_description_kept", "toolDefinition",
+             {{"remoteName", str("t")},
+              {"description", str("Does a thing.")},
+              {"inputSchema",
+               object({{"type", str("object")},
+                       {"properties",
+                        object({{"a", object({{"type", str("string")},
+                                              {"description", str("An a.")}})}})},
+                       {"required", str_array({"a"})}})}});
+
+    scenario("payload_text_only", "callPayload",
+             {{"result", object({{"content", array({object({{"type", str("text")},
+                                                             {"text", str("hello")}}),
+                                                     object({{"type", str("text")},
+                                                             {"text", str(" world")}})})}})}});
+    scenario("payload_image", "callPayload",
+             {{"result", object({{"content", array({object({{"type", str("image")},
+                                                             {"data", str("AAAA")},
+                                                             {"mimeType", str("image/png")}})})}})}});
+    scenario("payload_image_incomplete", "callPayload",
+             {{"result", object({{"content", array({object({{"type", str("image")},
+                                                             {"data", str("")},
+                                                             {"mimeType", str("image/png")}}),
+                                                     object({{"type", str("image")},
+                                                             {"data", str("BBBB")},
+                                                             {"mimeType", str("  ")}}),
+                                                     object({{"type", str("image")},
+                                                             {"data", str("CCCC")}})})}})}});
+    scenario("payload_resource_image", "callPayload",
+             {{"result", object({{"content", array({object({{"type", str("resource")},
+                                                             {"resource", object({{"mimeType", str("image/gif")},
+                                                                                  {"blob", str("ZZ")}})}})})}})}});
+    scenario("payload_resource_text", "callPayload",
+             {{"result", object({{"content", array({object({{"type", str("resource")},
+                                                             {"resource", object({{"mimeType", str("text/plain")},
+                                                                                  {"text", str("inline")}})}})})}})}});
+    scenario("payload_resource_blank_blob_falls_back", "callPayload",
+             {{"result", object({{"content", array({object({{"type", str("resource")},
+                                                             {"resource", object({{"mimeType", str("image/png")},
+                                                                                  {"blob", str(" ")},
+                                                                                  {"text", str("T")}})}})})}})}});
+    scenario("payload_resource_missing", "callPayload",
+             {{"result", object({{"content", array({object({{"type", str("resource")}}),
+                                                     object({{"type", str("resource")},
+                                                             {"resource", number(5)}})})}})}});
+    scenario("payload_structured_and_error", "callPayload",
+             {{"result", object({{"content", array({})},
+                                 {"structuredContent", object({{"a", number(1)}})},
+                                 {"isError", boolean(true)}})}});
+    scenario("payload_structured_null", "callPayload",
+             {{"result", object({{"structuredContent", null_value()},
+                                 {"isError", str("true")}})}});
+    scenario("payload_is_error_strict", "callPayload",
+             {{"result", object({{"isError", str("TRUE")}})}});
+    scenario("payload_unknown_types", "callPayload",
+             {{"result", object({{"content", array({object({{"type", str("video")}}),
+                                                     object({{"type", null_value()}}),
+                                                     str("x"),
+                                                     number(5),
+                                                     object({{"text", str("no type")}})})}})}});
+    scenario("payload_content_not_array", "callPayload",
+             {{"result", object({{"content", object({{"type", str("text")}})}})}});
+    scenario("payload_empty", "callPayload", {{"result", object({})}});
+
+    scenario("page_basic", "toolsPage",
+             {{"result",
+               object({{"tools", array({object({{"name", str("a")},
+                                                 {"description", str("A")},
+                                                 {"inputSchema", object({{"type", str("object")}})}}),
+                                        object({{"name", str("b")}})})},
+                       {"nextCursor", str("c2")}})}});
+    scenario("page_skips_invalid", "toolsPage",
+             {{"result",
+               object({{"tools", array({str("x"), number(5), object({{"name", str("  ")}}),
+                                        object({{"name", str("ok")}}), object({})})},
+                       {"nextCursor", str("   ")}})}});
+    scenario("page_default_schema", "toolsPage",
+             {{"result",
+               object({{"tools", array({object({{"name", str("a")},
+                                                 {"inputSchema", null_value()}}),
+                                        object({{"name", str("b")},
+                                                {"inputSchema", number(7)}})})}})}});
+    scenario("page_missing_tools_array", "toolsPage",
+             {{"result", object({{"nextCursor", str("c")}})}});
+    scenario("page_description_blank_kept", "toolsPage",
+             {{"result",
+               object({{"tools", array({object({{"name", str("a")},
+                                                 {"description", null_value()}})})}})}});
+
+    scenario("rpc_success", "rpcResponse",
+             {{"method", str("tools/call")},
+              {"id", number(7)},
+              {"response", object({{"jsonrpc", str("2.0")},
+                                   {"id", str("7")},
+                                   {"result", object({{"ok", boolean(true)}})}})}});
+    scenario("rpc_empty_response", "rpcResponse",
+             {{"method", str("tools/call")}, {"id", number(7)}});
+    scenario("rpc_id_number_mismatch", "rpcResponse",
+             {{"method", str("tools/list")},
+              {"id", number(3)},
+              {"response", object({{"id", str("4")}, {"result", object({})}})}});
+    scenario("rpc_id_missing", "rpcResponse",
+             {{"method", str("tools/list")},
+              {"id", number(3)},
+              {"response", object({{"result", object({})}})}});
+    scenario("rpc_error_object", "rpcResponse",
+             {{"method", str("tools/call")},
+              {"id", number(2)},
+              {"response", object({{"id", str("2")},
+                                   {"error", object({{"message", str("boom")},
+                                                     {"code", number(-32000)}})}})}});
+    scenario("rpc_error_object_without_message", "rpcResponse",
+             {{"method", str("tools/call")},
+              {"id", number(2)},
+              {"response", object({{"id", str("2")},
+                                   {"error", object({{"code", number(-1)}})}})}});
+    scenario("rpc_error_primitive", "rpcResponse",
+             {{"method", str("tools/call")},
+              {"id", number(2)},
+              {"response", object({{"id", str("2")}, {"error", str("plain failure")}})}});
+    scenario("rpc_error_null_ignored", "rpcResponse",
+             {{"method", str("tools/call")},
+              {"id", number(2)},
+              {"response", object({{"id", str("2")},
+                                   {"error", null_value()},
+                                   {"result", object({{"a", number(1)}})}})}});
+    scenario("rpc_result_missing", "rpcResponse",
+             {{"method", str("initialize")},
+              {"id", number(1)},
+              {"response", object({{"id", str("1")}})}});
+    scenario("rpc_result_not_object", "rpcResponse",
+             {{"method", str("initialize")},
+              {"id", number(1)},
+              {"response", object({{"id", str("1")},
+                                   {"result", array({number(1), number(2)})}})}});
+
+    scenario("negotiate_current_head", "negotiation",
+             {{"transportType", str("STREAMABLE_HTTP")},
+              {"currentVersion", str("2025-11-25")}});
+    scenario("negotiate_middle_version", "negotiation",
+             {{"transportType", str("STREAMABLE_HTTP")},
+              {"currentVersion", str("2025-03-26")}});
+    scenario("negotiate_unknown_version_wraps", "negotiation",
+             {{"transportType", str("STREAMABLE_HTTP")},
+              {"currentVersion", str("1999-01-01")}});
+    scenario("negotiate_sse_pinned", "negotiation",
+             {{"transportType", str("SSE")}, {"currentVersion", str("2025-11-25")}});
+
+    scenario("unsupported_single", "unsupportedVersion",
+             {{"messages", str_array({"Unsupported MCP protocol version: 1.0"})}});
+    scenario("unsupported_causal_chain", "unsupportedVersion",
+             {{"messages", str_array({"outer io failure",
+                                      "protocol version is not supported"})}});
+    scenario("unsupported_case_insensitive", "unsupportedVersion",
+             {{"messages", str_array({"UNSUPPORTED PROTOCOL VERSION"})}});
+    scenario("unsupported_unrelated", "unsupportedVersion",
+             {{"messages", str_array({"timeout", "connection reset"})}});
+    scenario("unsupported_no_messages", "unsupportedVersion",
+             {{"messages", array({})}});
+
+    scenario("init_supported", "initialize",
+             {{"currentVersion", str("2025-11-25")},
+              {"result", object({{"protocolVersion", str("2025-06-18")}})}});
+    scenario("init_same_version", "initialize",
+             {{"currentVersion", str("2025-06-18")},
+              {"result", object({{"protocolVersion", str("2025-06-18")}})}});
+    scenario("init_missing_version", "initialize",
+             {{"result", object({{"capabilities", object({})}})}});
+    scenario("init_version_not_primitive", "initialize",
+             {{"result", object({{"protocolVersion", number(20250618)}})}});
+    scenario("init_unsupported_version", "initialize",
+             {{"result", object({{"protocolVersion", str("1999-01-01")}})}});
+
+    remove_stale(scenarios);
+    const FormatOptions pretty{Format::Pretty2, false};
+    for (const json::Value& item : all) {
+        std::string name;
+        for (const json::Member& member : item.members) {
+            if (member.key == "name") name = member.value.text;
+        }
+        write_scenario(scenarios, name, item, pretty);
+    }
+    std::cout << "Wrote " << all.size() << " scenarios to " << scenarios.string() << "\n";
+}
+
 }  // namespace
 
 int main(int argc, char** argv) {
@@ -5418,7 +5940,9 @@ int main(int argc, char** argv) {
                   << "  conch-network         conch-network/gen_scenarios.py\n"
                   << "  provider-identity     provider-identity/gen_scenarios.py\n"
                   << "  run-ui-projection     run-ui-projection/gen_scenarios.py\n"
-                  << "  v18-regeneration-repair v18-regeneration-repair/gen_scenarios.py\n";
+                  << "  v18-regeneration-repair v18-regeneration-repair/gen_scenarios.py\n"
+                  << "  cron-expression       cron-expression/gen_scenarios.py\n"
+                  << "  mcp-protocol          mcp-protocol/gen_scenarios.py\n";
         return 2;
     }
     const std::string profile = argv[1];
@@ -5505,6 +6029,10 @@ int main(int argc, char** argv) {
         profile_run_ui_projection(scenarios);
     } else if (profile == "v18-regeneration-repair") {
         profile_v18_regeneration_repair(scenarios);
+    } else if (profile == "cron-expression") {
+        profile_cron_expression(scenarios);
+    } else if (profile == "mcp-protocol") {
+        profile_mcp_protocol(scenarios);
     } else {
         std::cerr << "unknown profile: " << profile << "\n";
         return 2;

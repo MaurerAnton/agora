@@ -18,7 +18,7 @@ to read a scenario file; there is no serialization compiler plugin in this build
 | `golden/*.trace` | Frozen canonical output, one per scenario |
 | `CronTraceDump.kt` | The stand driver (parses, dumps the field sets, resolves `next`) |
 | `run_golden.sh` | Compiles and regenerates or verifies the traces |
-| `gen_scenarios.py` | Generates the scenarios (deterministic; rerun after editing) |
+| `agora_scenarios cron-expression` | Generates the scenarios (deterministic; rerun after editing) |
 
 ## What is pinned
 
@@ -122,7 +122,7 @@ port keeps a vector for that field alone.
 ```bash
 JAVA_HOME=/path/to/jdk17 KOTLINC=/path/to/kotlinc KOTLINX_JARS=core.jar:json.jar ./run_golden.sh          # verify
 JAVA_HOME=/path/to/jdk17 KOTLINC=/path/to/kotlinc KOTLINX_JARS=core.jar:json.jar ./run_golden.sh --freeze # regenerate
-python3 gen_scenarios.py                                                                                  # rewrite scenarios
+core/build/agora_scenarios cron-expression core/tools/golden/cron-expression                                                                                  # rewrite scenarios
 ```
 
 `run_golden.sh` wipes the stand's `build/` (its git-ignored scratch) before each run, so runs are

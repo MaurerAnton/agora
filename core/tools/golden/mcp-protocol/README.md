@@ -19,7 +19,7 @@ Transport (`McpClientTransport.kt`), session lifecycle, mutexes and the registry
 | `McpProtocolTraceDump.kt` | The stand driver (real pieces + four transcribed helpers) |
 | ``agora_extract mcp-pieces`` | Verbatim extraction from `McpModels.kt` + `McpProtocolClient.kt` |
 | `run_golden.sh` | Extracts, compiles and regenerates or verifies the traces |
-| `gen_scenarios.py` | Generates the scenarios (deterministic; rerun after editing) |
+| `agora_scenarios mcp-protocol` | Generates the scenarios (deterministic; rerun after editing) |
 | `stubs/` | Leaf stubs for Android-only types the model sources touch |
 
 ## How the stand works
@@ -91,7 +91,7 @@ pinned surface is the pure decision/parsing half the protocol client performs ar
 ```
 KOTLINC=/path/to/kotlinc KOTLINX_JARS=core.jar:json.jar ./run_golden.sh          # verify
 KOTLINC=/path/to/kotlinc KOTLINX_JARS=core.jar:json.jar ./run_golden.sh --freeze # regenerate
-python3 gen_scenarios.py                                                          # rewrite scenarios
+core/build/agora_scenarios mcp-protocol core/tools/golden/mcp-protocol                                                          # rewrite scenarios
 ```
 
 The Kotlin reference is compiled from the app tree on every run; the extractor fails loudly if

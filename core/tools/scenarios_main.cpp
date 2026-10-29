@@ -1851,6 +1851,492 @@ void profile_skill_manager(const fs::path& scenarios) {
     std::cout << "Wrote " << all.size() << " scenarios\n";
 }
 
+
+// provider-protocol-support/gen_scenarios.py — indent=2, ensure_ascii=False.
+void profile_provider_protocol_support(const fs::path& scenarios) {
+    std::vector<json::Value> cases;
+    auto provider = [](const char* name, const char* protocol, const char* id,
+                       std::vector<std::string> legacy, bool responses, bool cache,
+                       const char* ttl) {
+        std::vector<json::Value> names;
+        for (auto& item : legacy) names.push_back(str(std::move(item)));
+        return object({{"name", str(name)},
+                       {"protocol", str(protocol)},
+                       {"id", str(id)},
+                       {"legacyNames", array(std::move(names))},
+                       {"responsesApiEnabled", boolean(responses)},
+                       {"anthropicCacheEnabled", boolean(cache)},
+                       {"anthropicCacheTtl", str(ttl)}});
+    };
+    auto case_add = [&](const char* name, const char* provider_name,
+                        std::vector<json::Value> providers,
+                        std::vector<std::pair<std::string, json::Value>> fields) {
+        std::vector<std::pair<std::string, json::Value>> members = {
+            {"name", str(name)},
+            {"providerName", str(provider_name)},
+            {"customProviders", array(std::move(providers))},
+        };
+        for (auto& field : fields) members.push_back(std::move(field));
+        cases.push_back(object(std::move(members)));
+    };
+    const char* kStable = "custom-provider-12345678-1234-4234-9234-123456789abc";
+
+    case_add("builtin_openai_defaults", "OpenAI", {}, {});
+    case_add("builtin_anthropic_defaults", "Anthropic", {}, {});
+    case_add("builtin_openai_disabled", "OpenAI", {}, {{"builtInEnabled", boolean(false)}});
+    case_add("builtin_anthropic_disabled", "Anthropic", {},
+             {{"builtInAnthropicEnabled", boolean(false)}, {"builtInTtl", str("5m")}});
+    case_add("builtin_anthropic_cache_disabled", "Anthropic", {},
+             {{"builtInEnabled", boolean(false)}});
+    case_add("builtin_other_no_custom", "Other", {}, {});
+
+    case_add("custom_openai_by_name", "Relay",
+             {provider("Relay", "openai", "", {}, false, true, "1h")}, {});
+    case_add("custom_anthropic_by_name", "Relay",
+             {provider("Relay", "anthropic", "", {}, false, true, "1h")}, {});
+    case_add("custom_google_by_name", "Relay",
+             {provider("Relay", "google", "", {}, false, true, "1h")}, {});
+    case_add("custom_unknown_by_name", "Relay",
+             {provider("Relay", "unknown", "", {}, false, true, "1h")}, {});
+    case_add("custom_openai_by_stable_id", kStable,
+             {provider("Renamed", "openai", kStable, {}, false, true, "1h")}, {});
+    case_add("custom_anthropic_by_legacy", "Old Name",
+             {provider("New Name", "anthropic", kStable, {"Old Name"}, false, true, "1h")}, {});
+
+    case_add("custom_anthropic_cache_disabled", "Relay",
+             {provider("Relay", "anthropic", "", {}, false, false, "5m")}, {});
+    case_add("custom_anthropic_cache_enabled_ttl", "Relay",
+             {provider("Relay", "anthropic", "", {}, false, true, "5m")}, {});
+    case_add("custom_openai_cache_disabled", "Relay",
+             {provider("Relay", "openai", "", {}, true, false, "1h")}, {});
+    case_add("custom_openai_responses_enabled", "Relay",
+             {provider("Relay", "openai", "", {}, true, true, "1h")}, {});
+    case_add("custom_google_switches_ignored", "Relay",
+             {provider("Relay", "google", "", {}, true, false, "1h")}, {});
+    case_add("custom_unknown_cache_switch_still_reported", "Relay",
+             {provider("Relay", "unknown", "", {}, false, false, "9m")}, {});
+
+    case_add("first_match_is_anthropic_then_openai", "Relay",
+             {provider("Relay", "anthropic", "", {}, false, false, "5m"),
+              provider("Relay", "openai", "", {}, true, true, "1h")},
+             {});
+    case_add("first_match_is_google_then_anthropic", "Relay",
+             {provider("Relay", "google", "", {}, false, false, "9m"),
+              provider("Relay", "anthropic", "", {}, true, true, "1h")},
+             {});
+    case_add("first_match_is_legacy_then_name", "Old Name",
+             {provider("First", "anthropic", kStable, {"Old Name"}, false, false, "1h"),
+              provider("Old Name", "openai", "", {}, true, true, "1h")},
+             {});
+    case_add("any_openai_after_nonmatching", "Relay",
+             {provider("Other", "anthropic", "", {}, false, true, "1h"),
+              provider("Relay", "openai", "", {}, true, true, "1h")},
+             {});
+    case_add("any_anthropic_after_nonmatching", "Relay",
+             {provider("Other", "openai", "", {}, false, true, "1h"),
+              provider("Relay", "anthropic", "", {}, false, true, "1h")},
+             {});
+
+    case_add("builtin_openai_name_with_custom_google", "OpenAI",
+             {provider("OpenAI", "google", "", {}, true, false, "9m")}, {});
+    case_add("builtin_anthropic_name_with_custom_google", "Anthropic",
+             {provider("Anthropic", "google", "", {}, false, false, "9m")},
+             {{"builtInAnthropicEnabled", boolean(false)}, {"builtInTtl", str("30m")}});
+    case_add("custom_name_case_sensitive", "relay",
+             {provider("Relay", "openai", "", {}, false, true, "1h")}, {});
+    case_add("custom_empty_id_uses_name", "Relay",
+             {provider("Relay", "anthropic", "", {}, false, true, "1h")}, {});
+    case_add("custom_legacy_names_order", "Alias B",
+             {provider("Relay", "anthropic", kStable, {"Alias C", "Alias B"}, false, false,
+                       "1h")},
+             {});
+
+    remove_stale(scenarios);
+    const FormatOptions pretty{Format::Pretty2, false};
+    for (const json::Value& item : cases) {
+        std::string name;
+        for (const json::Member& member : item.members) {
+            if (member.key == "name") name = member.value.text;
+        }
+        write_scenario(scenarios, name, item, pretty);
+    }
+    std::cout << "wrote " << cases.size() << " scenarios to " << scenarios.string() << "\n";
+}
+
+// new-chat-persist-dao/gen_scenarios.py — indent=2, ensure_ascii=False.
+void profile_new_chat_persist_dao(const fs::path& scenarios) {
+    auto persist = [](std::int64_t identifier, json::Value model_id, json::Value system_prompt_id,
+                      json::Value settings, const char* draft_text, json::Value attachments) {
+        return object({{"id", number(identifier)},
+                       {"modelId", std::move(model_id)},
+                       {"systemPromptId", std::move(system_prompt_id)},
+                       {"conversationSettingsJson", std::move(settings)},
+                       {"draftText", str(draft_text)},
+                       {"draftAttachments", std::move(attachments)}});
+    };
+    auto op = [](const char* name,
+                 std::vector<std::pair<std::string, json::Value>> arguments) {
+        std::vector<std::pair<std::string, json::Value>> members = {{"op", str(name)}};
+        for (auto& argument : arguments) members.push_back(std::move(argument));
+        return object(std::move(members));
+    };
+    auto seed = [](std::vector<json::Value> rows) {
+        return object({{"newChatPersist", array(std::move(rows))}});
+    };
+    auto delete_matching = [&](std::vector<std::pair<std::string, json::Value>> arguments) {
+        return op("deleteNewChatPersistIfMatches", std::move(arguments));
+    };
+    auto upsert = [&](std::vector<std::pair<std::string, json::Value>> arguments) {
+        return op("upsertNewChatPersist", std::move(arguments));
+    };
+    const FormatOptions pretty{Format::Pretty2, false};
+    auto write = [&](const char* name, json::Value scenario) {
+        write_scenario(scenarios, name, scenario, pretty);
+    };
+
+    write("01-empty-then-upsert",
+          object({{"seed", seed({})},
+                  {"steps", array({
+                      op("observeNewChatPersist", {}),
+                      op("getNewChatPersist", {}),
+                      upsert({{"modelId", str("m1")},
+                              {"systemPromptId", null_value()},
+                              {"conversationSettingsJson", str("{\"t\":0.2}")},
+                              {"draftText", str("hello")},
+                              {"draftAttachments", str("[\"a.png\"]")}}),
+                      op("observeNewChatPersist", {}),
+                      op("getNewChatPersist", {}),
+                      upsert({{"modelId", null_value()},
+                              {"systemPromptId", str("p2")},
+                              {"conversationSettingsJson", null_value()},
+                              {"draftText", str("")},
+                              {"draftAttachments", null_value()}}),
+                      op("getNewChatPersist", {}),
+                      op("observeNewChatPersist", {}),
+                      delete_matching({{"modelId", null_value()},
+                                       {"systemPromptId", str("p2")},
+                                       {"conversationSettingsJson", null_value()},
+                                       {"draftText", str("")},
+                                       {"draftAttachments", null_value()}}),
+                      op("observeNewChatPersist", {}),
+                      op("getNewChatPersist", {}),
+                      op("deleteNewChatPersist", {}),
+                  })}}));
+
+    write("02-seeded-row-matching",
+          object({{"seed",
+                   seed({persist(0, str("m1"), str("p1"), str("{\"x\":1}"), "draft",
+                                 str("[\"a\"]"))})},
+                  {"steps", array({
+                      op("getNewChatPersist", {}),
+                      op("observeNewChatPersist", {}),
+                      delete_matching({{"modelId", str("m1")},
+                                       {"systemPromptId", str("p1")},
+                                       {"conversationSettingsJson", str("{\"x\":1}")},
+                                       {"draftText", str("draft")},
+                                       {"draftAttachments", str("[\"a\"]")}}),
+                      op("getNewChatPersist", {}),
+                      delete_matching({{"modelId", str("m1")},
+                                       {"systemPromptId", str("p1")},
+                                       {"conversationSettingsJson", str("{\"x\":1}")},
+                                       {"draftText", str("draft")},
+                                       {"draftAttachments", str("[\"a\"]")}}),
+                  })}}));
+
+    write("03-null-safe-matching",
+          object({{"seed", seed({persist(0, null_value(), null_value(), null_value(), "x",
+                                         null_value())})},
+                  {"steps", array({
+                      delete_matching({{"modelId", null_value()},
+                                       {"systemPromptId", null_value()},
+                                       {"conversationSettingsJson", null_value()},
+                                       {"draftText", str("y")},
+                                       {"draftAttachments", null_value()}}),
+                      op("getNewChatPersist", {}),
+                      delete_matching({{"modelId", null_value()},
+                                       {"systemPromptId", null_value()},
+                                       {"conversationSettingsJson", null_value()},
+                                       {"draftText", str("x")},
+                                       {"draftAttachments", null_value()}}),
+                      op("getNewChatPersist", {}),
+                      op("deleteNewChatPersist", {}),
+                  })}}));
+
+    write("04-invalid-entity",
+          object({{"seed", seed({})},
+                  {"steps", array({
+                      upsert({{"id", number(1)}, {"draftText", str("bad")}}),
+                      upsert({{"id", number(-1)}, {"draftText", str("worse")}}),
+                      op("observeNewChatPersist", {}),
+                      op("getNewChatPersist", {}),
+                  })}}));
+
+    write("05-upsert-clears-columns",
+          object({{"seed",
+                   seed({persist(0, str("m1"), str("p1"), str("{\"x\":1}"), "draft",
+                                 str("[\"a\"]"))})},
+                  {"steps", array({
+                      upsert({{"modelId", null_value()},
+                              {"systemPromptId", null_value()},
+                              {"conversationSettingsJson", null_value()},
+                              {"draftText", str("z")},
+                              {"draftAttachments", null_value()}}),
+                      op("getNewChatPersist", {}),
+                      op("observeNewChatPersist", {}),
+                      op("deleteNewChatPersist", {}),
+                      op("observeNewChatPersist", {}),
+                  })}}));
+}
+
+// model-thinking-resolver/gen_scenarios.py — indent=2, ensure_ascii=False.
+void profile_model_thinking_resolver(const fs::path& scenarios) {
+    std::vector<json::Value> cases;
+    auto provider = [](const char* name, const char* protocol, const char* id,
+                       std::vector<std::string> legacy) {
+        std::vector<json::Value> names;
+        for (auto& item : legacy) names.push_back(str(std::move(item)));
+        return object({{"name", str(name)},
+                       {"protocol", str(protocol)},
+                       {"id", str(id)},
+                       {"legacyNames", array(std::move(names))}});
+    };
+    auto case_add = [&](const char* name, const char* selected,
+                        std::vector<json::Value> providers) {
+        cases.push_back(object({{"name", str(name)},
+                                {"selectedModel", str(selected)},
+                                {"customProviders", array(std::move(providers))}}));
+    };
+
+    const std::vector<std::pair<const char*, const char*>> legacy = {
+        {"legacy_gpt", "gpt-4o"},
+        {"legacy_o1", "o1-preview"},
+        {"legacy_o3", "o3-mini"},
+        {"legacy_o4", "o4-mini"},
+        {"legacy_o1_without_dash", "o100"},
+        {"legacy_claude", "claude-3-opus"},
+        {"legacy_deepseek", "deepseek-chat"},
+        {"legacy_qwen", "qwen2.5-coder"},
+        {"legacy_groq", "groq/llama-3"},
+        {"legacy_google_models", "models/gemini-2.5-pro"},
+        {"legacy_google_gemini", "gemini-1.5-flash"},
+        {"legacy_unknown", "mistral-large"},
+        {"legacy_uppercase_is_not_a_prefix", "GPT-4o"},
+    };
+    for (const auto& [name, model] : legacy) case_add(name, model, {});
+
+    case_add("prefixed_openai", "OpenAI:gpt-4o", {});
+    case_add("prefixed_empty_provider", ":gpt-4o", {});
+    case_add("prefixed_empty_model", "OpenAI:", {});
+    case_add("prefixed_first_colon_wins", "Provider:model:with:colons", {});
+    case_add("prefixed_model_contains_colon", "Custom:org/model:tag", {});
+
+    case_add("custom_name_match_anthropic", "Relay:claude-3-opus",
+             {provider("Relay", "anthropic", "", {})});
+    case_add("custom_name_match_google", "Relay:gemini-2.5-pro",
+             {provider("Relay", "google", "", {})});
+    case_add("custom_stable_id_match",
+             "custom-provider-12345678-1234-4234-9234-123456789abc:gpt-4o",
+             {provider("Renamed Relay", "anthropic",
+                       "custom-provider-12345678-1234-4234-9234-123456789abc", {"Old Relay"})});
+    case_add("custom_legacy_name_match", "Old Relay:gpt-4o",
+             {provider("New Relay", "google",
+                       "custom-provider-12345678-1234-4234-9234-123456789abc", {"Old Relay"})});
+    case_add("custom_stable_id_case_insensitive_test",
+             "CUSTOM-PROVIDER-ABCDEFAB-1234-4234-9234-123456789ABC:gpt-4o",
+             {provider("Relay", "anthropic",
+                       "CUSTOM-PROVIDER-ABCDEFAB-1234-4234-9234-123456789ABC", {})});
+    case_add("custom_stable_id_with_spaces_is_still_stable",
+             "  custom-provider-12345678-1234-4234-9234-123456789abc  :gpt-4o",
+             {provider("Relay", "openai",
+                       "  custom-provider-12345678-1234-4234-9234-123456789abc  ", {})});
+    case_add("custom_first_match_wins", "Relay:gpt-4o",
+             {provider("Relay", "anthropic", "", {}),
+              provider("Relay", "google", "", {})});
+    case_add("custom_name_is_case_sensitive", "relay:gpt-4o",
+             {provider("Relay", "anthropic", "", {})});
+    case_add("custom_name_does_not_match_builtin", "OpenAI:gpt-4o",
+             {provider("Other", "anthropic", "", {})});
+    case_add("custom_unknown_wire_protocol", "Relay:gpt-4o",
+             {provider("Relay", "something-else", "", {})});
+    case_add("custom_protocol_gemini_alias", "Relay:gpt-4o",
+             {provider("Relay", "gemini", "", {})});
+    case_add("custom_protocol_claude_alias", "Relay:gpt-4o",
+             {provider("Relay", "claude", "", {})});
+    case_add("custom_protocol_case_and_whitespace", "Relay:gpt-4o",
+             {provider("Relay", "  AnThRoPiC  ", "", {})});
+    case_add("custom_blank_protocol", "Relay:gpt-4o", {provider("Relay", "   ", "", {})});
+    case_add("unknown_provider_name_can_match_custom", "Unknown:model",
+             {provider("Unknown", "google", "", {})});
+    case_add("custom_legacy_names_order", "Alias B:gpt-4o",
+             {provider("Relay", "anthropic",
+                       "custom-provider-12345678-1234-4234-9234-123456789abc",
+                       {"Alias A", "Alias B", "Alias C"})});
+    case_add("custom_empty_id_uses_name", "Relay:claude-3",
+             {provider("Relay", "openai", "", {})});
+    case_add("custom_provider_without_match", "Elsewhere:claude-3",
+             {provider("Relay", "google", "", {})});
+
+    remove_stale(scenarios);
+    const FormatOptions pretty{Format::Pretty2, false};
+    for (const json::Value& item : cases) {
+        std::string name;
+        for (const json::Member& member : item.members) {
+            if (member.key == "name") name = member.value.text;
+        }
+        write_scenario(scenarios, name, item, pretty);
+    }
+    std::cout << "wrote " << cases.size() << " scenarios to " << scenarios.string() << "\n";
+}
+
+// shell-tools/gen_scenarios.py — indent=2, ensure_ascii=False, maxLength derived from the
+// compact JSON encoding of the full read payload (UTF-16 units, like Kotlin's String.length).
+void profile_shell_tools(const fs::path& scenarios) {
+    std::vector<json::Value> all;
+    auto scenario = [&](const char* name, const char* mode,
+                        std::vector<std::pair<std::string, json::Value>> extra) {
+        std::vector<std::pair<std::string, json::Value>> members = {{"name", str(name)},
+                                                                    {"mode", str(mode)}};
+        for (auto& member : extra) members.push_back(std::move(member));
+        all.push_back(object(std::move(members)));
+    };
+
+    scenario("args_mixed_values", "toolArgs",
+             {{"arguments", str("{\"s\":\"x\",\"n\":1,\"b\":true,\"o\":{\"a\":1},"
+                                "\"arr\":[1,2]}")},
+              {"probeKey", str("s")}});
+    scenario("args_blank_string_feeds_braces", "toolArgs",
+             {{"arguments", str("")}, {"probeKey", str("k")}});
+    scenario("args_whitespace_feeds_braces", "toolArgs",
+             {{"arguments", str("   ")}, {"probeKey", str("k")}});
+    scenario("args_malformed_returns_empty", "toolArgs",
+             {{"arguments", str("{oops")}, {"probeKey", str("k")}});
+    scenario("args_array_root_returns_empty", "toolArgs",
+             {{"arguments", str("[1,2]")}, {"probeKey", str("k")}});
+    scenario("args_primitive_root_returns_empty", "toolArgs",
+             {{"arguments", str("42")}, {"probeKey", str("k")}});
+    scenario("args_null_root_returns_empty", "toolArgs",
+             {{"arguments", str("null")}, {"probeKey", str("k")}});
+    scenario("args_duplicate_keys_last_wins_first_position", "toolArgs",
+             {{"arguments", str("{\"a\":1,\"b\":2,\"a\":3}")}, {"probeKey", str("a")}});
+    scenario("args_probe_null_value_is_literal", "toolArgs",
+             {{"arguments", str("{\"z\":null}")}, {"probeKey", str("z")}});
+    scenario("args_probe_object_value", "toolArgs",
+             {{"arguments", str("{\"o\":{\"a\":1}}")}, {"probeKey", str("o")}});
+    scenario("args_probe_array_value", "toolArgs",
+             {{"arguments", str("{\"a\":[1,2]}")}, {"probeKey", str("a")}});
+    scenario("args_probe_missing", "toolArgs",
+             {{"arguments", str("{\"a\":1}")}, {"probeKey", str("nope")}});
+    scenario("args_bool_true_literal", "toolArgs",
+             {{"arguments", str("{\"b\":true}")}, {"probeKey", str("b")}});
+    scenario("args_bool_false_literal", "toolArgs",
+             {{"arguments", str("{\"b\":false}")}, {"probeKey", str("b")}});
+    scenario("args_bool_quoted_true", "toolArgs",
+             {{"arguments", str("{\"b\":\"true\"}")}, {"probeKey", str("b")}});
+    scenario("args_bool_uppercase_false", "toolArgs",
+             {{"arguments", str("{\"b\":\"TRUE\"}")}, {"probeKey", str("b")}});
+    scenario("args_bool_number", "toolArgs",
+             {{"arguments", str("{\"b\":1}")}, {"probeKey", str("b")}});
+
+    scenario("error_full", "jsonError",
+             {{"type", str("net")},
+              {"message", str("boom")},
+              {"server", str("srv")},
+              {"command", str("ls")}});
+    scenario("error_blank_type_omitted", "jsonError",
+             {{"type", str("   ")}, {"message", str("boom")}});
+    scenario("error_without_optional_fields", "jsonError",
+             {{"type", str("net")}, {"message", str("boom")}});
+    scenario("error_special_chars", "jsonError",
+             {{"type", str("t")},
+              {"message", str("quo\"te\nline\\slash")},
+              {"server", null_value()},
+              {"command", null_value()}});
+    scenario("error_empty_message", "jsonError", {{"type", str("")}, {"message", str("")}});
+    scenario("error_server_only", "jsonError",
+             {{"type", str("t")}, {"message", str("m")}, {"server", str("box")}});
+
+    auto full_json = [](const std::string& content) {
+        const std::int64_t lines =
+            content.empty() ? 0
+                            : 1 + static_cast<std::int64_t>(
+                                      std::count(content.begin(), content.end(), '\n'));
+        const json::Value payload = object({{"type", str("file_read")},
+                                            {"server", str("srv")},
+                                            {"path", str("/tmp/f.txt")},
+                                            {"content", str(content)},
+                                            {"lines", number(lines)},
+                                            {"total_lines", number(10)},
+                                            {"total_bytes", number(100)},
+                                            {"returned_bytes", number(
+                                                 static_cast<std::int64_t>(content.size()))},
+                                            {"offset", number(0)},
+                                            {"limit", number(0)},
+                                            {"truncated", boolean(false)}});
+        return serialize(payload, FormatOptions{Format::Compact, false});
+    };
+    auto wrappers_len = [&](const std::string& content) {
+        return static_cast<std::int64_t>(json::utf16_length(full_json(content))) -
+               static_cast<std::int64_t>(json::utf16_length(content));
+    };
+    auto file_read = [&](const char* name, const std::string& content,
+                         std::optional<std::int64_t> max_length, std::int64_t lines,
+                         std::int64_t total_lines, std::int64_t total_bytes,
+                         std::int64_t offset, std::int64_t limit, bool truncated) {
+        std::vector<std::pair<std::string, json::Value>> members = {
+            {"fileServer", str("srv")},
+            {"filePath", str("/tmp/f.txt")},
+            {"fileContent", str(content)},
+            {"fileLines", number(lines)},
+            {"totalLines", number(total_lines)},
+            {"totalBytes", number(total_bytes)},
+            {"offset", number(offset)},
+            {"limit", number(limit)},
+            {"fileTruncated", boolean(truncated)},
+        };
+        if (max_length) members.emplace_back("maxLength", number(*max_length));
+        scenario(name, "fileRead", std::move(members));
+    };
+
+    file_read("file_small_fits_default_limit", "hello world", std::nullopt, 0, 10, 100, 0, 0,
+              false);
+    file_read("file_empty_content", "", 5000, 0, 10, 100, 0, 0, false);
+    const std::string ascii_content(200, 'x');
+    file_read("file_exact_fit_boundary", ascii_content,
+              static_cast<std::int64_t>(full_json(ascii_content).size()), 0, 10, 100, 0, 0,
+              false);
+    file_read("file_truncated_ascii", ascii_content, 220, 0, 10, 100, 0, 0, false);
+    file_read("file_tiny_limit_returns_over_limit_empty", ascii_content, 5, 0, 10, 100, 0, 0,
+              false);
+    file_read("file_limit_one", ascii_content, 1, 0, 10, 100, 0, 0, false);
+    file_read("file_limit_zero_throws", ascii_content, 0, 0, 10, 100, 0, 0, false);
+    file_read("file_limit_negative_throws", ascii_content, -7, 0, 10, 100, 0, 0, false);
+    file_read("file_multiline_lines_counted", "one\ntwo\nthree", std::nullopt, 0, 10, 100, 0, 0,
+              false);
+    file_read("file_unicode_returned_bytes", "h\u00e9llo \u20ac", std::nullopt, 0, 10, 100, 0, 0,
+              false);
+    const std::string emoji_content = "AB\U0001F600CD\U0001F600EF";
+    file_read("file_surrogate_pair_split_guard", emoji_content,
+              wrappers_len(emoji_content) + 3, 0, 10, 100, 0, 0, false);
+    file_read("file_surrogate_pair_exact_boundary", emoji_content,
+              wrappers_len(emoji_content) + 4, 0, 10, 100, 0, 0, false);
+    {
+        std::string euro_content;
+        for (int i = 0; i < 120; ++i) euro_content += "\u20ac";
+        file_read("file_big_unicode_truncation", euro_content, 260, 0, 10, 100, 0, 0, false);
+    }
+    file_read("file_metrics_passthrough", "abc", std::nullopt, 0, 42, 999, 5, 77, true);
+
+    const FormatOptions pretty{Format::Pretty2, false};
+    for (const json::Value& item : all) {
+        std::string name;
+        for (const json::Member& member : item.members) {
+            if (member.key == "name") name = member.value.text;
+        }
+        write_scenario(scenarios, name, item, pretty);
+    }
+    std::cout << "Wrote " << all.size() << " scenarios\n";
+}
+
 }  // namespace
 
 int main(int argc, char** argv) {
@@ -1876,7 +2362,11 @@ int main(int argc, char** argv) {
                   << "  loop-policy           loop-policy/gen_scenarios.py\n"
                   << "  sandbox-virtual-paths sandbox-virtual-paths/gen_scenarios.py\n"
                   << "  glob-matcher          glob-matcher/gen_scenarios.py\n"
-                  << "  skill-manager         skill-manager/gen_scenarios.py\n";
+                  << "  skill-manager         skill-manager/gen_scenarios.py\n"
+                  << "  provider-protocol-support provider-protocol-support/gen_scenarios.py\n"
+                  << "  new-chat-persist-dao  new-chat-persist-dao/gen_scenarios.py\n"
+                  << "  model-thinking-resolver model-thinking-resolver/gen_scenarios.py\n"
+                  << "  shell-tools           shell-tools/gen_scenarios.py\n";
         return 2;
     }
     const std::string profile = argv[1];
@@ -1923,6 +2413,14 @@ int main(int argc, char** argv) {
         profile_glob_matcher(scenarios);
     } else if (profile == "skill-manager") {
         profile_skill_manager(scenarios);
+    } else if (profile == "provider-protocol-support") {
+        profile_provider_protocol_support(scenarios);
+    } else if (profile == "new-chat-persist-dao") {
+        profile_new_chat_persist_dao(scenarios);
+    } else if (profile == "model-thinking-resolver") {
+        profile_model_thinking_resolver(scenarios);
+    } else if (profile == "shell-tools") {
+        profile_shell_tools(scenarios);
     } else {
         std::cerr << "unknown profile: " << profile << "\n";
         return 2;

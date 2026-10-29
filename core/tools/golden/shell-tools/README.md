@@ -14,7 +14,7 @@ canonical trace is frozen under `golden/`; the C++ port (`agora::core::shell_too
 | `ShellToolsTraceDump.kt` | The stand driver (calls the real functions) |
 | ``agora_extract shell-models`` | Verbatim extraction of `ShellFileReadResult` + `shellFileLineCount` |
 | `run_golden.sh` | Extracts, compiles and regenerates or verifies the traces |
-| `gen_scenarios.py` | Generates the scenarios (deterministic; rerun after editing) |
+| `agora_scenarios shell-tools` | Generates the scenarios (deterministic; rerun after editing) |
 
 ## How the stand works
 
@@ -55,7 +55,7 @@ verbatim into the generated `build/ShellModels.kt` (visibility unchanged).
 ```
 KOTLINC=/path/to/kotlinc KOTLINX_JARS=core.jar:json.jar ./run_golden.sh          # verify
 KOTLINC=/path/to/kotlinc KOTLINX_JARS=core.jar:json.jar ./run_golden.sh --freeze # regenerate
-python3 gen_scenarios.py                                                          # rewrite scenarios
+core/build/agora_scenarios shell-tools core/tools/golden/shell-tools                                                          # rewrite scenarios
 ```
 
 The Kotlin reference is compiled from the app tree on every run; the extractor fails loudly if

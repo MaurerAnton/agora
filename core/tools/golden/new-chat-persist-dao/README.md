@@ -53,7 +53,7 @@ All five members are operations, so no SQL goes unpinned.
            {"op": "deleteNewChatPersistIfMatches", "modelId": null, "draftText": "z"}]}
 ```
 
-Missing optional fields mean NULL; `draftText` defaults to `''`. `gen_scenarios.py` writes five
+Missing optional fields mean NULL; `draftText` defaults to `''`. `agora_scenarios new-chat-persist-dao` writes five
 scenarios over purpose-built seeds.
 
 ## Trace format (`golden/*.trace`)

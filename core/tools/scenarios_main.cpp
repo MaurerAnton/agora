@@ -8413,6 +8413,453 @@ void profile_gpt_chat_importer(const fs::path& scenarios) {
     std::cout << "Wrote " << entries.size() << " scenarios to " << scenarios.string() << "\n";
 }
 
+// chat-automation-dao/gen_scenarios.py — indent=2, ensure_ascii=False; Python op(name, **kwargs)
+// puts "op" first then the keyword arguments in call order, with explicit None values kept as
+// JSON null.
+void profile_chat_automation_dao(const fs::path& scenarios) {
+    std::vector<std::pair<std::string, json::Value>> entries;
+    auto conversation = [](const char* identifier) { return object({{"id", str(identifier)}}); };
+    auto task = [](const char* identifier, std::optional<std::string> name = std::nullopt,
+                   std::optional<std::string> prompt = std::nullopt,
+                   std::optional<std::string> system_prompt = std::nullopt,
+                   std::optional<std::string> system_prompt_id = std::nullopt,
+                   std::optional<std::string> model_id = std::nullopt,
+                   const char* cron = "", std::optional<std::int64_t> run_at = std::nullopt,
+                   std::int64_t next_run_at = 0, bool enabled = true,
+                   std::int64_t created_at = 0, std::optional<std::int64_t> last_run_at = std::nullopt) {
+        std::vector<std::pair<std::string, json::Value>> members = {
+            {"id", str(identifier)},
+            {"name", str(name ? *name : std::string(identifier))},
+            {"prompt", str(prompt ? *prompt : "prompt-" + std::string(identifier))},
+            {"cronExpr", str(cron)},
+            {"nextRunAt", number(next_run_at)},
+            {"enabled", boolean(enabled)},
+            {"createdAt", number(created_at)},
+        };
+        if (system_prompt) members.emplace_back("systemPrompt", str(*system_prompt));
+        if (system_prompt_id) members.emplace_back("systemPromptId", str(*system_prompt_id));
+        if (model_id) members.emplace_back("modelId", str(*model_id));
+        if (run_at) members.emplace_back("runAt", number(*run_at));
+        if (last_run_at) members.emplace_back("lastRunAt", number(*last_run_at));
+        return object(std::move(members));
+    };
+    auto loop = [](const char* conversation_id, std::int64_t interval_ms = 60000,
+                   std::optional<std::string> prompt = std::nullopt,
+                   std::int64_t next_fire_at = 0, std::int64_t cycle_count = 0,
+                   std::optional<std::int64_t> max_cycles = std::nullopt,
+                   bool active = true, std::int64_t revision = 0) {
+        std::vector<std::pair<std::string, json::Value>> members = {
+            {"conversationId", str(conversation_id)},
+            {"intervalMs", number(interval_ms)},
+            {"nextFireAt", number(next_fire_at)},
+            {"cycleCount", number(cycle_count)},
+            {"active", boolean(active)},
+            {"revision", number(revision)},
+        };
+        if (prompt) members.emplace_back("prompt", str(*prompt));
+        if (max_cycles) members.emplace_back("maxCycles", number(*max_cycles));
+        return object(std::move(members));
+    };
+    auto seed_value = [](std::vector<json::Value> conversations = {},
+                         std::vector<json::Value> tasks = {}, std::vector<json::Value> loops = {}) {
+        return object({{"conversations", array(std::move(conversations))},
+                       {"tasks", array(std::move(tasks))},
+                       {"loops", array(std::move(loops))}});
+    };
+    auto op = [](const char* operation, std::vector<std::pair<std::string, json::Value>> args = {}) {
+        std::vector<std::pair<std::string, json::Value>> members = {{"op", str(operation)}};
+        for (auto& arg : args) members.push_back(std::move(arg));
+        return object(std::move(members));
+    };
+    auto task_cas = [&](const char* identifier, const char* cron, std::int64_t expected,
+                       std::int64_t replacement) {
+        return op("updateTaskNextRunAtIfUnchanged", {
+            {"id", str(identifier)},
+            {"expectedCronExpr", str(cron)},
+            {"expectedNextRunAt", number(expected)},
+            {"replacementNextRunAt", number(replacement)},
+        });
+    };
+    auto loop_cas = [&](const char* conversation_id, std::int64_t revision, std::int64_t cycle,
+                       std::int64_t interval_ms, std::int64_t expected,
+                       std::int64_t replacement) {
+        return op("updateLoopNextFireAtIfUnchanged", {
+            {"conversationId", str(conversation_id)},
+            {"expectedRevision", number(revision)},
+            {"expectedCycleCount", number(cycle)},
+            {"expectedIntervalMs", number(interval_ms)},
+            {"expectedNextFireAt", number(expected)},
+            {"replacementNextFireAt", number(replacement)},
+        });
+    };
+    auto deactivate_cas = [&](const char* conversation_id, std::int64_t revision,
+                             std::int64_t cycle, std::int64_t interval_ms,
+                             std::int64_t expected, std::int64_t max_cycles) {
+        return op("deactivateLoopRowIfUnchanged", {
+            {"conversationId", str(conversation_id)},
+            {"expectedRevision", number(revision)},
+            {"expectedCycleCount", number(cycle)},
+            {"expectedIntervalMs", number(interval_ms)},
+            {"expectedNextFireAt", number(expected)},
+            {"normalizedMaxCycles", number(max_cycles)},
+        });
+    };
+    auto write = [&](const char* name, json::Value scenario_seed,
+                     std::vector<json::Value> steps) {
+        entries.emplace_back(name, object({{"seed", std::move(scenario_seed)},
+                                           {"steps", array(std::move(steps))}}));
+    };
+
+    write("01-tasks-read-and-upsert",
+          seed_value({}, {
+              task("t-old", std::string("old"), std::nullopt, std::string("sys"),
+                   std::nullopt, std::string("openai:gpt-4"), "0 0 * * *", std::nullopt,
+                   1000, true, 100, 50),
+              task("t-new", std::string("new"), std::nullopt, std::nullopt,
+                   std::string("sp-1"), std::nullopt, "", 5000, 0, false, 300),
+              task("t-mid", std::string("mid"), std::nullopt, std::nullopt, std::nullopt,
+                   std::string("anthropic:claude"), "*/5 * * * *", std::nullopt, 2000, true,
+                   200, 150),
+          }),
+          {
+              op("getAllTasks"),
+              op("getAllTasksList"),
+              op("getTask", {{"id", str("t-mid")}}),
+              op("getTask", {{"id", str("missing")}}),
+              op("getEnabledTasks"),
+              op("upsertTask", {
+                  {"id", str("t-new")},
+                  {"name", str("new name")},
+                  {"prompt", str("p-new2")},
+                  {"systemPrompt", str("sys2")},
+                  {"systemPromptId", null_value()},
+                  {"modelId", str("local:qwen")},
+                  {"cronExpr", str("0 12 * * *")},
+                  {"runAt", null_value()},
+                  {"nextRunAt", number(7000)},
+                  {"enabled", boolean(true)},
+                  {"createdAt", number(300)},
+                  {"lastRunAt", number(600)},
+              }),
+              op("getTask", {{"id", str("t-new")}}),
+              op("upsertTask", {
+                  {"id", str("t-insert")},
+                  {"name", str("inserted")},
+                  {"prompt", str("pi")},
+                  {"systemPromptId", str("sp-2")},
+                  {"modelId", str("openai:gpt-4o")},
+                  {"cronExpr", str("0 0 1 * *")},
+                  {"nextRunAt", number(9000)},
+                  {"enabled", boolean(true)},
+                  {"createdAt", number(400)},
+              }),
+              op("getAllTasksList"),
+              op("getEnabledTasks"),
+          });
+
+    write("02-task-model-references",
+          seed_value({}, {
+              task("t1", std::nullopt, std::nullopt, std::nullopt, std::nullopt,
+                   std::string("openai:gpt-4"), "", std::nullopt, 0, true, 1),
+              task("t2", std::nullopt, std::nullopt, std::nullopt, std::nullopt,
+                   std::string("openai:gpt-4o"), "", std::nullopt, 0, true, 2),
+              task("t3", std::nullopt, std::nullopt, std::nullopt, std::nullopt,
+                   std::string("anthropic:claude"), "", std::nullopt, 0, true, 3),
+              task("t4", std::nullopt, std::nullopt, std::nullopt, std::nullopt, std::nullopt,
+                   "", std::nullopt, 0, true, 4),
+              task("t5", std::nullopt, std::nullopt, std::nullopt, std::nullopt,
+                   std::string("other"), "", std::nullopt, 0, true, 5),
+              task("t6", std::nullopt, std::nullopt, std::nullopt, std::nullopt,
+                   std::string("openai"), "", std::nullopt, 0, true, 6),
+              task("t7", std::nullopt, std::nullopt, std::nullopt, std::nullopt,
+                   std::string("openaix:foo"), "", std::nullopt, 0, true, 7),
+          }),
+          {
+              op("replaceTaskModelReferences", {
+                  {"oldModelId", str("openai:gpt-4")}, {"newModelId", str("local:model")}}),
+              op("replaceTaskModelReferences", {
+                  {"oldModelId", str("openai:gpt-4")}, {"newModelId", null_value()}}),
+              op("replaceTaskModelReferences",
+                 {{"oldModelId", str("missing")}, {"newModelId", str("x")}}),
+              op("renameTaskProviderModelReferences",
+                 {{"oldProvider", str("openai")}, {"newProvider", str("azure")}}),
+              op("renameTaskProviderModelReferences",
+                 {{"oldProvider", str("azure")}, {"newProvider", str("openai")}}),
+              op("renameTaskProviderModelReferences",
+                 {{"oldProvider", str("openai")}, {"newProvider", str("x")}}),
+              op("getAllTasksList"),
+          });
+
+    write("03-task-clock-cas",
+          seed_value({}, {
+              task("t1", std::nullopt, std::nullopt, std::nullopt, std::nullopt, std::nullopt,
+                   "0 0 * * *", std::nullopt, 100, true, 1),
+              task("t2", std::nullopt, std::nullopt, std::nullopt, std::nullopt, std::nullopt,
+                   "0 0 * * *", std::nullopt, 100, false, 2),
+          }),
+          {
+              task_cas("t1", "0 0 * * *", 100, 200),
+              op("getTask", {{"id", str("t1")}}),
+              task_cas("t1", "0 0 * * *", 100, 200),
+              task_cas("t1", "0 0 * * *", 200, 300),
+              task_cas("t2", "0 0 * * *", 100, 200),
+              task_cas("t1", "bad cron", 300, 400),
+              task_cas("missing", "0 0 * * *", 300, 400),
+              op("deleteTask", {{"id", str("t1")}}),
+              op("getTask", {{"id", str("t1")}}),
+              op("deleteTask", {{"id", str("t1")}}),
+              op("deleteAllTasks"),
+              op("getAllTasksList"),
+          });
+
+    write("04-loops-read-and-upsert",
+          seed_value({conversation("c1"), conversation("c2"), conversation("c3")}, {}, {
+              loop("c1", 60000, std::string("continue"), 5000, 1, 10, true, 2),
+              loop("c2", 30000, std::nullopt, 0, 0, std::nullopt, false, 0),
+          }),
+          {
+              op("getLoop", {{"conversationId", str("c1")}}),
+              op("getLoop", {{"conversationId", str("missing")}}),
+              op("getActiveLoops"),
+              op("observeActiveLoops"),
+              op("getAllLoopsList"),
+              op("getLoopsForConversationSnapshot", {{"conversationId", str("c2")}}),
+              op("upsertLoopRow", {
+                  {"conversationId", str("c2")},
+                  {"intervalMs", number(30000)},
+                  {"prompt", str("p2")},
+                  {"nextFireAt", number(7000)},
+                  {"cycleCount", number(3)},
+                  {"maxCycles", number(5)},
+                  {"active", boolean(true)},
+                  {"revision", number(1)},
+              }),
+              op("observeActiveLoops"),
+              op("upsertLoopRow", {
+                  {"conversationId", str("c3")},
+                  {"intervalMs", number(10000)},
+                  {"prompt", null_value()},
+                  {"nextFireAt", number(9000)},
+                  {"cycleCount", number(0)},
+                  {"maxCycles", null_value()},
+                  {"active", boolean(true)},
+                  {"revision", number(0)},
+              }),
+              op("getAllLoopsList"),
+          });
+
+    write("05-loop-clock-cas",
+          seed_value({conversation("c1"), conversation("c2")}, {}, {
+              loop("c1", 60000, std::string("continue"), 5000, 1, 10, true, 2),
+              loop("c2", 30000, std::nullopt, 0, 0, std::nullopt, false, 0),
+          }),
+          {
+              loop_cas("c1", 2, 1, 60000, 5000, 9000),
+              op("getLoop", {{"conversationId", str("c1")}}),
+              loop_cas("c1", 2, 1, 60000, 5000, 9000),
+              loop_cas("c1", 2, 1, 60000, 9000, 12000),
+              loop_cas("c1", 3, 1, 60000, 12000, 15000),
+              loop_cas("c2", 0, 0, 30000, 0, 1000),
+              deactivate_cas("c1", 2, 1, 60000, 12000, 7),
+              op("getLoop", {{"conversationId", str("c1")}}),
+              deactivate_cas("c1", 2, 1, 60000, 12000, 7),
+              op("deleteLoopRow", {{"conversationId", str("c1")}}),
+              op("deleteLoopRow", {{"conversationId", str("c1")}}),
+              op("deleteAllLoops"),
+              op("getAllLoopsList"),
+          });
+
+    write("06-loop-upsert-clears",
+          seed_value({conversation("c1")}, {}, {
+              loop("c1", 60000, std::string("p"), 2000, 2, 9, true, 4),
+          }),
+          {
+              op("upsertLoopRow", {
+                  {"conversationId", str("c1")},
+                  {"intervalMs", number(1000)},
+                  {"prompt", null_value()},
+                  {"nextFireAt", number(0)},
+                  {"cycleCount", number(2)},
+                  {"maxCycles", null_value()},
+                  {"active", boolean(false)},
+                  {"revision", number(5)},
+              }),
+              op("getLoop", {{"conversationId", str("c1")}}),
+              op("upsertLoopRow", {
+                  {"conversationId", str("c1")},
+                  {"intervalMs", number(2000)},
+                  {"prompt", str("x")},
+                  {"nextFireAt", number(5000)},
+                  {"cycleCount", number(0)},
+                  {"maxCycles", number(3)},
+                  {"active", boolean(true)},
+                  {"revision", number(6)},
+              }),
+              op("getLoop", {{"conversationId", str("c1")}}),
+              op("deleteAllLoops"),
+              op("getAllLoopsList"),
+          });
+
+    remove_stale(scenarios);
+    const FormatOptions pretty{Format::Pretty2, false}; // indent=2, ensure_ascii=False
+    for (const auto& [name, value] : entries) {
+        write_scenario(scenarios, name, value, pretty);
+    }
+    std::cout << "Wrote " << entries.size() << " scenarios to " << scenarios.string() << "\n";
+}
+
+// legacy-run-backfill/gen_scenarios.py — Compact (separators=(",", ":")), ensure_ascii=False.
+void profile_legacy_run_backfill(const fs::path& scenarios) {
+    std::vector<std::pair<std::string, json::Value>> entries;
+    auto msg = [](const char* mid, const char* parent, const char* participant,
+                  const char* status, std::int64_t timestamp,
+                  std::optional<bool> synthetic = std::nullopt) {
+        std::vector<std::pair<std::string, json::Value>> members = {
+            {"id", str(mid)},
+            {"parentId", parent ? str(parent) : null_value()},
+            {"participant", str(participant)},
+            {"status", str(status)},
+            {"timestamp", number(timestamp)},
+        };
+        if (synthetic) members.emplace_back("isSynthetic", boolean(*synthetic));
+        return object(std::move(members));
+    };
+    auto user = [&](const char* mid, const char* parent, std::int64_t ts,
+                    const char* status = "SUCCESS", std::optional<bool> synthetic = std::nullopt) {
+        return msg(mid, parent, "USER", status, ts, synthetic);
+    };
+    auto model = [&](const char* mid, const char* parent, std::int64_t ts,
+                     const char* status = "SUCCESS", std::optional<bool> synthetic = std::nullopt) {
+        return msg(mid, parent, "MODEL", status, ts, synthetic);
+    };
+    auto plan_case = [&](const char* name, const char* conv, std::vector<json::Value> messages) {
+        entries.emplace_back(name, object({{"name", str(name)},
+                                           {"op", str("plan")},
+                                           {"conversationId", str(conv)},
+                                           {"messages", array(std::move(messages))}}));
+    };
+    auto selected_case = [&](const char* name, const char* conv,
+                             std::vector<json::Value> messages,
+                             std::optional<json::Value> selections = std::nullopt) {
+        std::vector<std::pair<std::string, json::Value>> members = {
+            {"name", str(name)},
+            {"op", str("selected")},
+            {"conversationId", str(conv)},
+            {"messages", array(std::move(messages))},
+        };
+        if (selections) members.emplace_back("selectedMessageBranches", std::move(*selections));
+        entries.emplace_back(name, object(std::move(members)));
+    };
+    auto sel = [](std::vector<std::pair<std::string, json::Value>> pairs) {
+        return object(std::move(pairs));
+    };
+
+    // ---- plan: shape ----
+    plan_case("plan_empty", "c", {});
+    plan_case("plan_single_user", "c", {user("u", nullptr, 10)});
+    plan_case("plan_user_model", "c", {user("u", nullptr, 10), model("m", "u", 11)});
+    plan_case("plan_two_boundaries", "c",
+              {user("u1", nullptr, 10), model("m1", "u1", 11), user("u2", "m1", 12),
+               model("m2", "u2", 13)});
+    plan_case("plan_orphan_model", "c", {model("m", "x", 10)});
+    plan_case("plan_synthetic_user", "c", {user("tool_x", nullptr, 10)});
+    plan_case("plan_tool_chain", "c",
+              {user("u", nullptr, 10), msg("tool_t", "u", "MODEL", "SUCCESS", 11),
+               msg("result_r", "tool_t", "MODEL", "SUCCESS", 12)});
+    plan_case("plan_nested_boundary_under_tool", "c",
+              {user("u", nullptr, 10), msg("tool_t", "u", "MODEL", "SUCCESS", 11),
+               user("u2", "tool_t", 12)});
+    plan_case("plan_multiple_roots", "c",
+              {user("u1", nullptr, 10), model("m1", "u1", 11), user("u2", nullptr, 20)});
+    plan_case("plan_deep_chain", "c",
+              {user("u1", nullptr, 10), model("m1", "u1", 11), user("u2", "m1", 12),
+               model("m2", "u2", 13), user("u3", "m2", 14), model("m3", "u3", 15)});
+    plan_case("plan_child_before_parent_input", "c",
+              {model("m", "u", 11), user("u", nullptr, 10)});
+    plan_case("plan_tie_children_order", "c",
+              {user("u", nullptr, 10), model("m_b", "u", 11), model("m_a", "u", 11)});
+    plan_case("plan_synthetic_flag_override", "c",
+              {user("u", nullptr, 10), model("plain_model", "u", 11, "SUCCESS", true)});
+    plan_case("plan_user_marked_synthetic", "c", {user("u_x", nullptr, 10, "SUCCESS", true)});
+
+    // ---- plan: status derivation ----
+    plan_case("plan_error_status", "c", {user("u", nullptr, 10), model("m", "u", 11, "ERROR")});
+    plan_case("plan_error_participant", "c",
+              {user("u", nullptr, 10), msg("e", "u", "ERROR", "SUCCESS", 11)});
+    plan_case("plan_stopped_status", "c",
+              {user("u", nullptr, 10), model("m", "u", 11, "STOPPED")});
+    plan_case("plan_transcribing_status", "c",
+              {user("u", nullptr, 10), model("m", "u", 11, "TRANSCRIBING")});
+    plan_case("plan_sending_status", "c",
+              {user("u", nullptr, 10), model("m", "u", 11, "SENDING")});
+    plan_case("plan_thinking_status", "c",
+              {user("u", nullptr, 10), model("m", "u", 11, "THINKING")});
+    plan_case("plan_tool_calling_status", "c",
+              {user("u", nullptr, 10), model("m", "u", 11, "TOOL_CALLING")});
+    plan_case("plan_error_beats_stopped", "c",
+              {user("u", nullptr, 10), model("m1", "u", 11, "STOPPED"),
+               model("m2", "u", 12, "ERROR")});
+
+    // ---- plan: ambiguity ----
+    plan_case("plan_ambiguous_model_siblings", "c",
+              {user("u", nullptr, 10), model("m1", "u", 11), model("m2", "u", 12)});
+    plan_case("plan_synthetic_siblings", "c",
+              {user("u", nullptr, 10), msg("tool_a", "u", "MODEL", "SUCCESS", 11),
+               msg("result_b", "u", "MODEL", "SUCCESS", 12)});
+    plan_case("plan_mixed_siblings", "c",
+              {user("u", nullptr, 10), model("m1", "u", 11),
+               msg("tool_a", "u", "MODEL", "SUCCESS", 12)});
+
+    // ---- plan: corrupt topology / requires ----
+    plan_case("plan_orphan_parent_user", "c",
+              {user("u", "gone", 10), model("m", "u", 11)});
+    plan_case("plan_cycle_input_order", "c",
+              {model("z", "y", 30), model("y", "x", 20), model("x", "z", 10)});
+    plan_case("plan_cycle_two", "c", {model("a", "b", 10), model("b", "a", 11)});
+    plan_case("plan_cycle_three", "c",
+              {model("a", "b", 10), model("b", "c", 11), model("c", "a", 12)});
+    plan_case("plan_duplicate_ids", "c", {user("u", nullptr, 10), model("u", "u", 11)});
+    plan_case("plan_blank_conversation", "   ", {user("u", nullptr, 10)});
+    plan_case("plan_empty_conversation", "", {user("u", nullptr, 10)});
+
+    // ---- selected ----
+    selected_case("selected_empty", "c", {});
+    selected_case("selected_roots", "c",
+                  {user("u1", nullptr, 10), user("u2", nullptr, 20)},
+                  sel({{"null", str("u1")}}));
+    selected_case("selected_roots_default", "c",
+                  {user("u1", nullptr, 10), user("u2", nullptr, 20)});
+    selected_case("selected_roots_missing", "c",
+                  {user("u1", nullptr, 10), user("u2", nullptr, 20)},
+                  sel({{"null", str("ghost")}}));
+    selected_case("selected_roots_synthetic", "c",
+                  {user("tool_x", nullptr, 5), user("u2", nullptr, 20)},
+                  sel({{"null", str("tool_x")}}));
+    selected_case("selected_run_chain", "c",
+                  {user("u1", nullptr, 10), model("m1", "u1", 11), user("u2a", "m1", 12),
+                   user("u2b", "m1", 13), model("m2a", "u2a", 14), model("m2b", "u2b", 15)},
+                  sel({{"m1", str("u2a")}}));
+    selected_case("selected_run_chain_default", "c",
+                  {user("u1", nullptr, 10), model("m1", "u1", 11), user("u2a", "m1", 12),
+                   user("u2b", "m1", 13), model("m2a", "u2a", 14), model("m2b", "u2b", 15)});
+    selected_case("selected_run_chain_missing", "c",
+                  {user("u1", nullptr, 10), model("m1", "u1", 11), user("u2a", "m1", 12),
+                   user("u2b", "m1", 13), model("m2a", "u2a", 14), model("m2b", "u2b", 15)},
+                  sel({{"m1", str("ghost")}}));
+    selected_case("selected_boundary_same_run", "c",
+                  {user("u", nullptr, 10), model("m1", "u", 11), model("m2", "u", 12)},
+                  sel({{"u", str("m1")}}));
+    selected_case("selected_cycle", "c",
+                  {model("a", "b", 10), model("b", "a", 11)});
+
+    remove_stale(scenarios);
+    const FormatOptions pretty{Format::Compact, false}; // separators=(",", ":"), ensure_ascii=False
+    for (const auto& [name, value] : entries) {
+        write_scenario(scenarios, name, value, pretty);
+    }
+    std::cout << "Wrote " << entries.size() << " scenarios to " << scenarios.string() << "\n";
+}
+
 }  // namespace
 
 int main(int argc, char** argv) {
@@ -8470,7 +8917,9 @@ int main(int argc, char** argv) {
                   << "  shell-crypto          shell-crypto/gen_scenarios.py\n"
                   << "  migration-17-18       migration-17-18/gen_scenarios.py\n"
                   << "  native-backup-v5      native-backup-v5/gen_scenarios.py\n"
-                  << "  gpt-chat-importer     gpt-chat-importer/gen_scenarios.py\n";
+                  << "  gpt-chat-importer     gpt-chat-importer/gen_scenarios.py\n"
+                  << "  chat-automation-dao   chat-automation-dao/gen_scenarios.py\n"
+                  << "  legacy-run-backfill   legacy-run-backfill/gen_scenarios.py\n";
         return 2;
     }
     const std::string profile = argv[1];
@@ -8581,6 +9030,10 @@ int main(int argc, char** argv) {
         profile_native_backup_v5(scenarios);
     } else if (profile == "gpt-chat-importer") {
         profile_gpt_chat_importer(scenarios);
+    } else if (profile == "chat-automation-dao") {
+        profile_chat_automation_dao(scenarios);
+    } else if (profile == "legacy-run-backfill") {
+        profile_legacy_run_backfill(scenarios);
     } else {
         std::cerr << "unknown profile: " << profile << "\n";
         return 2;

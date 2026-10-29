@@ -63,8 +63,8 @@ All twenty members are operations, so no SQL goes unpinned.
 ```
 
 Missing optional fields mean NULL; `name`/`prompt`/`cronExpr` default to `''`, `enabled`/`active`
-to true, `nextRunAt`/`nextFireAt`/`createdAt`/`revision` to 0. `gen_scenarios.py` writes six
-scenarios over purpose-built seeds.
+to true, `nextRunAt`/`nextFireAt`/`createdAt`/`revision` to 0. `agora_scenarios chat-automation-dao`
+writes six scenarios over purpose-built seeds.
 
 ## Trace format (`golden/*.trace`)
 

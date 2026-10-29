@@ -14,7 +14,7 @@ test `core/tests/shell_validation_parity_test.cpp`) must reproduce every trace b
 | `golden/*.trace` | Frozen canonical output, one per scenario |
 | `ShellValidationTraceDump.kt` | The stand driver (reads command/workdir, prints result) |
 | `agora_extract shell-validation` | Lifts `shellCommandValidationError` + its two constants out of the transport-coupled sources |
-| `gen_scenarios.py` | Generates the scenarios (deterministic; rerun after editing) |
+| `agora_scenarios shell-command-validation` | Generates the scenarios (deterministic; rerun after editing) |
 | `run_golden.sh` | Extracts, compiles and regenerates or verifies the traces |
 
 ## What is pinned
@@ -61,7 +61,7 @@ The error message itself (`command exceeds 64KB limit` / `workdir exceeds 32KB l
 ```bash
 JAVA_HOME=/path/to/jdk17 KOTLINC=/path/to/kotlinc KOTLINX_JARS=core.jar:json.jar ./run_golden.sh          # verify
 JAVA_HOME=/path/to/jdk17 KOTLINC=/path/to/kotlinc KOTLINX_JARS=core.jar:json.jar ./run_golden.sh --freeze # regenerate
-python3 gen_scenarios.py                                                                                  # rewrite scenarios
+core/build/agora_scenarios shell-command-validation core/tools/golden/shell-command-validation                                                                                  # rewrite scenarios
 ```
 
 `run_golden.sh` wipes the stand's `build/` (git-ignored scratch, including the extracted

@@ -15,7 +15,7 @@ from the app tree.
 | `golden/*.trace` | Frozen Kotlin output, one per scenario |
 | `MalformedToolCallTraceDump.kt` | Driver: builds the stand-in and renders it |
 | `agora_extract widen` | Lifts the policy file with a widened visibility |
-| `gen_scenarios.py` | Deterministic scenario generator |
+| `agora_scenarios malformed-tool-call` | Deterministic scenario generator |
 | `run_golden.sh` | Extracts, compiles, freezes (`--freeze`) or verifies the traces |
 
 ## What is pinned

@@ -35,7 +35,7 @@ rm -rf "$here/build"
 mkdir -p "$classes" "$fresh"
 
 echo "Generating scenarios..."
-python3 "$here/gen_scenarios.py"
+"${AGORA_SCENARIOS:-$root/core/build/agora_scenarios}" shell-command-validation "$here"
 
 echo "Extracting shellCommandValidationError from ShellToolProvider.kt..."
 "${AGORA_EXTRACT:-$root/core/build/agora_extract}" shell-validation "$app/tool/ShellToolProvider.kt" "$app/util/ShellClient.kt" "$here/build/ShellValidation.kt"

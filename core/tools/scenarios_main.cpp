@@ -6264,6 +6264,570 @@ void profile_conch_handshake(const fs::path& scenarios) {
     std::cout << "wrote 11 scenarios to " << scenarios.string() << "\n";
 }
 
+
+// generation-policies/gen_scenarios.py — indent=2, ensure_ascii=False; fuzz uses
+// random.Random(21000 + index).
+void profile_generation_policies(const fs::path& scenarios) {
+    constexpr std::int64_t kMonday = 1714979289000;
+    std::vector<std::pair<std::string, json::Value>> entries;
+    auto message = [](const char* id, const char* participant, std::optional<std::string> parent,
+                      const std::string& text, std::int64_t timestamp,
+                      std::optional<std::string> model, std::optional<json::Value> images,
+                      std::optional<json::Value> segments, std::optional<std::string> run,
+                      std::optional<json::Value> source) {
+        std::vector<std::pair<std::string, json::Value>> members = {
+            {"id", str(id)},
+            {"participant", str(participant)},
+            {"text", str(text)},
+            {"timestamp", number(timestamp)},
+            {"status", str("SUCCESS")},
+        };
+        if (parent) members.emplace_back("parentId", str(*parent));
+        if (model) members.emplace_back("modelName", str(*model));
+        if (images) members.emplace_back("images", std::move(*images));
+        if (segments) members.emplace_back("segments", std::move(*segments));
+        if (run) members.emplace_back("runId", str(*run));
+        if (source) members.emplace_back("source", std::move(*source));
+        return object(std::move(members));
+    };
+    auto segment = [](const char* kind, const std::string& content,
+                      std::vector<std::pair<std::string, json::Value>> extra) {
+        std::vector<std::pair<std::string, json::Value>> members = {
+            {"type", str(kind)}, {"content", str(content)}};
+        for (auto& field : extra) members.push_back(std::move(field));
+        return object(std::move(members));
+    };
+    auto round_entry = [](const char* run_id, std::vector<json::Value> segments) {
+        return object({{"runId", str(run_id)}, {"segments", array(std::move(segments))}});
+    };
+    auto write = [&](const char* name,
+                     std::vector<std::pair<std::string, json::Value>> members) {
+        entries.emplace_back(name, object(std::move(members)));
+    };
+    auto string_array = [](std::vector<const char*> values) {
+        std::vector<json::Value> elements;
+        for (const char* value : values) elements.push_back(str(value));
+        return array(std::move(elements));
+    };
+
+    const std::vector<json::Value> base = {
+        message("m1", "USER", std::nullopt, "question", kMonday, std::nullopt, std::nullopt,
+                std::nullopt, std::nullopt, std::nullopt),
+        message("m2", "MODEL", std::string("m1"), "answer", kMonday,
+                std::string("OpenAI:gpt-5.4"), std::nullopt, std::nullopt, std::nullopt,
+                std::nullopt),
+    };
+
+    write("01-policies-base",
+          {{"messages", array(base)},
+           {"segments",
+            array({segment("thought", "thinking",
+                           {{"signature", str("sig")},
+                            {"signatureProvider", str("openai")},
+                            {"durationMs", number(1200)}}),
+                   segment("answer", "partial", {}),
+                   segment("tool", "tool output", {})})},
+           {"compactorRounds",
+            array({round_entry("run-1",
+                               {segment("thought", "first thought", {{"signature", str("sig1")}}),
+                                segment("answer", "answer one", {})}),
+                   round_entry("run-1",
+                               {segment("thought", "first thought", {{"signature", str("sig1")}}),
+                                segment("thought", "second thought",
+                                        {{"signature", str("sig2")}}),
+                                segment("answer", "answer two", {})}),
+                   round_entry("run-1",
+                               {segment("thought", "first thought", {{"signature", str("sig1")}}),
+                                segment("thought", "second thought",
+                                        {{"signature", str("sig2")}}),
+                                segment("answer", "answer two", {})}),
+                   round_entry("run-2",
+                               {segment("thought", "other run",
+                                        {{"signature", str("sig3")}})})})},
+           {"templates",
+            object({{"userPrepend", str("<user> ")},
+                    {"userPostpend", str(" {sent_time} {sent_date} {message_model_id}")},
+                    {"assistantPrepend", str("")},
+                    {"assistantPostpend", str(" [{sent_date}]")}})},
+           {"automaticSource",
+            object({{"kind", str("ask_user")},
+                    {"askUser",
+                     array({object({{"question", str("which one?")},
+                                    {"answer", str("the first")}}),
+                            object({{"question", str("and now?")},
+                                    {"answer", null_value()}})})},
+                    {"text", str("raw text")}})},
+           {"projection", object({{"includeImages", boolean(true)},
+                                  {"initialUserPrompt", str("start here")}})}});
+
+    write("02-policies-template-variants",
+          {{"messages",
+            array({message("m1", "USER", std::nullopt, "question", kMonday, std::nullopt,
+                           std::nullopt, std::nullopt, std::nullopt, std::nullopt),
+                   message("m2", "MODEL", std::string("m1"), "answer", kMonday,
+                           std::string("gpt-4o"), std::nullopt, std::nullopt, std::nullopt,
+                           std::nullopt),
+                   message("m3", "USER", std::string("m2"), "", kMonday, std::nullopt,
+                           std::nullopt, std::nullopt, std::nullopt, std::nullopt),
+                   message("tool_1", "MODEL", std::string("m2"), "tool row", kMonday,
+                           std::nullopt, std::nullopt, std::nullopt, std::nullopt,
+                           std::nullopt),
+                   message("result_1", "MODEL", std::string("tool_1"), "tool result", kMonday,
+                           std::nullopt, std::nullopt, std::nullopt, std::nullopt,
+                           std::nullopt),
+                   message("compact_1", "MODEL", std::string("m2"), "summary", kMonday,
+                           std::nullopt, std::nullopt, std::nullopt, std::nullopt,
+                           std::nullopt),
+                   message("m4", "USER", std::string("m2"), "second", kMonday, std::nullopt,
+                           std::nullopt, std::nullopt, std::nullopt, std::nullopt)})},
+           {"segments", array({})},
+           {"compactorRounds", array({})},
+           {"templates", object({{"userPrepend", str("PRE {sent_time}|")},
+                                 {"userPostpend", str("|POST {sent_date}|")},
+                                 {"assistantPrepend", str("A")},
+                                 {"assistantPostpend", str("B {message_model_id}")}})},
+           {"projection", object({{"includeImages", boolean(false)}})}});
+
+    write("03-policies-automatic-sources",
+          {{"messages",
+            array({message("m1", "USER", std::nullopt, "typed by the user", kMonday,
+                           std::nullopt, std::nullopt, std::nullopt, std::nullopt,
+                           std::nullopt),
+                   message("m2", "USER", std::nullopt, "task prompt", kMonday, std::nullopt,
+                           std::nullopt, std::nullopt, std::nullopt,
+                           object({{"kind", str("task")}, {"askUser", array({})}})),
+                   message("m3", "USER", std::nullopt, "loop prompt", kMonday, std::nullopt,
+                           std::nullopt, std::nullopt, std::nullopt,
+                           object({{"kind", str("loop")}, {"askUser", array({})}})),
+                   message("m4", "USER", std::nullopt, "answers", kMonday, std::nullopt,
+                           std::nullopt, std::nullopt, std::nullopt,
+                           object({{"kind", str("ask_user")},
+                                   {"askUser",
+                                    array({object({{"question", str("q1")},
+                                                   {"answer", str("a1")}}),
+                                           object({{"question", str("q2")},
+                                                   {"answer", null_value()}})})}})),
+                   message("m5", "MODEL", std::nullopt, "model reply", kMonday, std::nullopt,
+                           std::nullopt, std::nullopt, std::nullopt,
+                           object({{"kind", str("task")}, {"askUser", array({})}}))})},
+           {"segments", array({})},
+           {"compactorRounds", array({})},
+           {"automaticSource", object({{"kind", str("task")},
+                                       {"askUser", array({})},
+                                       {"text", str("task & <text>")}})},
+           {"projection", object({{"includeImages", boolean(true)}})}});
+
+    write("04-policies-images-and-initial-prompt",
+          {{"messages",
+            array({message("m1", "USER", std::nullopt, "look", kMonday, std::nullopt,
+                           string_array({"a.png", "b.png"}), std::nullopt, std::nullopt,
+                           std::nullopt),
+                   message("m2", "MODEL", std::string("m1"), "answer", kMonday, std::nullopt,
+                           string_array({"c.png"}), std::nullopt, std::nullopt,
+                           std::nullopt)})},
+           {"segments", array({})},
+           {"compactorRounds", array({})},
+           {"templates", object({{"userPrepend", str("U")}, {"userPostpend", str("")}})},
+           {"projection", object({{"includeImages", boolean(false)},
+                                  {"initialUserPrompt", str("extra prompt")}})}});
+
+    write("05-policies-compactor-edges",
+          {{"messages", array(base)},
+           {"segments", array({})},
+           {"compactorRounds",
+            array({round_entry("r", {segment("answer", "no thoughts", {})}),
+                   round_entry("r", {segment("thought", "t1", {}),
+                                     segment("thought", "t1", {})}),
+                   round_entry("r", {segment("thought", "t1", {}),
+                                     segment("thought", "t2", {})}),
+                   round_entry("r", {segment("thought", "t1", {}),
+                                     segment("thought", "t2", {}),
+                                     segment("thought", "t3", {})})})}});
+
+    for (int index = 0; index < 6; ++index) {
+        PythonRandom rng(static_cast<std::uint32_t>(21000 + index));
+        std::vector<json::Value> messages;
+        const int count = 1 + static_cast<int>(rng.randbelow(5));
+        for (int position = 0; position < count; ++position) {
+            const std::string id = "m" + std::to_string(position);
+            static constexpr const char* kParticipants[] = {"USER", "MODEL", "MODEL"};
+            static constexpr const char* kTexts[] = {"", "text", "text \U0001F642",
+                                                     "{sent_time}"};
+            static constexpr std::int64_t kTimestamps[] = {kMonday, 0, kMonday + 1};
+            static constexpr const char* kModels[] = {"", "gpt-4o", "OpenAI:gpt-5.4"};
+            const char* participant = kParticipants[rng.randbelow(3)];
+            // Python evaluates the positional participant argument before the parent keyword.
+            std::optional<std::string> parent;
+            if (position > 0) {
+                parent = "m" + std::to_string(
+                                   rng.randbelow(static_cast<std::uint32_t>(position)));
+            }
+            const char* text = kTexts[rng.randbelow(4)];
+            const std::int64_t timestamp = kTimestamps[rng.randbelow(3)];
+            const std::uint32_t model_choice = rng.randbelow(3);
+            std::optional<std::string> model;
+            if (model_choice != 0) model = kModels[model_choice];
+            const std::uint32_t images_choice = rng.randbelow(3);
+            std::optional<json::Value> images;
+            if (images_choice == 1) {
+                images = array({});
+            } else if (images_choice == 2) {
+                images = string_array({"a.png"});
+            }
+            const std::uint32_t source_choice = rng.randbelow(2);
+            std::optional<json::Value> source;
+            if (source_choice == 1) {
+                source = object({{"kind", str("task")}, {"askUser", array({})}});
+            }
+            messages.push_back(message(id.c_str(), participant, parent, text, timestamp, model,
+                                       images, std::nullopt, std::nullopt, source));
+        }
+        std::vector<json::Value> rounds;
+        const int round_count = static_cast<int>(rng.randbelow(5));
+        for (int round = 0; round < round_count; ++round) {
+            static constexpr const char* kRuns[] = {"r1", "r2"};
+            static constexpr const char* kKinds[] = {"thought", "answer", "tool"};
+            static constexpr const char* kContents[] = {"", "x", "x"};
+            const char* run_id = kRuns[rng.randbelow(2)];
+            std::vector<json::Value> segments;
+            const int segment_count = static_cast<int>(rng.randbelow(4));
+            for (int segment_index = 0; segment_index < segment_count; ++segment_index) {
+                const char* kind = kKinds[rng.randbelow(3)];
+                const char* content = kContents[rng.randbelow(3)];
+                segments.push_back(segment(kind, content, {}));
+            }
+            rounds.push_back(round_entry(run_id, std::move(segments)));
+        }
+        static constexpr const char* kPrepends[] = {"", "U"};
+        static constexpr const char* kPostpends[] = {"", " {sent_time}"};
+        char fuzz_name[32];
+        std::snprintf(fuzz_name, sizeof(fuzz_name), "90-fuzz-%02d", index);
+        write(fuzz_name,
+              {{"messages", array(std::move(messages))},
+               {"segments", array({segment("thought", "s",
+                                           {{"signature", str("sig")},
+                                            {"durationMs", number(5)}})})},
+               {"compactorRounds", array(std::move(rounds))},
+               {"templates", object({{"userPrepend", str(kPrepends[rng.randbelow(2)])},
+                                     {"userPostpend", str(kPostpends[rng.randbelow(2)])}})},
+               {"projection",
+                object({{"includeImages", boolean(rng.randbelow(2) == 0)}})}});
+    }
+
+    remove_stale(scenarios);
+    const FormatOptions pretty{Format::Pretty2, false};
+    for (const auto& [name, value] : entries) {
+        write_scenario(scenarios, name, value, pretty);
+    }
+    std::cout << "Wrote " << entries.size() << " scenarios to " << scenarios.string() << "\n";
+}
+
+// claude-chat-importer/gen_scenarios.py — indent=2, ensure_ascii=False; the embedded payloads
+// use Python json.dumps default separators (", " / ": ").
+void profile_claude_chat_importer(const fs::path& scenarios) {
+    constexpr const char* kTs = "2024-05-06T07:08:09Z";
+    constexpr const char* kTsEarly = "2023-01-02T03:04:05Z";
+    constexpr const char* kTsOffset = "2024-05-06T09:08:09+02:00";
+    constexpr const char* kTsMillis = "2024-05-06T07:08:09.250Z";
+    std::vector<std::pair<std::string, json::Value>> entries;
+
+    auto conversation = [](const char* uuid, const std::string& name, const std::string& summary,
+                           const char* updated, std::vector<json::Value> messages,
+                           const char* created) {
+        std::vector<std::pair<std::string, json::Value>> members = {{"uuid", str(uuid)}};
+        if (!name.empty()) members.emplace_back("name", str(name));
+        if (!summary.empty()) members.emplace_back("summary", str(summary));
+        members.emplace_back("created_at", str(created));
+        members.emplace_back("updated_at", str(updated));
+        members.emplace_back("chat_messages", array(std::move(messages)));
+        return object(std::move(members));
+    };
+    auto message = [](const char* uuid, const char* sender, const std::string& text,
+                      const char* created, std::optional<std::string> parent,
+                      std::optional<json::Value> content, std::optional<json::Value> attachments,
+                      std::optional<json::Value> files) {
+        std::vector<std::pair<std::string, json::Value>> members = {
+            {"uuid", str(uuid)}, {"sender", str(sender)}};
+        if (!text.empty()) members.emplace_back("text", str(text));
+        members.emplace_back("created_at", str(created));
+        if (parent) members.emplace_back("parent_message_uuid", str(*parent));
+        if (content) members.emplace_back("content", std::move(*content));
+        if (attachments) members.emplace_back("attachments", std::move(*attachments));
+        if (files) members.emplace_back("files", std::move(*files));
+        return object(std::move(members));
+    };
+    auto write = [&](const char* name,
+                     std::vector<std::pair<std::string, json::Value>> members) {
+        entries.emplace_back(name, object(std::move(members)));
+    };
+    auto text_scenario = [&](const char* name, const std::string& payload,
+                             std::optional<std::vector<std::string>> selected) {
+        std::vector<std::pair<std::string, json::Value>> members = {{"text", str(payload)}};
+        if (selected) {
+            std::vector<json::Value> ids;
+            for (const std::string& id : *selected) ids.push_back(str(id));
+            members.emplace_back("selectedIds", array(std::move(ids)));
+        }
+        write(name, std::move(members));
+    };
+    auto zip_scenario = [&](const char* name, std::vector<json::Value> zip_entries,
+                            std::optional<std::vector<std::string>> selected) {
+        std::vector<std::pair<std::string, json::Value>> members = {
+            {"zip", array(std::move(zip_entries))}};
+        if (selected) {
+            std::vector<json::Value> ids;
+            for (const std::string& id : *selected) ids.push_back(str(id));
+            members.emplace_back("selectedIds", array(std::move(ids)));
+        }
+        write(name, std::move(members));
+    };
+    auto entry = [](const char* name, const std::string& content,
+                    std::optional<const char*> stored) {
+        std::vector<std::pair<std::string, json::Value>> members = {
+            {"name", str(name)}, {"content", str(content)}};
+        if (stored) members.emplace_back("stored", str(*stored));
+        return object(std::move(members));
+    };
+    auto spaced = [](const json::Value& value, bool ensure_ascii) {
+        return serialize(value, FormatOptions{Format::Spaced, ensure_ascii});
+    };
+    auto conversation_array = [](std::vector<json::Value> values) {
+        return object({{"conversations", array(std::move(values))}});
+    };
+
+    const json::Value simple = conversation(
+        "c1", "First", "", kTs,
+        {message("m1", "human", "hello", kTs,
+                 std::string("00000000-0000-4000-8000-000000000000"), std::nullopt,
+                 std::nullopt, std::nullopt),
+         message("m2", "assistant", "hi there", kTs, std::string("m1"), std::nullopt,
+                 std::nullopt, std::nullopt)},
+        kTs);
+    const json::Value other = conversation(
+        "c2", "Second", "", kTsEarly,
+        {message("m3", "human", "second chat", kTs, std::nullopt, std::nullopt, std::nullopt,
+                 std::nullopt)},
+        kTs);
+
+    text_scenario("01-text-wrapper", spaced(conversation_array({simple, other}), false),
+                  std::nullopt);
+    text_scenario("02-text-bare-array", spaced(array({simple}), false), std::nullopt);
+    text_scenario("03-text-leading-whitespace",
+                  "   \n\t" + spaced(conversation_array({simple}), true), std::nullopt);
+    text_scenario("04-text-unrecognised", "not json at all", std::nullopt);
+    text_scenario("05-text-empty", "", std::nullopt);
+    text_scenario("06-text-malformed", "{\"conversations\": [", std::nullopt);
+    text_scenario("07-text-empty-conversations", "{\"conversations\": []}", std::nullopt);
+    {
+        json::Value copy = simple;
+        copy.members.push_back(json::Member{"extra_field", number(42)});
+        copy.members.push_back(
+            json::Member{"nested", object({{"a", number(1)}})});
+        json::Value root = object({{"conversations", array({std::move(copy)})},
+                                   {"unknown_root", boolean(true)}});
+        text_scenario("08-text-unknown-fields", spaced(root, false), std::nullopt);
+    }
+    {
+        json::Value message_value =
+            object({{"uuid", str("m9")},
+                    {"sender", null_value()},
+                    {"text", null_value()},
+                    {"created_at", null_value()},
+                    {"parent_message_uuid", null_value()},
+                    {"content", null_value()}});
+        json::Value conversation_value =
+            object({{"uuid", str("c9")},
+                    {"name", null_value()},
+                    {"summary", null_value()},
+                    {"created_at", null_value()},
+                    {"updated_at", null_value()},
+                    {"chat_messages", array({std::move(message_value)})}});
+        text_scenario("09-text-null-coerced",
+                      spaced(object({{"conversations", array({std::move(conversation_value)})}}),
+                             true),
+                      std::nullopt);
+    }
+    text_scenario("10-text-wrong-type",
+                  spaced(object({{"conversations",
+                                  array({object({{"uuid", number(42)},
+                                                 {"chat_messages", array({})}})})}}),
+                         true),
+                  std::nullopt);
+    text_scenario("11-text-missing-uuid",
+                  spaced(object({{"conversations",
+                                  array({object({{"name", str("no uuid")}})})}}),
+                         true),
+                  std::nullopt);
+    text_scenario("12-text-selection", spaced(conversation_array({simple, other}), true),
+                  std::vector<std::string>{"c2"});
+    text_scenario("13-text-selection-missing",
+                  spaced(conversation_array({simple, other}), true),
+                  std::vector<std::string>{"nope"});
+    text_scenario(
+        "14-text-timestamps",
+        spaced(conversation_array({conversation(
+                   "t1", "Times", "", kTsOffset,
+                   {message("tm1", "human", "offset", kTsMillis, std::nullopt, std::nullopt,
+                            std::nullopt, std::nullopt),
+                    message("tm2", "assistant", "invalid", "not-a-timestamp", std::nullopt,
+                            std::nullopt, std::nullopt, std::nullopt)},
+                   kTs)}),
+               true),
+        std::nullopt);
+    text_scenario(
+        "15-text-content-blocks",
+        spaced(conversation_array({conversation(
+                   "b1", "Blocks", "", kTs,
+                   {message("bm1", "assistant", "raw text", kTs, std::nullopt,
+                            array({object({{"type", str("thinking")},
+                                           {"thinking", str("secret reasoning")},
+                                           {"text", str("ignored")}}),
+                                   object({{"type", str("text")},
+                                           {"text", str("visible answer")}})}),
+                            std::nullopt, std::nullopt),
+                    message("bm2", "human", "no content blocks", kTs, std::nullopt,
+                            array({}), std::nullopt, std::nullopt)},
+                   kTs)}),
+               true),
+        std::nullopt);
+    {
+        json::Value citation = object({{"url", str("https://example.com/doc")},
+                                       {"title", str("Doc")},
+                                       {"uuid", str("cite-1")}});
+        json::Value block = object({{"type", str("text")},
+                                    {"text", str("answer with citation")},
+                                    {"citations", array({std::move(citation)})}});
+        text_scenario(
+            "16-text-citations",
+            spaced(conversation_array({conversation(
+                       "ct1", "Cited", "", kTs,
+                       {message("cm1", "assistant", "answer with citation", kTs, std::nullopt,
+                                array({std::move(block)}), std::nullopt, std::nullopt)},
+                       kTs)}),
+                   true),
+            std::nullopt);
+    }
+    {
+        json::Value attachments =
+            array({object({{"file_name", str("photo.png")},
+                           {"file_size", number(12)},
+                           {"file_type", str("image/png")}}),
+                   object({{"file_name", str("notes.md")},
+                           {"file_size", number(3)},
+                           {"file_type", str("text/markdown")},
+                           {"extracted_content", str("# notes")}}),
+                   object({{"file_name", str("mystery")},
+                           {"file_size", number(1)},
+                           {"file_type", str("application/octet-stream")}})});
+        json::Value files = array({object({{"file_uuid", str("f-1")},
+                                           {"file_name", str("report.pdf")},
+                                           {"file_size", number(99)},
+                                           {"file_type", str("application/pdf")}})});
+        text_scenario(
+            "17-text-attachments",
+            spaced(conversation_array({conversation(
+                       "a1", "Files", "", kTs,
+                       {message("am1", "human", "see attached", kTs, std::nullopt,
+                                std::nullopt, std::move(attachments), std::move(files))},
+                       kTs)}),
+                   true),
+            std::nullopt);
+    }
+    text_scenario(
+        "18-text-unicode",
+        spaced(conversation_array({conversation(
+                   "u1", "\u042e\u043d\u0438\u043a\u043e\u0434 \U0001F642",
+                   "\u0441\u0432\u043e\u0434\u043a\u0430", kTs,
+                   {message("um1", "human",
+                            "\u043f\u0440\u0438\u0432\u0435\u0442 \U0001F642", kTs,
+                            std::nullopt, std::nullopt, std::nullopt, std::nullopt)},
+                   kTs)}),
+               false),
+        std::nullopt);
+    {
+        std::vector<json::Value> many;
+        for (int index = 0; index < 10; ++index) {
+            char id[16];
+            std::snprintf(id, sizeof(id), "m-%02d", index);
+            many.push_back(message(id, index % 2 == 0 ? "human" : "assistant",
+                                   "message " + std::to_string(index), kTs, std::nullopt,
+                                   std::nullopt, std::nullopt, std::nullopt));
+        }
+        text_scenario("19-text-many-messages",
+                      spaced(conversation_array(
+                                 {conversation("mm", "Many", "", kTs, std::move(many), kTs)}),
+                             true),
+                      std::nullopt);
+    }
+    text_scenario(
+        "20-text-title-fallbacks",
+        spaced(conversation_array(
+                   {conversation("tf1", "", "", kTs,
+                                 {message("tm", "human", "x", kTs, std::nullopt, std::nullopt,
+                                          std::nullopt, std::nullopt)},
+                                 kTs),
+                    conversation("tf2", "",
+                                 "a summary that is longer than fifty characters in total", kTs,
+                                 {message("tm2", "human", "y", kTs, std::nullopt,
+                                          std::nullopt, std::nullopt, std::nullopt)},
+                                 kTs),
+                    conversation("tf3", "Named", "ignored", kTs,
+                                 {message("tm3", "human", "z", kTs, std::nullopt,
+                                          std::nullopt, std::nullopt, std::nullopt)},
+                                 kTs)}),
+               true),
+        std::nullopt);
+    text_scenario(
+        "21-text-parent-zero-uuid",
+        spaced(conversation_array({conversation(
+                   "p1", "Parents", "", kTs,
+                   {message("pm1", "human", "root", kTs,
+                            std::string("00000000-0000-4000-8000-000000000000"), std::nullopt,
+                            std::nullopt, std::nullopt),
+                    message("pm2", "assistant", "child", kTs, std::string("pm1"),
+                            std::nullopt, std::nullopt, std::nullopt)},
+                   kTs)}),
+               true),
+        std::nullopt);
+
+    const std::string payload = spaced(conversation_array({simple, other}), false);
+    zip_scenario("30-zip-conversations-entry",
+                 {entry("conversations.json", payload, std::nullopt)}, std::nullopt);
+    zip_scenario("31-zip-fallback-entry", {entry("export.json", payload, std::nullopt)},
+                 std::nullopt);
+    zip_scenario("32-zip-named-entry-wins",
+                 {entry("export.json", spaced(conversation_array({other}), true), std::nullopt),
+                  entry("My-Conversations.json", payload, std::nullopt)},
+                 std::nullopt);
+    zip_scenario("33-zip-non-json-entry-skipped",
+                 {entry("README.txt", "not json", std::nullopt),
+                  entry("conversations.json", payload, std::nullopt)},
+                 std::nullopt);
+    zip_scenario("34-zip-malformed-entry",
+                 {entry("conversations.json", "{oops", std::nullopt)}, std::nullopt);
+    zip_scenario("35-zip-empty-conversations",
+                 {entry("conversations.json", "{\"conversations\": []}", std::nullopt)},
+                 std::nullopt);
+    zip_scenario("36-zip-no-json-entry",
+                 {entry("README.txt", "nothing here", std::nullopt)}, std::nullopt);
+    zip_scenario("37-zip-stored-entry",
+                 {entry("conversations.json", payload, "true")}, std::nullopt);
+    zip_scenario("38-zip-selection",
+                 {entry("conversations.json", payload, std::nullopt)},
+                 std::vector<std::string>{"c1"});
+    zip_scenario("39-zip-directory-and-entries",
+                 {entry("conversations.json", payload, std::nullopt),
+                  entry("other/data.json", "{\"conversations\": []}", std::nullopt)},
+                 std::nullopt);
+
+    remove_stale(scenarios);
+    const FormatOptions pretty{Format::Pretty2, false};
+    for (const auto& [name, value] : entries) {
+        write_scenario(scenarios, name, value, pretty);
+    }
+    std::cout << "Wrote " << entries.size() << " scenarios to " << scenarios.string() << "\n";
+}
+
 }  // namespace
 
 int main(int argc, char** argv) {
@@ -6313,7 +6877,9 @@ int main(int argc, char** argv) {
                   << "  cron-expression       cron-expression/gen_scenarios.py\n"
                   << "  mcp-protocol          mcp-protocol/gen_scenarios.py\n"
                   << "  thinking-capability   thinking-capability/gen_scenarios.py\n"
-                  << "  conch-handshake       conch-handshake/gen_scenarios.py\n";
+                  << "  conch-handshake       conch-handshake/gen_scenarios.py\n"
+                  << "  generation-policies   generation-policies/gen_scenarios.py\n"
+                  << "  claude-chat-importer  claude-chat-importer/gen_scenarios.py\n";
         return 2;
     }
     const std::string profile = argv[1];
@@ -6408,6 +6974,10 @@ int main(int argc, char** argv) {
         profile_thinking_capability(scenarios);
     } else if (profile == "conch-handshake") {
         profile_conch_handshake(scenarios);
+    } else if (profile == "generation-policies") {
+        profile_generation_policies(scenarios);
+    } else if (profile == "claude-chat-importer") {
+        profile_claude_chat_importer(scenarios);
     } else {
         std::cerr << "unknown profile: " << profile << "\n";
         return 2;

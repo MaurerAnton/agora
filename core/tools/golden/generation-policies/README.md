@@ -17,7 +17,7 @@ to the default visibility so the driver can call them; no logic is changed. `Cha
 | `golden/*.trace` | Frozen Kotlin output, one per scenario |
 | `GenerationPoliciesTraceDump.kt` | Driver: runs every policy of the two files |
 | `agora_extract widen` | Lifts the two policy files with a widened visibility |
-| `gen_scenarios.py` | Deterministic scenario generator |
+| `agora_scenarios generation-policies` | Deterministic scenario generator |
 | `run_golden.sh` | Extracts, compiles, freezes (`--freeze`) or verifies the traces |
 
 ## What is pinned

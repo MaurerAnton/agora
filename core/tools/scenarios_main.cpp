@@ -53,18 +53,49 @@ json::Value literal(std::string text) {
 
 json::Value number(std::int64_t value) { return literal(std::to_string(value)); }
 
-// Python's float repr (json.dump uses it): shortest round-trip form, with ".0" kept on integral
-// values and a lowercase "e+NN" exponent, exactly what std::to_chars(general) produces.
+// Python's float repr (json.dump uses it): shortest round-trip digits, but formatted as fixed
+// notation whenever the decimal exponent is in [-4, 15] (repr(1e15) is "1000000000000000.0"
+// while repr(1e16) is "1e+16"), with ".0" kept on integral values.
 json::Value float_number(double value) {
     char buffer[64];
     const std::to_chars_result result =
-        std::to_chars(buffer, buffer + sizeof(buffer), value, std::chars_format::general);
-    std::string text(buffer, result.ptr);
-    if (text.find('.') == std::string::npos && text.find('e') == std::string::npos &&
-        text.find("inf") == std::string::npos && text.find("nan") == std::string::npos) {
-        text += ".0";
+        std::to_chars(buffer, buffer + sizeof(buffer), value, std::chars_format::scientific);
+    if (result.ec != std::errc()) fail("error: float conversion failed");
+    std::string sci(buffer, result.ptr);
+    const std::size_t e_pos = sci.find('e');
+    if (e_pos == std::string::npos) {
+        return literal(std::move(sci)); // inf / nan
     }
-    return literal(std::move(text));
+    std::string sign;
+    std::size_t index = 0;
+    if (sci[0] == '-') {
+        sign = "-";
+        index = 1;
+    }
+    std::string digits;
+    for (; index < e_pos; ++index) {
+        if (sci[index] != '.') digits.push_back(sci[index]);
+    }
+    const int exponent = std::stoi(sci.substr(e_pos + 1));
+    if (exponent < -4 || exponent > 15) return literal(std::move(sci));
+    std::string out = std::move(sign);
+    if (exponent >= 0) {
+        const std::size_t int_len = static_cast<std::size_t>(exponent) + 1;
+        if (digits.size() <= int_len) {
+            out += digits;
+            out.append(int_len - digits.size(), '0');
+            out += ".0";
+        } else {
+            out += digits.substr(0, int_len);
+            out += '.';
+            out += digits.substr(int_len);
+        }
+    } else {
+        out += "0.";
+        out.append(static_cast<std::size_t>(-exponent - 1), '0');
+        out += digits;
+    }
+    return literal(std::move(out));
 }
 
 json::Value boolean(bool value) { return literal(value ? "true" : "false"); }
@@ -7741,6 +7772,647 @@ void profile_migration_17_18(const fs::path& scenarios) {
     std::cout << "Wrote " << entries.size() << " scenarios to " << scenarios.string() << "\n";
 }
 
+// native-backup-v5/gen_scenarios.py — indent=2, ensure_ascii=False; conversationEntry(id)
+// is "conv/items/" + utf8hex(id) + ".json".
+void profile_native_backup_v5(const fs::path& scenarios) {
+    std::vector<std::pair<std::string, json::Value>> entries;
+    auto conversation_entry = [](const std::string& identifier) {
+        static constexpr char kHex[] = "0123456789abcdef";
+        std::string out = "conv/items/";
+        for (unsigned char byte : identifier) {
+            out.push_back(kHex[(byte >> 4) & 0xF]);
+            out.push_back(kHex[byte & 0xF]);
+        }
+        out += ".json";
+        return out;
+    };
+    auto entry = [&](const char* identifier, std::int64_t data_changed_at,
+                     std::vector<std::string> media = {}) {
+        std::vector<json::Value> media_values;
+        for (const std::string& m : media) media_values.push_back(str(m));
+        return object({{"id", str(identifier)},
+                       {"dataChangedAt", number(data_changed_at)},
+                       {"entry", str(conversation_entry(identifier))},
+                       {"mediaEntries", array(std::move(media_values))}});
+    };
+    auto item = [](const char* identifier, std::int64_t data_changed_at,
+                   const std::string& conversation,
+                   std::vector<std::string> runs = {}, std::vector<std::string> messages = {},
+                   std::vector<std::string> loops = {}, std::vector<std::string> media = {}) {
+        auto to_array = [](std::vector<std::string> values) {
+            std::vector<json::Value> out;
+            for (const std::string& v : values) out.push_back(str(v));
+            return array(std::move(out));
+        };
+        return object({{"id", str(identifier)},
+                       {"dataChangedAt", number(data_changed_at)},
+                       {"conversation", str(conversation)},
+                       {"runs", to_array(std::move(runs))},
+                       {"messages", to_array(std::move(messages))},
+                       {"loops", to_array(std::move(loops))},
+                       {"mediaEntries", to_array(std::move(media))}});
+    };
+    auto str_array = [](std::vector<std::string> values) {
+        std::vector<json::Value> out;
+        for (const std::string& v : values) out.push_back(str(v));
+        return array(std::move(out));
+    };
+    auto media_array = [](std::vector<std::pair<std::string, std::string>> values) {
+        std::vector<json::Value> out;
+        for (auto& [name, content] : values) {
+            out.push_back(object({{"name", str(name)}, {"content", str(content)}}));
+        }
+        return out;
+    };
+    auto baseline = [&](const char* identifier, std::optional<json::Value> manifest = std::nullopt,
+                        std::vector<json::Value> items = {}, std::vector<json::Value> media = {},
+                        std::optional<std::vector<json::Value>> index = std::nullopt,
+                        std::optional<std::string> manifest_text = std::nullopt,
+                        std::optional<std::string> index_text = std::nullopt,
+                        bool dump = true) {
+        std::vector<std::pair<std::string, json::Value>> members = {
+            {"op", str("createBaseline")},
+            {"file", str(identifier)},
+            {"dump", boolean(dump)},
+            {"manifest",
+             manifest ? std::move(*manifest)
+                      : object({{"agora_export_version", number(6)},
+                                {"incremental_baseline", number(1)},
+                                {"categories", array({str("conversations")})}})},
+            {"items", array(std::move(items))},
+            {"media", array(std::move(media))},
+        };
+        if (index) members.emplace_back("index", array(std::move(*index)));
+        if (manifest_text) members.emplace_back("manifestText", str(*manifest_text));
+        if (index_text) members.emplace_back("indexText", str(*index_text));
+        return object(std::move(members));
+    };
+    auto open_baseline = [](const char* identifier) {
+        return object({{"op", str("openOrNull")}, {"file", str(identifier)}});
+    };
+    auto reuse = [](const char* identifier, const char* cid, std::int64_t data_changed_at) {
+        return object({{"op", str("canReuse")},
+                       {"file", str(identifier)},
+                       {"id", str(cid)},
+                       {"dataChangedAt", number(data_changed_at)}});
+    };
+    auto write = [&](const char* name, std::vector<json::Value> steps) {
+        entries.emplace_back(name, object({{"steps", array(std::move(steps))}}));
+    };
+
+    // 01 — entry assembly: separators, record joins, empty record lists, media sorting.
+    write("01-write-entries", {
+        object({{"op", str("writeConversationEntry")},
+                {"file", str("out")},
+                {"conversationId", str("conv-1")},
+                {"dataChangedAt", number(100)},
+                {"conversation", str("{\"id\":\"conv-1\",\"title\":\"one\"}")},
+                {"runs", str_array({"{\"id\":\"r1\"}", "{\"id\":\"r2\"}"})},
+                {"messages", str_array({"{\"id\":\"m1\"}"})},
+                {"loops", str_array({})},
+                {"mediaEntries", str_array({"media/images/b.png", "media/images/a.png"})}}),
+        object({{"op", str("writeConversationEntry")},
+                {"file", str("out")},
+                {"conversationId", str("conv2")},
+                {"dataChangedAt", number(200)},
+                {"conversation", str("{\"id\":\"conv2\"}")},
+                {"runs", str_array({})},
+                {"messages", str_array({"{\"id\":\"m2\"}", "{\"id\":\"m3\"}"})},
+                {"loops", str_array({"{\"conversationId\":\"conv2\"}"})},
+                {"mediaEntries", str_array({})}}),
+        object({{"op", str("writeTasksEntry")},
+                {"file", str("out")},
+                {"tasks", str_array({"{\"id\":\"t1\"}", "{\"id\":\"t2\"}", "{\"id\":\"t3\"}"})}}),
+        object({{"op", str("writeConversationIndex")},
+                {"file", str("out")},
+                {"entries", array({entry("conv-1", 100, {"media/images/a.png", "media/images/b.png"}),
+                                   entry("conv2", 200)})}}),
+        object({{"op", str("writeTasksEntry")},
+                {"file", str("empty-tasks")},
+                {"tasks", str_array({})}}),
+    });
+
+    // 02 — a valid baseline opens, its index round trips, and lookups answer hit and miss.
+    write("02-baseline-open-valid", {
+        baseline("b0",
+                 std::nullopt,
+                 {item("c1", 10, "{\"id\":\"c1\",\"title\":\"first\"}", {"{\"id\":\"r1\"}"},
+                       {}, {}, {"media/images/x.png"}),
+                  item("c2", 20, "{\"id\":\"c2\"}", {}, {"{\"id\":\"m2\"}"})},
+                 media_array({{"media/images/x.png", "PNGDATA"}})),
+        open_baseline("b0"),
+        object({{"op", str("indexEntry")}, {"file", str("b0")}, {"id", str("c1")}}),
+        object({{"op", str("indexEntry")}, {"file", str("b0")}, {"id", str("missing")}}),
+        open_baseline("never-created"),
+    });
+
+    // 03 — every validation in openOrNull.
+    write("03-baseline-open-invalid", {
+        baseline("wrong-version",
+                 object({{"agora_export_version", number(5)},
+                         {"incremental_baseline", number(1)},
+                         {"categories", array({str("conversations")})}}),
+                 {item("c1", 10, "{\"id\":\"c1\"}")}),
+        open_baseline("wrong-version"),
+        baseline("wrong-revision",
+                 object({{"agora_export_version", number(6)},
+                         {"incremental_baseline", number(2)},
+                         {"categories", array({str("conversations")})}}),
+                 {item("c1", 10, "{\"id\":\"c1\"}")}),
+        open_baseline("wrong-revision"),
+        baseline("wrong-categories",
+                 object({{"agora_export_version", number(6)},
+                         {"incremental_baseline", number(1)},
+                         {"categories", array({str("settings")})}}),
+                 {item("c1", 10, "{\"id\":\"c1\"}")}),
+        open_baseline("wrong-categories"),
+        baseline("duplicate-ids", std::nullopt,
+                 {item("c1", 10, "{\"id\":\"c1\"}")},
+                 {}, std::vector<json::Value>{entry("c1", 10), entry("c1", 11)}),
+        open_baseline("duplicate-ids"),
+        baseline("wrong-entry-name", std::nullopt,
+                 {item("c1", 10, "{\"id\":\"c1\"}")},
+                 {},
+                 std::vector<json::Value>{
+                     object({{"id", str("c1")},
+                             {"dataChangedAt", number(10)},
+                             {"entry", str("conv/items/wrong.json")},
+                             {"mediaEntries", array({})}})}),
+        open_baseline("wrong-entry-name"),
+        baseline("missing-item", std::nullopt,
+                 {}, {}, std::vector<json::Value>{entry("c1", 10)}),
+        open_baseline("missing-item"),
+        baseline("missing-media", std::nullopt,
+                 {item("c1", 10, "{\"id\":\"c1\"}", {}, {}, {}, {"media/gone.png"})}),
+        open_baseline("missing-media"),
+        baseline("index-not-json", std::nullopt,
+                 {item("c1", 10, "{\"id\":\"c1\"}")},
+                 {}, std::nullopt, std::nullopt, std::string("not json at all")),
+        open_baseline("index-not-json"),
+        baseline("manifest-not-json", std::nullopt,
+                 {item("c1", 10, "{\"id\":\"c1\"}")},
+                 {}, std::nullopt, std::string("oops")),
+        open_baseline("manifest-not-json"),
+    });
+
+    // 04 — canReuse: a timestamp match over intact entries reuses; anything else refuses.
+    write("04-can-reuse", {
+        baseline("b0",
+                 std::nullopt,
+                 {item("c1", 100, "{\"id\":\"c1\"}", {}, {}, {}, {"media/images/x.png"}),
+                  item("c2", 200, "{\"id\":\"c2\"}")},
+                 media_array({{"media/images/x.png", "PNGDATA"}})),
+        reuse("b0", "c1", 100),
+        reuse("b0", "c2", 200),
+        reuse("b0", "c1", 999),
+        reuse("b0", "unknown", 100),
+        reuse("never-created", "c1", 100),
+    });
+
+    // 05 — the integrity check: a damaged media entry poisons its conversation, a damaged
+    // conversation poisons only itself, and untouched conversations still reuse.
+    write("05-can-reuse-damaged", {
+        baseline("b0",
+                 std::nullopt,
+                 {item("c1", 100, "{\"id\":\"c1\"}", {}, {}, {}, {"media/images/x.png"})},
+                 media_array({{"media/images/x.png", "PNGDATA"}})),
+        object({{"op", str("corruptEntry")},
+                {"file", str("b0")},
+                {"name", str("media/images/x.png")}}),
+        reuse("b0", "c1", 100),
+        baseline("b1", std::nullopt,
+                 {item("c1", 100, "{\"id\":\"c1\"}"), item("c2", 200, "{\"id\":\"c2\"}")}),
+        object({{"op", str("corruptEntry")},
+                {"file", str("b1")},
+                {"name", str(conversation_entry("c1"))}}),
+        reuse("b1", "c1", 100),
+        reuse("b1", "c2", 200),
+    });
+
+    // 06 — raw copies: exact entry carry-over, media deduplication across calls, the caller's
+    // pre-seeded set, and the missing-entry failure text.
+    write("06-copy-raw", {
+        baseline("b0",
+                 std::nullopt,
+                 {item("c1", 100, "{\"id\":\"c1\"}", {"{\"id\":\"r1\"}"},
+                       {}, {}, {"media/images/x.png"})},
+                 media_array({{"media/images/x.png", "PNGDATA"}})),
+        object({{"op", str("copyRaw")},
+                {"file", str("out")},
+                {"baseline", str("b0")},
+                {"name", str(conversation_entry("c1"))}}),
+        object({{"op", str("copyRaw")},
+                {"file", str("out")},
+                {"baseline", str("b0")},
+                {"name", str("media/images/x.png")}}),
+        object({{"op", str("copyRaw")},
+                {"file", str("out")},
+                {"baseline", str("b0")},
+                {"name", str("media/missing.png")}}),
+        object({{"op", str("copyConversationFromBaseline")},
+                {"file", str("out2")},
+                {"baseline", str("b0")},
+                {"entry", entry("c1", 100, {"media/images/x.png"})},
+                {"copiedMedia", str_array({})}}),
+        object({{"op", str("copyConversationFromBaseline")},
+                {"file", str("out2")},
+                {"baseline", str("b0")},
+                {"entry", entry("c1", 100, {"media/images/x.png"})}}),
+        object({{"op", str("copyConversationFromBaseline")},
+                {"file", str("out3")},
+                {"baseline", str("b0")},
+                {"entry", entry("c1", 100, {"media/images/x.png"})},
+                {"copiedMedia", str_array({"media/pre-seeded.png"})}}),
+    });
+
+    // 07 — the incremental shape: copied baseline entries alongside freshly assembled ones.
+    write("07-mixed-archive", {
+        baseline("b0",
+                 std::nullopt,
+                 {item("c1", 100, "{\"id\":\"c1\"}", {"{\"id\":\"r1\"}"},
+                       {}, {}, {"media/images/x.png"})},
+                 media_array({{"media/images/x.png", "PNGDATA"}})),
+        object({{"op", str("copyConversationFromBaseline")},
+                {"file", str("out")},
+                {"baseline", str("b0")},
+                {"entry", entry("c1", 100, {"media/images/x.png"})},
+                {"copiedMedia", str_array({})}}),
+        object({{"op", str("writeConversationEntry")},
+                {"file", str("out")},
+                {"conversationId", str("c2")},
+                {"dataChangedAt", number(300)},
+                {"conversation", str("{\"id\":\"c2\",\"title\":\"fresh\"}")},
+                {"runs", str_array({"{\"id\":\"r2\"}"})},
+                {"messages", str_array({"{\"id\":\"m2\"}"})},
+                {"loops", str_array({})},
+                {"mediaEntries", str_array({})}}),
+        object({{"op", str("writeTasksEntry")},
+                {"file", str("out")},
+                {"tasks", str_array({"{\"id\":\"t1\"}"})}}),
+        object({{"op", str("writeConversationIndex")},
+                {"file", str("out")},
+                {"entries", array({entry("c1", 100, {"media/images/x.png"}), entry("c2", 300)})}}),
+    });
+
+    // 08 — a conversation with no runs, messages or loops still produces every separator.
+    write("08-empty-records", {
+        baseline("b0", std::nullopt, {item("c9", 5, "{\"id\":\"c9\"}")}),
+        open_baseline("b0"),
+    });
+
+    remove_stale(scenarios);
+    const FormatOptions pretty{Format::Pretty2, false}; // indent=2, ensure_ascii=False
+    for (const auto& [name, value] : entries) {
+        write_scenario(scenarios, name, value, pretty);
+    }
+    std::cout << "Wrote " << entries.size() << " scenarios to " << scenarios.string() << "\n";
+}
+
+// gpt-chat-importer/gen_scenarios.py — scenario files are indent=2/ensure_ascii=False; the
+// embedded "text" payload is json.dumps(payload, ensure_ascii=False) with Python's default
+// (", ", ": ") separators (Spaced).
+void profile_gpt_chat_importer(const fs::path& scenarios) {
+    std::vector<std::pair<std::string, json::Value>> entries;
+
+    struct MsgOpts {
+        std::optional<json::Value> parts;
+        const char* content_type = "text";
+        std::optional<std::string> text;
+        std::optional<std::string> result;
+        std::optional<json::Value> thoughts;
+        std::optional<std::string> reasoning;
+        // Python message(create_time=1700000000.0); null_value() means None → key omitted.
+        json::Value create_time = float_number(1700000000.0);
+        std::optional<json::Value> metadata;
+    };
+    auto message = [](const std::string& msg_id, const char* role, MsgOpts opts = {}) {
+        std::vector<std::pair<std::string, json::Value>> content_members = {
+            {"content_type", str(opts.content_type)},
+        };
+        if (opts.parts) content_members.emplace_back("parts", std::move(*opts.parts));
+        if (opts.text) content_members.emplace_back("text", str(*opts.text));
+        if (opts.result) content_members.emplace_back("result", str(*opts.result));
+        if (opts.reasoning) content_members.emplace_back("content", str(*opts.reasoning));
+        if (opts.thoughts) content_members.emplace_back("thoughts", std::move(*opts.thoughts));
+        std::vector<std::pair<std::string, json::Value>> members = {
+            {"id", str(msg_id)},
+            {"author", object({{"role", str(role)}})},
+            {"content", object(std::move(content_members))},
+        };
+        if (!opts.create_time.is_literal("null")) {
+            members.emplace_back("create_time", opts.create_time);
+        }
+        if (opts.metadata) members.emplace_back("metadata", std::move(*opts.metadata));
+        return object(std::move(members));
+    };
+    auto node = [](const std::string& node_id, std::optional<json::Value> msg = std::nullopt,
+                   const std::string& parent = "client-created-root") {
+        std::vector<std::pair<std::string, json::Value>> members = {{"id", str(node_id)}};
+        if (msg) members.emplace_back("message", std::move(*msg));
+        members.emplace_back("parent", str(parent));
+        return object(std::move(members));
+    };
+    auto conversation = [](const std::string& conversation_id,
+                           std::vector<std::pair<std::string, json::Value>> mapping,
+                           const char* title = "Chat",
+                           std::optional<std::string> current_node = std::nullopt,
+                           double update_time = 1700000005.5,
+                           double create_time = 1700000000.0) {
+        std::vector<std::pair<std::string, json::Value>> members = {
+            {"conversation_id", str(conversation_id)},
+            {"title", str(title)},
+            {"create_time", float_number(create_time)},
+            {"update_time", float_number(update_time)},
+            {"mapping", object(std::move(mapping))},
+        };
+        if (current_node) members.emplace_back("current_node", str(*current_node));
+        return object(std::move(members));
+    };
+    auto simple_mapping = [&]() {
+        return std::vector<std::pair<std::string, json::Value>>{
+            {"n0", node("n0")},
+            {"n1", node("n1", message("m1", "user", {.parts = array({str("hello")})}), "n0")},
+            {"n2",
+             node("n2", message("m2", "assistant", {.parts = array({str("hi there")})}), "n1")},
+        };
+    };
+    auto spaced = [](const json::Value& value) {
+        return serialize(value, FormatOptions{Format::Spaced, false});
+    };
+    auto write_text_raw = [&](const std::string& name, std::string payload,
+                              std::optional<std::vector<std::string>> selected = std::nullopt) {
+        std::vector<std::pair<std::string, json::Value>> members = {
+            {"text", str(std::move(payload))}};
+        if (selected) {
+            std::vector<json::Value> ids;
+            for (const std::string& id : *selected) ids.push_back(str(id));
+            members.emplace_back("selectedIds", array(std::move(ids)));
+        }
+        entries.emplace_back(name, object(std::move(members)));
+    };
+    auto write_text = [&](const std::string& name, const json::Value& payload,
+                          std::optional<std::vector<std::string>> selected = std::nullopt) {
+        write_text_raw(name, spaced(payload), std::move(selected));
+    };
+    auto write_zip = [&](const std::string& name, std::vector<json::Value> zip_entries,
+                         std::optional<std::vector<std::string>> selected = std::nullopt) {
+        std::vector<std::pair<std::string, json::Value>> members = {
+            {"zip", array(std::move(zip_entries))}};
+        if (selected) {
+            std::vector<json::Value> ids;
+            for (const std::string& id : *selected) ids.push_back(str(id));
+            members.emplace_back("selectedIds", array(std::move(ids)));
+        }
+        entries.emplace_back(name, object(std::move(members)));
+    };
+    auto zip_entry = [](const char* name, const std::string& content, bool stored = false) {
+        std::vector<std::pair<std::string, json::Value>> members = {
+            {"name", str(name)}, {"content", str(content)}};
+        if (stored) members.emplace_back("stored", str("true"));
+        return object(std::move(members));
+    };
+
+    write_text("01-text-simple", array({conversation("c1", simple_mapping())}));
+    write_text("02-text-empty-mapping", array({conversation("c2", {})}));
+    write_text("03-text-empty-array", array({}));
+    write_text("04-text-not-an-array", object({{"conversations", array({})}}));
+    write_text_raw("05-text-malformed", "[{");
+    {
+        json::Value conv = conversation("c3", simple_mapping());
+        conv.members.push_back(json::Member{"unknown", number(1)});
+        conv.members.push_back(
+            json::Member{"extra", object({{"nested", boolean(true)}})});
+        write_text("06-text-unknown-fields", array({std::move(conv)}));
+    }
+    write_text("07-text-branching",
+               array({conversation("c4",
+                                   {{"n0", node("n0")},
+                                    {"n1",
+                                     node("n1", message("m1", "user",
+                                                        {.parts = array({str("start")})}), "n0")},
+                                    {"n2", node("n2", message("m2", "assistant",
+                                                              {.parts = array({str("first branch")})}),
+                                                "n1")},
+                                    {"n3", node("n3", message("m3", "assistant",
+                                                              {.parts = array({str("second branch")})}),
+                                                "n1")}},
+                                   "Chat", std::string("n3"))}));
+    write_text("08-text-cycle",
+               array({conversation("c5",
+                                   {{"n0", node("n0")},
+                                    {"n1", node("n1", message("m1", "user",
+                                                              {.parts = array({str("x")})}), "n2")},
+                                    {"n2", node("n2", message("m2", "assistant",
+                                                              {.parts = array({str("y")})}), "n1")}})}));
+    write_text("09-text-dangling-parent",
+               array({conversation("c6",
+                                   {{"n0", node("n0")},
+                                    {"n1", node("n1", message("m1", "user",
+                                                              {.parts = array({str("x")})}), "missing")},
+                                    {"n2", node("n2", message("m2", "assistant",
+                                                              {.parts = array({str("y")})}), "n1")}})}));
+    write_text("10-text-invalid-current-node",
+               array({conversation("c7", simple_mapping(), "Chat", std::string("nope"))}));
+    write_text("11-text-ephemeral-nodes",
+               array({conversation(
+                   "c8",
+                   {{"n0", node("n0")},
+                    {"n1", node("n1", message("m1", "user",
+                                               {.parts = array({str("question")})}), "n0")},
+                    {"n2",
+                     node("n2",
+                          message("m2", "thoughts",
+                                  {.content_type = "thoughts",
+                                   .thoughts = array({object({{"content", str("thinking hard")},
+                                                              {"summary", str("plan")}})})}),
+                          "n1")},
+                    {"n3", node("n3", message("m3", "assistant",
+                                               {.parts = array({str("answer")})}), "n2")},
+                    {"n4", node("n4", message("m4", "code",
+                                               {.content_type = "code",
+                                                .text = std::string("print(1)")}), "n3")},
+                    {"n5", node("n5", message("m5", "tool",
+                                               {.content_type = "execution_output",
+                                                .result = std::string("42")}), "n4")}})}));
+    write_text("12-text-reasoning-recap",
+               array({conversation(
+                   "c9",
+                   {{"n0", node("n0")},
+                    {"n1", node("n1", message("m1", "user",
+                                               {.parts = array({str("question")})}), "n0")},
+                    {"n2",
+                     node("n2",
+                          message("m2", "reasoning_recap",
+                                  {.content_type = "reasoning_recap",
+                                   .reasoning = std::string("a recap"),
+                                   .metadata = object({{"finished_duration_sec", number(3)}})}),
+                          "n1")},
+                    {"n3", node("n3", message("m3", "assistant",
+                                               {.parts = array({str("answer")})}), "n2")}})}));
+    write_text("13-text-citations",
+               array({conversation(
+                   "c10",
+                   {{"n0", node("n0")},
+                    {"n1",
+                     node("n1",
+                          message("m1", "user",
+                                  {.parts = array({str(
+                                       "see \uE200cite\uE202turn3f12\uE201 for details")}),
+                                   .metadata =
+                                       object({{"content_references",
+                                                array({object({{"source_id", str("turn3f12")},
+                                                               {"url", str("https://example.com/doc")},
+                                                               {"title", str("Doc")}})})}})}),
+                          "n0")},
+                    {"n2", node("n2", message("m2", "assistant",
+                                               {.parts = array({str("sure")})}), "n1")}})}));
+    write_text("14-text-multimodal",
+               array({conversation(
+                   "c11",
+                   {{"n0", node("n0")},
+                    {"n1",
+                     node("n1",
+                          message("m1", "user",
+                                  {.parts = array({object({{"content_type", str("image_asset_pointer")},
+                                                           {"asset_pointer", str("file-1")}}),
+                                                   object({{"content_type", str("text")},
+                                                           {"text", str("look")}})}),
+                                   .content_type = "multimodal_text"}),
+                          "n0")}})}));
+    write_text("15-text-metadata-status",
+               array({conversation(
+                   "c12",
+                   {{"n0", node("n0")},
+                    {"n1",
+                     node("n1",
+                          message("m1", "assistant",
+                                  {.parts = array({str("done")}),
+                                   .metadata = object({{"model_slug", str("gpt-4o")},
+                                                       {"is_complete", boolean(false)}})}),
+                          "n0")},
+                    {"n2",
+                     node("n2",
+                          message("m2", "assistant",
+                                  {.parts = array({str("stopped")}),
+                                   .metadata = object(
+                                       {{"finish_details", object({{"type", str("max_tokens")}})}})}),
+                          "n1")}})}));
+    write_text("16-text-no-create-time",
+               array({conversation(
+                   "c13",
+                   {{"n0", node("n0")},
+                    {"n1", node("n1", message("m1", "user",
+                                               {.parts = array({str("hi")}),
+                                                .create_time = null_value()}), "n0")}})}));
+    write_text("17-text-selection",
+               array({conversation("c14", simple_mapping()),
+                      conversation("c15", simple_mapping())}),
+               std::vector<std::string>{"c15"});
+    write_text("18-text-unicode",
+               array({conversation(
+                   "c16",
+                   {{"n0", node("n0")},
+                    {"n1", node("n1",
+                                message("m1", "user",
+                                        {.parts = array({str(
+                                             "\u043f\u0440\u0438\u0432\u0435\u0442 \U0001F642")})}),
+                                "n0")}},
+                   "\u042e\u043d\u0438\u043a\u043e\u0434")}));
+    write_text("19-text-empty-title", array({conversation("c17", simple_mapping(), "")}));
+    write_text("20-text-multiple-conversations",
+               array({conversation("c18", simple_mapping()),
+                      conversation("c19", simple_mapping(), "Chat", std::nullopt,
+                                   1700000001.0)}));
+
+    // ------------------------------------------------------------------ zip archives
+    const std::string payload = spaced(array({conversation("z1", simple_mapping())}));
+    write_zip("30-zip-conversations", {zip_entry("conversations.json", payload)});
+    write_zip("31-zip-split-conversations",
+              {zip_entry("conversations-1.json",
+                         spaced(array({conversation("z2", simple_mapping())}))),
+               zip_entry("conversations-2.json",
+                         spaced(array({conversation("z3", simple_mapping())})))});
+    write_zip("32-zip-unrelated-entry", {zip_entry("chat.html", "<html></html>")});
+    write_zip("33-zip-stored-entry", {zip_entry("conversations.json", payload, true)});
+    write_zip("34-zip-mixed-entries",
+              {zip_entry("user.json", "{}"), zip_entry("conversations.json", payload)});
+    write_zip("35-zip-selection", {zip_entry("conversations.json", payload)},
+              std::vector<std::string>{"z1"});
+
+    // ----------------------------------------------------------------------- fuzz
+    static constexpr const char* kRoles[] = {"user", "assistant", "tool", "system"};
+    static constexpr const char* kContentTypes[] = {"text",          "text",
+                                                    "multimodal_text", "code",
+                                                    "execution_output", "thoughts"};
+    static constexpr const char* kPartChoices[] = {"hello", "world", nullptr};
+    static constexpr const char* kTitles[] = {"", "Fuzz", "\u0424\u0430\u0437"};
+    for (int index = 0; index < 8; ++index) {
+        PythonRandom rng(7000 + static_cast<std::uint32_t>(index));
+        std::vector<std::pair<std::string, json::Value>> mapping_members;
+        const std::uint32_t node_count = 2 + rng.randbelow(6);
+        for (std::uint32_t node_index = 0; node_index < node_count; ++node_index) {
+            const std::string node_id = "n" + std::to_string(node_index);
+            std::string parent = node_index == 0
+                                     ? std::string("client-created-root")
+                                     : "n" + std::to_string(rng.randbelow(node_index));
+            if (rng.random() < 0.2) {
+                parent = "n" + std::to_string(rng.randbelow(node_count + 1));
+            }
+            std::optional<json::Value> message_value;
+            if (rng.random() < 0.85) {
+                const char* role = kRoles[rng.randbelow(4)];
+                const char* content_type = kContentTypes[rng.randbelow(6)];
+                const std::string_view kind(content_type);
+                std::optional<json::Value> parts;
+                if (kind == "text" || kind == "multimodal_text") {
+                    const std::uint32_t choice = rng.randbelow(3);
+                    if (choice < 2) {
+                        parts = array({str(kPartChoices[choice])});
+                    } else {
+                        parts = array({object({{"content_type", str("text")},
+                                               {"text", str("obj")}})});
+                    }
+                }
+                json::Value create_time = null_value();
+                const std::uint32_t time_choice = rng.randbelow(3);
+                if (time_choice == 0) create_time = float_number(1700000000.0);
+                else if (time_choice == 1) create_time = float_number(1700000000.5);
+                MsgOpts opts;
+                opts.parts = std::move(parts);
+                opts.content_type = content_type;
+                opts.create_time = create_time;
+                if (kind == "code") {
+                    opts.text = std::string("code()");
+                } else if (kind == "execution_output") {
+                    opts.result = std::string("output");
+                } else if (kind == "thoughts") {
+                    opts.thoughts = array({object({{"content", str("thinking")},
+                                                   {"summary", str("sum")}})});
+                }
+                message_value = message("m" + std::to_string(node_index), role, opts);
+            }
+            mapping_members.emplace_back(node_id, node(node_id, message_value, parent));
+        }
+        std::optional<std::string> current;
+        if (rng.random() < 0.5) {
+            current = "n" + std::to_string(rng.randbelow(node_count + 1));
+        }
+        const char* title = kTitles[rng.randbelow(3)];
+        char name[32];
+        std::snprintf(name, sizeof(name), "90-fuzz-%02d", index);
+        write_text(name,
+                   array({conversation("f" + std::to_string(index), mapping_members, title,
+                                       current)}));
+    }
+
+    remove_stale(scenarios);
+    const FormatOptions pretty{Format::Pretty2, false}; // indent=2, ensure_ascii=False
+    for (const auto& [name, value] : entries) {
+        write_scenario(scenarios, name, value, pretty);
+    }
+    std::cout << "Wrote " << entries.size() << " scenarios to " << scenarios.string() << "\n";
+}
+
 }  // namespace
 
 int main(int argc, char** argv) {
@@ -7796,7 +8468,9 @@ int main(int argc, char** argv) {
                   << "  chat-media-references-dao chat-media-references-dao/gen_scenarios.py\n"
                   << "  task-schedule         task-schedule/gen_scenarios.py\n"
                   << "  shell-crypto          shell-crypto/gen_scenarios.py\n"
-                  << "  migration-17-18       migration-17-18/gen_scenarios.py\n";
+                  << "  migration-17-18       migration-17-18/gen_scenarios.py\n"
+                  << "  native-backup-v5      native-backup-v5/gen_scenarios.py\n"
+                  << "  gpt-chat-importer     gpt-chat-importer/gen_scenarios.py\n";
         return 2;
     }
     const std::string profile = argv[1];
@@ -7903,6 +8577,10 @@ int main(int argc, char** argv) {
         profile_shell_crypto(scenarios);
     } else if (profile == "migration-17-18") {
         profile_migration_17_18(scenarios);
+    } else if (profile == "native-backup-v5") {
+        profile_native_backup_v5(scenarios);
+    } else if (profile == "gpt-chat-importer") {
+        profile_gpt_chat_importer(scenarios);
     } else {
         std::cerr << "unknown profile: " << profile << "\n";
         return 2;

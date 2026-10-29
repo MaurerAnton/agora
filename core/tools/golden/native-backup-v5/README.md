@@ -17,7 +17,7 @@ already-pinned core `zip_reader` and the importers consume.
 | `scenarios/*.json` | 8 cases: entry assembly, baseline validation, reuse decisions, raw copies |
 | `golden/*.trace` | Frozen Kotlin output, one per scenario |
 | `NativeBackupV5TraceDump.kt` | Driver: builds archives, replays baseline queries, dumps entries |
-| `gen_scenarios.py` | Deterministic scenario generator |
+| `agora_scenarios native-backup-v5` | Deterministic scenario generator |
 | `platform/` | Identical stubs used by the `native-backup-format` stand for the shared models |
 | `run_golden.sh` | Compiles, freezes (`--freeze`) or verifies the traces |
 

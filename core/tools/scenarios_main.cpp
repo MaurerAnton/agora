@@ -13169,6 +13169,1302 @@ void profile_chat_search_dao(const fs::path& scenarios) {
     std::cout << "Wrote " << entries.size() << " scenarios to " << scenarios.string() << "\n";
 }
 
+// shell-tool-backends/gen_scenarios.py — indent=2, ensure_ascii=False. Scenarios are numbered
+// by insertion order (%03d-name). SSE lines are "event: X" plus "data: " + Compact JSON.
+
+void profile_maintenance_debt(const fs::path& scenarios) {
+    constexpr std::int64_t kFuture = 5000000000000LL;
+    std::vector<std::pair<std::string, json::Value>> entries;
+    auto add = [&](const std::string& name, json::Value value) {
+        entries.emplace_back(name, std::move(value));
+    };
+    auto debt = [](const std::string& kind, const std::string& identity,
+                   std::string state = "PENDING", std::int64_t revision = 1,
+                   std::int64_t updated = 0, std::optional<std::string> claim_id = std::nullopt,
+                   std::optional<std::int64_t> claimed_at = std::nullopt) {
+        std::vector<std::pair<std::string, json::Value>> members = {
+            {"kind", str(kind)},
+            {"identity", str(identity)},
+            {"state", str(state)},
+            {"revision", number(revision)},
+            {"updatedAt", number(updated)}};
+        if (claim_id.has_value()) members.emplace_back("claimId", str(*claim_id));
+        if (claimed_at.has_value()) members.emplace_back("claimedAt", number(*claimed_at));
+        return object(std::move(members));
+    };
+    auto conversation = [](const std::string& id, std::optional<std::string> run_branches,
+                           std::int64_t data_changed_at = 100) {
+        return object(
+            {{"id", str(id)},
+             {"selectedRunBranchesJson", run_branches ? str(*run_branches) : null_value()},
+             {"dataChangedAt", number(data_changed_at)}});
+    };
+    auto run = [](const std::string& id, const std::string& conversation_id,
+                  const std::string& status, std::optional<std::string> parent = std::nullopt,
+                  std::optional<std::int64_t> active_slot = std::nullopt,
+                  std::int64_t started = 1000,
+                  std::optional<std::int64_t> stopped = std::nullopt,
+                  std::optional<std::int64_t> ended = std::nullopt,
+                  std::optional<std::string> end_reason = std::nullopt,
+                  std::int64_t current_pass = 0, bool legacy_ambiguous = false) {
+        std::vector<std::pair<std::string, json::Value>> members = {
+            {"id", str(id)},
+            {"conversationId", str(conversation_id)},
+            {"status", str(status)},
+            {"startedAt", number(started)},
+            {"lastCheckpointAt", number(started)},
+            {"currentPass", number(current_pass)},
+            {"legacyAmbiguous", boolean(legacy_ambiguous)}};
+        if (parent.has_value()) members.emplace_back("parentRunId", str(*parent));
+        if (active_slot.has_value()) members.emplace_back("activeSlot", number(*active_slot));
+        if (stopped.has_value()) members.emplace_back("stopRequestedAt", number(*stopped));
+        if (ended.has_value()) members.emplace_back("endedAt", number(*ended));
+        if (end_reason.has_value()) members.emplace_back("endReason", str(*end_reason));
+        return object(std::move(members));
+    };
+
+    add("01-enqueue-lifecycle",
+        object({{"steps",
+                 array({object({{"op", str("hasDebt")}}),
+                        object({{"op", str("enqueue")},
+                                {"kind", str("ATTACHMENT_ORPHANS")},
+                                {"identity", str("c1")},
+                                {"updatedAt", number(10)}}),
+                        object({{"op", str("enqueue")},
+                                {"kind", str("ATTACHMENT_ORPHANS")},
+                                {"identity", str("c1")},
+                                {"updatedAt", number(20)}}),
+                        object({{"op", str("enqueue")},
+                                {"kind", str("EMBEDDING_ORPHANS")},
+                                {"identity", str("*")},
+                                {"updatedAt", number(30)}}),
+                        object({{"op", str("hasDebt")}}),
+                        object({{"op", str("getDebt")},
+                                {"kind", str("ATTACHMENT_ORPHANS")},
+                                {"identity", str("c1")}}),
+                        object({{"op", str("getDebt")},
+                                {"kind", str("RUN_BRANCHES")},
+                                {"identity", str("c9")}}),
+                        object({{"op", str("enqueue")},
+                                {"kind", str("")},
+                                {"identity", str("c1")},
+                                {"updatedAt", number(40)}}),
+                        object({{"op", str("enqueue")},
+                                {"kind", str("ATTACHMENT_ORPHANS")},
+                                {"identity", str("  ")},
+                                {"updatedAt", number(40)}}),
+                        object({{"op", str("renewDebt")},
+                                {"kind", str("EMBEDDING_ORPHANS")},
+                                {"identity", str("*")},
+                                {"updatedAt", number(50)}}),
+                        object({{"op", str("renewDebt")},
+                                {"kind", str("MISSING")},
+                                {"identity", str("*")},
+                                {"updatedAt", number(50)}}),
+                        object({{"op", str("getClaimCandidates")},
+                                {"staleBefore", number(0)},
+                                {"limit", number(10)}})})}}));
+
+    add("02-entity-validation",
+        object({{"steps",
+                 array({object({{"op", str("insertDebt")}, {"debt", debt("", "c1", "PENDING", 1, 1)}}),
+                        object({{"op", str("insertDebt")}, {"debt", debt("K", "", "PENDING", 1, 1)}}),
+                        object({{"op", str("insertDebt")}, {"debt", debt("K", "  ", "PENDING", 1, 1)}}),
+                        object({{"op", str("insertDebt")},
+                                {"debt", debt("K", "id", "BROKEN", 1, 1)}}),
+                        object({{"op", str("insertDebt")},
+                                {"debt", debt("K", "id", "PENDING", 0, 1)}}),
+                        object({{"op", str("insertDebt")},
+                                {"debt", debt("K", "id", "PENDING", 1, 1, "c-only")}}),
+                        object({{"op", str("insertDebt")},
+                                {"debt", debt("K", "id", "CLAIMED", 1, 1)}}),
+                        object({{"op", str("insertDebt")},
+                                {"debt", debt("K", "id", "PENDING", 1, 1, "c1", 5)}}),
+                        object({{"op", str("insertDebt")},
+                                {"debt", debt("K", "id", "PENDING", 1, 1)}}),
+                        object({{"op", str("insertDebt")},
+                                {"debt", debt("K", "id", "PENDING", 1, 2)}})})}}));
+
+    add("03-claim-ordering",
+        object({{"steps",
+                 array({object({{"op", str("enqueue")},
+                                {"kind", str("ATTACHMENT_ORPHANS")},
+                                {"identity", str("b")},
+                                {"updatedAt", number(30)}}),
+                        object({{"op", str("enqueue")},
+                                {"kind", str("ATTACHMENT_ORPHANS")},
+                                {"identity", str("a")},
+                                {"updatedAt", number(30)}}),
+                        object({{"op", str("enqueue")},
+                                {"kind", str("EMBEDDING_ORPHANS")},
+                                {"identity", str("*")},
+                                {"updatedAt", number(10)}}),
+                        object({{"op", str("enqueue")},
+                                {"kind", str("RUN_BRANCHES")},
+                                {"identity", str("z")},
+                                {"updatedAt", number(20)}}),
+                        object({{"op", str("claim")},
+                                {"claimId", str("claim-1")},
+                                {"claimedAt", number(100)},
+                                {"staleBefore", number(50)},
+                                {"limit", number(10)}}),
+                        object({{"op", str("getClaimCandidates")},
+                                {"staleBefore", number(100)},
+                                {"limit", number(10)}}),
+                        object({{"op", str("claim")},
+                                {"claimId", str("")},
+                                {"claimedAt", number(100)},
+                                {"staleBefore", number(50)},
+                                {"limit", number(1)}}),
+                        object({{"op", str("claim")},
+                                {"claimId", str("c")},
+                                {"claimedAt", number(40)},
+                                {"staleBefore", number(50)},
+                                {"limit", number(1)}}),
+                        object({{"op", str("claim")},
+                                {"claimId", str("c")},
+                                {"claimedAt", number(100)},
+                                {"staleBefore", number(50)},
+                                {"limit", number(0)}}),
+                        object({{"op", str("claim")},
+                                {"claimId", str("c")},
+                                {"claimedAt", number(100)},
+                                {"staleBefore", number(50)},
+                                {"limit", number(101)}}),
+                        object({{"op", str("sql")}, {"sql", str("SELECT 1")}})})}}));
+
+    add("04-claim-stale-revival",
+        object({{"steps",
+                 array({object({{"op", str("enqueue")},
+                                {"kind", str("ATTACHMENT_ORPHANS")},
+                                {"identity", str("fresh")},
+                                {"updatedAt", number(90)}}),
+                        object({{"op", str("enqueue")},
+                                {"kind", str("EMBEDDING_ORPHANS")},
+                                {"identity", str("stale")},
+                                {"updatedAt", number(10)}}),
+                        object({{"op", str("claim")},
+                                {"claimId", str("first")},
+                                {"claimedAt", number(60)},
+                                {"staleBefore", number(50)},
+                                {"limit", number(10)}}),
+                        object({{"op", str("claim")},
+                                {"claimId", str("second")},
+                                {"claimedAt", number(120)},
+                                {"staleBefore", number(75)},
+                                {"limit", number(10)}}),
+                        object({{"op", str("claim")},
+                                {"claimId", str("third")},
+                                {"claimedAt", number(40)},
+                                {"staleBefore", number(40)},
+                                {"limit", number(10)}})})}}));
+
+    add("05-complete-release",
+        object({{"steps",
+                 array({object({{"op", str("enqueue")},
+                                {"kind", str("ATTACHMENT_ORPHANS")},
+                                {"identity", str("c1")},
+                                {"updatedAt", number(10)}}),
+                        object({{"op", str("enqueue")},
+                                {"kind", str("RUN_BRANCHES")},
+                                {"identity", str("c2")},
+                                {"updatedAt", number(11)}}),
+                        object({{"op", str("claim")},
+                                {"claimId", str("claim-1")},
+                                {"claimedAt", number(100)},
+                                {"staleBefore", number(50)},
+                                {"limit", number(10)}}),
+                        object({{"op", str("complete")},
+                                {"debt", debt("ATTACHMENT_ORPHANS", "c1", "CLAIMED", 1, 10,
+                                              "claim-1", 100)}}),
+                        object({{"op", str("complete")},
+                                {"debt", debt("ATTACHMENT_ORPHANS", "c1", "CLAIMED", 1, 10,
+                                              "claim-1", 100)}}),
+                        object({{"op", str("release")},
+                                {"debt", debt("RUN_BRANCHES", "c2", "CLAIMED", 1, 11, "claim-1",
+                                              100)},
+                                {"updatedAt", number(99)}}),
+                        object({{"op", str("complete")},
+                                {"debt", debt("RUN_BRANCHES", "c2", "PENDING", 1, 11)}}),
+                        object({{"op", str("release")},
+                                {"debt", debt("RUN_BRANCHES", "c2", "CLAIMED", 1, 11, "claim-1",
+                                              100)},
+                                {"updatedAt", number(120)}}),
+                        object({{"op", str("release")},
+                                {"debt", debt("RUN_BRANCHES", "c2", "CLAIMED", 1, 11, "claim-1",
+                                              100)},
+                                {"updatedAt", number(130)}}),
+                        object({{"op", str("enqueue")},
+                                {"kind", str("EMBEDDING_ORPHANS")},
+                                {"identity", str("*")},
+                                {"updatedAt", number(140)}}),
+                        object({{"op", str("claim")},
+                                {"claimId", str("claim-2")},
+                                {"claimedAt", number(200)},
+                                {"staleBefore", number(150)},
+                                {"limit", number(10)}}),
+                        object({{"op", str("sql")},
+                                {"sql",
+                                 str("UPDATE maintenance_debt SET revision = revision + 1 "
+                                     "WHERE kind = 'EMBEDDING_ORPHANS'")},
+                                {"args", array({})}}),
+                        object({{"op", str("complete")},
+                                {"debt", debt("EMBEDDING_ORPHANS", "*", "CLAIMED", 1, 140,
+                                              "claim-2", 200)}}),
+                        object({{"op", str("release")},
+                                {"debt", debt("EMBEDDING_ORPHANS", "*", "CLAIMED", 1, 140,
+                                              "claim-2", 200)},
+                                {"updatedAt", number(300)}}),
+                        object({{"op", str("completeClaimed")},
+                                {"kind", str("EMBEDDING_ORPHANS")},
+                                {"identity", str("*")},
+                                {"revision", number(2)},
+                                {"claimId", str("claim-2")}}),
+                        object({{"op", str("completeClaimed")},
+                                {"kind", str("EMBEDDING_ORPHANS")},
+                                {"identity", str("*")},
+                                {"revision", number(2)},
+                                {"claimId", str("other")}}),
+                        object({{"op", str("releaseClaimed")},
+                                {"kind", str("EMBEDDING_ORPHANS")},
+                                {"identity", str("*")},
+                                {"revision", number(2)},
+                                {"claimId", str("claim-2")},
+                                {"updatedAt", number(400)}}),
+                        object({{"op", str("releaseClaimed")},
+                                {"kind", str("EMBEDDING_ORPHANS")},
+                                {"identity", str("*")},
+                                {"revision", number(99)},
+                                {"claimId", str("claim-2")},
+                                {"updatedAt", number(401)}})})}}));
+
+    add("06-orphan-pages",
+        object({{"seed",
+                 object({{"messages",
+                          array({object({{"id", str("m1")},
+                                         {"conversationId", str("c1")},
+                                         {"text", str("alpha")}}),
+                                 object({{"id", str("m2")},
+                                         {"conversationId", str("c1")},
+                                         {"text", str("beta")}})})},
+                         {"embeddings",
+                          array({object({{"id", number(1)},
+                                         {"messageId", str("m1")},
+                                         {"modelId", str("a")},
+                                         {"embedding", str("01")}}),
+                                 object({{"id", number(2)},
+                                         {"messageId", str("compact_9")},
+                                         {"modelId", str("a")},
+                                         {"embedding", str("02")}}),
+                                 object({{"id", number(3)},
+                                         {"messageId", str("ghost")},
+                                         {"modelId", str("a")},
+                                         {"embedding", str("03")}}),
+                                 object({{"id", number(4)},
+                                         {"messageId", str("ghost")},
+                                         {"modelId", str("b")},
+                                         {"embedding", str("04")}}),
+                                 object({{"id", number(5)},
+                                         {"messageId", str("m2")},
+                                         {"modelId", str("a")},
+                                         {"embedding", str("05")}}),
+                                 object({{"id", number(6)},
+                                         {"messageId", str("lost")},
+                                         {"modelId", str("a")},
+                                         {"embedding", str("06")}})})}})},
+                {"steps",
+                 array({object({{"op", str("getOrphanEmbeddingIdsPage")},
+                                {"afterId", number(0)},
+                                {"limit", number(3)}}),
+                        object({{"op", str("getOrphanEmbeddingIdsPage")},
+                                {"afterId", number(3)},
+                                {"limit", number(3)}}),
+                        object({{"op", str("getOrphanEmbeddingIdsPage")},
+                                {"afterId", number(6)},
+                                {"limit", number(3)}}),
+                        object({{"op", str("deleteOrphanEmbeddingsForMessage")},
+                                {"messageId", str("ghost")}}),
+                        object({{"op", str("deleteOrphanEmbeddingsForMessage")},
+                                {"messageId", str("m1")}}),
+                        object({{"op", str("deleteOrphanEmbeddingsByIds")},
+                                {"ids", array({number(2)})}}),
+                        object({{"op", str("deleteOrphanEmbeddingsByIds")},
+                                {"ids", array({})}}),
+                        object({{"op", str("deleteOrphanEmbeddingsByIds")},
+                                {"ids", array({number(99)})}}),
+                        object({{"op", str("getOrphanEmbeddingIdsPage")},
+                                {"afterId", number(0)},
+                                {"limit", number(10)}})})}}));
+
+    add("07-run-branch-pages",
+        object({{"seed",
+                 object({{"conversations",
+                          array({conversation("c1", "{\"r1\":\"r2\"}"),
+                                 conversation("c2", std::nullopt),
+                                 conversation("c3", ""),
+                                 conversation("c4", "{}"),
+                                 conversation("bad-pass", "{}"),
+                                 conversation("bad-status", "{}")})},
+                         {"runs",
+                          array({run("r1", "c1", "COMPLETED", std::nullopt, std::nullopt, 1000,
+                                     std::nullopt, 2000, "MODEL_COMPLETED"),
+                                 run("r2", "c1", "ACTIVE", "r1", 1),
+                                 run("x1", "c3", "FAILED", std::nullopt, std::nullopt, 1000,
+                                     std::nullopt, 3000, "PROVIDER_ERROR"),
+                                 run("bad", "bad-pass", "COMPLETED", std::nullopt, std::nullopt,
+                                     1000, std::nullopt, 4000, "MODEL_COMPLETED", -1),
+                                 run("weird", "bad-status", "BOGUS")})}})},
+                {"steps",
+                 array({object({{"op", str("getRunBranchConversationIdsPage")},
+                                {"afterId", null_value()},
+                                {"limit", number(10)}}),
+                        object({{"op", str("getRunBranchConversationIdsPage")},
+                                {"afterId", str("c1")},
+                                {"limit", number(1)}}),
+                        object({{"op", str("getRunBranchConversationIdsPage")},
+                                {"afterId", str("zzz")},
+                                {"limit", number(5)}}),
+                        object({{"op", str("getMaintenanceConversation")},
+                                {"conversationId", str("c1")}}),
+                        object({{"op", str("getMaintenanceConversation")},
+                                {"conversationId", str("missing")}}),
+                        object({{"op", str("getMaintenanceRuns")},
+                                {"conversationId", str("c1")}}),
+                        object({{"op", str("getMaintenanceRuns")},
+                                {"conversationId", str("missing")}}),
+                        object({{"op", str("getMaintenanceRuns")},
+                                {"conversationId", str("bad-pass")}}),
+                        object({{"op", str("getMaintenanceRuns")},
+                                {"conversationId", str("bad-status")}})})}}));
+
+    add("08-repair-missing-and-null",
+        object({{"seed",
+                 object({{"conversations",
+                          array({conversation("present", std::nullopt)})}})},
+                {"steps",
+                 array({object({{"op", str("repairRunBranches")},
+                                {"conversationId", str("absent")}}),
+                        object({{"op", str("repairRunBranches")},
+                                {"conversationId", str("present")}})})}}));
+
+    add("09-repair-malformed",
+        object({{"seed",
+                 object({{"conversations",
+                          array({conversation("array", "[1, 2]"),
+                                 conversation("number", "5"),
+                                 conversation("not-a-string-map", "{\"a\": 1}"),
+                                 conversation("empty", "")})}})},
+                {"steps",
+                 array({object({{"op", str("repairRunBranches")},
+                                {"conversationId", str("array")}}),
+                        object({{"op", str("repairRunBranches")},
+                                {"conversationId", str("number")}}),
+                        object({{"op", str("repairRunBranches")},
+                                {"conversationId", str("not-a-string-map")}}),
+                        object({{"op", str("repairRunBranches")},
+                                {"conversationId", str("empty")}})})}}));
+
+    add("10-repair-valid-noop",
+        object({{"seed",
+                 object({{"conversations",
+                          array({conversation("keep", "{\"r1\":\"r2\"}"),
+                                 conversation("blank", "{}")})},
+                         {"runs",
+                          array({run("r1", "keep", "COMPLETED", std::nullopt, std::nullopt, 1000,
+                                     std::nullopt, 2000, "MODEL_COMPLETED"),
+                                 run("r2", "keep", "ACTIVE", "r1", 1)})}})},
+                {"steps",
+                 array({object({{"op", str("repairRunBranches")},
+                                {"conversationId", str("keep")}}),
+                        object({{"op", str("repairRunBranches")},
+                                {"conversationId", str("blank")}})})}}));
+
+    add("11-repair-invalid-edges",
+        object({{"seed",
+                 object({{"conversations",
+                          array({conversation("mixed", "{\"r1\":\"r2\",\"r2\":\"r2\",\"rX\":\"r2\"}"),
+                                 conversation("null-keys",
+                                              "{\"null\":\"n1\",\"null\":\"n2\",\"n1\":\"n3\"}"),
+                                 conversation("self-null", "{\"null\":\"s1\",\"s1\":\"s1\"}"),
+                                 conversation("future-clock", "{\"f1\":\"f2\",\"f9\":\"f2\"}",
+                                              kFuture)})},
+                         {"runs",
+                          array({run("r1", "mixed", "COMPLETED", std::nullopt, std::nullopt,
+                                     1000, std::nullopt, 2000, "MODEL_COMPLETED"),
+                                 run("r2", "mixed", "ACTIVE", "r1", 1),
+                                 run("r3", "mixed", "COMPLETED", "r1", std::nullopt, 1000,
+                                     std::nullopt, 2100, "MODEL_COMPLETED"),
+                                 run("n1", "null-keys", "COMPLETED", std::nullopt, std::nullopt,
+                                     1000, std::nullopt, 2000, "MODEL_COMPLETED"),
+                                 run("n2", "null-keys", "ACTIVE", "n1", 1),
+                                 run("n3", "null-keys", "COMPLETED", "n1", std::nullopt, 1000,
+                                     std::nullopt, 2100, "MODEL_COMPLETED"),
+                                 run("s1", "self-null", "COMPLETED", std::nullopt, std::nullopt,
+                                     1000, std::nullopt, 2000, "MODEL_COMPLETED"),
+                                 run("f1", "future-clock", "COMPLETED", std::nullopt,
+                                     std::nullopt, 1000, std::nullopt, 2000,
+                                     "MODEL_COMPLETED"),
+                                 run("f2", "future-clock", "ACTIVE", "f1", 1)})}})},
+                {"steps",
+                 array({object({{"op", str("repairRunBranches")},
+                                {"conversationId", str("mixed")}}),
+                        object({{"op", str("repairRunBranches")},
+                                {"conversationId", str("null-keys")}}),
+                        object({{"op", str("repairRunBranches")},
+                                {"conversationId", str("self-null")}}),
+                        object({{"op", str("repairRunBranches")},
+                                {"conversationId", str("future-clock")}})})}}));
+
+    add("12-repair-then-observe",
+        object({{"seed",
+                 object({{"conversations",
+                          array({conversation("twice", "{\"r1\":\"r2\",\"r2\":\"r2\"}", 100)})},
+                         {"runs",
+                          array({run("r1", "twice", "COMPLETED", std::nullopt, std::nullopt,
+                                     1000, std::nullopt, 2000, "MODEL_COMPLETED"),
+                                 run("r2", "twice", "ACTIVE", "r1", 1)})}})},
+                {"steps",
+                 array({object({{"op", str("repairRunBranches")},
+                                {"conversationId", str("twice")}}),
+                        object({{"op", str("getMaintenanceConversation")},
+                                {"conversationId", str("twice")}}),
+                        object({{"op", str("repairRunBranches")},
+                                {"conversationId", str("twice")}}),
+                        object({{"op", str("repairRunBranches")},
+                                {"conversationId", str("twice")}})})}}));
+
+    add("13-claim-then-repair-mix",
+        object({{"seed",
+                 object({{"conversations", array({conversation("c1", "{\"r1\":\"r2\"}")})},
+                         {"runs",
+                          array({run("r1", "c1", "STOPPING", std::nullopt, 1, 1000, 1500),
+                                 run("r2", "c1", "STOPPED", "r1", std::nullopt, 1000,
+                                     std::nullopt, 2500, "USER_STOPPED")})}})},
+                {"steps",
+                 array({object({{"op", str("enqueue")},
+                                {"kind", str("RUN_BRANCHES")},
+                                {"identity", str("c1")},
+                                {"updatedAt", number(5)}}),
+                        object({{"op", str("claim")},
+                                {"claimId", str("worker")},
+                                {"claimedAt", number(50)},
+                                {"staleBefore", number(20)},
+                                {"limit", number(10)}}),
+                        object({{"op", str("repairRunBranches")},
+                                {"conversationId", str("c1")}}),
+                        object({{"op", str("getMaintenanceRuns")},
+                                {"conversationId", str("c1")}}),
+                        object({{"op", str("complete")},
+                                {"debt", debt("RUN_BRANCHES", "c1", "CLAIMED", 1, 5, "worker",
+                                              50)}}),
+                        object({{"op", str("hasDebt")}}),
+                        object({{"op", str("getClaimCandidates")},
+                                {"staleBefore", number(0)},
+                                {"limit", number(10)}})})}}));
+
+    remove_stale(scenarios);
+    const FormatOptions pretty{Format::Pretty2, false}; // indent=2, ensure_ascii=False
+    for (const auto& [name, value] : entries) {
+        write_scenario(scenarios, name, value, pretty);
+    }
+    std::cout << "Wrote " << entries.size() << " scenarios to " << scenarios.string() << "\n";
+}
+
+// regeneration-tree-repair/gen_scenarios.py — Compact separators, ensure_ascii=False, newline.
+// Cases are either a `plan` (runs/messages + optional selections) or a `fingerprint` probe.
+void profile_regeneration_tree_repair(const fs::path& scenarios) {
+    std::vector<std::pair<std::string, json::Value>> entries;
+    auto add = [&](const std::string& name, json::Value value) {
+        entries.emplace_back(name, std::move(value));
+    };
+    auto run = [](const std::string& id, std::optional<std::string> parent = std::nullopt,
+                  std::int64_t started = 0) {
+        return object({{"id", str(id)},
+                       {"parentRunId", parent ? str(*parent) : null_value()},
+                       {"startedAt", number(started)}});
+    };
+    auto msg = [](const std::string& id, std::optional<std::string> parent,
+                  const std::string& participant, std::int64_t timestamp,
+                  const std::string& run_id, std::int64_t seq,
+                  const std::string& fp = "fpA") {
+        return object({{"id", str(id)},
+                       {"parentId", parent ? str(*parent) : null_value()},
+                       {"participant", str(participant)},
+                       {"timestamp", number(timestamp)},
+                       {"runId", str(run_id)},
+                       {"runSequence", number(seq)},
+                       {"inputFingerprint", str(fp)}});
+    };
+    auto selections = [](std::vector<std::pair<std::string, std::string>> pairs) {
+        std::vector<std::pair<std::string, json::Value>> members;
+        for (auto& [key, value] : pairs) members.emplace_back(key, str(value));
+        return object(std::move(members));
+    };
+    auto plan = [&](const std::string& name, std::vector<json::Value> runs,
+                    std::vector<json::Value> messages,
+                    std::optional<json::Value> message_selections = std::nullopt,
+                    std::optional<json::Value> run_selections = std::nullopt) {
+        std::vector<std::pair<std::string, json::Value>> members = {
+            {"name", str(name)},
+            {"op", str("plan")},
+            {"runs", array(std::move(runs))},
+            {"messages", array(std::move(messages))}};
+        if (message_selections) {
+            members.emplace_back("messageSelections", std::move(*message_selections));
+        }
+        if (run_selections) members.emplace_back("runSelections", std::move(*run_selections));
+        add(name, object(std::move(members)));
+    };
+    auto fingerprint = [&](const std::string& name, const std::string& text,
+                           std::int64_t image_count = 0,
+                           std::optional<std::string> attachment_meta = std::nullopt) {
+        std::vector<std::pair<std::string, json::Value>> members = {
+            {"name", str(name)},
+            {"op", str("fingerprint")},
+            {"text", str(text)},
+            {"imageCount", number(image_count)}};
+        if (attachment_meta) {
+            members.emplace_back("attachmentMeta", str(*attachment_meta));
+        }
+        add(name, object(std::move(members)));
+    };
+
+    // ---- plan: guard rails ----------------------------------------------------
+    plan("plan_empty", {}, {});
+    plan("single_run_no_group", {run("r1", std::nullopt, 100)},
+         {msg("u1", "p0", "USER", 10, "r1", 0), msg("m1", "u1", "MODEL", 11, "r1", 1)});
+    plan("distinct_fingerprints", {run("r1", std::nullopt, 100), run("r2", std::nullopt, 200)},
+         {msg("u1", "p0", "USER", 10, "r1", 0, "fpA"),
+          msg("m1", "u1", "MODEL", 11, "r1", 1, "fpA"),
+          msg("u2", "p0", "USER", 12, "r2", 0, "fpB"),
+          msg("m2", "u2", "MODEL", 13, "r2", 1, "fpB")});
+    plan("synthetic_boundary_ignored",
+         {run("r1", std::nullopt, 100), run("r2", std::nullopt, 200)},
+         {msg("tool_u1", "p0", "USER", 10, "r1", 0),
+          msg("m1", "tool_u1", "MODEL", 11, "r1", 1),
+          msg("result_u2", "p0", "USER", 12, "r2", 0),
+          msg("m2", "result_u2", "MODEL", 13, "r2", 1)});
+    plan("error_rows_ignored", {run("r1", std::nullopt, 100), run("r2", std::nullopt, 200)},
+         {msg("u1", "p0", "USER", 10, "r1", 0), msg("m1", "u1", "MODEL", 11, "r1", 1),
+          msg("e2", "p0", "ERROR", 12, "r2", 0), msg("m2", "e2", "MODEL", 13, "r2", 1)});
+
+    // ---- plan: the regenerate shape -------------------------------------------
+    plan("regenerate_pair", {run("r1", std::nullopt, 100), run("r2", std::nullopt, 200)},
+         {msg("u1", "p0", "USER", 10, "r1", 0), msg("m1", "u1", "MODEL", 11, "r1", 1),
+          msg("u2", "p0", "USER", 12, "r2", 0), msg("m2", "u2", "MODEL", 13, "r2", 1)});
+    plan("reverse_started_at", {run("r1", std::nullopt, 200), run("r2", std::nullopt, 100)},
+         {msg("u1", "p0", "USER", 10, "r1", 0), msg("m1", "u1", "MODEL", 11, "r1", 1),
+          msg("u2", "p0", "USER", 12, "r2", 0), msg("m2", "u2", "MODEL", 13, "r2", 1)});
+    plan("tie_started_at_run_id", {run("r1", std::nullopt, 100), run("r2", std::nullopt, 100)},
+         {msg("u2", "p0", "USER", 10, "r2", 0), msg("m2", "u2", "MODEL", 11, "r2", 1),
+          msg("u1", "p0", "USER", 10, "r1", 0), msg("m1", "u1", "MODEL", 11, "r1", 1)});
+    plan("tie_started_at_timestamp",
+         {run("r1", std::nullopt, 100), run("r2", std::nullopt, 100)},
+         {msg("u1", "p0", "USER", 10, "r1", 0), msg("m1", "u1", "MODEL", 11, "r1", 1),
+          msg("u2", "p0", "USER", 5, "r2", 0), msg("m2", "u2", "MODEL", 6, "r2", 1)});
+    plan("missing_run_record", {run("r1", std::nullopt, 100), run("r2", std::nullopt, 200)},
+         {msg("u1", "p0", "USER", 10, "r1", 0), msg("m1", "u1", "MODEL", 11, "r1", 1),
+          msg("u2", "p0", "USER", 12, "r2", 0), msg("m2", "u2", "MODEL", 13, "r2", 1),
+          msg("ug", "p0", "USER", 12, "rG", 0), msg("mg", "ug", "MODEL", 13, "rG", 1)});
+    plan("all_runs_missing", {},
+         {msg("u1", "p0", "USER", 10, "r1", 0), msg("m1", "u1", "MODEL", 11, "r1", 1),
+          msg("u2", "p0", "USER", 12, "r2", 0), msg("m2", "u2", "MODEL", 13, "r2", 1)});
+    plan("inferred_without_root", {run("r1", std::nullopt, 100), run("r2", std::nullopt, 200)},
+         {msg("u1", "p0", "USER", 10, "r1", 0), msg("m1", "u1", "MODEL", 11, "r1", 1),
+          msg("u2", "p0", "USER", 12, "r2", 0)});
+    plan("no_leading_inputs", {run("r1", std::nullopt, 100), run("r2", std::nullopt, 200)},
+         {msg("u1", "p0", "USER", 10, "r1", 0), msg("m1", "u1", "MODEL", 11, "r1", 1),
+          msg("u2", "p0", "USER", 12, "r2", 0), msg("m2", "u2", "MODEL", 12, "r2", 0)});
+    plan("three_runs_same_input",
+         {run("r1", std::nullopt, 100), run("r2", std::nullopt, 200),
+          run("r3", std::nullopt, 300)},
+         {msg("u1", "p0", "USER", 10, "r1", 0), msg("m1", "u1", "MODEL", 11, "r1", 1),
+          msg("u2", "p0", "USER", 12, "r2", 0), msg("m2", "u2", "MODEL", 13, "r2", 1),
+          msg("u3", "p0", "USER", 14, "r3", 0), msg("m3", "u3", "MODEL", 15, "r3", 1)});
+    plan("duplicate_run_ids_last_wins",
+         {run("r1", std::nullopt, 300), run("r2", std::nullopt, 200),
+          run("r1", std::nullopt, 100)},
+         {msg("u1", "p0", "USER", 10, "r1", 0), msg("m1", "u1", "MODEL", 11, "r1", 1),
+          msg("u2", "p0", "USER", 12, "r2", 0), msg("m2", "u2", "MODEL", 13, "r2", 1)});
+    plan("duplicate_boundary_user",
+         {run("r1", std::nullopt, 100), run("r2", std::nullopt, 200)},
+         {msg("u1b", "p0", "USER", 9, "r1", 0), msg("u1a", "p0", "USER", 5, "r1", 0),
+          msg("m1", "u1a", "MODEL", 11, "r1", 1), msg("u2", "p0", "USER", 7, "r2", 0),
+          msg("m2", "u2", "MODEL", 13, "r2", 1)});
+
+    // ---- plan: selections -----------------------------------------------------
+    plan("boundary_null_parent_message_selection",
+         {run("r1", std::nullopt, 100), run("r2", std::nullopt, 200)},
+         {msg("u1", std::nullopt, "USER", 10, "r1", 0), msg("m1", "u1", "MODEL", 11, "r1", 1),
+          msg("u2", std::nullopt, "USER", 12, "r2", 0), msg("m2", "u2", "MODEL", 13, "r2", 1)},
+         selections({{"null", "u2"}}));
+    plan("boundary_null_parent_run_selection",
+         {run("r1", std::nullopt, 100), run("r2", std::nullopt, 200)},
+         {msg("u1", std::nullopt, "USER", 10, "r1", 0), msg("m1", "u1", "MODEL", 11, "r1", 1),
+          msg("u2", std::nullopt, "USER", 12, "r2", 0), msg("m2", "u2", "MODEL", 13, "r2", 1)},
+         std::nullopt, selections({{"null", "r2"}}));
+    plan("run_selection_parent_run", {run("r1", "pr", 100), run("r2", "pr", 200)},
+         {msg("u1", "p0", "USER", 10, "r1", 0), msg("m1", "u1", "MODEL", 11, "r1", 1),
+          msg("u2", "p0", "USER", 12, "r2", 0), msg("m2", "u2", "MODEL", 13, "r2", 1)},
+         std::nullopt, selections({{"pr", "r2"}}));
+    plan("selection_missing_retained",
+         {run("r1", std::nullopt, 100), run("r2", std::nullopt, 200)},
+         {msg("u1", "p0", "USER", 10, "r1", 0), msg("m1", "u1", "MODEL", 11, "r1", 1),
+          msg("u2", "p0", "USER", 12, "r2", 0), msg("m2", "u2", "MODEL", 13, "r2", 1)},
+         selections({{"p0", "gone"}}));
+    plan("selection_not_removed", {run("r1", std::nullopt, 100), run("r2", std::nullopt, 200)},
+         {msg("u1", "p0", "USER", 10, "r1", 0), msg("m1", "u1", "MODEL", 11, "r1", 1),
+          msg("u2", "p0", "USER", 12, "r2", 0), msg("m2", "u2", "MODEL", 13, "r2", 1)},
+         selections({{"p0", "m1"}}));
+    plan("self_edge_branch", {run("r1", std::nullopt, 100), run("r2", std::nullopt, 200)},
+         {msg("u1", "p0", "USER", 10, "r1", 0), msg("m1", "u1", "MODEL", 11, "r1", 1),
+          msg("u2", "p0", "USER", 12, "r2", 0), msg("m2", "u2", "MODEL", 13, "r2", 1)},
+         selections({{"p0", "u1"}}), selections({{"r1", "r1"}, {"r2", "r2"}}));
+    plan("two_leading_inputs", {run("r1", std::nullopt, 100), run("r2", std::nullopt, 200)},
+         {msg("u1", "p0", "USER", 10, "r1", 0), msg("m1", "u1", "MODEL", 11, "r1", 1),
+          msg("u2a", "p0", "USER", 12, "r2", 0), msg("u2b", "p0", "USER", 13, "r2", 1),
+          msg("m2", "u2b", "MODEL", 14, "r2", 2)});
+    plan("two_leading_inputs_selected",
+         {run("r1", std::nullopt, 100), run("r2", std::nullopt, 200)},
+         {msg("u1", "p0", "USER", 10, "r1", 0), msg("m1", "u1", "MODEL", 11, "r1", 1),
+          msg("u2a", "p0", "USER", 12, "r2", 0), msg("u2b", "p0", "USER", 13, "r2", 1),
+          msg("m2a", "u1", "MODEL", 14, "r2", 2), msg("m2b", "u1", "MODEL", 15, "r2", 3)},
+         selections({{"p0", "u2a"}, {"u2a", "m2a"}, {"u2b", "m2b"}}));
+    plan("selection_output_removed_fallback",
+         {run("r1", std::nullopt, 100), run("r2", std::nullopt, 200)},
+         {msg("u1", "p0", "USER", 10, "r1", 0), msg("m1", "u1", "MODEL", 11, "r1", 1),
+          msg("u2a", "p0", "USER", 12, "r2", 0), msg("u2b", "p0", "USER", 13, "r2", 1),
+          msg("m2a", "u1", "MODEL", 14, "r2", 2)},
+         selections({{"p0", "u2a"}, {"u2a", "u2b"}}));
+    plan("selected_root_fallback", {run("r1", std::nullopt, 100), run("r2", std::nullopt, 200)},
+         {msg("u1", "p0", "USER", 10, "r1", 0), msg("m1", "u1", "MODEL", 11, "r1", 1),
+          msg("u2a", "p0", "USER", 12, "r2", 0), msg("m2a", "u1", "MODEL", 14, "r2", 2)},
+         selections({{"p0", "u2a"}}));
+    plan("boundary_nonzero_user", {run("r1", std::nullopt, 100), run("r2", std::nullopt, 200)},
+         {msg("u1", "p0", "USER", 10, "r1", 1), msg("m1", "u1", "MODEL", 11, "r1", 2),
+          msg("u2", "p0", "USER", 12, "r2", 1), msg("m2", "u2", "MODEL", 13, "r2", 2)});
+    plan("synthetic_boundary_with_leading",
+         {run("r1", std::nullopt, 100), run("r2", std::nullopt, 200)},
+         {msg("u1", "p0", "USER", 10, "r1", 0), msg("m1", "u1", "MODEL", 11, "r1", 1),
+          msg("tool_x", "p0", "USER", 12, "r2", 0), msg("u2", "p0", "USER", 13, "r2", 1),
+          msg("m2", "u2", "MODEL", 14, "r2", 2)});
+    plan("selected_max_reparented", {run("r1", std::nullopt, 100), run("r2", std::nullopt, 200)},
+         {msg("u1", "p0", "USER", 10, "r1", 0), msg("m1", "u1", "MODEL", 11, "r1", 1),
+          msg("u2", "p0", "USER", 12, "r2", 0), msg("m2a", "u2", "MODEL", 13, "r2", 1),
+          msg("m2b", "u2", "MODEL", 14, "r2", 2)},
+         selections({{"p0", "u2"}}));
+    plan("synthetic_root_candidate",
+         {run("r1", std::nullopt, 100), run("r2", std::nullopt, 200)},
+         {msg("u1", "p0", "USER", 10, "r1", 0), msg("m1", "u1", "MODEL", 11, "r1", 1),
+          msg("u2", "p0", "USER", 12, "r2", 0), msg("tool_m", "u1", "MODEL", 13, "r2", 1),
+          msg("m2", "u1", "MODEL", 14, "r2", 2)},
+         selections({{"p0", "u2"}}));
+    plan("error_root_candidate", {run("r1", std::nullopt, 100), run("r2", std::nullopt, 200)},
+         {msg("u1", "p0", "USER", 10, "r1", 0), msg("m1", "u1", "MODEL", 11, "r1", 1),
+          msg("u2", "p0", "USER", 12, "r2", 0), msg("e2", "u1", "ERROR", 13, "r2", 1),
+          msg("m2", "u1", "MODEL", 14, "r2", 2)},
+         selections({{"p0", "u2"}}));
+    plan("model_leading_candidate",
+         {run("r1", std::nullopt, 100), run("r2", std::nullopt, 200)},
+         {msg("u1", "p0", "USER", 10, "r1", 0), msg("m1", "u1", "MODEL", 11, "r1", 1),
+          msg("u2", "p0", "USER", 12, "r2", 0), msg("x0", "u1", "MODEL", 13, "r2", 1),
+          msg("m2", "u2", "MODEL", 14, "r2", 2)},
+         selections({{"p0", "u2"}}));
+    plan("user_after_root", {run("r1", std::nullopt, 100), run("r2", std::nullopt, 200)},
+         {msg("u1", "p0", "USER", 10, "r1", 0), msg("m1", "u1", "MODEL", 11, "r1", 1),
+          msg("v2", "p0", "USER", 12, "r2", 0), msg("m2", "u1", "MODEL", 13, "r2", 0),
+          msg("u2", "p0", "USER", 14, "r2", 1)});
+    plan("different_boundary_parents",
+         {run("r1", std::nullopt, 100), run("r2", std::nullopt, 200)},
+         {msg("u1", "pA", "USER", 10, "r1", 0), msg("m1", "u1", "MODEL", 11, "r1", 1),
+          msg("u2", "pB", "USER", 12, "r2", 0), msg("m2", "u2", "MODEL", 13, "r2", 1)});
+    plan("three_runs_both_selections",
+         {run("r1", std::nullopt, 100), run("r2", std::nullopt, 200),
+          run("r3", std::nullopt, 300)},
+         {msg("u1", "p0", "USER", 10, "r1", 0), msg("m1", "u1", "MODEL", 11, "r1", 1),
+          msg("u2", "p0", "USER", 12, "r2", 0), msg("m2", "u2", "MODEL", 13, "r2", 1),
+          msg("u3", "p0", "USER", 14, "r3", 0), msg("m3", "u3", "MODEL", 15, "r3", 1)},
+         selections({{"p0", "u2"}}), selections({{"null", "r3"}}));
+    plan("synthetic_reparented", {run("r1", std::nullopt, 100), run("r2", std::nullopt, 200)},
+         {msg("u1", "p0", "USER", 10, "r1", 0), msg("m1", "u1", "MODEL", 11, "r1", 1),
+          msg("u2", "p0", "USER", 12, "r2", 0), msg("m2", "u2", "MODEL", 13, "r2", 1),
+          msg("tool_h", "u2", "MODEL", 14, "r2", 2)});
+    plan("selections_cleanup", {run("r1", std::nullopt, 100), run("r2", std::nullopt, 200)},
+         {msg("u1", "p0", "USER", 10, "r1", 0), msg("m1", "u1", "MODEL", 11, "r1", 1),
+          msg("u2", "p0", "USER", 12, "r2", 0), msg("m2", "u2", "MODEL", 13, "r2", 1)},
+         selections({{"u2", "keep"}, {"x", "u2"}, {"p0", "u2"}, {"y", "z"}}));
+    plan("sequence_by_timestamp", {run("r1", std::nullopt, 100), run("r2", std::nullopt, 200)},
+         {msg("u1", "p0", "USER", 10, "r1", 0), msg("m1", "u1", "MODEL", 11, "r1", 1),
+          msg("u2", "p0", "USER", 50, "r2", 0), msg("m2", "u2", "MODEL", 20, "r2", 10),
+          msg("m2b", "u1", "MODEL", 10, "r2", 10)});
+    plan("two_groups",
+         {run("r1", std::nullopt, 100), run("r3", std::nullopt, 110),
+          run("r2", std::nullopt, 200), run("r4", std::nullopt, 210)},
+         {msg("u1", "p0", "USER", 10, "r1", 0, "fpA"),
+          msg("m1", "u1", "MODEL", 11, "r1", 1, "fpA"),
+          msg("u3", "pB", "USER", 12, "r3", 0, "fpB"),
+          msg("m3", "u3", "MODEL", 13, "r3", 1, "fpB"),
+          msg("u2", "p0", "USER", 14, "r2", 0, "fpA"),
+          msg("m2", "u2", "MODEL", 15, "r2", 1, "fpA"),
+          msg("u4", "pB", "USER", 16, "r4", 0, "fpB"),
+          msg("m4", "u4", "MODEL", 17, "r4", 1, "fpB")});
+    plan("two_groups_selected",
+         {run("r1", std::nullopt, 100), run("r3", std::nullopt, 110),
+          run("r2", std::nullopt, 200), run("r4", std::nullopt, 210)},
+         {msg("u1", "p0", "USER", 10, "r1", 0, "fpA"),
+          msg("m1", "u1", "MODEL", 11, "r1", 1, "fpA"),
+          msg("u3", "pB", "USER", 12, "r3", 0, "fpB"),
+          msg("m3", "u3", "MODEL", 13, "r3", 1, "fpB"),
+          msg("u2", "p0", "USER", 14, "r2", 0, "fpA"),
+          msg("m2", "u2", "MODEL", 15, "r2", 1, "fpA"),
+          msg("u4", "pB", "USER", 16, "r4", 0, "fpB"),
+          msg("m4", "u4", "MODEL", 17, "r4", 1, "fpB")},
+         selections({{"pB", "u4"}, {"p0", "u2"}}));
+    plan("group_by_parent_run",
+         {run("r1", std::nullopt, 100), run("r2", std::nullopt, 200), run("ra", "pr", 100),
+          run("rb", "pr", 200)},
+         {msg("u1", "p0", "USER", 10, "r1", 0, "fpA"),
+          msg("m1", "u1", "MODEL", 11, "r1", 1, "fpA"),
+          msg("u2", "p0", "USER", 12, "r2", 0, "fpA"),
+          msg("m2", "u2", "MODEL", 13, "r2", 1, "fpA"),
+          msg("ua", "pa", "USER", 14, "ra", 0, "fpA"),
+          msg("ma", "ua", "MODEL", 15, "ra", 1, "fpA"),
+          msg("ub", "pa", "USER", 16, "rb", 0, "fpA"),
+          msg("mb", "ub", "MODEL", 17, "rb", 1, "fpA")});
+
+    // ---- fingerprint ----------------------------------------------------------
+    fingerprint("fingerprint_basic", "hello");
+    fingerprint("fingerprint_unicode", "Привет, мир", 3);
+    fingerprint("fingerprint_empty_obj", "text", 0, "{}");
+    fingerprint("fingerprint_strip_original_uri", "text", 1,
+                "{\"a\":[{\"originalUri\":\"x\",\"b\":1}],\"originalUri\":\"y\"}");
+    fingerprint("fingerprint_invalid_json", "text", 2, "not json");
+    fingerprint("fingerprint_blank_meta", "text", 0, "   ");
+    fingerprint("fingerprint_numbers", "t", 0,
+                "{\"n\":1.50,\"e\":1e3,\"neg\":-0,\"bool\":true,\"nil\":null}");
+    fingerprint("fingerprint_escapes", "t", 0,
+                "{\"s\":\"line\\nquote\\\"back\\\\slash\\u0001\",\"raw\":\"héllo\"}");
+    fingerprint("fingerprint_nul_text", std::string("a\0b", 3), -1);
+    fingerprint("fingerprint_scalar_meta", "t", 0, "\"top\"");
+    fingerprint("fingerprint_array_meta", "t", 0, "[1,\"x\",null]");
+    fingerprint("fingerprint_nested_uri_array", "t", 4,
+                "[{\"originalUri\":\"a\",\"keep\":[{\"originalUri\":\"b\",\"v\":\"é\"}]}]");
+
+    remove_stale(scenarios);
+    const FormatOptions compact{Format::Compact, false}; // separators=(",", ":"), ensure_ascii=False
+    for (const auto& [name, value] : entries) {
+        write_scenario(scenarios, name, value, compact);
+    }
+    std::cout << "wrote " << entries.size() << " scenarios to " << scenarios.string() << "\n";
+}
+
+// shell-tool-backends/gen_scenarios.py — indent=2, ensure_ascii=False. Scenarios are numbered
+// by insertion order (%03d-name). SSE lines are "event: X" plus "data: " + Compact JSON.
+// Python: sse(event, payload) -> ["event: X", "data: {...}"] (flat array)
+// stream["lines"] is a flat array of these strings.
+void profile_shell_tool_backends(const fs::path& scenarios) {
+    std::vector<std::pair<std::string, json::Value>> entries;
+    auto add = [&](const std::string& name, json::Value value) {
+        char prefix[8];
+        std::snprintf(prefix, sizeof(prefix), "%03d", static_cast<int>(entries.size()) + 1);
+        entries.emplace_back(std::string(prefix) + "-" + name, std::move(value));
+    };
+    auto compact = [](const json::Value& value) {
+        return serialize(value, FormatOptions{Format::Compact, false});
+    };
+    auto sse_event = [](const std::string& event) {
+        return str("event: " + event);
+    };
+    auto sse_data = [&](const json::Value& payload) {
+        return str("data: " + compact(payload));
+    };
+    auto sse_pair = [&](const std::string& event, const json::Value& payload) {
+        return std::vector<json::Value>{sse_event(event), sse_data(payload)};
+    };
+    auto concat_sse = [](std::vector<std::vector<json::Value>> pairs) {
+        std::vector<json::Value> lines;
+        for (auto& pair : pairs) {
+            for (auto& element : pair) lines.push_back(std::move(element));
+        }
+        return lines;
+    };
+    auto conch_device = [](std::string name = "conch-box",
+                           std::string url = "http://conch.local:9",
+                           std::string api_key = "", std::string pub = "") {
+        return object({{"name", str(name)},
+                       {"type", str("conch")},
+                       {"serverUrl", str(url)},
+                       {"apiKey", str(api_key)},
+                       {"conchPublicKey", str(pub)},
+                       {"description", str("Conch host")}});
+    };
+    auto ssh_device = [](std::string name = "pi", std::string host = "10.0.0.5",
+                         std::int64_t port = 22, std::string user = "pi",
+                         std::string password = "pw", std::string host_key = "") {
+        return object({{"name", str(name)},
+                       {"type", str("ssh")},
+                       {"sshHost", str(host)},
+                       {"sshPort", number(port)},
+                       {"sshUser", str(user)},
+                       {"sshPassword", str(password)},
+                       {"sshHostKey", str(host_key)},
+                       {"description", str("Lab Pi")}});
+    };
+    auto stream_ok = [](std::vector<json::Value> lines) {
+        return object({{"code", number(200)}, {"lines", array(std::move(lines))}});
+    };
+    auto stream_http_error = [](std::int64_t code, const std::string& body) {
+        return object({{"code", number(code)}, {"error_body", str(body)}});
+    };
+    auto stream_failure = [](const std::string& failure, const std::string& detail) {
+        return object({{"failure", str(failure)}, {"failure_detail", str(detail)}});
+    };
+    auto conch_execute = [&](const std::string& name, json::Value stream,
+                             std::optional<json::Value> device = std::nullopt,
+                             std::string op = "conch_execute", std::string command = "ls -la", std::string workdir = "",
+                             std::int64_t timeout_ms = 30000,
+                             std::vector<std::pair<std::string, json::Value>> extra = {}) {
+        std::vector<std::pair<std::string, json::Value>> members = {
+            {"op", str(op)},
+            {"device", device ? std::move(*device) : conch_device()},
+            {"command", str(command)},
+            {"workdir", str(workdir)},
+            {"timeout_ms", number(timeout_ms)},
+            {"stream", std::move(stream)}};
+        for (auto& [key, value] : extra) members.emplace_back(std::move(key), std::move(value));
+        add(name, object(std::move(members)));
+    };
+    auto conch_file = [&](const std::string& name, const std::string& op,
+                          json::Value response, std::optional<json::Value> device,
+                          std::vector<std::pair<std::string, json::Value>> kwargs) {
+        std::vector<std::pair<std::string, json::Value>> members = {
+            {"op", str(op)},
+            {"device", device ? std::move(*device) : conch_device()},
+            {"response", std::move(response)}};
+        for (auto& [key, value] : kwargs) members.emplace_back(std::move(key), std::move(value));
+        add(name, object(std::move(members)));
+    };
+    auto ssh_execute = [&](const std::string& name, json::Value jsch,
+                           std::optional<json::Value> device = std::nullopt,
+                           std::string op = "ssh_execute", std::string command = "ls -la",
+                           std::string workdir = "", std::int64_t timeout_ms = 30000,
+                           std::vector<std::pair<std::string, json::Value>> extra = {}) {
+        std::vector<std::pair<std::string, json::Value>> members = {
+            {"op", str(op)},
+            {"device", device ? std::move(*device) : ssh_device()},
+            {"command", str(command)},
+            {"workdir", str(workdir)},
+            {"timeout_ms", number(timeout_ms)},
+            {"jsch", std::move(jsch)}};
+        for (auto& [key, value] : extra) members.emplace_back(std::move(key), std::move(value));
+        add(name, object(std::move(members)));
+    };
+    auto ssh_file = [&](const std::string& name, const std::string& op, json::Value jsch,
+                        std::optional<json::Value> device,
+                        std::vector<std::pair<std::string, json::Value>> kwargs) {
+        std::vector<std::pair<std::string, json::Value>> members = {
+            {"op", str(op)},
+            {"device", device ? std::move(*device) : ssh_device()},
+            {"jsch", std::move(jsch)}};
+        for (auto& [key, value] : kwargs) members.emplace_back(std::move(key), std::move(value));
+        add(name, object(std::move(members)));
+    };
+    auto sandbox_execute = [&](const std::string& name, json::Value sandbox,
+                               std::string command = "ls", std::string workdir = "",
+                               std::int64_t timeout_ms = 30000) {
+        add(name, object({{"op", str("sandbox_execute")},
+                          {"command", str(command)},
+                          {"workdir", str(workdir)},
+                          {"timeout_ms", number(timeout_ms)},
+                          {"sandbox", std::move(sandbox)}}));
+    };
+
+    const std::string api_key = "secret-api-key";
+    const std::string presented = "server-host-key";
+    const std::string presented_b64 = "c2VydmVyLWhvc3Qta2V5";
+
+    // ---- conch_execute --------------------------------------------------------
+    conch_execute("ce-url-blank",
+                  stream_ok(concat_sse({sse_pair("result", object({{"exit_code", number(0)}}))})),
+                  conch_device("conch-box", ""));
+    conch_execute(
+        "ce-plain-success",
+        stream_ok(concat_sse(
+            {sse_pair("line", object({{"line", str("hello")}, {"stream", str("stdout")}})),
+             sse_pair("result", object({{"exit_code", number(0)}}))})));
+    conch_execute(
+        "ce-plain-stderr",
+        stream_ok(concat_sse(
+            {sse_pair("line", object({{"line", str("out1")}, {"stream", str("stdout")}})),
+             sse_pair("line", object({{"line", str("out2")}, {"stream", str("stdout")}})),
+             sse_pair("line", object({{"line", str("err1")}, {"stream", str("stderr")}})),
+             sse_pair("result", object({{"exit_code", number(0)}}))})));
+    conch_execute(
+        "ce-warning",
+        stream_ok(concat_sse(
+            {sse_pair("line", object({{"line", str("x")}, {"stream", str("stdout")}})),
+             sse_pair("warning", object({{"message", str("disk almost full")}})),
+             sse_pair("result", object({{"exit_code", number(0)}}))})));
+    conch_execute(
+        "ce-error-terminal",
+        stream_ok(concat_sse({sse_pair("error", object({{"message", str("command not found")},
+                                                        {"timed_out", boolean(true)}}))})));
+    conch_execute(
+        "ce-encrypted-success", stream_ok({
+            sse_event("line"),
+            sse_data(object({{"_conch_event", str("line")},
+                             {"_conch_sequence", number(0)},
+                             {"line", str("secret")},
+                             {"stream", str("stdout")}})),
+            sse_event("result"),
+            sse_data(object({{"_conch_event", str("result")},
+                             {"_conch_sequence", number(1)},
+                             {"exit_code", number(0)}}))}),
+        conch_device("conch-box", "http://conch.local:9", api_key));
+    conch_execute(
+        "ce-encrypted-warning", stream_ok({
+            sse_event("warning"),
+            sse_data(object({{"_conch_event", str("warning")},
+                             {"_conch_sequence", number(0)},
+                             {"message", str("quota at 90%")}})),
+            sse_event("result"),
+            sse_data(object({{"_conch_event", str("result")},
+                             {"_conch_sequence", number(1)},
+                             {"exit_code", number(3)}}))}),
+        conch_device("conch-box", "http://conch.local:9", api_key));
+    conch_execute("ce-http-error", stream_http_error(500, "oops"));
+    conch_execute("ce-http-empty", stream_http_error(500, ""));
+    conch_execute("ce-http-long-error", stream_http_error(502, std::string(300, 'z')));
+    conch_execute("ce-stream-timeout", stream_failure("socket_timeout", "read timed out"));
+    conch_execute("ce-stream-unknown-host", stream_failure("unknown_host", "conch.local"));
+    conch_execute("ce-sse-unsupported-event",
+                  stream_ok({sse_event("bogus"), str("data: {}")}));
+    conch_execute("ce-sse-no-terminal",
+                  stream_ok({sse_pair("line", object({{"line", str("x")},
+                                                     {"stream", str("stdout")}}))}));
+    conch_execute("ce-fetch-handshake-fails",
+                  stream_ok(concat_sse({sse_pair("result", object({{"exit_code", number(0)}}))})),
+                  conch_device("conch-box", "http://conch.local:9", api_key),
+                  "conch_execute", "ls -la", "", 30000,
+                  {{"handshake_sign_with", str("other-key")}});
+    conch_execute("ce-workdir-body",
+                  stream_ok(concat_sse({sse_pair("result", object({{"exit_code", number(0)}}))})),
+                  std::nullopt, "conch_execute", "ls -la", "/home/pi");
+    conch_execute(
+        "ce-events-deltas",
+        stream_ok(concat_sse(
+            {sse_pair("line", object({{"line", str("hello")}, {"stream", str("stdout")}})),
+             sse_pair("line", object({{"line", str("world")}, {"stream", str("stdout")}})),
+             sse_pair("result", object({{"exit_code", number(0)}}))})),
+        std::nullopt, "conch_execute_events");
+
+    // ---- conch file passthrough ----------------------------------------------
+    conch_file("cr-passthrough", "conch_file_read",
+               object({{"code", number(200)},
+                       {"body", str(compact(object({{"content", str("hi")},
+                                                    {"size", number(2)},
+                                                    {"lines", number(1)},
+                                                    {"totalLines", number(1)}})))}}),
+               std::nullopt, {{"path", str("/data/a.txt")}, {"offset", number(0)},
+                              {"limit", number(0)}});
+    conch_file("cr-throws", "conch_file_read",
+               object({{"failure", str("unknown_host")}, {"failure_detail", str("db")}}),
+               std::nullopt, {{"path", str("/data/a.txt")}, {"offset", number(0)},
+                              {"limit", number(0)}});
+    conch_file("cw-ok", "conch_file_write",
+               object({{"code", number(200)}, {"body", str("{}")}}), std::nullopt,
+               {{"path", str("/data/b.txt")}, {"content", str("payload")}});
+    conch_file("cw-error", "conch_file_write",
+               object({{"code", number(200)},
+                       {"body", str(compact(object({{"error", str("permission denied")}})))}}),
+               std::nullopt,
+               {{"path", str("/data/b.txt")}, {"content", str("payload")}});
+    conch_file("cw-encrypted", "conch_file_write",
+               object({{"code", number(200)}, {"body", str("{}")}}),
+               conch_device("conch-box", "http://conch.local:9", api_key),
+               {{"path", str("/data/b.txt")}, {"content", str("payload")}});
+    conch_file("ce-file-edit-passthrough", "conch_file_edit",
+               object({{"code", number(200)},
+                       {"body", str(compact(object({{"replacements", number(1)},
+                                                    {"sha256", str("aa")}})))}}),
+               std::nullopt,
+               {{"path", str("/data/c.txt")}, {"old_string", str("foo")},
+                {"new_string", str("baz")}, {"replace_all", boolean(false)}});
+    conch_file("cg-error", "conch_file_glob",
+               object({{"code", number(200)},
+                       {"body", str(compact(object({{"error", str("bad pattern")}})))}}),
+               std::nullopt,
+               {{"pattern", str("*.txt")}, {"path", str("")}, {"depth", null_value()}});
+    conch_file(
+        "cgr-matches", "conch_file_grep",
+        object({{"code", number(200)},
+                {"body", str(compact(object(
+                     {{"matches", array({object({{"path", str("/a")},
+                                                 {"line", number(3)},
+                                                 {"content", str("hit")}})})},
+                      {"truncated", boolean(false)}})))}}),
+        std::nullopt,
+        {{"pattern", str("hit")}, {"path", str("")}, {"glob", str("")}});
+
+    // ---- ssh_execute ----------------------------------------------------------
+    ssh_execute("ssh-ok",
+                object({{"presented_key", str(presented)},
+                        {"exit_status", number(7)},
+                        {"stdout", str("line1\nline2")},
+                        {"stderr", str("err1")}}));
+    ssh_execute("ssh-blank-stderr",
+                object({{"presented_key", str(presented)},
+                        {"exit_status", number(0)},
+                        {"stdout", str("only-out")},
+                        {"stderr", str("")}}));
+    ssh_execute("ssh-strict-match",
+                object({{"presented_key", str(presented)},
+                        {"exit_status", number(0)},
+                        {"stdout", str("ok")}}),
+                ssh_device("pi", "10.0.0.5", 22, "pi", "pw", presented_b64));
+    ssh_execute("ssh-strict-reject",
+                object({{"presented_key", str(presented)},
+                        {"strict_rejection", str("host key rejected by policy")}}),
+                ssh_device("pi", "10.0.0.5", 22, "pi", "pw",
+                           "pinned-key-AAAAAAAAAAAAAAAAAAAAAA=="));
+    ssh_execute("ssh-connect-failure",
+                object({{"connect_failure", str("Connection refused")}}));
+    ssh_execute("ssh-no-host", object({{"presented_key", str(presented)}}),
+                ssh_device("pi", ""));
+    ssh_execute("ssh-timeout",
+                object({{"presented_key", str(presented)},
+                        {"never_close", boolean(true)},
+                        {"exit_status", number(0)}}),
+                std::nullopt, "ssh_execute", "ls -la", "", 500);
+    ssh_execute("ssh-workdir-escape",
+                object({{"presented_key", str(presented)},
+                        {"exit_status", number(0)},
+                        {"stdout", str("ran")}}),
+                std::nullopt, "ssh_execute", "ls -la", "/home/o'brien");
+    ssh_execute("ssh-events",
+                object({{"presented_key", str(presented)},
+                        {"exit_status", number(0)},
+                        {"stdout", str("done")}}),
+                std::nullopt, "ssh_execute_events");
+    add("ssh-fingerprint-valid",
+        object({{"op", str("ssh_fingerprint")}, {"base64_key", str("aGVsbG8=")}}));
+    add("ssh-fingerprint-invalid",
+        object({{"op", str("ssh_fingerprint")}, {"base64_key", str("!!not-base64!!")}}));
+
+    // ---- ssh file ops ---------------------------------------------------------
+    ssh_file("sr-basic", "ssh_file_read",
+             object({{"pwd", str("/home/pi")},
+                     {"stats", object({{"/home/pi/x.txt", object({{"size", number(11)}})}})},
+                     {"file_bytes",
+                      object({{"/home/pi/x.txt", str("Hello World")}})}}),
+             std::nullopt,
+             {{"path", str("/home/pi/x.txt")}, {"offset", number(0)}, {"limit", number(0)}});
+    ssh_file("sr-offset-rewind-read", "ssh_file_read",
+             object({{"pwd", str("/home/pi")},
+                     {"stats", object({{"/home/pi/x.txt", object({{"size", number(11)}})}})},
+                     {"file_bytes",
+                      object({{"/home/pi/x.txt", str("Hello World")}})}}),
+             std::nullopt,
+             {{"path", str("/home/pi/x.txt")}, {"offset", number(6)}, {"limit", number(0)}});
+    ssh_file("sr-stat-missing", "ssh_file_read",
+             object({{"pwd", str("/home/pi")}, {"stats", object({})}}), std::nullopt,
+             {{"path", str("/home/pi/gone.txt")}, {"offset", number(0)},
+              {"limit", number(500)}});
+    ssh_file("sr-session-failure", "ssh_file_read",
+             object({{"connect_failure", str("Connection refused")}}), std::nullopt,
+             {{"path", str("/home/pi/x.txt")}, {"offset", number(0)}, {"limit", number(0)}});
+
+    ssh_file("sw-parents-exist", "ssh_file_write",
+             object({{"stats", object({{"/home", object({{"is_dir", boolean(true)}})},
+                                       {"/home/pi", object({{"is_dir", boolean(true)}})}})}}),
+             std::nullopt,
+             {{"path", str("/home/pi/new.txt")}, {"content", str("data")}});
+    ssh_file("sw-mkdir-parent", "ssh_file_write",
+             object({{"stats", object({{"/home", object({{"is_dir", boolean(true)}})}})},
+                     {"mkdir_failures", array({})}}),
+             std::nullopt,
+             {{"path", str("/home/pi/new/deep.txt")}, {"content", str("data")}});
+    ssh_file("sw-put-fails", "ssh_file_write",
+             object({{"stats", object({{"/home", object({{"is_dir", boolean(true)}})},
+                                       {"/home/pi", object({{"is_dir", boolean(true)}})}})},
+                     {"put_failures",
+                      object({{"/home/pi/new.txt", str("disk full")}})}}),
+             std::nullopt,
+             {{"path", str("/home/pi/new.txt")}, {"content", str("data")}});
+
+    ssh_file("se-basic", "ssh_file_edit",
+             object({{"stats", object({{"/home/pi/c.txt", object({{"size", number(7)}})}})},
+                     {"file_bytes", object({{"/home/pi/c.txt", str("foo bar")}})}}),
+             std::nullopt,
+             {{"path", str("/home/pi/c.txt")}, {"old_string", str("foo")},
+              {"new_string", str("baz")}, {"replace_all", boolean(false)}});
+    ssh_file("se-not-found", "ssh_file_edit",
+             object({{"stats", object({{"/home/pi/c.txt", object({{"size", number(7)}})}})},
+                     {"file_bytes", object({{"/home/pi/c.txt", str("foo bar")}})}}),
+             std::nullopt,
+             {{"path", str("/home/pi/c.txt")}, {"old_string", str("nope")},
+              {"new_string", str("baz")}, {"replace_all", boolean(false)}});
+    ssh_file("se-concurrent-change", "ssh_file_edit",
+             object({{"stats", object({{"/home/pi/c.txt", object({{"size", number(7)}})}})},
+                     {"file_bytes", object({{"/home/pi/c.txt", str("foo bar")}})},
+                     {"file_bytes_second",
+                      object({{"/home/pi/c.txt", str("CHANGED!")}})}}),
+             std::nullopt,
+             {{"path", str("/home/pi/c.txt")}, {"old_string", str("foo")},
+              {"new_string", str("baz")}, {"replace_all", boolean(false)}});
+
+    ssh_file("sg-basic", "ssh_file_glob",
+             object({{"pwd", str("/home/pi")},
+                     {"ls", object({{"/home/pi",
+                                     array({array({str("a.txt"), str("false")}),
+                                            array({str("dir"), str("true")})})},
+                                    {"/home/pi/dir",
+                                     array({array({str("b.txt"), str("false")})})}})}}),
+             std::nullopt,
+             {{"pattern", str("*.txt")}, {"path", str("")}, {"depth", null_value()}});
+    ssh_file("sg-depth-1", "ssh_file_glob",
+             object({{"pwd", str("/home/pi")},
+                     {"ls", object({{"/home/pi",
+                                     array({array({str("a.txt"), str("false")}),
+                                            array({str("dir"), str("true")})})},
+                                    {"/home/pi/dir",
+                                     array({array({str("b.txt"), str("false")})})}})}}),
+             std::nullopt,
+             {{"pattern", str("*.txt")}, {"path", str("")}, {"depth", number(1)}});
+    ssh_file("sg-subdir-ls-fails", "ssh_file_glob",
+             object({{"pwd", str("/home/pi")},
+                     {"ls", object({{"/home/pi",
+                                     array({array({str("a.txt"), str("false")}),
+                                            array({str("dir"), str("true")})})}})}}),
+             std::nullopt,
+             {{"pattern", str("*.txt")}, {"path", str("")}, {"depth", null_value()}});
+
+    ssh_file("sgr-server-side", "ssh_file_grep",
+             object({{"pwd", str("/home/pi")},
+                     {"exit_status", number(0)},
+                     {"stdout", str("a.kt:3:hit line\nb.kt:7:12:hit two\njunk\nc.kt:nope:x\n")},
+                     {"stderr", str("")}}),
+             std::nullopt,
+             {{"pattern", str("it's")}, {"path", str("")}, {"glob", str("*.kt")}});
+    ssh_file("sgr-server-no-match", "ssh_file_grep",
+             object({{"pwd", str("/home/pi")},
+                     {"exit_status", number(1)},
+                     {"stdout", str("")},
+                     {"stderr", str("")}}),
+             std::nullopt,
+             {{"pattern", str("absent")}, {"path", str("")}, {"glob", str("")}});
+    ssh_file("sgr-fallback", "ssh_file_grep",
+             object({{"pwd", str("/home/pi")},
+                     {"exit_status", number(2)},
+                     {"stdout", str("grep: boom\n")},
+                     {"stderr", str("")},
+                     {"stats", object({{"./a.txt", object({{"size", number(11)}})}})},
+                     {"file_bytes", object({{"./a.txt", str("hello hit\nno")}})},
+                     {"ls", object({{".", array({array({str("a.txt"), str("false")})})}})}}),
+             std::nullopt,
+             {{"pattern", str("hit")}, {"path", str("")}, {"glob", str("")}});
+    ssh_file("sgr-fallback-invalid-regex", "ssh_file_grep",
+             object({{"pwd", str("/home/pi")},
+                     {"exit_status", number(2)},
+                     {"stdout", str("")},
+                     {"stderr", str("")},
+                     {"stats", object({{"./a.txt", object({{"size", number(9)}})}})},
+                     {"file_bytes", object({{"./a.txt", str("a [b] c\nx")}})},
+                     {"ls", object({{".", array({array({str("a.txt"), str("false")})})}})}}),
+             std::nullopt,
+             {{"pattern", str("[")}, {"path", str("")}, {"glob", str("")}});
+
+    // ---- sandbox --------------------------------------------------------------
+    sandbox_execute("sbx-not-installed", object({{"available", boolean(false)}}));
+    sandbox_execute("sbx-success",
+                    object({{"execute_result",
+                             object({{"stdout", str("pkg list")},
+                                     {"stderr", str("")},
+                                     {"exit_code", number(0)}})}}));
+    sandbox_execute("sbx-warning-and-stderr",
+                    object({{"execute_result",
+                             object({{"stdout", str("out")},
+                                     {"stderr", str("err")},
+                                     {"exit_code", number(2)},
+                                     {"warning", str("proot fallback engaged")}})}}));
+    sandbox_execute("sbx-exec-fails",
+                    object({{"execute_failure", str("proot crashed")}}));
+    add("sbx-file-read",
+        object({{"op", str("sandbox_file_read")},
+                {"path", str("/mnt/home/a.txt")},
+                {"offset", number(0)},
+                {"limit", number(0)},
+                {"sandbox",
+                 object({{"file_read_result",
+                          object({{"content", str("sandbox data")},
+                                  {"lines", number(1)},
+                                  {"total_lines", number(1)},
+                                  {"total_bytes", number(12)},
+                                  {"returned_bytes", number(12)},
+                                  {"offset", number(0)},
+                                  {"limit", number(1048576)},
+                                  {"truncated", boolean(false)}})}})}}));
+    add("sbx-file-read-throws",
+        object({{"op", str("sandbox_file_read")},
+                {"path", str("/mnt/home/a.txt")},
+                {"offset", number(0)},
+                {"limit", number(500)},
+                {"sandbox", object({{"file_read_failure", str("rootfs vanished")}})}}));
+    add("sbx-file-write-error",
+        object({{"op", str("sandbox_file_write")},
+                {"path", str("/mnt/home/b.txt")},
+                {"content", str("x")},
+                {"sandbox", object({{"file_write_error", str("read-only mount")}})}}));
+    add("sbx-file-edit",
+        object({{"op", str("sandbox_file_edit")},
+                {"path", str("/mnt/home/c.txt")},
+                {"old_string", str("foo")},
+                {"new_string", str("baz")},
+                {"replace_all", boolean(false)},
+                {"sandbox",
+                 object({{"file_edit_result",
+                          object({{"replacements", number(2)}, {"sha256", str("cafe")}})}})}}));
+    add("sbx-file-glob-ok",
+        object({{"op", str("sandbox_file_glob")},
+                {"pattern", str("*.txt")},
+                {"path", str("")},
+                {"depth", null_value()},
+                {"sandbox",
+                 object({{"file_glob_result",
+                          object({{"files", array({str("/mnt/home/a.txt")})},
+                                  {"truncated", boolean(false)}})}})}}));
+    add("sbx-file-glob-failure",
+        object({{"op", str("sandbox_file_glob")},
+                {"pattern", str("[")},
+                {"path", str("")},
+                {"depth", null_value()},
+                {"sandbox", object({{"file_glob_failure", str("glob blew up")}})}}));
+    add("sbx-file-grep-ok",
+        object({{"op", str("sandbox_file_grep")},
+                {"pattern", str("x")},
+                {"path", str("")},
+                {"glob", str("")},
+                {"sandbox",
+                 object({{"file_grep_result",
+                          object({{"matches",
+                                   array({object({{"path", str("/mnt/home/a.txt")},
+                                                  {"line", number(1)},
+                                                  {"content", str("xyz")}})})},
+                                  {"truncated", boolean(true)}})}})}}));
+    add("sbx-file-grep-failure",
+        object({{"op", str("sandbox_file_grep")},
+                {"pattern", str("x")},
+                {"path", str("")},
+                {"glob", str("")},
+                {"sandbox", object({{"file_grep_failure", str("grep unavailable")}})}}));
+
+    remove_stale(scenarios);
+    const FormatOptions pretty{Format::Pretty2, false}; // indent=2, ensure_ascii=False
+    for (const auto& [name, value] : entries) {
+        write_scenario(scenarios, name, value, pretty);
+    }
+    std::cout << "wrote " << entries.size() << " scenarios to " << scenarios.string() << "\n";
+}
 }  // namespace
 
 int main(int argc, char** argv) {
@@ -13242,7 +14538,10 @@ int main(int argc, char** argv) {
                   << "  conversation-runtime   conversation-runtime/gen_scenarios.py\n"
                   << "  export-spool           export-spool/gen_scenarios.py\n"
                   << "  native-conversation-graph-source native-conversation-graph-source/gen_scenarios.py\n"
-                  << "  chat-search-dao        chat-search-dao/gen_scenarios.py\n";
+                  << "  chat-search-dao        chat-search-dao/gen_scenarios.py\n"
+                  << "  shell-tool-backends    shell-tool-backends/gen_scenarios.py\n"
+                  << "  maintenance-debt       maintenance-debt/gen_scenarios.py\n"
+                  << "  regeneration-tree-repair regeneration-tree-repair/gen_scenarios.py\n";
         return 2;
     }
     const std::string profile = argv[1];
@@ -13385,6 +14684,12 @@ int main(int argc, char** argv) {
         profile_native_conversation_graph_source(scenarios);
     } else if (profile == "chat-search-dao") {
         profile_chat_search_dao(scenarios);
+    } else if (profile == "shell-tool-backends") {
+        profile_shell_tool_backends(scenarios);
+    } else if (profile == "maintenance-debt") {
+        profile_maintenance_debt(scenarios);
+    } else if (profile == "regeneration-tree-repair") {
+        profile_regeneration_tree_repair(scenarios);
     } else {
         std::cerr << "unknown profile: " << profile << "\n";
         return 2;

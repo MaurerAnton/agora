@@ -9911,6 +9911,773 @@ void profile_token_pricing(const fs::path& scenarios) {
     std::cout << "Wrote " << entries.size() << " scenarios to " << scenarios.string() << "\n";
 }
 
+// shell-client/gen_scenarios.py — indent=2, ensure_ascii=False, files numbered "%03d-<name>.json".
+// body() embeds json.dumps(obj, ensure_ascii=False, separators=(",", ":")) as a string; the dict
+// update() semantics keep existing key positions and append new keys.
+void profile_shell_client(const fs::path& scenarios) {
+    std::vector<std::pair<std::string, json::Value>> entries;
+    int counter = 0;
+    auto add = [&](const char* name, std::vector<std::pair<std::string, json::Value>> members) {
+        ++counter;
+        char key[96];
+        std::snprintf(key, sizeof(key), "%03d-%s", counter, name);
+        entries.emplace_back(key, object(std::move(members)));
+    };
+    static constexpr const char* kServer = "http://conch.local:8080";
+    static constexpr const char* kKey = "secret-api-key";
+    auto body = [](const json::Value& value) {
+        return serialize(value, FormatOptions{Format::Compact, false});
+    };
+    auto response = [](std::int64_t code, const std::string& body_text) {
+        return object({{"code", number(code)}, {"body", str(body_text)}});
+    };
+
+    // ---- fetch_public_key ----
+    auto fetch = [&](const char* name,
+                     std::vector<std::pair<std::string, json::Value>> extra = {}) {
+        std::vector<std::pair<std::string, json::Value>> members = {
+            {"op", str("fetch_public_key")},
+            {"server_url", str(kServer)},
+            {"api_key", str(kKey)},
+        };
+        for (auto& [key, value] : extra) {
+            bool replaced = false;
+            for (auto& existing : members) {
+                if (existing.first == key) {
+                    existing.second = std::move(value);
+                    replaced = true;
+                    break;
+                }
+            }
+            if (!replaced) members.emplace_back(key, std::move(value));
+        }
+        add(name, std::move(members));
+    };
+    fetch("fetch-success");
+    fetch("fetch-blank-key", {{"api_key", str("")}});
+    fetch("fetch-wrong-sign-key", {{"handshake_sign_with", str("other-key")}});
+    fetch("fetch-missing-features",
+          {{"handshake_features", str("hkdf-extract-v2,response-auth-v1")}});
+    fetch("fetch-challenge-mismatch", {{"handshake_challenge", str("different")}});
+    fetch("fetch-http-failure", {{"handshake_http_failure", boolean(true)},
+                                 {"handshake_failure_code", number(503)},
+                                 {"handshake_failure_body", str("maintenance")}});
+    fetch("fetch-http-empty", {{"handshake_http_failure", boolean(true)},
+                               {"handshake_failure_code", number(500)},
+                               {"handshake_failure_body", str("")}});
+    fetch("fetch-http-long-body", {{"handshake_http_failure", boolean(true)},
+                                   {"handshake_failure_code", number(502)},
+                                   {"handshake_failure_body", str(std::string(300, 'x'))}});
+    fetch("fetch-unknown-host", {{"transport_failure", str("unknown_host")},
+                                 {"transport_failure_detail", str("conch.local")}});
+    fetch("fetch-connect", {{"transport_failure", str("connect")},
+                            {"transport_failure_detail", str("connection refused")}});
+    fetch("fetch-socket-timeout", {{"transport_failure", str("socket_timeout")},
+                                   {"transport_failure_detail", str("read timed out")}});
+    fetch("fetch-interrupted-io", {{"transport_failure", str("interrupted_io")},
+                                   {"transport_failure_detail", str("interrupted")}});
+    fetch("fetch-ssl", {{"transport_failure", str("ssl")},
+                        {"transport_failure_detail", str("bad cert")}});
+    fetch("fetch-plain-exception", {{"transport_failure", str("plain")},
+                                    {"transport_failure_detail", str("boom")}});
+    fetch("fetch-cached-invalid", {{"cached_public_key", str("garbage-not-a-key")}});
+    fetch("fetch-decode-key-failure", {{"handshake_public_key", str("AAAA")}});
+
+    // ---- prepare_request ----
+    auto prepare = [&](const char* name,
+                       std::vector<std::pair<std::string, json::Value>> extra = {}) {
+        std::vector<std::pair<std::string, json::Value>> members = {
+            {"op", str("prepare_request")},
+            {"server_url", str(kServer)},
+            {"api_key", str(kKey)},
+            {"command", str("ls -la")},
+            {"timeout_ms", number(5000)},
+            {"workdir", str("")},
+        };
+        for (auto& [key, value] : extra) {
+            bool replaced = false;
+            for (auto& existing : members) {
+                if (existing.first == key) {
+                    existing.second = std::move(value);
+                    replaced = true;
+                    break;
+                }
+            }
+            if (!replaced) members.emplace_back(key, std::move(value));
+        }
+        add(name, std::move(members));
+    };
+    prepare("prepare-plain", {{"api_key", str("")}});
+    prepare("prepare-plain-workdir",
+            {{"api_key", str("")}, {"workdir", str("/home/user")}});
+    prepare("prepare-encrypted", {{"run_fetch_first", boolean(true)}});
+    prepare("prepare-no-fetch");
+    prepare("prepare-plain-command-unicode",
+            {{"api_key", str("")}, {"command", str("echo héllo 世界")}});
+
+    // ---- decrypt_sse ----
+    auto decrypt = [&](const char* name,
+                       std::vector<std::pair<std::string, json::Value>> extra = {}) {
+        std::vector<std::pair<std::string, json::Value>> members = {
+            {"op", str("decrypt_sse")},
+            {"server_url", str(kServer)},
+            {"api_key", str(kKey)},
+            {"command", str("ls")},
+            {"timeout_ms", number(5000)},
+            {"run_fetch_first", boolean(false)},
+            {"prepare_first", boolean(false)},
+            {"seal_for_session", boolean(false)},
+            {"data", str("x")},
+        };
+        for (auto& [key, value] : extra) {
+            bool replaced = false;
+            for (auto& existing : members) {
+                if (existing.first == key) {
+                    existing.second = std::move(value);
+                    replaced = true;
+                    break;
+                }
+            }
+            if (!replaced) members.emplace_back(key, std::move(value));
+        }
+        add(name, std::move(members));
+    };
+    decrypt("decrypt-no-session");
+    decrypt("decrypt-roundtrip", {{"run_fetch_first", boolean(true)},
+                                  {"prepare_first", boolean(true)},
+                                  {"seal_for_session", boolean(true)},
+                                  {"plaintext", str("hello sse")}});
+    decrypt("decrypt-raw-short", {{"run_fetch_first", boolean(true)},
+                                  {"prepare_first", boolean(true)},
+                                  {"data", str("AAAA")}});
+
+    // ---- file ops and jobs ----
+    auto file_op = [&](const char* name, const char* op,
+                       std::vector<std::pair<std::string, json::Value>> extra) {
+        std::vector<std::pair<std::string, json::Value>> members = {
+            {"op", str(op)},
+            {"server_url", str(kServer)},
+            {"api_key", str("")},
+        };
+        for (auto& [key, value] : extra) {
+            bool replaced = false;
+            for (auto& existing : members) {
+                if (existing.first == key) {
+                    existing.second = std::move(value);
+                    replaced = true;
+                    break;
+                }
+            }
+            if (!replaced) members.emplace_back(key, std::move(value));
+        }
+        add(name, std::move(members));
+    };
+
+    // ---- file_read ----
+    file_op("read-plain-basic", "file_read",
+            {{"path", str("/tmp/a.txt")},
+             {"offset", number(0)},
+             {"limit", number(0)},
+             {"response",
+              response(200, body(object({{"content", str("hello")},
+                                          {"size", number(5)},
+                                          {"lines", number(1)},
+                                          {"totalLines", number(1)}})))}});
+    file_op("read-offset-limit", "file_read",
+            {{"path", str("/tmp/a.txt")},
+             {"offset", number(6)},
+             {"limit", number(5)},
+             {"response",
+              response(200, body(object({{"content", str("World")}, {"size", number(11)}})))}});
+    file_op("read-limit-zero", "file_read",
+            {{"path", str("/a")},
+             {"offset", number(0)},
+             {"limit", number(0)},
+             {"response",
+              response(200, body(object({{"content", str("abc")}, {"size", number(3)}})))}});
+    file_op("read-limit-over-max", "file_read",
+            {{"path", str("/a")},
+             {"offset", number(0)},
+             {"limit", number(2000000)},
+             {"response",
+              response(200, body(object({{"content", str("abc")}, {"size", number(3)}})))}});
+    file_op("read-offset-negative", "file_read",
+            {{"path", str("/a")},
+             {"offset", number(-3)},
+             {"limit", number(0)},
+             {"response",
+              response(200, body(object({{"content", str("abc")}, {"size", number(3)}})))}});
+    file_op("read-offset-past-end", "file_read",
+            {{"path", str("/a")},
+             {"offset", number(10)},
+             {"limit", number(0)},
+             {"response", response(200, body(object({{"size", number(5)}})))}});
+    file_op("read-error-field", "file_read",
+            {{"path", str("/missing")},
+             {"offset", number(0)},
+             {"limit", number(0)},
+             {"response",
+              response(200, body(object({{"content", str("")},
+                                          {"error", str("File not found")}})))}});
+    file_op("read-error-null", "file_read",
+            {{"path", str("/a")},
+             {"offset", number(0)},
+             {"limit", number(0)},
+             {"response",
+              response(200, body(object({{"content", str("x")}, {"error", null_value()}})))}});
+    file_op("read-lines-string", "file_read",
+            {{"path", str("/a")},
+             {"offset", number(0)},
+             {"limit", number(0)},
+             {"response",
+              response(200, body(object({{"content", str("a\nb")},
+                                          {"size", number(3)},
+                                          {"lines", str("5")}})))}});
+    file_op("read-lines-float", "file_read",
+            {{"path", str("/a")},
+             {"offset", number(0)},
+             {"limit", number(0)},
+             {"response",
+              response(200, body(object({{"content", str("a\nb")},
+                                          {"size", number(3)},
+                                          {"lines", float_number(5.5)}})))}});
+    file_op("read-size-string", "file_read",
+            {{"path", str("/a")},
+             {"offset", number(0)},
+             {"limit", number(5)},
+             {"response",
+              response(200, body(object({{"content", str("abcde")}, {"size", str("12")}})))}});
+    file_op("read-truncated-string-flag", "file_read",
+            {{"path", str("/a")},
+             {"offset", number(0)},
+             {"limit", number(5)},
+             {"response",
+              response(200, body(object({{"content", str("abcde")},
+                                          {"size", number(5)},
+                                          {"truncated", str("true")}})))}});
+    file_op("read-truncated-invalid-flag", "file_read",
+            {{"path", str("/a")},
+             {"offset", number(0)},
+             {"limit", number(5)},
+             {"response",
+              response(200, body(object({{"content", str("abcde")},
+                                          {"size", number(9)},
+                                          {"truncated", str("maybe")}})))}});
+    file_op("read-unicode-content", "file_read",
+            {{"path", str("/a")},
+             {"offset", number(0)},
+             {"limit", number(0)},
+             {"response",
+              response(200, body(object({{"content", str("héllo 世界")},
+                                          {"size", number(13)}})))}});
+    file_op("read-http-500", "file_read",
+            {{"path", str("/a")},
+             {"offset", number(0)},
+             {"limit", number(0)},
+             {"response", response(500, "boom")}});
+    file_op("read-encrypted-http-500", "file_read",
+            {{"path", str("/a")},
+             {"offset", number(0)},
+             {"limit", number(0)},
+             {"api_key", str(kKey)},
+             {"script_handshake", boolean(true)},
+             {"response", response(500, "boom")}});
+    file_op("read-http-empty-body", "file_read",
+            {{"path", str("/a")},
+             {"offset", number(0)},
+             {"limit", number(0)},
+             {"response", response(500, "")}});
+    file_op("read-http-long-body", "file_read",
+            {{"path", str("/a")},
+             {"offset", number(0)},
+             {"limit", number(0)},
+             {"response", response(500, std::string(300, 'y'))}});
+    file_op("read-unknown-host", "file_read",
+            {{"path", str("/a")},
+             {"offset", number(0)},
+             {"limit", number(0)},
+             {"transport_failure", str("unknown_host")},
+             {"transport_failure_detail", str("db.internal")}});
+    file_op("read-connect", "file_read",
+            {{"path", str("/a")},
+             {"offset", number(0)},
+             {"limit", number(0)},
+             {"transport_failure", str("connect")},
+             {"transport_failure_detail", str("connection refused")}});
+    file_op("read-socket-timeout", "file_read",
+            {{"path", str("/a")},
+             {"offset", number(0)},
+             {"limit", number(0)},
+             {"transport_failure", str("socket_timeout")},
+             {"transport_failure_detail", str("timeout")}});
+    file_op("read-interrupted-io", "file_read",
+            {{"path", str("/a")},
+             {"offset", number(0)},
+             {"limit", number(0)},
+             {"transport_failure", str("interrupted_io")},
+             {"transport_failure_detail", str("stop")}});
+    file_op("read-ssl", "file_read",
+            {{"path", str("/a")},
+             {"offset", number(0)},
+             {"limit", number(0)},
+             {"transport_failure", str("ssl")},
+             {"transport_failure_detail", str("bad cert")}});
+    file_op("read-plain-exception", "file_read",
+            {{"path", str("/a")},
+             {"offset", number(0)},
+             {"limit", number(0)},
+             {"transport_failure", str("plain")},
+             {"transport_failure_detail", str("kaboom")}});
+    file_op("read-encrypted-auth-invalid", "file_read",
+            {{"path", str("/a")},
+             {"offset", number(0)},
+             {"limit", number(0)},
+             {"api_key", str(kKey)},
+             {"response",
+              object({{"code", number(200)},
+                      {"body", str(body(object({{"content", str("secret")}})))},
+                      {"signature", str("invalid")}})}});
+    file_op("read-encrypted-decrypt-short", "file_read",
+            {{"path", str("/a")},
+             {"offset", number(0)},
+             {"limit", number(0)},
+             {"api_key", str(kKey)},
+             {"response",
+              object({{"code", number(200)},
+                      {"body", str("unused")},
+                      {"raw_body", str("AAAA")},
+                      {"signature", str("valid")}})}});
+    file_op("read-encrypted-success", "file_read",
+            {{"path", str("/a")},
+             {"offset", number(0)},
+             {"limit", number(0)},
+             {"api_key", str(kKey)},
+             {"response",
+              response(200, body(object({{"content", str("secret")}, {"size", number(6)}})))}});
+
+    // ---- file_write ----
+    file_op("write-plain-ok", "file_write",
+            {{"path", str("/tmp/b.txt")},
+             {"content", str("data")},
+             {"response", response(200, "{}")}});
+    file_op("write-plain-error", "file_write",
+            {{"path", str("/tmp/b.txt")},
+             {"content", str("data")},
+             {"response",
+              response(200, body(object({{"error", str("permission denied")}})))}});
+    file_op("write-encrypted-ok", "file_write",
+            {{"path", str("/tmp/b.txt")},
+             {"content", str("data")},
+             {"api_key", str(kKey)},
+             {"response", response(200, "{}")}});
+
+    // ---- file_edit ----
+    file_op("edit-plain-ok", "file_edit",
+            {{"path", str("/tmp/c.txt")},
+             {"old_string", str("foo")},
+             {"new_string", str("bar")},
+             {"replace_all", boolean(false)},
+             {"response",
+              response(200, body(object({{"replacements", number(2)},
+                                          {"sha256", str("abc123")}})))}});
+    file_op("edit-replace-all", "file_edit",
+            {{"path", str("/tmp/c.txt")},
+             {"old_string", str("foo")},
+             {"new_string", str("bar")},
+             {"replace_all", boolean(true)},
+             {"response",
+              response(200, body(object({{"replacements", number(2)},
+                                          {"sha256", str("abc123")}})))}});
+    file_op("edit-error", "file_edit",
+            {{"path", str("/tmp/c.txt")},
+             {"old_string", str("nope")},
+             {"new_string", str("bar")},
+             {"replace_all", boolean(false)},
+             {"response",
+              response(200, body(
+                  object({{"error", str("old_string not found in file")}})))}});
+    file_op("edit-error-null", "file_edit",
+            {{"path", str("/tmp/c.txt")},
+             {"old_string", str("foo")},
+             {"new_string", str("bar")},
+             {"replace_all", boolean(false)},
+             {"response",
+              response(200, body(object({{"replacements", number(1)},
+                                          {"error", null_value()}})))}});
+    file_op("edit-replacements-string", "file_edit",
+            {{"path", str("/tmp/c.txt")},
+             {"old_string", str("foo")},
+             {"new_string", str("bar")},
+             {"replace_all", boolean(false)},
+             {"response",
+              response(200, body(object({{"replacements", str("3")},
+                                          {"sha256", str("deadbeef")}})))}});
+    file_op("edit-missing-fields", "file_edit",
+            {{"path", str("/tmp/c.txt")},
+             {"old_string", str("foo")},
+             {"new_string", str("bar")},
+             {"replace_all", boolean(false)},
+             {"response", response(200, "{}")}});
+
+    // ---- file_glob ----
+    file_op("glob-ok", "file_glob",
+            {{"pattern", str("*.txt")},
+             {"path", str("")},
+             {"depth", null_value()},
+             {"response",
+              response(200, body(object({{"files", array({str("/a.txt"), str("/b.txt")})},
+                                          {"truncated", boolean(false)}})))}});
+    file_op("glob-with-path-depth", "file_glob",
+            {{"pattern", str("*.txt")},
+             {"path", str("/tmp")},
+             {"depth", number(2)},
+             {"response",
+              response(200, body(object({{"files", array({str("/tmp/a.txt")})}})))}});
+    file_op("glob-depth-negative", "file_glob",
+            {{"pattern", str("*")},
+             {"path", str("")},
+             {"depth", number(-1)},
+             {"response", response(200, body(object({{"files", array({})}})))}});
+    file_op("glob-truncated-invalid", "file_glob",
+            {{"pattern", str("*")},
+             {"path", str("")},
+             {"depth", null_value()},
+             {"response",
+              response(200, body(object({{"files", array({str("/x")})},
+                                          {"truncated", str("yes")}})))}});
+    file_op("glob-error", "file_glob",
+            {{"pattern", str("bad[")},
+             {"path", str("")},
+             {"depth", null_value()},
+             {"response",
+              response(200, body(object({{"error", str("bad pattern")}})))}});
+    file_op("glob-not-array", "file_glob",
+            {{"pattern", str("*")},
+             {"path", str("")},
+             {"depth", null_value()},
+             {"response",
+              response(200, body(object({{"files", str("oops")}})))}});
+
+    // ---- file_grep ----
+    file_op("grep-ok", "file_grep",
+            {{"pattern", str("hit")},
+             {"path", str("")},
+             {"glob", str("")},
+             {"response",
+              response(200, body(object(
+                                 {{"matches",
+                                   array({object({{"path", str("/a")},
+                                                  {"line", number(3)},
+                                                  {"content", str("hit me")}})})},
+                                  {"truncated", boolean(true)}})))}});
+    file_op("grep-with-path-glob", "file_grep",
+            {{"pattern", str("hit")},
+             {"path", str("/src")},
+             {"glob", str("*.kt")},
+             {"response",
+              response(200, body(object(
+                                 {{"matches",
+                                   array({object({{"path", str("/src/A.kt")},
+                                                  {"line", number(1)},
+                                                  {"content", str("hit")}})})}})))}});
+    file_op("grep-bad-line", "file_grep",
+            {{"pattern", str("x")},
+             {"path", str("")},
+             {"glob", str("")},
+             {"response",
+              response(200, body(object(
+                                 {{"matches",
+                                   array({object({{"path", str("/a")},
+                                                  {"line", str("abc")}})})}})))}});
+    file_op("grep-truncated-string", "file_grep",
+            {{"pattern", str("x")},
+             {"path", str("")},
+             {"glob", str("")},
+             {"response",
+              response(200, body(object({{"matches", array({})},
+                                          {"truncated", str("true")}})))}});
+    file_op("grep-error", "file_grep",
+            {{"pattern", str("x")},
+             {"path", str("")},
+             {"glob", str("")},
+             {"response",
+              response(200, body(object({{"error", str("regex broke")}})))}});
+
+    // ---- file_image ----
+    file_op("image-ok", "file_image",
+            {{"path", str("/img.png")},
+             {"response",
+              response(200, body(object({{"data", str("AAA")},
+                                          {"mimeType", str("image/png")},
+                                          {"size", number(123)}})))}});
+    file_op("image-error", "file_image",
+            {{"path", str("/img.png")},
+             {"response",
+              response(200, body(object({{"error", str("not an image")}})))}});
+    file_op("image-missing-fields", "file_image",
+            {{"path", str("/img.png")}, {"response", response(200, "{}")}});
+
+    // ---- jobs ----
+    file_op("job-start-plain", "job_start",
+            {{"command", str("ls -la")},
+             {"timeout_ms", number(5000)},
+             {"workdir", str("")},
+             {"response",
+              response(200, body(object({{"job_id", str("job-1")}})))}});
+    file_op("job-start-workdir", "job_start",
+            {{"command", str("ls -la")},
+             {"timeout_ms", number(5000)},
+             {"workdir", str("/home/user")},
+             {"response",
+              response(200, body(object({{"job_id", str("job-1")}})))}});
+    file_op("job-list", "job_list", {{"response", response(200, "[]")}});
+    file_op("job-get", "job_get",
+            {{"job_id", str("job-9")},
+             {"response",
+              response(200, body(object({{"state", str("running")}})))}});
+    file_op("job-stop-timeout", "job_stop",
+            {{"job_id", str("job-9")},
+             {"call_timeout_ms", number(5000)},
+             {"response", response(200, "{}")}});
+    file_op("job-stop-null-timeout", "job_stop",
+            {{"job_id", str("job-9")}, {"response", response(200, "{}")}});
+    file_op("job-ack", "job_ack",
+            {{"job_id", str("job-9")}, {"response", response(200, "{}")}});
+    file_op("job-start-encrypted", "job_start",
+            {{"command", str("ls")},
+             {"timeout_ms", number(1000)},
+             {"workdir", str("")},
+             {"api_key", str(kKey)},
+             {"response",
+              response(200, body(object({{"job_id", str("job-2")}})))}});
+    file_op("job-list-http-error", "job_list",
+            {{"response", response(500, "busy")}});
+
+    remove_stale(scenarios);
+    const FormatOptions pretty{Format::Pretty2, false}; // indent=2, ensure_ascii=False
+    for (const auto& [name, value] : entries) {
+        write_scenario(scenarios, name, value, pretty);
+    }
+    std::cout << "Wrote " << entries.size() << " scenarios to " << scenarios.string() << "\n";
+}
+
+// native-backup-secrets/gen_scenarios.py — indent=2, ensure_ascii=False; no stale removal in the
+// original (harmless here: every run rewrites exactly the committed set).
+void profile_native_backup_secrets(const fs::path& scenarios) {
+    std::vector<std::pair<std::string, json::Value>> entries;
+    auto api = [](const char* id, const char* name, const char* key, const char* provider) {
+        return object({{"id", str(id)},
+                       {"name", str(name)},
+                       {"key", str(key)},
+                       {"provider", str(provider)}});
+    };
+    auto shell_dev = [](const char* id, const char* name, const char* api_key = "",
+                        const char* ssh_password = "") {
+        return object({{"id", str(id)},
+                       {"name", str(name)},
+                       {"apiKey", str(api_key)},
+                       {"sshPassword", str(ssh_password)}});
+    };
+    auto embedding = [](const char* id, const char* name, const char* kind,
+                        const char* remote_key = "", const char* local_path = "",
+                        std::int64_t batch_size = 8) {
+        return object({{"id", str(id)},
+                       {"name", str(name)},
+                       {"type", str(kind)},
+                       {"remoteApiKey", str(remote_key)},
+                       {"localFilePath", str(local_path)},
+                       {"batchSize", number(batch_size)}});
+    };
+    auto mcp = [](const char* id, const char* name,
+                  std::vector<std::pair<std::string, json::Value>> headers) {
+        return object({{"id", str(id)}, {"name", str(name)}, {"headers", object(std::move(headers))}});
+    };
+    // settings(): always all seven keys in fixed order.
+    auto settings = [](std::vector<json::Value> api_keys = {},
+                       std::vector<std::pair<std::string, std::string>> active = {},
+                       std::vector<std::pair<std::string, std::string>> web = {},
+                       const std::string& proxy = "",
+                       std::vector<json::Value> shells = {},
+                       std::vector<json::Value> embeddings = {},
+                       std::vector<json::Value> mcp_servers = {}) {
+        auto str_dict = [](const std::vector<std::pair<std::string, std::string>>& pairs) {
+            std::vector<std::pair<std::string, json::Value>> members;
+            for (const auto& [key, value] : pairs) members.emplace_back(key, str(value));
+            return object(std::move(members));
+        };
+        return object({
+            {"apiKeys", array(std::move(api_keys))},
+            {"activeApiKeyIds", str_dict(active)},
+            {"webSearchApiKeys", str_dict(web)},
+            {"proxyPassword", str(proxy)},
+            {"shellDevices", array(std::move(shells))},
+            {"embeddingModels", array(std::move(embeddings))},
+            {"mcpServers", array(std::move(mcp_servers))},
+        });
+    };
+    // secrets(): eight keys; shells/mcp_headers pair lists become objects of objects.
+    auto secrets = [](std::vector<json::Value> api_keys = {},
+                      std::vector<std::pair<std::string, std::string>> active = {},
+                      std::vector<std::pair<std::string, std::string>> web = {},
+                      const std::string& proxy = "",
+                      std::vector<std::pair<std::string, json::Value>> shells = {},
+                      std::vector<std::pair<std::string, std::string>> shell_api_keys = {},
+                      std::vector<std::pair<std::string, std::string>> embedding_keys = {},
+                      std::vector<std::pair<std::string, json::Value>> mcp_headers = {}) {
+        auto str_dict = [](const std::vector<std::pair<std::string, std::string>>& pairs) {
+            std::vector<std::pair<std::string, json::Value>> members;
+            for (const auto& [key, value] : pairs) members.emplace_back(key, str(value));
+            return object(std::move(members));
+        };
+        auto inner_dict = [](const std::vector<std::pair<std::string, json::Value>>& pairs) {
+            std::vector<std::pair<std::string, json::Value>> members;
+            for (const auto& [key, value] : pairs) members.emplace_back(key, value);
+            return object(std::move(members));
+        };
+        return object({
+            {"apiKeys", array(std::move(api_keys))},
+            {"activeApiKeyIds", str_dict(active)},
+            {"webSearchApiKeys", str_dict(web)},
+            {"proxyPassword", str(proxy)},
+            {"shellDevices", inner_dict(shells)},
+            {"shellApiKeys", str_dict(shell_api_keys)},
+            {"embeddingApiKeys", str_dict(embedding_keys)},
+            {"mcpHeaders", inner_dict(mcp_headers)},
+        });
+    };
+    auto add = [&](const char* name, const char* op, json::Value seed_value,
+                   std::optional<json::Value> backup = std::nullopt,
+                   std::optional<bool> replace = std::nullopt) {
+        std::vector<std::pair<std::string, json::Value>> members = {
+            {"name", str(name)}, {"op", str(op)}, {"settings", std::move(seed_value)}};
+        if (backup) members.emplace_back("secrets", std::move(*backup));
+        if (replace) members.emplace_back("replace", boolean(*replace));
+        entries.emplace_back(name, object(std::move(members)));
+    };
+    auto shell_kv = [](const char* id, const char* api_key, const char* ssh_password) {
+        return std::pair<std::string, json::Value>(
+            id, object({{"apiKey", str(api_key)}, {"sshPassword", str(ssh_password)}}));
+    };
+    auto header_kv = [](const char* id, std::vector<std::pair<std::string, json::Value>> headers) {
+        return std::pair<std::string, json::Value>(id, object(std::move(headers)));
+    };
+
+    // --- capture ---
+    add("capture_filters", "capture",
+        settings(
+            {api("k1", "One", "sk-1", "openai"), api("k2", "Two", "sk-2", "google")},
+            {{"openai", "k1"}},
+            {{"brave", "b1"}},
+            "proxy-pw",
+            {shell_dev("s1", "dev-one", "ak1", "sp1"),
+             shell_dev("blank", "blank"),
+             shell_dev("ssh-only", "ssh-only", "", "sp2"),
+             shell_dev("s1", "dev-duplicate", "ak2", "sp3"),
+             shell_dev("spaces", "spaces", "   ", "  ")},
+            {embedding("e1", "remote", "REMOTE", "r1"),
+             embedding("e2", "local", "LOCAL", "local-key", "/tmp/e2"),
+             embedding("e3", "remote-blank", "REMOTE", ""),
+             embedding("e4", "remote-spaces", "REMOTE", "   ")},
+            {mcp("m1", "with-headers", {{"Authorization", str("Bearer x")},
+                                        {"X-Empty", str("")}}),
+             mcp("m2", "empty", {})}));
+    add("capture_empty", "capture", settings());
+    add("capture_whitespace", "capture",
+        settings({}, {}, {}, "  ",
+                 {shell_dev("s1", "spaces", "  ", "\t")},
+                 {embedding("e1", "spaces", "REMOTE", "  ")},
+                 {mcp("m1", "headers", {{"A", str(" ")}, {"B", str("")}})}));
+
+    // --- restore: replace ---
+    add("restore_replace_all", "restore",
+        settings(
+            {api("old", "Old", "sk-old", "google")},
+            {{"google", "old"}},
+            {{"ddg", "old"}},
+            "old",
+            {shell_dev("s1", "dev", "old-ak", "old-pw"),
+             shell_dev("s2", "unmatched", "u-ak", "u-pw")},
+            {embedding("e1", "remote", "REMOTE", "old-key"),
+             embedding("e2", "local", "LOCAL", "local-old", "/tmp/e2")},
+            {mcp("m1", "server", {{"Old", str("1")}})}),
+        secrets(
+            {api("k1", "Imported", "sk-new", "openai")},
+            {{"openai", "k1"}, {"broken", "missing"}},
+            {{"brave", "new"}},
+            "new",
+            {shell_kv("s1", "ak", "pw"), shell_kv("ghost", "g", "")},
+            {{"dev", "legacy-ignored"}, {"ghostname", "x"}},
+            {{"e1", "newkey"}, {"e2", "local-ignore"}, {"orphan", "x"}},
+            {header_kv("m1", {{"A", str("B")}}), header_kv("orphan", {{"C", str("D")}})}),
+        true);
+    add("restore_replace_clears", "restore",
+        settings(
+            {api("old", "Old", "sk-old", "google")},
+            {{"google", "old"}},
+            {{"ddg", "old"}},
+            "old",
+            {shell_dev("s1", "dev", "old-ak", "old-pw")},
+            {embedding("e1", "remote", "REMOTE", "old-key"),
+             embedding("e2", "local", "LOCAL", "local-old", "/tmp/e2")},
+            {mcp("m1", "server", {{"Old", str("1")}})}),
+        secrets(),
+        true);
+    add("restore_replace_legacy_shell", "restore",
+        settings({}, {}, {}, "",
+                 {shell_dev("s2", "dev", "old-ak", "old-pw"),
+                  shell_dev("s3", "other", "other-ak", "other-pw")}),
+        secrets({}, {}, {}, "", {}, {{"dev", "legacy"}}),
+        true);
+
+    // --- restore: merge ---
+    add("restore_merge_semantics", "restore",
+        settings(
+            {api("a", "A", "ka", "google")},
+            {{"old", "a"}},
+            {{"brave", "old"}, {"keep", "k"}},
+            "existing",
+            {shell_dev("s1", "dev", "old-ak", "old-pw"),
+             shell_dev("s2", "other", "o-ak", "o-pw")},
+            {embedding("e1", "remote", "REMOTE", "old-key"),
+             embedding("e2", "local", "LOCAL", "local-old", "/tmp/e2")},
+            {mcp("m1", "server", {{"Old", str("1")}})}),
+        secrets(
+            {api("b", "B", "kb", "openai"), api("c", "C", "ka", "google"),
+             api("d", "D", "ka", "anthropic"), api("a", "A2", "ka2", "google")},
+            {{"x", "a"}, {"y", "b"}, {"z", "c"}, {"q", "missing"}},
+            {{"brave", "new"}, {"ddg", "d"}},
+            "",
+            {shell_kv("s1", "newak", "newpw"), shell_kv("ghost", "g", "gp")},
+            {{"dev", "legacy"}, {"ghostname", "x"}},
+            {{"e1", "newkey"}, {"e2", "local-ignore"}, {"orphan", "x"}},
+            {header_kv("m1", {{"New", str("2")}}), header_kv("orphan", {{"C", str("D")}})}),
+        false);
+    add("restore_merge_legacy_shell", "restore",
+        settings({}, {}, {}, "",
+                 {shell_dev("s1", "dev", "old-ak", "old-pw"),
+                  shell_dev("s2", "other", "o-ak", "o-pw")}),
+        secrets({}, {}, {}, "", {}, {{"dev", "legacy"}}),
+        false);
+    add("restore_empty_merge", "restore",
+        settings(
+            {api("a", "A", "ka", "google")},
+            {{"old", "a"}},
+            {{"brave", "old"}},
+            "existing",
+            {shell_dev("s1", "dev", "old-ak", "old-pw")},
+            {embedding("e1", "remote", "REMOTE", "old-key")},
+            {mcp("m1", "server", {{"Old", str("1")}})}),
+        secrets(),
+        false);
+
+    remove_stale(scenarios);
+    const FormatOptions pretty{Format::Pretty2, false}; // indent=2, ensure_ascii=False
+    for (const auto& [name, value] : entries) {
+        write_scenario(scenarios, name, value, pretty);
+    }
+    std::cout << "Wrote " << entries.size() << " scenarios to " << scenarios.string() << "\n";
+}
+
 }  // namespace
 
 int main(int argc, char** argv) {
@@ -9974,7 +10741,9 @@ int main(int argc, char** argv) {
                   << "  runtime-recovery      runtime-recovery/gen_scenarios.py\n"
                   << "  generation-streaming-segments generation-streaming-segments/gen_scenarios.py\n"
                   << "  shell-file-edit       shell-file-edit/gen_scenarios.py\n"
-                  << "  token-pricing         token-pricing/gen_scenarios.py\n";
+                  << "  token-pricing         token-pricing/gen_scenarios.py\n"
+                  << "  shell-client          shell-client/gen_scenarios.py\n"
+                  << "  native-backup-secrets native-backup-secrets/gen_scenarios.py\n";
         return 2;
     }
     const std::string profile = argv[1];
@@ -10097,6 +10866,10 @@ int main(int argc, char** argv) {
         profile_shell_file_edit(scenarios);
     } else if (profile == "token-pricing") {
         profile_token_pricing(scenarios);
+    } else if (profile == "shell-client") {
+        profile_shell_client(scenarios);
+    } else if (profile == "native-backup-secrets") {
+        profile_native_backup_secrets(scenarios);
     } else {
         std::cerr << "unknown profile: " << profile << "\n";
         return 2;

@@ -15,7 +15,7 @@ shell credentials, embedding keys and MCP headers in and out of a native backup.
 | `golden/*.trace` | Frozen Kotlin output, one per scenario |
 | `NativeBackupSecretsTraceDump.kt` | Driver: seeds settings, runs the policy, prints the trace |
 | `platform/` | DataStore preferences keys, crypto/debug shims, in-memory `SettingsManager` |
-| `gen_scenarios.py` | Deterministic scenario generator |
+| `agora_scenarios native-backup-secrets` | Deterministic scenario generator |
 | `run_golden.sh` | Compiles, freezes (`--freeze`) or verifies the traces |
 
 ## What is pinned

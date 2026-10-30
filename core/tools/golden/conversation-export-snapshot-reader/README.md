@@ -34,7 +34,7 @@ from the compiled app sources.
 
 ## Scenarios
 
-`gen_scenarios.py` writes 10 scenarios / 13 reader steps:
+`agora_scenarios conversation-export-snapshot-reader` writes 10 scenarios / 13 reader steps:
 
 - empty database;
 - one complete conversation with runs, messages, a loop, and tasks;

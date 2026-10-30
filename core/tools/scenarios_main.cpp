@@ -11085,6 +11085,263 @@ void profile_imported_citation_projection(const fs::path& scenarios) {
     std::cout << "Wrote " << entries.size() << " scenarios to " << scenarios.string() << "\n";
 }
 
+// conversation-export-snapshot-reader/gen_scenarios.py — indent=2, ensure_ascii=False. The seed
+// is raw SQL INSERT text: q() wraps a value in single quotes doubling any embedded quote, None
+// becomes bare NULL; "or"-fallbacks (title/name/prompt) treat "" like None, while message text
+// uses an explicit None check ("" stays ""). The original never deletes stale scenario files;
+// the committed set is exactly the generated one, so remove_stale is equivalent here.
+void profile_conversation_export_snapshot_reader(const fs::path& scenarios) {
+    std::vector<std::pair<std::string, json::Value>> entries;
+    auto q = [](std::string_view value) {
+        std::string out = "'";
+        for (char ch : value) {
+            if (ch == '\'') out += "''";
+            out.push_back(ch);
+        }
+        out.push_back('\'');
+        return out;
+    };
+    auto q_or_null = [&q](const std::optional<std::string>& value) {
+        return value ? q(*value) : std::string("NULL");
+    };
+    auto num = [](std::int64_t value) { return std::to_string(value); };
+    auto int_or_null = [](const std::optional<std::int64_t>& value) {
+        return value ? std::to_string(*value) : std::string("NULL");
+    };
+    auto bit = [](bool value) { return value ? "1" : "0"; };
+
+    // INSERT INTO conversations (id, title, lastUpdated, dataChangedAt, selectedBranchesJson,
+    // modelId, taskId, origin, graduated, draftText, selectedRunBranchesJson,
+    // hasUnreadGeneration, isPinned) VALUES (...)
+    auto conv = [&](const std::string& cid, const std::optional<std::string>& title = std::nullopt,
+                    std::int64_t last_updated = 0, std::int64_t data_changed_at = 0,
+                    const std::optional<std::string>& selected = std::nullopt,
+                    const std::optional<std::string>& model = std::nullopt,
+                    const std::optional<std::string>& task = std::nullopt,
+                    const std::string& origin = "user", bool graduated = false,
+                    const std::string& draft = "", const std::optional<std::string>& run_selected =
+                                                      std::nullopt,
+                    bool unread = false, bool pinned = false) -> std::string {
+        const std::string resolved_title =
+            (title && !title->empty()) ? *title : cid;  // Python: title or cid
+        return "INSERT INTO conversations (id, title, lastUpdated, dataChangedAt, "
+               "selectedBranchesJson, modelId, taskId, origin, graduated, draftText, "
+               "selectedRunBranchesJson, hasUnreadGeneration, isPinned) VALUES (" +
+               q(cid) + ", " + q(resolved_title) + ", " + num(last_updated) + ", " +
+               num(data_changed_at) + ", " + q_or_null(selected) + ", " + q_or_null(model) + ", " +
+               q_or_null(task) + ", " + q(origin) + ", " + bit(graduated) + ", " + q(draft) + ", " +
+               q_or_null(run_selected) + ", " + bit(unread) + ", " + bit(pinned) + ")";
+    };
+    auto run = [&](const std::string& rid, const std::string& cid,
+                   const std::optional<std::string>& parent = std::nullopt,
+                   const std::string& status = "COMPLETED",
+                   const std::optional<std::int64_t>& active_slot = std::nullopt,
+                   std::int64_t started_at = 0, std::int64_t last_checkpoint = 0,
+                   const std::optional<std::int64_t>& stop_requested = std::nullopt,
+                   const std::optional<std::int64_t>& ended_at = 0,
+                   const std::optional<std::string>& reason = "MODEL_COMPLETED",
+                   std::int64_t current_pass = 0, bool legacy = false) -> std::string {
+        return "INSERT INTO runs (id, conversationId, parentRunId, status, activeSlot, startedAt, "
+               "lastCheckpointAt, stopRequestedAt, endedAt, endReason, currentPass, "
+               "legacyAmbiguous) VALUES (" +
+               q(rid) + ", " + q(cid) + ", " + q_or_null(parent) + ", " + q(status) + ", " +
+               int_or_null(active_slot) + ", " + num(started_at) + ", " + num(last_checkpoint) +
+               ", " + int_or_null(stop_requested) + ", " + int_or_null(ended_at) + ", " +
+               q_or_null(reason) + ", " + num(current_pass) + ", " + bit(legacy) + ")";
+    };
+    auto message = [&](const std::string& mid, const std::string& cid, const std::string& rid,
+                       const std::optional<std::string>& parent = std::nullopt,
+                       const std::optional<std::string>& text = std::nullopt,
+                       std::int64_t timestamp = 0, std::int64_t sequence = 0,
+                       const std::string& status = "SUCCESS",
+                       const std::string& participant = "MODEL", const std::string& images = "[]",
+                       std::int64_t token_count = 0,
+                       const std::optional<std::string>& model = std::nullopt) -> std::string {
+        const std::string resolved_text = text ? *text : mid;  // Python: text is not None
+        return "INSERT INTO messages (id, conversationId, parentId, text, images, tokenCount, "
+               "status, participant, timestamp, modelName, runId, runSequence) VALUES (" +
+               q(mid) + ", " + q(cid) + ", " + q_or_null(parent) + ", " + q(resolved_text) + ", " +
+               q(images) + ", " + num(token_count) + ", " + q(status) + ", " + q(participant) +
+               ", " + num(timestamp) + ", " + q_or_null(model) + ", " + q(rid) + ", " +
+               num(sequence) + ")";
+    };
+    auto loop_row = [&](const std::string& cid, std::int64_t interval = 60000,
+                        const std::optional<std::string>& prompt = std::nullopt,
+                        std::int64_t next_fire = 1000, std::int64_t cycle = 0,
+                        const std::optional<std::int64_t>& max_cycles = std::nullopt,
+                        bool active = true, std::int64_t revision = 0) -> std::string {
+        return "INSERT INTO loops (conversationId, intervalMs, prompt, nextFireAt, cycleCount, "
+               "maxCycles, active, revision) VALUES (" +
+               q(cid) + ", " + num(interval) + ", " + q_or_null(prompt) + ", " + num(next_fire) +
+               ", " + num(cycle) + ", " + int_or_null(max_cycles) + ", " + bit(active) + ", " +
+               num(revision) + ")";
+    };
+    auto task_row = [&](const std::string& tid, const std::optional<std::string>& name = std::nullopt,
+                        const std::optional<std::string>& prompt = std::nullopt,
+                        const std::string& cron = "0 * * * *", std::int64_t next_run = 1000,
+                        bool enabled = true, std::int64_t created = 0,
+                        const std::optional<std::int64_t>& last_run = std::nullopt) -> std::string {
+        // Python: name or tid / prompt or tid — "" falls back like None.
+        const std::string resolved_name = (name && !name->empty()) ? *name : tid;
+        const std::string resolved_prompt = (prompt && !prompt->empty()) ? *prompt : tid;
+        return "INSERT INTO tasks (id, name, prompt, cronExpr, nextRunAt, enabled, createdAt, "
+               "lastRunAt) VALUES (" +
+               q(tid) + ", " + q(resolved_name) + ", " + q(resolved_prompt) + ", " + q(cron) +
+               ", " + num(next_run) + ", " + bit(enabled) + ", " + num(created) + ", " +
+               int_or_null(last_run) + ")";
+    };
+    auto scenario_obj = [](std::vector<std::string> seed, std::vector<json::Value> steps) {
+        std::vector<json::Value> seed_values;
+        for (const std::string& sql : seed) seed_values.push_back(str(sql));
+        return object({{"seedSql", array(std::move(seed_values))},
+                       {"steps", array(std::move(steps))}});
+    };
+    auto read_step = [](std::optional<std::vector<std::string>> skip_body = std::nullopt,
+                        std::optional<std::string> fail_include_body = std::nullopt,
+                        std::optional<std::int64_t> fail_on_record_at = std::nullopt) {
+        std::vector<std::pair<std::string, json::Value>> members = {{"op", str("readSnapshot")}};
+        if (skip_body) {
+            std::vector<json::Value> ids;
+            for (const std::string& id : *skip_body) ids.push_back(str(id));
+            members.emplace_back("skipBody", array(std::move(ids)));
+        }
+        if (fail_include_body) members.emplace_back("failIncludeBody", str(*fail_include_body));
+        if (fail_on_record_at) members.emplace_back("failOnRecordAt", number(*fail_on_record_at));
+        return object(std::move(members));
+    };
+    auto add = [&](const char* name, std::vector<std::string> seed,
+                   std::vector<json::Value> steps) {
+        entries.emplace_back(name, scenario_obj(std::move(seed), std::move(steps)));
+    };
+
+    add("01-empty", {}, {read_step()});
+
+    add("02-single-conversation",
+        {conv("c1", "one", 10, 11, "{\"old\":\"m1\"}", "m0", "t1", "user", false, "draft",
+              "{\"null\":\"r1\"}", true, true),
+         run("r1", "c1", std::nullopt, "COMPLETED", std::nullopt, 10, 0, std::nullopt, 20),
+         run("r2", "c1", "r1", "COMPLETED", std::nullopt, 30, 0, std::nullopt, 40),
+         message("m1", "c1", "r1", std::nullopt, "first", 1, 0),
+         message("m2", "c1", "r1", "m1", "second", 2, 1, "SUCCESS", "MODEL",
+                 "[\"a.png\",\"b.png\"]", 0, "m0"),
+         message("m3", "c1", "r2", "m2", "third", 3, 0, "SUCCESS", "MODEL", "[]", 7),
+         loop_row("c1", 60000, "continue", 500, 2, 8, true, 3),
+         task_row("t1", "task one", "do one", "0 * * * *", 200, true, 1, 3),
+         task_row("t2", "task two", "do two", "0 * * * *", 300, false, 2)},
+        {read_step()});
+
+    add("03-multi-conversation",
+        {conv("c1", "one"), conv("c2", "two", 0, 0, std::nullopt, std::nullopt, std::nullopt,
+                                 "user", false, "", std::nullopt, true),
+         conv("c3", "three", 0, 0, std::nullopt, std::nullopt, std::nullopt, "user", false, "",
+              std::nullopt, false, true),
+         run("r1", "c1", std::nullopt, "COMPLETED", std::nullopt, 1),
+         run("r2", "c2", std::nullopt, "COMPLETED", std::nullopt, 2),
+         run("r3", "c3", std::nullopt, "COMPLETED", std::nullopt, 3),
+         message("m1", "c1", "r1", std::nullopt, "c1", 1),
+         message("m2", "c2", "r2", std::nullopt, "c2", 2),
+         message("m3", "c3", "r3", std::nullopt, "c3", 3),
+         loop_row("c1", 60000, "c1 loop"), loop_row("c2", 60000, "c2 loop"),
+         loop_row("c3", 60000, "c3 loop"), task_row("t2", "second", std::nullopt, "0 * * * *",
+                                                    1000, true, 2),
+         task_row("t1", "first", std::nullopt, "0 * * * *", 1000, true, 1)},
+        {read_step(std::vector<std::string>{"c2"}),
+         read_step(std::vector<std::string>{"c1", "c3"})});
+
+    {
+        // page_65: conv + run + messages m001..m065 (text "message i", timestamp 100+i,
+        // sequence i-1); range(1, 66) is inclusive of 65.
+        std::vector<std::string> seed = {conv("c1", "many"),
+                                         run("r1", "c1", std::nullopt, "COMPLETED",
+                                             std::nullopt, 1)};
+        for (int i = 1; i <= 65; ++i) {
+            char mid[8];
+            std::snprintf(mid, sizeof(mid), "m%03d", i);
+            seed.push_back(message(mid, "c1", "r1", std::nullopt, "message " + std::to_string(i),
+                                   100 + i, i - 1));
+        }
+        add("04-message-page-65", std::move(seed), {read_step()});
+    }
+    {
+        // page_64: boundary — range(1, 65) is inclusive of 64.
+        std::vector<std::string> seed = {conv("c1", "boundary"),
+                                         run("r1", "c1", std::nullopt, "COMPLETED",
+                                             std::nullopt, 1)};
+        for (int i = 1; i <= 64; ++i) {
+            char mid[8];
+            std::snprintf(mid, sizeof(mid), "m%03d", i);
+            seed.push_back(message(mid, "c1", "r1", std::nullopt, "message " + std::to_string(i),
+                                   100 + i, i - 1));
+        }
+        add("05-message-page-boundary-64", std::move(seed), {read_step()});
+    }
+
+    add("06-skip-all-bodies",
+        {conv("c1"), conv("c2"), conv("c3"),
+         run("r1", "c1", std::nullopt, "COMPLETED", std::nullopt, 1),
+         message("m1", "c1", "r1", std::nullopt, std::nullopt, 1),
+         run("r2", "c2", std::nullopt, "COMPLETED", std::nullopt, 2),
+         message("m2", "c2", "r2", std::nullopt, std::nullopt, 2),
+         run("r3", "c3", std::nullopt, "COMPLETED", std::nullopt, 3),
+         message("m3", "c3", "r3", std::nullopt, std::nullopt, 3),
+         loop_row("c1"), loop_row("c2"), loop_row("c3"),
+         task_row("t1", std::nullopt, std::nullopt, "0 * * * *", 1000, true, 1)},
+        {read_step(std::vector<std::string>{"c1", "c2", "c3"})});
+
+    add("07-include-body-error",
+        {conv("c1"), conv("c2"), conv("c3"),
+         run("r1", "c1", std::nullopt, "COMPLETED", std::nullopt, 1),
+         run("r2", "c2", std::nullopt, "COMPLETED", std::nullopt, 2),
+         run("r3", "c3", std::nullopt, "COMPLETED", std::nullopt, 3),
+         message("m1", "c1", "r1", std::nullopt, std::nullopt, 1),
+         message("m2", "c2", "r2", std::nullopt, std::nullopt, 2),
+         message("m3", "c3", "r3", std::nullopt, std::nullopt, 3),
+         loop_row("c1"), loop_row("c2"), loop_row("c3"),
+         task_row("t1", std::nullopt, std::nullopt, "0 * * * *", 1000, true, 1)},
+        {read_step(std::nullopt, std::string("c2")), read_step()});
+
+    add("08-on-record-error",
+        {conv("c1"), run("r1", "c1", std::nullopt, "COMPLETED", std::nullopt, 1),
+         message("m1", "c1", "r1", std::nullopt, std::nullopt, 1),
+         message("m2", "c1", "r1", std::nullopt, std::nullopt, 2),
+         message("m3", "c1", "r1", std::nullopt, std::nullopt, 3),
+         loop_row("c1"), task_row("t1", std::nullopt, std::nullopt, "0 * * * *", 1000, true, 1)},
+        {read_step(std::nullopt, std::nullopt, 2), read_step()});
+
+    add("09-order-ties",
+        {conv("c1"), conv("c2"),
+         run("rB", "c1", std::nullopt, "COMPLETED", std::nullopt, 10),
+         run("rA", "c1", std::nullopt, "COMPLETED", std::nullopt, 10),
+         run("rC", "c1", std::nullopt, "COMPLETED", std::nullopt, 5),
+         message("m2", "c1", "rA", std::nullopt, std::nullopt, 10, 2),
+         message("m10", "c1", "rA", std::nullopt, std::nullopt, 10, 1),
+         message("m01", "c1", "rA", std::nullopt, std::nullopt, 10, 1),
+         message("m001", "c1", "rA", std::nullopt, std::nullopt, 10, 1),
+         message("m3", "c2", "rB", std::nullopt, std::nullopt, 3),
+         loop_row("c1", 60000, std::nullopt, 1000, 0, std::nullopt, true, 1),
+         loop_row("c2", 60000, std::nullopt, 1000, 0, std::nullopt, true, 2),
+         task_row("t3", std::nullopt, std::nullopt, "0 * * * *", 1000, true, 3),
+         task_row("t1", std::nullopt, std::nullopt, "0 * * * *", 1000, true, 1),
+         task_row("t2", std::nullopt, std::nullopt, "0 * * * *", 1000, true, 2)},
+        {read_step()});
+
+    add("10-no-body-with-tasks",
+        {conv("c1"), conv("c2"),
+         run("r1", "c1", std::nullopt, "COMPLETED", std::nullopt, 1),
+         message("m1", "c1", "r1", std::nullopt, std::nullopt, 1), loop_row("c1"),
+         task_row("t3", "three", std::nullopt, "0 * * * *", 1000, true, 3),
+         task_row("t1", "one", std::nullopt, "0 * * * *", 1000, true, 1),
+         task_row("t2", "two", std::nullopt, "0 * * * *", 1000, true, 2)},
+        {read_step(std::vector<std::string>{"c1", "c2"})});
+
+    remove_stale(scenarios);
+    const FormatOptions pretty{Format::Pretty2, false}; // indent=2, ensure_ascii=False
+    for (const auto& [name, value] : entries) {
+        write_scenario(scenarios, name, value, pretty);
+    }
+    std::cout << "Wrote " << entries.size() << " scenarios to " << scenarios.string() << "\n";
+}
+
 }  // namespace
 
 int main(int argc, char** argv) {
@@ -11151,7 +11408,8 @@ int main(int argc, char** argv) {
                   << "  token-pricing         token-pricing/gen_scenarios.py\n"
                   << "  shell-client          shell-client/gen_scenarios.py\n"
                   << "  native-backup-secrets native-backup-secrets/gen_scenarios.py\n"
-                  << "  imported-citation-projection imported-citation-projection/gen_scenarios.py\n";
+                  << "  imported-citation-projection imported-citation-projection/gen_scenarios.py\n"
+                  << "  conversation-export-snapshot-reader conversation-export-snapshot-reader/gen_scenarios.py\n";
         return 2;
     }
     const std::string profile = argv[1];
@@ -11280,6 +11538,8 @@ int main(int argc, char** argv) {
         profile_native_backup_secrets(scenarios);
     } else if (profile == "imported-citation-projection") {
         profile_imported_citation_projection(scenarios);
+    } else if (profile == "conversation-export-snapshot-reader") {
+        profile_conversation_export_snapshot_reader(scenarios);
     } else {
         std::cerr << "unknown profile: " << profile << "\n";
         return 2;

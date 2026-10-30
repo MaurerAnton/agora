@@ -101,7 +101,8 @@ add_library(agora_core_lib STATIC
     src/migration_19_20.cpp
     src/migration_20_35.cpp
     src/sqlite_platform.cpp
-    src/sqlite_executor.cpp
+    # src/sqlite_executor.cpp is added below once SQLite3 is found: it is the only TU that
+    # includes <sqlite3.h>, which the Android NDK sysroot does not ship.
     src/uuid_v3.cpp
     src/font_utils.cpp
     src/provider_identity.cpp
@@ -171,27 +172,41 @@ else()
 endif()
 
 # Optional host-side HTTP transport: the OkHttp surface HttpClient.kt drives, backed by libcurl+OpenSSL.
-# Android ships without libcurl (OkHttp stays the Kotlin stack there), so the APK is untouched.
-find_package(CURL REQUIRED)
-if(CURL_FOUND OR CURL_LIBRARY_RELEASE)
-    set(AGORA_CORE_HAVE_CURL ON)
-    target_sources(agora_core_lib PRIVATE src/curl_transport.cpp)
-    target_compile_definitions(agora_core_lib PUBLIC AGORA_CORE_HAVE_CURL=1)
-    target_include_directories(agora_core_lib PRIVATE ${CURL_INCLUDE_DIRS})
-    target_link_libraries(agora_core_lib PUBLIC ${CURL_LIBRARIES})
-    message(STATUS "agora core: libcurl HTTP transport enabled (${CURL_LIBRARIES})")
-else()
+# Android ships without libcurl (OkHttp stays the Kotlin stack there) and the NDK sysroot has no
+# curl headers, so the transport is host-only; curl_transport.hpp degrades without the define.
+if(CMAKE_SYSTEM_NAME STREQUAL "Android")
     set(AGORA_CORE_HAVE_CURL OFF)
+    message(STATUS "agora core: libcurl HTTP transport disabled (Android)")
+else()
+    find_package(CURL REQUIRED)
+    if(CURL_FOUND OR CURL_LIBRARY_RELEASE)
+        set(AGORA_CORE_HAVE_CURL ON)
+        target_sources(agora_core_lib PRIVATE src/curl_transport.cpp)
+        target_compile_definitions(agora_core_lib PUBLIC AGORA_CORE_HAVE_CURL=1)
+        target_include_directories(agora_core_lib PRIVATE ${CURL_INCLUDE_DIRS})
+        target_link_libraries(agora_core_lib PUBLIC ${CURL_LIBRARIES})
+        message(STATUS "agora core: libcurl HTTP transport enabled (${CURL_LIBRARIES})")
+    else()
+        set(AGORA_CORE_HAVE_CURL OFF)
+    endif()
 endif()
 
-# SQLite3 for the database layer (replaces Room on host).
-find_package(SQLite3 REQUIRED)
-if(SQLite3_FOUND)
-    target_compile_definitions(agora_core_lib PUBLIC AGORA_CORE_HAVE_SQLITE3=1)
-    target_link_libraries(agora_core_lib PUBLIC ${SQLite3_LIBRARIES})
-    message(STATUS "agora core: SQLite3 enabled (${SQLite3_LIBRARIES})")
-else()
+# SQLite3 for the database layer (replaces Room on host). Android keeps Room and the NDK sysroot
+# ships no sqlite3 headers, so SqliteExecutor stays host-only.
+if(CMAKE_SYSTEM_NAME STREQUAL "Android")
     set(AGORA_CORE_HAVE_SQLITE3 OFF)
+    message(STATUS "agora core: SQLite3 disabled (Android keeps Room)")
+else()
+    find_package(SQLite3 REQUIRED)
+    if(SQLite3_FOUND)
+        # The executor is the only TU that includes <sqlite3.h>.
+        target_sources(agora_core_lib PRIVATE src/sqlite_executor.cpp)
+        target_compile_definitions(agora_core_lib PUBLIC AGORA_CORE_HAVE_SQLITE3=1)
+        target_link_libraries(agora_core_lib PUBLIC ${SQLite3_LIBRARIES})
+        message(STATUS "agora core: SQLite3 enabled (${SQLite3_LIBRARIES})")
+    else()
+        set(AGORA_CORE_HAVE_SQLITE3 OFF)
+    endif()
 endif()
 
 if(AGORA_CORE_BUILD_TESTS)

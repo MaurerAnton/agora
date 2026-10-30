@@ -158,7 +158,7 @@ inside a printed data class Kotlin prints `null`, which the describes reproduce.
 ```bash
 JAVA_HOME=/path/to/jdk17 KOTLINC=/path/to/kotlinc KOTLINX_JARS=core.jar:json.jar ./run_golden.sh          # verify
 JAVA_HOME=/path/to/jdk17 KOTLINC=/path/to/kotlinc KOTLINX_JARS=core.jar:json.jar ./run_golden.sh --freeze # regenerate
-python3 gen_scenarios.py                                                                                  # rewrite scenarios
+core/build/agora_scenarios token-pricing core/tools/golden/token-pricing                                # rewrite scenarios
 ```
 
 `run_golden.sh` wipes the stand's git-ignored `build/` before each run, so runs are idempotent. The

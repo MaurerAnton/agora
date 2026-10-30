@@ -9315,6 +9315,602 @@ void profile_generation_streaming_segments(const fs::path& scenarios) {
     std::cout << "Wrote " << entries.size() << " scenarios to " << scenarios.string() << "\n";
 }
 
+// shell-file-edit/gen_scenarios.py — indent=2, ensure_ascii=False; files are numbered
+// "%03d-<name>.json" in insertion order.
+void profile_shell_file_edit(const fs::path& scenarios) {
+    std::vector<std::pair<std::string, json::Value>> entries;
+    int counter = 0;
+    auto add = [&](const char* name, std::vector<std::pair<std::string, json::Value>> members) {
+        ++counter;
+        char key[96];
+        std::snprintf(key, sizeof(key), "%03d-%s", counter, name);
+        entries.emplace_back(key, object(std::move(members)));
+    };
+    auto hexs = [](std::string_view data) {
+        static constexpr char kHex[] = "0123456789abcdef";
+        std::string out;
+        out.reserve(data.size() * 2);
+        for (unsigned char byte : data) {
+            out.push_back(kHex[(byte >> 4) & 0xF]);
+            out.push_back(kHex[byte & 0xF]);
+        }
+        return out;
+    };
+    auto sha256_hex = [&](const std::string& data) {
+        unsigned char digest[EVP_MAX_MD_SIZE];
+        unsigned int length = 0;
+        if (EVP_Digest(data.data(), data.size(), digest, &length, EVP_sha256(), nullptr) != 1) {
+            fail("error: SHA-256 digest failed");
+        }
+        return hexs(std::string_view(reinterpret_cast<const char*>(digest), length));
+    };
+
+    // ---- lineCount ----
+    struct LineCase {
+        const char* name;
+        const char* content;
+    };
+    static constexpr LineCase kLineCases[] = {
+        {"line-empty", ""},          {"line-single", "a"},
+        {"line-trailing-newline", "a\n"}, {"line-only-newline", "\n"},
+        {"line-two-newlines", "\n\n"},    {"line-crlf", "a\r\nb"},
+        {"line-cr-only", "a\rb"},         {"line-unicode", "héllo\n世界"},
+        {"line-multiline", "a\nb\nc\n"},  {"line-emoji", "\U0001F600\n\U0001F600"},
+    };
+    for (const LineCase& item : kLineCases) {
+        add(item.name, {});
+        entries.back().second =
+            object({{"op", str("lineCount")}, {"content", str(item.content)}});
+    }
+
+    // ---- shellFileSha256 ----
+    auto sha_case = [&](const char* name, const std::string& data) {
+        ++counter;
+        char key[96];
+        std::snprintf(key, sizeof(key), "%03d-%s", counter, name);
+        entries.emplace_back(
+            key, object({{"op", str("sha256")}, {"bytesHex", str(hexs(data))}}));
+    };
+    std::string all_bytes;
+    all_bytes.reserve(256);
+    for (int i = 0; i < 256; ++i) all_bytes.push_back(static_cast<char>(i));
+    sha_case("sha-empty", "");
+    sha_case("sha-abc", "abc");
+    sha_case("sha-hello", "hello world");
+    sha_case("sha-utf8", "héllo 世界 \U0001F600");
+    sha_case("sha-newlines", "a\r\nb\nc");
+    sha_case("sha-all-bytes", all_bytes);
+    sha_case("sha-nul", std::string("\x00\x00\x00", 3));
+    sha_case("sha-long", std::string(1000, 'a'));
+
+    // ---- completeUtf8PrefixLength ----
+    auto prefix_case = [&](const char* name, const std::string& data) {
+        ++counter;
+        char key[96];
+        std::snprintf(key, sizeof(key), "%03d-%s", counter, name);
+        entries.emplace_back(
+            key, object({{"op", str("completeUtf8Prefix")}, {"bytesHex", str(hexs(data))}}));
+    };
+    prefix_case("prefix-empty", "");
+    prefix_case("prefix-ascii", "abc");
+    prefix_case("prefix-two-byte", "é");
+    prefix_case("prefix-three-byte", "€");
+    prefix_case("prefix-four-byte", "\U0001F600");
+    prefix_case("prefix-cut-two", "\xc3");
+    prefix_case("prefix-cut-three", "\xe2\x82");
+    prefix_case("prefix-cut-four", "\xf0\x9f\x98");
+    prefix_case("prefix-ascii-cut-two", "a\xc3");
+    prefix_case("prefix-complete-two-cut-three", std::string("\xc3\xa9\xe2\x82", 4));
+    prefix_case("prefix-complete-three-stray-cont", std::string("\xe2\x82\xac\x80", 4));
+    prefix_case("prefix-all-continuation", "\x80\x80");
+    prefix_case("prefix-invalid-lead-ff", "\xff");
+    prefix_case("prefix-invalid-lead-c0", "\xc0");
+    prefix_case("prefix-overlong-c0-80", "\xc0\x80");
+    prefix_case("prefix-cut-four-b", "\xf0\x90\x80");
+    prefix_case("prefix-complete-four-b", "\xf0\x90\x80\x80");
+    prefix_case("prefix-ascii-four", "abcd");
+    prefix_case("prefix-cut-f4", "\xf4\x8f\xbf");
+    prefix_case("prefix-complete-f4", "\xf4\x8f\xbf\xbf");
+    prefix_case("prefix-ascii-stray-cont", "a\x80");
+    prefix_case("prefix-lead-two-ascii", std::string("\xc3" "A", 2));
+
+    // ---- readBoundedShellOutput ----
+    auto bounded = [&](const char* name, const std::string& data,
+                       std::optional<std::int64_t> max_bytes = std::nullopt,
+                       std::vector<std::int64_t> chunks = {}) {
+        ++counter;
+        char key[96];
+        std::snprintf(key, sizeof(key), "%03d-%s", counter, name);
+        std::vector<std::pair<std::string, json::Value>> members = {
+            {"op", str("readBoundedShellOutput")}, {"bytesHex", str(hexs(data))}};
+        if (max_bytes) members.emplace_back("maxBytes", number(*max_bytes));
+        std::vector<json::Value> chunk_values;
+        for (std::int64_t chunk : chunks) chunk_values.push_back(number(chunk));
+        members.emplace_back("chunks", array(std::move(chunk_values)));
+        entries.emplace_back(key, object(std::move(members)));
+    };
+    bounded("bounded-empty", "", 10);
+    bounded("bounded-ascii-under", "hello", 10);
+    bounded("bounded-ascii-exact", "hello", 5);
+    bounded("bounded-ascii-over", "hello!", 5);
+    bounded("bounded-zero-limit", "hello", 0);
+    bounded("bounded-empty-zero", "", 0);
+    bounded("bounded-default-limit", "hello");
+    bounded("bounded-two-byte-exact", "é", 2);
+    bounded("bounded-two-byte-cut", "é", 1);
+    bounded("bounded-ascii-two-byte-cut", "aé", 2);
+    bounded("bounded-three-byte-cut1", "€", 1);
+    bounded("bounded-three-byte-cut2", "€", 2);
+    bounded("bounded-three-byte-exact", "€", 3);
+    bounded("bounded-four-byte-cut3", "\U0001F600", 3);
+    bounded("bounded-four-byte-exact", "\U0001F600", 4);
+    bounded("bounded-ascii-four-byte-cut", "a\U0001F600", 2);
+    bounded("bounded-ascii-four-byte-exact", "a\U0001F600", 5);
+    bounded("bounded-invalid-ff", "\xff", 1);
+    bounded("bounded-invalid-ff-cut", std::string("\xff" "a", 2), 1);
+    bounded("bounded-overlong", "\xc0\x80", 2);
+    bounded("bounded-overlong-cut", "\xc0\x80", 1);
+    bounded("bounded-truncated-three", "\xe2\x82", 2);
+    bounded("bounded-truncated-three-plus", std::string("\xe2\x82" "a", 3), 2);
+    bounded("bounded-invalid-cont", std::string("\xe2" "AB", 3), 3);
+    bounded("bounded-invalid-cont2", std::string("\xe2\x82" "A", 3), 3);
+    bounded("bounded-stray-cont", "a\x80", 2);
+    bounded("bounded-chunked", "abcdefghij", 6, {1, 2, 3, 4});
+    bounded("bounded-chunked-exact", "abcdefghij", 10, {1, 2, 3, 4});
+    bounded("bounded-negative", "abc", -1);
+    bounded("bounded-large-default-chunks", std::string(9000, 'a'), 8192);
+    bounded("bounded-nul-controls", std::string("\x00\x01\x07\x08", 4), 4);
+
+    // ---- fileEditMatchRanges ----
+    auto match_case = [&](const char* name, const std::string& content,
+                          const std::string& old_string) {
+        ++counter;
+        char key[96];
+        std::snprintf(key, sizeof(key), "%03d-%s", counter, name);
+        entries.emplace_back(key, object({{"op", str("matchRanges")},
+                                          {"content", str(content)},
+                                          {"oldString", str(old_string)}}));
+    };
+    match_case("match-simple", "abc abc", "abc");
+    match_case("match-none", "abc", "zzz");
+    match_case("match-overlap", "aaaa", "aa");
+    match_case("match-aba", "abababa", "aba");
+    match_case("match-crlf-content-lf-old", "a\r\nb", "a\nb");
+    match_case("match-crlf-both", "a\r\nb", "a\r\nb");
+    match_case("match-lf-content-crlf-old", "a\nb", "a\r\nb");
+    match_case("match-newline-only", "a\r\nb", "\nb");
+    match_case("match-after-crlf", "a\r\nb", "b");
+    match_case("match-before-crlf", "a\r\nb", "a");
+    match_case("match-lone-cr", "a\rb", "a\rb");
+    match_case("match-lone-cr-vs-lf", "a\rb", "a\nb");
+    match_case("match-unicode", "\U0001F600x\U0001F600", "\U0001F600");
+    match_case("match-unicode-text", "a\U0001F600b", "\U0001F600b");
+    match_case("match-old-longer", "ab", "abc");
+    match_case("match-empty-old", "abc", "");
+    match_case("match-exact", "abc", "abc");
+    match_case("match-multiline", "one\ntwo\none\ntwo", "one");
+    match_case("match-crlf-multi", "x\r\ny\r\nx", "x");
+    match_case("match-old-crlf-multi", "a\r\nb\r\nc", "\r\n");
+    match_case("match-crlf-at-end", "a\r\n", "\r\n");
+    match_case("match-lf-at-end", "a\r\n", "\n");
+    match_case("match-empty-content", "", "a");
+    match_case("match-empty-content-empty-old", "", "");
+
+    // ---- replaceFileEditMatches ----
+    auto replace_case = [&](const char* name, const std::string& content,
+                            std::vector<std::pair<std::int64_t, std::int64_t>> matches,
+                            const std::string& new_string) {
+        ++counter;
+        char key[96];
+        std::snprintf(key, sizeof(key), "%03d-%s", counter, name);
+        std::vector<json::Value> match_values;
+        for (auto [begin, end] : matches) {
+            match_values.push_back(array({number(begin), number(end)}));
+        }
+        entries.emplace_back(key, object({{"op", str("replaceMatches")},
+                                          {"content", str(content)},
+                                          {"matches", array(std::move(match_values))},
+                                          {"newString", str(new_string)}}));
+    };
+    replace_case("replace-no-matches", "abc", {}, "X");
+    replace_case("replace-one", "abc", {{1, 1}}, "X");
+    replace_case("replace-two", "abcabc", {{0, 2}, {3, 5}}, "X");
+    replace_case("replace-crlf-file-lf-match", "a\r\nb", {{0, 2}}, "x\ny");
+    replace_case("replace-crlf-file-lf-match-partial", "a\r\nb", {{0, 0}}, "x\ny");
+    replace_case("replace-lf-file-crlf-new", "a\nb", {{0, 0}}, "x\r\ny");
+    replace_case("replace-no-file-ending-crlf-new", "abc", {{1, 1}}, "x\r\ny");
+    replace_case("replace-no-file-ending-lf-new", "abc", {{1, 1}}, "x\ny");
+    replace_case("replace-no-newlines", "abc", {{1, 1}}, "XYZ");
+    replace_case("replace-tie-crlf-first", "a\r\nb\nc", {{0, 0}}, "x\ny");
+    replace_case("replace-tie-lf-first", "a\nb\r\nc", {{0, 0}}, "x\ny");
+    replace_case("replace-matched-lf-overrides", "a\nb\r\nc", {{0, 2}}, "x\r\ny");
+    replace_case("replace-matched-crlf-overrides", "a\r\nb\nc", {{0, 2}}, "x\ny");
+    replace_case("replace-new-fallback", "abc", {{0, 2}}, "x\r\ny");
+    replace_case("replace-lone-cr", "a\rb", {{1, 1}}, "x\ny");
+    replace_case("replace-lone-cr-new", "a\rb", {{1, 1}}, "x\ry");
+    replace_case("replace-trailing", "abc", {{2, 2}}, "X");
+    replace_case("replace-all-content", "abc", {{0, 2}}, "X");
+    replace_case("replace-invalid-overlap", "abcdef", {{2, 3}, {1, 2}}, "X");
+    replace_case("replace-invalid-oob", "abc", {{0, 3}}, "X");
+    replace_case("replace-invalid-first-oob", "abc", {{3, 3}}, "X");
+    replace_case("replace-empty-range", "abc", {{1, 0}}, "X");
+    replace_case("replace-two-empty-ranges", "abc", {{1, 0}, {2, 1}}, "X");
+    replace_case("replace-empty-content-no-matches", "", {}, "X");
+    replace_case("replace-crlf-new-lf", "a\r\nb", {{1, 2}}, "x\ny");
+    replace_case("replace-lf-new-crlf", "a\nb", {{1, 1}}, "x\r\ny");
+
+    // ---- editShellFileContent ----
+    auto edit_case = [&](const char* name, const std::string& content,
+                         const std::string& old_string, const std::string& new_string,
+                         bool replace_all) {
+        ++counter;
+        char key[96];
+        std::snprintf(key, sizeof(key), "%03d-%s", counter, name);
+        entries.emplace_back(key, object({{"op", str("edit")},
+                                          {"content", str(content)},
+                                          {"oldString", str(old_string)},
+                                          {"newString", str(new_string)},
+                                          {"replaceAll", boolean(replace_all)}}));
+    };
+    edit_case("edit-not-found", "abc", "z", "X", false);
+    edit_case("edit-one", "abc", "b", "X", false);
+    edit_case("edit-one-replace-all", "abc", "b", "X", true);
+    edit_case("edit-multi-no-replace-all", "abcabc", "abc", "X", false);
+    edit_case("edit-multi-replace-all", "abcabc", "abc", "X", true);
+    edit_case("edit-multi-three", "aaaa", "aa", "X", true);
+    edit_case("edit-crlf-preserve", "a\r\nb\r\nc", "b", "x\ny", false);
+    edit_case("edit-lf-preserve", "a\nb\nc", "b", "x\r\ny", false);
+    edit_case("edit-crlf-old-lf", "a\r\nb", "a\nb", "x", false);
+    edit_case("edit-old-crlf", "a\nb", "a\r\nb", "x", false);
+    edit_case("edit-empty-old", "abc", "", "X", false);
+    edit_case("edit-empty-content", "", "a", "X", false);
+    edit_case("edit-unicode", "\U0001F600x\U0001F600", "\U0001F600", "Y", true);
+    edit_case("edit-unicode-partial", "a\U0001F600b", "\U0001F600", "Z", false);
+    edit_case("edit-newline-only-old", "a\nb", "\n", "X", false);
+    edit_case("edit-crlf-only-old", "a\r\nb", "\r\n", "X", false);
+    edit_case("edit-newline-old-lf", "a\r\nb", "\n", "X", false);
+    edit_case("edit-no-line-ending-new", "abc", "b", "XYZ", false);
+    edit_case("edit-empty-new", "abc", "b", "", false);
+
+    // ---- preferredFileEditLineEnding ----
+    auto preferred_case = [&](const char* name, const std::string& text) {
+        ++counter;
+        char key[96];
+        std::snprintf(key, sizeof(key), "%03d-%s", counter, name);
+        entries.emplace_back(key, object({{"op", str("preferredLineEnding")},
+                                          {"text", str(text)}}));
+    };
+    preferred_case("preferred-empty", "");
+    preferred_case("preferred-none", "abc");
+    preferred_case("preferred-lf", "a\nb");
+    preferred_case("preferred-crlf", "a\r\nb");
+    preferred_case("preferred-tie-crlf-first", "a\r\nb\nc");
+    preferred_case("preferred-tie-lf-first", "a\nb\r\nc");
+    preferred_case("preferred-crlf-majority", "a\r\nb\r\nc\nd");
+    preferred_case("preferred-lf-majority", "a\nb\nc\r\nd");
+    preferred_case("preferred-lone-cr", "a\rb");
+    preferred_case("preferred-lone-cr-then-lf", "a\rb\nc");
+    preferred_case("preferred-trailing-cr", "a\r\nb\r");
+    preferred_case("preferred-only-lf", "\n");
+    preferred_case("preferred-only-crlf", "\r\n");
+    preferred_case("preferred-only-cr", "\r");
+    preferred_case("preferred-double-lf", "a\n\nb");
+    preferred_case("preferred-double-crlf", "a\r\n\r\nb");
+
+    // ---- withFileEditLineEnding ----
+    auto ending_case = [&](const char* name, const std::string& text,
+                           const std::string& line_ending) {
+        ++counter;
+        char key[96];
+        std::snprintf(key, sizeof(key), "%03d-%s", counter, name);
+        entries.emplace_back(key, object({{"op", str("withLineEnding")},
+                                          {"text", str(text)},
+                                          {"lineEnding", str(line_ending)}}));
+    };
+    ending_case("ending-no-lf", "abc", "\r\n");
+    ending_case("ending-lf-to-lf", "a\nb", "\n");
+    ending_case("ending-lf-to-crlf", "a\nb", "\r\n");
+    ending_case("ending-crlf-to-lf", "a\r\nb", "\n");
+    ending_case("ending-crlf-to-crlf", "a\r\nb", "\r\n");
+    ending_case("ending-lone-cr", "a\rb\nc", "\r\n");
+    ending_case("ending-trailing", "a\nb\n", "\r\n");
+    ending_case("ending-consecutive", "a\r\n\r\nb", "\n");
+    ending_case("ending-empty-text", "", "\r\n");
+    ending_case("ending-empty-ending", "a\nb", "");
+    ending_case("ending-cr-ending", "a\nb", "\r");
+    ending_case("ending-mixed", "a\r\nb\nc", "\r\n");
+    ending_case("ending-only-cr-text", "a\rb", "\r\n");
+    ending_case("ending-only-lf-text", "\n", "\r\n");
+    ending_case("ending-only-crlf-text", "\r\n", "\n");
+
+    remove_stale(scenarios);
+    const FormatOptions pretty{Format::Pretty2, false}; // indent=2, ensure_ascii=False
+    for (const auto& [name, value] : entries) {
+        write_scenario(scenarios, name, value, pretty);
+    }
+    std::cout << "Wrote " << entries.size() << " scenarios to " << scenarios.string() << "\n";
+}
+
+// token-pricing/gen_scenarios.py — Compact (separators=(",", ":")), ensure_ascii=False; case()
+// puts "name" first, then "op" and the keyword fields in call order.
+void profile_token_pricing(const fs::path& scenarios) {
+    std::vector<std::pair<std::string, json::Value>> entries;
+    // image(byte=None, width=None, height=None) always emits all three keys.
+    auto image = [](std::optional<std::int64_t> byte = std::nullopt,
+                    std::optional<std::int64_t> width = std::nullopt,
+                    std::optional<std::int64_t> height = std::nullopt) {
+        return object({{"byteSize", byte ? number(*byte) : null_value()},
+                       {"pixelWidth", width ? number(*width) : null_value()},
+                       {"pixelHeight", height ? number(*height) : null_value()}});
+    };
+    auto add = [&](const char* name, std::vector<std::pair<std::string, json::Value>> fields) {
+        std::vector<std::pair<std::string, json::Value>> members = {{"name", str(name)}};
+        for (auto& field : fields) members.push_back(std::move(field));
+        entries.emplace_back(name, object(std::move(members)));
+    };
+    auto op_fields = [](const char* op) {
+        return std::vector<std::pair<std::string, json::Value>>{{"op", str(op)}};
+    };
+
+    // ---- HeuristicTextTokenCounter ----
+    static constexpr const char* kHeuristics[][2] = {
+        {"heuristic_empty", ""},
+        {"heuristic_ascii_short", "abcd"},
+        {"heuristic_ascii_ceil", "abcde"},
+        {"heuristic_two_words", "hello world"},
+        {"heuristic_mixed_punct", "hi!there"},
+        {"heuristic_cjk", "日本語"},
+        {"heuristic_emoji", "\U0001F642\U0001F642"},
+        {"heuristic_alnum", "abc123"},
+        {"heuristic_whitespace_only", "  \t\n"},
+        {"heuristic_accent", "café"},
+        {"heuristic_nbsp_not_whitespace", "a\u00a0b"},
+        {"heuristic_eight_run", "abcdefgh"},
+        {"heuristic_digit_run", "1234567"},
+        {"heuristic_three_runs", "ab cd ef"},
+        {"heuristic_newline_flush", "abc\ndef"},
+        {"heuristic_wide_mix", "aあb"},
+    };
+    for (const auto& item : kHeuristics) {
+        auto fields = op_fields("heuristic");
+        fields.emplace_back("text", str(item[1]));
+        add(item[0], std::move(fields));
+    }
+
+    // ---- LocalModelTextCounter: local(name, text, exact=None, throws=False) ----
+    auto local = [&](const char* name, const std::string& text,
+                     std::optional<std::int64_t> exact = std::nullopt, bool throws = false) {
+        auto fields = op_fields("local");
+        fields.emplace_back("text", str(text));
+        fields.emplace_back("exact", exact ? number(*exact) : null_value());
+        fields.emplace_back("throws", boolean(throws));
+        add(name, std::move(fields));
+    };
+    local("local_empty_short_circuits", "", std::nullopt, true);
+    local("local_exact_used", "abcd", 5);
+    local("local_exact_zero", "abcd", 0);
+    local("local_exact_negative", "abcd", -1);
+    local("local_missing_method", "abcd", std::nullopt, true);
+    local("local_heuristic_fallback", "日本語");
+    local("local_empty_negative", "", -3);
+    local("local_long_run", "abcdefghij");
+
+    // ---- ByteProportionalImageCost ----
+    auto byte_image = [&](const char* name, json::Value desc) {
+        auto fields = op_fields("byteImage");
+        fields.emplace_back("image", std::move(desc));
+        add(name, std::move(fields));
+    };
+    byte_image("byte_unknown", image());
+    byte_image("byte_zero", image(0));
+    byte_image("byte_negative", image(-5));
+    byte_image("byte_one_block", image(768));
+    byte_image("byte_500", image(384000));
+    byte_image("byte_1024", image(786432));
+    byte_image("byte_1536", image(1179648));
+    byte_image("byte_huge", image(999999999));
+    byte_image("byte_just_below", image(767));
+    byte_image("byte_255", image(195840));
+    byte_image("byte_257", image(197376));
+
+    // ---- AnthropicImageCost.tierForModelName ----
+    auto anthropic_tier = [&](const char* name, const char* model) {
+        auto fields = op_fields("anthropicTier");
+        fields.emplace_back("model", str(model));
+        add(name, std::move(fields));
+    };
+    anthropic_tier("tier_46_standard", "claude-opus-4-6");
+    anthropic_tier("tier_47_high", "claude-opus-4-7");
+    anthropic_tier("tier_47_dated_high", "claude-sonnet-4-7-20260101");
+    anthropic_tier("tier_37_standard", "claude-3-7-sonnet-20250219");
+    anthropic_tier("tier_path_48_high", "anthropic/claude-opus-4-8");
+    anthropic_tier("tier_major_only_5", "claude-5");
+    anthropic_tier("tier_no_version", "claude");
+    anthropic_tier("tier_major_only_4", "claude-opus-4");
+    anthropic_tier("tier_two_digit_major", "claude-opus-14-7");
+    anthropic_tier("tier_dot_46", "claude-opus-4.6");
+    anthropic_tier("tier_dot_47", "claude-opus-4.7");
+    anthropic_tier("tier_haiku_45", "claude-haiku-4-5");
+    anthropic_tier("tier_release_date_only", "claude-opus-20260101");
+
+    // ---- AnthropicImageCost.tokens ----
+    auto anthropic_image = [&](const char* name, const char* model, json::Value desc) {
+        auto fields = op_fields("anthropicImage");
+        fields.emplace_back("model", str(model));
+        fields.emplace_back("image", std::move(desc));
+        add(name, std::move(fields));
+    };
+    anthropic_image("anthropic_square_100", "claude-opus-4-6", image(std::nullopt, 100, 100));
+    anthropic_image("anthropic_standard_cap", "claude-opus-4-6", image(std::nullopt, 1568, 1568));
+    anthropic_image("anthropic_high_cap", "claude-opus-4-7", image(std::nullopt, 2576, 2576));
+    anthropic_image("anthropic_landscape", "claude-opus-4-6", image(std::nullopt, 1000, 500));
+    anthropic_image("anthropic_long_edge_cap", "claude-opus-4-6", image(std::nullopt, 5000, 1000));
+    anthropic_image("anthropic_byte_fallback", "claude-opus-4-6", image(384000));
+    anthropic_image("anthropic_zero_dimension", "claude-opus-4-6", image(786432, 0, 100));
+    anthropic_image("anthropic_high_small", "claude-opus-4-7", image(std::nullopt, 100, 100));
+    anthropic_image("anthropic_portrait", "claude-opus-4-6", image(std::nullopt, 500, 1000));
+    anthropic_image("anthropic_high_landscape", "claude-opus-4-7", image(std::nullopt, 3000, 1000));
+    anthropic_image("anthropic_standard_wide", "claude-opus-4-6", image(std::nullopt, 2500, 1000));
+
+    // ---- GeminiImageCost ----
+    auto gemini_image = [&](const char* name, json::Value desc) {
+        auto fields = op_fields("geminiImage");
+        fields.emplace_back("image", std::move(desc));
+        add(name, std::move(fields));
+    };
+    gemini_image("gemini_single_384", image(std::nullopt, 384, 384));
+    gemini_image("gemini_single_100", image(std::nullopt, 100, 100));
+    gemini_image("gemini_over_width", image(std::nullopt, 385, 384));
+    gemini_image("gemini_over_height", image(std::nullopt, 384, 385));
+    gemini_image("gemini_guide_960x540", image(std::nullopt, 960, 540));
+    gemini_image("gemini_one_px", image(std::nullopt, 1, 1));
+    gemini_image("gemini_tall", image(std::nullopt, 540, 960));
+    gemini_image("gemini_byte_fallback", image(786432));
+    gemini_image("gemini_zero_dimension", image(384000, 0, 500));
+    gemini_image("gemini_large", image(std::nullopt, 1920, 1080));
+    gemini_image("gemini_crop_unit_one", image(std::nullopt, 1000, 1));
+    gemini_image("gemini_landscape_4_3", image(std::nullopt, 400, 300));
+    gemini_image("gemini_portrait_4_3", image(std::nullopt, 300, 400));
+    gemini_image("gemini_wide_4_3", image(std::nullopt, 800, 600));
+
+    // ---- OpenAiImageCosts ----
+    auto openai_image = [&](const char* name, const char* model, json::Value desc) {
+        auto fields = op_fields("openaiImage");
+        fields.emplace_back("model", str(model));
+        fields.emplace_back("image", std::move(desc));
+        add(name, std::move(fields));
+    };
+    openai_image("openai_default_small", "totally-unknown", image(std::nullopt, 100, 100));
+    openai_image("openai_gpt4o_small", "gpt-4o", image(std::nullopt, 100, 100));
+    openai_image("openai_gpt4o_mini_1024", "gpt-4o-mini", image(std::nullopt, 1024, 1024));
+    openai_image("openai_gpt4o_mini_path", "openai/gpt-4o-mini", image(std::nullopt, 100, 100));
+    openai_image("openai_gpt41_small", "gpt-4.1", image(std::nullopt, 100, 100));
+    openai_image("openai_gpt41_mini_small", "gpt-4.1-mini", image(std::nullopt, 100, 100));
+    openai_image("openai_gpt41_nano_small", "gpt-4.1-nano", image(std::nullopt, 100, 100));
+    openai_image("openai_gpt41_mini_square", "gpt-4.1-mini", image(std::nullopt, 10000, 10000));
+    openai_image("openai_gpt51_1000", "gpt-5.1", image(std::nullopt, 1000, 1000));
+    openai_image("openai_gpt52_square", "gpt-5.2", image(std::nullopt, 5000, 5000));
+    openai_image("openai_gpt54_shrink_square", "gpt-5.4", image(std::nullopt, 5000, 5000));
+    openai_image("openai_gpt54_shrink_2048", "gpt-5.4", image(std::nullopt, 2048, 2048));
+    openai_image("openai_gpt54_shrink_landscape", "gpt-5.4", image(std::nullopt, 5000, 4000));
+    openai_image("openai_gpt55_shrink_landscape", "gpt-5.5", image(std::nullopt, 10000, 7000));
+    openai_image("openai_gpt55_shrink", "gpt-5.5", image(std::nullopt, 10000, 10000));
+    openai_image("openai_gpt5nano_small", "gpt-5-nano", image(std::nullopt, 100, 100));
+    openai_image("openai_gpt5mini_small", "gpt-5-mini", image(std::nullopt, 100, 100));
+    openai_image("openai_gpt5_1000", "gpt-5", image(std::nullopt, 1000, 1000));
+    openai_image("openai_o4_mini_small", "o4-mini", image(std::nullopt, 100, 100));
+    openai_image("openai_o1_small", "o1-preview", image(std::nullopt, 100, 100));
+    openai_image("openai_o3_square", "o3-mini", image(std::nullopt, 5000, 5000));
+    openai_image("openai_gpt4o_wide_fit", "gpt-4o", image(std::nullopt, 3000, 1000));
+    openai_image("openai_byte_fallback", "gpt-4o", image(786432));
+    openai_image("openai_unknown_huge", "mystery-vision", image(std::nullopt, 70000, 70000));
+
+    // ---- AnthropicModelId ----
+    auto model_id = [&](const char* name, const char* model) {
+        auto fields = op_fields("anthropicModelId");
+        fields.emplace_back("model", str(model));
+        add(name, std::move(fields));
+    };
+    model_id("model_id_opus_45", "claude-opus-4-5-20251101");
+    model_id("model_id_path_37", "anthropic/claude-3-7-sonnet-20250219");
+    model_id("model_id_dot_46", "claude-opus-4.6");
+    model_id("model_id_sonnet_4", "claude-sonnet-4");
+    model_id("model_id_haiku_35", "claude-haiku-3.5");
+    model_id("model_id_other_vendor", "gpt-4-5");
+    model_id("model_id_no_version", "claude-opus");
+    model_id("model_id_release_date_only", "claude-opus-20260101");
+    model_id("model_id_mid_version", "claude-3-opus-4-5");
+    model_id("model_id_upper", "CLAUDE-OPUS-4-7");
+    model_id("model_id_trailing_dot_version", "claude-opus-4.5.1");
+    model_id("model_id_long_major_run", "claude-opus-123-4");
+    model_id("model_id_long_minor_run", "claude-opus-4-123456");
+    model_id("model_id_two_digit_pair", "claude-opus-14.11");
+
+    // ---- AnthropicModelId.versionAtLeast ----
+    auto version = [&](const char* name, const char* model, std::int64_t major,
+                       std::int64_t minor) {
+        auto fields = op_fields("versionAtLeast");
+        fields.emplace_back("model", str(model));
+        fields.emplace_back("major", number(major));
+        fields.emplace_back("minor", number(minor));
+        add(name, std::move(fields));
+    };
+    version("version_at_least_equal", "claude-opus-4-7", 4, 7);
+    version("version_at_least_minor_short", "claude-opus-4-7", 4, 8);
+    version("version_at_least_major_short", "claude-opus-4-7", 5, 0);
+    version("version_at_least_major_over", "claude-opus-5", 4, 9);
+    version("version_at_least_unreadable", "claude", 4, 0);
+    version("version_at_least_major_only", "claude-opus-4", 4, 1);
+    version("version_at_least_dot", "claude-opus-4.6", 4, 6);
+    version("version_at_least_old", "claude-opus-3-9", 4, 0);
+
+    // ---- Envelope costs ----
+    add("envelope_default", op_fields("envelopeDefault"));
+    add("envelope_openai", op_fields("envelopeOpenAi"));
+    auto envelope_anthropic = [&](const char* name, const char* model) {
+        auto fields = op_fields("envelopeAnthropic");
+        fields.emplace_back("model", str(model));
+        add(name, std::move(fields));
+    };
+    envelope_anthropic("envelope_opus_45", "claude-opus-4-5");
+    envelope_anthropic("envelope_opus_46", "claude-opus-4-6");
+    envelope_anthropic("envelope_opus_47", "claude-opus-4-7");
+    envelope_anthropic("envelope_opus_48", "claude-opus-4-8");
+    envelope_anthropic("envelope_opus_5", "claude-opus-5");
+    envelope_anthropic("envelope_opus_55", "claude-opus-5-5");
+    envelope_anthropic("envelope_sonnet_5", "claude-sonnet-5");
+    envelope_anthropic("envelope_sonnet_46", "claude-sonnet-4-6");
+    envelope_anthropic("envelope_haiku_45", "claude-haiku-4-5");
+    envelope_anthropic("envelope_haiku_35", "claude-haiku-3-5");
+    envelope_anthropic("envelope_opus_41", "claude-opus-4-1");
+    envelope_anthropic("envelope_opus_40", "claude-opus-4-0");
+    envelope_anthropic("envelope_sonnet_40", "claude-sonnet-4-0");
+    envelope_anthropic("envelope_unknown_vendor", "gpt-4o");
+    envelope_anthropic("envelope_unpublished", "claude-opus-4-9");
+    envelope_anthropic("envelope_future_major", "claude-opus-6-0");
+    envelope_anthropic("envelope_upper", "CLAUDE-OPUS-4-8");
+
+    // ---- SafetyMargin ----
+    auto margin = [&](const char* name, std::int64_t raw) {
+        auto fields = op_fields("margin");
+        fields.emplace_back("raw", number(raw));
+        add(name, std::move(fields));
+    };
+    margin("margin_zero", 0);
+    margin("margin_one", 1);
+    margin("margin_two", 2);
+    margin("margin_nine", 9);
+    margin("margin_ten", 10);
+    margin("margin_99", 99);
+    margin("margin_100", 100);
+    margin("margin_int_max", 2147483647);
+    margin("margin_over_int_max", 2000000000);
+    margin("margin_negative", -5);
+    margin("margin_negative_one", -1);
+    margin("margin_large_in_range", 195000000);
+
+    // ---- ContextCostModel.Default wiring ----
+    auto default_model = [&](const char* name, const std::string& text, json::Value desc,
+                             std::int64_t raw) {
+        auto fields = op_fields("defaultModel");
+        fields.emplace_back("text", str(text));
+        fields.emplace_back("image", std::move(desc));
+        fields.emplace_back("raw", number(raw));
+        add(name, std::move(fields));
+    };
+    default_model("default_model_text", "abcd", image(786432), 100);
+    default_model("default_model_cjk", "日本語", image(), 1);
+    default_model("default_model_empty", "", image(384000), 0);
+    default_model("default_model_margin_clamp", "abcdefgh", image(195840), 195000000);
+
+    remove_stale(scenarios);
+    const FormatOptions pretty{Format::Compact, false}; // separators=(",", ":"), ensure_ascii=False
+    for (const auto& [name, value] : entries) {
+        write_scenario(scenarios, name, value, pretty);
+    }
+    std::cout << "Wrote " << entries.size() << " scenarios to " << scenarios.string() << "\n";
+}
+
 }  // namespace
 
 int main(int argc, char** argv) {
@@ -9376,7 +9972,9 @@ int main(int argc, char** argv) {
                   << "  chat-automation-dao   chat-automation-dao/gen_scenarios.py\n"
                   << "  legacy-run-backfill   legacy-run-backfill/gen_scenarios.py\n"
                   << "  runtime-recovery      runtime-recovery/gen_scenarios.py\n"
-                  << "  generation-streaming-segments generation-streaming-segments/gen_scenarios.py\n";
+                  << "  generation-streaming-segments generation-streaming-segments/gen_scenarios.py\n"
+                  << "  shell-file-edit       shell-file-edit/gen_scenarios.py\n"
+                  << "  token-pricing         token-pricing/gen_scenarios.py\n";
         return 2;
     }
     const std::string profile = argv[1];
@@ -9495,6 +10093,10 @@ int main(int argc, char** argv) {
         profile_runtime_recovery(scenarios);
     } else if (profile == "generation-streaming-segments") {
         profile_generation_streaming_segments(scenarios);
+    } else if (profile == "shell-file-edit") {
+        profile_shell_file_edit(scenarios);
+    } else if (profile == "token-pricing") {
+        profile_token_pricing(scenarios);
     } else {
         std::cerr << "unknown profile: " << profile << "\n";
         return 2;

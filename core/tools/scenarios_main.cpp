@@ -12,6 +12,7 @@
 #include <cstdio>
 #include <openssl/evp.h>
 #include <optional>
+#include <map>
 #include <set>
 #include <zlib.h>
 #include <cstdlib>
@@ -15041,6 +15042,1964 @@ void profile_run_recovery(const fs::path& scenarios) {
     }
     std::cout << "wrote " << entries.size() << " scenarios to " << scenarios.string() << "\n";
 }
+// http-policy/gen_scenarios.py — indent=2, ensure_ascii=False. Policy probes:
+// isLocalHost, guardCleartextCredentials, sanitizeProxy, resolveProxy, isProxyBypassed,
+// ipv4InCidr, proxyAuthorization, clientPolicy.
+void profile_http_policy(const fs::path& scenarios) {
+    std::vector<std::pair<std::string, json::Value>> entries;
+    auto add = [&](const std::string& name, json::Value value) {
+        entries.emplace_back(name, std::move(value));
+    };
+    auto proxy = [](std::string type, std::string host, std::int64_t port,
+                    std::string username, std::string password,
+                    std::vector<std::string> bypass_entries) {
+        std::vector<json::Value> bypass_values;
+        for (const std::string& entry : bypass_entries) bypass_values.push_back(str(entry));
+        return object({{"type", str(type)},
+                       {"host", str(host)},
+                       {"port", number(port)},
+                       {"username", str(username)},
+                       {"password", str(password)},
+                       {"bypass", array(std::move(bypass_values))}});
+    };
+    auto base = [&](std::string type = "HTTP", std::string host = "proxy.test",
+                    std::int64_t port = 8080, std::string username = "",
+                    std::string password = "",
+                    std::vector<std::string> bypass_entries = {}) {
+        return proxy(std::move(type), std::move(host), port, std::move(username),
+                     std::move(password), std::move(bypass_entries));
+    };
+    auto local = [&](const std::string& name, const std::string& host) {
+        add(name, object({{"op", str("isLocalHost")}, {"host", str(host)}}));
+    };
+    auto guard = [&](const std::string& name, const std::string& url,
+                     std::vector<std::vector<std::string>> headers) {
+        std::vector<json::Value> header_values;
+        for (const auto& header : headers) {
+            std::vector<json::Value> pair_values;
+            for (const std::string& part : header) pair_values.push_back(str(part));
+            header_values.push_back(array(std::move(pair_values)));
+        }
+        add(name, object({{"op", str("guardCleartextCredentials")},
+                          {"url", str(url)},
+                          {"headers", array(std::move(header_values))}}));
+    };
+    auto config_op = [&](const std::string& name, const std::string& operation,
+                         json::Value config) {
+        add(name, object({{"op", str(operation)}, {"config", std::move(config)}}));
+    };
+    auto resolve = [&](const std::string& name, const std::string& host, json::Value config) {
+        add(name, object({{"op", str("resolveProxy")},
+                          {"host", str(host)},
+                          {"config", std::move(config)}}));
+    };
+    auto bypass = [&](const std::string& name, const std::string& host,
+                      std::vector<std::string> bypass_entries) {
+        std::vector<json::Value> values;
+        for (const std::string& entry : bypass_entries) values.push_back(str(entry));
+        add(name, object({{"op", str("isProxyBypassed")},
+                          {"host", str(host)},
+                          {"bypass", array(std::move(values))}}));
+    };
+    auto cidr = [&](const std::string& name, const std::string& host,
+                    const std::string& cidr_value) {
+        add(name, object({{"op", str("ipv4InCidr")},
+                          {"host", str(host)},
+                          {"cidr", str(cidr_value)}}));
+    };
+    auto auth = [&](const std::string& name, json::Value config, bool existing) {
+        add(name, object({{"op", str("proxyAuthorization")},
+                          {"config", std::move(config)},
+                          {"hasExistingHeader", boolean(existing)}}));
+    };
+
+    // -- isLocalHost -------------------------------------------------------------
+    local("01-localhost", "localhost");
+    local("02-localhost-uppercase", "LOCALHOST");
+    local("03-loopback-ipv4", "127.0.0.1");
+    local("04-private-10", "10.1.2.3");
+    local("05-private-172-16", "172.16.0.1");
+    local("06-private-172-31", "172.31.255.255");
+    local("07-public-172-32", "172.32.0.1");
+    local("08-private-192-168", "192.168.1.1");
+    local("09-public-192-169", "192.169.1.1");
+    local("10-link-local", "169.254.1.1");
+    local("11-cgnat-100-64", "100.64.0.1");
+    local("12-cgnat-100-127", "100.127.255.255");
+    local("13-public-100-128", "100.128.0.1");
+    local("14-unspecified-ipv4", "0.0.0.0");
+    local("15-public-ipv4", "8.8.8.8");
+    local("16-public-fqdn", "api.openai.com");
+    local("17-dot-local", "nas.local");
+    local("18-dot-lan", "foo.lan");
+    local("19-dot-home", "foo.home");
+    local("20-dot-internal", "foo.internal");
+    local("21-dot-local-evil", "foo.local.evil");
+    local("22-tailscale-dns", "machine.tailnet.ts.net");
+    local("23-tailscale-apex", "ts.net");
+    local("24-not-tailscale", "notts.net");
+    local("25-tailscale-ula", "fd7a:115c:a1e0::1");
+    local("26-tailscale-prefix", "fd7a:115c:a1e0evil");
+    local("27-ipv6-brackets", "[::1]");
+    local("28-empty-brackets", "[]");
+    local("29-blank", "");
+    local("30-whitespace", "   ");
+    local("31-bare-name", "foo");
+    local("32-bare-name-trailing-dot", "foo.");
+    local("33-localhost-trailing-dot", "localhost.");
+    local("34-plus-octet", "+127.0.0.1");
+    local("35-leading-zero-octet", "127.0.0.01");
+    local("36-negative-zero-octet", "-0.0.0.0");
+    local("37-five-octets", "192.168.1.1.1");
+    local("38-three-octets", "192.168.1");
+    local("39-trailing-dot-ipv4", "192.168.1.1.");
+    local("40-trailing-space-ipv4", "1.2.3.4 ");
+    local("41-fullwidth-digits", "１２７.０.０.１");
+    local("42-host-with-port", "127.0.0.1:80");
+    local("43-host-with-path", "127.0.0.1/path");
+    local("44-bare-name-with-port", "localhost:8080");
+    local("45-fqdn-with-port", "api.example.com:443");
+
+    // -- guardCleartextCredentials ------------------------------------------------
+    const std::vector<std::vector<std::string>> auth_header = {
+        {"Authorization", "Bearer secret"}};
+    guard("46-http-localhost-auth", "http://localhost/v1", auth_header);
+    guard("47-http-loopback-x-api-key", "http://127.0.0.1/v1", {{"X-Api-Key", "k"}});
+    guard("48-http-public-auth", "http://api.example.com/v1", auth_header);
+    guard("49-http-public-x-api-key", "http://api.example.com/v1", {{"X-Api-Key", "k"}});
+    guard("50-https-public-auth", "https://api.example.com/v1", auth_header);
+    guard("51-ftp-public-auth", "ftp://api.example.com/v1", auth_header);
+    guard("52-http-public-custom-header", "http://api.example.com/v1", {{"X-Custom", "1"}});
+    guard("53-http-uppercase-public-auth", "HTTP://API.EXAMPLE.COM/v1", auth_header);
+    guard("54-http-ipv6-loopback-auth", "http://[::1]:8080/v1", auth_header);
+    guard("55-http-registry-authority", "http://foo_bar/v1", auth_header);
+    guard("56-http-userinfo-public-auth", "http://user:pass@api.example.com/v1", auth_header);
+    guard("57-http-empty-authority", "http://", auth_header);
+    guard("58-http-empty-host-path", "http:///path", auth_header);
+    guard("59-http-public-lower-auth", "http://api.example.com/v1", {{"authorization", "x"}});
+    guard("60-http-public-trailing-space-key", "http://api.example.com/v1",
+          {{"Authorization ", "x"}});
+    guard("61-http-public-goog-key", "http://api.example.com/v1", {{"X-Goog-Api-Key", "k"}});
+    guard("62-http-public-api-key", "http://api.example.com/v1", {{"api-key", "k"}});
+    guard("63-http-public-no-headers", "http://api.example.com/v1", {});
+    guard("64-http-public-trailing-dot", "http://api.example.com./v1", auth_header);
+    guard("65-http-unspecified-auth", "http://0.0.0.0/v1", auth_header);
+    guard("66-http-localhost-dot-auth", "http://localhost./v1", auth_header);
+    guard("67-http-local-evil-auth", "http://foo.local.evil/v1", auth_header);
+    guard("68-http-malformed-escape", "http://api.example.com/%zz", auth_header);
+    guard("69-http-malformed-host", "http://exa mple.com/v1", auth_header);
+    guard("70-httpx-public-auth", "httpx://api.example.com/v1", auth_header);
+    guard("71-http-tailscale-auth", "http://machine.tailnet.ts.net/v1", auth_header);
+    guard("72-http-cgnat-auth", "http://100.64.0.1/v1", auth_header);
+    guard("73-http-public-cgnat-auth", "http://100.128.0.1/v1", auth_header);
+    guard("74-http-bare-name-auth", "http://foo/v1", auth_header);
+    guard("75-http-bare-name-dot-auth", "http://foo./v1", auth_header);
+
+    // -- sanitizeProxy -------------------------------------------------------------
+    config_op("76-sanitize-null", "sanitizeProxy", null_value());
+    config_op("77-sanitize-empty-host", "sanitizeProxy", base("HTTP", ""));
+    config_op("78-sanitize-space-host", "sanitizeProxy", base("HTTP", "   "));
+    config_op("79-sanitize-nbsp-host", "sanitizeProxy", base("HTTP", "\u00A0"));
+    config_op("80-sanitize-zero-width-host", "sanitizeProxy", base("HTTP", "\u200B"));
+    config_op("81-sanitize-port-one", "sanitizeProxy", base("HTTP", "proxy.test", 1));
+    config_op("82-sanitize-port-max", "sanitizeProxy", base("HTTP", "proxy.test", 65535));
+    config_op("83-sanitize-port-zero", "sanitizeProxy", base("HTTP", "proxy.test", 0));
+    config_op("84-sanitize-port-over", "sanitizeProxy", base("HTTP", "proxy.test", 65536));
+    config_op("85-sanitize-port-negative", "sanitizeProxy", base("HTTP", "proxy.test", -1));
+    config_op("86-sanitize-untrimmed-host", "sanitizeProxy", base("HTTP", " proxy "));
+    config_op("87-sanitize-fields", "sanitizeProxy",
+              base("HTTP", "proxy.test", 8080, "user", "pass", {"localhost", "10.0.0.0/8"}));
+    config_op("88-sanitize-socks", "sanitizeProxy", base("SOCKS"));
+
+    // -- resolveProxy ---------------------------------------------------------------
+    resolve("89-resolve-null", "api.example.com", null_value());
+    resolve("90-resolve-http", "api.example.com", base());
+    resolve("91-resolve-socks", "api.example.com", base("SOCKS"));
+    resolve("92-resolve-bypass-exact", "api.example.com",
+            base("HTTP", "proxy.test", 8080, "", "", {"api.example.com"}));
+    resolve("93-resolve-bypass-wildcard", "api.example.com",
+            base("HTTP", "proxy.test", 8080, "", "", {"*.example.com"}));
+    resolve("94-resolve-bypass-cidr", "192.168.1.5",
+            base("HTTP", "proxy.test", 8080, "", "", {"192.168.0.0/16"}));
+    resolve("95-resolve-invalid-port", "api.example.com", base("HTTP", "proxy.test", 0));
+    resolve("96-resolve-blank-host", "api.example.com", base("HTTP", ""));
+    resolve("97-resolve-blank-target", "", base());
+    resolve("98-resolve-empty-bypass-entry", "api.example.com",
+            base("HTTP", "proxy.test", 8080, "", "", {""}));
+    resolve("99-resolve-ipv6-bypass", "[::1]",
+            base("HTTP", "proxy.test", 8080, "", "", {"::1"}));
+    resolve("100-resolve-ipv6-bracket-bypass", "[::1]",
+            base("HTTP", "proxy.test", 8080, "", "", {"[::1]"}));
+    resolve("101-resolve-local-wildcard", "foo.local",
+            base("HTTP", "proxy.test", 8080, "", "", {"*.local"}));
+    resolve("102-resolve-local-wildcard-evil", "foo.local.evil",
+            base("HTTP", "proxy.test", 8080, "", "", {"*.local"}));
+
+    // -- isProxyBypassed --------------------------------------------------------------
+    bypass("103-bypass-blank-host", "", {"x"});
+    bypass("104-bypass-empty-list", "api.example.com", {});
+    bypass("105-bypass-exact", "api.example.com", {"api.example.com"});
+    bypass("106-bypass-exact-case", "API.EXAMPLE.COM", {"api.example.com"});
+    bypass("107-bypass-wildcard-apex", "example.com", {"*.example.com"});
+    bypass("108-bypass-wildcard-subdomain", "api.example.com", {"*.example.com"});
+    bypass("109-bypass-wildcard-no-dot", "api.example.com", {"*example.com"});
+    bypass("110-bypass-wildcard-tld", "example.com", {"*.com"});
+    bypass("111-bypass-wildcard-apex-tld", "com", {"*.com"});
+    bypass("112-bypass-wildcard-dot", "foo.", {"*."});
+    bypass("113-bypass-cidr-match", "192.168.1.5", {"192.168.0.0/16"});
+    bypass("114-bypass-cidr-miss", "192.169.1.5", {"192.168.0.0/16"});
+    bypass("115-bypass-cidr-zero", "8.8.8.8", {"0.0.0.0/0"});
+    bypass("116-bypass-cidr-hostname", "api.example.com", {"0.0.0.0/0"});
+    bypass("117-bypass-cidr-bits-over", "192.168.1.5", {"192.168.0.0/33"});
+    bypass("118-bypass-cidr-shape", "192.168.1.5", {"192.168.0.0/8/9"});
+    bypass("119-bypass-trimmed-entry", "api.example.com", {"  API.EXAMPLE.COM  "});
+    bypass("120-bypass-empty-entry", "api.example.com", {"", "api.example.com"});
+    bypass("121-bypass-ipv6-trim", "[::1]", {"::1"});
+    bypass("122-bypass-ipv6-bracket-entry", "[::1]", {"[::1]"});
+    bypass("123-bypass-cidr-leading-zero", "192.168.1.5", {"192.168.0.0/016"});
+    bypass("124-bypass-cidr-plus-bits", "192.168.1.5", {"192.168.0.0/+16"});
+    bypass("125-bypass-plus-octet", "+192.168.0.1", {"192.168.0.0/16"});
+    bypass("126-bypass-negative-zero", "-0.0.0.0", {"0.0.0.0/0"});
+    bypass("127-bypass-negative-bits", "192.168.1.5", {"192.168.0.0/-1"});
+
+    // -- ipv4InCidr -------------------------------------------------------------------
+    cidr("128-cidr-match-16", "192.168.1.1", "192.168.0.0/16");
+    cidr("129-cidr-miss-16", "192.169.1.1", "192.168.0.0/16");
+    cidr("130-cidr-match-8", "10.1.2.3", "10.0.0.0/8");
+    cidr("131-cidr-miss-32", "10.1.2.3", "10.0.0.0/32");
+    cidr("132-cidr-match-32", "10.1.2.3", "10.1.2.3/32");
+    cidr("133-cidr-match-zero", "10.1.2.3", "0.0.0.0/0");
+    cidr("134-cidr-hostname", "api.example.com", "0.0.0.0/0");
+    cidr("135-cidr-bits-over", "10.1.2.3", "10.0.0.0/33");
+    cidr("136-cidr-bits-negative", "10.1.2.3", "10.0.0.0/-1");
+    cidr("137-cidr-shape", "10.1.2.3", "10.0.0.0/8/9");
+    cidr("138-cidr-plus-host", "+10.1.2.3", "10.0.0.0/8");
+    cidr("139-cidr-negative-zero", "-0.1.2.3", "0.0.0.0/0");
+    cidr("140-cidr-empty-bits", "10.1.2.3", "10.0.0.0/");
+    cidr("141-cidr-plus-bits", "10.1.2.3", "10.0.0.0/+8");
+    cidr("142-cidr-leading-zero-bits", "10.1.2.3", "10.0.0.0/08");
+
+    // -- proxyAuthorization -------------------------------------------------------------
+    auth("143-auth-null", null_value(), false);
+    auth("144-auth-http", base("HTTP", "proxy.test", 8080, "user", "pass"), false);
+    auth("145-auth-existing", base("HTTP", "proxy.test", 8080, "user", "pass"), true);
+    auth("146-auth-blank-username", base("HTTP", "proxy.test", 8080, ""), false);
+    auth("147-auth-space-username", base("HTTP", "proxy.test", 8080, "   "), false);
+    auth("148-auth-socks", base("SOCKS", "proxy.test", 8080, "user", "pass"), false);
+    auth("149-auth-latin1", base("HTTP", "proxy.test", 8080, "user", "päss"), false);
+    auth("150-auth-unmappable", base("HTTP", "proxy.test", 8080, "user", "€"), false);
+    auth("151-auth-colon", base("HTTP", "proxy.test", 8080, "a:b", "c"), false);
+    auth("152-auth-invalid-port", base("HTTP", "proxy.test", 0, "user", "pass"), false);
+    auth("153-auth-nbsp-username", base("HTTP", "proxy.test", 8080, "\u00A0"), false);
+    auth("154-auth-zero-width-username", base("HTTP", "proxy.test", 8080, "\u200B"), false);
+    auth("155-auth-latin1-username", base("HTTP", "proxy.test", 8080, "ü", "p"), false);
+    auth("156-auth-emoji", base("HTTP", "proxy.test", 8080, "user", "\U0001F600"), false);
+    auth("157-auth-empty-password", base("HTTP", "proxy.test", 8080, "user", ""), false);
+
+    // -- clientPolicy --------------------------------------------------------------------
+    add("158-client-policy", object({{"op", str("clientPolicy")}}));
+
+    remove_stale(scenarios);
+    const FormatOptions pretty{Format::Pretty2, false}; // indent=2, ensure_ascii=False
+    for (const auto& [name, value] : entries) {
+        write_scenario(scenarios, name, value, pretty);
+    }
+    std::cout << "Wrote " << entries.size() << " scenarios to " << scenarios.string() << "\n";
+}
+// export-extra-settings/gen_scenarios.py — indent=2, ensure_ascii=False.
+// Scenarios wrap {object, replace, allowSecrets, allowedConversationIds, modelAliases,
+// customModels}. The fuzz corpus replicates CPython random.sample (set-based for k==5,
+// pool-swap for k>=6 at n==40) on top of PythonRandom.
+void profile_export_extra_settings(const fs::path& scenarios) {
+    std::vector<std::pair<std::string, json::Value>> entries;
+    auto add = [&](const std::string& name, json::Value value) {
+        entries.emplace_back(name, std::move(value));
+    };
+    auto scalars = []() {
+        return object({
+            {"imageTranscriptionEnabled", boolean(true)},
+            {"imageTranscriptionEnabledModels", str("whisper-large,whisper-small")},
+            {"imageTranscriptionModel", str("gpt-4o-mini")},
+            {"imageTranscriptionBatchSize", number(4)},
+            {"imageTranscriptionPrompt", str("Describe the image.")},
+            {"webSearchNumResults", number(5)},
+            {"searchContextWindow", number(8192)},
+            {"searchMatchLimit", number(12)},
+            {"defaultTemperature", float_number(0.7)},
+            {"defaultMaxTokens", number(4096)},
+            {"defaultTopP", float_number(0.9)},
+            {"defaultFrequencyPenalty", float_number(0.1)},
+            {"defaultPresencePenalty", float_number(-0.2)},
+            {"showDocumentationFab", boolean(true)},
+            {"proxyEnabled", boolean(true)},
+            {"proxyType", str("http")},
+            {"proxyHost", str("proxy.example")},
+            {"proxyPort", str("8080")},
+            {"proxyUsername", str("user")},
+            {"proxyPassword", str("secret")},
+            {"proxyBypass", str("localhost,127.0.0.1")},
+            {"themeMode", str("dark")},
+            {"colorScheme", str("green")},
+            {"dynamicColor", boolean(false)},
+            {"blurEffectsEnabled", boolean(true)},
+            {"reduceMotion", boolean(false)},
+            {"openAiServiceTierEnabled", boolean(true)},
+            {"openAiServiceTier", str("flex")},
+            {"hapticsEnabled", boolean(false)},
+            {"detailedTokenUsage", boolean(true)},
+            {"autoExpandActiveGroup", boolean(false)},
+            {"schemeStyle", str("tonal")},
+            {"fontPreference", str("system")},
+            {"autoUpdateCheck", boolean(true)},
+            {"automationToolsEnabled", boolean(false)},
+            {"exactExecutionEnabled", boolean(true)},
+            {"automationWakeLockEnabled", boolean(false)}});
+    };
+    auto conversation_all = []() {
+        return object({
+            {"contextWindow", number(128000)},
+            {"temperature", float_number(0.6)},
+            {"maxTokens", number(2048)},
+            {"topP", float_number(0.95)},
+            {"frequencyPenalty", float_number(0.25)},
+            {"presencePenalty", float_number(-0.5)},
+            {"codeExecutionEnabled", boolean(true)},
+            {"googleSearchEnabled", boolean(false)},
+            {"openAiWebSearchEnabled", boolean(true)},
+            {"thinkingEnabled", boolean(true)},
+            {"thinkingLevel", str("high")},
+            {"thinkingBudgetEnabled", boolean(false)},
+            {"thinkingBudgetTokens", number(0)},
+            {"openAiServiceTierEnabled", boolean(true)},
+            {"openAiServiceTier", str("priority")},
+            {"webSearchEnabled", boolean(false)},
+            {"shellEnabled", boolean(true)},
+            {"lowContextModeEnabled", boolean(false)}});
+    };
+    auto conv_settings = [](json::Value c1) {
+        return object({{"conversationSettings", object({{"c1", std::move(c1)}})}});
+    };
+    // Python {**SCALARS, **overrides}: base order, existing keys replaced in place,
+    // new keys appended.
+    auto merge_scalars = [&](json::Value overrides) {
+        json::Value base = scalars();
+        for (auto& incoming : overrides.members) {
+            bool replaced = false;
+            for (auto& member : base.members) {
+                if (member.key == incoming.key) {
+                    member.value = std::move(incoming.value);
+                    replaced = true;
+                    break;
+                }
+            }
+            if (!replaced) base.members.push_back(std::move(incoming));
+        }
+        return base;
+    };
+    auto write_case = [&](const std::string& name, json::Value obj, bool replace = false,
+                          bool allow_secrets = false,
+                          std::vector<std::string> allowed = {},
+                          std::vector<std::pair<std::string, std::string>> model_aliases = {},
+                          std::vector<json::Value> custom_models = {}) {
+        std::vector<json::Value> allowed_values;
+        for (const std::string& entry : allowed) allowed_values.push_back(str(entry));
+        std::vector<std::pair<std::string, json::Value>> alias_members;
+        for (const auto& [key, value] : model_aliases) alias_members.emplace_back(key, str(value));
+        std::vector<json::Value> model_values;
+        for (const json::Value& value : custom_models) model_values.push_back(value);
+        add(name, object({{"object", std::move(obj)},
+                          {"replace", boolean(replace)},
+                          {"allowSecrets", boolean(allow_secrets)},
+                          {"allowedConversationIds", array(std::move(allowed_values))},
+                          {"modelAliases", object(std::move(alias_members))},
+                          {"customModels", array(std::move(model_values))}}));
+    };
+
+    // -- empty and scalar-field coverage -----------------------------------------
+    write_case("01-empty-object", object({}));
+    write_case("02-all-scalars", scalars());
+    write_case("03-all-scalars-false-zero", merge_scalars(object({
+        {"imageTranscriptionEnabled", boolean(false)},
+        {"imageTranscriptionEnabledModels", str("")},
+        {"imageTranscriptionModel", str("")},
+        {"imageTranscriptionBatchSize", number(0)},
+        {"imageTranscriptionPrompt", str("")},
+        {"webSearchNumResults", number(-1)},
+        {"searchContextWindow", number(0)},
+        {"searchMatchLimit", number(-7)},
+        {"defaultTemperature", float_number(0.0)},
+        {"defaultMaxTokens", number(0)},
+        {"defaultTopP", float_number(-0.0)},
+        {"defaultFrequencyPenalty", float_number(0.0)},
+        {"defaultPresencePenalty", float_number(0.0)},
+        {"showDocumentationFab", boolean(false)},
+        {"proxyEnabled", boolean(false)},
+        {"proxyType", str("")},
+        {"proxyHost", str("")},
+        {"proxyPort", str("")},
+        {"proxyUsername", str("")},
+        {"proxyBypass", str("")},
+        {"themeMode", str("")},
+        {"colorScheme", str("")},
+        {"dynamicColor", boolean(true)},
+        {"blurEffectsEnabled", boolean(false)},
+        {"reduceMotion", boolean(true)},
+        {"openAiServiceTierEnabled", boolean(false)},
+        {"openAiServiceTier", str("")},
+        {"hapticsEnabled", boolean(true)},
+        {"detailedTokenUsage", boolean(false)},
+        {"autoExpandActiveGroup", boolean(true)},
+        {"schemeStyle", str("")},
+        {"fontPreference", str("")},
+        {"autoUpdateCheck", boolean(false)},
+        {"automationToolsEnabled", boolean(true)},
+        {"exactExecutionEnabled", boolean(false)},
+        {"automationWakeLockEnabled", boolean(true)},
+    })));
+    write_case("04-float-spellings", object({
+        {"defaultTemperature", float_number(0.1)},
+        {"defaultMaxTokens", number(2147483647)},
+        {"defaultTopP", float_number(1e-7)},
+        {"defaultFrequencyPenalty", float_number(-123.456)},
+        {"defaultPresencePenalty", float_number(3.4028235e38)},
+    }));
+    write_case("05-float-overflow", object({
+        {"defaultTemperature", float_number(1e39)},
+        {"defaultTopP", float_number(-1e39)},
+    }));
+    write_case("06-string-primitives-for-numbers", object({
+        {"imageTranscriptionBatchSize", str(" 7 ")},
+        {"webSearchNumResults", str("+3")},
+        {"searchContextWindow", str("00042")},
+        {"searchMatchLimit", str("-0")},
+        {"defaultTemperature", str(" 0.5f ")},
+        {"defaultMaxTokens", str("12")},
+        {"defaultTopP", str("NaN")},
+        {"defaultFrequencyPenalty", str("Infinity")},
+        {"defaultPresencePenalty", str("-Infinity")},
+    }));
+    write_case("07-content-or-null-primitives", object({
+        {"imageTranscriptionModel", number(42)},
+        {"imageTranscriptionPrompt", boolean(true)},
+        {"proxyType", float_number(3.5)},
+        {"proxyHost", boolean(false)},
+        {"themeMode", null_value()},
+        {"colorScheme", array({str("not"), str("a"), str("primitive")})},
+    }));
+
+    // -- primitive spellings -----------------------------------------------------
+    const std::vector<std::string> kIntSpellings = {
+        " 7 ", "+3", " +3 ", "-3", "00042", "3e2", "3E+2", "3e-1", "10e-1", "3e",
+        "3e+", "3e-", "3e+2x", "1e10", "-2147483648", "2147483647", "2147483648",
+        "0x10", "1_000", "3.0", "\t7\n", "\u00A03\u00A0", "\u20033\u2003"};
+    for (std::size_t index = 0; index < kIntSpellings.size(); ++index) {
+        char name[32];
+        std::snprintf(name, sizeof(name), "08-int-spelling-%02zu", index);
+        write_case(name, object({{"webSearchNumResults", str(kIntSpellings[index])}}));
+    }
+    const std::vector<std::string> kFloatSpellings = {
+        "0.5", " 0.5 ", "0.5f", "0.5F", "0.5d", "0.5D", ".5", "5.", "+.5", "-.5e1",
+        "0x1.8p1", "0x10", "0x1p2f", "1e39", "1e-50", "NaN", "NAN", "nan", "+NaN",
+        "-NaN", "Infinity", "+Infinity", "-Infinity", "infinity", "-infinity",
+        "1,5", "", "1_0", "0x1.8"};
+    for (std::size_t index = 0; index < kFloatSpellings.size(); ++index) {
+        char name[32];
+        std::snprintf(name, sizeof(name), "09-float-spelling-%02zu", index);
+        write_case(name, object({{"defaultTemperature", str(kFloatSpellings[index])}}));
+    }
+    const std::vector<std::string> kBoolSpellings = {
+        "true", "false", "TRUE", "False", "yes", " true ", ""};
+    for (std::size_t index = 0; index < kBoolSpellings.size(); ++index) {
+        char name[32];
+        std::snprintf(name, sizeof(name), "11-bool-spelling-%02zu", index);
+        write_case(name, object({{"imageTranscriptionEnabled", str(kBoolSpellings[index])}}));
+    }
+    const std::vector<std::string> kImageModels = {
+        "", "a", "a,b", ",a,,b,", " a , b ", "a,, ,b", ",",
+        "\u00FC,\u65E5\u672C,\U0001F642", "a,b,a"};
+    for (std::size_t index = 0; index < kImageModels.size(); ++index) {
+        char name[32];
+        std::snprintf(name, sizeof(name), "10-image-models-%02zu", index);
+        write_case(name, object({{"imageTranscriptionEnabledModels", str(kImageModels[index])}}));
+    }
+
+    // -- proxy secret gating ------------------------------------------------------
+    write_case("20-proxy-secret-allowed", object({{"proxyPassword", str("s3cr3t")}}),
+               false, true);
+    write_case("21-proxy-secret-denied", object({{"proxyPassword", str("s3cr3t")}}));
+    write_case("22-proxy-secret-empty", object({{"proxyPassword", str("")}}), false, true);
+    write_case("23-proxy-bypass-filter", object({{"proxyBypass", str(" ")}}), false, true);
+    write_case("24-proxy-bypass-empty", object({{"proxyBypass", str("")}}));
+    write_case("25-proxy-no-field", object({}), false, true);
+
+    // -- conversation settings -----------------------------------------------------
+    write_case("30-conversation-all-fields",
+               object({{"conversationSettings", object({{"c1", conversation_all()}})}}),
+               false, false, {"c1"});
+    write_case("31-conversation-filter",
+               object({{"conversationSettings",
+                        object({{"c1", object({{"contextWindow", number(1)}})},
+                                {"c2", object({{"contextWindow", number(2)}})},
+                                {"c3", object({{"contextWindow", number(3)}})}})}}),
+               false, false, {"c3", "c1"});
+    write_case("32-conversation-empty",
+               object({{"conversationSettings", object({})}}), false, false, {"c1"});
+    write_case("33-conversation-all-null",
+               object({{"conversationSettings",
+                        object({{"c1", object({
+                            {"contextWindow", null_value()},
+                            {"temperature", null_value()},
+                            {"maxTokens", null_value()},
+                            {"topP", null_value()},
+                            {"frequencyPenalty", null_value()},
+                            {"presencePenalty", null_value()},
+                            {"codeExecutionEnabled", null_value()},
+                            {"googleSearchEnabled", null_value()},
+                            {"openAiWebSearchEnabled", null_value()},
+                            {"thinkingEnabled", null_value()},
+                            {"thinkingLevel", null_value()},
+                            {"thinkingBudgetEnabled", null_value()},
+                            {"thinkingBudgetTokens", null_value()},
+                            {"openAiServiceTierEnabled", null_value()},
+                            {"openAiServiceTier", null_value()},
+                            {"webSearchEnabled", null_value()},
+                            {"shellEnabled", null_value()},
+                            {"lowContextModeEnabled", null_value()},
+                        })}})}}),
+               false, false, {"c1"});
+    write_case("34-conversation-unknown-fields",
+               object({{"conversationSettings",
+                        object({{"c1", object({{"unknown", number(1)},
+                                               {"another", array({number(2)})},
+                                               {"contextWindow", number(99)}})}})}}),
+               false, false, {"c1"});
+    write_case("35-conversation-empty-id",
+               object({{"conversationSettings", object({{"", object({{"maxTokens", number(5)}})}})}}),
+               false, false, {""});
+    write_case("36-conversation-unicode-id",
+               object({{"conversationSettings",
+                        object({{"беседа-\U0001F642",
+                                 object({{"shellEnabled", boolean(true)}})}})}}),
+               false, false, {"беседа-\U0001F642"});
+    write_case("37-conversation-value-not-object",
+               object({{"conversationSettings", object({{"c1", array({})}})}}),
+               false, false, {"c1"});
+    write_case("38-conversation-not-object",
+               object({{"conversationSettings", array({})}}), false, false, {"c1"});
+
+    // -- legacy thinking budgets and effort normalisation ---------------------------
+    const std::pair<std::string, json::Value> kThinking[] = {
+        {"budget:2048", object({{"thinkingLevel", str("budget:2048")}})},
+        {"budget:0", object({{"thinkingLevel", str("budget:0")}})},
+        {"budget:-5", object({{"thinkingLevel", str("budget:-5")}})},
+        {"budget:abc", object({{"thinkingLevel", str("budget:abc")}})},
+        {"budget: 42", object({{"thinkingLevel", str("budget: 42")}})},
+        {"budget:+7", object({{"thinkingLevel", str("budget:+7")}})},
+        {"budget-overflow", object({{"thinkingLevel", str("budget:99999999999")}})},
+        {"budget-upper", object({{"thinkingLevel", str("BUDGET:7")}})},
+        {"budget-spaced", object({{"thinkingLevel", str(" budget: 8 ")}})},
+        {"budget-explicit-disabled",
+         object({{"thinkingLevel", str("budget:2048")},
+                 {"thinkingBudgetEnabled", boolean(false)},
+                 {"thinkingBudgetTokens", number(0)}})},
+        {"budget-explicit-enabled",
+         object({{"thinkingLevel", str("budget:2048")},
+                 {"thinkingBudgetEnabled", boolean(true)},
+                 {"thinkingBudgetTokens", number(1024)}})},
+        {"budget-explicit-tokens-only",
+         object({{"thinkingLevel", str("budget:2048")},
+                 {"thinkingBudgetTokens", number(512)}})},
+        {"effort-alias-min", object({{"thinkingLevel", str("MIN")}})},
+        {"effort-alias-balanced", object({{"thinkingLevel", str("balanced")}})},
+        {"effort-alias-extra-high", object({{"thinkingLevel", str("extra-high")}})},
+        {"effort-alias-quick", object({{"thinkingLevel", str("quick")}})},
+        {"effort-unknown", object({{"thinkingLevel", str("turbo")}})},
+        {"effort-empty", object({{"thinkingLevel", str("")}})},
+        {"effort-none", object({{"thinkingLevel", str("none")}})},
+    };
+    for (std::size_t index = 0; index < sizeof(kThinking) / sizeof(kThinking[0]); ++index) {
+        char name[128];
+        std::snprintf(name, sizeof(name), "40-thinking-%02zu-%s", index, kThinking[index].first.c_str());
+        write_case(name, conv_settings(kThinking[index].second), false, false, {"c1"});
+    }
+    const std::pair<std::string, json::Value> kTiers[] = {
+        {"scale", str("scale")},
+        {"priority", str("priority")},
+        {"upper", str(" FAST ")},
+        {"unknown", str("bogus")},
+        {"empty", str("")},
+        {"auto", str("AUTO")},
+        {"ultrafast", str("ultraFast")},
+        {"flex", str(" flex ")},
+        {"null", null_value()},
+        {"number", number(3)},
+    };
+    for (std::size_t index = 0; index < sizeof(kTiers) / sizeof(kTiers[0]); ++index) {
+        char name[64];
+        std::snprintf(name, sizeof(name), "50-tier-%02zu-%s", index, kTiers[index].first.c_str());
+        write_case(name,
+                   object({{"conversationSettings",
+                            object({{"c1", object({{"openAiServiceTier", kTiers[index].second}})}})}}),
+                   false, false, {"c1"});
+    }
+
+    // -- conversation primitives accepted from strings and numbers ------------------
+    write_case("55-conversation-primitive-strings",
+               object({{"conversationSettings",
+                        object({{"c1", object({
+                            {"contextWindow", str("2048")},
+                            {"temperature", str("0.25")},
+                            {"maxTokens", number(17)},
+                            {"topP", number(1)},
+                            {"frequencyPenalty", str("0.125")},
+                            {"presencePenalty", str("-0.0")},
+                            {"codeExecutionEnabled", str("TRUE")},
+                            {"googleSearchEnabled", str("false")},
+                            {"openAiWebSearchEnabled", number(1)},
+                            {"thinkingEnabled", number(0)},
+                            {"thinkingLevel", number(123)},
+                            {"thinkingBudgetEnabled", str("true")},
+                            {"thinkingBudgetTokens", str("33")},
+                            {"openAiServiceTierEnabled", str("False")},
+                            {"openAiServiceTier", number(5)},
+                            {"webSearchEnabled", str(" true ")},
+                            {"shellEnabled", str("no")},
+                            {"lowContextModeEnabled", null_value()},
+                        })}})}}),
+               false, false, {"c1"});
+
+    // -- modelAliases merge/replace ---------------------------------------------------
+    const std::vector<std::pair<std::string, std::string>> kAliasSeed = {
+        {"seed1", "Seed"}, {"m2", "Old"}};
+    for (int replace = 0; replace <= 1; ++replace) {
+        char name[32];
+        std::snprintf(name, sizeof(name), "60-aliases-replace-%d", replace);
+        write_case(name, object({{"modelAliases",
+                                  object({{"m1", str("One")}, {"m2", str("Two")},
+                                          {"m3", str("Three")}})}}),
+                   replace != 0, false, {}, kAliasSeed);
+    }
+    write_case("61-aliases-empty", object({{"modelAliases", object({})}}),
+               false, false, {}, {{"seed", "Seed"}});
+    write_case("62-aliases-primitives",
+               object({{"modelAliases", object({{"s", str("text")}, {"n", number(42)},
+                                                {"b", boolean(true)}, {"z", null_value()},
+                                                {"f", float_number(1.5)}})}}),
+               false, false, {}, {{"seed", "Seed"}});
+    write_case("63-aliases-only-null",
+               object({{"modelAliases", object({{"a", null_value()}})}}),
+               false, false, {}, {{"seed", "Seed"}});
+    write_case("64-aliases-value-object",
+               object({{"modelAliases", object({{"a", object({{"nested", number(1)}})}})}}));
+    write_case("65-aliases-not-object", object({{"modelAliases", array({})}}));
+    write_case("66-aliases-unicode",
+               object({{"modelAliases", object({{"модель", str("\U0001F642")},
+                                                {"", str("empty")}})}}),
+               true);
+
+    // -- customModels merge/replace ----------------------------------------------------
+    const std::vector<json::Value> kCustomSeed2 = {str("seed"), str("m1")};
+    for (int replace = 0; replace <= 1; ++replace) {
+        char name[32];
+        std::snprintf(name, sizeof(name), "70-custom-replace-%d", replace);
+        write_case(name, object({{"customModels",
+                                  array({str("m3"), str("m1"), str("m3")})}}),
+                   replace != 0, false, {}, {}, kCustomSeed2);
+    }
+    write_case("71-custom-empty-replace", object({{"customModels", array({})}}),
+               true, false, {}, {}, {str("seed")});
+    write_case("72-custom-empty-merge", object({{"customModels", array({})}}),
+               false, false, {}, {}, {str("seed"), str("seed2")});
+    write_case("73-custom-primitives",
+               object({{"customModels", array({str("s"), number(42), boolean(true),
+                                               float_number(1.5), null_value()})}}),
+               false, false, {}, {}, {str("seed")});
+    write_case("74-custom-element-object",
+               object({{"customModels", array({object({{"x", number(1)}})})}}));
+    write_case("75-custom-not-array-object",
+               object({{"customModels", object({{"a", str("b")}})}}),
+               false, false, {}, {}, {str("seed")});
+    write_case("76-custom-not-array-string",
+               object({{"customModels", str("m1")}}),
+               true, false, {}, {}, {str("seed")});
+
+    // -- scalar type failures -----------------------------------------------------------
+    const std::pair<std::string, json::Value> kErrors[] = {
+        {"80-bool-null", object({{"imageTranscriptionEnabled", null_value()}})},
+        {"81-bool-number", object({{"imageTranscriptionEnabled", number(1)}})},
+        {"82-bool-word", object({{"imageTranscriptionEnabled", str("yes")}})},
+        {"83-bool-object", object({{"imageTranscriptionEnabled", object({})}})},
+        {"84-int-null", object({{"imageTranscriptionBatchSize", null_value()}})},
+        {"85-int-decimal", object({{"imageTranscriptionBatchSize", float_number(1.5)}})},
+        {"86-int-junk", object({{"imageTranscriptionBatchSize", str("12x")}})},
+        {"87-int-overflow", object({{"imageTranscriptionBatchSize", str("2147483648")}})},
+        {"88-int-array", object({{"webSearchNumResults", array({})}})},
+        {"89-float-null", object({{"defaultTemperature", null_value()}})},
+        {"90-float-junk", object({{"defaultTemperature", str("0.5.5")}})},
+        {"91-float-array", object({{"defaultTopP", array({})}})},
+        {"92-string-object", object({{"imageTranscriptionModel", object({})}})},
+        {"93-int-hex", object({{"searchContextWindow", str("0x10")}})},
+        {"94-int-underscore", object({{"searchMatchLimit", str("1_000")}})},
+    };
+    for (const auto& [name, value] : kErrors) {
+        write_case(name, value);
+    }
+    write_case("95-partial-before-error",
+               object({{"imageTranscriptionEnabled", boolean(true)},
+                       {"imageTranscriptionModel", str("m")},
+                       {"conversationSettings", object({{"c1", object({{"contextWindow", number(1)}})}})},
+                       {"imageTranscriptionBatchSize", null_value()},
+                       {"themeMode", str("dark")}}),
+               false, false, {"c1"});
+
+    // -- deterministic mixed-field fuzz corpus -----------------------------------------
+    const std::vector<std::string> kKeys = {
+        "imageTranscriptionEnabled", "imageTranscriptionEnabledModels",
+        "imageTranscriptionModel", "imageTranscriptionBatchSize",
+        "imageTranscriptionPrompt", "webSearchNumResults", "searchContextWindow",
+        "searchMatchLimit", "defaultTemperature", "defaultMaxTokens", "defaultTopP",
+        "defaultFrequencyPenalty", "defaultPresencePenalty", "showDocumentationFab",
+        "proxyEnabled", "proxyType", "proxyHost", "proxyPort", "proxyUsername",
+        "proxyPassword", "proxyBypass", "themeMode", "colorScheme", "dynamicColor",
+        "blurEffectsEnabled", "reduceMotion", "openAiServiceTierEnabled",
+        "openAiServiceTier", "hapticsEnabled", "detailedTokenUsage",
+        "autoExpandActiveGroup", "schemeStyle", "fontPreference", "autoUpdateCheck",
+        "automationToolsEnabled", "exactExecutionEnabled", "automationWakeLockEnabled",
+        "conversationSettings", "modelAliases", "customModels"};
+    const std::size_t n = kKeys.size(); // 40
+    const std::vector<json::Value> kInvalid = {
+        null_value(), array({}), object({}), boolean(true), boolean(false),
+        number(0), number(1), number(-1), float_number(1.5), str(""), str(" "),
+        str("text"), str("true"), str("false"), str("budget:64"), str("scale"),
+        number(2147483648LL)};
+    // valid_values[key] for the SCALAR keys is the base scalar value.
+    std::map<std::string, json::Value> valid;
+    {
+        json::Value base = scalars();
+        for (auto& member : base.members) valid[member.key] = member.value;
+    }
+    auto valid_for = [&](const std::string& key) -> json::Value {
+        if (key == "conversationSettings") {
+            json::Value c1 = conversation_all();
+            return object({{"c1", std::move(c1)},
+                           {"c2", object({{"maxTokens", number(9)}})}});
+        }
+        if (key == "modelAliases") {
+            return object({{"a", str("A")}, {"b", str("B")}});
+        }
+        if (key == "customModels") {
+            return array({str("x"), str("y"), str("x")});
+        }
+        auto it = valid.find(key);
+        if (it == valid.end()) fail("fuzz key missing: " + key);
+        return it->second;
+    };
+    for (int index = 0; index < 12; ++index) {
+        // Python re-seeds random.Random(1000 + index) for every scenario.
+        PythonRandom rng(static_cast<std::uint32_t>(1000 + index));
+        // CPython random.sample population with k items: for n=40, k==5 uses the
+        // rejection-set branch (setsize 21); k>=6 uses the pool-swap branch (setsize 85).
+        const int k = 5 + static_cast<int>(rng.randbelow(8)); // randint(5, 12)
+        int setsize = 21;
+        if (k > 5) {
+            int k3 = k * 3;
+            int log4 = 0;
+            int power = 1;
+            while (power < k3) { power *= 4; ++log4; } // ceil(log4(k*3))
+            setsize += 1 << (2 * log4);                // 4^log4
+        }
+        std::vector<std::string> chosen(static_cast<std::size_t>(k));
+        if (n <= static_cast<std::size_t>(setsize)) {
+            std::vector<std::string> pool = kKeys;
+            for (int i = 0; i < k; ++i) {
+                const std::uint32_t j = rng.randbelow(static_cast<std::uint32_t>(n - i));
+                chosen[static_cast<std::size_t>(i)] = pool[j];
+                pool[j] = pool[n - static_cast<std::size_t>(i) - 1];
+            }
+        } else {
+            std::set<std::uint32_t> selected;
+            for (int i = 0; i < k; ++i) {
+                std::uint32_t j = rng.randbelow(static_cast<std::uint32_t>(n));
+                while (selected.count(j) != 0) j = rng.randbelow(static_cast<std::uint32_t>(n));
+                selected.insert(j);
+                chosen[static_cast<std::size_t>(i)] = kKeys[j];
+            }
+        }
+        std::vector<std::pair<std::string, json::Value>> obj;
+        for (const std::string& key : chosen) {
+            if (rng.random() < 0.72) {
+                obj.emplace_back(key, valid_for(key));
+            } else {
+                obj.emplace_back(key, kInvalid[rng.randbelow(static_cast<std::uint32_t>(kInvalid.size()))]);
+            }
+        }
+        const bool replace = rng.randbelow(2) != 0;          // choice([False, True])
+        const bool allow_secrets = rng.randbelow(2) != 0;    // choice([False, True])
+        const bool allowed_c1 = rng.random() < 0.6;
+        char name[24];
+        std::snprintf(name, sizeof(name), "100-fuzz-%02d", index);
+        write_case(name, object(std::move(obj)), replace, allow_secrets,
+                   allowed_c1 ? std::vector<std::string>{"c1"} : std::vector<std::string>{},
+                   {{"seed", "S"}}, {str("seed")});
+    }
+
+    remove_stale(scenarios);
+    const FormatOptions pretty{Format::Pretty2, false}; // indent=2, ensure_ascii=False
+    for (const auto& [name, value] : entries) {
+        write_scenario(scenarios, name, value, pretty);
+    }
+    std::cout << "Wrote " << entries.size() << " scenarios to " << scenarios.string() << "\n";
+}
+// shell-durable-jobs/gen_scenarios.py — indent=2, ensure_ascii=False. Files are numbered
+// %03d-name by insertion order. payload() = Compact JSON of arbitrary Python objects.
+void profile_shell_durable_jobs(const fs::path& scenarios) {
+    std::vector<std::pair<std::string, json::Value>> entries;
+    auto add = [&](const std::string& name, json::Value value) {
+        char prefix[8];
+        std::snprintf(prefix, sizeof(prefix), "%03d", static_cast<int>(entries.size()) + 1);
+        entries.emplace_back(std::string(prefix) + "-" + name, std::move(value));
+    };
+    auto compact = [](const json::Value& value) {
+        return serialize(value, FormatOptions{Format::Compact, false});
+    };
+    auto payload = [&](const json::Value& value) { return str(compact(value)); };
+    auto device = [](const std::string& name, const std::string& type) {
+        return object({{"name", str(name)}, {"type", str(type)}});
+    };
+    auto devices = [](std::vector<json::Value> values) { return array(std::move(values)); };
+
+    const json::Value kConch1 = devices({device("home", "conch")});
+    const json::Value kConch2 = devices({device("alpha", "conch"), device("beta", "conch")});
+    const json::Value kSsh1 = devices({device("rasp", "ssh")});
+    const json::Value kMixed = devices({device("home", "conch"), device("rasp", "ssh")});
+    const json::Value kUntitled = devices({device("", "conch")});
+
+    // ---- resolve_conch_device ----------------------------------------------------
+    auto resolve_conch = [&](const std::string& name, const std::string& server,
+                             json::Value devs) {
+        add(name, object({{"op", str("resolve_conch_device")},
+                          {"server", str(server)},
+                          {"devices", std::move(devs)}}));
+    };
+    resolve_conch("resolve-match-case", "HOME", kConch1);
+    resolve_conch("resolve-blank-single", "", kConch1);
+    resolve_conch("resolve-blank-multi", "", kConch2);
+    resolve_conch("resolve-named", "beta", kConch2);
+    resolve_conch("resolve-ssh-excluded", "rasp", kMixed);
+    resolve_conch("resolve-blank-ssh-only", "", kSsh1);
+    resolve_conch("resolve-unknown-named", "ghost", kConch1);
+
+    // ---- conch_not_found ----------------------------------------------------------
+    auto not_found = [&](const std::string& name, const std::string& server,
+                         json::Value devs) {
+        add(name, object({{"op", str("conch_not_found")},
+                          {"server", str(server)},
+                          {"devices", std::move(devs)}}));
+    };
+    not_found("notfound-no-config", "", devices({}));
+    not_found("notfound-unknown-named", "ghost", kConch2);
+    not_found("notfound-blank-multi", "", kConch2);
+    not_found("notfound-blank-single", "", kConch1);
+    not_found("notfound-ssh-only", "", kSsh1);
+    not_found("notfound-untitled", "x", kUntitled);
+    not_found("notfound-untitled-list", "",
+              devices({device(" ", "conch"), device("b", "conch")}));
+
+    // ---- is_terminal_payload --------------------------------------------------------
+    const std::pair<std::string, std::string> kTerminal[] = {
+        {"succeeded", "{\"state\":\"succeeded\"}"},
+        {"failed-upper", "{\"state\":\"FAILED\"}"},
+        {"stopped", "{\"state\":\"stopped\"}"},
+        {"interrupted", "{\"state\":\"interrupted\"}"},
+        {"running", "{\"state\":\"running\"}"},
+        {"stopping", "{\"state\":\"stopping\"}"},
+        {"settling", "{\"state\":\"settling\"}"},
+        {"error-present", "{\"error\":\"job not found\"}"},
+        {"error-null", "{\"error\":null}"},
+        {"error-with-running-state", "{\"state\":\"running\",\"error\":\"boom\"}"},
+        {"state-null", "{\"state\":null}"},
+        {"state-number", "{\"state\":5}"},
+        {"state-blank", "{\"state\":\"\"}"},
+        {"state-object", "{\"state\":{\"code\":1},\"error\":\"x\"}"},
+        {"empty-object", "{}"},
+        {"unparseable", "{broken"},
+        {"blank", "   "},
+        {"array", "[1,2]"},
+        {"json-string", "\"succeeded\""},
+        {"error-object-value", "{\"error\":{\"code\":500}}"},
+        {"duplicate-state", "{\"state\":\"running\",\"state\":\"succeeded\"}"},
+        {"result-only", "{\"result\":\"x\"}"},
+        {"stopped-with-error", "{\"state\":\"stopped\",\"error\":\"killed\"}"},
+        {"bare-word", "succeeded"},
+    };
+    for (const auto& [suffix, raw] : kTerminal) {
+        add("terminal-" + suffix,
+            object({{"op", str("is_terminal_payload")}, {"raw", str(raw)}}));
+    }
+
+    // ---- max_wait_ms ----------------------------------------------------------------
+    const std::pair<std::string, std::int64_t> kMaxWait[] = {
+        {"60s", 60000}, {"6s", 6000}, {"exact-5000", 5000}, {"5001", 5001},
+        {"7s", 7000}, {"zero", 0}, {"int-truncation", 5000000000LL},
+    };
+    for (const auto& [suffix, ms] : kMaxWait) {
+        add("maxwait-" + suffix,
+            object({{"op", str("max_wait_ms")}, {"tool_timeout_ms", number(ms)}}));
+    }
+
+    // ---- output_snapshot --------------------------------------------------------------
+    const std::pair<std::string, std::string> kSnapshots[] = {
+        {"basic", "{\"output\":\"hello\",\"output_bytes\":5}"},
+        {"fallback-truncated", "{\"output\":\"hi\",\"output_bytes\":10}"},
+        {"explicit-false", "{\"output\":\"hi\",\"output_bytes\":10,\"truncated\":false}"},
+        {"explicit-true", "{\"output\":\"hello\",\"output_bytes\":1,\"truncated\":true}"},
+        {"string-bytes", "{\"output\":\"hi\",\"output_bytes\":\"5\"}"},
+        {"negative", "{\"output\":\"hi\",\"output_bytes\":-1}"},
+        {"float", "{\"output\":\"hi\",\"output_bytes\":2.5}"},
+        {"overflow", "{\"output\":\"hi\",\"output_bytes\":99999999999999999999}"},
+        {"missing-output", "{\"output_bytes\":5}"},
+        {"number-output", "{\"output\":7,\"output_bytes\":5}"},
+        {"truncated-string-value", "{\"output\":\"hi\",\"output_bytes\":10,\"truncated\":\"true\"}"},
+        {"missing-bytes", "{\"output\":\"hi\"}"},
+        {"bytes-object", "{\"output\":\"hi\",\"output_bytes\":{\"n\":1}}"},
+        {"unicode", "{\"output\":\"héllo 世界\",\"output_bytes\":13}"},
+        {"astral", "{\"output\":\"\U0001F600\",\"output_bytes\":4}"},
+        {"astral-truncated", "{\"output\":\"\U0001F600\",\"output_bytes\":3}"},
+        {"truncated-null", "{\"output\":\"hi\",\"output_bytes\":10,\"truncated\":null}"},
+        {"truncated-false-string", "{\"output\":\"hello\",\"output_bytes\":6,\"truncated\":\"false\"}"},
+    };
+    for (const auto& [suffix, raw] : kSnapshots) {
+        add("snapshot-" + suffix,
+            object({{"op", str("output_snapshot")}, {"raw", str(raw)}}));
+    }
+
+    // ---- output_cursor ----------------------------------------------------------------
+    auto cursor = [&](const std::string& name, std::vector<std::string> payloads) {
+        std::vector<json::Value> values;
+        for (const std::string& p : payloads) values.push_back(str(p));
+        add(name, object({{"op", str("output_cursor")},
+                          {"payloads", array(std::move(values))}}));
+    };
+    cursor("cursor-initial", {"{\"output\":\"abc\",\"output_bytes\":3}"});
+    cursor("cursor-append", {"{\"output\":\"abc\",\"output_bytes\":3}",
+                             "{\"output\":\"abcdef\",\"output_bytes\":6}"});
+    cursor("cursor-gap", {"{\"output\":\"def\",\"output_bytes\":6}"});
+    cursor("cursor-duplicate", {"{\"output\":\"abc\",\"output_bytes\":3}",
+                                "{\"output\":\"abc\",\"output_bytes\":3}"});
+    cursor("cursor-backwards", {"{\"output\":\"abcdefgh\",\"output_bytes\":8}",
+                                "{\"output\":\"ab\",\"output_bytes\":2}"});
+    cursor("cursor-missing-fields", {"{\"output\":\"abc\"}", "not json",
+                                     "{\"output_bytes\":3}",
+                                     "{\"output\":\"\",\"output_bytes\":0}"});
+    cursor("cursor-window-shift", {"{\"output\":\"abcdef\",\"output_bytes\":6}",
+                                   "{\"output\":\"fgh\",\"output_bytes\":9}"});
+    cursor("cursor-shared-tail", {"{\"output\":\"abcdefgh\",\"output_bytes\":10}",
+                                  "{\"output\":\"cdefghij\",\"output_bytes\":10}"});
+    cursor("cursor-evict-reemit", {"{\"output\":\"abcdef\",\"output_bytes\":6}",
+                                   "{\"output\":\"defghij\",\"output_bytes\":10}"});
+    cursor("cursor-zero-bytes", {"{\"output\":\"\",\"output_bytes\":0}"});
+
+    // ---- wait_for_job_polling ------------------------------------------------------------
+    auto polling = [&](const std::string& name, std::int64_t timeout_ms,
+                       std::int64_t ceiling_ms, std::optional<std::int64_t> clamped_from,
+                       const std::string& server, const std::string& job_id,
+                       std::int64_t start_clock, std::optional<std::int64_t> cancel_after_delay,
+                       std::vector<json::Value> poll_entries,
+                       std::optional<json::Value> poll_repeat) {
+        std::vector<std::pair<std::string, json::Value>> members = {
+            {"op", str("wait_for_job_polling")},
+            {"job_id", str(job_id)},
+            {"server", str(server)},
+            {"timeout_ms", number(timeout_ms)},
+            {"clamped_from", clamped_from ? number(*clamped_from) : null_value()},
+            {"ceiling_ms", number(ceiling_ms)},
+            {"start_clock", number(start_clock)},
+            {"polls", array(std::move(poll_entries))},
+            {"cancel_after_delay",
+             cancel_after_delay ? number(*cancel_after_delay) : null_value()}};
+        if (poll_repeat) members.emplace_back("poll_repeat", std::move(*poll_repeat));
+        add(name, object(std::move(members)));
+    };
+    auto ok_poll = [&](json::Value body) {
+        return object({{"ok", payload(body)}});
+    };
+    auto throw_poll = [](const std::string& message) {
+        return object({{"throw", str(message)}});
+    };
+    auto cancel_poll = [&](json::Value body) {
+        return object({{"cancel", payload(body)}});
+    };
+    const json::Value running = ok_poll(object({{"state", str("running")}}));
+    auto default_polling = [&](const std::string& name, std::vector<json::Value> polls,
+                               std::optional<json::Value> poll_repeat = std::nullopt) {
+        polling(name, 30000, 55000, std::nullopt, "srv", "job-1", 1000000, std::nullopt,
+                std::move(polls), std::move(poll_repeat));
+    };
+    default_polling("polling-terminal-first",
+                    {ok_poll(object({{"state", str("succeeded")}, {"exit_code", number(0)}}))});
+    default_polling("polling-transient-terminal",
+                    {throw_poll("connection reset"),
+                     ok_poll(object({{"state", str("failed")}, {"exit_code", number(1)}}))});
+    default_polling("polling-snapshot-publish",
+                    {ok_poll(object({{"state", str("running")},
+                                     {"output", str("line1\n")},
+                                     {"output_bytes", number(6)}})),
+                     ok_poll(object({{"state", str("succeeded")},
+                                     {"output", str("line1\nline2")},
+                                     {"output_bytes", number(12)}}))});
+    default_polling("polling-snapshot-dedupe",
+                    {ok_poll(object({{"state", str("running")},
+                                     {"output", str("same")},
+                                     {"output_bytes", number(4)}})),
+                     ok_poll(object({{"state", str("running")},
+                                     {"output", str("same")},
+                                     {"output_bytes", number(4)}})),
+                     ok_poll(object({{"state", str("succeeded")},
+                                     {"output", str("same")},
+                                     {"output_bytes", number(4)}}))});
+    polling("polling-timeout", 1000, 55000, std::nullopt, "srv", "job-1", 1000000,
+            std::nullopt, {running}, running);
+    polling("polling-timeout-with-snapshot", 1000, 55000, std::nullopt, "srv", "job-1",
+            1000000, std::nullopt,
+            {ok_poll(object({{"state", str("running")},
+                             {"output", str("tick")},
+                             {"output_bytes", number(4)}}))},
+            ok_poll(object({{"state", str("running")},
+                            {"output", str("tick")},
+                            {"output_bytes", number(4)}})));
+    polling("polling-timeout-clamp-note", 1000, 1000, 5000, "srv", "job-1", 1000000,
+            std::nullopt, {running}, running);
+    {
+        std::vector<json::Value> failed(5, throw_poll("socket closed"));
+        default_polling("polling-poll-failed-5", failed);
+    }
+    default_polling("polling-poll-failed-with-snapshot",
+                    {ok_poll(object({{"state", str("running")},
+                                     {"output", str("head")},
+                                     {"output_bytes", number(4)}})),
+                     throw_poll("socket closed"), throw_poll("socket closed"),
+                     throw_poll("socket closed"), throw_poll("socket closed"),
+                     throw_poll("socket closed")});
+    default_polling("polling-cancel-during-poll",
+                    {cancel_poll(object({{"state", str("running")},
+                                         {"output", str("x")},
+                                         {"output_bytes", number(1)}}))});
+    default_polling("polling-cancel-then-terminal",
+                    {cancel_poll(object({{"state", str("succeeded")},
+                                         {"job_id", str("job-1")}}))});
+    polling("polling-cancel-then-timeout", 0, 55000, std::nullopt, "srv", "job-1", 1000000,
+            std::nullopt,
+            {cancel_poll(object({{"state", str("running")}}))}, std::nullopt);
+    polling("polling-cancel-after-delay", 30000, 55000, std::nullopt, "srv", "job-1",
+            1000000, 1, {running}, running);
+    default_polling("polling-cancel-fail",
+                    {object({{"cancel_throw", str("generation stopped")}})});
+    default_polling("polling-exhausted", {});
+    default_polling("polling-error-terminal",
+                    {ok_poll(object({{"error", str("job not found")}}))});
+    polling("polling-unicode-snapshot-timeout", 0, 55000, std::nullopt, "srv", "job-1",
+            1000000, std::nullopt,
+            {ok_poll(object({{"state", str("running")},
+                             {"output", str("héllo 世界")},
+                             {"output_bytes", number(13)}}))}, std::nullopt);
+
+    // ---- wait_for_job (public path) ---------------------------------------------------
+    auto wait_public = [&](const std::string& name, json::Value arguments,
+                           json::Value devs, std::int64_t tool_timeout_ms,
+                           std::vector<json::Value> polls,
+                           std::optional<json::Value> poll_repeat) {
+        std::vector<std::pair<std::string, json::Value>> members = {
+            {"op", str("wait_for_job")},
+            {"arguments", std::move(arguments)},
+            {"devices", std::move(devs)},
+            {"tool_timeout_ms", number(tool_timeout_ms)},
+            {"polls", array(std::move(polls))}};
+        if (poll_repeat) members.emplace_back("poll_repeat", std::move(*poll_repeat));
+        add(name, object(std::move(members)));
+    };
+    wait_public("wait-missing-job-id", str("{}"), kConch1, 60000, {}, std::nullopt);
+    wait_public("wait-missing-timeout", payload(object({{"job_id", str("job-1")}})),
+                kConch1, 60000, {}, std::nullopt);
+    wait_public("wait-bad-timeout",
+                payload(object({{"job_id", str("job-1")},
+                                {"timeout_ms", str("soon")},
+                                {"server", str("home")}})),
+                kConch1, 60000, {}, std::nullopt);
+    wait_public("wait-unknown-server",
+                payload(object({{"job_id", str("job-1")},
+                                {"timeout_ms", str("5000")},
+                                {"server", str("ghost")}})),
+                kConch2, 60000, {}, std::nullopt);
+    wait_public("wait-terminal-first",
+                payload(object({{"job_id", str("job-1")},
+                                {"timeout_ms", str("30000")},
+                                {"server", str("")}})),
+                kConch1, 60000,
+                {ok_poll(object({{"state", str("succeeded")}, {"exit_code", number(0)}}))},
+                std::nullopt);
+    wait_public("wait-transient-terminal",
+                payload(object({{"job_id", str("job-1")},
+                                {"timeout_ms", str("30000")},
+                                {"server", str("")}})),
+                kConch1, 60000,
+                {throw_poll("connection reset"),
+                 ok_poll(object({{"state", str("failed")}}))},
+                std::nullopt);
+    {
+        const json::Value running_output =
+            ok_poll(object({{"state", str("running")},
+                            {"output", str("x")},
+                            {"output_bytes", number(1)}}));
+        wait_public("wait-timeout-clamp",
+                    payload(object({{"job_id", str("job-1")},
+                                    {"timeout_ms", str("5000")},
+                                    {"server", str("")}})),
+                    kConch1, 6000, {running_output}, running_output);
+    }
+
+    // ---- durable_foreground ------------------------------------------------------------
+    auto durable = [&](const std::string& name, const std::string& server,
+                       const std::string& command, const std::string& workdir,
+                       std::int64_t wait_ms, json::Value devs,
+                       std::optional<json::Value> start,
+                       std::vector<json::Value> polls,
+                       std::optional<json::Value> poll_repeat,
+                       std::optional<json::Value> stop) {
+        std::vector<std::pair<std::string, json::Value>> members = {
+            {"op", str("durable_foreground")},
+            {"server", str(server)},
+            {"devices", std::move(devs)},
+            {"command", str(command)},
+            {"workdir", str(workdir)},
+            {"wait_ms", number(wait_ms)},
+            {"polls", array(std::move(polls))}};
+        if (start) members.emplace_back("start", std::move(*start));
+        if (poll_repeat) members.emplace_back("poll_repeat", std::move(*poll_repeat));
+        if (stop) members.emplace_back("stop", std::move(*stop));
+        add(name, object(std::move(members)));
+    };
+    const json::Value start_ok = object({{"ok", payload(object({{"job_id", str("job-1")}}))}});
+    const json::Value succeeded =
+        ok_poll(object({{"state", str("succeeded")}, {"exit_code", number(0)}}));
+    auto default_durable = [&](const std::string& name, const std::string& server,
+                               json::Value start, std::vector<json::Value> polls) {
+        durable(name, server, "echo hi", "", 60000, kConch1, std::move(start),
+                std::move(polls), std::nullopt, std::nullopt);
+    };
+    default_durable("durable-terminal-first", "home", start_ok, {succeeded});
+    default_durable("durable-server-case", "HOME", start_ok, {succeeded});
+    default_durable("durable-start-throw", "home",
+                    object({{"throw", str("unreachable host")}}), {});
+    default_durable("durable-start-error-passthrough", "home",
+                    object({{"ok", str("{\"error\": \"denied\"}")}}), {});
+    default_durable("durable-start-unparseable", "home",
+                    object({{"ok", str("not-json")}}), {});
+    default_durable("durable-start-no-job-id", "home",
+                    object({{"ok", payload(object({{"status", str("queued")}}))}}), {});
+    default_durable("durable-start-error-null", "home",
+                    object({{"ok", payload(object({{"error", null_value()}}))}}), {});
+    default_durable("durable-poll-failed-5", "home", start_ok,
+                    std::vector<json::Value>(5, throw_poll("socket closed")));
+    default_durable("durable-transient-terminal", "home", start_ok,
+                    {throw_poll("connection reset"), succeeded});
+    durable("durable-wait-expiry", "home", "echo hi", "", 0, kConch1, start_ok,
+            {ok_poll(object({{"state", str("running")},
+                             {"output", str("x")},
+                             {"output_bytes", number(1)}}))},
+            std::nullopt, std::nullopt);
+    durable("durable-gap-outputs", "home", "echo hi", "", 0, kConch1, start_ok,
+            {ok_poll(object({{"output", str("def")}, {"output_bytes", number(6)}}))},
+            std::nullopt, std::nullopt);
+    default_durable("durable-cancel-fail", "home", start_ok,
+                    {object({{"cancel_throw", str("stop requested")}})});
+    durable("durable-cancel-expiry", "home", "echo hi", "", 0, kConch1, start_ok,
+            {cancel_poll(object({{"state", str("running")}}))}, std::nullopt, std::nullopt);
+    default_durable("durable-cancel-then-delay", "home", start_ok,
+                    {cancel_poll(object({{"state", str("running")}}))});
+    {
+        durable("durable-workdir-command", "home", "cd /tmp && echo héllo", "/tmp", 60000,
+                kConch1, start_ok, {succeeded}, std::nullopt, std::nullopt);
+    }
+
+    // ---- list_jobs ---------------------------------------------------------------------
+    auto list_jobs = [&](const std::string& name, json::Value arguments,
+                         json::Value devs, std::optional<json::Value> list_step) {
+        std::vector<std::pair<std::string, json::Value>> members = {
+            {"op", str("list_jobs")},
+            {"arguments", std::move(arguments)},
+            {"devices", std::move(devs)}};
+        if (list_step) members.emplace_back("list", std::move(*list_step));
+        add(name, object(std::move(members)));
+    };
+    list_jobs("list-success", payload(object({{"server", str("home")}})), kConch1,
+              object({{"ok",
+                       payload(array({object({{"job_id", str("job-1")},
+                                              {"state", str("running")}})}))}}));
+    list_jobs("list-unknown-server", payload(object({{"server", str("ghost")}})), kConch1,
+              std::nullopt);
+    list_jobs("list-throw", payload(object({{"server", str("home")}})), kConch1,
+              object({{"throw", str("maintenance window")}}));
+    list_jobs("list-blank-single", str("{}"), kConch1, object({{"ok", str("[]")}}));
+    list_jobs("list-invalid-args", str("not json"), kConch1, object({{"ok", str("[]")}}));
+    list_jobs("list-two-devices-blank", str("{}"), kConch2, std::nullopt);
+
+    // ---- get_jobs ------------------------------------------------------------------------
+    auto get_jobs = [&](const std::string& name, json::Value arguments,
+                        json::Value devs, std::vector<json::Value> polls,
+                        std::optional<json::Value> poll_repeat) {
+        std::vector<std::pair<std::string, json::Value>> members = {
+            {"op", str("get_jobs")},
+            {"arguments", std::move(arguments)},
+            {"devices", std::move(devs)},
+            {"polls", array(std::move(polls))}};
+        if (poll_repeat) members.emplace_back("poll_repeat", std::move(*poll_repeat));
+        add(name, object(std::move(members)));
+    };
+    get_jobs("get-blank-job-id", payload(object({{"server", str("home")}})), kConch1, {},
+             std::nullopt);
+    get_jobs("get-success",
+             payload(object({{"job_id", str("job-1")}, {"server", str("home")}})),
+             kConch1, {succeeded}, std::nullopt);
+    get_jobs("get-unknown-server",
+             payload(object({{"job_id", str("job-1")}, {"server", str("ghost")}})),
+             kConch1, {}, std::nullopt);
+    get_jobs("get-throw",
+             payload(object({{"job_id", str("job-1")}, {"server", str("home")}})),
+             kConch1, {throw_poll("gone")}, std::nullopt);
+    get_jobs("get-null-job-id", str("{\"job_id\":null,\"server\":\"\"}"), kConch1,
+             {ok_poll(object({{"state", str("running")}}))}, std::nullopt);
+    get_jobs("get-case-insensitive-server",
+             payload(object({{"job_id", str("job-1")}, {"server", str("HOME")}})),
+             kConch1, {throw_poll("gone")}, std::nullopt);
+
+    // ---- terminal_acks --------------------------------------------------------------------
+    const std::string kShell = "execute_shell_command";
+    auto ack = [&](const std::string& name, const std::string& tool_name,
+                   json::Value arguments, json::Value result) {
+        add(name, object({{"op", str("terminal_acks")},
+                          {"calls", array({object({{"tool_name", str(tool_name)},
+                                                   {"arguments", std::move(arguments)},
+                                                   {"result", std::move(result)}})})}}));
+    };
+    ack("acks-envelope-state", kShell, payload(object({{"server", str("home")}})),
+        payload(object({{"job_id", str("job-1")}, {"state", str("succeeded")},
+                        {"server", str("home")}})));
+    ack("acks-nested-state", kShell, payload(object({{"server", str("home")}})),
+        payload(object({{"result", object({{"state", str("failed")}})},
+                        {"job_id", str("job-2")}, {"server", str("alpha")}})));
+    ack("acks-nested-state-priority", kShell, payload(object({{"server", str("srv")}})),
+        payload(object({{"job_id", str("job-3")}, {"state", str("running")},
+                        {"result", object({{"state", str("stopped")}})}})));
+    ack("acks-non-terminal", kShell, payload(object({{"server", str("home")}})),
+        payload(object({{"job_id", str("job-4")}, {"state", str("running")}})));
+    ack("acks-missing-state", kShell, payload(object({{"server", str("home")}})),
+        payload(object({{"job_id", str("job-5")}})));
+    ack("acks-wrong-tool", "file_read", payload(object({{"server", str("home")}})),
+        payload(object({{"job_id", str("job-6")}, {"state", str("succeeded")}})));
+    ack("acks-missing-job-id", kShell, payload(object({{"server", str("home")}})),
+        payload(object({{"state", str("succeeded")}})));
+    ack("acks-server-arguments-fallback", kShell,
+        payload(object({{"server", str("fromargs")}})),
+        payload(object({{"job_id", str("job-7")}, {"state", str("stopped")}})));
+    ack("acks-server-nested-fallback", kShell, payload(object({{"server", str("srv")}})),
+        payload(object({{"job_id", str("job-8")}, {"state", str("stopped")},
+                        {"result", object({{"server", str("fromnested")}})}})));
+    ack("acks-server-blank-default", kShell, payload(object({{"server", str("home")}})),
+        payload(object({{"job_id", str("job-9")}, {"state", str("stopped")}})));
+    ack("acks-arguments-not-object", kShell, str("nope"),
+        payload(object({{"job_id", str("job-10")}, {"state", str("stopped")}})));
+    ack("acks-case-insensitive-state", kShell, payload(object({{"server", str("home")}})),
+        payload(object({{"job_id", str("job-11")}, {"state", str("SUCCEEDED")}})));
+    ack("acks-state-from-envelope-when-nested-blank", kShell,
+        payload(object({{"server", str("home")}})),
+        payload(object({{"result", object({{"state", str("")}})},
+                        {"state", str("interrupted")}, {"job_id", str("job-12")}})));
+    ack("acks-blank-job-id-falls-to-nested", kShell,
+        payload(object({{"server", str("s")}})),
+        payload(object({{"result", object({{"job_id", str("job-n")}})},
+                        {"job_id", str("")}, {"state", str("failed")}})));
+    ack("acks-job-id-null-primitive", kShell, payload(object({{"server", str("home")}})),
+        payload(object({{"job_id", null_value()}, {"state", str("succeeded")}})));
+    ack("acks-result-not-object", kShell, payload(object({{"server", str("home")}})),
+        str("\"just a string\""));
+    ack("acks-result-not-json", kShell, payload(object({{"server", str("home")}})),
+        str("garbage"));
+    ack("acks-state-number", kShell, payload(object({{"server", str("home")}})),
+        payload(object({{"job_id", str("job-13")}, {"state", number(5)}})));
+    ack("acks-get-shell-job-tool", "get_shell_job",
+        payload(object({{"server", str("home")}})),
+        payload(object({{"job_id", str("job-14")}, {"state", str("failed")},
+                        {"server", str("home")}})));
+
+    auto ack_multi = [&](const std::string& name, std::vector<json::Value> calls) {
+        add(name, object({{"op", str("terminal_acks")},
+                          {"calls", array(std::move(calls))}}));
+    };
+    auto call_entry = [](const std::string& tool_name, json::Value arguments,
+                         json::Value result) {
+        return object({{"tool_name", str(tool_name)},
+                       {"arguments", std::move(arguments)},
+                       {"result", std::move(result)}});
+    };
+    ack_multi("acks-dedupe",
+              {call_entry(kShell, payload(object({{"server", str("Home")}})),
+                          payload(object({{"job_id", str("job-15")},
+                                          {"state", str("stopped")},
+                                          {"server", str("Home")}}))),
+               call_entry(kShell, payload(object({{"server", str("home")}})),
+                          payload(object({{"job_id", str("job-15")},
+                                          {"state", str("stopped")},
+                                          {"server", str("home")}})))});
+    ack_multi("acks-dedupe-different-job",
+              {call_entry(kShell, payload(object({{"server", str("home")}})),
+                          payload(object({{"job_id", str("job-16")},
+                                          {"state", str("stopped")},
+                                          {"server", str("home")}}))),
+               call_entry(kShell, payload(object({{"server", str("home")}})),
+                          payload(object({{"job_id", str("job-17")},
+                                          {"state", str("stopped")},
+                                          {"server", str("home")}})))});
+    ack_multi("acks-non-shell-ignored",
+              {call_entry("file_read", str("{}"), str("{}")),
+               call_entry(kShell, payload(object({{"server", str("home")}})),
+                          payload(object({{"job_id", str("job-18")},
+                                          {"state", str("interrupted")}})))});
+
+    remove_stale(scenarios);
+    const FormatOptions pretty{Format::Pretty2, false}; // indent=2, ensure_ascii=False
+    for (const auto& [name, value] : entries) {
+        write_scenario(scenarios, name, value, pretty);
+    }
+    std::cout << "wrote " << entries.size() << " scenarios to " << scenarios.string() << "\n";
+}
+// semantic-index-ledger/gen_scenarios.py — indent=2, ensure_ascii=False.
+// ledger() updates keep base key order (Python dict.update semantics); seeds follow the
+// exact key order of each Python literal.
+void profile_semantic_index_ledger(const fs::path& scenarios) {
+    std::vector<std::pair<std::string, json::Value>> entries;
+    auto add = [&](const std::string& name, json::Value value) {
+        entries.emplace_back(name, std::move(value));
+    };
+    auto ledger = [](const std::string& model,
+                     std::vector<std::pair<std::string, json::Value>> overrides = {}) {
+        std::vector<std::pair<std::string, json::Value>> entry = {
+            {"modelId", str(model)},
+            {"state", str("NEEDS_RECONCILE")},
+            {"sourceRevision", number(0)},
+            {"completedRevision", number(0)},
+            {"reconcileRevision", number(0)},
+            {"updatedAt", number(0)}};
+        // entity.update(overrides): existing keys keep their position.
+        for (const auto& [key, value] : overrides) {
+            bool replaced = false;
+            for (auto& member : entry) {
+                if (member.first == key) {
+                    member.second = value;
+                    replaced = true;
+                    break;
+                }
+            }
+            if (!replaced) entry.emplace_back(key, value);
+        }
+        return object(std::move(entry));
+    };
+    auto work = [](const std::string& model, const std::string& message,
+                   std::optional<std::string> fingerprint, std::int64_t revision,
+                   std::int64_t updated) {
+        return object({{"modelId", str(model)},
+                       {"messageId", str(message)},
+                       {"sourceFingerprint", fingerprint ? str(*fingerprint) : null_value()},
+                       {"sourceRevision", number(revision)},
+                       {"updatedAt", number(updated)}});
+    };
+    auto message = [](const std::string& id, const std::string& conversation,
+                      const std::string& text, const std::string& participant = "USER") {
+        return object({{"id", str(id)},
+                       {"conversationId", str(conversation)},
+                       {"text", str(text)},
+                       {"participant", str(participant)}});
+    };
+    auto embedding = [](std::optional<std::int64_t> id, const std::string& message_id,
+                        const std::string& model, const std::string& blob,
+                        const std::string& text, std::int64_t dimension,
+                        std::optional<std::string> fingerprint) {
+        return object({{"id", id ? number(*id) : null_value()},
+                       {"messageId", str(message_id)},
+                       {"modelId", str(model)},
+                       {"embedding", str(blob)},
+                       {"chunkText", str(text)},
+                       {"dimension", number(dimension)},
+                       {"sourceFingerprint", fingerprint ? str(*fingerprint) : null_value()}});
+    };
+    auto conversation_row = [](const std::string& id, std::optional<std::string> task_id) {
+        return object({{"id", str(id)},
+                       {"taskId", task_id ? str(*task_id) : null_value()}});
+    };
+    auto sql_block = [](const std::string& sql, json::Value args) {
+        std::vector<std::pair<std::string, json::Value>> members = {{"sql", str(sql)}};
+        if (args.kind != json::Kind::Literal || args.text != "null") {
+            members.emplace_back("args", std::move(args));
+        }
+        return object(std::move(members));
+    };
+
+    // 01-admission-and-reconcile
+    add("01-admission-and-reconcile",
+        object({{"seed", object({{"conversations",
+                                  array({conversation_row("c1", std::nullopt)})}})},
+                {"steps",
+                 array({object({{"op", str("fingerprint")}, {"text", str("hello")}}),
+                        object({{"op", str("snapshot")},
+                                {"activeModelId", str("m1")},
+                                {"configured",
+                                 array({str("m1"), str(""), str("m2"), str("m1")})}}),
+                        object({{"op", str("admitModel")},
+                                {"modelId", str("m1")},
+                                {"updatedAt", number(100)}}),
+                        object({{"op", str("admitModel")},
+                                {"modelId", str("m1")},
+                                {"updatedAt", number(200)}}),
+                        object({{"op", str("getLedger")}, {"modelId", str("m1")}}),
+                        object({{"op", str("requestReconcile")},
+                                {"modelId", str("m1")},
+                                {"updatedAt", number(300)}}),
+                        object({{"op", str("getLedger")}, {"modelId", str("m1")}}),
+                        object({{{"op", str("getLedger")}, {"modelId", str("missing")}}}),
+                        object({{"op", str("admitModel")},
+                                {"modelId", str("")},
+                                {"updatedAt", number(1)}})})}}));
+
+    // 02-entity-validation
+    add("02-entity-validation",
+        object({{"steps",
+                 array({object({{"op", str("insertLedger")},
+                                {"ledger", ledger("m", {{"state", str("BROKEN")},
+                                                        {"updatedAt", number(1)}})}}),
+                        object({{"op", str("insertLedger")},
+                                {"ledger", ledger("m", {{"sourceRevision", number(-1)},
+                                                        {"updatedAt", number(1)}})}}),
+                        object({{"op", str("insertLedger")},
+                                {"ledger", ledger("m", {{"sourceRevision", number(2)},
+                                                        {"completedRevision", number(3)},
+                                                        {"updatedAt", number(1)}})}}),
+                        object({{"op", str("insertLedger")},
+                                {"ledger", ledger("m", {{"sourceRevision", number(2)},
+                                                        {"reconcileRevision", number(3)},
+                                                        {"updatedAt", number(1)}})}}),
+                        object({{"op", str("insertLedger")},
+                                {"ledger", ledger("m", {{"state", str("CURRENT")},
+                                                        {"sourceRevision", number(1)},
+                                                        {"completedRevision", number(0)},
+                                                        {"updatedAt", number(1)}})}}),
+                        object({{"op", str("insertLedger")},
+                                {"ledger", ledger("m", {{"state", str("CURRENT")},
+                                                        {"sourceRevision", number(1)},
+                                                        {"completedRevision", number(1)},
+                                                        {"updatedAt", number(1)}})}}),
+                        object({{"op", str("insertLedger")},
+                                {"ledger", ledger("m", {{"updatedAt", number(1)}})}}),
+                        object({{"op", str("insertLedger")},
+                                {"ledger", ledger("m", {{"updatedAt", number(2)}})}}),
+                        object({{"op", str("upsertWork")},
+                                {"work", work("m", "", std::nullopt, 1, 1)}}),
+                        object({{"op", str("upsertWork")},
+                                {"work", work("m", "x", "  ", 1, 1)}}),
+                        object({{"op", str("upsertWork")},
+                                {"work", work("m", "x", std::nullopt, 0, 1)}})})}}));
+
+    // 03-exact-work-lifecycle
+    add("03-exact-work-lifecycle",
+        object({{"seed",
+                 object({{"messages",
+                          array({message("m1", "c1", "hello"), message("m2", "c1", "world")})},
+                         {"conversations",
+                          array({conversation_row("c1", std::nullopt)})}})},
+                {"steps",
+                 array({object({{"op", str("enqueueExactWork")},
+                                {"modelId", str("model")},
+                                {"messageId", str("m1")},
+                                {"sourceFingerprint", str("fp-1")},
+                                {"updatedAt", number(10)}}),
+                        object({{"op", str("getWork")},
+                                {"modelId", str("model")},
+                                {"messageId", str("m1")}}),
+                        object({{"op", str("completeExactWork")},
+                                {"work", work("model", "m1", "fp-1", 1, 10)},
+                                {"updatedAt", number(20)}}),
+                        object({{"op", str("getLedger")}, {"modelId", str("model")}}),
+                        object({{"op", str("completeExactWork")},
+                                {"work", work("model", "m1", "fp-1", 1, 10)},
+                                {"updatedAt", number(30)}}),
+                        object({{"op", str("enqueueExactWork")},
+                                {"modelId", str("model")},
+                                {"messageId", str("m1")},
+                                {"sourceFingerprint", str("fp-2")},
+                                {"updatedAt", number(40)}}),
+                        object({{"op", str("enqueueExactWork")},
+                                {"modelId", str("model")},
+                                {"messageId", str("m2")},
+                                {"sourceFingerprint", null_value()},
+                                {"updatedAt", number(50)}}),
+                        object({{"op", str("completeExactWork")},
+                                {"work", work("model", "m1", "fp-1", 2, 40)},
+                                {"updatedAt", number(60)}}),
+                        object({{"op", str("getWork")},
+                                {"modelId", str("model")},
+                                {"messageId", str("m1")}}),
+                        object({{"op", str("completeExactWork")},
+                                {"work", work("model", "m1", "fp-2", 2, 40)},
+                                {"updatedAt", number(70)}}),
+                        object({{"op", str("getLedger")}, {"modelId", str("model")}}),
+                        object({{"op", str("completeExactWork")},
+                                {"work", work("model", "m2", std::nullopt, 3, 50)},
+                                {"updatedAt", number(80)}}),
+                        object({{"op", str("getLedger")}, {"modelId", str("model")}}),
+                        object({{"op", str("enqueueExactWork")},
+                                {"modelId", str("")},
+                                {"messageId", str("m1")},
+                                {"sourceFingerprint", null_value()},
+                                {"updatedAt", number(90)}}),
+                        object({{"op", str("enqueueExactWork")},
+                                {"modelId", str("model")},
+                                {"messageId", str("")},
+                                {"sourceFingerprint", null_value()},
+                                {"updatedAt", number(90)}})})}}));
+
+    // 04-reconcile-lifecycle
+    add("04-reconcile-lifecycle",
+        object({{"seed",
+                 object({{"messages", array({message("m1", "c1", "hello")})}})},
+                {"steps",
+                 array({object({{"op", str("requestReconcile")},
+                                {"modelId", str("model")},
+                                {"updatedAt", number(10)}}),
+                        object({{"op", str("enqueueExactWork")},
+                                {"modelId", str("model")},
+                                {"messageId", str("m1")},
+                                {"sourceFingerprint", str("fp")},
+                                {"updatedAt", number(20)}}),
+                        object({{"op", str("completeReconcile")},
+                                {"modelId", str("model")},
+                                {"expectedReconcileRevision", number(1)},
+                                {"updatedAt", number(30)}}),
+                        object({{"op", str("getLedger")}, {"modelId", str("model")}}),
+                        object({{"op", str("completeReconcile")},
+                                {"modelId", str("model")},
+                                {"expectedReconcileRevision", number(1)},
+                                {"updatedAt", number(40)}}),
+                        object({{"op", str("deleteWorkForModel")}, {"modelId", str("model")}}),
+                        object({{"op", str("completeReconcile")},
+                                {"modelId", str("model")},
+                                {"expectedReconcileRevision", number(1)},
+                                {"updatedAt", number(50)}}),
+                        object({{"op", str("getLedger")}, {"modelId", str("model")}}),
+                        object({{"op", str("completeReconcile")},
+                                {"modelId", str("model")},
+                                {"expectedReconcileRevision", number(5)},
+                                {"updatedAt", number(60)}}),
+                        object({{"op", str("completeReconcile")},
+                                {"modelId", str("")},
+                                {"expectedReconcileRevision", number(1)},
+                                {"updatedAt", number(70)}}),
+                        object({{"op", str("completeReconcile")},
+                                {"modelId", str("model")},
+                                {"expectedReconcileRevision", number(-1)},
+                                {"updatedAt", number(70)}})})}}));
+
+    // 05-work-pages
+    add("05-work-pages",
+        object({{"steps",
+                 array({object({{"op", str("requestReconcile")},
+                                {"modelId", str("model")},
+                                {"updatedAt", number(1)}}),
+                        object({{"op", str("upsertWork")},
+                                {"work", work("model", "a", "fa", 2, 10)}}),
+                        object({{"op", str("upsertWork")},
+                                {"work", work("model", "b", "fb", 1, 11)}}),
+                        object({{"op", str("upsertWork")},
+                                {"work", work("model", "c", std::nullopt, 2, 12)}}),
+                        object({{"op", str("upsertWork")},
+                                {"work", work("model", "d", "fd", 3, 13)}}),
+                        object({{"op", str("upsertWork")},
+                                {"work", work("other", "a", "fo", 1, 14)}}),
+                        object({{"op", str("getWorkPage")},
+                                {"modelId", str("model")},
+                                {"maxSourceRevision", number(2)},
+                                {"afterSourceRevision", number(0)},
+                                {"afterMessageId", str("")},
+                                {"limit", number(2)}}),
+                        object({{"op", str("getWorkPage")},
+                                {"modelId", str("model")},
+                                {"maxSourceRevision", number(2)},
+                                {"afterSourceRevision", number(1)},
+                                {"afterMessageId", str("b")},
+                                {"limit", number(2)}}),
+                        object({{"op", str("getWorkPage")},
+                                {"modelId", str("model")},
+                                {"maxSourceRevision", number(2)},
+                                {"afterSourceRevision", number(2)},
+                                {"afterMessageId", str("c")},
+                                {"limit", number(2)}}),
+                        object({{"op", str("getWorkPage")},
+                                {"modelId", str("model")},
+                                {"maxSourceRevision", number(3)},
+                                {"afterSourceRevision", number(0)},
+                                {"afterMessageId", str("")},
+                                {"limit", number(10)}}),
+                        object({{"op", str("getWorkCountThroughRevision")},
+                                {"modelId", str("model")},
+                                {"maxSourceRevision", number(2)}}),
+                        object({{"op", str("getWorkCountThroughRevision")},
+                                {"modelId", str("model")},
+                                {"maxSourceRevision", number(0)}})})}}));
+
+    // 06-reconcile-page
+    add("06-reconcile-page",
+        object({{"seed",
+                 object({{"conversations",
+                          array({conversation_row("c1", std::nullopt),
+                                 conversation_row("task", "t1")})},
+                         {"messages",
+                          array({message("m1", "c1", "alpha"),
+                                 message("m2", "c1", "beta", "MODEL"),
+                                 message("m3", "c1", ""),
+                                 message("m4", "c1", "tool body"),
+                                 message("tool_1", "c1", "tool"),
+                                 message("result_1", "c1", "result"),
+                                 message("compact_1", "c1", "compact"),
+                                 message("m5", "task", "task message"),
+                                 message("m6", "c1", "gamma", "SYSTEM"),
+                                 message("m10", "c1", "delta"),
+                                 message("m11", "c1", "epsilon")})},
+                         {"embeddings",
+                          array({embedding(1, "m1", "model", "0a0b", "alpha", 2, "fp-alpha"),
+                                 embedding(2, "m2", "model", "0c0d0e", "beta", 3, std::nullopt),
+                                 embedding(3, "m1", "other", "ff", "alpha", 1, "fp-other")})}})},
+                {"steps",
+                 array({object({{"op", str("getReconcileMessagesPage")},
+                                {"modelId", str("model")},
+                                {"maxWorkRevision", number(0)},
+                                {"afterId", null_value()},
+                                {"limit", number(10)}}),
+                        object({{"op", str("getReconcileMessagesPage")},
+                                {"modelId", str("model")},
+                                {"maxWorkRevision", number(0)},
+                                {"afterId", str("m1")},
+                                {"limit", number(3)}}),
+                        object({{"op", str("getReconcileMessagesPage")},
+                                {"modelId", str("model")},
+                                {"maxWorkRevision", number(5)},
+                                {"afterId", null_value()},
+                                {"limit", number(10)}}),
+                        object({{"op", str("upsertWork")},
+                                {"work", work("model", "m1", "fp-alpha", 4, 20)}}),
+                        object({{"op", str("upsertWork")},
+                                {"work", work("model", "m10", "fp-delta", 6, 21)}}),
+                        object({{"op", str("getReconcileMessagesPage")},
+                                {"modelId", str("model")},
+                                {"maxWorkRevision", number(4)},
+                                {"afterId", null_value()},
+                                {"limit", number(10)}}),
+                        object({{"op", str("getReconcileMessagesPage")},
+                                {"modelId", str("model")},
+                                {"maxWorkRevision", number(5)},
+                                {"afterId", null_value()},
+                                {"limit", number(10)}}),
+                        object({{"op", str("getSearchableMessageText")},
+                                {"messageId", str("m1")}}),
+                        object({{"op", str("getSearchableMessageText")},
+                                {"messageId", str("tool_1")}}),
+                        object({{"op", str("getSearchableMessageText")},
+                                {"messageId", str("m5")}}),
+                        object({{"op", str("getSearchableMessageText")},
+                                {"messageId", str("missing")}}),
+                        object({{"op", str("getSearchableMessageText")},
+                                {"messageId", str("m6")}})})}}));
+
+    // 07-embedding-upsert-and-deletes
+    add("07-embedding-upsert-and-deletes",
+        object({{"seed",
+                 object({{"messages",
+                          array({message("m1", "c1", "alpha"), message("m2", "c1", "beta")})},
+                         {"embeddings",
+                          array({embedding(7, "m1", "model", "01", "alpha", 1, "fp-1"),
+                                 embedding(8, "m1", "other", "02", "alpha", 1, "fp-1"),
+                                 embedding(9, "m2", "model", "03", "beta", 1, "fp-2")})}})},
+                {"steps",
+                 array({object({{"op", str("upsertEmbedding")},
+                                {"embedding",
+                                 embedding(std::nullopt, "m2", "new-model", "aa", "beta", 1,
+                                           "fp-2")}}),
+                        object({{"op", str("upsertEmbedding")},
+                                {"embedding",
+                                 embedding(7, "m1", "model", "aabb", "alpha2", 2, "fp-1b")}}),
+                        object({{"op", str("upsertEmbedding")},
+                                {"embedding",
+                                 embedding(std::nullopt, "m1", "model", "cccc", "alpha3", 2,
+                                           "fp-1c")}}),
+                        object({{"op", str("upsertEmbedding")},
+                                {"embedding",
+                                 embedding(8, "m1", "other", "dd", "alpha4", 1, "fp-1d")}}),
+                        object({{"op", str("getWork")},
+                                {"modelId", str("model")},
+                                {"messageId", str("m1")}}),
+                        object({{"op", str("deleteMatchingWork")},
+                                {"modelId", str("model")},
+                                {"messageId", str("m1")},
+                                {"sourceFingerprint", null_value()},
+                                {"sourceRevision", number(1)}}),
+                        object({{"op", str("deleteEmbeddingsForMessages")},
+                                {"messageIds", array({str("m1"), str("missing")})}}),
+                        object({{"op", str("deleteEmbeddingsForModel")},
+                                {"modelId", str("model")}}),
+                        object({{"op", str("deleteEmbeddingsForMessages")},
+                                {"messageIds", array({})}}),
+                        object({{"op", str("deleteAllEmbeddings")}})})}}));
+
+    // 08-model-invalidation
+    add("08-model-invalidation",
+        object({{"seed",
+                 object({{"messages", array({message("m1", "c1", "alpha")})},
+                         {"embeddings",
+                          array({embedding(1, "m1", "a", "01", "alpha", 1, "fp"),
+                                 embedding(2, "m1", "b", "02", "alpha", 1, "fp")})}})},
+                {"steps",
+                 array({object({{"op", str("requestReconcile")},
+                                {"modelId", str("a")},
+                                {"updatedAt", number(1)}}),
+                        object({{"op", str("requestReconcile")},
+                                {"modelId", str("b")},
+                                {"updatedAt", number(2)}}),
+                        object({{"op", str("upsertWork")},
+                                {"work", work("a", "m1", "fp", 2, 3)}}),
+                        object({{"op", str("invalidateSemanticModel")},
+                                {"modelId", str("a")},
+                                {"updatedAt", number(10)}}),
+                        object({{"op", str("deleteSemanticModel")},
+                                {"modelId", str("b")}}),
+                        object({{"op", str("getLedgers")},
+                                {"modelIds", array({str("a"), str("b")})}}),
+                        object({{"op", str("getLedgers")},
+                                {"modelIds", array({})}})})}}));
+
+    // 09-fingerprints
+    {
+        std::string pad_8000(8000, 'a');
+        std::string pad_7999(7999, 'a');
+        add("09-fingerprints",
+            object({{"steps",
+                     array({object({{"op", str("fingerprint")}, {"text", str("")}}),
+                            object({{"op", str("fingerprint")}, {"text", str("hello")}}),
+                            object({{"op", str("fingerprint")},
+                                    {"text", str("héllo — 世界")}}),
+                            object({{"op", str("fingerprint")}, {"text", str(pad_8000)}}),
+                            object({{"op", str("fingerprint")},
+                                    {"text", str(pad_7999 + "\U0001F600")}}),
+                            object({{"op", str("fingerprint")},
+                                    {"text", str(pad_8000 + "tail")}}),
+                            object({{"op", str("fingerprint")},
+                                    {"text", str("\U0001F600\U0001F600\U0001F600")}})})}}));
+    }
+
+    // 10-source-mutation
+    add("10-source-mutation",
+        object({{"seed",
+                 object({{"messages",
+                          array({message("m1", "c1", "before"),
+                                 message("m2", "c1", "stable"),
+                                 message("m3", "c1", "")})},
+                         {"embeddings",
+                          array({embedding(1, "m1", "active", "01", "before", 1, "old"),
+                                 embedding(2, "m1", "other", "02", "before", 1, "old"),
+                                 embedding(3, "m2", "active", "03", "stable", 1, "stable")})}})},
+                {"steps",
+                 array({object({{"op", str("withSemanticSourceMutation")},
+                                {"activeModelId", str("active")},
+                                {"configured", array({str("active"), str("other")})},
+                                {"messageIds", array({str("m1"), str("m2"), str(""), str("m1")})},
+                                {"updatedAt", number(100)},
+                                {"blockSql",
+                                 array({sql_block("UPDATE messages SET text = ? WHERE id = ?",
+                                                  array({str("after"), str("m1")}))})}}),
+                        object({{"op", str("withSemanticSourceMutation")},
+                                {"activeModelId", str("active")},
+                                {"configured", array({str("active"), str("other")})},
+                                {"messageIds", array({str("m1"), str("m2")})},
+                                {"updatedAt", number(200)},
+                                {"blockSql", array({sql_block("SELECT 1", null_value())})}}),
+                        object({{"op", str("withSemanticSourceMutation")},
+                                {"activeModelId", str("active")},
+                                {"configured", array({str("active"), str("other")})},
+                                {"messageIds", array({str("m3")})},
+                                {"updatedAt", number(300)},
+                                {"blockSql",
+                                 array({sql_block("UPDATE messages SET text = ? WHERE id = ?",
+                                                  array({str("now indexed"), str("m3")}))})}})})}}));
+
+    // 11-graph-mutation
+    add("11-graph-mutation",
+        object({{"seed",
+                 object({{"messages",
+                          array({message("m1", "c1", "alpha"), message("m2", "c1", "beta")})},
+                         {"embeddings",
+                          array({embedding(1, "m1", "active", "01", "alpha", 1, "fp1"),
+                                 embedding(2, "m2", "active", "02", "beta", 1, "fp2"),
+                                 embedding(3, "m1", "other", "03", "alpha", 1, "fp1")})}})},
+                {"steps",
+                 array({object({{"op", str("withSemanticGraphMutation")},
+                                {"activeModelId", str("active")},
+                                {"configured", array({str("active"), str("other")})},
+                                {"clearMessageIds", array({str("m1"), str(""), str("m1")})},
+                                {"clearAllEmbeddings", boolean(false)},
+                                {"updatedAt", number(100)},
+                                {"blockSql", array({sql_block("SELECT 1", null_value())})}}),
+                        object({{"op", str("withSemanticGraphMutation")},
+                                {"activeModelId", str("active")},
+                                {"configured", array({str("active")})},
+                                {"clearMessageIds", array({})},
+                                {"clearAllEmbeddings", boolean(true)},
+                                {"updatedAt", number(200)},
+                                {"blockSql", array({sql_block("SELECT 1", null_value())})}})})}}));
+
+    // 12-eligibility-mutation
+    add("12-eligibility-mutation",
+        object({{"seed",
+                 object({{"conversations",
+                          array({conversation_row("c1", std::nullopt),
+                                 conversation_row("c2", std::nullopt),
+                                 conversation_row("task", "t1")})},
+                         {"messages",
+                          array({message("m1", "c1", "alpha"),
+                                 message("m2", "c2", "beta"),
+                                 message("m3", "task", "gamma")})},
+                         {"embeddings",
+                          array({embedding(1, "m1", "active", "01", "alpha", 1, "fp1"),
+                                 embedding(2, "m2", "active", "02", "beta", 1, "fp2")})}})},
+                {"steps",
+                 array({object({{"op", str("withSemanticEligibilityMutation")},
+                                {"activeModelId", str("active")},
+                                {"configured", array({str("active")})},
+                                {"conversationId", str("c1")},
+                                {"updatedAt", number(100)},
+                                {"blockSql",
+                                 array({sql_block("UPDATE conversations SET taskId = ? WHERE id = ?",
+                                                  array({str("t9"), str("c1")}))})}}),
+                        object({{"op", str("withSemanticEligibilityMutation")},
+                                {"activeModelId", str("active")},
+                                {"configured", array({str("active")})},
+                                {"conversationId", str("c2")},
+                                {"updatedAt", number(200)},
+                                {"blockSql", array({sql_block("SELECT 1", null_value())})}}),
+                        object({{"op", str("withSemanticEligibilityMutation")},
+                                {"activeModelId", str("active")},
+                                {"configured", array({str("active")})},
+                                {"conversationId", str("task")},
+                                {"updatedAt", number(300)},
+                                {"blockSql",
+                                 array({sql_block("UPDATE conversations SET taskId = ? WHERE id = ?",
+                                                  array({null_value(), str("task")}))})}}),
+                        object({{"op", str("withSemanticEligibilityMutation")},
+                                {"activeModelId", str("active")},
+                                {"configured", array({str("active")})},
+                                {"conversationId", str("missing")},
+                                {"updatedAt", number(400)},
+                                {"blockSql", array({sql_block("SELECT 1", null_value())})}})})}}));
+
+    // 13-commit-embedding
+    add("13-commit-embedding",
+        object({{"seed",
+                 object({{"messages",
+                          array({message("m1", "c1", "alpha"), message("m2", "c1", "beta")})},
+                         {"embeddings",
+                          array({embedding(5, "m1", "model", "01", "alpha", 1, "fp-alpha")})}})},
+                {"steps",
+                 array({object({{"op", str("requestReconcile")},
+                                {"modelId", str("model")},
+                                {"updatedAt", number(10)}}),
+                        object({{"op", str("enqueueExactWork")},
+                                {"modelId", str("model")},
+                                {"messageId", str("m2")},
+                                {"sourceFingerprint", str("fp-beta")},
+                                {"updatedAt", number(20)}}),
+                        object({{"op", str("commitSemanticEmbedding")},
+                                {"embedding",
+                                 embedding(std::nullopt, "m2", "model", "aabb", "beta", 2,
+                                           "fp-beta")},
+                                {"expectedFingerprint", str("fp-beta")},
+                                {"updatedAt", number(30)},
+                                {"expectedWorkRevision", number(2)},
+                                {"expectedReconcileRevision", number(1)},
+                                {"completePendingWork", boolean(true)}}),
+                        object({{"op", str("getLedger")}, {"modelId", str("model")}}),
+                        object({{"op", str("getWork")},
+                                {"modelId", str("model")},
+                                {"messageId", str("m2")}}),
+                        object({{"op", str("commitSemanticEmbedding")},
+                                {"embedding",
+                                 embedding(std::nullopt, "m2", "model", "ccdd", "beta", 2,
+                                           "fp-beta")},
+                                {"expectedFingerprint", str("fp-wrong")},
+                                {"updatedAt", number(40)},
+                                {"expectedWorkRevision", number(2)},
+                                {"expectedReconcileRevision", number(1)},
+                                {"completePendingWork", boolean(true)}}),
+                        object({{"op", str("commitSemanticEmbedding")},
+                                {"embedding",
+                                 embedding(std::nullopt, "m2", "model", "ccdd", "beta", 2,
+                                           "fp-beta")},
+                                {"expectedFingerprint", str("fp-beta")},
+                                {"updatedAt", number(40)},
+                                {"expectedWorkRevision", number(9)},
+                                {"expectedReconcileRevision", number(1)},
+                                {"completePendingWork", boolean(true)}}),
+                        object({{"op", str("commitSemanticEmbedding")},
+                                {"embedding",
+                                 embedding(std::nullopt, "m2", "model", "ccdd", "beta", 2,
+                                           "fp-beta")},
+                                {"expectedFingerprint", str("fp-beta")},
+                                {"updatedAt", number(40)},
+                                {"expectedWorkRevision", number(2)},
+                                {"expectedReconcileRevision", number(7)},
+                                {"completePendingWork", boolean(true)}}),
+                        object({{"op", str("commitSemanticEmbedding")},
+                                {"embedding",
+                                 embedding(std::nullopt, "m2", "unknown", "ccdd", "beta", 2,
+                                           "fp-beta")},
+                                {"expectedFingerprint", str("fp-beta")},
+                                {"updatedAt", number(40)},
+                                {"expectedWorkRevision", null_value()},
+                                {"expectedReconcileRevision", null_value()},
+                                {"completePendingWork", boolean(true)}}),
+                        object({{"op", str("commitSemanticEmbedding")},
+                                {"embedding",
+                                 embedding(std::nullopt, "m1", "model", "eeff", "alpha", 2,
+                                           "fp-alpha")},
+                                {"expectedFingerprint", str("fp-alpha")},
+                                {"updatedAt", number(50)},
+                                {"expectedWorkRevision", null_value()},
+                                {"expectedReconcileRevision", number(1)},
+                                {"completePendingWork", boolean(false)}}),
+                        object({{"op", str("enqueueExactWork")},
+                                {"modelId", str("model")},
+                                {"messageId", str("m2")},
+                                {"sourceFingerprint", str("fp-beta")},
+                                {"updatedAt", number(60)}}),
+                        object({{"op", str("commitSemanticEmbedding")},
+                                {"embedding",
+                                 embedding(11, "m2", "model", "1122", "beta two", 2, "fp-beta")},
+                                {"expectedFingerprint", str("fp-beta")},
+                                {"updatedAt", number(70)},
+                                {"expectedWorkRevision", number(4)},
+                                {"expectedReconcileRevision", null_value()},
+                                {"completePendingWork", boolean(true)}})})}}));
+
+    remove_stale(scenarios);
+    const FormatOptions pretty{Format::Pretty2, false}; // indent=2, ensure_ascii=False
+    for (const auto& [name, value] : entries) {
+        write_scenario(scenarios, name, value, pretty);
+    }
+    std::cout << "Wrote " << entries.size() << " scenarios to " << scenarios.string() << "\n";
+}
 }  // namespace
 
 int main(int argc, char** argv) {
@@ -15119,7 +17078,11 @@ int main(int argc, char** argv) {
                   << "  maintenance-debt       maintenance-debt/gen_scenarios.py\n"
                   << "  regeneration-tree-repair regeneration-tree-repair/gen_scenarios.py\n"
                   << "  message-persistence-guard message-persistence-guard/gen_scenarios.py\n"
-                  << "  run-recovery           run-recovery/gen_scenarios.py\n";
+                  << "  run-recovery           run-recovery/gen_scenarios.py\n"
+                  << "  http-policy            http-policy/gen_scenarios.py\n"
+                  << "  export-extra-settings   export-extra-settings/gen_scenarios.py\n"
+                  << "  shell-durable-jobs     shell-durable-jobs/gen_scenarios.py\n"
+                  << "  semantic-index-ledger  semantic-index-ledger/gen_scenarios.py\n";
         return 2;
     }
     const std::string profile = argv[1];
@@ -15272,6 +17235,14 @@ int main(int argc, char** argv) {
         profile_message_persistence_guard(scenarios);
     } else if (profile == "run-recovery") {
         profile_run_recovery(scenarios);
+    } else if (profile == "http-policy") {
+        profile_http_policy(scenarios);
+    } else if (profile == "export-extra-settings") {
+        profile_export_extra_settings(scenarios);
+    } else if (profile == "shell-durable-jobs") {
+        profile_shell_durable_jobs(scenarios);
+    } else if (profile == "semantic-index-ledger") {
+        profile_semantic_index_ledger(scenarios);
     } else {
         std::cerr << "unknown profile: " << profile << "\n";
         return 2;

@@ -42,7 +42,7 @@ rm -rf "$here/build"
 mkdir -p "$classes" "$fresh"
 
 echo "Generating scenarios..."
-python3 "$here/gen_scenarios.py"
+"${AGORA_SCENARIOS:-$root/core/build/agora_scenarios}" shell-durable-jobs "$here"
 
 sources=(
     "$app/tool/ShellDurableJobExecutor.kt"

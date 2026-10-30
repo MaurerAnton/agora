@@ -36,7 +36,7 @@ rm -rf "$here/build"
 mkdir -p "$classes" "$fresh"
 
 echo "Generating scenarios..."
-python3 "$here/gen_scenarios.py"
+"${AGORA_SCENARIOS:-$root/core/build/agora_scenarios}" http-policy "$here"
 
 echo "Extracting the policy declarations from HttpClient.kt..."
 "${AGORA_EXTRACT:-$root/core/build/agora_extract}" http-policy "$app/api/HttpClient.kt" "$here/build/HttpPolicy.kt"

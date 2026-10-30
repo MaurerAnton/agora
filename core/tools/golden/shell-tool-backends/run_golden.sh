@@ -102,6 +102,7 @@ sources=(
     "$here/platform/JSch.kt"
     "$here/platform/ScriptedSandboxManager.kt"
     "$here/ShellToolBackendsTraceDump.kt"
+    "$here/ShellToolBackendsTraceDumpSsh.kt"
 )
 for source in "${sources[@]}"; do
     [[ -f "$source" ]] || { echo "error: missing source $source" >&2; exit 2; }

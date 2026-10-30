@@ -2,6 +2,7 @@
 
 #include <charconv>
 #include <cmath>
+#include <cstdlib>
 #include <limits>
 #include <regex>
 #include <stdexcept>
@@ -139,10 +140,25 @@ std::optional<float> kotlin_float(std::string_view text) {
     std::string_view view = text;
     if (!view.empty() && view.front() == '+') view.remove_prefix(1);  // from_chars has no '+'
     if (view.empty()) return std::nullopt;
-    float value = 0.0f;
-    const auto [end, error] =
-        std::from_chars(view.data(), view.data() + view.size(), value);
-    if (error != std::errc{} || end != view.data() + view.size()) return std::nullopt;
+    // std::from_chars for floats is deleted in the NDK's libc++, so it cannot be used on
+    // Android; strtof is correctly rounded on both bionic and glibc. Native code keeps the C
+    // locale. The guards below keep the previous from_chars semantics exactly: no leading
+    // whitespace, no hex-float or inf/nan forms, and out-of-range input is rejected.
+    if (view.front() == ' ' || view.front() == '\t' || view.front() == '\n' ||
+        view.front() == '\v' || view.front() == '\f' || view.front() == '\r') {
+        return std::nullopt;
+    }
+    const std::size_t sign = view.front() == '-' ? 1 : 0;
+    if (view.size() >= sign + 2 && view[sign] == '0' &&
+        (view[sign + 1] == 'x' || view[sign + 1] == 'X')) {
+        return std::nullopt;
+    }
+    const std::string copy(view);
+    const char* const begin = copy.c_str();
+    char* end = nullptr;
+    const float value = std::strtof(begin, &end);
+    if (end != begin + copy.size()) return std::nullopt;
+    if (!std::isfinite(value)) return std::nullopt;  // "inf"/"nan" tails and overflow
     return value;
 }
 

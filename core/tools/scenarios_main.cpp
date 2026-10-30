@@ -14465,6 +14465,582 @@ void profile_shell_tool_backends(const fs::path& scenarios) {
     }
     std::cout << "wrote " << entries.size() << " scenarios to " << scenarios.string() << "\n";
 }
+// message-persistence-guard/gen_scenarios.py — indent=2, ensure_ascii=False. 24 fuzz cases
+// seeded with random.Random(20261020); the alphabet includes Unicode, surrogates, escapes.
+// Built via helper functions (no deeply nested braced lists) to keep brace balance obvious.
+void profile_message_persistence_guard(const fs::path& scenarios) {
+    std::vector<std::pair<std::string, json::Value>> entries;
+    auto add = [&](const std::string& name, json::Value value) {
+        entries.emplace_back(name, std::move(value));
+    };
+    // seg(fields...) -> object
+    auto seg = [](std::initializer_list<std::pair<std::string, json::Value>> fields) {
+        return object(std::vector<std::pair<std::string, json::Value>>(fields.begin(), fields.end()));
+    };
+    auto image_obj = [&](std::initializer_list<std::pair<std::string, json::Value>> extra) {
+        std::string sha;
+        sha.reserve(64);
+        for (int i = 0; i < 32; ++i) sha += "ab"; // Python: "ab" * 32
+        std::vector<std::pair<std::string, json::Value>> members = {
+            {"path", str("media/a.png")},
+            {"mimeType", str("image/png")},
+            {"sizeBytes", number(1234)},
+            {"sha256", str(std::move(sha))}};
+        for (const auto& [k, v] : extra) members.emplace_back(k, v);
+        return object(std::move(members));
+    };
+    // case_obj(name, fn, fields...) -> add(name, {"name":..,"fn":.., **fields})
+    auto case_obj = [&](const std::string& name, const std::string& fn,
+                        std::initializer_list<std::pair<std::string, json::Value>> fields) {
+        std::vector<std::pair<std::string, json::Value>> members = {
+            {"name", str(name)}, {"fn", str(fn)}};
+        for (const auto& [k, v] : fields) members.emplace_back(k, v);
+        add(name, object(std::move(members)));
+    };
+    auto segs1 = [](json::Value s) { return array(std::vector<json::Value>{std::move(s)}); };
+
+    case_obj("null_segments", "encodeSegmentsBounded",
+             {{"segments_json", null_value()}});
+    case_obj("empty_segments", "encodeSegmentsBounded",
+             {{"segments_json", array({})}});
+    case_obj("canonical_empty_answer", "encodeSegmentsBounded",
+             {{"segments_json", segs1(seg({{"type", str("answer")}}))}});
+
+    // canonical_rich_segment
+    {
+        json::Value answer = seg({{"type", str("answer")},
+                                  {"content", str("quoted \" text \\ newline\n control\u0001 \U0001F600")},
+                                  {"signature", str("sig")},
+                                  {"signatureProvider", str("provider")}});
+        json::Value tool = seg({{"type", str("tool")},
+                                {"content", str("tool content")},
+                                {"toolName", str("lookup")},
+                                {"toolArgs", str("{\"query\":\"value\"}")},
+                                {"toolResult", str("result")},
+                                {"toolResultText", str("display")},
+                                {"toolStructuredResult", str("{\"ok\":true}")},
+                                {"toolProgress", str("complete")},
+                                {"toolCallId", str("call-1")},
+                                {"durationMs", number(1234)},
+                                {"toolState", str("succeeded")},
+                                {"toolTarget", str("target")},
+                                {"toolDisplayName", str("Lookup")},
+                                {"toolTranscription", str("transcription")},
+                                {"responseOutputItems",
+                                 array({object({{"id", str("m1")}, {"type", str("message")}})})},
+                                {"responseOutputItemProvider", str("OpenAI")},
+                                {"errorCode", str("none")},
+                                {"toolImages",
+                                 array({image_obj({{"width", number(10)}, {"height", number(20)}})})}});
+        case_obj("canonical_rich_segment", "encodeSegmentsBounded",
+                 {{"segments_json", array({std::move(answer), std::move(tool)})}});
+    }
+    case_obj("canonical_empty_fields_are_preserved", "encodeSegmentsBounded",
+             {{"segments_json",
+               segs1(seg({{"type", str("tool")},
+                          {"toolResult", str("")},
+                          {"toolProgress", str("")},
+                          {"toolResultText", str("")},
+                          {"toolStructuredResult", str("")}}))}});
+    case_obj("canonical_empty_response_items_are_omitted", "encodeSegmentsBounded",
+             {{"segments_json",
+               segs1(seg({{"type", str("tool")}, {"responseOutputItems", array({})}}))}});
+
+    case_obj("default_budget_is_600000", "encodeSegmentsBounded",
+             {{"segments_json",
+               segs1(seg({{"type", str("tool")},
+                          {"toolResult", str(std::string(620000, 'd'))}}))}});
+    case_obj("oversized_payload_is_trimmed", "encodeSegmentsBounded",
+             {{"maxBytes", number(4000)},
+              {"segments_json",
+               segs1(seg({{"type", str("tool")},
+                          {"toolResult", str(std::string(8000, 'r'))}}))}});
+    {
+        json::Value first = seg({{"type", str("tool")},
+                                 {"toolName", str("first")},
+                                 {"toolResult", str(std::string(3000, 'r'))}});
+        json::Value second = seg({{"type", str("tool")},
+                                  {"toolName", str("second")},
+                                  {"toolResultText", str(std::string(5000, 't'))}});
+        case_obj("two_segments_trim_the_largest_first", "encodeSegmentsBounded",
+                 {{"maxBytes", number(4000)},
+                  {"segments_json", array({std::move(first), std::move(second)})}});
+    }
+    {
+        json::Value first = seg({{"type", str("tool")},
+                                 {"toolName", str("first")},
+                                 {"toolResult", str(std::string(3000, 'a'))}});
+        json::Value second = seg({{"type", str("tool")},
+                                  {"toolName", str("second")},
+                                  {"toolResult", str(std::string(3000, 'b'))}});
+        case_obj("tie_across_segments_picks_first", "encodeSegmentsBounded",
+                 {{"maxBytes", number(5500)},
+                  {"segments_json", array({std::move(first), std::move(second)})}});
+    }
+    auto tool4 = [&](char r, char t, char s, char p) {
+        return seg({{"type", str("tool")},
+                    {"toolResult", str(std::string(3000, r))},
+                    {"toolResultText", str(std::string(3000, t))},
+                    {"toolStructuredResult", str(std::string(3000, s))},
+                    {"toolProgress", str(std::string(3000, p))}});
+    };
+    case_obj("tie_prefers_tool_result_then_result_text", "encodeSegmentsBounded",
+             {{"maxBytes", number(10000)}, {"segments_json", segs1(tool4('r', 't', 's', 'p'))}});
+    case_obj("tie_single_trim_prefers_tool_result", "encodeSegmentsBounded",
+             {{"maxBytes", number(11000)}, {"segments_json", segs1(tool4('r', 't', 's', 'p'))}});
+    case_obj("answer_content_is_trimmed", "encodeSegmentsBounded",
+             {{"maxBytes", number(3000)},
+              {"segments_json",
+               segs1(seg({{"type", str("answer")}, {"content", str(std::string(5000, 'c'))}}))}});
+    case_obj("tool_content_is_never_counted_or_trimmed", "encodeSegmentsBounded",
+             {{"maxBytes", number(2000)},
+              {"segments_json",
+               segs1(seg({{"type", str("tool")}, {"content", str(std::string(5000, 'c'))}}))}});
+    case_obj("payload_fits_but_metadata_exceeds", "encodeSegmentsBounded",
+             {{"maxBytes", number(4000)},
+              {"segments_json",
+               segs1(seg({{"type", str("answer")},
+                          {"content", str(std::string(3000, 'c'))},
+                          {"toolArgs", str(std::string(2000, 'a'))}}))}});
+    case_obj("floor_exactly_is_not_trimmable", "encodeSegmentsBounded",
+             {{"maxBytes", number(1000)},
+              {"segments_json",
+               segs1(seg({{"type", str("tool")}, {"toolResult", str(std::string(2000, 'x'))}}))}});
+    case_obj("floor_plus_one_is_trimmed", "encodeSegmentsBounded",
+             {{"maxBytes", number(2033)},
+              {"segments_json",
+               segs1(seg({{"type", str("tool")}, {"toolResult", str(std::string(2001, 'x'))}}))}});
+    case_obj("trim_json_escapes_at_floor_boundary", "encodeSegmentsBounded",
+             {{"maxBytes", number(2035)},
+              {"segments_json",
+               segs1(seg({{"type", str("tool")},
+                          {"toolResult",
+                           str(std::string(1968, 'x') + "\"\"" + std::string(31, 'x'))}}))}});
+    case_obj("structured_result_is_trimmed", "encodeSegmentsBounded",
+             {{"maxBytes", number(3000)},
+              {"segments_json",
+               segs1(seg({{"type", str("tool")},
+                          {"toolStructuredResult", str(std::string(5000, 's'))}}))}});
+    case_obj("progress_is_trimmed", "encodeSegmentsBounded",
+             {{"maxBytes", number(3000)},
+              {"segments_json",
+               segs1(seg({{"type", str("tool")}, {"toolProgress", str(std::string(5000, 'p'))}}))}});
+    case_obj("result_text_is_trimmed", "encodeSegmentsBounded",
+             {{"maxBytes", number(3000)},
+              {"segments_json",
+               segs1(seg({{"type", str("tool")}, {"toolResultText", str(std::string(5000, 't'))}}))}});
+    case_obj("multi_field_trimming_terminates", "encodeSegmentsBounded",
+             {{"maxBytes", number(5000)},
+              {"segments_json",
+               segs1(seg({{"type", str("tool")},
+                          {"toolResult", str(std::string(3000, 'r'))},
+                          {"toolResultText", str(std::string(4000, 't'))},
+                          {"toolStructuredResult", str(std::string(5000, 's'))},
+                          {"toolProgress", str(std::string(6000, 'p'))}}))}});
+    case_obj("tool_content_with_trimmable_result", "encodeSegmentsBounded",
+             {{"maxBytes", number(7100)},
+              {"segments_json",
+               segs1(seg({{"type", str("tool")},
+                          {"content", str(std::string(5000, 'c'))},
+                          {"toolResult", str(std::string(5000, 'r'))}}))}});
+    case_obj("empty_result_fields_stay_empty_while_progress_trims", "encodeSegmentsBounded",
+             {{"maxBytes", number(3000)},
+              {"segments_json",
+               segs1(seg({{"type", str("tool")},
+                          {"toolResult", str("")},
+                          {"toolProgress", str(std::string(5000, 'p'))},
+                          {"toolResultText", str("")},
+                          {"toolStructuredResult", str("")}}))}});
+    case_obj("empty_fields_placeholder_count_boundary", "encodeSegmentsBounded",
+             {{"maxBytes", number(3000)},
+              {"segments_json",
+               segs1(seg({{"type", str("tool")},
+                          {"toolResult", str("")},
+                          {"toolProgress", str(std::string(5000, 'p'))},
+                          {"toolResultText", str("")},
+                          {"toolStructuredResult", str("")},
+                          {"toolArgs", str(std::string(372, 'a'))}}))}});
+    case_obj("empty_answer_content_is_not_a_placeholder", "encodeSegmentsBounded",
+             {{"maxBytes", number(3000)},
+              {"segments_json",
+               segs1(seg({{"type", str("answer")},
+                          {"content", str("")},
+                          {"toolResult", str(std::string(5000, 'r'))}}))}});
+    case_obj("responses_state_survives_trimming", "encodeSegmentsBounded",
+             {{"maxBytes", number(3000)},
+              {"segments_json",
+               segs1(seg({{"type", str("tool")},
+                          {"toolResult", str(std::string(5000, 'r'))},
+                          {"responseOutputItems",
+                           array({object({{"type", str("message")}, {"id", str("m1")}})})},
+                          {"responseOutputItemProvider", str("OpenAI")}}))}});
+    case_obj("answer_and_result_content_are_both_trimmed", "encodeSegmentsBounded",
+             {{"maxBytes", number(4000)},
+              {"segments_json",
+               segs1(seg({{"type", str("answer")},
+                          {"content", str(std::string(3000, 'c'))},
+                          {"toolResult", str(std::string(5000, 'r'))}}))}});
+    case_obj("trim_does_not_split_a_surrogate_pair", "encodeSegmentsBounded",
+             {{"maxBytes", number(3000)},
+              {"segments_json",
+               segs1(seg({{"type", str("tool")},
+                          {"toolResult",
+                           str(std::string(2500, 'a') + "\U0001F600" + std::string(2500, 'b'))}}))}});
+    {
+        // Python: ("\"\\\n\t\u0001\U0001F600" * 500) — the whole pattern repeated 500 times.
+        const std::string pattern = "\"\\\n\t\x01\U0001F600";
+        std::string repeated;
+        repeated.reserve(pattern.size() * 500);
+        for (int k = 0; k < 500; ++k) repeated += pattern;
+        case_obj("trim_counts_json_escapes", "encodeSegmentsBounded",
+                 {{"maxBytes", number(2500)},
+                  {"segments_json",
+                   segs1(seg({{"type", str("tool")},
+                              {"toolResult", str(repeated)}}))}});
+    }
+    {
+        std::vector<json::Value> segs;
+        for (int i = 0; i < 40; ++i) {
+            segs.push_back(seg({{"type", str("tool")},
+                                {"toolName", str("tool_" + std::to_string(i))},
+                                {"toolArgs",
+                                 str("{\"payload\":\"" + std::string(2000, 'x') + "\"}")}}));
+        }
+        case_obj("many_untrimmable_segments_fail_closed", "encodeSegmentsBounded",
+                 {{"maxBytes", number(8000)}, {"segments_json", array(std::move(segs))}});
+    }
+    case_obj("zero_budget_fails_closed", "encodeSegmentsBounded",
+             {{"maxBytes", number(0)},
+              {"segments_json",
+               segs1(seg({{"type", str("tool")}, {"toolResult", str(std::string(3000, 'r'))}}))}});
+    case_obj("negative_budget_fails_closed", "encodeSegmentsBounded",
+             {{"maxBytes", number(-5)},
+              {"segments_json",
+               segs1(seg({{"type", str("tool")}, {"toolResult", str(std::string(3000, 'r'))}}))}});
+
+    // Protected Responses continuation state
+    case_obj("responses_state_oversized_throws", "encodeSegmentsBounded",
+             {{"maxBytes", number(512)},
+              {"segments_json",
+               segs1(seg({{"type", str("tool")},
+                          {"toolName", str("lookup")},
+                          {"responseOutputItems",
+                           array({object({{"id", str("rs_1")},
+                                          {"type", str("reasoning")},
+                                          {"encrypted_content", str(std::string(4000, 'x'))}})})},
+                          {"responseOutputItemProvider", str("OpenAI")}}))}});
+    case_obj("responses_state_that_fits_is_kept", "encodeSegmentsBounded",
+             {{"segments_json",
+               segs1(seg({{"type", str("tool")},
+                          {"toolName", str("lookup")},
+                          {"toolResult", str("ok")},
+                          {"responseOutputItems",
+                           array({object({{"type", str("message")},
+                                          {"id", str("m1")},
+                                          {"content",
+                                           array({object({{"type", str("output_text")},
+                                                          {"text", str("ok")}})})}})})},
+                          {"responseOutputItemProvider", str("OpenAI")}}))}});
+
+    // clipText
+    case_obj("clip_text_exact_limit", "clipText", {{"text", str(std::string(100000, 'a'))}});
+    case_obj("clip_text_over_limit", "clipText", {{"text", str(std::string(100001, 'a'))}});
+    case_obj("clip_text_stops_before_split_surrogate", "clipText",
+             {{"text", str(std::string(99999, 'a') + "\U0001F600" + "tail")}});
+    case_obj("clip_text_keeps_astral_ending_before_boundary", "clipText",
+             {{"text", str(std::string(99998, 'a') + "\U0001F600" + "tail")}});
+    case_obj("clip_text_exact_limit_ending_in_emoji", "clipText",
+             {{"text", str(std::string(99998, 'a') + "\U0001F600")}});
+    case_obj("clip_text_empty", "clipText", {{"text", str("")}});
+
+    // ---- fuzz: seed 20261020 --------------------------------------------------
+    PythonRandom rng(20261020);
+    const std::vector<std::string> kAlphabet = {
+        "a", "b", "x", " ", "\n", "\t", "\u0001", "\"", "\\", "\U0001F600",
+        "\u6F22", "\u00E9", "\u2028", "\U0001D11E", "e\u0301"};
+    auto random_text = [&](int size) {
+        std::string out;
+        out.reserve(static_cast<std::size_t>(size));
+        for (int i = 0; i < size; ++i) {
+            out += kAlphabet[rng.randbelow(static_cast<std::uint32_t>(kAlphabet.size()))];
+        }
+        return out;
+    };
+    auto pick = [&](std::initializer_list<std::int64_t> options) {
+        return options.begin()[rng.randbelow(static_cast<std::uint32_t>(options.size()))];
+    };
+    const std::vector<std::string> kKinds = {"tool", "tool", "tool", "answer", "thought", "citation"};
+    for (int idx = 0; idx < 24; ++idx) {
+        std::vector<std::pair<std::string, json::Value>> fields;
+        const std::string kind = kKinds[rng.randbelow(static_cast<std::uint32_t>(kKinds.size()))];
+        fields.emplace_back("type", str(kind));
+        if (kind == "tool") {
+            if (rng.random() < 0.85) {
+                fields.emplace_back("content", str(random_text(static_cast<int>(pick({0, 10, 2000, 4000})))));
+            }
+            if (rng.random() < 0.9) {
+                fields.emplace_back("toolResult", str(random_text(static_cast<int>(pick({0, 5, 1999, 2001, 3000, 5000})))));
+            }
+            if (rng.random() < 0.6) {
+                fields.emplace_back("toolResultText", str(random_text(static_cast<int>(pick({0, 2000, 2500, 4000})))));
+            }
+            if (rng.random() < 0.6) {
+                fields.emplace_back("toolStructuredResult", str(random_text(static_cast<int>(pick({0, 2001, 3500})))));
+            }
+            if (rng.random() < 0.6) {
+                fields.emplace_back("toolProgress", str(random_text(static_cast<int>(pick({0, 2000, 4000})))));
+            }
+            if (rng.random() < 0.5) {
+                fields.emplace_back("toolArgs", str(random_text(static_cast<int>(pick({10, 500, 1500})))));
+            }
+            if (rng.random() < 0.3) {
+                fields.emplace_back("responseOutputItems",
+                                    array({object({{"type", str("message")},
+                                                   {"id", str("m" + std::to_string(idx))}})}));
+            }
+        } else {
+            fields.emplace_back("content", str(random_text(static_cast<int>(pick({0, 100, 2000, 2001, 3000, 5000})))));
+            if (rng.random() < 0.4) {
+                fields.emplace_back("toolResult", str(random_text(static_cast<int>(pick({0, 2500, 4000})))));
+            }
+        }
+        const int budget = static_cast<int>(pick({0, 100, 500, 1200, 2000, 3000, 4000, 5000, 8000}));
+        char fuzz_name[16];
+        std::snprintf(fuzz_name, sizeof(fuzz_name), "fuzz_%02d", idx);
+        case_obj(fuzz_name, "encodeSegmentsBounded",
+                 {{"maxBytes", number(budget)},
+                  {"segments_json", segs1(object(std::move(fields)))}});
+    }
+
+    remove_stale(scenarios);
+    const FormatOptions pretty{Format::Pretty2, false}; // indent=2, ensure_ascii=False
+    for (const auto& [name, value] : entries) {
+        write_scenario(scenarios, name, value, pretty);
+    }
+    std::cout << "wrote " << entries.size() << " scenarios to " << scenarios.string() << "\n";
+}
+// run-recovery/gen_scenarios.py — Compact (separators=(",", ":")), ensure_ascii=False.
+// Raw JSON strings are preserved literally; they escape only for the scenario file.
+void profile_run_recovery(const fs::path& scenarios) {
+    std::vector<std::pair<std::string, json::Value>> entries;
+    auto add = [&](const std::string& name, json::Value value) {
+        entries.emplace_back(name, std::move(value));
+    };
+    auto seg = [](std::optional<std::string> state,
+                  std::initializer_list<std::pair<std::string, json::Value>> overrides) {
+        std::vector<std::pair<std::string, json::Value>> entry = {
+            {"type", str("tool")}, {"content", str("segment-content")}};
+        if (state) entry.emplace_back("toolState", str(*state));
+        for (const auto& [k, v] : overrides) entry.emplace_back(k, v);
+        return object(std::move(entry));
+    };
+    auto seg_type = [](const std::string& type, std::optional<std::string> state,
+                       std::initializer_list<std::pair<std::string, json::Value>> overrides) {
+        std::vector<std::pair<std::string, json::Value>> entry = {
+            {"type", str(type)}, {"content", str("segment-content")}};
+        if (state) entry.emplace_back("toolState", str(*state));
+        for (const auto& [k, v] : overrides) entry.emplace_back(k, v);
+        return object(std::move(entry));
+    };
+    auto full_segment = [&](std::initializer_list<std::pair<std::string, json::Value>> overrides) {
+        std::vector<std::pair<std::string, json::Value>> entry = {
+            {"type", str("tool")},
+            {"content", str("answer | with ; separators\nsecond line\tand tab")},
+            {"toolName", str("shell")},
+            {"toolArgs", str("{\"command\":\"echo hi\"}")},
+            {"toolResult", str("ok")},
+            {"toolCallId", str("call-1")},
+            {"signature", str("c2lnbmF0dXJl")},
+            {"signatureProvider", str("anthropic")},
+            {"durationMs", number(1234)},
+            {"toolState", str("running")},
+            {"toolProgress", str("50%")},
+            {"toolTarget", str("device")},
+            {"toolDisplayName", str("Shell command")},
+            {"toolResultText", str("done")},
+            {"toolStructuredResult", str("{\"ok\":true}")},
+            {"toolImages",
+             array({object({{"path", str("/data/a.png")},
+                            {"mimeType", str("image/png")},
+                            {"sizeBytes", number(7)},
+                            {"width", number(2)},
+                            {"height", number(3)},
+                            {"sha256", str("aa")}}),
+                    object({{"path", str("/data/b.png")},
+                            {"mimeType", str("image/jpeg")},
+                            {"sizeBytes", number(11)},
+                            {"width", null_value()},
+                            {"height", number(9)},
+                            {"sha256", str("bb")}})})},
+            {"toolImageRequestKey", str("request-key")},
+            {"toolTranscription", str("a screenshot")},
+            {"responseOutputItems",
+             array({object({{"type", str("text")}, {"text", str("hi")}}),
+                    object({{"nested",
+                             object({{"b", array({number(1), boolean(true), null_value()})},
+                                     {"a", str("\u00E9")}})}})})},
+            {"responseOutputItemProvider", str("openai")},
+            {"errorCode", str("E42")},
+            {"streamingTextDeltas",
+             array({object({{"sequence", number(1)}, {"codePointCount", number(2)}}),
+                    object({{"sequence", number(2)}, {"codePointCount", number(3)}})})}};
+        for (const auto& [k, v] : overrides) {
+            bool replaced = false;
+            for (auto& member : entry) {
+                if (member.first == k) { member.second = v; replaced = true; break; }
+            }
+            if (!replaced) entry.emplace_back(k, v);
+        }
+        return object(std::move(entry));
+    };
+    auto case_obj = [&](const std::string& name, const std::string& fn,
+                        std::initializer_list<std::pair<std::string, json::Value>> fields) {
+        std::vector<std::pair<std::string, json::Value>> members = {
+            {"name", str(name)}, {"fn", str(fn)}};
+        for (const auto& [k, v] : fields) members.emplace_back(k, v);
+        add(name, object(std::move(members)));
+    };
+    auto vec = [](std::initializer_list<json::Value> items) {
+        return array(std::vector<json::Value>(items.begin(), items.end()));
+    };
+
+    const std::vector<std::string> kStatuses = {"TRANSCRIBING", "SENDING", "THINKING",
+                                                "TOOL_CALLING", "SUCCESS", "STOPPED", "ERROR"};
+    const std::vector<std::string> kTerminal = {"succeeded", "empty", "failed", "stopped",
+                                                "background_running"};
+
+    // recoverMessageStatus: every participant and every status
+    for (const std::string& participant : {"USER", "MODEL", "ERROR"}) {
+        std::vector<json::Value> statuses;
+        for (const auto& s : kStatuses) statuses.push_back(str(s));
+        std::string lower = participant; // Python: participant.lower() (ASCII only)
+        for (char& c : lower) {
+            if (c >= 'A' && c <= 'Z') c = static_cast<char>(c - 'A' + 'a');
+        }
+        case_obj("status_" + lower + "_all", "recoverMessageStatus",
+                 {{"participant", str(participant)}, {"statuses", array(std::move(statuses))}});
+    }
+
+    // stopIncompleteTools
+    case_obj("segments_empty", "stopIncompleteTools", {{"segments", array({})}});
+    {
+        std::vector<json::Value> segs;
+        for (const auto& s : kTerminal) segs.push_back(seg(s, {{"toolName", str(s)}}));
+        case_obj("segments_terminal_states_are_untouched", "stopIncompleteTools",
+                 {{"segments", array(std::move(segs))}});
+    }
+    case_obj("segments_non_terminal_states_are_stopped", "stopIncompleteTools",
+             {{"segments",
+               vec({seg("calling", {{"toolName", str("one")}}),
+                    seg("running", {{"toolName", str("two")}}),
+                    seg(std::nullopt, {{"toolName", str("three")}})})}});
+    case_obj("segments_unknown_states_are_stopped", "stopIncompleteTools",
+             {{"segments",
+               vec({seg("paused", {}), seg("", {}), seg("STOPPED", {}),
+                    seg("background-running", {}), seg(" stopped", {})})}});
+    case_obj("segments_non_tool_segments_are_untouched", "stopIncompleteTools",
+             {{"segments",
+               vec({seg_type("answer", std::nullopt, {}),
+                    seg_type("thought", "calling", {}),
+                    seg_type("error", "running", {}),
+                    seg_type("citation", std::nullopt, {}),
+                    seg_type("Tool", "calling", {})})}});
+    case_obj("segments_preserves_every_untouched_field", "stopIncompleteTools",
+             {{"segments", vec({full_segment({})})}});
+    case_obj("segments_mixed_order", "stopIncompleteTools",
+             {{"segments",
+               vec({seg_type("answer", std::nullopt, {}),
+                    full_segment({{"toolState", str("calling")}}),
+                    seg("succeeded", {{"toolName", str("finished")}}),
+                    seg(std::nullopt, {{"toolName", str("missing")}}),
+                    seg_type("thought", "running", {})})}});
+
+    // stopIncompleteToolsJson — raw JSON strings preserved literally
+    auto raw_case = [&](const std::string& name, const std::string& raw) {
+        case_obj(name, "stopIncompleteToolsJson", {{"raw", str(raw)}});
+    };
+
+    raw_case("json_unchanged_non_tool_returns_raw_verbatim",
+             "[\n  {\"type\": \"answer\", \"toolState\": \"calling\"},\n"
+             "  {\"type\":\"thought\",\"toolState\":null},\n  42, \"x\", null, [1,2]\n]\n");
+    raw_case("json_unchanged_terminal_states_return_raw_verbatim",
+             "[\n  {\"type\": \"tool\", \"toolState\": \"succeeded\"},\n"
+             "  {\"toolState\":\"empty\",\"type\":\"tool\"},\n"
+             "  {\"type\":\"tool\",\"toolState\":\"failed\"},\n"
+             "  {\"type\":\"tool\",\"toolState\":\"stopped\"},\n"
+             "  {\"type\":\"tool\",\"toolState\":\"background_running\"}\n]  ");
+    raw_case("json_empty_array_returns_raw_verbatim", " [ ] \n");
+    raw_case("json_changed_missing_state_is_appended_at_end",
+             "[{\"type\":\"tool\",\"toolName\":\"shell\",\"toolArgs\":\"{}\",\"content\":\"a\"}]");
+    raw_case("json_changed_existing_state_is_replaced_in_place",
+             "[{\"type\":\"tool\",\"toolState\":\"calling\",\"toolName\":\"shell\"}]");
+    raw_case("json_changed_compacts_source_whitespace",
+             "[\n\t{ \"type\" : \"tool\", \"content\" : \"x\" },\n\t{ \"type\" : \"answer\" }\n]\n");
+    raw_case("json_changed_mixed_elements_keep_order_and_shape",
+             "[null,{\"type\":\"answer\",\"toolState\":\"calling\"},{\"type\":\"tool\",\"content\":\"a\"},"
+             "{\"type\":\"tool\",\"toolState\":\"succeeded\"},[1,2],\"x\","
+             "{\"type\":\"tool\",\"toolState\":\"running\"}]");
+    raw_case("json_changed_preserves_nested_key_order",
+             "[{\"z\":1,\"type\":\"tool\",\"a\":{\"b\":2,\"a\":1},\"m\":[{\"y\":2,\"x\":1},true,null],"
+             "\"content\":\"x\"}]");
+    raw_case("json_changed_unicode_and_escapes_are_recoded",
+             "[{\"type\":\"tool\",\"content\":\"caf\\u00e9 \\u65e5\\u672c\\u8a9e "
+             "\\ud83d\\ude00 \\/ slash \\\\ quote \\\" tab \\t newline \\n ctrl \\u0001\","
+             "\"na\\u006de\":\"value\"}]");
+    raw_case("json_nested_tool_objects_are_not_rewritten",
+             "[{\"type\":\"answer\",\"nested\":{\"type\":\"tool\"}},"
+             "{\"type\":\"tool\",\"toolState\":\"succeeded\",\"nested\":[{\"type\":\"tool\"}]}]");
+
+    raw_case("json_state_null_is_stopped", "[{\"type\":\"tool\",\"toolState\":null}]");
+    raw_case("json_state_number_is_stopped", "[{\"type\":\"tool\",\"toolState\":5}]");
+    raw_case("json_state_bool_is_stopped", "[{\"type\":\"tool\",\"toolState\":true}]");
+    raw_case("json_state_array_is_stopped", "[{\"type\":\"tool\",\"toolState\":[]}]");
+    raw_case("json_state_object_is_stopped", "[{\"type\":\"tool\",\"toolState\":{}}]");
+    raw_case("json_state_empty_string_is_stopped", "[{\"type\":\"tool\",\"toolState\":\"\"}]");
+    raw_case("json_state_unknown_string_is_stopped", "[{\"type\":\"tool\",\"toolState\":\"paused\"}]");
+    raw_case("json_state_uppercase_is_stopped", "[{\"type\":\"tool\",\"toolState\":\"STOPPED\"}]");
+    raw_case("json_state_whitespace_is_stopped", "[{\"type\":\"tool\",\"toolState\":\" stopped \"}]");
+
+    raw_case("json_type_null_is_not_tool", "[{\"type\":null,\"toolState\":\"calling\"}]");
+    raw_case("json_type_number_is_not_tool", "[{\"type\":5,\"toolState\":\"calling\"}]");
+    raw_case("json_type_bool_is_not_tool", "[{\"type\":true,\"toolState\":\"calling\"}]");
+    raw_case("json_type_array_is_not_tool", "[{\"type\":[\"tool\"],\"toolState\":\"calling\"}]");
+    raw_case("json_type_object_is_not_tool", "[{\"type\":{\"value\":\"tool\"},\"toolState\":\"calling\"}]");
+    raw_case("json_type_uppercase_is_not_tool", "[{\"type\":\"Tool\",\"toolState\":\"calling\"}]");
+    raw_case("json_type_missing_is_not_tool", "[{\"toolState\":\"calling\"}]");
+
+    raw_case("json_duplicate_state_last_non_terminal_wins",
+             "[{\"type\":\"tool\",\"toolState\":\"succeeded\",\"toolState\":\"calling\"}]");
+    raw_case("json_duplicate_state_last_terminal_returns_raw",
+             "[{\"type\":\"tool\",\"toolState\":\"calling\",\"toolState\":\"succeeded\"}]");
+    raw_case("json_duplicate_type_last_non_tool_returns_raw",
+             "[{\"type\":\"tool\",\"toolState\":\"calling\",\"type\":\"answer\"}]");
+    raw_case("json_duplicate_type_last_tool_is_rewritten",
+             "[{\"type\":\"answer\",\"toolState\":\"calling\",\"type\":\"tool\"}]");
+
+    raw_case("json_root_object", "{\"type\":\"tool\"}");
+    raw_case("json_root_string", "\"tool\"");
+    raw_case("json_root_number", "42");
+    raw_case("json_root_null", "null");
+    raw_case("json_root_bool", "true");
+
+    raw_case("json_malformed_empty", "");
+    raw_case("json_malformed_blank", " \n\t ");
+    raw_case("json_malformed_unclosed", "[{\"type\":\"tool\"");
+    raw_case("json_malformed_trailing_comma", "[{\"type\":\"tool\"},]");
+    raw_case("json_malformed_trailing_content", "[]x");
+    raw_case("json_malformed_invalid_escape", "[{\"type\":\"\\q\"}]");
+    raw_case("json_malformed_bom", "\uFEFF[{\"type\":\"tool\"}]");
+    raw_case("json_malformed_single_quotes", "[{'type':'tool'}]");
+    raw_case("json_malformed_missing_colon", "[{\"type\" \"tool\"}]");
+
+    remove_stale(scenarios);
+    const FormatOptions compact{Format::Compact, false}; // separators=(",", ":"), ensure_ascii=False
+    for (const auto& [name, value] : entries) {
+        write_scenario(scenarios, name, value, compact);
+    }
+    std::cout << "wrote " << entries.size() << " scenarios to " << scenarios.string() << "\n";
+}
 }  // namespace
 
 int main(int argc, char** argv) {
@@ -14541,7 +15117,9 @@ int main(int argc, char** argv) {
                   << "  chat-search-dao        chat-search-dao/gen_scenarios.py\n"
                   << "  shell-tool-backends    shell-tool-backends/gen_scenarios.py\n"
                   << "  maintenance-debt       maintenance-debt/gen_scenarios.py\n"
-                  << "  regeneration-tree-repair regeneration-tree-repair/gen_scenarios.py\n";
+                  << "  regeneration-tree-repair regeneration-tree-repair/gen_scenarios.py\n"
+                  << "  message-persistence-guard message-persistence-guard/gen_scenarios.py\n"
+                  << "  run-recovery           run-recovery/gen_scenarios.py\n";
         return 2;
     }
     const std::string profile = argv[1];
@@ -14690,6 +15268,10 @@ int main(int argc, char** argv) {
         profile_maintenance_debt(scenarios);
     } else if (profile == "regeneration-tree-repair") {
         profile_regeneration_tree_repair(scenarios);
+    } else if (profile == "message-persistence-guard") {
+        profile_message_persistence_guard(scenarios);
+    } else if (profile == "run-recovery") {
+        profile_run_recovery(scenarios);
     } else {
         std::cerr << "unknown profile: " << profile << "\n";
         return 2;

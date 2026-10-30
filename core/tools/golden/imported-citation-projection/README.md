@@ -17,7 +17,7 @@ shared with the `citations` stand.
 | `scenarios/*.json` | 51 cases across the three ops (markers, anchors, references, budget, fuzz) |
 | `golden/*.trace` | Frozen Kotlin output, one per scenario |
 | `ImportedCitationProjectionTraceDump.kt` | Driver: runs one op per scenario against the record renderer |
-| `gen_scenarios.py` | Deterministic scenario generator (real U+E200/U+E201/U+E202 envelopes) |
+| `agora_scenarios imported-citation-projection` | Deterministic scenario generator (real U+E200/U+E201/U+E202 envelopes) |
 | `run_golden.sh` | Compiles, freezes (`--freeze`) or verifies the traces |
 
 ## What is pinned

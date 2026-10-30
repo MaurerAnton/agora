@@ -12,6 +12,7 @@
 #include <cstdio>
 #include <openssl/evp.h>
 #include <optional>
+#include <set>
 #include <zlib.h>
 #include <cstdlib>
 #include <filesystem>
@@ -10678,6 +10679,412 @@ void profile_native_backup_secrets(const fs::path& scenarios) {
     std::cout << "Wrote " << entries.size() << " scenarios to " << scenarios.string() << "\n";
 }
 
+// imported-citation-projection/gen_scenarios.py — indent=2, ensure_ascii=False; the markers use
+// the real U+E200/U+E201/U+E202 envelope characters, and the fuzz corpus runs CPython's
+// random.Random(3000 + index) (validated seeds; see PythonRandom).
+void profile_imported_citation_projection(const fs::path& scenarios) {
+    std::vector<std::pair<std::string, json::Value>> entries;
+    static constexpr const char* kE200 = "\uE200";
+    static constexpr const char* kE201 = "\uE201";
+    static constexpr const char* kE202 = "\uE202";
+    auto cite = [](const std::string& marker_id, const char* kind = "cite") {
+        return std::string(kE200) + kind + kE202 + marker_id + kE201;
+    };
+    auto write_gpt = [&](const char* name, const std::string& raw_text, json::Value references) {
+        entries.emplace_back(name, object({{"op", str("gpt")},
+                                           {"rawText", str(raw_text)},
+                                           {"references", std::move(references)}}));
+    };
+    auto write_claude = [&](const char* name, json::Value citation, std::int64_t start_index,
+                            const std::string& answer_text) {
+        entries.emplace_back(name, object({{"op", str("claude")},
+                                           {"citation", std::move(citation)},
+                                           {"startIndex", number(start_index)},
+                                           {"answerText", str(answer_text)}}));
+    };
+    auto write_encode = [&](const char* name, json::Value citations,
+                            const std::string& answer_text) {
+        entries.emplace_back(name, object({{"op", str("encode")},
+                                           {"citations", std::move(citations)},
+                                           {"answerText", str(answer_text)}}));
+    };
+    // record(source_id, *, provider, kind, title, url, file_name, location,
+    //        provider_source_id, excerpt, anchors, version) — None means the key is omitted;
+    // url defaults to "https://example.com/a".
+    auto record = [](const char* source_id, const char* provider = "openai",
+                     const char* kind = "url", const char* title = "T",
+                     const char* url = "https://example.com/a",
+                     std::optional<const char*> file_name = std::nullopt,
+                     std::optional<const char*> location = std::nullopt,
+                     std::optional<const char*> provider_source_id = std::nullopt,
+                     std::optional<const char*> excerpt = std::nullopt,
+                     std::optional<json::Value> anchors = std::nullopt,
+                     std::optional<std::int64_t> version = std::nullopt) {
+        std::vector<std::pair<std::string, json::Value>> members = {
+            {"sourceId", str(source_id)},
+            {"provider", str(provider)},
+            {"kind", str(kind)},
+            {"title", str(title)},
+        };
+        if (version) members.emplace_back("version", number(*version));
+        if (url) members.emplace_back("url", str(url));
+        if (file_name) members.emplace_back("fileName", str(*file_name));
+        if (location) members.emplace_back("location", str(*location));
+        if (provider_source_id) members.emplace_back("providerSourceId", str(*provider_source_id));
+        if (excerpt) members.emplace_back("excerpt", str(*excerpt));
+        if (anchors) members.emplace_back("anchors", std::move(*anchors));
+        return object(std::move(members));
+    };
+
+    // ---------------------------------------------------------------- gpt markers
+    write_gpt("01-gpt-plain-text", "Just a plain answer with no markers at all.", array({}));
+    write_gpt("02-gpt-single-cite",
+              "First sentence. " + cite("turn3f12") + " Second sentence.",
+              array({object({{"source_id", str("turn3f12")},
+                             {"url", str("https://example.com/doc")},
+                             {"title", str("Doc")},
+                             {"matched_text", str("Second")},
+                             {"start_idx", number(16)},
+                             {"end_idx", number(22)}})}));
+    write_gpt("03-gpt-filecite", "See " + cite("turn3f12", "filecite") + " for details.",
+              array({object({{"source_id", str("turn3f12")},
+                             {"file_name", str("notes.md")},
+                             {"file_type", str("text/markdown")},
+                             {"extracted_content", str("# notes")}})}));
+    write_gpt("04-gpt-multi-id-marker",
+              "A" + cite("turn3f12") + "B" + kE200 + "cite" + kE202 + "turn3f13" + kE202 +
+                  " turn3f14 " + kE201 + "C",
+              array({object({{"source_id", str("turn3f12")},
+                             {"url", str("https://one.example")},
+                             {"title", str("One")},
+                             {"matched_text", str("A")}}),
+                     object({{"source_id", str("turn3f13")},
+                             {"url", str("https://two.example")},
+                             {"title", str("Two")},
+                             {"matched_text", str("B")}}),
+                     object({{"source_id", str("turn3f14")},
+                             {"url", str("https://three.example")},
+                             {"title", str("Three")},
+                             {"matched_text", str("C")}})}));
+    write_gpt("05-gpt-unknown-id-dropped", "Keep " + cite("turn9z99") + " but no source matches.",
+              array({object({{"source_id", str("turn7x77")},
+                             {"url", str("https://example.com/a")},
+                             {"title", str("Other")},
+                             {"matched_text", str("Keep ")}})}));
+    write_gpt("06-gpt-cjk-marker-structured-ref", "Answer text \u3010turn3f12\u3011 end.",
+              array({object({{"turn_index", number(3)},
+                             {"ref_type", str("f")},
+                             {"ref_index", number(12)},
+                             {"url", str("https://structured.example")},
+                             {"title", str("Structured")}})}));
+    write_gpt("07-gpt-marker-without-references", "Only " + cite("turn3f12") + " marker here.",
+              array({}));
+    write_gpt("08-gpt-title-only-source", "Text " + cite("turn3f12") + " tail.",
+              array({object({{"source_id", str("turn3f12")},
+                             {"title", str("Title only")},
+                             {"matched_text", str("tail.")}})}));
+    write_gpt("09-gpt-invalid-url-source", "Text " + cite("turn3f12") + " tail.",
+              array({object({{"source_id", str("turn3f12")},
+                             {"url", str("not a url")},
+                             {"matched_text", str("tail.")}})}));
+    write_gpt("10-gpt-safe-urls-fallback", "Text " + cite("turn3f12") + " tail.",
+              array({object({{"source_id", str("turn3f12")},
+                             {"safe_urls", array({str("https://safe.example/x")})},
+                             {"matched_text", str("tail.")}}),
+                     object({{"source_id", str("turn3f13")},
+                             {"safe_urls", array({number(42), null_value()})},
+                             {"matched_text", str("tail.")}})}));
+    write_gpt("11-gpt-exact-range-anchor", "prefix " + cite("turn3f12") + " suffix",
+              array({object({{"source_id", str("turn3f12")},
+                             {"url", str("https://example.com/range")},
+                             {"title", str("R")},
+                             {"matched_text", str("suffix")},
+                             {"start_idx", number(8)},
+                             {"end_idx", number(14)}})}));
+    write_gpt("12-gpt-matched-fallback-blank-gap",
+              "alpha beta " + cite("turn3f12") + " gamma   ",
+              array({object({{"source_id", str("turn3f12")},
+                             {"url", str("https://example.com/fb")},
+                             {"title", str("F")},
+                             {"matched_text", str("alpha beta")}})}));
+    write_gpt("13-gpt-matched-range-mismatch", "alpha beta " + cite("turn3f12") + " tail",
+              array({object({{"source_id", str("turn3f12")},
+                             {"url", str("https://example.com/mm")},
+                             {"title", str("M")},
+                             {"matched_text", str("ALPHA")},
+                             {"start_idx", number(0)},
+                             {"end_idx", number(6)}})}));
+    write_gpt("14-gpt-range-out-of-bounds", "short " + cite("turn3f12") + " tail",
+              array({object({{"source_id", str("turn3f12")},
+                             {"url", str("https://example.com/ob")},
+                             {"title", str("O")},
+                             {"matched_text", str("tail")},
+                             {"start_idx", number(100)},
+                             {"end_idx", number(104)}})}));
+    write_gpt("15-gpt-duplicate-markers-dedup",
+              cite("turn3f12") + " and " + cite("turn3f12") + " again.",
+              array({object({{"source_id", str("turn3f12")},
+                             {"url", str("https://example.com/dup")},
+                             {"title", str("Dup")},
+                             {"matched_text", str("again.")}})}));
+    write_gpt("16-gpt-nested-references", "nested " + cite("turn3f12") + " end",
+              array({array({object({{"source_id", str("turn3f12")},
+                                    {"url", str("https://nested.example")},
+                                    {"title", str("Nested")},
+                                    {"matched_text", str("end")}})}),
+                     object({{"whatever",
+                              object({{"deep",
+                                       array({object({{"source_id", str("turn3f13")},
+                                                      {"title", str("Deep")},
+                                                      {"matched_text", str("nested ")}})})}})}})}));
+    write_gpt("17-gpt-non-string-primitives-ignored", "x " + cite("turn3f12") + " y",
+              array({object({{"title", number(42)},
+                             {"url", boolean(true)},
+                             {"matched_text", str("y")},
+                             {"turn_index", str("3")},
+                             {"ref_type", str("f")},
+                             {"ref_index", number(12)}})}));
+    write_gpt("18-gpt-uppercase-marker", std::string("up ") + kE200 + "CITE" + kE202 + "TURN3F12" +
+                                              kE201 + " case",
+              array({object({{"source_id", str("turn3f12")},
+                             {"url", str("https://example.com/upper")},
+                             {"title", str("U")},
+                             {"matched_text", str("case")}})}));
+    write_gpt("19-gpt-blank-id-parts-filtered",
+              std::string(kE200) + "cite" + kE202 + "turn3f12" + kE202 + kE202 + " " + kE201 +
+                  "ok",
+              array({object({{"source_id", str("turn3f12")},
+                             {"url", str("https://example.com/blank")},
+                             {"title", str("B")},
+                             {"matched_text", str("ok")}})}));
+    write_gpt("20-gpt-no-identifying-field",
+              "drop " + cite("turn3f12") + " this citation",
+              array({object({{"source_id", str("turn3f12")},
+                             {"matched_text", str("this")}})}));
+    write_gpt("21-gpt-source-ids-in-string-content", "content " + cite("turn3f12") + " end",
+              array({object({{"text", str("see turn3f12 in text")},
+                             {"url", str("https://example.com/content")},
+                             {"matched_text", str("end")}})}));
+    write_gpt("22-gpt-marker-end-beyond-stripped",
+              std::string(kE200) + "cite" + kE202 + "turn3f12" + kE201 + kE200 + "cite" +
+                  kE202 + "turn3f13" + kE201,
+              array({object({{"source_id", str("turn3f12")},
+                             {"url", str("https://example.com/beyond")},
+                             {"title", str("B")},
+                             {"matched_text", str("gone")}})}));
+    write_gpt("23-gpt-cjk-marker-without-source", "plain \u3010turn5a1\u3011 marker", array({}));
+    write_gpt("24-gpt-multiple-answers-order",
+              "one " + cite("turn3f12") + " two " + cite("turn3f13") + " three",
+              array({object({{"source_id", str("turn3f12")},
+                             {"url", str("https://a.example")},
+                             {"matched_text", str("one ")}}),
+                     object({{"source_id", str("turn3f13")},
+                             {"url", str("https://b.example")},
+                             {"matched_text", str("two ")}})}));
+    write_gpt("25-gpt-emoji-and-unicode-text",
+              "emoji \U0001F642 " + cite("turn3f12") +
+                  " \u044e\u043d\u0438\u043a\u043e\u0434 \u0442\u0435\u043a\u0441\u0442",
+              array({object({{"source_id", str("turn3f12")},
+                             {"url", str("https://unicode.example")},
+                             {"title", str("\u042e\u043d\u0438\u043a\u043e\u0434")},
+                             {"matched_text", str("\u044e\u043d\u0438\u043a\u043e\u0434")}})}));
+    write_gpt("26-gpt-empty-text", "", array({}));
+    write_gpt("27-gpt-int-accessor-trimmed-string", "tail ZZZ more " + cite("turn1f1"),
+              array({object({{"source_id", str("turn1f1")},
+                             {"url", str("https://example.com/trim")},
+                             {"matched_text", str("ZZZ")},
+                             {"start_idx", str(" 5 ")},
+                             {"end_idx", str(" 8 ")}})}));
+    write_gpt("28-gpt-int-accessor-fraction-string", "tail ZZZ more " + cite("turn1f1"),
+              array({object({{"source_id", str("turn1f1")},
+                             {"url", str("https://example.com/fraction")},
+                             {"matched_text", str("ZZZ")},
+                             {"start_idx", number(5)},
+                             {"end_idx", str("8.0")}})}));
+    write_gpt("29-gpt-structured-ref-exponent-index", "exp " + cite("turn300f12"),
+              array({object({{"turn_index", str("3e2")},
+                             {"ref_type", str("f")},
+                             {"ref_index", number(12)},
+                             {"url", str("https://example.com/exp")},
+                             {"title", str("Exp")}})}));
+
+    // ------------------------------------------------------------- claude citations
+    write_claude("30-claude-url-source",
+                 object({{"url", str("https://claude.example/doc")},
+                         {"title", str("Claude Doc")},
+                         {"uuid", str("cite-1")},
+                         {"matched_text", str("answer")}}),
+                 0, "the answer text");
+    write_claude("31-claude-file-source",
+                 object({{"file_name", str("report.pdf")},
+                         {"file_type", str("application/pdf")},
+                         {"title", str("Report")}}),
+                 0, "answer");
+    write_claude("32-claude-structured-anchor-range",
+                 object({{"url", str("https://range.example")},
+                         {"title", str("R")},
+                         {"matched_text", str("ZZZ")}}),
+                 4, "abcdZZZtail");
+    write_claude("33-claude-empty-answer",
+                 object({{"url", str("https://empty.example")},
+                         {"title", str("E")},
+                         {"matched_text", str("m")}}),
+                 0, "");
+    write_claude("34-claude-no-source", object({{"foo", str("bar")}}), 0, "answer");
+    write_claude("35-claude-title-only", object({{"title", str("Only title")}}), 0, "answer");
+    write_claude("36-claude-start-index-beyond",
+                 object({{"url", str("https://b.example")}, {"matched_text", str("x")}}),
+                 99, "short");
+
+    // ------------------------------------------------------------------- encode
+    write_encode("40-encode-empty", array({}), "answer");
+    write_encode("41-encode-single",
+                 array({record("s1", "openai", "url", "T", "https://example.com/a",
+                               std::nullopt, std::nullopt, std::nullopt, "An excerpt",
+                               array({object({{"startIndex", number(0)},
+                                              {"endIndex", number(6)},
+                                              {"citedText", str("answer")}})}))}),
+                 "answer text");
+    write_encode("42-encode-dedup-two-sources",
+                 array({record("s1", "openai", "url", "First"),
+                        record("s2", "openai", "url", "Second")}),
+                 "answer");
+    write_encode("43-encode-version-and-fields",
+                 array({record("s3", "anthropic", "file", "T", nullptr, "a.txt", "line 1",
+                               "turn3f12", "ex", std::nullopt, 1)}),
+                 "answer");
+    // Over the 600000-byte persistence budget: six records with 32 maximum anchor payloads.
+    {
+        std::vector<json::Value> big_records;
+        const std::string big_cited(4096, 'a');
+        const std::string big_excerpt(512, 'e');
+        for (int i = 0; i < 6; ++i) {
+            std::vector<json::Value> anchors;
+            for (int a = 0; a < 32; ++a) {
+                anchors.push_back(object({{"startIndex", number(0)},
+                                          {"endIndex", number(4096)},
+                                          {"citedText", str(big_cited)}}));
+            }
+            const std::string url = "https://big.example/" + std::to_string(i);
+            big_records.push_back(record(("big" + std::to_string(i)).c_str(), "openai", "url",
+                                         "big", url.c_str(), std::nullopt, std::nullopt,
+                                         std::nullopt, big_excerpt.c_str(),
+                                         array(std::move(anchors))));
+        }
+        write_encode("44-encode-over-budget", array(std::move(big_records)), "answer");
+    }
+
+    // ----------------------------------------------------------------------- fuzz
+    for (int index = 0; index < 10; ++index) {
+        PythonRandom rng(3000 + static_cast<std::uint32_t>(index));
+        const auto randint = [&rng](int low, int high) {
+            return low + static_cast<int>(
+                             rng.randbelow(static_cast<std::uint32_t>(high - low + 1)));
+        };
+        std::vector<std::string> pieces;
+        const int piece_count = randint(3, 7);
+        for (int piece_index = 0; piece_index < piece_count; ++piece_index) {
+            static constexpr const char* kKinds[] = {"plain", "cite", "cjk", "filecite",
+                                                     "blank"};
+            const std::string_view kind = kKinds[rng.randbelow(5)];
+            if (kind == "plain") {
+                static constexpr const char* kPlain[] = {"alpha ", "beta ", "gamma ",
+                                                         "\U0001F642 "};
+                pieces.emplace_back(kPlain[rng.randbelow(4)]);
+            } else if (kind == "cite" || kind == "filecite") {
+                const int turn = randint(1, 4);
+                const int marker = randint(1, 20);
+                char id[32];
+                std::snprintf(id, sizeof(id), "turn%df%02d", turn, marker);
+                pieces.push_back(cite(id, kind == "cite" ? "cite" : "filecite"));
+            } else if (kind == "cjk") {
+                const int turn = randint(1, 4);
+                const int marker = randint(1, 20);
+                char id[40];
+                std::snprintf(id, sizeof(id), "\u3010turn%df%02d\u3011", turn, marker);
+                pieces.emplace_back(id);
+            } else {
+                static constexpr const char* kBlank[] = {" ", "\n", "\t"};
+                pieces.emplace_back(kBlank[rng.randbelow(3)]);
+            }
+        }
+        // Collect marker ids in Python's sorted(set) order.
+        std::set<std::string> marker_set;
+        for (const std::string& part : pieces) {
+            if (part.rfind(kE200, 0) == 0 && part.find(kE202) != std::string::npos) {
+                const std::size_t cut = part.find(kE202);
+                const std::string rest = part.substr(cut + 3); // past E202
+                const std::size_t end = rest.find(kE201);
+                marker_set.insert(rest.substr(0, end));
+            } else if (part.rfind("\u3010", 0) == 0 &&
+                       part.size() >= 6 && part.rfind("\u3011") == part.size() - 3) {
+                marker_set.insert(part.substr(3, part.size() - 6));
+            }
+        }
+        std::string text;
+        for (const std::string& piece : pieces) text += piece;
+        std::vector<json::Value> references;
+        for (const std::string& marker_id : marker_set) {
+            const std::uint32_t choice = rng.randbelow(4);
+            if (choice == 0) {
+                references.push_back(object({{"source_id", str(marker_id)},
+                                             {"url", str("https://fuzz.example")},
+                                             {"title", str("F")},
+                                             {"matched_text", str("tail.")}}));
+            } else if (choice == 1) {
+                references.push_back(object({{"source_id", str(marker_id)},
+                                             {"file_name", str("f.txt")},
+                                             {"file_type", str("text/plain")}}));
+            } else if (choice == 2) {
+                references.push_back(object({{"source_id", str(marker_id)},
+                                             {"title", str("T")}}));
+            } else {
+                references.push_back(object({{"source_id", str(marker_id)},
+                                             {"url", str("not a url")}}));
+            }
+        }
+        const int extra_count = randint(0, 2);
+        for (int reference_index = 0; reference_index < extra_count; ++reference_index) {
+            const std::uint32_t which = rng.randbelow(6);
+            const std::string idx = std::to_string(reference_index);
+            if (which == 0) {
+                references.push_back(object(
+                    {{"url", str("https://fuzz.example/" + idx)},
+                     {"title", str("F" + idx)},
+                     {"matched_text", str("end")}}));
+            } else if (which == 1) {
+                references.push_back(object({{"file_name", str("f" + idx + ".txt")},
+                                             {"file_type", str("text/plain")}}));
+            } else if (which == 2) {
+                references.push_back(object({{"turn_index", number(reference_index)},
+                                             {"ref_type", str("f")},
+                                             {"ref_index", number(reference_index)},
+                                             {"url", str("https://struct.example")}}));
+            } else if (which == 3) {
+                references.push_back(
+                    object({{"safe_urls",
+                             array({str("https://safe.example/" + idx)})}}));
+            } else if (which == 4) {
+                references.push_back(object({{"title", str("T" + idx)},
+                                             {"matched_text", str("tail.")}}));
+            } else {
+                references.push_back(object({{"uuid", str("id-" + idx)},
+                                             {"matched_text", str("plain text ")}}));
+            }
+        }
+        char name[32];
+        std::snprintf(name, sizeof(name), "50-fuzz-%02d", index);
+        write_gpt(name, text, array(std::move(references)));
+    }
+
+    remove_stale(scenarios);
+    const FormatOptions pretty{Format::Pretty2, false}; // indent=2, ensure_ascii=False
+    for (const auto& [name, value] : entries) {
+        write_scenario(scenarios, name, value, pretty);
+    }
+    std::cout << "Wrote " << entries.size() << " scenarios to " << scenarios.string() << "\n";
+}
+
 }  // namespace
 
 int main(int argc, char** argv) {
@@ -10743,7 +11150,8 @@ int main(int argc, char** argv) {
                   << "  shell-file-edit       shell-file-edit/gen_scenarios.py\n"
                   << "  token-pricing         token-pricing/gen_scenarios.py\n"
                   << "  shell-client          shell-client/gen_scenarios.py\n"
-                  << "  native-backup-secrets native-backup-secrets/gen_scenarios.py\n";
+                  << "  native-backup-secrets native-backup-secrets/gen_scenarios.py\n"
+                  << "  imported-citation-projection imported-citation-projection/gen_scenarios.py\n";
         return 2;
     }
     const std::string profile = argv[1];
@@ -10870,6 +11278,8 @@ int main(int argc, char** argv) {
         profile_shell_client(scenarios);
     } else if (profile == "native-backup-secrets") {
         profile_native_backup_secrets(scenarios);
+    } else if (profile == "imported-citation-projection") {
+        profile_imported_citation_projection(scenarios);
     } else {
         std::cerr << "unknown profile: " << profile << "\n";
         return 2;

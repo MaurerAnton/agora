@@ -4320,6 +4320,35 @@ class PythonRandom {
                (1.0 / 9007199254740992.0);
     }
 
+    // CPython _random.Random.getrandbits for k > 32: fills (k+7)/8 bytes — whole 32-bit words
+    // little-endian, then the high 8*remainder bits of one more word — and truncates to k bits.
+    std::uint64_t getrandbits64(int bits) {
+        if (bits <= 32) return getrandbits(bits);
+        const int bytes = (bits + 7) / 8;
+        const int full_words = bytes / 4;
+        const int remainder = bytes % 4;
+        std::uint64_t value = 0;
+        for (int i = 0; i < full_words; ++i) {
+            value |= static_cast<std::uint64_t>(genrand_uint32()) << (32 * i);
+        }
+        if (remainder != 0) {
+            const std::uint32_t extra = genrand_uint32() >> (32 - 8 * remainder);
+            value |= static_cast<std::uint64_t>(extra) << (32 * full_words);
+        }
+        const int extra_bits = bytes * 8 - bits;
+        if (extra_bits > 0) value >>= extra_bits;
+        return value;
+    }
+
+    std::uint64_t randbelow64(std::uint64_t n) {
+        if (n == 0) return 0;
+        int bits = 0;
+        for (std::uint64_t value = n; value != 0; value >>= 1) ++bits;
+        std::uint64_t result = getrandbits64(bits);
+        while (result >= n) result = getrandbits64(bits);
+        return result;
+    }
+
   private:
     static constexpr int kSize = 624;
 
@@ -11342,6 +11371,1804 @@ void profile_conversation_export_snapshot_reader(const fs::path& scenarios) {
     std::cout << "Wrote " << entries.size() << " scenarios to " << scenarios.string() << "\n";
 }
 
+// gemini-stream/gen_scenarios.py — indent=2, ensure_ascii=False for the file; every "L data:"
+// line embeds json.dumps(payload, separators=(",", ":"), ensure_ascii=False) i.e. Compact with
+// raw UTF-8. ops entries are "L data: ...", "L <raw>" or the bare "E" terminator.
+void profile_gemini_stream(const fs::path& scenarios) {
+    std::vector<std::pair<std::string, json::Value>> entries;
+    auto compact = [](const json::Value& value) {
+        return serialize(value, FormatOptions{Format::Compact, false});
+    };
+    auto data_line = [&](const json::Value& payload) { return "L data: " + compact(payload); };
+    auto raw_line = [](const std::string& line) { return "L " + line; };
+    auto end_line = [] { return std::string("E"); };
+    // candidate(*parts, finish=None, grounding=None): {"candidates": [{"content": {"role":
+    // "model", "parts": [...]}, [finishReason], [groundingMetadata]]} — key order preserved.
+    auto candidate = [](std::vector<json::Value> parts,
+                        std::optional<std::string> finish = std::nullopt,
+                        std::optional<json::Value> grounding = std::nullopt) {
+        std::vector<std::pair<std::string, json::Value>> cand_members = {
+            {"content", object({{"role", str("model")}, {"parts", array(std::move(parts))}})}};
+        if (finish) cand_members.emplace_back("finishReason", str(*finish));
+        if (grounding) cand_members.emplace_back("groundingMetadata", std::move(*grounding));
+        return object({{"candidates", array({object(std::move(cand_members))})}});
+    };
+    auto usage = [](std::vector<std::pair<std::string, json::Value>> counters) {
+        return object({{"usageMetadata", object(std::move(counters))}});
+    };
+    auto part = [](std::vector<std::pair<std::string, json::Value>> members) {
+        return object(std::move(members));
+    };
+    auto add = [&](const char* name, std::vector<json::Value> ops,
+                   const char* provider = "Google") {
+        entries.emplace_back(name, object({{"name", str(name)},
+                                           {"providerName", str(provider)},
+                                           {"ops", array(std::move(ops))}}));
+    };
+    // GROUNDING is shared by three scenarios; key order is fixed.
+    const json::Value grounding = object({
+        {"groundingChunks",
+         array({object({{"web", object({{"uri", str("https://a.example/x")},
+                                        {"title", str("Alpha")}})}}),
+                object({{"web", object({{"uri", str("https://a.example/x")},
+                                        {"title", str("Duplicate")}})}}),
+                object({{"web", object({{"uri", str("https://b.example/y")}})}})})},
+        {"groundingSupports",
+         array({object({{"segment", object({{"startIndex", number(0)},
+                                            {"endIndex", number(5)},
+                                            {"text", str("first")}})},
+                        {"groundingChunkIndices", array({number(0), number(2)})}}),
+                object({{"segment", object({{"startIndex", number(6)},
+                                            {"endIndex", number(11)},
+                                            {"text", str("second")}})},
+                        {"groundingChunkIndices", array({number(1)})}})})},
+        {"webSearchQueries", array({str("agora stream"), str("gemini citations")})},
+    });
+
+    // ---- basic text ----
+    add("stream_basic_text", {str(data_line(candidate({part({{"text", str("Hel")}}),
+                                                       part({{"text", str("lo")}})}))),
+                              str(data_line(candidate({part({{"text", str(" world")}})}, "STOP"))),
+                              str(end_line())});
+    add("stream_non_data_lines_ignored", {str(raw_line("event: message")),
+                                          str(raw_line(": keep-alive comment")),
+                                          str(raw_line("")),
+                                          str(data_line(candidate({part({{"text", str("hi")}})}, "STOP"))),
+                                          str(end_line())});
+    add("stream_usage_only_line", {str(data_line(usage({{"promptTokenCount", number(7)}}))),
+                                   str(data_line(candidate({part({{"text", str("hi")}})}, "STOP"))),
+                                   str(end_line())});
+    add("stream_empty_data_is_parse_error", {str(raw_line("data: ")),
+                                             str(data_line(candidate({part({{"text", str("late")}})}))),
+                                             str(end_line())});
+
+    // ---- thoughts ----
+    add("stream_thought_string_bold_title",
+        {str(data_line(candidate(
+             {part({{"thought", str("**Summary** of the reasoning steps.")}})}))),
+         str(data_line(candidate({part({{"text", str("done")}})}, "STOP"))), str(end_line())});
+    add("stream_thought_heading_title",
+        {str(data_line(candidate(
+             {part({{"thought", str("## Headline\nBody of the thought.")}})}))),
+         str(data_line(candidate({part({{"text", str("done")}})}, "STOP"))), str(end_line())});
+    add("stream_thought_empty_and_non_string_markers",
+        {str(data_line(candidate({part({{"thought", str("")}}), part({{"thought", number(5)}}),
+                                  part({{"text", str("plain answer")}})}))),
+         str(data_line(candidate({part({{"thought", boolean(true)}}),
+                                  part({{"text", str("in thought")}}),
+                                  part({{"text", str("after thought")}})}))),
+         str(data_line(candidate({part({{"text", str("final")}})}, "STOP"))), str(end_line())});
+    add("stream_thought_signature_routes_text",
+        {str(data_line(candidate({part({{"thoughtSignature", str("sig-1")}}),
+                                  part({{"text", str("thinking aloud")}}),
+                                  part({{"text", str("still thinking")}})}))),
+         str(data_line(candidate({part({{"text", str("answered")}})}, "STOP"))), str(end_line())});
+    add("stream_reasoning_content",
+        {str(data_line(candidate(
+             {part({{"reasoning_content", str("**Derived** the answer.")}})}))),
+         str(data_line(candidate({part({{"text", str("answer")}})}, "STOP"))), str(end_line())});
+
+    // ---- function calls ----
+    add("stream_function_call_valid",
+        {str(data_line(candidate(
+             {part({{"functionCall",
+                    object({{"id", str("call_1")},
+                            {"name", str("lookup")},
+                            {"args", object({{"q", str("agora")}})}})}})}))),
+         str(data_line(candidate({part({{"text", str("checking")}})}, "STOP"))), str(end_line())});
+    add("stream_function_call_missing_or_blank_id",
+        {str(data_line(candidate({part({{"functionCall",
+                                        object({{"name", str("lookup")},
+                                                {"args", object({})}})}})}))),
+         str(data_line(candidate({part({{"functionCall",
+                                        object({{"id", str("")}, {"name", str("other")}})}})}))),
+         str(data_line(candidate({}, "STOP"))), str(end_line())});
+    add("stream_function_call_no_args",
+        {str(data_line(candidate(
+             {part({{"functionCall", object({{"id", str("call_1")}, {"name", str("lookup")}})}})}))),
+         str(data_line(candidate(
+             {part({{"functionCall", object({{"id", str("call_2")},
+                                             {"name", str("bare")},
+                                             {"args", object({})}})}})}))),
+         str(data_line(candidate({}, "STOP"))), str(end_line())});
+    add("stream_function_call_duplicate_id",
+        {str(data_line(candidate(
+             {part({{"functionCall", object({{"id", str("call_1")},
+                                             {"name", str("lookup")},
+                                             {"args", object({{"a", number(1)}})}})}})}))),
+         str(data_line(candidate(
+             {part({{"functionCall", object({{"id", str("call_1")},
+                                             {"name", str("lookup")},
+                                             {"args", object({{"a", number(2)}})}})}})}))),
+         str(data_line(candidate({}, "STOP"))), str(end_line())});
+    add("stream_function_call_unsafe_name",
+        {str(data_line(candidate(
+             {part({{"functionCall", object({{"id", str("call_1")},
+                                             {"name", str("bad name")},
+                                             {"args", object({})}})}})}))),
+         str(data_line(candidate({}, "STOP"))), str(end_line())});
+    add("stream_function_call_signature_chain",
+        {str(data_line(candidate({part({{"thoughtSignature", str("s1")},
+                                        {"functionCall", object({{"id", str("c1")},
+                                                                 {"name", str("one")},
+                                                                 {"args", object({})}})}})}))),
+         str(data_line(candidate({part({{"functionCall",
+                                        object({{"id", str("c2")},
+                                                {"name", str("two")},
+                                                {"args", object({})},
+                                                {"thought_signature", str("s2")}})}})}))),
+         str(data_line(candidate({part({{"thoughtSignature", str("s3")}}),
+                                  part({{"functionCall", object({{"id", str("c3")},
+                                                                 {"name", str("three")}})}})}))),
+         str(data_line(candidate({part({{"functionCall", object({{"id", str("c4")},
+                                                                 {"name", str("four")}})}})}))),
+         str(data_line(candidate({}, "STOP"))), str(end_line())});
+
+    // ---- code execution ----
+    add("stream_code_execution_round",
+        {str(data_line(candidate(
+             {part({{"executableCode", object({{"language", str("python")},
+                                               {"code", str("print(1)")}})}})}))),
+         str(data_line(candidate(
+             {part({{"codeExecutionResult", object({{"outcome", str("OUTCOME_OK")},
+                                                    {"output", str("1")}})}})}))),
+         str(data_line(candidate({part({{"text", str("done")}})}, "STOP"))), str(end_line())});
+    add("stream_code_execution_queue_pairing",
+        {str(data_line(candidate({part({{"executableCode", object({{"language", str("python")},
+                                                                   {"code", str("a")}})}}),
+                                  part({{"executableCode", object({{"language", str("python")},
+                                                                   {"code", str("b")}})}})}))),
+         str(data_line(candidate(
+             {part({{"codeExecutionResult", object({{"outcome", str("OUTCOME_OK")},
+                                                    {"output", str("1")}})}})}))),
+         str(data_line(candidate(
+             {part({{"codeExecutionResult", object({{"outcome", str("FAILED")},
+                                                    {"output", str("boom")}})}})}))),
+         str(data_line(candidate({}, "STOP"))), str(end_line())});
+    add("stream_code_execution_result_without_pending",
+        {str(data_line(candidate(
+             {part({{"codeExecutionResult", object({{"outcome", str("OK")},
+                                                    {"output", str("0")}})}})}))),
+         str(data_line(candidate(
+             {part({{"codeExecutionResult", object({{"outcome", str("failed")},
+                                                    {"output", str("x")}})}})}))),
+         str(data_line(candidate({}, "STOP"))), str(end_line())});
+
+    // ---- finish reasons and stopping ----
+    add("stream_finish_reason_normalized",
+        {str(data_line(candidate({part({{"text", str("a")}})}, "MAX_TOKENS"))), str(end_line())});
+    add("stream_finish_reason_hyphen_form",
+        {str(data_line(candidate({part({{"text", str("a")}})}, "max-tokens"))), str(end_line())});
+    add("stream_finish_reason_lowercase_passthrough",
+        {str(data_line(candidate({part({{"text", str("a")}})}, "STOP"))), str(end_line())});
+    add("stream_break_on_finish_reason",
+        {str(data_line(candidate({part({{"text", str("before")}})}, "STOP"))),
+         str(data_line(candidate({part({{"text", str("after")}})}))),
+         str(data_line(candidate({part({{"text", str("late")}})}))), str(end_line())});
+    add("stream_break_on_blank_finish_reason",
+        {str(data_line(candidate({part({{"text", str("a")}})}, "   "))),
+         str(data_line(candidate({part({{"text", str("b")}})}, "STOP"))), str(end_line())});
+    add("stream_done_marker_stops_loop",
+        {str(data_line(candidate({part({{"text", str("a")}})}))),
+         str(raw_line("data: [DONE]")),
+         str(data_line(candidate({part({{"text", str("after done")}})}))), str(end_line())});
+
+    // ---- errors ----
+    add("stream_error_payload",
+        {str(data_line(object({{"error",
+                                object({{"code", number(429)},
+                                        {"status", str("RESOURCE_EXHAUSTED")},
+                                        {"message", str("quota exceeded")}})}}))),
+         str(data_line(candidate({part({{"text", str("late")}})}))), str(end_line())});
+    add("stream_error_fallback_message",
+        {str(data_line(object({{"error", object({{"status", str("INTERNAL")}})}}))),
+         str(end_line())},
+        "Relay");
+    add("stream_outcome_failed_to_generate",
+        {str(data_line(object({{"candidates", null_value()},
+                               {"outcome", str("upstream failed to generate the response")}}))),
+         str(data_line(candidate({part({{"text", str("late")}})}))), str(end_line())});
+    add("stream_outcome_other_value",
+        {str(data_line(object({{"outcome", str("some other outcome")}}))),
+         str(data_line(candidate({part({{"text", str("kept")}})}, "STOP"))), str(end_line())});
+    {
+        // long_junk = '{"candidates": [' + '"' + "x" * 600 — a deliberately truncated payload.
+        const std::string long_junk = "{\"candidates\": [\"" + std::string(600, 'x');
+        add("stream_decode_failure_take512", {str(raw_line("data: " + long_junk)),
+                                              str(data_line(candidate({part({{"text", str("late")}})}))),
+                                              str(end_line())});
+    }
+
+    // ---- grounding metadata ----
+    add("stream_grounding_hosted_once_per_change",
+        {str(data_line(candidate({part({{"text", str("first")}})}, std::nullopt, grounding))),
+         str(data_line(candidate({part({{"text", str(" second")}})}, std::nullopt, grounding))),
+         str(data_line(candidate({part({{"text", str(" third")}})}, "STOP",
+                                 grounding))),
+         str(end_line())});
+    add("stream_grounding_metadata_changed",
+        {str(data_line(candidate({part({{"text", str("first")}})}, std::nullopt, grounding))),
+         str(data_line(candidate(
+             {part({{"text", str("second")}})}, "STOP",
+             object({{"groundingChunks",
+                      array({object({{"web", object({{"uri", str("https://c.example/z")}})}})})},
+                     {"groundingSupports", array({})},
+                     {"webSearchQueries", array({str("changed")})}})))),
+         str(end_line())});
+    add("stream_grounding_citations_final_pass",
+        {str(data_line(candidate({part({{"text", str("hello")}})}, std::nullopt, grounding))),
+         str(end_line())});
+
+    // ---- termination inputs and usage math ----
+    add("stream_usage_derived_total",
+        {str(data_line(usage({{"promptTokenCount", number(10)},
+                              {"candidatesTokenCount", number(5)},
+                              {"thoughtsTokenCount", number(3)}}))),
+         str(data_line(candidate({part({{"text", str("done")}})}, "STOP"))), str(end_line())});
+    add("stream_usage_total_wins_and_coercion",
+        {str(data_line(usage({{"promptTokenCount", number(-3)},
+                              {"candidatesTokenCount", number(-1)},
+                              {"thoughtsTokenCount", number(0)},
+                              {"totalTokenCount", number(99)}}))),
+         str(data_line(candidate({part({{"text", str("done")}})}, "STOP"))), str(end_line())});
+    add("stream_pending_code_execution_in_flight",
+        {str(data_line(candidate(
+             {part({{"executableCode", object({{"language", str("python")},
+                                               {"code", str("a")}})}})}))),
+         str(end_line())});
+    add("stream_tool_call_counts_as_produced",
+        {str(data_line(candidate(
+             {part({{"functionCall", object({{"id", str("c1")},
+                                             {"name", str("lookup")},
+                                             {"args", object({})}})}})}))),
+         str(end_line())});
+
+    remove_stale(scenarios);
+    const FormatOptions pretty{Format::Pretty2, false}; // indent=2, ensure_ascii=False
+    for (const auto& [name, value] : entries) {
+        write_scenario(scenarios, name, value, pretty);
+    }
+    std::cout << "Wrote " << entries.size() << " scenarios to " << scenarios.string() << "\n";
+}
+
+// openai-responses-request/gen_scenarios.py — indent=2, ensure_ascii=False. 46 hand-written
+// input/tools/validate cases plus 8 seeded fuzz requests (random.Random(11000 + index)).
+void profile_openai_responses_request(const fs::path& scenarios) {
+    std::vector<std::pair<std::string, json::Value>> entries;
+    auto add = [&](std::string name, json::Value value) {
+        entries.emplace_back(std::move(name), std::move(value));
+    };
+    auto text_part = [](const std::string& text) {
+        return object({{"type", str("text")}, {"text", str(text)}});
+    };
+    auto image_part = [](const std::string& url) {
+        return object({{"type", str("image_url")},
+                       {"image_url", object({{"url", str(url)}})}});
+    };
+    auto user = [&](const std::string& text) {
+        return object({{"role", str("user")}, {"content", array({text_part(text)})}});
+    };
+    auto assistant = [&](const std::string& text) {
+        return object({{"role", str("assistant")}, {"content", array({text_part(text)})}});
+    };
+    auto tool_message = [&](const std::string& call_id, const std::string& text) {
+        return object({{"role", str("tool")},
+                       {"tool_call_id", str(call_id)},
+                       {"content", array({text_part(text)})}});
+    };
+    auto function_call = [&](const std::string& call_id, const std::string& name,
+                             const std::string& arguments) {
+        return object({{"id", str(call_id)},
+                       {"type", str("function")},
+                       {"function", object({{"name", str(name)},
+                                            {"arguments", str(arguments)}})}});
+    };
+    auto tool_definition = [&](const std::string& name, const std::string& description,
+                               std::optional<json::Value> parameters) {
+        json::Value schema = parameters
+                                 ? std::move(*parameters)
+                                 : object({{"type", str("object")},
+                                           {"properties", object({})},
+                                           {"required", array({})}});
+        return object({{"type", str("function")},
+                       {"function", object({{"name", str(name)},
+                                            {"description", str(description)},
+                                            {"parameters", std::move(schema)}})}});
+    };
+    auto input_scenario = [&](std::vector<json::Value> messages) {
+        return object({{"op", str("input")}, {"messages", array(std::move(messages))}});
+    };
+
+    // ------------------------------------------------------------------- input
+    add("01-input-user-text", input_scenario({user("hello")}));
+    add("02-input-assistant-text", input_scenario({assistant("hi there")}));
+    add("03-input-system-and-developer",
+        input_scenario({object({{"role", str("system")},
+                                {"content", array({text_part("be brief")})}}),
+                        object({{"role", str("developer")},
+                                {"content", array({text_part("follow the rules")})}})}));
+    add("04-input-tool-output",
+        input_scenario({user("run it"), tool_message("call_1", "done")}));
+    add("05-input-assistant-tool-calls",
+        input_scenario({object(
+            {{"role", str("assistant")},
+             {"tool_calls", array({function_call("call_1", "search", "{\"q\":\"x\"}"),
+                                   function_call("call_2", "fetch", "{}")})}})}));
+    add("06-input-image-part",
+        input_scenario({object({{"role", str("user")},
+                                {"content", array({image_part("https://img.example/a.png"),
+                                                   text_part("what?")})}})}));
+    add("07-input-assistant-image-part",
+        input_scenario({object({{"role", str("assistant")},
+                                {"content",
+                                 array({image_part("https://img.example/b.png")})}})}));
+    add("08-input-empty-content",
+        input_scenario({object({{"role", str("user")}, {"content", array({})}}),
+                        object({{"role", str("user")}})}));
+    add("09-input-empty-tool-output", input_scenario({tool_message("call_1", "")}));
+
+    const json::Value reasoning_items =
+        array({object({{"type", str("reasoning")},
+                       {"id", str("rs_1")},
+                       {"summary", array({object({{"type", str("summary_text")},
+                                                  {"text", str("thought")}})})},
+                       {"encrypted_content", str("abc")}})});
+    auto replay_scenario = [&](const std::string& item_provider,
+                               const std::string& item_model,
+                               std::optional<std::string> target_model,
+                               std::optional<json::Value> tool_calls) {
+        std::vector<std::pair<std::string, json::Value>> message = {
+            {"role", str("assistant")}};
+        if (tool_calls) message.emplace_back("tool_calls", std::move(*tool_calls));
+        message.emplace_back("response_output_items", reasoning_items);
+        message.emplace_back("response_output_item_provider", str(item_provider));
+        message.emplace_back("response_output_item_model", str(item_model));
+        std::vector<std::pair<std::string, json::Value>> scenario = {
+            {"op", str("input")}, {"provider", str("openai")}};
+        if (target_model) scenario.emplace_back("target_model", str(*target_model));
+        scenario.emplace_back("messages", array({object(std::move(message))}));
+        return object(std::move(scenario));
+    };
+    add("10-input-replay-reasoning",
+        replay_scenario("openai", "gpt-5.4", "gpt-5.4", std::nullopt));
+    add("11-input-replay-provider-mismatch",
+        replay_scenario("anthropic", "gpt-5.4", "gpt-5.4", std::nullopt));
+    add("12-input-replay-model-mismatch",
+        replay_scenario("openai", "gpt-4o", "gpt-5.4", std::nullopt));
+    add("13-input-replay-case-insensitive-model",
+        replay_scenario("openai", "models/gpt-5.4", "GPT-5.4", std::nullopt));
+    add("14-input-replay-without-target-model",
+        replay_scenario("openai", "gpt-5.4", std::nullopt, std::nullopt));
+    add("15-input-replay-falls-back-to-tool-calls",
+        replay_scenario("openai", "gpt-4o", "gpt-5.4",
+                        array({function_call("call_9", "search", "{}")})));
+    add("16-input-reasoning-content-only",
+        input_scenario({object({{"role", str("assistant")},
+                                {"reasoning_content", str("because")},
+                                {"content", array({text_part("answer")})}})}));
+    add("17-input-unicode", input_scenario({user("привет \U0001F642")}));
+
+    // ------------------------------------------------------------------- tools
+    add("20-tools-empty", object({{"op", str("tools")}, {"tools", array({})}}));
+    add("21-tools-one",
+        object({{"op", str("tools")},
+                {"tools", array({tool_definition("search", "Search the web", std::nullopt)})}}));
+    add("22-tools-with-parameters",
+        object({{"op", str("tools")},
+                {"tools",
+                 array({tool_definition(
+                     "search", "Search",
+                     object({{"type", str("object")},
+                             {"properties",
+                              object({{"q", object({{"type", str("string")},
+                                                    {"description", str("query")}})}})},
+                             {"required", array({str("q")})}}))})}}));
+    add("23-tools-several",
+        object({{"op", str("tools")},
+                {"tools", array({tool_definition("a", "first", std::nullopt),
+                                 tool_definition("b", "second", std::nullopt)})}}));
+
+    // ---------------------------------------------------------------- validate
+    auto message_item = [](const std::string& role, const std::string& content_type,
+                           const std::string& text) {
+        return object({{"type", str("message")},
+                       {"role", str(role)},
+                       {"content", array({object({{"type", str(content_type)},
+                                                  {"text", str(text)}})})}});
+    };
+    auto request = [](std::vector<json::Value> input_items) {
+        return object({{"model", str("gpt-5.4")},
+                       {"input", array(std::move(input_items))},
+                       {"stream", boolean(true)}});
+    };
+    // payload.update(extra): existing keys keep their position, new keys append in call order.
+    auto with_extra = [](json::Value payload,
+                         std::vector<std::pair<std::string, json::Value>> extra) {
+        for (auto& [key, value] : extra) {
+            bool replaced = false;
+            for (json::Member& member : payload.members) {
+                if (member.key == key) {
+                    member.value = std::move(value);
+                    replaced = true;
+                    break;
+                }
+            }
+            if (!replaced) {
+                payload.members.push_back(json::Member{std::move(key), std::move(value)});
+            }
+        }
+        return payload;
+    };
+    auto validate_request = [&](std::vector<json::Value> input_items,
+                                std::vector<std::pair<std::string, json::Value>> extra = {}) {
+        return object({{"op", str("validate")},
+                       {"provider", str("openai")},
+                       {"request", with_extra(request(std::move(input_items)),
+                                              std::move(extra))}});
+    };
+    auto plain_function_call = [](const std::string& call_id, const std::string& name,
+                                  const std::string& arguments) {
+        return object({{"type", str("function_call")},
+                       {"call_id", str(call_id)},
+                       {"name", str(name)},
+                       {"arguments", str(arguments)}});
+    };
+
+    add("30-validate-ok", validate_request({message_item("user", "input_text", "hi")}));
+    add("31-validate-blank-model",
+        validate_request({message_item("user", "input_text", "hi")},
+                         {{"model", str("   ")}}));
+    add("32-validate-empty-input", validate_request({}));
+    add("33-validate-max-output-tokens",
+        validate_request({message_item("user", "input_text", "hi")},
+                         {{"max_output_tokens", number(0)}}));
+    add("34-validate-top-p-out-of-range",
+        validate_request({message_item("user", "input_text", "hi")},
+                         {{"top_p", float_number(1.5)}}));
+    add("35-validate-unsafe-tool-name",
+        validate_request({message_item("user", "input_text", "hi")},
+                         {{"tools", array({object({{"type", str("function")},
+                                                   {"name", str("bad name!")}})})}}));
+    add("36-validate-hosted-web-search",
+        validate_request({message_item("user", "input_text", "hi")},
+                         {{"tools", array({object({{"type", str("web_search")},
+                                                   {"name", str("search")}})})}}));
+    add("37-validate-unsupported-tool-type",
+        validate_request({message_item("user", "input_text", "hi")},
+                         {{"tools", array({object({{"type", str("custom")}})})}}));
+    add("38-validate-invalid-role",
+        validate_request({object({{"type", str("message")},
+                                  {"role", str("wizard")},
+                                  {"content", array({object({{"type", str("input_text")},
+                                                             {"text", str("x")}})})}})}));
+    add("39-validate-empty-content",
+        validate_request({object({{"type", str("message")},
+                                  {"role", str("user")},
+                                  {"content", array({})}})}));
+    add("40-validate-assistant-with-input-text",
+        validate_request({message_item("assistant", "input_text", "hi")}));
+    add("41-validate-user-with-output-text",
+        validate_request({message_item("user", "output_text", "hi")}));
+    add("42-validate-image-without-detail",
+        validate_request({object({{"type", str("message")},
+                                  {"role", str("user")},
+                                  {"content", array({object({{"type", str("input_image")},
+                                                             {"image_url",
+                                                              str("https://i.example/a.png")}})})}})}));
+    add("43-validate-unsafe-call-id",
+        validate_request({message_item("user", "input_text", "hi"),
+                          plain_function_call("bad id!", "f", "{}")}));
+    add("44-validate-duplicate-call-id",
+        validate_request({message_item("user", "input_text", "hi"),
+                          plain_function_call("call_1", "f", "{}"),
+                          plain_function_call("call_1", "f", "{}")}));
+    add("45-validate-missing-output",
+        validate_request({message_item("user", "input_text", "hi"),
+                          plain_function_call("call_1", "f", "{}")}));
+    add("46-validate-output-without-call",
+        validate_request({message_item("user", "input_text", "hi"),
+                          object({{"type", str("function_call_output")},
+                                  {"call_id", str("call_1")},
+                                  {"output", str("done")}})}));
+    add("47-validate-not-ending-in-user",
+        validate_request({message_item("assistant", "output_text", "hi")}));
+    add("48-validate-reasoning-blank-id",
+        validate_request({message_item("user", "input_text", "hi"),
+                          object({{"type", str("reasoning")}, {"id", str("  ")}})}));
+    add("49-validate-opaque-item-extra-fields",
+        validate_request({message_item("user", "input_text", "hi"),
+                          object({{"type", str("web_search_call")},
+                                  {"id", str("ws_1")},
+                                  {"status", str("done")}})}));
+    add("50-validate-message-extra-fields",
+        validate_request({object({{"type", str("message")},
+                                  {"role", str("user")},
+                                  {"content", array({object({{"type", str("input_text")},
+                                                             {"text", str("x")}})})},
+                                  {"id", str("msg_1")}})}));
+    add("51-validate-multiple-violations",
+        validate_request({message_item("assistant", "input_text", "hi")},
+                         {{"model", str("")},
+                          {"max_output_tokens", number(-1)},
+                          {"top_p", float_number(2.0)}}));
+    add("52-validate-arguments-not-object",
+        validate_request({message_item("user", "input_text", "hi"),
+                          plain_function_call("call_1", "f", "not json")}));
+    add("53-validate-unsupported-input-item",
+        validate_request({message_item("user", "input_text", "hi"),
+                          object({{"type", str("mystery")}})}));
+    add("54-validate-duplicate-violations",
+        validate_request({message_item("user", "input_text", "hi"),
+                          message_item("user", "input_text", "hi")},
+                         {{"model", str("")}}));
+
+    // -------------------------------------------------------------------- fuzz
+    static constexpr const char* kKinds[] = {"message", "function_call", "function_call_output",
+                                             "reasoning", "opaque"};
+    static constexpr const char* kRoles[] = {"user", "assistant", "system", "developer",
+                                             "wizard"};
+    static constexpr const char* kContentTypes[] = {"input_text", "output_text", "input_image"};
+    static constexpr const char* kModels[] = {"gpt-5.4", "", "  "};
+    static constexpr double kTopP[] = {0.0, 0.5, 1.0, 1.5, -0.5};
+    static constexpr std::int64_t kMaxTokens[] = {1, 0, -5, 100};
+    static constexpr const char* kToolTypes[] = {"function", "web_search", "custom"};
+    static constexpr const char* kToolNames[] = {"f", "bad name"};
+    for (int index = 0; index < 8; ++index) {
+        PythonRandom rng(11000 + static_cast<std::uint32_t>(index));
+        std::vector<json::Value> items;
+        const int count = 1 + static_cast<int>(rng.randbelow(4));
+        for (int position = 0; position < count; ++position) {
+            const std::string kind = kKinds[rng.randbelow(5)];
+            if (kind == "message") {
+                const std::string role = kRoles[rng.randbelow(5)];
+                const std::string content_type = kContentTypes[rng.randbelow(3)];
+                std::vector<json::Value> content;
+                if (rng.random() < 0.85) {
+                    content.push_back(
+                        object({{"type", str(content_type)}, {"text", str("text")}}));
+                }
+                if (content_type == "input_image" && rng.random() < 0.5) {
+                    content[0] = object({{"type", str("input_image")},
+                                         {"image_url", str("https://i.example/a.png")},
+                                         {"detail", str("auto")}});
+                }
+                items.push_back(object({{"type", str("message")},
+                                        {"role", str(role)},
+                                        {"content", array(std::move(content))}}));
+            } else if (kind == "function_call") {
+                static constexpr const char* kCallIds[] = {"call_1", "bad id", "call_2"};
+                static constexpr const char* kNames[] = {"f", "bad name", "g"};
+                static constexpr const char* kArguments[] = {"{}", "not json", "[]"};
+                items.push_back(object({{"type", str("function_call")},
+                                        {"call_id", str(kCallIds[rng.randbelow(3)])},
+                                        {"name", str(kNames[rng.randbelow(3)])},
+                                        {"arguments", str(kArguments[rng.randbelow(3)])}}));
+            } else if (kind == "function_call_output") {
+                static constexpr const char* kCallIds[] = {"call_1", "call_2"};
+                static constexpr const char* kOutputs[] = {"done", ""};
+                items.push_back(object({{"type", str("function_call_output")},
+                                        {"call_id", str(kCallIds[rng.randbelow(2)])},
+                                        {"output", str(kOutputs[rng.randbelow(2)])}}));
+            } else if (kind == "reasoning") {
+                static constexpr const char* kIds[] = {"rs_1", "  "};
+                items.push_back(object({{"type", str("reasoning")},
+                                        {"id", str(kIds[rng.randbelow(2)])}}));
+            } else {
+                static constexpr const char* kIds[] = {"op_1", ""};
+                items.push_back(object({{"type", str("opaque")},
+                                        {"id", str(kIds[rng.randbelow(2)])}}));
+            }
+        }
+        std::vector<std::pair<std::string, json::Value>> members = {
+            {"model", str(kModels[rng.randbelow(3)])},
+            {"input", array(std::move(items))},
+            {"stream", boolean(true)}};
+        if (rng.random() < 0.3) {
+            members.emplace_back("top_p", float_number(kTopP[rng.randbelow(5)]));
+        }
+        if (rng.random() < 0.3) {
+            members.emplace_back("max_output_tokens", number(kMaxTokens[rng.randbelow(4)]));
+        }
+        if (rng.random() < 0.3) {
+            members.emplace_back(
+                "tools", array({object({{"type", str(kToolTypes[rng.randbelow(3)])},
+                                        {"name", str(kToolNames[rng.randbelow(2)])}})}));
+        }
+        char name[16];
+        std::snprintf(name, sizeof(name), "90-fuzz-%02d", index);
+        add(name, object({{"op", str("validate")},
+                          {"provider", str("openai")},
+                          {"request", object(std::move(members))}}));
+    }
+
+    remove_stale(scenarios);
+    const FormatOptions pretty{Format::Pretty2, false}; // indent=2, ensure_ascii=False
+    for (const auto& [name, value] : entries) {
+        write_scenario(scenarios, name, value, pretty);
+    }
+    std::cout << "Wrote " << entries.size() << " scenarios to " << scenarios.string() << "\n";
+}
+
+// conversation-runtime/gen_scenarios.py — json.dump defaults: separators (", ", ": "), no
+// indent, ensure_ascii=False. Every case replays a reducer command sequence from RunState.Idle.
+void profile_conversation_runtime(const fs::path& scenarios) {
+    std::vector<std::pair<std::string, json::Value>> entries;
+    const std::string cid = "c";
+    constexpr std::int64_t kLongMax = 9223372036854775807LL;
+    auto add = [&](const std::string& name, json::Value value) {
+        entries.emplace_back(name, std::move(value));
+    };
+    // cmd(kind, identity=None, **kw): kind first, identity next, kwargs in call order.
+    auto cmd = [](const std::string& kind, std::optional<json::Value> identity,
+                  std::vector<std::pair<std::string, json::Value>> extra) {
+        std::vector<std::pair<std::string, json::Value>> members = {{"kind", str(kind)}};
+        if (identity) members.emplace_back("identity", std::move(*identity));
+        for (auto& [key, value] : extra) {
+            members.emplace_back(std::move(key), std::move(value));
+        }
+        return object(std::move(members));
+    };
+    auto eid = [&](const std::string& run, std::int64_t owner, std::int64_t pass,
+                   const std::string& effect) {
+        return object({{"conversationId", str(cid)},
+                       {"ownerToken", number(owner)},
+                       {"runId", str(run)},
+                       {"pass", number(pass)},
+                       {"effectId", str(effect)}});
+    };
+    // rid(): conversationId, ownerToken, pass, then runId only when run is not None.
+    auto rid = [&](std::optional<std::string> run, std::int64_t owner, std::int64_t pass,
+                   const std::string& conversation_id) {
+        std::vector<std::pair<std::string, json::Value>> members = {
+            {"conversationId", str(conversation_id)},
+            {"ownerToken", number(owner)},
+            {"pass", number(pass)}};
+        if (run) members.emplace_back("runId", str(*run));
+        return object(std::move(members));
+    };
+    auto acquire = [&](std::int64_t owner = 1) {
+        return cmd("AcquireSlot", rid(std::nullopt, owner, 0, cid), {});
+    };
+    auto bind = [&](const std::string& run = "run1", std::int64_t owner = 1,
+                    std::int64_t pass = 0) {
+        return cmd("BindRun", rid(run, owner, pass, cid), {});
+    };
+    auto send = [&](const std::string& effect = "send", bool direct = false,
+                    bool guidance = false) {
+        return cmd("SendRequested", eid("prop", 1, 0, effect),
+                   {{"directOnly", boolean(direct)}, {"hasPendingGuidance", boolean(guidance)}});
+    };
+    auto stop = [&](const std::string& effect = "stop", std::optional<std::string> run = "run1",
+                    std::int64_t owner = 1, bool coroutine_settled = false,
+                    bool requires_persistence = true) {
+        return cmd("StopRequested", rid(run, owner, 0, cid),
+                   {{"coroutineAlreadySettled", boolean(coroutine_settled)},
+                    {"requiresPersistence", boolean(requires_persistence)},
+                    {"effectId", requires_persistence ? str(effect) : null_value()}});
+    };
+    auto recover = [&](const std::string& run = "run1", std::int64_t pass = 0,
+                       const std::string& status = "ACTIVE") {
+        return cmd("Recover", std::nullopt,
+                   {{"snapshot", object({{"conversationId", str(cid)},
+                                         {"runId", str(run)},
+                                         {"pass", number(pass)},
+                                         {"status", str(status)}})}});
+    };
+    auto recovered = [&](const std::string& run = "run1", std::int64_t pass = 0,
+                         bool success = true, std::int64_t owner = 9223372036854775807LL,
+                         std::optional<std::string> effect = std::nullopt) {
+        const std::string effect_id =
+            effect ? *effect : "recover-" + run + "-" + std::to_string(pass);
+        return cmd("RecoveryCompleted", eid(run, owner, pass, effect_id),
+                   {{"success", boolean(success)}});
+    };
+    auto provider_request = [&](const std::string& effect = "pp", const std::string& run = "run1",
+                                std::int64_t pass = 0) {
+        return cmd("ProviderPassRequested", eid(run, 1, pass, effect), {});
+    };
+    auto provider_done = [&](const std::string& effect = "pp",
+                             const std::string& result = "COMPLETED_TEXT",
+                             const std::string& run = "run1", std::int64_t pass = 0) {
+        return cmd("ProviderPassCompleted", eid(run, 1, pass, effect),
+                   {{"result", str(result)}});
+    };
+    auto tool_request = [&](const std::string& effect = "tb", const std::string& run = "run1",
+                            std::int64_t pass = 0) {
+        return cmd("ToolBatchRequested", eid(run, 1, pass, effect), {});
+    };
+    // The completed command carries the *effect* identity the reducer derived for the batch.
+    auto tool_done = [&](const std::string& effect = "tb", const std::string& run = "run1",
+                         std::int64_t pass = 0) {
+        return cmd("ToolBatchCompleted", eid(run, 1, pass, "tool-batch-" + effect), {});
+    };
+    auto round_done = [&](const std::string& effect = "tb", bool success = true,
+                          const std::string& run = "run1", std::int64_t pass = 0) {
+        return cmd("ToolRoundCommitted", eid(run, 1, pass, "tool-round-tool-batch-" + effect),
+                   {{"success", boolean(success)}});
+    };
+    auto finalize_request = [&](const std::string& effect = "fin",
+                                const std::string& status = "COMPLETED",
+                                const std::string& reason = "MODEL_COMPLETED", bool unread = true,
+                                const std::string& run = "run1", std::int64_t pass = 0) {
+        return cmd("FinalizationRequested", eid(run, 1, pass, effect),
+                   {{"status", str(status)},
+                    {"reason", str(reason)},
+                    {"markConversationUnread", boolean(unread)}});
+    };
+    auto finalize_done = [&](const std::string& effect = "fin", bool success = true,
+                             const std::string& run = "run1", std::int64_t pass = 0) {
+        return cmd("FinalizationCompleted", eid(run, 1, pass, effect),
+                   {{"success", boolean(success)}});
+    };
+    auto coroutine_settled = [&](std::optional<std::string> run = "run1", std::int64_t owner = 1,
+                                 std::int64_t pass = 0) {
+        return cmd("CoroutineSettled", rid(run, owner, pass, cid), {});
+    };
+    auto persistence_settled = [&](const std::string& effect = "stop", bool success = true,
+                                   const std::string& run = "run1", std::int64_t pass = 0) {
+        return cmd("PersistenceSettled", eid(run, 1, pass, effect),
+                   {{"success", boolean(success)}});
+    };
+    auto add_case = [&](const std::string& name, std::vector<json::Value> commands) {
+        add(name, object({{"name", str(name)},
+                          {"conversationId", str(cid)},
+                          {"commands", array(std::move(commands))}}));
+    };
+
+    // ---- recovery -----------------------------------------------------------
+    add_case("recovery_success", {recover(), recovered(), acquire()});
+    add_case("recovery_failure_then_duplicate",
+             {recover(), recovered("run1", 0, false), recovered("run1", 0, false)});
+    add_case("recovery_stale_identity",
+             {recover(), recovered("run1", 0, true, kLongMax, "wrong")});
+    add_case("recovery_duplicate_snapshot", {recover(), recover(), recover("run1", 1)});
+    add_case("recovery_rejects_other_commands",
+             {recover(), acquire(), send(), coroutine_settled(std::nullopt)});
+
+    // ---- slot acquisition and binding --------------------------------------
+    add_case("acquire_slot_rejected_when_active", {acquire(), acquire()});
+    add_case("bind_run_then_duplicates", {acquire(), bind(), bind(), bind("run1", 2)});
+    add_case("bind_run_rejects_another_run", {acquire(), bind(), bind("run2")});
+    add_case("bind_run_allows_pass_advance",
+             {acquire(), bind("run1", 1, 0), bind("run1", 1, 1), bind("run1", 1, 3)});
+    add_case("bind_run_rejected_when_coroutine_settled",
+             {acquire(), bind(), coroutine_settled(), bind("run1", 1, 1)});
+    add_case("bind_run_rejected_during_provider",
+             {acquire(), bind(), provider_request(), bind("run1", 1, 1)});
+
+    // ---- send placement and guidance ---------------------------------------
+    add_case("send_preparing_flow",
+             {send(), cmd("InputPersisted", eid("prop", 1, 0, "send"), {}), acquire()});
+    add_case("send_busy_direct_with_guidance", {send("send", true, true)});
+    add_case("send_drains_guidance_first", {send("send", false, true)});
+    add_case("send_guidance_while_preparing",
+             {send(), send("g1", true), send("g2", false)});
+    add_case("send_guidance_while_unbound_active",
+             {acquire(), send("send", false), send("send", true)});
+    add_case("send_guidance_while_bound", {acquire(), bind(), send("g", false)});
+    add_case("send_rejected_while_recovering", {recover(), send()});
+    add_case("send_launch_abandoned",
+             {send(), cmd("SendLaunchAbandoned", eid("prop", 1, 0, "send"), {}),
+              cmd("SendLaunchAbandoned", eid("prop", 1, 0, "send"), {})});
+    add_case("input_persistence_failed",
+             {send(), cmd("InputPersistenceFailed", eid("prop", 1, 0, "send"), {}),
+              cmd("InputPersistenceFailed", eid("prop", 1, 0, "send"), {}),
+              cmd("InputPersistenceFailed", eid("prop", 1, 0, "other"), {})});
+    add_case("input_persisted_rejected_outside_preparing",
+             {acquire(), cmd("InputPersisted", eid("prop", 1, 0, "send"), {})});
+    add_case("input_persisted_stale_identity",
+             {send(), cmd("InputPersisted", eid("prop", 1, 0, "other"), {})});
+
+    // ---- provider passes ----------------------------------------------------
+    add_case("provider_pass_happy",
+             {acquire(), bind(), provider_request(), provider_done(),
+              provider_request("pp2")});
+    add_case("provider_pass_duplicate_and_stale",
+             {acquire(), bind(), provider_request(), provider_request(),
+              provider_request("pp2"), provider_done("pp2")});
+    add_case("provider_pass_requires_running_phase", {acquire(), bind(), provider_done()});
+    add_case("provider_pass_rejected_when_tool_phase",
+             {acquire(), bind(), tool_request(), provider_request()});
+
+    // ---- tool batch and commit gate ----------------------------------------
+    add_case("tool_batch_happy",
+             {acquire(), bind(), provider_request(), provider_done(), tool_request(),
+              tool_done(), round_done(), provider_request("pp2")});
+    add_case("tool_batch_duplicates",
+             {acquire(), bind(), tool_request(), tool_request(), tool_request("tb2")});
+    add_case("tool_batch_completed_stale",
+             {acquire(), bind(), tool_request(), tool_done("wrong"), tool_done(), tool_done()});
+    add_case("tool_round_failure_then_retry",
+             {acquire(), bind(), tool_request(), tool_done(), round_done("tb", false),
+              round_done("tb", false), round_done("tb", true)});
+    add_case("tool_round_rejected_in_executing_phase",
+             {acquire(), bind(), tool_request(), round_done()});
+    add_case("tool_batch_rejected_when_provider_running",
+             {acquire(), bind(), provider_request(), tool_request()});
+
+    // ---- natural finalization ----------------------------------------------
+    add_case("finalization_happy",
+             {acquire(), bind(), finalize_request(), finalize_done(), coroutine_settled()});
+    add_case("finalization_coroutine_first",
+             {acquire(), bind(), finalize_request(), coroutine_settled(), finalize_done()});
+    add_case("finalization_failure_then_duplicate",
+             {acquire(), bind(), finalize_request(), finalize_done("fin", false),
+              finalize_done("fin", false)});
+    add_case("finalization_stale_identity",
+             {acquire(), bind(), finalize_request(), finalize_done("wrong"),
+              finalize_done("fin", false), finalize_done("wrong")});
+    add_case("finalization_rejected_outside_active",
+             {acquire(), bind(), finalize_request(), finalize_request()});
+    add_case("finalization_terminal_variants",
+             {acquire(), bind(),
+              finalize_request("f1", "STOPPED", "USER_STOPPED", false), finalize_done("f1"),
+              coroutine_settled(), acquire(2), bind("run2", 2),
+              finalize_request("f2", "FAILED", "PROVIDER_ERROR", true, "run2"),
+              coroutine_settled("run2", 2), finalize_done("f2", true, "run2")});
+
+    // ---- stop: bound Run ----------------------------------------------------
+    add_case("stop_bound_persistence_then_coroutine",
+             {acquire(), bind(), stop(), persistence_settled(), coroutine_settled()});
+    add_case("stop_bound_coroutine_then_persistence",
+             {acquire(), bind(), stop(), coroutine_settled(), persistence_settled()});
+    add_case("stop_persistence_failure_then_success",
+             {acquire(), bind(), stop(), persistence_settled("stop", false),
+              persistence_settled("stop", false), persistence_settled(), coroutine_settled()});
+    add_case("stop_duplicate_and_stale",
+             {acquire(), bind(), stop(), stop(), stop("other"), stop("stop", "run2")});
+    add_case("stop_retry_after_failure",
+             {acquire(), bind(), stop(), persistence_settled("stop", false), stop(), stop()});
+
+    // ---- stop: unbound slot -------------------------------------------------
+    add_case("stop_empty_unbound",
+             {acquire(), stop("stop", std::nullopt, 1, true, false)});
+    add_case("stop_unbound_then_bind_run",
+             {acquire(), stop("stop", std::nullopt, 1, false, false), bind(),
+              persistence_settled("stop-1"), coroutine_settled()});
+    add_case("stop_unbound_binds_with_another_owner",
+             {acquire(), stop("stop", std::nullopt, 1, false, false), bind("run1", 2)});
+    add_case("stop_from_preparing_then_input_persisted",
+             {send(), stop("stop", std::nullopt, 1, false, false),
+              cmd("InputPersisted", eid("prop", 1, 0, "send"), {}),
+              persistence_settled("stop-1"), coroutine_settled("prop"),
+              persistence_settled("stop-1", true, "prop")});
+    add_case("stop_from_recovering_is_illegal",
+             {recover(), stop("stop", std::nullopt, 1, false, false)});
+    add_case("stop_while_finalizing_requires_failure",
+             {acquire(), bind(), finalize_request(), stop("stop2")});
+    add_case("stop_while_finalizing_after_failure",
+             {acquire(), bind(), finalize_request(), finalize_done("fin", false), stop("stop2"),
+              persistence_settled("stop2"), coroutine_settled()});
+    add_case("stop_from_idle_is_illegal", {stop("stop", std::nullopt, 1, false, false)});
+
+    // ---- coroutine settlement ----------------------------------------------
+    add_case("settle_coroutine_while_preparing", {send(), coroutine_settled(std::nullopt)});
+    add_case("settle_coroutine_while_preparing_stale",
+             {send(), coroutine_settled(std::nullopt, 2)});
+    add_case("settle_coroutine_unbound_active", {acquire(), coroutine_settled(std::nullopt)});
+    add_case("settle_coroutine_bound_active",
+             {acquire(), bind(), coroutine_settled(), coroutine_settled(),
+              coroutine_settled("run1", 2)});
+    add_case("settle_coroutine_while_idle", {coroutine_settled(std::nullopt)});
+
+    // ---- persistence settlement outside a Stop -----------------------------
+    add_case("persistence_settled_outside_stopping", {acquire(), persistence_settled()});
+    add_case("persistence_settled_without_effect_id",
+             {acquire(), stop("stop", std::nullopt, 1, false, false), persistence_settled()});
+
+    // ---- crossings ----------------------------------------------------------
+    add_case("send_while_stopping",
+             {acquire(), bind(), stop(), send("send", false), send("send", true)});
+    add_case("send_while_finalizing",
+             {acquire(), bind(), finalize_request(), send("send", false), send("send", true)});
+    add_case("bind_run_rejects_another_owner", {acquire(1), bind("run1", 2)});
+    add_case("stale_conversation_is_rejected_first",
+             {cmd("AcquireSlot", rid(std::nullopt, 1, 0, "other"), {})});
+    add_case("stop_while_too_early_but_bound_is_stale",
+             {acquire(), stop("stop", "run1", 1, false, true)});
+
+    remove_stale(scenarios);
+    const FormatOptions spaced{Format::Spaced, false}; // default separators, ensure_ascii=False
+    for (const auto& [name, value] : entries) {
+        write_scenario(scenarios, name, value, spaced);
+    }
+    std::cout << "Wrote " << entries.size() << " scenarios to " << scenarios.string() << "\n";
+}
+
+// export-spool/gen_scenarios.py — indent=2, ensure_ascii=False. Writer scenarios replay a
+// `writes` sequence; raw scenarios carry `content`. Fuzz: random.Random(5000 + index), and the
+// content-mode rewrite drops `writes` then appends `content`, so the key order becomes
+// reads, content (static content scenarios keep content, reads).
+void profile_export_spool(const fs::path& scenarios) {
+    std::vector<std::pair<std::string, json::Value>> entries;
+    auto add = [&](const std::string& name, json::Value value) {
+        entries.emplace_back(name, std::move(value));
+    };
+    auto conversation = [](const std::string& id, std::int64_t changed,
+                           const std::string& payload) {
+        return object({{"op", str("conversation")},
+                       {"id", str(id)},
+                       {"dataChangedAt", number(changed)},
+                       {"json", str(payload)}});
+    };
+    auto simple = [](const std::string& op, const std::string& payload) {
+        return object({{"op", str(op)}, {"json", str(payload)}});
+    };
+    auto slice_name = [](const std::string& name) { return str(name); };
+    auto slice_range = [](std::int64_t start, std::int64_t end) {
+        return array({number(start), number(end)});
+    };
+    auto records = [](json::Value spec) {
+        return object({{"kind", str("records")}, {"slice", std::move(spec)}});
+    };
+    auto iterator = [](json::Value slices, std::optional<std::string> type = std::nullopt,
+                       std::optional<bool> probe_next = std::nullopt) {
+        std::vector<std::pair<std::string, json::Value>> members = {
+            {"kind", str("iterator")}, {"slices", std::move(slices)}};
+        if (type) members.emplace_back("type", str(*type));
+        if (probe_next) members.emplace_back("probeNext", boolean(*probe_next));
+        return object(std::move(members));
+    };
+    auto writer_scenario = [&](const std::string& name, std::vector<json::Value> writes,
+                               std::vector<json::Value> reads) {
+        add(name, object({{"writes", array(std::move(writes))},
+                          {"reads", array(std::move(reads))}}));
+    };
+    auto content_scenario = [&](const std::string& name, const std::string& content,
+                                std::vector<json::Value> reads) {
+        add(name, object({{"content", str(content)}, {"reads", array(std::move(reads))}}));
+    };
+
+    // ------------------------------------------------------------------ writer scenarios
+    writer_scenario("01-write-basic",
+                   {conversation("c1", 1700000000000, "{\"id\":\"c1\"}"),
+                    simple("run", "{\"run\":\"r1\"}"),
+                    simple("message", "{\"msg\":\"m1\"}"),
+                    simple("message", "{\"msg\":\"m2\"}"),
+                    simple("loop", "{\"loop\":\"l1\"}")},
+                   {records(slice_name("conv:0")), records(slice_range(0, 1000)),
+                    iterator(array({slice_name("conv:0")})),
+                    iterator(array({slice_name("conv:0")}), "M"),
+                    iterator(array({slice_name("conv:0")}), "R"),
+                    iterator(array({slice_name("conv:0")}), "M", true)});
+    writer_scenario("02-write-task-between-conversations",
+                   {conversation("c1", 100, "{\"id\":\"c1\"}"),
+                    simple("message", "{\"msg\":\"m1\"}"),
+                    simple("task", "{\"task\":\"t1\"}"),
+                    simple("task", "{\"task\":\"t2\"}"),
+                    conversation("c2", 200, "{\"id\":\"c2\"}"),
+                    simple("message", "{\"msg\":\"m2\"}"),
+                    simple("task", "{\"task\":\"t3\"}")},
+                   {records(slice_name("conv:0")), records(slice_name("conv:1")),
+                    records(slice_name("task:0")), records(slice_name("task:1")),
+                    iterator(array({slice_name("conv:0"), slice_name("conv:1")})),
+                    iterator(array({slice_name("task:0"), slice_name("task:1")}), "T"),
+                    iterator(array({slice_name("conv:0"), slice_name("task:1"),
+                                    slice_name("conv:1")}))});
+    writer_scenario("03-write-utf8-offsets",
+                   {conversation("беседа-\U0001F642", 1700000000001,
+                                 "{\"title\":\"юникод \U0001F642 текст\"}"),
+                    simple("message", "{\"text\":\"日本語のメッセージ\"}")},
+                   {records(slice_name("conv:0")),
+                    iterator(array({slice_name("conv:0")}))});
+    writer_scenario("04-write-run-without-conversation",
+                   {simple("run", "{\"run\":\"r1\"}"), conversation("c1", 5, "{\"id\":\"c1\"}"),
+                    simple("message", "{\"msg\":\"m1\"}")},
+                   {records(slice_name("conv:0"))});
+    writer_scenario("05-write-task-first",
+                   {simple("task", "{\"task\":\"t0\"}"), conversation("c1", 7, "{\"id\":\"c1\"}"),
+                    simple("message", "{\"msg\":\"m1\"}")},
+                   {records(slice_name("task:0")), records(slice_name("conv:0"))});
+    writer_scenario("06-write-empty-finish", {}, {records(slice_range(0, 0))});
+    writer_scenario("07-write-empty-payloads",
+                   {conversation("c1", 1, ""), simple("message", "")},
+                   {records(slice_name("conv:0")),
+                    iterator(array({slice_name("conv:0")}))});
+    writer_scenario("08-write-payload-with-newline",
+                   {conversation("c1", 1, "{\"id\":\"c1\"}"),
+                    simple("message", "{\"text\":\"line1\nline2\"}")},
+                   {records(slice_name("conv:0")),
+                    iterator(array({slice_name("conv:0")}))});
+    writer_scenario("09-write-large-record-crosses-chunks",
+                   {conversation("big", 42, "{\"blob\":\"" + std::string(200000, 'x') + "\"}"),
+                    simple("message", "{\"msg\":\"tail\"}")},
+                   {records(slice_name("conv:0")),
+                    iterator(array({slice_name("conv:0")})),
+                    iterator(array({slice_name("conv:0")}), "M", true)});
+    writer_scenario("10-write-readonly-slice-clamps",
+                   {conversation("c1", 11, "{\"id\":\"c1\"}"),
+                    simple("message", "{\"msg\":\"m1\"}")},
+                   {records(slice_range(0, 999999)), records(slice_range(5, 3)),
+                    records(slice_range(999, 1000)),
+                    iterator(array({slice_name("conv:0"), slice_range(5, 3),
+                                    slice_range(999, 1000)}))});
+
+    // ------------------------------------------------------------- raw content scenarios
+    content_scenario("20-read-content-unterminated-last-line",
+                     "C\t{\"id\":\"c1\"}\nM\t{\"msg\":\"m1\"}\nM\tunterminated",
+                     {records(slice_range(0, 1000)),
+                      iterator(array({slice_range(0, 1000)}))});
+    content_scenario("21-read-content-empty-line",
+                     "C\t{\"id\":\"c1\"}\n\nM\t{\"msg\":\"m1\"}\n",
+                     {records(slice_range(0, 1000)),
+                      iterator(array({slice_range(0, 1000)}))});
+    content_scenario("22-read-content-tab-first",
+                     "\t{\"id\":\"c1\"}\nM\t{\"msg\":\"m1\"}\n",
+                     {records(slice_range(0, 1000)),
+                      iterator(array({slice_range(0, 1000)}))});
+    content_scenario("23-read-content-no-tab",
+                     "C\t{\"id\":\"c1\"}\nplainline\nM\t{\"msg\":\"m1\"}\n",
+                     {records(slice_range(0, 1000)),
+                      iterator(array({slice_range(0, 1000)}), std::nullopt, true)});
+    content_scenario("24-read-iterator-type-filter", "C\tc\nR\tr\nM\tm1\nM\tm2\nT\tt\nL\tl\n",
+                     {iterator(array({slice_range(0, 1000)}), "M"),
+                      iterator(array({slice_range(0, 1000)}), "T"),
+                      iterator(array({slice_range(0, 1000)}), "X"),
+                      iterator(array({slice_range(0, 1000)}), "M", true),
+                      iterator(array({slice_range(0, 1000)}))});
+    content_scenario("25-read-iterator-splits-across-slices",
+                     "C\t{\"id\":\"c1\"}\nM\t{\"msg\":\"m1\"}\nM\t{\"msg\":\"m2\"}\n"
+                     "T\t{\"task\":\"t1\"}\n",
+                     {iterator(array({slice_range(0, 12), slice_range(12, 40)})),
+                      iterator(array({slice_range(0, 13), slice_range(13, 26)})),
+                      iterator(array({slice_range(5, 18), slice_range(18, 100)}), "M"),
+                      records(slice_range(5, 18))});
+    content_scenario("26-read-empty-slices", "C\tc\n",
+                     {iterator(array({})),
+                      iterator(array({slice_range(0, 0), slice_range(0, 0)}), std::nullopt,
+                               true),
+                      records(slice_range(0, 0))});
+    content_scenario("27-read-content-utf8",
+                     "C\t{\"title\":\"юникод \U0001F642\"}\nM\t{\"text\":\"日本語\"}\n",
+                     {records(slice_range(0, 1000)),
+                      iterator(array({slice_range(0, 1000)})),
+                      iterator(array({slice_range(0, 10), slice_range(10, 100)})),
+                      records(slice_range(1, 12))});
+    content_scenario("28-read-content-invalid-after-valid",
+                     "C\t{\"id\":\"c1\"}\nM\tok\nBADLINE\nM\t{\"msg\":\"m2\"}\n",
+                     {records(slice_range(0, 1000)),
+                      iterator(array({slice_range(0, 1000)}), std::nullopt, true)});
+    content_scenario("29-read-empty-content", "",
+                     {records(slice_range(0, 0)),
+                      iterator(array({slice_range(0, 0)}), std::nullopt, true)});
+    content_scenario("30-read-large-crosses-chunks",
+                     "M\t" + std::string(150000, 'y') + "\nM\ttail\n",
+                     {records(slice_range(0, 1000000)),
+                      iterator(array({slice_range(0, 1000000)})),
+                      iterator(array({slice_range(0, 65536), slice_range(65536, 1000000)}),
+                               "M")});
+
+    // ------------------------------------------------------------------------ fuzz
+    static constexpr const char* kOpsPool[] = {"run", "message", "loop", "task"};
+    static constexpr const char* kConversationPayloads[] = {
+        "{\"id\":\"c%d\"}", "{\"id\":\"юникод%d\"}", "", "{\"a\":%d,\"b\":\"text\"}"};
+    static constexpr const char* kSimplePayloads[] = {"{\"x\":1}", "{\"y\":\"日本\"}", "",
+                                                      "{\"z\":\"line\"}"};
+    static constexpr const char* kContentPool[] = {"C\tc\nM\tm\n", "T\tt", "\n", "bad\n",
+                                                   "M\tok\n"};
+    static constexpr const char* kTypes[] = {"C", "M", "T", "R"};
+    for (int index = 0; index < 10; ++index) {
+        PythonRandom rng(5000 + static_cast<std::uint32_t>(index));
+        std::vector<json::Value> writes;
+        int conversation_counter = 0;
+        const int write_count = static_cast<int>(rng.randbelow(9)); // randint(0, 8)
+        for (int i = 0; i < write_count; ++i) {
+            const double choice = rng.random();
+            if (choice < 0.45) {
+                ++conversation_counter;
+                const int payload_index = static_cast<int>(rng.randbelow(4));
+                std::string payload;
+                if (payload_index == 2) {
+                    payload = "";
+                } else {
+                    char buffer[64];
+                    std::snprintf(buffer, sizeof(buffer), kConversationPayloads[payload_index],
+                                  conversation_counter);
+                    payload = buffer;
+                }
+                const std::int64_t changed =
+                    1 + static_cast<std::int64_t>(rng.randbelow64(1000000000000ULL));
+                writes.push_back(conversation("c" + std::to_string(conversation_counter),
+                                              changed, payload));
+            } else {
+                writes.push_back(simple(kOpsPool[rng.randbelow(4)],
+                                        kSimplePayloads[rng.randbelow(4)]));
+            }
+        }
+        std::vector<json::Value> reads;
+        const int read_count = 1 + static_cast<int>(rng.randbelow(4)); // randint(1, 4)
+        for (int i = 0; i < read_count; ++i) {
+            const std::string kind = rng.randbelow(2) == 0 ? "records" : "iterator";
+            const int count = 1 + static_cast<int>(rng.randbelow(3)); // randint(1, 3)
+            std::vector<json::Value> slices;
+            for (int s = 0; s < count; ++s) {
+                const double choice = rng.random();
+                if (choice < 0.4 && conversation_counter > 0) {
+                    slices.push_back(slice_name(
+                        "conv:" + std::to_string(rng.randbelow(
+                                     static_cast<std::uint32_t>(conversation_counter)))));
+                } else if (choice < 0.6) {
+                    const std::int64_t start = static_cast<std::int64_t>(rng.randbelow(61));
+                    slices.push_back(
+                        slice_range(start, start + static_cast<std::int64_t>(rng.randbelow(81))));
+                } else if (choice < 0.8) {
+                    slices.push_back(slice_range(0, 1000000));
+                } else {
+                    slices.push_back(slice_range(static_cast<std::int64_t>(rng.randbelow(31)),
+                                                 static_cast<std::int64_t>(rng.randbelow(31))));
+                }
+            }
+            if (kind == "records") {
+                reads.push_back(records(slices[0]));
+            } else {
+                // choice([None, None, "C", "M", "T", "R"]): index 0/1 are None.
+                const std::uint32_t type_index = rng.randbelow(6);
+                std::optional<std::string> type;
+                if (type_index >= 2) type = kTypes[type_index - 2];
+                // choice([False, True, None]).
+                const std::uint32_t probe_index = rng.randbelow(3);
+                std::optional<bool> probe_next;
+                if (probe_index == 0) probe_next = false;
+                if (probe_index == 1) probe_next = true;
+                reads.push_back(iterator(array(std::move(slices)), type, probe_next));
+            }
+        }
+        const bool content_mode = rng.random() < 0.3;
+        if (!content_mode) {
+            char name[16];
+            std::snprintf(name, sizeof(name), "40-fuzz-%02d", index);
+            writer_scenario(name, std::move(writes), std::move(reads));
+        } else {
+            // scenario.pop("writes") then scenario["content"] = ... -> reads first, content next.
+            const std::string content = kContentPool[rng.randbelow(5)];
+            std::vector<json::Value> explicit_reads;
+            for (const json::Value& read : reads) {
+                const json::Value* kind_member = nullptr;
+                for (const json::Member& member : read.members) {
+                    if (member.key == "kind") kind_member = &member.value;
+                }
+                const bool is_records = kind_member != nullptr && kind_member->text == "records";
+                if (is_records) {
+                    const std::int64_t start = static_cast<std::int64_t>(rng.randbelow(11));
+                    explicit_reads.push_back(
+                        records(slice_range(start,
+                                            start + static_cast<std::int64_t>(rng.randbelow(41)))));
+                } else {
+                    std::optional<std::string> type;
+                    std::optional<bool> probe_next;
+                    for (const json::Member& member : read.members) {
+                        if (member.key == "type") type = member.value.text;
+                        if (member.key == "probeNext") {
+                            probe_next = member.value.text == "true";
+                        }
+                    }
+                    std::vector<json::Value> ranges;
+                    const int range_count = static_cast<int>(rng.randbelow(4)); // randint(0, 3)
+                    for (int r = 0; r < range_count; ++r) {
+                        const std::int64_t start = static_cast<std::int64_t>(rng.randbelow(11));
+                        ranges.push_back(
+                            slice_range(start, start + static_cast<std::int64_t>(
+                                                               rng.randbelow(41))));
+                    }
+                    explicit_reads.push_back(
+                        iterator(array(std::move(ranges)), type, probe_next));
+                }
+            }
+            char name[16];
+            std::snprintf(name, sizeof(name), "40-fuzz-%02d", index);
+            add(name, object({{"reads", array(std::move(explicit_reads))},
+                              {"content", str(content)}}));
+        }
+    }
+
+    remove_stale(scenarios);
+    const FormatOptions pretty{Format::Pretty2, false}; // indent=2, ensure_ascii=False
+    for (const auto& [name, value] : entries) {
+        write_scenario(scenarios, name, value, pretty);
+    }
+    std::cout << "Wrote " << entries.size() << " scenarios to " << scenarios.string() << "\n";
+}
+
+// native-conversation-graph-source/gen_scenarios.py — indent=2, ensure_ascii=False. Entry
+// contents are Compact JSON strings (ensure_ascii=False); item() updates the base object in
+// place (existing keys keep their position, new keys append).
+void profile_native_conversation_graph_source(const fs::path& scenarios) {
+    std::vector<std::pair<std::string, json::Value>> entries;
+    const std::string index_name = "conv/index.json";
+    const std::string tasks_name = "conv/tasks.json";
+    auto add = [&](const std::string& name, json::Value value) {
+        entries.emplace_back(name, std::move(value));
+    };
+    auto compact = [](const json::Value& value) {
+        return serialize(value, FormatOptions{Format::Compact, false});
+    };
+    auto conversation_entry = [](const std::string& id) {
+        static constexpr const char* kHex = "0123456789abcdef";
+        std::string hex;
+        for (const char raw : id) {
+            const unsigned char byte = static_cast<unsigned char>(raw);
+            hex.push_back(kHex[byte >> 4]);
+            hex.push_back(kHex[byte & 0x0F]);
+        }
+        return "conv/items/" + hex + ".json";
+    };
+    auto index_json = [&](std::vector<json::Value> conversations) {
+        return compact(object({{"conversations", array(std::move(conversations))}}));
+    };
+    auto index_entry = [](const std::string& id, std::int64_t changed,
+                          const std::string& entry) {
+        return object({{"id", str(id)},
+                       {"dataChangedAt", number(changed)},
+                       {"entry", str(entry)}});
+    };
+    auto item_json = [&](const std::string& conversation_id, std::int64_t changed,
+                         std::vector<std::pair<std::string, json::Value>> payload) {
+        json::Value base = object(
+            {{"conversations",
+              array({object({{"id", str(conversation_id)},
+                             {"title", str("t")},
+                             {"lastUpdated", number(1)},
+                             {"dataChangedAt", number(changed)}})})},
+             {"runs", array({})},
+             {"messages", array({})},
+             {"loops", array({})}});
+        // base.update(payload): existing keys keep their position, new keys append in order.
+        for (auto& [key, value] : payload) {
+            bool replaced = false;
+            for (json::Member& member : base.members) {
+                if (member.key == key) {
+                    member.value = std::move(value);
+                    replaced = true;
+                    break;
+                }
+            }
+            if (!replaced) {
+                base.members.push_back(json::Member{std::move(key), std::move(value)});
+            }
+        }
+        return compact(base);
+    };
+    auto write = [&](const std::string& name, std::int64_t version,
+                     std::vector<std::pair<std::string, json::Value>> entry_members,
+                     std::vector<json::Value> steps,
+                     std::optional<json::Value> stream_null = std::nullopt,
+                     std::optional<json::Value> drain_faults = std::nullopt) {
+        std::vector<std::pair<std::string, json::Value>> members = {
+            {"version", number(version)},
+            {"entries", object(std::move(entry_members))},
+            {"steps", array(std::move(steps))}};
+        if (stream_null) members.emplace_back("streamNull", std::move(*stream_null));
+        if (drain_faults) members.emplace_back("drainFaults", std::move(*drain_faults));
+        add(name, object(std::move(members)));
+    };
+    auto open_steps = [] { return std::vector<json::Value>{object({{"op", str("open")}})}; };
+
+    const std::string legacy_graph =
+        compact(object({{"conversations", array({object({{"id", str("c1")}})})},
+                        {"tasks", array({object({{"id", str("t1")}})})}}));
+    const std::string empty_tasks = compact(object({{"tasks", array({})}}));
+
+    write("01-legacy-v4", 4, {{"conversations.json", str(legacy_graph)}},
+          {object({{"op", str("open")}}), object({{"op", str("open-partial")}})});
+    write("02-legacy-missing", 4, {{"other.json", str("{}")}}, open_steps());
+    write("03-legacy-stream-null", 4, {{"conversations.json", str(legacy_graph)}}, open_steps(),
+          array({str("conversations.json")}));
+
+    const std::string c1 = conversation_entry("c1");
+    const std::string c2 = conversation_entry("c2");
+
+    write("04-index-missing", 5, {{tasks_name, str(empty_tasks)}}, open_steps());
+    write("05-index-missing-field", 5, {{index_name, str("{}")}}, open_steps());
+    write("06-index-broken-json", 5, {{index_name, str("not json")}}, open_steps());
+    write("07-duplicate-id", 5,
+          {{index_name,
+            str(index_json({index_entry("c1", 1, c1),
+                            index_entry("c1", 2, conversation_entry("c1x"))}))}},
+          open_steps());
+    write("08-entry-mismatch", 5,
+          {{index_name, str(index_json({index_entry("c1", 1, "conv/items/dead.json")}))}},
+          open_steps());
+    write("09-item-missing", 5,
+          {{index_name, str(index_json({index_entry("c1", 1, c1)}))}}, open_steps());
+    write("10-tasks-missing", 5,
+          {{index_name, str(index_json({index_entry("c1", 1, c1)}))},
+           {c1, str(item_json("c1", 1, {}))}},
+          open_steps());
+
+    const std::string rich = item_json(
+        "c1", 7,
+        {{"conversations",
+          array({object({{"id", str("c1")},
+                         {"title", str("t")},
+                         {"lastUpdated", number(1)},
+                         {"dataChangedAt", number(7)},
+                         {"conversationSettings",
+                          object({{"temperature", float_number(0.7)},
+                                  {"topP", null_value()},
+                                  {"maxTokens", number(512)}})}})})},
+         {"runs",
+          array({object({{"id", str("r1")},
+                         {"conversationId", str("c1")},
+                         {"currentPass", number(0)}})})},
+         {"messages",
+          array({object(
+              {{"id", str("m1")},
+               {"conversationId", str("c1")},
+               {"text", str("Quote \\\" backslash \\\\ slash \\/ newline \\n tab \\t cafe "
+                            "\u00e9 \U0001F600")},
+               {"tokenCount", number(12)},
+               {"duration", float_number(1.0e10)},
+               {"ratio", float_number(0.7)},
+               {"sci", float_number(1e5)},
+               {"huge", literal("99999999999999999999")},
+               {"negZero", float_number(-0.0)},
+               {"small", float_number(0.0001)},
+               {"frac", float_number(123.456)},
+               {"floatOne", float_number(1.0)},
+               {"rawDouble", float_number(1.0e10)},
+               {"unknownInside",
+                object({{"deep", array({boolean(true), null_value(), str("x")})}})}})})},
+         {"loops",
+          array({object({{"conversationId", str("c1")},
+                         {"intervalMs", number(60000)},
+                         {"prompt", null_value()}})})},
+         {"tasks",
+          array({object({{"id", str("ignored")}, {"name", str("dropped")}})})},
+         {"extra",
+          array({array({number(1), number(2)}),
+                 object({{"skip", array({boolean(true), boolean(false)})}}),
+                 str("stray")})},
+         {"numbers",
+          object({{"zero", number(0)},
+                  {"negZero", number(0)},
+                  {"seven", number(-7)},
+                  {"floatOne", float_number(1.0)},
+                  {"temp", float_number(0.7)},
+                  {"sci", float_number(1e5)},
+                  {"big", literal("99999999999999999999")},
+                  {"small", float_number(1.0e-4)},
+                  {"frac", float_number(123.456)},
+                  {"e10", float_number(1.0e10)}})},
+         {"conversationSettings",
+          object({{"temperature", float_number(0.7)},
+                  {"topP", null_value()},
+                  {"maxTokens", number(512)}})},
+         {"nested",
+          object({{"deep",
+                   array({number(1),
+                          array({number(2),
+                                 array({number(3),
+                                        object({{"leaf", str("value")}})})})})}})}});
+    const std::string second = item_json(
+        "c2", 9,
+        {{"messages", array({object({{"id", str("m2")},
+                                     {"conversationId", str("c2")},
+                                     {"text", str("second")}})})}});
+    const std::string tasks_entry =
+        compact(object({{"tasks", array({object({{"id", str("t1")},
+                                                 {"name", str("Daily")}})})},
+                        {"padding", object({{"ignored", array({number(1), number(2)})}})}}));
+    write("11-split-happy", 5,
+          {{index_name,
+            str(index_json({index_entry("c1", 7, c1), index_entry("c2", 9, c2)}))},
+           {c1, str(rich)},
+           {c2, str(second)},
+           {tasks_name, str(tasks_entry)}},
+          {object({{"op", str("open")}}), object({{"op", str("open-partial")}})});
+    write("12-empty-conversations", 5,
+          {{index_name, str(index_json({}))}, {tasks_name, str(empty_tasks)}}, open_steps());
+
+    write("13-item-unquoted-name", 5,
+          {{index_name, str(index_json({index_entry("c1", 1, c1)}))},
+           {c1, str("{\"conversations\": [{id: \"c1\"}], \"runs\": [], \"messages\": [], "
+                    "\"loops\": []}")},
+           {tasks_name, str(empty_tasks)}},
+          open_steps());
+    write("14-item-truncated", 5,
+          {{index_name, str(index_json({index_entry("c1", 1, c1)}))},
+           {c1, str("{\"conversations\": [{\"id\": \"c1\", \"title\": \"unfinished\"")},
+           {tasks_name, str(empty_tasks)}},
+          open_steps());
+    write("15-item-raw-control-char", 5,
+          {{index_name, str(index_json({index_entry("c1", 1, c1)}))},
+           {c1, str("{\"conversations\": [{\"id\": \"c1\", \"title\": \"a\ab\"}], "
+                    "\"runs\": [], \"messages\": [], \"loops\": []}")},
+           {tasks_name, str(empty_tasks)}},
+          open_steps());
+    write("16-drain-fault", 5,
+          {{index_name, str(index_json({index_entry("c1", 1, c1)}))},
+           {c1, str(item_json("c1", 1, {}))},
+           {tasks_name, str(empty_tasks)}},
+          open_steps(), std::nullopt,
+          object({{tasks_name, str("Read error: CRC mismatch")}}));
+    write("17-item-trailing-bytes", 5,
+          {{index_name, str(index_json({index_entry("c1", 1, c1)}))},
+           {c1, str(item_json("c1", 1, {}) + "\nTRAILING GARBAGE")},
+           {tasks_name, str(empty_tasks)}},
+          open_steps());
+
+    write("05b-index-unknown-key", 5,
+          {{index_name, str("{\"conversations\": [], \"bogus\": 1}")}}, open_steps());
+    write("05c-index-wrong-type", 5, {{index_name, str("{\"conversations\": \"nope\"}")}},
+          open_steps());
+    write("05d-index-item-missing-field", 5,
+          {{index_name, str("{\"conversations\": [{\"id\": \"c1\"}]}")}}, open_steps());
+    write("18-item-field-not-array", 5,
+          {{index_name, str(index_json({index_entry("c1", 1, c1)}))},
+           {c1, str("{\"conversations\": 5, \"runs\": [], \"messages\": [], \"loops\": []}")},
+           {tasks_name, str(empty_tasks)}},
+          open_steps());
+    write("19-item-not-object", 5,
+          {{index_name, str(index_json({index_entry("c1", 1, c1)}))},
+           {c1, str("[]")},
+           {tasks_name, str(empty_tasks)}},
+          open_steps());
+
+    remove_stale(scenarios);
+    const FormatOptions pretty{Format::Pretty2, false}; // indent=2, ensure_ascii=False
+    for (const auto& [name, value] : entries) {
+        write_scenario(scenarios, name, value, pretty);
+    }
+    std::cout << "Wrote " << entries.size() << " scenarios to " << scenarios.string() << "\n";
+}
+
+// chat-search-dao/gen_scenarios.py — indent=2, ensure_ascii=False. Every scenario embeds the
+// same seed dataset (conversations/runs/messages/embeddings in ascending id order) and a list
+// of DAO probe steps.
+void profile_chat_search_dao(const fs::path& scenarios) {
+    std::vector<std::pair<std::string, json::Value>> entries;
+    const std::string citation =
+        "{\"toolCallId\":\"tc\",\"segments\":[{\"type\":\"citation\",\"citationId\":\"cit-1\"}]}";
+    const std::string spaced_citation = "{\"segments\":[{\"type\": \"citation\"}]}";
+    auto add = [&](const std::string& name, json::Value value) {
+        entries.emplace_back(name, std::move(value));
+    };
+    auto conversation = [](const std::string& id, const std::string& title,
+                           std::int64_t last_updated,
+                           std::vector<std::pair<std::string, json::Value>> fields) {
+        std::vector<std::pair<std::string, json::Value>> members = {
+            {"id", str(id)}, {"title", str(title)}, {"lastUpdated", number(last_updated)}};
+        for (auto& [key, value] : fields) {
+            members.emplace_back(std::move(key), std::move(value));
+        }
+        return object(std::move(members));
+    };
+    auto run = [](const std::string& id, const std::string& conversation_id) {
+        return object({{"id", str(id)},
+                       {"conversationId", str(conversation_id)},
+                       {"status", str("COMPLETED")},
+                       {"activeSlot", null_value()},
+                       {"startedAt", number(100)},
+                       {"lastCheckpointAt", number(100)},
+                       {"endedAt", number(200)},
+                       {"endReason", str("MODEL_COMPLETED")},
+                       {"currentPass", number(0)},
+                       {"legacyAmbiguous", boolean(false)}});
+    };
+    auto message_full = [](const std::string& id, const std::string& conversation_id,
+                           const std::string& text, const std::string& participant,
+                           std::int64_t timestamp,
+                           std::vector<std::pair<std::string, json::Value>> fields) {
+        std::vector<std::pair<std::string, json::Value>> members = {
+            {"id", str(id)},
+            {"conversationId", str(conversation_id)},
+            {"text", str(text)},
+            {"participant", str(participant)},
+            {"timestamp", number(timestamp)},
+            {"runId", str("r-" + conversation_id.substr(2))}};
+        for (auto& [key, value] : fields) {
+            members.emplace_back(std::move(key), std::move(value));
+        }
+        return object(std::move(members));
+    };
+    auto message = [&](const std::string& id, const std::string& conversation_id,
+                       const std::string& text, std::int64_t timestamp,
+                       std::vector<std::pair<std::string, json::Value>> fields = {}) {
+        return message_full(id, conversation_id, text, "MODEL", timestamp, std::move(fields));
+    };
+    auto embedding = [](std::int64_t id, const std::string& message_id,
+                        const std::string& model_id, const std::string& payload,
+                        std::int64_t dimension) {
+        return object({{"id", number(id)},
+                       {"messageId", str(message_id)},
+                       {"modelId", str(model_id)},
+                       {"embedding", str(payload)},
+                       {"chunkText", str("chunk-" + std::to_string(id))},
+                       {"dimension", number(dimension)},
+                       {"sourceFingerprint", str("fp-" + std::to_string(id))}});
+    };
+    auto op = [](const std::string& name,
+                 std::vector<std::pair<std::string, json::Value>> arguments) {
+        std::vector<std::pair<std::string, json::Value>> members = {{"op", str(name)}};
+        for (auto& [key, value] : arguments) {
+            members.emplace_back(std::move(key), std::move(value));
+        }
+        return object(std::move(members));
+    };
+
+    const std::vector<json::Value> conversations = {
+        conversation("c-alpha", "Alpha Notes", 300,
+                     {{"dataChangedAt", number(301)},
+                      {"selectedBranchesJson", str("{\"m\":\"x\"}")},
+                      {"systemPromptId", str("sp-1")},
+                      {"modelId", str("mdl-1")},
+                      {"origin", str("user")},
+                      {"draftText", str("draft")},
+                      {"draftAttachments", str("[]")},
+                      {"selectedRunBranchesJson", str("{\"r\":\"y\"}")},
+                      {"hasUnreadGeneration", boolean(true)},
+                      {"isPinned", boolean(true)}}),
+        conversation("c-beta", "Project Emerald", 100,
+                     {{"origin", str("loop")}, {"graduated", boolean(true)}}),
+        conversation("c-delta", "Delta `code` 100%", 250,
+                     {{"dataChangedAt", number(250)}, {"isPinned", boolean(true)}}),
+        conversation("c-epsilon", "Epsilon", 900, {{"dataChangedAt", number(900)}}),
+        conversation("c-gamma", "Gamma 100% coverage", 250, {{"dataChangedAt", number(250)}}),
+        conversation("c-task", "Secret Alpha Task", 50,
+                     {{"taskId", str("task-1")},
+                      {"origin", str("task")},
+                      {"graduated", boolean(true)}}),
+        conversation("c-zeta", "Zeta", 10, {{"taskId", str("")}}),
+    };
+    const std::vector<json::Value> runs = {
+        run("r-alpha", "c-alpha"), run("r-beta", "c-beta"),     run("r-delta", "c-delta"),
+        run("r-epsilon", "c-epsilon"), run("r-gamma", "c-gamma"), run("r-task", "c-task"),
+        run("r-zeta", "c-zeta"),
+    };
+    const std::vector<json::Value> messages = {
+        message("compact", "c-alpha", "alpha compact boundary", 282,
+                {{"parentId", str("m-01")},
+                 {"images", array({str("file://a.png")})},
+                 {"thoughts", str("thinking")},
+                 {"thoughtTitle", str("plan")},
+                 {"tokenCount", number(12)},
+                 {"inputTokenCount", number(3)},
+                 {"cachedInputTokenCount", number(1)},
+                 {"cacheWriteInputTokenCount", number(2)},
+                 {"uncachedInputTokenCount", number(0)},
+                 {"outputTokenCount", number(4)},
+                 {"reasoningTokenCount", number(5)},
+                 {"generationDurationMs", number(1234)},
+                 {"thoughtTimeMs", number(99)},
+                 {"modelName", str("model-x")},
+                 {"attachmentMeta", str("{\"files\":[]}")},
+                 {"runSequence", number(7)},
+                 {"consumedAtPass", number(2)},
+                 {"sourceJson", str("{\"kind\":\"edited\"}")}}),
+        message("compact_09", "c-alpha", "Alpha compact summary", 960,
+                {{"toolCallJson", str(citation)}}),
+        message("m-01", "c-alpha", "The alpha build ships today", 500,
+                {{"inputTokenCount", number(10)}, {"outputTokenCount", number(20)}}),
+        message_full("m-02", "c-alpha", "Alpha is the first letter", "USER", 500, {}),
+        message("m-03", "c-beta", "Unrelated body", 400),
+        message("m-04", "c-task", "Alpha in a task conversation", 600),
+        message_full("m-05", "c-alpha", "Alpha from an error participant", "ERROR", 700, {}),
+        message("m-06", "c-alpha", "", 800),
+        message("m-07", "c-alpha", "Alpha again", 500),
+        message_full("m-08", "c-beta", "Alpha from loop origin", "USER", 60, {}),
+        message("m-09", "c-alpha", "alpha", 70),
+        message_full("m-10", "c-gamma", "Lowercase alpha appears", "USER", 100, {}),
+        message("m-11", "c-epsilon", "100% coverage complete", 110),
+        message("m-12", "c-epsilon", "100x coverage failed", 120),
+        message("m-13", "c-delta", "value a_b here", 130),
+        message("m-14", "c-delta", "value axb here", 140),
+        message("m-15", "c-alpha", "path C:\\temp\\alpha", 150),
+        message("m-16", "c-alpha", "citation holder", 160, {{"toolCallJson", str(citation)}}),
+        message("m-17", "c-beta", "spaced citation", 170,
+                {{"toolCallJson", str(spaced_citation)}}),
+        message("m-18", "c-task", "citation in task", 180, {{"toolCallJson", str(citation)}}),
+        message_full("m-19", "c-alpha", "citation user", "USER", 190,
+                     {{"toolCallJson", str(citation)}}),
+        message("m-20", "c-gamma", "citation one", 200, {{"toolCallJson", str(citation)}}),
+        message("m-21", "c-gamma", "citation two", 210, {{"toolCallJson", str(citation)}}),
+        message("m-22", "c-alpha", "citation three", 220, {{"toolCallJson", str(citation)}}),
+        message_full("m-23", "c-gamma", "éé", "USER", 230, {}),
+        message_full("m-24", "c-gamma", "漢字", "USER", 240, {}),
+        message_full("m-25", "c-gamma", "é", "USER", 250, {}),
+        message_full("m-26", "c-gamma", "\U0001F600", "USER", 260, {}),
+        message("m-27", "c-epsilon", "tools are useful", 270),
+        message("m-28", "c-epsilon", "ALPHA", 80),
+        message("m-29", "c-zeta", "Alpha in empty-task conversation", 290),
+        message("m-30", "c-alpha", "citation four", 300, {{"toolCallJson", str(citation)}}),
+        message("m-31", "c-alpha", "citation five", 310, {{"toolCallJson", str(citation)}}),
+        message("m-35", "c-alpha", "citation compact exact", 90,
+                {{"toolCallJson", str(citation)}}),
+        message("result_08", "c-alpha", "Alpha result output", 950),
+        message("resultx", "c-alpha", "alpha resultx boundary", 281),
+        message("tool_07", "c-alpha", "Alpha tool output", 900),
+        message("toolx", "c-epsilon", "alpha with toolx id", 280),
+    };
+    const std::vector<json::Value> embeddings = {
+        embedding(1, "m-01", "model-a", "0a0b", 2),
+        embedding(2, "m-02", "model-a", "0c", 1),
+        embedding(3, "m-03", "model-a", "0d0e", 2),
+        embedding(4, "m-04", "model-a", "0f", 1),
+        embedding(5, "m-05", "model-a", "10", 1),
+        embedding(6, "m-06", "model-a", "11", 1),
+        embedding(7, "tool_07", "model-a", "12", 1),
+        embedding(8, "result_08", "model-a", "13", 1),
+        embedding(9, "compact_09", "model-a", "14", 1),
+        embedding(10, "m-10", "model-a", "15", 1),
+        embedding(11, "m-11", "model-a", "16", 1),
+        embedding(12, "m-12", "model-a", "17", 1),
+        embedding(13, "m-13", "model-a", "18", 1),
+        embedding(14, "m-14", "model-a", "19", 1),
+        embedding(15, "m-16", "model-a", "1a", 1),
+        embedding(16, "m-20", "model-a", "1b", 1),
+        embedding(17, "m-21", "model-a", "1c", 1),
+        embedding(18, "m-22", "model-a", "1d", 1),
+        embedding(19, "m-23", "model-a", "1e", 1),
+        embedding(20, "m-24", "model-a", "1f", 1),
+        embedding(21, "m-25", "model-a", "20", 1),
+        embedding(22, "m-26", "model-a", "21", 1),
+        embedding(23, "m-27", "model-a", "22", 1),
+        embedding(24, "m-28", "model-a", "23", 1),
+        embedding(25, "m-30", "model-a", "24", 1),
+        embedding(26, "m-31", "model-a", "25", 1),
+        embedding(27, "m-35", "model-a", "26", 1),
+        embedding(28, "resultx", "model-a", "27", 1),
+        embedding(29, "toolx", "model-a", "28", 1),
+        embedding(30, "m-01", "model-b", "29", 1),
+        embedding(31, "m-02", "model-b", "2a", 1),
+        embedding(32, "m-09", "model-b", "2b", 1),
+        embedding(33, "m-10", "model-b", "2c", 1),
+        embedding(34, "m-01", "model-c", "2d", 1),
+        embedding(35, "m-29", "model-a", "2e", 1),
+        embedding(36, "m-18", "model-a", "2f", 1),
+        embedding(37, "m-04", "model-b", "30", 1),
+    };
+    const json::Value seed = object({{"conversations", array(conversations)},
+                                     {"runs", array(runs)},
+                                     {"messages", array(messages)},
+                                     {"embeddings", array(embeddings)}});
+    auto scenario = [&](std::vector<json::Value> steps) {
+        return object({{"seed", seed}, {"steps", array(std::move(steps))}});
+    };
+    auto search = [&](const std::string& query, std::optional<std::int64_t> limit) {
+        std::vector<std::pair<std::string, json::Value>> arguments = {{"query", str(query)}};
+        if (limit) arguments.emplace_back("limit", number(*limit));
+        return op("searchMessages", std::move(arguments));
+    };
+    auto citations = [&](const std::string& after_id, std::int64_t page_size) {
+        return op("getMessagesWithCitationSegmentsPage",
+                  {{"afterId", str(after_id)}, {"pageSize", number(page_size)}});
+    };
+    auto embedding_page = [&](const std::string& model_id, std::int64_t after_id,
+                              std::int64_t minimum_text_length, std::int64_t limit) {
+        return op("getEmbeddingSearchPage",
+                  {{"modelId", str(model_id)},
+                   {"afterId", number(after_id)},
+                   {"minimumTextLength", number(minimum_text_length)},
+                   {"limit", number(limit)}});
+    };
+    auto indexable_page = [&](std::optional<std::string> after_id, std::int64_t limit) {
+        return op("getSearchableMessagesPage",
+                  {{"afterId", after_id ? str(*after_id) : null_value()},
+                   {"limit", number(limit)}});
+    };
+    auto unembedded_page = [&](const std::string& model_id, std::optional<std::string> after_id,
+                               std::int64_t limit) {
+        return op("getUnembeddedMessagesPage",
+                  {{"modelId", str(model_id)},
+                   {"afterId", after_id ? str(*after_id) : null_value()},
+                   {"limit", number(limit)}});
+    };
+    auto by_ids = [&](std::vector<json::Value> ids) {
+        return op("getSearchableMessagesByIds", {{"ids", array(std::move(ids))}});
+    };
+    auto conversations_page = [&](const std::string& direction, std::int64_t offset,
+                                  std::int64_t limit) {
+        return op("getSearchableConversationsPage" + direction,
+                  {{"offset", number(offset)}, {"limit", number(limit)}});
+    };
+    auto ids_of = [](std::initializer_list<const char*> ids) {
+        std::vector<json::Value> values;
+        for (const char* id : ids) values.push_back(str(id));
+        return values;
+    };
+
+    add("01-search-text-and-title",
+        scenario({search("alpha", 100), search("ALPHA", 100), search("Alpha", 4),
+                  search("emerald", 100), search("emerald", 0), search("", 100),
+                  search("nonexistent", 100), search("alpha", std::nullopt)}));
+    add("02-search-like-escapes",
+        scenario({search("100\\%", 100), search("100%", 100), search("a\\_b", 100),
+                  search("a_b", 100), search("C:\\\\temp\\\\alpha", 100),
+                  search("\\\\", 100), search("100\\% coverage", 100)}));
+    add("03-citation-pages",
+        scenario({citations("", 100), citations("", 3), citations("m-16", 2),
+                  citations("m-22", 100), citations("m-31", 100), citations("compact_09", 100),
+                  citations("zzz", 100)}));
+    add("04-embedding-pages",
+        scenario({embedding_page("model-a", 0, 0, 100), embedding_page("model-a", 0, 2, 100),
+                  embedding_page("model-a", 0, 5, 100), embedding_page("model-a", 15, 0, 3),
+                  embedding_page("model-a", 1000, 0, 100), embedding_page("model-b", 0, 0, 100),
+                  embedding_page("model-c", 0, 0, 100), embedding_page("model-a", 0, 0, 0)}));
+    add("05-embedding-counts",
+        scenario({op("getEmbeddingCountByModel", {{"modelId", str("model-a")}}),
+                  op("getEmbeddingCountByModel", {{"modelId", str("model-b")}}),
+                  op("getEmbeddingCountByModel", {{"modelId", str("model-c")}}),
+                  op("getEmbeddingCountByModel", {{"modelId", str("model-unknown")}}),
+                  op("getEmbeddingCountsByModels",
+                     {{"modelIds", array(ids_of({"model-a", "model-b", "model-c"}))}}),
+                  op("getEmbeddingCountsByModels",
+                     {{"modelIds", array(ids_of({"model-b", "model-a"}))}}),
+                  op("getEmbeddingCountsByModels", {{"modelIds", array({})}}),
+                  op("getEmbeddingCountsByModels",
+                     {{"modelIds", array(ids_of({"model-unknown"}))}}),
+                  op("getIndexableMessageCount", {})}));
+    add("06-indexable-pages",
+        scenario({indexable_page(std::nullopt, 100), indexable_page(std::nullopt, 5),
+                  indexable_page("m-10", 100), indexable_page("m-10", 3),
+                  indexable_page("", 100), indexable_page("zzz", 100),
+                  indexable_page(std::nullopt, 0), unembedded_page("model-a", std::nullopt, 100),
+                  unembedded_page("model-b", std::nullopt, 100),
+                  unembedded_page("model-a", "m-09", 100),
+                  unembedded_page("model-a", std::nullopt, 2),
+                  unembedded_page("model-c", std::nullopt, 100)}));
+    add("07-messages-by-ids",
+        scenario({by_ids(ids_of({"m-01", "m-16", "m-10", "m-05"})),
+                  by_ids(ids_of({"m-01", "m-01", "m-02"})),
+                  by_ids(ids_of({"m-04", "m-05", "m-06"})),
+                  by_ids(ids_of({"compact_09", "result_08", "tool_07", "resultx", "toolx",
+                                 "compact"})),
+                  by_ids({}), by_ids(ids_of({"missing"}))}));
+    add("08-searchability",
+        scenario({op("isMessageSearchable", {{"messageId", str("m-01")}}),
+                  op("isMessageSearchable", {{"messageId", str("m-05")}}),
+                  op("isMessageSearchable", {{"messageId", str("m-06")}}),
+                  op("isMessageSearchable", {{"messageId", str("m-04")}}),
+                  op("isMessageSearchable", {{"messageId", str("m-29")}}),
+                  op("isMessageSearchable", {{"messageId", str("compact")}}),
+                  op("isMessageSearchable", {{"messageId", str("compact_09")}}),
+                  op("isMessageSearchable", {{"messageId", str("resultx")}}),
+                  op("isMessageSearchable", {{"messageId", str("toolx")}}),
+                  op("isMessageSearchable", {{"messageId", str("tool_07")}}),
+                  op("isMessageSearchable", {{"messageId", str("missing")}})}));
+    add("09-conversation-pages",
+        scenario({op("getSearchableConversation", {{"conversationId", str("c-alpha")}}),
+                  op("getSearchableConversation", {{"conversationId", str("c-beta")}}),
+                  op("getSearchableConversation", {{"conversationId", str("c-task")}}),
+                  op("getSearchableConversation", {{"conversationId", str("c-zeta")}}),
+                  op("getSearchableConversation", {{"conversationId", str("nope")}}),
+                  op("getSearchableConversationCount", {}),
+                  conversations_page("Ascending", 0, 100), conversations_page("Ascending", 0, 2),
+                  conversations_page("Ascending", 2, 2), conversations_page("Ascending", 10, 5),
+                  conversations_page("Ascending", 0, 0),
+                  conversations_page("Descending", 0, 100),
+                  conversations_page("Descending", 0, 2),
+                  conversations_page("Descending", 2, 2),
+                  conversations_page("Descending", 10, 5),
+                  conversations_page("Descending", 0, 0)}));
+
+    remove_stale(scenarios);
+    const FormatOptions pretty{Format::Pretty2, false}; // indent=2, ensure_ascii=False
+    for (const auto& [name, value] : entries) {
+        write_scenario(scenarios, name, value, pretty);
+    }
+    std::cout << "Wrote " << entries.size() << " scenarios to " << scenarios.string() << "\n";
+}
+
 }  // namespace
 
 int main(int argc, char** argv) {
@@ -11409,7 +13236,13 @@ int main(int argc, char** argv) {
                   << "  shell-client          shell-client/gen_scenarios.py\n"
                   << "  native-backup-secrets native-backup-secrets/gen_scenarios.py\n"
                   << "  imported-citation-projection imported-citation-projection/gen_scenarios.py\n"
-                  << "  conversation-export-snapshot-reader conversation-export-snapshot-reader/gen_scenarios.py\n";
+                  << "  conversation-export-snapshot-reader conversation-export-snapshot-reader/gen_scenarios.py\n"
+                  << "  gemini-stream          gemini-stream/gen_scenarios.py\n"
+                  << "  openai-responses-request openai-responses-request/gen_scenarios.py\n"
+                  << "  conversation-runtime   conversation-runtime/gen_scenarios.py\n"
+                  << "  export-spool           export-spool/gen_scenarios.py\n"
+                  << "  native-conversation-graph-source native-conversation-graph-source/gen_scenarios.py\n"
+                  << "  chat-search-dao        chat-search-dao/gen_scenarios.py\n";
         return 2;
     }
     const std::string profile = argv[1];
@@ -11540,6 +13373,18 @@ int main(int argc, char** argv) {
         profile_imported_citation_projection(scenarios);
     } else if (profile == "conversation-export-snapshot-reader") {
         profile_conversation_export_snapshot_reader(scenarios);
+    } else if (profile == "gemini-stream") {
+        profile_gemini_stream(scenarios);
+    } else if (profile == "openai-responses-request") {
+        profile_openai_responses_request(scenarios);
+    } else if (profile == "conversation-runtime") {
+        profile_conversation_runtime(scenarios);
+    } else if (profile == "export-spool") {
+        profile_export_spool(scenarios);
+    } else if (profile == "native-conversation-graph-source") {
+        profile_native_conversation_graph_source(scenarios);
+    } else if (profile == "chat-search-dao") {
+        profile_chat_search_dao(scenarios);
     } else {
         std::cerr << "unknown profile: " << profile << "\n";
         return 2;

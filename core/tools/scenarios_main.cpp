@@ -8860,6 +8860,461 @@ void profile_legacy_run_backfill(const fs::path& scenarios) {
     std::cout << "Wrote " << entries.size() << " scenarios to " << scenarios.string() << "\n";
 }
 
+// runtime-recovery/gen_scenarios.py — indent=2, ensure_ascii=False.
+void profile_runtime_recovery(const fs::path& scenarios) {
+    std::vector<std::pair<std::string, json::Value>> entries;
+    auto conversation = [](const char* identifier, std::optional<std::string> branches = std::nullopt,
+                           std::int64_t data_changed_at = 100) {
+        return object({{"id", str(identifier)},
+                       {"selectedRunBranchesJson", branches ? str(*branches) : null_value()},
+                       {"dataChangedAt", number(data_changed_at)}});
+    };
+    // run(): id, conversationId, status, startedAt, lastCheckpointAt, currentPass,
+    // legacyAmbiguous, then the optional parentRunId, activeSlot, stopRequestedAt, endedAt,
+    // endReason in that order.
+    auto run = [](const char* identifier, const char* conversation_id, const char* status,
+                  std::optional<const char*> parent = std::nullopt,
+                  std::optional<std::int64_t> active_slot = std::nullopt,
+                  std::int64_t started = 1000, std::optional<std::int64_t> stopped = std::nullopt,
+                  std::optional<std::int64_t> ended = std::nullopt,
+                  std::optional<const char*> end_reason = std::nullopt,
+                  std::int64_t current_pass = 0) {
+        std::vector<std::pair<std::string, json::Value>> members = {
+            {"id", str(identifier)},
+            {"conversationId", str(conversation_id)},
+            {"status", str(status)},
+            {"startedAt", number(started)},
+            {"lastCheckpointAt", number(started)},
+            {"currentPass", number(current_pass)},
+            {"legacyAmbiguous", boolean(false)},
+        };
+        if (parent) members.emplace_back("parentRunId", str(*parent));
+        if (active_slot) members.emplace_back("activeSlot", number(*active_slot));
+        if (stopped) members.emplace_back("stopRequestedAt", number(*stopped));
+        if (ended) members.emplace_back("endedAt", number(*ended));
+        if (end_reason) members.emplace_back("endReason", str(*end_reason));
+        return object(std::move(members));
+    };
+    // live_run(identifier, conversation_id, status="ACTIVE", **kwargs): active_slot defaults to
+    // 1, STOPPING defaults stopped=1500; live runs have no ended/end_reason.
+    auto live_run = [&](const char* identifier, const char* conversation_id,
+                        const char* status = "ACTIVE",
+                        std::optional<const char*> parent = std::nullopt,
+                        std::optional<std::int64_t> active_slot = std::nullopt,
+                        std::int64_t started = 1000, std::optional<std::int64_t> stopped = std::nullopt,
+                        std::int64_t current_pass = 0) {
+        if (!active_slot) active_slot = 1;
+        if (std::string_view(status) == "STOPPING" && !stopped) stopped = 1500;
+        return run(identifier, conversation_id, status, parent, *active_slot, started, stopped,
+                   std::nullopt, std::nullopt, current_pass);
+    };
+    // done_run(identifier, conversation_id, status="COMPLETED", **kwargs): ended defaults 2000,
+    // end_reason defaults from status.
+    auto done_run = [&](const char* identifier, const char* conversation_id,
+                        const char* status = "COMPLETED",
+                        std::optional<const char*> parent = std::nullopt,
+                        std::optional<std::int64_t> active_slot = std::nullopt,
+                        std::int64_t started = 1000, std::optional<std::int64_t> stopped = std::nullopt,
+                        std::optional<std::int64_t> ended = std::nullopt,
+                        std::optional<const char*> end_reason = std::nullopt,
+                        std::int64_t current_pass = 0) {
+        if (!ended) ended = 2000;
+        if (!end_reason) {
+            if (std::string_view(status) == "COMPLETED") end_reason = "MODEL_COMPLETED";
+            else if (std::string_view(status) == "STOPPED") end_reason = "USER_STOPPED";
+            else end_reason = "PROVIDER_ERROR";
+        }
+        return run(identifier, conversation_id, status, parent, active_slot, started, stopped,
+                   *ended, *end_reason, current_pass);
+    };
+    auto message = [](const char* identifier, const char* conversation_id, const char* run_id,
+                      const char* status, const char* participant = "MODEL",
+                      const char* text = "body", std::optional<json::Value> images = std::nullopt,
+                      std::optional<std::string> images_raw = std::nullopt,
+                      std::optional<std::string> tool_json = std::nullopt,
+                      std::int64_t timestamp = 100, std::int64_t run_sequence = 0,
+                      std::int64_t token_count = 0) {
+        std::vector<std::pair<std::string, json::Value>> members = {
+            {"id", str(identifier)},
+            {"conversationId", str(conversation_id)},
+            {"text", str(text)},
+            {"status", str(status)},
+            {"participant", str(participant)},
+            {"timestamp", number(timestamp)},
+            {"runId", str(run_id)},
+            {"runSequence", number(run_sequence)},
+            {"tokenCount", number(token_count)},
+        };
+        if (images) members.emplace_back("images", std::move(*images));
+        if (images_raw) members.emplace_back("imagesRaw", str(*images_raw));
+        if (tool_json) members.emplace_back("toolCallJson", str(*tool_json));
+        return object(std::move(members));
+    };
+    auto recover = [](const char* conversation_id, std::int64_t at) {
+        return object({{"op", str("executeRuntimeRecovery")},
+                       {"conversationId", str(conversation_id)},
+                       {"at", number(at)}});
+    };
+    auto seed_obj = [](std::vector<json::Value> conversations, std::vector<json::Value> runs,
+                       std::vector<json::Value> messages) {
+        return object({{"conversations", array(std::move(conversations))},
+                       {"runs", array(std::move(runs))},
+                       {"messages", array(std::move(messages))}});
+    };
+    // Scenarios 05/08 omit the "messages" key entirely.
+    auto seed_no_messages = [](std::vector<json::Value> conversations,
+                               std::vector<json::Value> runs) {
+        return object({{"conversations", array(std::move(conversations))},
+                       {"runs", array(std::move(runs))}});
+    };
+
+auto write = [&](const char* name, std::vector<std::pair<std::string, json::Value>> members) {
+        entries.emplace_back(name, object(std::move(members)));
+    };
+
+    // 01-missing-conversation — no seed key at all.
+    write("01-missing-conversation", {{"steps", array({recover("absent", 100)})}});
+
+    write("02-quiet-conversation",
+          {{"seed", seed_obj({conversation("c1", "{\"r1\":\"r2\"}")},
+                             {done_run("r1", "c1"), done_run("r2", "c1", "COMPLETED", "r1")},
+                             {message("m1", "c1", "r1", "SUCCESS"),
+                              message("m2", "c1", "r2", "STOPPED")})},
+           {"steps", array({
+                         recover("c1", 5000),
+                         object({{"op", str("sql")}, {"sql", str("SELECT 1")}}),
+                     })}});
+
+    write("03-live-run-recovers-messages",
+          {{"seed", seed_obj({conversation("c1")},
+                             {live_run("r1", "c1"),
+                              done_run("r0", "c1", "FAILED", std::nullopt, std::nullopt, 200,
+                                       std::nullopt, 500, "PROVIDER_ERROR")},
+                             {message("m1", "c1", "r1", "THINKING", "MODEL", "body",
+                                      std::nullopt, std::nullopt, std::nullopt, 10, 0),
+                              message("m2", "c1", "r1", "SUCCESS", "MODEL", "body",
+                                      std::nullopt, std::nullopt,
+                                      "[{\"type\":\"tool\",\"toolState\":\"calling\",\"toolName\":\"shell\"}]",
+                                      11, 1),
+                              message("m3", "c1", "r1", "SENDING", "USER", "body",
+                                      std::nullopt, std::nullopt, std::nullopt, 12, 2),
+                              message("m4", "c1", "r1", "SUCCESS", "MODEL", "body",
+                                      std::nullopt, std::nullopt,
+                                      "[{\"type\":\"tool\",\"toolState\":\"succeeded\"}]", 13, 3),
+                              message("m5", "c1", "r0", "THINKING", "MODEL", "body",
+                                      std::nullopt, std::nullopt, std::nullopt, 5, 0)})},
+           {"steps", array({recover("c1", 5000)})}});
+
+    write("04-live-run-stopping",
+          {{"seed", seed_obj({conversation("c1")},
+                             {live_run("r1", "c1", "STOPPING", std::nullopt, std::nullopt, 1000,
+                                       std::nullopt, 2)},
+                             {message("m1", "c1", "r1", "TOOL_CALLING", "MODEL", "body",
+                                      std::nullopt, std::nullopt, std::nullopt, 10, 0),
+                              message("m2", "c1", "r1", "ERROR", "MODEL", "body",
+                                      std::nullopt, std::nullopt, std::nullopt, 11, 0)})},
+           {"steps", array({recover("c1", 7000)})}});
+
+    write("05-branch-repair-branches",
+          {{"seed", seed_no_messages({conversation("b1", "{\"b1r1\":\"b1r2\",\"b1r2\":\"b1r2\"}"),
+                                      conversation("b2", "{\"b2r1\":\"b2r2\"}"),
+                                      conversation("b3", "[1, 2]"),
+                                      conversation("b4")},
+                                     {done_run("b1r1", "b1"),
+                                      done_run("b1r2", "b1", "COMPLETED", "b1r1"),
+                                      done_run("b2r1", "b2"),
+                                      done_run("b2r2", "b2", "COMPLETED", "b2r1")})},
+           {"steps", array({recover("b1", 5000), recover("b2", 5000), recover("b3", 5000),
+                            recover("b4", 5000)})}});
+
+    write("06-legacy-images-roundtrip",
+          {{"seed", seed_obj({conversation("c1")},
+                             {live_run("r1", "c1")},
+                             {message("m1", "c1", "r1", "THINKING", "MODEL", "body",
+                                      std::nullopt, "a.png|||b.png", std::nullopt, 10, 0),
+                              message("m2", "c1", "r1", "SUCCESS", "MODEL", "body",
+                                      std::nullopt, "", std::nullopt, 11, 1),
+                              message("m3", "c1", "r1", "THINKING", "MODEL", "body",
+                                      array({str("c.png")}), std::nullopt, std::nullopt, 12, 2)})},
+           {"steps", array({recover("c1", 5000)})}});
+
+    write("07-tool-json-fallbacks",
+          {{"seed", seed_obj({conversation("c1")},
+                             {live_run("r1", "c1")},
+                             {message("m1", "c1", "r1", "SUCCESS", "MODEL", "body",
+                                      std::nullopt, "keep-me", "{\"not\":\"an array\"}", 10, 0),
+                              message("m2", "c1", "r1", "SUCCESS", "MODEL", "body",
+                                      std::nullopt, "keep-me-too",
+                                      "[{\"type\":\"tool\",\"toolState\":\"succeeded\"}]", 11, 1),
+                              message("m3", "c1", "r1", "SUCCESS", "MODEL", "body",
+                                      std::nullopt, std::nullopt,
+                                      "[null,{\"type\":\"tool\",\"toolName\":\"shell\"}]", 12, 2),
+                              message("m4", "c1", "r1", "SUCCESS", "MODEL", "body",
+                                      std::nullopt, std::nullopt,
+                                      "[{\"type\":\"tool\",\"toolState\":\"running\",\"toolName\":\"shell\"}]",
+                                      13, 3)})},
+           {"steps", array({recover("c1", 5000)})}});
+
+    write("08-touch-watermark",
+          {{"seed", seed_no_messages({conversation("t1", "{\"t1r1\":\"t1r2\"}", 9000),
+                                      conversation("t2", "{\"t2r1\":\"t2r2\"}", 9000)},
+                                     {done_run("t1r1", "t1"),
+                                      done_run("t1r2", "t1", "COMPLETED", "t1r1"),
+                                      done_run("t2r1", "t2"),
+                                      done_run("t2r2", "t2", "COMPLETED", "t2r1")})},
+           {"steps", array({
+                         object({{"op", str("sql")},
+                                 {"sql", str("UPDATE conversations SET selectedRunBranchesJson = ? "
+                                             "WHERE id = ?")},
+                                 {"args", array({str("{\"t1r1\":\"t1r2\",\"ghost\":\"t1r2\"}"),
+                                                 str("t1")})}}),
+                         recover("t1", 5000),
+                         recover("t2", 5000),
+                     })}});
+
+    write("09-all-paths-together",
+          {{"seed", seed_obj({conversation("c1", "{\"r1\":\"r2\",\"r2\":\"r2\"}")},
+                             {live_run("r1", "c1")},
+                             {message("m1", "c1", "r1", "THINKING", "MODEL", "body",
+                                      std::nullopt, std::nullopt, std::nullopt, 10, 0),
+                              message("m2", "c1", "r1", "SENDING", "USER", "body",
+                                      std::nullopt, std::nullopt, std::nullopt, 11, 1),
+                              message("m3", "c1", "r1", "TOOL_CALLING", "MODEL", "body",
+                                      std::nullopt, "x|||y",
+                                      "[{\"type\":\"tool\",\"toolState\":\"calling\"}]", 12, 2)})},
+           {"steps", array({recover("c1", 5000)})}});
+
+    remove_stale(scenarios);
+    const FormatOptions pretty{Format::Pretty2, false}; // indent=2, ensure_ascii=False
+    for (const auto& [name, value] : entries) {
+        write_scenario(scenarios, name, value, pretty);
+    }
+    std::cout << "Wrote " << entries.size() << " scenarios to " << scenarios.string() << "\n";
+}
+
+// generation-streaming-segments/gen_scenarios.py — indent=2, ensure_ascii=False; segment(kind,
+// content="", **extra) emits {"type": kind, "content": content} then the extras in call order.
+void profile_generation_streaming_segments(const fs::path& scenarios) {
+    std::vector<std::pair<std::string, json::Value>> entries;
+    auto segment = [](const char* kind, const std::string& content = "",
+                      std::vector<std::pair<std::string, json::Value>> extra = {}) {
+        std::vector<std::pair<std::string, json::Value>> members = {
+            {"type", str(kind)}, {"content", str(content)}};
+        for (auto& e : extra) members.push_back(std::move(e));
+        return object(std::move(members));
+    };
+    // The common skeleton: clock, timingSteps, merge — every scenario starts with these three.
+    auto base = [](std::vector<std::int64_t> clock, std::vector<json::Value> timing_steps,
+                   std::vector<json::Value> merge) {
+        std::vector<json::Value> clock_values;
+        for (std::int64_t t : clock) clock_values.push_back(number(t));
+        return std::vector<std::pair<std::string, json::Value>>{
+            {"clock", array(std::move(clock_values))},
+            {"timingSteps", array(std::move(timing_steps))},
+            {"merge", array(std::move(merge))},
+        };
+    };
+    auto timing = [](const char* action, std::optional<std::int64_t> duration = std::nullopt) {
+        std::vector<std::pair<std::string, json::Value>> members = {{"action", str(action)}};
+        if (duration) members.emplace_back("duration", number(*duration));
+        return object(std::move(members));
+    };
+    auto action = [](const char* kind) { return object({{"action", str(kind)}}); };
+    auto write = [&](const char* name, std::vector<std::pair<std::string, json::Value>> members) {
+        entries.emplace_back(name, object(std::move(members)));
+    };
+
+    // 01-segments-merge
+    {
+        auto members = base({0, 100, 150, 200, 300, 400, 500},
+                            {action("ensureStarted"), action("live"), action("finish"),
+                             action("live"), action("reset"), action("live"),
+                             timing("adopt", 1234)},
+                            {segment("answer", "first"),
+                             segment("answer", " second"),
+                             segment("thought", "thinking",
+                                     {{"signature", str("sig")}, {"durationMs", number(100)}}),
+                             segment("thought", " more",
+                                     {{"signature", null_value()}, {"durationMs", number(50)}}),
+                             segment("tool", "tool output"),
+                             segment("answer", "third")});
+        members.emplace_back("live",
+                             object({{"flushed", array({segment("citation", "citation body")})},
+                                     {"answer", str("live answer")},
+                                     {"thought", str("live thought")},
+                                     {"signature", str("sig")},
+                                     {"signatureProvider", str("openai")},
+                                     {"thoughtDurationMs", number(700)},
+                                     {"answerDeltas",
+                                      array({object({{"sequence", number(1)},
+                                                     {"codePointCount", number(5)}})})}}));
+        write("01-segments-merge", members);
+    }
+
+    // 02
+    {
+        auto members = base({}, {}, {});
+        members.emplace_back("live", object({{"flushed", array({})},
+                                             {"answer", str("")},
+                                             {"thought", str("")}}));
+        write("02-segments-live-variants", members);
+    }
+    // 03
+    {
+        auto members = base({}, {}, {});
+        members.emplace_back("live", object({{"flushed", array({segment("answer", "kept")})},
+                                             {"answer", str("partial")},
+                                             {"thought", str("")},
+                                             {"errorMessage", str("provider failed")},
+                                             {"errorCode", str("http_500")}}));
+        write("03-segments-live-error", members);
+    }
+    // 04
+    {
+        auto members = base({}, {}, {});
+        members.emplace_back("live", object({{"flushed", array({})},
+                                             {"answer", str("a")},
+                                             {"thought", str("")},
+                                             {"errorMessage", str("   ")},
+                                             {"errorCode", str("x")}}));
+        write("04-segments-live-blank-error", members);
+    }
+    // 05-07: citation rebase variants
+    auto citation_scenario = [&](const char* name, json::Value citation,
+                                 std::int64_t provider_answer_start, const char* final_answer) {
+        auto members = base({}, {}, {});
+        members.emplace_back("citation", std::move(citation));
+        members.emplace_back("providerAnswerStart", number(provider_answer_start));
+        members.emplace_back("finalAnswer", str(final_answer));
+        write(name, members);
+    };
+    citation_scenario(
+        "05-segments-citation-rebase",
+        object({{"sourceId", str("s1")},
+                {"provider", str("openai")},
+                {"kind", str("url")},
+                {"title", str("Doc")},
+                {"url", str("https://example.com")},
+                {"anchors", array({object({{"startIndex", number(0)},
+                                           {"endIndex", number(5)},
+                                           {"citedText", str("hello")}})})}}),
+        10, "hello world, this is the final answer");
+    citation_scenario(
+        "06-segments-citation-rebase-overflow",
+        object({{"sourceId", str("s1")},
+                {"provider", str("openai")},
+                {"kind", str("url")},
+                {"title", str("Doc")},
+                {"url", str("https://example.com")},
+                {"anchors", array({object({{"startIndex", number(2147483640)},
+                                           {"endIndex", number(2147483647)},
+                                           {"citedText", str("tail")}})})}}),
+        100, "short");
+    citation_scenario(
+        "07-segments-citation-without-anchors",
+        object({{"sourceId", str("s1")},
+                {"provider", str("openai")},
+                {"kind", str("url")},
+                {"title", str("Doc")},
+                {"url", str("https://example.com")},
+                {"anchors", array({})}}),
+        3, "answer");
+
+    // 08-09: bounded transform
+    auto transform_scenario = [&](const char* name, const char* id, const char* text,
+                                  std::vector<json::Value> segments, const char* replacement) {
+        auto members = base({}, {}, {});
+        members.emplace_back(
+            "message",
+            object({{"id", str(id)},
+                    {"text", str(text)},
+                    {"status", str("SUCCESS")},
+                    {"participant", str("MODEL")},
+                    {"timestamp", number(1)},
+                    {"segments", array(std::move(segments))}}));
+        members.emplace_back("transform", object({{"replacement", str(replacement)}}));
+        write(name, members);
+    };
+    transform_scenario("08-segments-bounded-transform", "m1", "0123456789",
+                       {segment("answer", "01234"), segment("answer", "56789")}, "abcde");
+    transform_scenario("09-segments-bounded-transform-single", "m1", "hello",
+                       {segment("answer", "hello")}, "hi");
+
+    // 10-12: terminal error
+    auto terminal_scenario = [&](const char* name, const char* status, const char* current_error) {
+        auto members = base({}, {}, {});
+        members.emplace_back("terminalError",
+                             object({{"status", str(status)},
+                                     {"currentError", str(current_error)},
+                                     {"fallbackError", str("fallback")}}));
+        write(name, members);
+    };
+    terminal_scenario("10-segments-terminal-error", "ERROR", "boom");
+    terminal_scenario("11-segments-terminal-error-blank", "ERROR", "   ");
+    terminal_scenario("12-segments-terminal-no-error", "SUCCESS", "boom");
+
+    // 13-14: snapshot
+    auto snapshot_scenario = [&](const char* name, json::Value snapshot) {
+        auto members = base({}, {}, {});
+        members.emplace_back("snapshot", std::move(snapshot));
+        write(name, members);
+    };
+    snapshot_scenario(
+        "13-segments-snapshot",
+        object({{"messageId", str("m1")},
+                {"parentId", str("m0")},
+                {"text", str("the answer")},
+                {"images", array({str("a.png")})},
+                {"thoughts", str("  ")},
+                {"thoughtTitle", str("title")},
+                {"tokenCount", number(42)},
+                {"timestamp", number(1700000000000)},
+                {"thoughtTimeMs", number(1200)},
+                {"modelName", str("OpenAI:gpt-5.4")},
+                {"flushedSegments", array({segment("citation", "cite")})},
+                {"answerBuffer", str("the answer")},
+                {"thoughtBuffer", str("")},
+                {"thoughtSignature", str("sig")},
+                {"thoughtSignatureProvider", str("openai")},
+                {"thoughtDurationMs", number(900)},
+                {"errorMessage", null_value()},
+                {"errorCode", null_value()},
+                {"runId", str("run-1")},
+                {"runSequence", number(7)},
+                {"answerDeltas", array({object({{"sequence", number(3)},
+                                               {"codePointCount", number(4)}})})}}));
+    snapshot_scenario(
+        "14-segments-snapshot-error",
+        object({{"messageId", str("m2")},
+                {"parentId", null_value()},
+                {"text", str("partial")},
+                {"images", array({})},
+                {"thoughts", str("thinking")},
+                {"thoughtTitle", null_value()},
+                {"tokenCount", number(0)},
+                {"timestamp", number(1700000001000)},
+                {"thoughtTimeMs", null_value()},
+                {"modelName", str("")},
+                {"flushedSegments", array({})},
+                {"answerBuffer", str("")},
+                {"thoughtBuffer", str("thinking")},
+                {"thoughtSignature", null_value()},
+                {"thoughtSignatureProvider", null_value()},
+                {"thoughtDurationMs", number(100)},
+                {"errorMessage", str("failed")},
+                {"errorCode", str("e1")},
+                {"runId", str("run-2")},
+                {"runSequence", number(1)},
+                {"answerDeltas", array({})}}));
+
+    remove_stale(scenarios);
+    const FormatOptions pretty{Format::Pretty2, false}; // indent=2, ensure_ascii=False
+    for (const auto& [name, value] : entries) {
+        write_scenario(scenarios, name, value, pretty);
+    }
+    std::cout << "Wrote " << entries.size() << " scenarios to " << scenarios.string() << "\n";
+}
+
 }  // namespace
 
 int main(int argc, char** argv) {
@@ -8919,7 +9374,9 @@ int main(int argc, char** argv) {
                   << "  native-backup-v5      native-backup-v5/gen_scenarios.py\n"
                   << "  gpt-chat-importer     gpt-chat-importer/gen_scenarios.py\n"
                   << "  chat-automation-dao   chat-automation-dao/gen_scenarios.py\n"
-                  << "  legacy-run-backfill   legacy-run-backfill/gen_scenarios.py\n";
+                  << "  legacy-run-backfill   legacy-run-backfill/gen_scenarios.py\n"
+                  << "  runtime-recovery      runtime-recovery/gen_scenarios.py\n"
+                  << "  generation-streaming-segments generation-streaming-segments/gen_scenarios.py\n";
         return 2;
     }
     const std::string profile = argv[1];
@@ -9034,6 +9491,10 @@ int main(int argc, char** argv) {
         profile_chat_automation_dao(scenarios);
     } else if (profile == "legacy-run-backfill") {
         profile_legacy_run_backfill(scenarios);
+    } else if (profile == "runtime-recovery") {
+        profile_runtime_recovery(scenarios);
+    } else if (profile == "generation-streaming-segments") {
+        profile_generation_streaming_segments(scenarios);
     } else {
         std::cerr << "unknown profile: " << profile << "\n";
         return 2;

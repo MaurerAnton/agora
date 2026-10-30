@@ -16,7 +16,7 @@ default visibility so the driver can call it; `ChatMessage.kt`, `MessagePersiste
 | `golden/*.trace` | Frozen Kotlin output, one per scenario |
 | `GenerationStreamingSegmentsTraceDump.kt` | Driver: runs every policy of the file |
 | `agora_extract widen` | Lifts the policy file with a widened visibility |
-| `gen_scenarios.py` | Deterministic scenario generator |
+| `agora_scenarios generation-streaming-segments` | Deterministic scenario generator |
 | `run_golden.sh` | Extracts, compiles, freezes (`--freeze`) or verifies the traces |
 
 ## What is pinned

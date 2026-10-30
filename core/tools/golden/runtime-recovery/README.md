@@ -38,7 +38,7 @@ only the logging stub, so **every trace here is deterministic without clock mask
 | `golden/*.trace` | Frozen Kotlin output, one per scenario |
 | `RuntimeRecoveryTraceDump.kt` | Driver: seeds SQLite, runs `recoverConversationRuntime`, dumps the tables |
 | ``agora_extract recovery-sources`` | Lifts `MessageEntity`, `MessageStreamCheckpoint`, `encodeSelectionMap` and the recovery body |
-| `gen_scenarios.py` | Deterministic scenario generator |
+| `agora_scenarios runtime-recovery` | Deterministic scenario generator |
 | `run_golden.sh` | Extracts, compiles, freezes (`--freeze`) or verifies the traces |
 
 ## What is pinned
@@ -90,7 +90,7 @@ export JAVA_HOME=/path/to/jdk17; export PATH=$JAVA_HOME/bin:$PATH
 KOTLINC=/path/to/kotlinc KOTLINX_JARS=core.jar:json.jar:coroutines.jar:sqlite-jdbc.jar \
   ./run_golden.sh          # verify
 KOTLINC=... KOTLINX_JARS=... ./run_golden.sh --freeze   # regenerate
-python3 gen_scenarios.py                                # rewrite scenarios
+core/build/agora_scenarios runtime-recovery core/tools/golden/runtime-recovery # rewrite scenarios
 ```
 
 `run_golden.sh` wipes the stand's git-ignored `build/` before each run, so runs are idempotent.

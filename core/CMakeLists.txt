@@ -227,5 +227,12 @@ if(AGORA_CORE_BUILD_TESTS)
     find_package(ZLIB REQUIRED)
     find_package(OpenSSL REQUIRED)
     add_executable(agora_scenarios tools/scenarios_main.cpp)
+    # The extractor is one huge single TU whose emitter literals dominate optimized build time
+    # (the -O3 variant OOM-kills on constrained machines); byte-parity does not depend on the
+    # optimization level, so build the dev tool at -O0.
+    # The aggregate-init pattern (MsgOpts with empty optional members) is intentional.
+    # -Wmaybe-uninitialized is a known GCC false positive on std::optional payload reads.
+    target_compile_options(agora_scenarios PRIVATE -O0 -Wall -Wextra
+        -Wno-missing-field-initializers -Wno-maybe-uninitialized)
     target_link_libraries(agora_scenarios PRIVATE agora_core_lib ZLIB::ZLIB OpenSSL::Crypto)
 endif()

@@ -75,8 +75,24 @@ rec_pid=$!
 
 echo "Launching $pkg..."
 adb shell monkey -p "$pkg" -c android.intent.category.LAUNCHER 1 >/dev/null
-sleep 12
+# Cold start on the emulator shows a splash for a while; give it time to paint the
+# real UI before the first frame (12s captured only the white splash).
+sleep 22
 shot 01_launch
+
+# Dismiss whatever covers the UI on a fresh install: the Android 13+ notification
+# permission dialog first, then the in-app update card. Best effort - each step
+# taps the first matching visible control and moves on.
+dismiss() {
+  if xy=$(tap_matching "$@"); then
+    echo "dismissing via control at $xy ($*)"
+    # shellcheck disable=SC2086
+    adb shell input tap $xy
+    sleep 3
+  fi
+}
+dismiss "don't allow" "don’t allow" "не разрешать"
+dismiss "later" "позже"
 
 # Onboarding: fresh install lands on Welcome; tap the first Skip/Start control we
 # can find so the second shot shows the actual chat surface. Bilingual patterns
@@ -86,10 +102,9 @@ if xy=$(tap_matching skip start "let's go" пропустить продолжи
   # shellcheck disable=SC2086
   adb shell input tap $xy
   sleep 8
-  shot 02_after_onboarding
-else
-  echo "no onboarding control found; keeping the launch shot only"
 fi
+dismiss "later" "позже"
+shot 02_after_onboarding
 
 # Give screenrecord time to finalise the container, then pull it.
 wait "$rec_pid" 2>/dev/null || true

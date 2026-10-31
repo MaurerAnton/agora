@@ -42,3 +42,7 @@ AGENTS.md
 # Golden harness scratch builds (classes, transcripts output)
 core/tools/golden/*/build/
 core/tools/golden/*/__pycache__/
+
+# Python bytecode anywhere (the sources are deleted; stray caches must never land)
+__pycache__/
+*.pyc

@@ -116,6 +116,10 @@ if xy=$(tap_matching skip start "let's go" пропустить продолжи
   sleep 8
 fi
 clean_ui
+# Drop the keyboard the dismissal taps may have opened (tap an empty area - a BACK
+# keyevent could finish the root activity on some builds).
+adb shell input tap 540 700 >/dev/null 2>&1 || true
+sleep 2
 shot 02_after_onboarding
 
 # Give screenrecord time to finalise the container, then pull it.

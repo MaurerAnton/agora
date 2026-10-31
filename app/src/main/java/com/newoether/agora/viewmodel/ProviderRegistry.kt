@@ -5,6 +5,7 @@ import com.newoether.agora.api.DebugProvider
 import com.newoether.agora.api.LlmProvider
 import com.newoether.agora.api.ModelFetchEmptyResultException
 import com.newoether.agora.api.ModelFetchTimeoutException
+import com.newoether.agora.api.withModelFetchEndpoint
 import com.newoether.agora.api.anthropic.AnthropicProvider
 import com.newoether.agora.api.gemini.GeminiProvider
 import com.newoether.agora.api.local.LocalProvider
@@ -371,7 +372,7 @@ class ProviderRegistry(
             } catch (error: CancellationException) {
                 throw error
             } catch (error: Exception) {
-                lastFailure = error
+                lastFailure = error.withModelFetchEndpoint(candidate)
             }
         }
         throw lastFailure ?: ModelFetchEmptyResultException()

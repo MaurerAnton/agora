@@ -255,7 +255,7 @@ abstract class BaseOpenAiProvider : LlmProvider {
                                 delay(retryDelayMs)
                                 retryScheduled = true
                             } else {
-                                emit(StreamEvent.Error(buildGenerationError(handle.code, errorRaw, endpointUrls)))
+                                emit(StreamEvent.Error(buildGenerationError(handle.code, errorRaw, endpointUrls, endpointUrl)))
                                 finished = true
                             }
                         }
@@ -501,19 +501,16 @@ abstract class BaseOpenAiProvider : LlmProvider {
     private fun buildGenerationError(
         statusCode: Int,
         errorRaw: String,
-        endpointUrls: List<String>
+        endpointUrls: List<String>,
+        endpointUrl: String,
     ): GenerationError {
-        val endpointHint = if (statusCode == 404 && endpointUrls.size > 1) {
-            "\nTried ${endpointUrls.joinToString(" and ")}. OpenAI-compatible servers often require a /v1 Base URL."
-        } else {
-            ""
-        }
-        val error = providerHttpError(statusCode, errorRaw)
-        return if (endpointHint.isEmpty()) {
-            error
-        } else {
-            error.copy(message = error.message + endpointHint)
-        }
+        val error = providerHttpError(statusCode, errorRaw, endpointUrl)
+        if (statusCode != 404 || endpointUrls.size <= 1) return error
+        return error.copy(
+            message = error.message +
+                "\nOpenAI-compatible servers often require a /v1 Base URL " +
+                "(tried ${endpointUrls.joinToString(" and ")}).",
+        )
     }
 
     private fun fetchModelPages(

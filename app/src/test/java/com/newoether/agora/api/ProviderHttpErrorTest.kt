@@ -97,6 +97,44 @@ class ProviderHttpErrorTest {
     }
 
     @Test
+    fun `endpoint context is appended so a wrong base URL is visible`() {
+        val error = providerHttpError(
+            statusCode = 404,
+            rawBody = """{"error":{"code":"not_found","type":"invalid_request_error","message":"Not found"}}""",
+            endpointUrl = "https://api.example.com/v1/chat/completions",
+        )
+
+        assertEquals(
+            "Not found\nEndpoint: https://api.example.com/v1/chat/completions",
+            error.message,
+        )
+    }
+
+    @Test
+    fun `endpoint context never carries credentials from the query string`() {
+        val error = providerHttpError(
+            statusCode = 404,
+            rawBody = """{"error":{"message":"Not found"}}""",
+            endpointUrl = "https://gateway.example.com/v1beta/models/gemini:streamGenerateContent?key=SECRET",
+        )
+
+        assertEquals(
+            "Not found\nEndpoint: https://gateway.example.com/v1beta/models/gemini:streamGenerateContent",
+            error.message,
+        )
+    }
+
+    @Test
+    fun `a missing endpoint leaves the parsed message untouched`() {
+        assertEquals("Denied", providerHttpError(401, """{"error":{"message":"Denied"}}""").message)
+        assertEquals("HTTP 404", providerHttpError(404, null).message)
+        assertEquals("HTTP 404", providerHttpError(404, null, "   ").message)
+        // Re-appending the same endpoint must not grow the message.
+        val once = providerHttpError(404, """{"error":{"message":"Not found"}}""", "https://a.example/v1")
+        assertEquals(once, once.withEndpoint("https://a.example/v1"))
+    }
+
+    @Test
     fun `all provider HTTP transports use the shared parser`() {
         val providerFiles = listOf(
             "app/src/main/java/com/newoether/agora/api/openai/BaseOpenAiProvider.kt",

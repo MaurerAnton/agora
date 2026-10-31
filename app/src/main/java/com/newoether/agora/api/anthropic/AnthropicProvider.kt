@@ -549,7 +549,7 @@ class AnthropicProvider(
                         delay(retryDelayMs)
                     } else {
                         done = true
-                        val genError = providerHttpError(handle.code, errorRaw)
+                        val genError = providerHttpError(handle.code, errorRaw, url)
                         emit(StreamEvent.Error(genError))
                     }
                 }

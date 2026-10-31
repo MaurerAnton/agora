@@ -69,4 +69,18 @@ class ModelSyncFailureFormatterTest {
             ),
         )
     }
+
+    @Test
+    fun invalidResponseReasonNamesTheEndpointItCameFrom() {
+        assertEquals(
+            "Invalid response — Expected JSON object (https://api.example.com/v1/models)",
+            modelSyncFailureReason(
+                ModelFetchInvalidResponseException(
+                    IllegalArgumentException("Expected JSON object"),
+                    "https://api.example.com/v1/models?limit=100",
+                ),
+                labels,
+            ),
+        )
+    }
 }

@@ -63,6 +63,7 @@ internal fun parseProviderHttpErrorBody(rawBody: String): ParsedProviderHttpErro
 internal fun providerHttpError(
     statusCode: Int,
     rawBody: String?,
+    endpointUrl: String? = null,
 ): GenerationError.Api {
     val parsed = rawBody
         ?.let(::parseProviderHttpErrorBody)
@@ -70,13 +71,33 @@ internal fun providerHttpError(
             code = null,
             type = null,
             message = "HTTP $statusCode",
-        )
+        ).withEndpoint(endpointUrl)
 
     return GenerationError.Api(
         code = parsed.code ?: statusCode.toString(),
         type = parsed.type,
         message = parsed.message,
-    )
+    ).withEndpoint(endpointUrl)
+}
+
+/**
+ * The endpoint a failed call went to, minus the query string and fragment: Gemini and other
+ * gateways carry credentials in `?key=`, and the resulting text is rendered in the chat,
+ * persisted with the message and selectable for copying.
+ */
+internal fun endpointForDisplay(url: String): String =
+    url.substringBefore('#').substringBefore('?').trim()
+
+/**
+ * Appends the endpoint a status code came from to the error text the user reads. A bare
+ * `HTTP 404` never says *which* URL was tried, so a wrong Base URL is indistinguishable from a
+ * dead account; the endpoint line is what makes the failure diagnosable from the chat surface.
+ */
+internal fun GenerationError.Api.withEndpoint(endpointUrl: String?): GenerationError.Api {
+    val display = endpointUrl?.let(::endpointForDisplay)?.takeIf(String::isNotEmpty)
+        ?: return this
+    if (message.endsWith("Endpoint: $display")) return this
+    return copy(message = "$message\nEndpoint: $display")
 }
 
 internal fun extractStructuredProviderHttpErrorMessage(rawBody: String): String? =

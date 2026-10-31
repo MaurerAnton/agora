@@ -460,7 +460,7 @@ class OllamaProvider : LlmProvider {
                             emit(StreamEvent.Retrying(attempt, ProviderRetryPolicy.MAX_RETRIES))
                             delay(ProviderRetryPolicy.delayMillis(attempt))
                         } else {
-                            val genError = providerHttpError(handle.code, errorRaw)
+                            val genError = providerHttpError(handle.code, errorRaw, url)
                             emit(StreamEvent.Error(genError))
                             completed = true
                         }

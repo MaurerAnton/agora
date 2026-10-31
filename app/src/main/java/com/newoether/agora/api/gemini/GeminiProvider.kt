@@ -729,7 +729,7 @@ class GeminiProvider(
                             emit(StreamEvent.Retrying(attempt, ProviderRetryPolicy.MAX_RETRIES))
                             delay(ProviderRetryPolicy.delayMillis(attempt))
                         } else {
-                            val genError = providerHttpError(handle.code, errorRaw)
+                            val genError = providerHttpError(handle.code, errorRaw, finalUrlString)
                             emit(StreamEvent.Error(genError))
                             done = true
                         }

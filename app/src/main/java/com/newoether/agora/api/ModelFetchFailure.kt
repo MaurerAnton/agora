@@ -13,10 +13,12 @@ import okhttp3.HttpUrl.Companion.toHttpUrl
 internal class ModelFetchHttpException(
     val statusCode: Int,
     val detail: String?,
+    val endpoint: String? = null,
 ) : IOException(
     buildString {
         append("HTTP ").append(statusCode)
         detail?.takeIf(String::isNotBlank)?.let { append(" — ").append(it) }
+        endpoint?.let(::appendEndpointContext)
     }
 )
 
@@ -25,8 +27,39 @@ internal class ModelFetchEmptyResultException : IOException("No models returned"
 internal class ModelFetchTimeoutException : IOException("Request timed out")
 
 internal class ModelFetchInvalidResponseException(
-    cause: Throwable,
-) : IOException(cause.message, cause)
+    internal val source: Throwable,
+    val endpoint: String? = null,
+) : IOException(
+    source.message?.let { message -> message + endpointContext(endpoint) } ?: source.message,
+    source,
+)
+
+private fun endpointContext(endpoint: String?): String =
+    endpoint
+        ?.let(::endpointForDisplay)
+        ?.takeIf(String::isNotEmpty)
+        ?.let { " ($it)" }
+        .orEmpty()
+
+private fun StringBuilder.appendEndpointContext(endpoint: String) {
+    endpointForDisplay(endpoint)
+        .takeIf(String::isNotEmpty)
+        ?.let { append(" (").append(it).append(')') }
+}
+
+/**
+ * Attaches the endpoint a model-list failure came from while the attempt still knows which URL
+ * was used. Without it the user sees `HTTP 404 — Not found` and has no way to tell a wrong Base
+ * URL from a broken key. Failures that already carry an endpoint keep it.
+ */
+internal fun Exception.withModelFetchEndpoint(endpoint: String?): Exception = when {
+    endpoint.isNullOrBlank() -> this
+    this is ModelFetchHttpException && this.endpoint == null ->
+        ModelFetchHttpException(statusCode, detail, endpoint)
+    this is ModelFetchInvalidResponseException && this.endpoint == null ->
+        ModelFetchInvalidResponseException(source, endpoint)
+    else -> this
+}
 
 private val modelFetchErrorJson = Json { ignoreUnknownKeys = true }
 private val modelFetchWhitespace = Regex("\\s+")

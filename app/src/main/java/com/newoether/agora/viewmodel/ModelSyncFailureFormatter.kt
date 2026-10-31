@@ -4,6 +4,7 @@ import com.newoether.agora.api.ModelFetchEmptyResultException
 import com.newoether.agora.api.ModelFetchHttpException
 import com.newoether.agora.api.ModelFetchInvalidResponseException
 import com.newoether.agora.api.ModelFetchTimeoutException
+import com.newoether.agora.api.endpointForDisplay
 import com.newoether.agora.api.normalizeModelFetchDetail
 import java.net.SocketTimeoutException
 
@@ -32,7 +33,16 @@ internal fun modelSyncFailureReason(
         val detail = error.cause?.localizedMessage
             ?.let { value -> normalizeModelFetchDetail(value) }
             ?.takeIf(String::isNotBlank)
-        if (detail == null) labels.invalidResponse else "${labels.invalidResponse} — $detail"
+        val reason = if (detail == null) {
+            labels.invalidResponse
+        } else {
+            "${labels.invalidResponse} — $detail"
+        }
+        error.endpoint
+            ?.let(::endpointForDisplay)
+            ?.takeIf(String::isNotEmpty)
+            ?.let { endpoint -> "$reason ($endpoint)" }
+            ?: reason
     }
     else -> error.localizedMessage
         ?.let { value -> normalizeModelFetchDetail(value) }

@@ -739,6 +739,11 @@ class BaseOpenAiProviderTerminationTest : OpenAiSseTestFixture() {
         assertTrue(events.none { it is StreamEvent.Retrying })
         val error = events.filterIsInstance<StreamEvent.Error>().single().error
         assertTrue(error is GenerationError.Api)
-        assertEquals("unauthorized", (error as GenerationError.Api).message)
+        val message = (error as GenerationError.Api).message
+        assertTrue("message keeps the provider detail: $message", message.startsWith("unauthorized"))
+        assertTrue(
+            "message names the endpoint the 404/401 came from: $message",
+            message.contains("\nEndpoint: http"),
+        )
     }
 }

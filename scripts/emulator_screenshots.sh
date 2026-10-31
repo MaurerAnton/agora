@@ -80,19 +80,31 @@ adb shell monkey -p "$pkg" -c android.intent.category.LAUNCHER 1 >/dev/null
 sleep 22
 shot 01_launch
 
-# Dismiss whatever covers the UI on a fresh install: the Android 13+ notification
-# permission dialog first, then the in-app update card. Best effort - each step
-# taps the first matching visible control and moves on.
+# Dismiss whatever covers the UI on a fresh install. Best effort: tap the first
+# matching visible control, or say so in the log when nothing matched (the
+# notification dialog shows up asynchronously, after the onboarding tap).
 dismiss() {
   if xy=$(tap_matching "$@"); then
     echo "dismissing via control at $xy ($*)"
     # shellcheck disable=SC2086
     adb shell input tap $xy
     sleep 3
+    return 0
   fi
+  echo "no control matching '$*' visible"
+  return 1
 }
-dismiss "don't allow" "don’t allow" "не разрешать"
-dismiss "later" "позже"
+clean_ui() {
+  # System permission dialog first - it sits above everything; then the in-app
+  # update card. Repeat: both appear with their own delays.
+  for _ in 1 2 3; do
+    dismiss "don't allow" "don’t allow" "не разрешать" || true
+    dismiss "later" "позже" || true
+  done
+}
+
+dismiss "don't allow" "don’t allow" "не разрешать" || true
+dismiss "later" "позже" || true
 
 # Onboarding: fresh install lands on Welcome; tap the first Skip/Start control we
 # can find so the second shot shows the actual chat surface. Bilingual patterns
@@ -103,7 +115,7 @@ if xy=$(tap_matching skip start "let's go" пропустить продолжи
   adb shell input tap $xy
   sleep 8
 fi
-dismiss "later" "позже"
+clean_ui
 shot 02_after_onboarding
 
 # Give screenrecord time to finalise the container, then pull it.

@@ -356,7 +356,10 @@ fun WelcomeScreen(
         }
     }
 
-    LaunchedEffect(motionPolicy.reduceMotion) {
+    // Unit: the effect must run exactly once. Keying on motionPolicy.reduceMotion restarted it
+    // on every pager recomposition (the CompositionLocal hands out fresh instances), which made
+    // the onboarding content — including the Skip button — blink on each page.
+    LaunchedEffect(Unit) {
         if (!motionPolicy.reduceMotion) {
             kotlinx.coroutines.delay(2000)
         }

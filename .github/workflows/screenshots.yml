@@ -1,0 +1,83 @@
+name: Emulator screenshots
+
+# Free cloud emulator runs for this (public) repo: the workflow boots an x86_64
+# AVD on the GitHub-hosted runner with KVM, installs the debug build (x86_64 +
+# applicationId .screenshots -- the release build is arm64-v8a and cannot run on
+# an x86_64 image), captures PNGs and uploads them as an artifact.
+#
+# Dispatch-only on purpose: it must not slow down or add noise to the push CI.
+# Run with:  gh workflow run screenshots.yml
+
+on:
+  workflow_dispatch:
+    inputs:
+      live_minutes:
+        description: >-
+          Keep the emulator alive that many minutes after capture and expose it over
+          Tailscale so you can watch/drive it live with scrcpy (needs the TS_AUTHKEY
+          secret). 0 = capture only.
+        required: false
+        default: "0"
+
+permissions:
+  contents: read
+
+concurrency:
+  group: screenshots-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  screenshots:
+    name: Boot emulator and capture
+    runs-on: ubuntu-latest
+    timeout-minutes: 90
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          submodules: recursive
+
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: 21
+
+      - uses: android-actions/setup-android@v4
+        with:
+          packages: "platform-tools ndk;28.2.13676358"
+
+      - uses: gradle/actions/setup-gradle@v4
+
+      - name: Build the emulator build (debug, fdroid flavor)
+        run: |
+          chmod +x ./gradlew
+          ./gradlew :app:assembleFdroidDebug --stacktrace
+
+      - name: Enable KVM group perms
+        run: |
+          echo 'KERNEL=="kvm", GROUP="kvm", MODE="0666", OPTIONS+="static_node=kvm"' | sudo tee /etc/udev/rules.d/99-kvm4all.rules
+          sudo udevadm control --reload-rules
+          sudo udevadm trigger --name-match=kvm
+
+      - name: Capture screenshots
+        uses: reactivecircus/android-emulator-runner@v2
+        env:
+          LIVE_MINUTES: ${{ github.event.inputs.live_minutes || '0' }}
+          TS_AUTHKEY: ${{ secrets.TS_AUTHKEY }}
+        with:
+          api-level: 34
+          arch: x86_64
+          target: google_apis
+          profile: pixel_6
+          disable-animations: true
+          emulator-options: -no-window -gpu swiftshader_indirect -noaudio -no-boot-anim -camera-back none
+          script: bash scripts/emulator_screenshots.sh
+
+      - name: Upload screenshots
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: screenshots
+          path: |
+            screenshots/*.png
+            screenshots/*.mp4
+          if-no-files-found: error

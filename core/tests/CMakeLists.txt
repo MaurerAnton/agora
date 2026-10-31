@@ -234,6 +234,11 @@ target_compile_definitions(agora_core_tests PRIVATE
     AGORA_FIXTURE_PREP_VOCAB="${CMAKE_CURRENT_SOURCE_DIR}/../../app/src/main/assets/tokenizers/o200k_base.tiktoken"
 )
 
+if(UNIX)
+    # POSIX sockets + setenv; the receivers never build on Windows.
+    target_sources(agora_core_tests PRIVATE server_submission_test.cpp)
+endif()
+
 add_test(NAME agora_core_tests COMMAND agora_core_tests)
 
 # Real-SSH integration suite for the libssh2 transport. Needs libssh2 (parent scope) plus

@@ -1,6 +1,6 @@
 # Agora rating submission API
 
-This dependency-free Python service implements only Agora's public rating submission endpoint:
+This dependency-free C++ service implements only Agora's public rating submission endpoint:
 
 ```text
 POST /api/rating
@@ -12,12 +12,15 @@ It stores accepted submissions in SQLite. It contains no read, listing, aggregat
 ## Installation
 
 ```sh
+# Build the receiver once (needs cmake, a C++ compiler, libsqlite3-dev, libcurl4-openssl-dev);
+# the same binary serves both services, each install keeps a copy next to its unit.
+cmake -S core -B core-build && cmake --build core-build --target agora_server
+
 sudo useradd --system --home /nonexistent --shell /usr/sbin/nologin agora-rating
 sudo install -d -o agora-rating -g agora-rating -m 0750 /var/lib/agora-rating
 sudo install -d -o root -g root -m 0755 /opt/agora-rating
-sudo install -o root -g root -m 0755 agora-rating-api.py /opt/agora-rating/
-sudo install -o root -g root -m 0644 agora-rating.service /etc/systemd/system/
-sudo install -o root -g root -m 0644 ../submission_messages.py /opt/agora-rating/
+sudo install -o root -g root -m 0755 core-build/agora_server /opt/agora-rating/
+sudo install -o root -g root -m 0644 server/rating/agora-rating.service /etc/systemd/system/
 sudo systemctl daemon-reload
 sudo systemctl enable --now agora-rating
 ```
@@ -36,7 +39,6 @@ No database, submitted record, host identity, domain, certificate, token, or cre
 
 ## Optional submission messages
 
-Install `../submission_messages.py` alongside this service's Python entry point.
 Set `AGORA_SUBMISSION_MESSAGES` in the service environment to an administrator-managed,
 UTF-8 JSON file outside the checkout. Leave it unset to retain the ordinary success response.
 

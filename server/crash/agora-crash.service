@@ -6,7 +6,7 @@ After=network.target
 Type=simple
 User=newoether
 Group=newoether
-ExecStart=/usr/bin/python3 /opt/agora-crash/agora-crash.py
+ExecStart=/opt/agora-crash/agora_server crash
 Restart=on-failure
 RestartSec=2
 

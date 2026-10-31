@@ -31,9 +31,11 @@ cmake --build core-build
 ctest --test-dir core-build --output-on-failure
 ```
 
-The binaries are `core-build/tests/agora_core_tests` and the parity tool
-`core-build/agora_core_dump`. The tests read fixtures straight from the app tree, so run the
-commands from the repository root.
+The binaries are `core-build/tests/agora_core_tests`, the parity tool `core-build/agora_core_dump`,
+the submission receivers `core-build/agora_server` (modes: `rating`, `crash`, `patch-nginx` -
+they replace the Python scripts documented under `server/`), and the development tools
+`core-build/agora_icon` and `core-build/agora_utf8_host_test`. The tests read fixtures straight
+from the app tree, so run the commands from the repository root.
 
 ## How parity is held
 

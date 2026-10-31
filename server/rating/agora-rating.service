@@ -6,7 +6,7 @@ After=network.target
 Type=simple
 User=agora-rating
 Group=agora-rating
-ExecStart=/usr/bin/python3 /opt/agora-rating/agora-rating-api.py
+ExecStart=/opt/agora-rating/agora_server rating
 Restart=on-failure
 RestartSec=2
 

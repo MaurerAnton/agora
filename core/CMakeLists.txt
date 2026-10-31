@@ -209,6 +209,20 @@ else()
     endif()
 endif()
 
+# POSIX submission receivers (server/): host-only POSIX, excluded on Android and Windows.
+# Threads::Threads covers the per-connection accept threads on glibc older than 2.34 as well.
+if(UNIX AND NOT CMAKE_SYSTEM_NAME STREQUAL "Android")
+    find_package(Threads REQUIRED)
+    target_sources(agora_core_lib PRIVATE
+        src/server/submission_messages.cpp
+        src/server/http_server.cpp
+        src/server/rating_receiver.cpp
+        src/server/crash_receiver.cpp
+        src/server/patch_nginx.cpp
+    )
+    target_link_libraries(agora_core_lib PUBLIC Threads::Threads)
+endif()
+
 if(AGORA_CORE_BUILD_TESTS)
     enable_testing()
     add_subdirectory(tests)
@@ -235,4 +249,28 @@ if(AGORA_CORE_BUILD_TESTS)
     target_compile_options(agora_scenarios PRIVATE -O0 -Wall -Wextra
         -Wno-missing-field-initializers -Wno-maybe-uninitialized)
     target_link_libraries(agora_scenarios PRIVATE agora_core_lib ZLIB::ZLIB OpenSSL::Crypto)
+endif()
+
+if(UNIX AND NOT CMAKE_SYSTEM_NAME STREQUAL "Android")
+    # C++ replacement for the Python receiver scripts in server/ (reference implementations live
+    # in the git history of server/*.py; wire semantics pinned by core/tests/server_submission_test.cpp).
+    add_executable(agora_server tools/server_main.cpp)
+    target_link_libraries(agora_server PRIVATE agora_core_lib Threads::Threads)
+endif()
+
+if(NOT CMAKE_SYSTEM_NAME STREQUAL "Android")
+    # Icon generator (scripts/round_icon.py port): header-only vendored stb, no core dependency.
+    add_executable(agora_icon tools/icon_main.cpp)
+    target_include_directories(agora_icon PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/thirdparty/stb)
+    if(NOT MSVC)
+        # Vendored stb triggers -Wextra's aggregate-init noise; same suppression the repo
+        # already uses for the scenario tool.
+        target_compile_options(agora_icon PRIVATE -Wall -Wextra -Wno-unused-function
+            -Wno-sign-compare -Wno-missing-field-initializers)
+    endif()
+
+    # UTF-8 JNI host test (scripts/test-native-utf8.py port): needs a JDK at RUN time,
+    # not at build time.
+    add_executable(agora_utf8_host_test tools/utf8_host_main.cpp)
+    target_link_libraries(agora_utf8_host_test PRIVATE agora_core_lib)
 endif()

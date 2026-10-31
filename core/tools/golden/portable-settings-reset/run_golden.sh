@@ -24,7 +24,7 @@ rm -rf "$here/build"
 mkdir -p "$classes" "$fresh"
 
 echo "Regenerating the settings schema key list..."
-python3 "$here/gen_schema_keys.py"
+"${AGORA_SCENARIOS:-$root/core/build/agora_scenarios}" schema-keys "$here"
 
 sources=(
     "$app/data/SettingsPreferenceSchema.kt"

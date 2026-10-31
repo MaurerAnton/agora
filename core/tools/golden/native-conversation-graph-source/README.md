@@ -19,7 +19,7 @@ through.
    `MalformedJsonException` + `com.android.internal.util.StringPool`** — vendored **verbatim**
    from `android.googlesource.com` (`platform/frameworks/base`, `core/java/android/util/…`,
    fetched from `refs/heads/main`) in `vendor/android-util-json/`. The single documented
-   build-time edit (`prepare_vendor.py`) drops the `@android.ravenwood.annotation…` lines,
+   build-time edit (`agora_scenarios prepare-vendor`) drops the `@android.ravenwood.annotation…` lines,
    which only exist for Android's internal test harness. `javac` compiles them into the stand
    classpath, so the streaming parse, the strict-mode acceptance rules, the `line N column M`
    error arithmetic and the `Double.toString` emission the spool re-serialisation depends on

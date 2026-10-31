@@ -16,7 +16,7 @@ every trace byte for byte **after the same non-determinism mask** is applied to 
 | `ShellCryptoTraceDump.kt` | The stand driver (exercises every public function) |
 | `agora_scenarios shell-crypto` | Generates the scenarios (deterministic; rerun after editing) |
 | `platform/Base64.java` | The substituted `android.util.Base64` surface (vendored) |
-| `mask_trace.py` | Masks non-deterministic trace fields **with their length** on both sides |
+| `agora_scenarios mask-trace <file>` | Masks non-deterministic trace fields **with their length** on both sides |
 | `run_golden.sh` | Extracts nothing, compiles and regenerates or verifies the traces |
 
 ## What is pinned
@@ -65,7 +65,7 @@ One compact JSON object per line, keys in driver order, e.g.
 `{"derived_key":"…"}` or `{"error":"Tag mismatch!"}`; escaping is the driver's
 (`\` `"` `\n` `\r` `\t` only). Every trace ends with `\n`.
 
-**Masking**: `run_golden.sh` runs `mask_trace.py` over the fresh traces *and* the frozen golden
+**Masking**: `run_golden.sh` runs `agora_scenarios mask-trace` over the fresh traces *and* the frozen golden
 traces before diffing (and over the golden on `--freeze`). `nonce`, `ciphertext`, `public_key_raw`
 and `private_key_raw` are replaced with **length-carrying** placeholders — `<nonce:16>`,
 `<ciphertext:55>`, `<public_key_raw:43>`, `<private_key_raw:64>` — while everything else stays

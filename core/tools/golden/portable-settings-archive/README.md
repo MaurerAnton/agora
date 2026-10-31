@@ -19,7 +19,7 @@ extractor of the `provider-identity` stand (`agora_extract provider-identity`).
 | `golden/*.trace` | Frozen Kotlin output, one per scenario |
 | `PortableSettingsArchiveTraceDump.kt` | Driver: runs export/restore against the recording double |
 | `platform/` | DataStore preferences keys, crypto/debug shims, recording `SettingsManager` double |
-| `gen_scenarios.py` | Deterministic scenario generator (every scenario carries the full 97-key snapshot) |
+| `agora_scenarios portable-settings-archive <stand>` | Deterministic scenario generator (every scenario carries the full 97-key snapshot) |
 | `run_golden.sh` | Extracts the identity policy, compiles, freezes (`--freeze`) or verifies the traces |
 
 ## What is pinned

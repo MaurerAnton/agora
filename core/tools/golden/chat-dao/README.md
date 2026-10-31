@@ -87,7 +87,7 @@ is reproducible without freezing the process clock.
 
 Missing optional fields mean NULL. Message `status` defaults to `SUCCESS`, `participant` to
 `MODEL`, and `runSequence` to `-1`; run `status` defaults to `ACTIVE` and `activeSlot` to `1`
-(an explicit `"activeSlot": null` is preserved). `gen_scenarios.py` writes the fifteen scenarios
+(an explicit `"activeSlot": null` is preserved). `agora_scenarios chat-dao <stand>` writes the fifteen scenarios
 over purpose-built seeds.
 
 ## Trace format (`golden/*.trace`)

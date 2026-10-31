@@ -54,7 +54,7 @@ echo "Generating scenarios..."
 "${AGORA_SCENARIOS:-$root/core/build/agora_scenarios}" native-conversation-graph-importer "$here"
 
 echo "Staging the vendored android.util.Json* sources (from the graph-source stand)..."
-python3 "$graph_stand/prepare_vendor.py" "$graph_stand/vendor/android-util-json" "$vendor_src"
+"${AGORA_SCENARIOS:-$root/core/build/agora_scenarios}" prepare-vendor "$graph_stand/vendor/android-util-json" "$vendor_src"
 
 echo "Compiling the vendored Android JSON platform types..."
 javac -nowarn -d "$android_classes" "$vendor_src"/*.java

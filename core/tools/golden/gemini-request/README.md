@@ -50,7 +50,7 @@ signature-compatibility check.
 | `GeminiRequestTraceDump.kt` | The stand driver (see "How the driver works") |
 | ``agora_extract gemini-request`` | Verbatim extraction of the request-side provider helpers |
 | `run_golden.sh` | Extracts, compiles and regenerates or verifies the traces |
-| `gen_scenarios.py` | Generates the scenarios (deterministic; rerun after editing) |
+| `agora_scenarios gemini-request <stand>` | Generates the scenarios (deterministic; rerun after editing) |
 | `files/` | Attachment fixtures for the base64 registry |
 | `stubs/` | Leaf stubs for Android-only types the reference sources touch |
 
@@ -158,7 +158,7 @@ are collapsed to `<uuid>`; escaping is the shared `\\` `\p` `\s` `\n` `\r` `\t` 
 ```
 KOTLINC=/path/to/kotlinc KOTLINX_JARS=core.jar:json.jar ./run_golden.sh          # verify
 KOTLINC=/path/to/kotlinc KOTLINX_JARS=core.jar:json.jar ./run_golden.sh --freeze # regenerate
-python3 gen_scenarios.py                                                          # rewrite scenarios
+../../../build/agora_scenarios gemini-request .                                                          # rewrite scenarios
 ```
 
 The Kotlin reference is compiled from the app tree on every run; the extractor fails loudly if

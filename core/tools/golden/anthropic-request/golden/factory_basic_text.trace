@@ -1,4 +1,0 @@
-name|factory_basic_text
-mode|factory
-apiMessages|[{"role":"user","content":[{"type":"text","text":"Hello"}]}]
-body|{"model":"claude-3-5-sonnet","messages":[{"role":"user","content":[{"type":"text","text":"Hello"}]}],"system":"You are helpful.","max_tokens":8192,"stream":true,"cache_control":{"type":"ephemeral","ttl":"1h"},"temperature":0.7}

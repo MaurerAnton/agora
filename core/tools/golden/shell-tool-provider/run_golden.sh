@@ -62,7 +62,7 @@ rm -rf "$here/build"
 mkdir -p "$classes" "$fresh" "$android_classes"
 
 echo "Generating scenarios..."
-python3 "$here/gen_scenarios.py"
+"${AGORA_SCENARIOS:-$root/core/build/agora_scenarios}" shell-tool-provider "$here"
 
 echo "Compiling the vendored Android Base64 platform type..."
 "$javac_bin" -nowarn -d "$android_classes" "$here/platform/Base64.java"

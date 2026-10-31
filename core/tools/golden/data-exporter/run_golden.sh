@@ -127,7 +127,7 @@ for source in "${sources[@]}"; do
 done
 
 echo "Generating scenarios..."
-python3 "$here/gen_scenarios.py"
+"${AGORA_SCENARIOS:-$root/core/build/agora_scenarios}" data-exporter "$here"
 
 echo "Compiling the Kotlin reference sources..."
 "$kotlinc_bin" -Xjvm-default=all -java-parameters -Xplugin="$plugin" -cp "$runtime" \

@@ -1,8 +1,0 @@
-name|factory_with_images
-mode|factory
-apiMessages|[{"role":"user","content":[{"type":"image","source":{"type":"base64","media_type":"image/png","data":"__AGORA_BASE64_<uuid>__"}},{"type":"text","text":"What's in this image?"}]}]
-body|{"model":"claude-3-5-sonnet","messages":[{"role":"user","content":[{"type":"image","source":{"type":"base64","media_type":"image/png","data":"__AGORA_BASE64_<uuid>__"}},{"type":"text","text":"What's in this image?"}]}],"system":"You are helpful.","max_tokens":8192,"stream":true,"cache_control":{"type":"ephemeral","ttl":"1h"},"temperature":0.7}
-diagnostic|{"model":"claude-3-5-sonnet","messages":[{"role":"user","content":[{"type":"image","source":{"type":"base64","media_type":"image/png","data":"[STREAMED_BASE64:4_BYTES]"}},{"type":"text","text":"What's in this image?"}]}],"system":"You are helpful.","max_tokens":8192,"stream":true,"cache_control":{"type":"ephemeral","ttl":"1h"},"temperature":0.7}
-contentLength|330
-file|0|files/a.png|4|0f4636c78f65d3639ece5a064b5ae753e3408614a14fb18ab4d7540d2c248543
-resolvedBody|{"model":"claude-3-5-sonnet","messages":[{"role":"user","content":[{"type":"image","source":{"type":"base64","media_type":"image/png","data":"iVBORw=="}},{"type":"text","text":"What's in this image?"}]}],"system":"You are helpful.","max_tokens":8192,"stream":true,"cache_control":{"type":"ephemeral","ttl":"1h"},"temperature":0.7}

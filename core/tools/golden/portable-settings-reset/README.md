@@ -14,9 +14,9 @@ preference store), which is the documented leaf stub of the `native-backup-secre
 | `golden/*.trace` | Frozen Kotlin output |
 | `PortableSettingsResetTraceDump.kt` | Driver: seeds the store, runs the reset, renders the outcome |
 | `platform/Preferences.kt` | The in-memory preference store (the DataStore preferences contract) |
-| `SchemaKeys.kt` | **Generated** list of every settings key (see `gen_schema_keys.py`) |
-| `gen_schema_keys.py` | Regenerates `SchemaKeys.kt` from `SettingsPreferenceSchema.kt` |
-| `gen_reset_keys.py` | Regenerates the C++ reset key list from `PortableSettingsReset.kt` |
+| `SchemaKeys.kt` | **Generated** list of every settings key (see `agora_scenarios schema-keys`) |
+| `agora_scenarios schema-keys <stand>` | Regenerates `SchemaKeys.kt` from `SettingsPreferenceSchema.kt` |
+| `agora_scenarios gen-reset-keys <stand>` | Regenerates the C++ reset key list from `PortableSettingsReset.kt` |
 | `run_golden.sh` | Compiles, freezes (`--freeze`) or verifies the trace |
 
 ## What is pinned
@@ -34,11 +34,11 @@ preference store), which is the documented leaf stub of the `native-backup-secre
 
 * The reset writes through the preference-name contract, not through the typed DataStore keys; the
   names are the schema's names.
-* The C++ list is **generated from the Kotlin source** (`gen_reset_keys.py`), so the port cannot
-  drift from the policy: the script fails if a removed constant is not a schema key or is removed
+* The C++ list is **generated from the Kotlin source** (`agora_scenarios gen-reset-keys`), so the
+  port cannot drift from the policy: the tool fails if a removed constant is not a schema key or is removed
   twice.
-* The schema key list is generated as well (`gen_schema_keys.py`); run both scripts after the
-  schema or the policy changes.
+* The schema key list is generated as well (`agora_scenarios schema-keys`); run both modes after
+  the schema or the policy changes.
 
 ## Running
 

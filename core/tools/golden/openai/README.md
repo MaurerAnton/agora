@@ -58,7 +58,7 @@ host `std::pow` disagree by one ulp on some integer exponents, so the C++ port c
 
 `pow10/ProbePow10.kt` dumps `Math.pow(10.0, e)` bit patterns for `e` in `[-400, 400]` on the
 desktop JDK; the dump is frozen as `pow10/pow10_jvm.txt` and turned into
-`core/src/jvm_pow10_table.generated.hpp` by `pow10/generate_table.py`. The port uses the table for
+`core/src/jvm_pow10_table.generated.hpp` by `agora_scenarios gen-pow10-table`. The port uses the table for
 integral exponents in range and falls back to `std::pow` outside it (where every implementation
 saturates to `0` or `Inf`).
 
@@ -67,7 +67,7 @@ Regenerate the table:
 ```sh
 cd pow10
 kotlinc ProbePow10.kt -include-runtime -d probe.jar && java -jar probe.jar > pow10_jvm.txt
-python3 generate_table.py
+../../build/agora_scenarios gen-pow10-table pow10
 ```
 
 ## codec (the JNI wire format)
@@ -77,12 +77,12 @@ self-contained payload (events, debug lines and the keep-reading flag) and `fini
 encoded termination. The format is documented in `core/include/agora/core/openai_stream_codec.hpp`.
 
 The fixtures under `app/src/test/resources/openai_stream_codec/` are the single source of truth for
-those bytes: `codec/generate_codec_fixtures.py` writes them,
+those bytes: `agora_scenarios gen-codec-fixtures` writes them,
 `core/tests/openai_stream_codec_test.cpp` byte-compares the native encoder against them, and
 `app/src/test/java/com/newoether/agora/api/openai/NativeStreamCodecTest.kt` decodes them back into
 events and a termination. The fixtures are committed; regenerate only when the format itself
 changes:
 
 ```sh
-python3 codec/generate_codec_fixtures.py
+../../build/agora_scenarios gen-codec-fixtures codec
 ```

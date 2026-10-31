@@ -16,7 +16,7 @@ canonical trace is frozen under `golden/`; the C++ port
 | `agora_extract message-segment` | Lifts `MessageSegment`, `ToolImageAttachment` and `StreamingTextDelta` out of `model/ChatMessage.kt` |
 | `PlatformStubs.kt` | The `@Immutable` Compose marker annotation |
 | `run_golden.sh` | Extracts, compiles and regenerates or verifies the traces |
-| `gen_scenarios.py` | Generates the scenarios (deterministic; rerun after editing) |
+| `agora_scenarios backup-media-policy <stand>` | Generates the scenarios (deterministic; rerun after editing) |
 
 ## What is pinned
 
@@ -124,7 +124,7 @@ Escaping: `\` `|` `;` `\n` `\r` `\t` → `\\\\` `\\p` `\\s` `\\n` `\\r` `\\t`; a
 ```bash
 JAVA_HOME=/path/to/jdk17 KOTLINC=/path/to/kotlinc-2.3.21 KOTLINX_JARS=core-1.11.0.jar:json-1.11.0.jar ./run_golden.sh          # verify
 JAVA_HOME=/path/to/jdk17 KOTLINC=/path/to/kotlinc-2.3.21 KOTLINX_JARS=core-1.11.0.jar:json-1.11.0.jar ./run_golden.sh --freeze # regenerate
-python3 gen_scenarios.py                                                                                                     # rewrite scenarios
+../../../build/agora_scenarios backup-media-policy .                                                                                                     # rewrite scenarios
 ```
 
 **The toolchain must match the app: Kotlin 2.3.21 and kotlinx-serialization 1.11.0.** That is a

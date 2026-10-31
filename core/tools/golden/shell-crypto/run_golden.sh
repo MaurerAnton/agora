@@ -65,7 +65,7 @@ java -cp "$classes:$runtime" \
 
 # Mask non-deterministic values in fresh traces
 for f in "$fresh"/*.trace; do
-    python3 "$here/mask_trace.py" "$f"
+    "${AGORA_SCENARIOS:-$root/core/build/agora_scenarios}" mask-trace "$f"
 done
 
 count="$(ls "$fresh"/*.trace | wc -l)"
@@ -76,7 +76,7 @@ if [[ "${1:-}" == "--freeze" ]]; then
     cp "$fresh"/*.trace "$here/golden/"
     # Also mask the golden traces so they match the masked fresh traces
     for f in "$here/golden"/*.trace; do
-        python3 "$here/mask_trace.py" "$f"
+        "${AGORA_SCENARIOS:-$root/core/build/agora_scenarios}" mask-trace "$f"
     done
     echo "Frozen $count traces into $here/golden"
     exit 0
@@ -84,7 +84,7 @@ fi
 
 # Mask golden traces before comparison
 for f in "$here/golden"/*.trace; do
-    python3 "$here/mask_trace.py" "$f"
+    "${AGORA_SCENARIOS:-$root/core/build/agora_scenarios}" mask-trace "$f"
 done
 
 if diff -r "$here/golden" "$fresh" > "$here/build/diff.txt"; then

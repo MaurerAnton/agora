@@ -1,3 +1,0 @@
-name|validate_error_text_blank
-mode|validate
-error|RequestFormatException|Anthropic request validation failed: messages[0].content[0] is not a valid nonblank text block

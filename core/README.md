@@ -50,7 +50,7 @@ commands from the repository root.
    KOTLINC=/path/to/kotlinc/bin ./core/tools/golden/check_parity.sh
    ```
 
-To extend the corpus, edit `core/tools/golden/generate_corpus.py` (seeded, deterministic),
+To extend the corpus, rerun `agora_scenarios gen-corpus <repo-root> <out>` (seeded, deterministic),
 regenerate `corpus.b64`, re-freeze `golden_counts.txt` with the Kotlin dumper, and rerun the
 tests — that is the reviewable definition of "the port still agrees".
 

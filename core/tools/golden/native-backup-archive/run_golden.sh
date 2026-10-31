@@ -4,7 +4,7 @@
 # NativeBackupArchive.kt and its collaborators compile VERBATIM from the app tree; the platform
 # substitutes are the Android Context/Uri/ParcelFileDescriptor surface and the DataStore
 # SettingsManager double (needed only so SettingsContracts.kt compiles). The archives are
-# committed fixtures built byte-exactly by gen_scenarios.py, so both ports read identical bytes.
+# committed fixtures built byte-exactly by agora_scenarios, so both ports read identical bytes.
 #
 # Usage:
 #   KOTLINX_JARS=... ./run_golden.sh            # verify scenarios against the frozen traces
@@ -36,7 +36,7 @@ rm -rf "$here/build"
 mkdir -p "$classes" "$fresh"
 
 echo "Generating scenarios and fixtures..."
-python3 "$here/gen_scenarios.py"
+"${AGORA_SCENARIOS:-$root/core/build/agora_scenarios}" native-backup-archive "$here"
 
 echo "Extracting the graph entry-source interface..."
 "${AGORA_EXTRACT:-$root/core/build/agora_extract}" graph-interface \

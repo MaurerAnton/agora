@@ -17002,6 +17002,2369 @@ void profile_semantic_index_ledger(const fs::path& scenarios) {
 }
 }  // namespace
 
+// context-compact/gen_scenarios.py — indent=2, ensure_ascii=False.
+void profile_context_compact(const fs::path& scenarios) {
+    std::vector<std::pair<std::string, json::Value>> entries;
+    auto add = [&](const std::string& name, json::Value value) {
+        entries.emplace_back(name, std::move(value));
+    };
+
+    auto is_terminal = [](const std::string& status) {
+        return status == "COMPLETED" || status == "STOPPED" || status == "FAILED";
+    };
+    auto end_reason = [](const std::string& status) -> std::string {
+        if (status == "STOPPED") return "USER_STOPPED";
+        if (status == "FAILED") return "PROVIDER_ERROR";
+        return "MODEL_COMPLETED";
+    };
+
+    auto conversation = [](const char* id,
+                           std::optional<std::string> branches = std::nullopt,
+                           std::optional<std::string> run_branches = std::nullopt,
+                           std::int64_t last_updated = 100,
+                           std::int64_t data_changed_at = 100) {
+        std::vector<std::pair<std::string, json::Value>> members = {
+            {"id", str(id)},
+            {"selectedBranchesJson", branches ? str(*branches) : null_value()},
+            {"selectedRunBranchesJson", run_branches ? str(*run_branches) : null_value()},
+            {"lastUpdated", number(last_updated)},
+            {"dataChangedAt", number(data_changed_at)}};
+        return object(std::move(members));
+    };
+
+    // Python run(): terminal rows clear activeSlot/stopRequestedAt and fill endedAt+endReason;
+    // non-terminal rows take the live slot. parentRunId is appended last when present.
+    auto run_members = [&](const char* id, const char* conversation_id, const char* status,
+                           const char* parent, std::int64_t started,
+                           std::optional<std::int64_t> stopped,
+                           std::optional<std::int64_t> ended, const char* reason,
+                           std::int64_t current_pass) {
+        const std::string st(status);
+        std::optional<std::int64_t> active_slot;
+        std::optional<std::string> end_reason_value;
+        if (is_terminal(st)) {
+            active_slot = std::nullopt;
+            if (!ended) ended = started + 100;
+            end_reason_value =
+                (reason && reason[0] != '\0') ? std::string(reason) : end_reason(st);
+            stopped = std::nullopt;
+        } else {
+            active_slot = 1;
+            ended = std::nullopt;
+            end_reason_value = std::nullopt;
+            if (st == "STOPPING" && !stopped) stopped = started + 50;
+        }
+        std::vector<std::pair<std::string, json::Value>> members = {
+            {"id", str(id)},
+            {"conversationId", str(conversation_id)},
+            {"status", str(st)},
+            {"activeSlot", active_slot ? number(*active_slot) : null_value()},
+            {"startedAt", number(started)},
+            {"lastCheckpointAt", number(started)},
+            {"stopRequestedAt", stopped ? number(*stopped) : null_value()},
+            {"endedAt", ended ? number(*ended) : null_value()},
+            {"endReason", end_reason_value ? str(*end_reason_value) : null_value()},
+            {"currentPass", number(current_pass)},
+            {"legacyAmbiguous", boolean(false)}};
+        if (parent) members.emplace_back("parentRunId", str(parent));
+        return members;
+    };
+    auto run = [&](const char* id, const char* conversation_id,
+                   const char* status = "COMPLETED", const char* parent = nullptr,
+                   std::int64_t started = 1000, std::optional<std::int64_t> stopped = std::nullopt,
+                   std::optional<std::int64_t> ended = std::nullopt, const char* reason = nullptr,
+                   std::int64_t current_pass = 0) {
+        return object(run_members(id, conversation_id, status, parent, started, stopped, ended,
+                                  reason, current_pass));
+    };
+    // replacement(): the beginRecompactContextCompact argument; ACTIVE re-asserts the live-slot
+    // fields in place (Python dict reassignment keeps key order).
+    auto replacement = [&](const char* id, const char* conversation_id, const char* parent = nullptr,
+                           const char* status = "ACTIVE", std::int64_t started = 50) {
+        auto members = run_members(id, conversation_id, status, parent, started, std::nullopt,
+                                   std::nullopt, nullptr, 0);
+        if (std::string(status) == "ACTIVE") {
+            for (auto& [key, value] : members) {
+                if (key == "activeSlot") value = number(1);
+                else if (key == "endedAt") value = null_value();
+                else if (key == "endReason") value = null_value();
+                else if (key == "stopRequestedAt") value = null_value();
+            }
+        }
+        return object(std::move(members));
+    };
+
+    auto message = [](const char* id, const char* conversation_id, const char* text = "body",
+                      const char* status = "SUCCESS", const char* participant = "MODEL",
+                      std::int64_t timestamp = 100, const char* run_id = "r1",
+                      std::int64_t seq = 0, const char* parent = nullptr,
+                      std::int64_t token_count = 0,
+                      std::optional<std::string> model_name = std::nullopt,
+                      std::optional<json::Value> images = std::nullopt,
+                      std::optional<std::string> images_raw = std::nullopt) {
+        std::vector<std::pair<std::string, json::Value>> members = {
+            {"id", str(id)},
+            {"conversationId", str(conversation_id)},
+            {"text", str(text)},
+            {"status", str(status)},
+            {"participant", str(participant)},
+            {"timestamp", number(timestamp)},
+            {"runId", str(run_id)},
+            {"runSequence", number(seq)},
+            {"tokenCount", number(token_count)}};
+        if (parent) members.emplace_back("parentId", str(parent));
+        if (images) members.emplace_back("images", *std::move(images));
+        if (images_raw) members.emplace_back("imagesRaw", str(*images_raw));
+        if (model_name) members.emplace_back("modelName", str(*model_name));
+        return object(std::move(members));
+    };
+
+    auto embedding = [](std::int64_t id, const char* message_id) {
+        return object({{"id", number(id)},
+                       {"messageId", str(message_id)},
+                       {"modelId", str("m")},
+                       {"embedding", str("0a0b")},
+                       {"chunkText", str("chunk")},
+                       {"dimension", number(2)},
+                       {"sourceFingerprint", str("fp")}});
+    };
+
+    auto recompact = [](json::Value replacement_run, const char* message_id,
+                        const char* model_name, const char* expected_branches) {
+        return object({{"op", str("beginRecompactContextCompact")},
+                       {"replacementRun", std::move(replacement_run)},
+                       {"messageId", str(message_id)},
+                       {"modelName", str(model_name)},
+                       {"expectedSelectedBranchesJson", str(expected_branches)}});
+    };
+    auto remove = [](const char* message_id) {
+        return object({{"op", str("removeContextCompact")}, {"messageId", str(message_id)}});
+    };
+    auto sql = [](const char* sql_text,
+                  std::optional<std::vector<json::Value>> args = std::nullopt) {
+        std::vector<std::pair<std::string, json::Value>> members = {
+            {"op", str("sql")}, {"sql", str(sql_text)}};
+        if (args) members.emplace_back("args", array(std::move(*args)));
+        return object(std::move(members));
+    };
+    auto op_field = [](const char* op, const char* key, json::Value value) {
+        return object({{"op", str(op)}, {key, std::move(value)}});
+    };
+
+    auto seed = [](std::vector<json::Value> conversations, std::vector<json::Value> runs,
+                   std::vector<json::Value> messages) {
+        return object({{"conversations", array(std::move(conversations))},
+                       {"runs", array(std::move(runs))},
+                       {"messages", array(std::move(messages))}});
+    };
+    auto seed_emb = [](std::vector<json::Value> conversations, std::vector<json::Value> runs,
+                       std::vector<json::Value> messages, std::vector<json::Value> embeddings) {
+        return object({{"conversations", array(std::move(conversations))},
+                       {"runs", array(std::move(runs))},
+                       {"messages", array(std::move(messages))},
+                       {"embeddings", array(std::move(embeddings))}});
+    };
+    auto scenario = [](json::Value seed_value, std::vector<json::Value> steps) {
+        return object({{"seed", std::move(seed_value)}, {"steps", array(std::move(steps))}});
+    };
+
+    // 01 — the full Recompact surgery: run swap, message re-point, selections rewrite, old run
+    // dropped, watermark moved to the replacement run's startedAt.
+    add("01-recompact-happy",
+        scenario(
+            seed({conversation("c1", R"({"m1":"compact_1"})", R"({"r1":"compact_run"})")},
+                 {run("r1", "c1", "COMPLETED", nullptr, 10, std::nullopt, 20, "MODEL_COMPLETED"),
+                  run("compact_run", "c1", "STOPPED", "r1", 30, std::nullopt, 40, "USER_STOPPED")},
+                 {message("m1", "c1", "hello", "SUCCESS", "USER", 5, "r1", 0),
+                  message("compact_1", "c1", "summary", "SUCCESS", "MODEL", 45, "compact_run", 0,
+                          "m1")}),
+            {recompact(replacement("recompact_run", "c1", "r1"), "compact_1", "gpt-x",
+                       R"({"m1":"compact_1"})")}));
+
+    // 02 — Remove with dedicated run and suffix children: both promotion branches fire, both
+    // reparents run, the embeddings go, and the clock watermark is masked.
+    add("02-remove-dedicated-run",
+        scenario(
+            seed_emb(
+                {conversation("c1", R"({"m1":"compact_1","compact_1":"m2"})",
+                              R"({"r1":"compact_run","compact_run":"child_run"})")},
+                {run("r1", "c1"), run("compact_run", "c1", "STOPPED", "r1"),
+                 run("child_run", "c1", "COMPLETED", "compact_run")},
+                {message("m1", "c1", "body", "SUCCESS", "USER", 100, "r1", 0),
+                 message("compact_1", "c1", "body", "SUCCESS", "MODEL", 100, "compact_run", 0,
+                         "m1"),
+                 message("m2", "c1", "body", "SUCCESS", "MODEL", 100, "r1", 1, "compact_1")},
+                {embedding(1, "compact_1"), embedding(2, "m1")}),
+            {remove("compact_1")}));
+
+    // 03 — Remove where neither projection has a suffix entry: the parent keys are dropped
+    // instead of being repointed.
+    add("03-remove-key-removal",
+        scenario(
+            seed({conversation("c1", R"({"m1":"compact_1"})", R"({"r1":"compact_run"})")},
+                 {run("r1", "c1"), run("compact_run", "c1", "STOPPED", "r1")},
+                 {message("m1", "c1", "body", "SUCCESS", "MODEL", 100, "r1", 0),
+                  message("compact_1", "c1", "body", "SUCCESS", "MODEL", 100, "compact_run", 0,
+                          "m1")}),
+            {remove("compact_1")}));
+
+    // 04 — The compact shares its Run with another message, so the Run survives untouched while
+    // the message-level projection still collapses.
+    add("04-remove-shared-run",
+        scenario(
+            seed({conversation("c1", R"({"m1":"compact_1"})", R"({"r1":"compact_run"})")},
+                 {run("r1", "c1"), run("compact_run", "c1", "STOPPED", "r1")},
+                 {message("m1", "c1", "body", "SUCCESS", "MODEL", 100, "r1", 0),
+                  message("compact_1", "c1", "body", "SUCCESS", "MODEL", 100, "compact_run", 0,
+                          "m1"),
+                  message("other_msg", "c1", "body", "SUCCESS", "MODEL", 100, "compact_run", 1)}),
+            {remove("compact_1")}));
+
+    // 05 — The guards SQLite's foreign keys would otherwise make unreachable: reached by turning
+    // foreign_keys off for the deletions, exactly as the two `?: return false` paths and the
+    // missing-conversation error behave.
+    add("05-fk-off-guards",
+        scenario(
+            seed({conversation("c1", R"({"m1":"compact_c1"})"), conversation("c2"),
+                  conversation("c3")},
+                 {run("c1_run", "c1"), run("c2_run", "c2"), run("c3_run", "c3")},
+                 {message("m1", "c1", "body", "SUCCESS", "MODEL", 100, "c1_run", 0),
+                  message("compact_c1", "c1", "body", "SUCCESS", "MODEL", 100, "c1_run", 1, "m1"),
+                  message("compact_c2", "c2", "body", "SUCCESS", "MODEL", 100, "c2_run", 0),
+                  message("compact_c3", "c3", "body", "SUCCESS", "MODEL", 100, "c3_run", 0)}),
+            {remove("missing_message"),
+             sql("PRAGMA foreign_keys = OFF"),
+             sql("DELETE FROM conversations WHERE id = ?", std::vector<json::Value>{str("c1")}),
+             remove("compact_c1"),
+             sql("DELETE FROM runs WHERE id = ?", std::vector<json::Value>{str("c2_run")}),
+             remove("compact_c2"),
+             sql("DELETE FROM conversations WHERE id = ?", std::vector<json::Value>{str("c3")}),
+             recompact(replacement("zz_run", "c3", "c3_run"), "compact_c3", "m",
+                       R"({"m1":"compact_c1"})")}));
+
+    // 06 — A non-compact message is rejected by the prefix require.
+    add("06-remove-not-compact",
+        scenario(seed({conversation("c1")}, {run("r1", "c1")},
+                      {message("m1", "c1", "body", "SUCCESS", "MODEL", 100, "r1", 0)}),
+                 {remove("m1")}));
+
+    // 07 — The read half of the interface, including every "absent row" answer.
+    add("07-plain-reads",
+        scenario(
+            seed({conversation("c1", R"({"a":"b"})", R"({"c":"d"})", 100, 100),
+                  conversation("c2")},
+                 {run("r1", "c1"), run("r2", "c1"), run("lr", "c2", "ACTIVE", nullptr, 10)},
+                 {message("m1", "c1", "body", "SUCCESS", "MODEL", 5, "r1", 0),
+                  message("m2", "c1", "body", "SUCCESS", "MODEL", 9, "r1", 5)}),
+            {op_field("getConversation", "conversationId", str("c1")),
+             op_field("getConversation", "conversationId", str("missing")),
+             op_field("getMessage", "messageId", str("m1")),
+             op_field("getMessage", "messageId", str("missing")),
+             op_field("getRun", "runId", str("r1")),
+             op_field("getRun", "runId", str("missing")),
+             op_field("getLiveRun", "conversationId", str("c1")),
+             op_field("getLiveRun", "conversationId", str("c2")),
+             op_field("getLiveRun", "conversationId", str("missing")),
+             op_field("getMessagesForRuns", "runIds", array({str("r1")})),
+             op_field("getMessagesForRuns", "runIds", array({str("missing")})),
+             op_field("nextRunSequence", "runId", str("r1")),
+             op_field("nextRunSequence", "runId", str("r2"))}));
+
+    // 08 — The write half of the interface: every update/delete/insert reports its row count,
+    // the four selection updaters move the two watermarks independently, and the Compact run
+    // replacement both succeeds (1) and refuses (0).
+    add("08-plain-writes",
+        scenario(
+            seed_emb({conversation("c1")},
+                     {run("r1", "c1"), run("r_child", "c1", "COMPLETED", "r1"), run("r_del", "c1")},
+                     {message("m1", "c1", "body", "SUCCESS", "MODEL", 100, "r1", 0),
+                      message("m2", "c1", "body", "SUCCESS", "MODEL", 100, "r1", 1, "m1"),
+                      message("m3", "c1", "body", "SUCCESS", "MODEL", 100, "r1", 2),
+                      message("compact_1", "c1", "body", "SUCCESS", "MODEL", 100, "r1", 3)},
+                     {embedding(1, "m1"), embedding(2, "m2")}),
+            {object({{"op", str("insertMessage")},
+                     {"message",
+                      object({{"id", str("m_new")},
+                              {"conversationId", str("c1")},
+                              {"text", str("inserted")},
+                              {"status", str("SUCCESS")},
+                              {"participant", str("MODEL")},
+                              {"timestamp", number(50)},
+                              {"runId", str("r1")},
+                              {"runSequence", number(7)}})}}),
+             object({{"op", str("insertRun")}, {"run", run("r_new", "c1", "COMPLETED", nullptr, 70)}}),
+             object({{"op", str("touchRun")}, {"runId", str("r1")}, {"at", number(77)}}),
+             object({{"op", str("touchRun")}, {"runId", str("missing")}, {"at", number(77)}}),
+             object({{"op", str("reparentMessageChildren")},
+                     {"removedMessageId", str("m1")},
+                     {"replacementParentId", str("m3")}}),
+             object({{"op", str("reparentMessageChildren")},
+                     {"removedMessageId", str("m1")},
+                     {"replacementParentId", null_value()}}),
+             object({{"op", str("reparentRunChildren")},
+                     {"removedRunId", str("r1")},
+                     {"replacementParentRunId", str("r_new")}}),
+             object({{"op", str("reparentRunChildren")},
+                     {"removedRunId", str("missing")},
+                     {"replacementParentRunId", null_value()}}),
+             object({{"op", str("replaceContextCompactMessageRun")},
+                     {"messageId", str("compact_1")},
+                     {"oldRunId", str("r1")},
+                     {"newRunId", str("r_new")},
+                     {"modelName", str("model-x")}}),
+             object({{"op", str("replaceContextCompactMessageRun")},
+                     {"messageId", str("compact_1")},
+                     {"oldRunId", str("r1")},
+                     {"newRunId", str("r_new")},
+                     {"modelName", str("model-x")}}),
+             object({{"op", str("updateSelectionsForRunDeletion")},
+                     {"conversationId", str("c1")},
+                     {"selectedBranchesJson", str(R"({"a":"b"})")},
+                     {"selectedRunBranchesJson", str(R"({"c":"d"})")},
+                     {"at", number(500)}}),
+             object({{"op", str("updateMessageBranchSelections")},
+                     {"conversationId", str("c1")},
+                     {"selectedBranchesJson", str(R"({"e":"f"})")},
+                     {"at", number(600)}}),
+             object({{"op", str("updateRunBranchSelections")},
+                     {"conversationId", str("c1")},
+                     {"selectedRunBranchesJson", str(R"({"g":"h"})")},
+                     {"at", number(700)}}),
+             object({{"op", str("updateBranchSelections")},
+                     {"conversationId", str("c1")},
+                     {"selectedBranchesJson", str(R"({"i":"j"})")},
+                     {"selectedRunBranchesJson", str(R"({"k":"l"})")},
+                     {"at", number(800)}}),
+             object({{"op", str("updateMessageBranchSelections")},
+                     {"conversationId", str("missing")},
+                     {"selectedBranchesJson", str("{}")},
+                     {"at", number(900)}}),
+             object({{"op", str("deleteMessagesByIds")}, {"ids", array({str("m3")})}}),
+             object({{"op", str("deleteEmbeddingsByMessageIds")},
+                     {"messageIds", array({str("m1")})}}),
+             object({{"op", str("deleteRun")}, {"runId", str("r_del")}}),
+             object({{"op", str("deleteRun")}, {"runId", str("missing")}})}));
+
+    // 09 — RunEntity validation on the read path: the init block and Enum.valueOf both fire.
+    // One corrupt Run per conversation: SQLite's unique (conversationId, activeSlot) index only
+    // permits a single occupied slot, so the violations cannot share a conversation.
+    add("09-run-validation",
+        scenario(
+            object({{"conversations",
+                     array({conversation("c_slot"), conversation("c_enum"), conversation("c_end"),
+                            conversation("c_stop"), conversation("c_pass")})},
+                    {"runs",
+                     array({
+                         object({{"id", str("bad_slot")},
+                                 {"conversationId", str("c_slot")},
+                                 {"status", str("COMPLETED")},
+                                 {"activeSlot", number(1)},
+                                 {"startedAt", number(10)},
+                                 {"lastCheckpointAt", number(10)},
+                                 {"endedAt", number(20)},
+                                 {"endReason", str("MODEL_COMPLETED")},
+                                 {"currentPass", number(0)},
+                                 {"legacyAmbiguous", boolean(false)}}),
+                         object({{"id", str("bad_enum")},
+                                 {"conversationId", str("c_enum")},
+                                 {"status", str("BOGUS")},
+                                 {"activeSlot", null_value()},
+                                 {"startedAt", number(10)},
+                                 {"lastCheckpointAt", number(10)},
+                                 {"endedAt", null_value()},
+                                 {"endReason", null_value()},
+                                 {"currentPass", number(0)},
+                                 {"legacyAmbiguous", boolean(false)}}),
+                         object({{"id", str("bad_end")},
+                                 {"conversationId", str("c_end")},
+                                 {"status", str("COMPLETED")},
+                                 {"activeSlot", null_value()},
+                                 {"startedAt", number(10)},
+                                 {"lastCheckpointAt", number(10)},
+                                 {"endedAt", null_value()},
+                                 {"endReason", null_value()},
+                                 {"currentPass", number(0)},
+                                 {"legacyAmbiguous", boolean(false)}}),
+                         object({{"id", str("bad_stop")},
+                                 {"conversationId", str("c_stop")},
+                                 {"status", str("STOPPING")},
+                                 {"activeSlot", number(1)},
+                                 {"startedAt", number(10)},
+                                 {"lastCheckpointAt", number(10)},
+                                 {"stopRequestedAt", null_value()},
+                                 {"endedAt", null_value()},
+                                 {"endReason", null_value()},
+                                 {"currentPass", number(0)},
+                                 {"legacyAmbiguous", boolean(false)}}),
+                         object({{"id", str("bad_pass")},
+                                 {"conversationId", str("c_pass")},
+                                 {"status", str("ACTIVE")},
+                                 {"activeSlot", number(1)},
+                                 {"startedAt", number(10)},
+                                 {"lastCheckpointAt", number(10)},
+                                 {"endedAt", null_value()},
+                                 {"endReason", null_value()},
+                                 {"currentPass", number(-1)},
+                                 {"legacyAmbiguous", boolean(false)}}),
+                     })}}),
+            {op_field("getRun", "runId", str("bad_slot")),
+             op_field("getRun", "runId", str("bad_enum")),
+             op_field("getRun", "runId", str("bad_end")),
+             op_field("getRun", "runId", str("bad_stop")),
+             op_field("getRun", "runId", str("bad_pass")),
+             op_field("getLiveRun", "conversationId", str("c_slot"))}));
+
+    // 10 — Recompact guards that fire before any read of the compact Run.
+    add("10-recompact-errors-early",
+        scenario(
+            seed({conversation("c1"), conversation("cb")},
+                 {run("r1", "c1"), run("busy_run", "cb", "ACTIVE", nullptr, 10)},
+                 {message("m1", "c1", "body", "SUCCESS", "MODEL", 100, "r1", 0),
+                  message("compact_x", "cb", "body", "SUCCESS", "MODEL", 100, "busy_run", 0)}),
+            {recompact(replacement("zz1", "c1"), "missing_message", "m", "{}"),
+             recompact(replacement("zz2", "c1"), "m1", "m", "{}"),
+             recompact(replacement("zz3", "cb"), "compact_x", "m", "{}")}));
+
+    // 11 — Recompact guards over the compact Run and the compact message themselves.
+    add("11-recompact-errors-run",
+        scenario(
+            seed({conversation("c1"), conversation("c2")},
+                 {run("r1", "c1"), run("compact_shared", "c1", "STOPPED", "r1"),
+                  run("compact_ok", "c1", "STOPPED", "r1"),
+                  run("active_c2", "c2", "ACTIVE", nullptr, 10)},
+                 {message("m1", "c1", "body", "SUCCESS", "MODEL", 100, "r1", 0),
+                  message("compact_1", "c1", "body", "SUCCESS", "MODEL", 100, "compact_shared", 0,
+                          "m1"),
+                  message("compact_2", "c1", "body", "SUCCESS", "MODEL", 100, "compact_shared", 1,
+                          "m1"),
+                  message("compact_3", "c1", "body", "SUCCESS", "MODEL", 100, "active_c2", 0, "m1"),
+                  message("compact_4", "c1", "body", "THINKING", "MODEL", 100, "compact_ok", 0,
+                          "m1")}),
+            {recompact(replacement("zz_shared", "c1", "r1"), "compact_1", "m", "{}"),
+             recompact(replacement("zz_active", "c2", "r1"), "compact_3", "m", "{}"),
+             recompact(replacement("zz_thinking", "c1", "r1"), "compact_4", "m", "{}")}));
+
+    // 12 — The branch projection check: content mismatch fails, and two maps that differ only in
+    // key order are equal (Kotlin Map.equals is order independent) so the Recompact succeeds.
+    add("12-recompact-branch-check",
+        scenario(
+            seed({conversation("c1", R"({"x":"y"})"), conversation("c2", R"({"b":"x","a":"y"})")},
+                 {run("r1", "c1"), run("compact_c1", "c1", "STOPPED", "r1"), run("r2", "c2"),
+                  run("compact_c2", "c2", "STOPPED", "r2")},
+                 {message("m1", "c1", "body", "SUCCESS", "MODEL", 100, "r1", 0),
+                  message("compact_c1", "c1", "body", "SUCCESS", "MODEL", 100, "compact_c1", 0,
+                          "m1"),
+                  message("m2", "c2", "body", "SUCCESS", "MODEL", 100, "r2", 0),
+                  message("compact_c2", "c2", "body", "SUCCESS", "MODEL", 100, "compact_c2", 0,
+                          "m2")}),
+            {recompact(replacement("zz_a", "c1", "r1"), "compact_c1", "m", R"({"x":"z"})"),
+             recompact(replacement("zz_b", "c2", "r2"), "compact_c2", "m",
+                       R"({"a":"y","b":"x"})")}));
+
+    // 13 — The remaining Recompact guards: parent, fresh Run, conversation, status/slot,
+    // parentage and the run-graph consistency check.
+    add("13-recompact-errors-late",
+        scenario(
+            seed({conversation("c1", R"({"m1":"compact_ok"})",
+                               R"({"r1":"compact_graph","other":"compact_graph"})"),
+                  conversation("c2")},
+                 {run("r1", "c1"), run("other_run", "c1"),
+                  run("compact_parentless", "c1", "STOPPED", "r1"),
+                  run("compact_ok", "c1", "STOPPED", "r1"),
+                  run("compact_ancestry", "c1", "STOPPED", "other_run"),
+                  run("compact_graph", "c1", "STOPPED", "r1")},
+                 {message("m1", "c1", "body", "SUCCESS", "MODEL", 100, "r1", 0),
+                  message("compact_parentless", "c1", "body", "SUCCESS", "MODEL", 100,
+                          "compact_parentless", 0),
+                  message("compact_ok", "c1", "body", "SUCCESS", "MODEL", 100, "compact_ok", 0,
+                          "m1"),
+                  message("compact_ancestry", "c1", "body", "SUCCESS", "MODEL", 100,
+                          "compact_ancestry", 0, "m1"),
+                  message("compact_graph", "c1", "body", "SUCCESS", "MODEL", 100, "compact_graph",
+                          0, "m1")}),
+            {recompact(replacement("zz_c", "c1", "r1"), "compact_parentless", "m",
+                       R"({"m1":"compact_ok"})"),
+             recompact(replacement("compact_ok", "c1", "r1"), "compact_ok", "m",
+                       R"({"m1":"compact_ok"})"),
+             recompact(replacement("zz_wrong", "c2", "r1"), "compact_ok", "m",
+                       R"({"m1":"compact_ok"})"),
+             recompact(replacement("zz_terminal", "c1", "r1", "COMPLETED"), "compact_ok", "m",
+                       R"({"m1":"compact_ok"})"),
+             recompact(replacement("zz_parent", "c1", "other_run"), "compact_ok", "m",
+                       R"({"m1":"compact_ok"})"),
+             recompact(replacement("zz_ancestry", "c1", "r1"), "compact_ancestry", "m",
+                       R"({"m1":"compact_ok"})"),
+             recompact(replacement("zz_graph", "c1", "r1"), "compact_graph", "m",
+                       R"({"m1":"compact_ok"})")}));
+
+    // 14 — A null branch projection decodes to an empty map (expected "{}" matches) and the
+    // write-back materialises "{}" over the NULL column.
+    add("14-recompact-null-branches",
+        scenario(
+            seed({conversation("c1")},
+                 {run("r1", "c1"), run("compact_ok", "c1", "STOPPED", "r1")},
+                 {message("m1", "c1", "body", "SUCCESS", "MODEL", 100, "r1", 0),
+                  message("compact_ok", "c1", "body", "SUCCESS", "MODEL", 100, "compact_ok", 0,
+                          "m1")}),
+            {recompact(replacement("zz_null", "c1", "r1"), "compact_ok", "m", "{}")}));
+
+    remove_stale(scenarios);
+    const FormatOptions pretty{Format::Pretty2, false}; // indent=2, ensure_ascii=False
+    for (const auto& [name, value] : entries) {
+        write_scenario(scenarios, name, value, pretty);
+    }
+    std::cout << "Wrote " << entries.size() << " scenarios to " << scenarios.string() << "\n";
+}
+
+// ollama/gen_scenarios.py — indent=2, ensure_ascii=False.
+void profile_ollama(const fs::path& scenarios) {
+    std::vector<std::pair<std::string, json::Value>> entries;
+    auto add = [&](const std::string& name, json::Value value) {
+        entries.emplace_back(name, std::move(value));
+    };
+
+    auto msg = [](const char* mid, const char* text = "", const char* participant = "USER",
+                  std::optional<std::string> model_name = std::nullopt,
+                  std::optional<std::vector<std::string>> images = std::nullopt,
+                  std::optional<json::Value> segments = std::nullopt,
+                  std::optional<json::Value> tool_call = std::nullopt) {
+        std::vector<std::pair<std::string, json::Value>> members = {
+            {"id", str(mid)}, {"participant", str(participant)}, {"text", str(text)}};
+        if (images && !images->empty()) {
+            std::vector<json::Value> list;
+            for (const auto& path : *images) list.emplace_back(str(path));
+            members.emplace_back("images", array(std::move(list)));
+        }
+        if (model_name) members.emplace_back("modelName", str(*model_name));
+        if (segments) members.emplace_back("segments", std::move(*segments));
+        if (tool_call) members.emplace_back("toolCall", std::move(*tool_call));
+        return object(std::move(members));
+    };
+    auto seg = [](const char* stype, const char* content = "", const char* tool_name = nullptr,
+                  const char* tool_args = nullptr, const char* tool_result = nullptr,
+                  const char* tool_call_id = nullptr, const char* signature = nullptr,
+                  const char* signature_provider = nullptr) {
+        std::vector<std::pair<std::string, json::Value>> members = {
+            {"type", str(stype)}, {"content", str(content)}};
+        if (tool_name) members.emplace_back("toolName", str(tool_name));
+        if (tool_args) members.emplace_back("toolArgs", str(tool_args));
+        if (tool_result) members.emplace_back("toolResult", str(tool_result));
+        if (tool_call_id) members.emplace_back("toolCallId", str(tool_call_id));
+        if (signature) members.emplace_back("signature", str(signature));
+        if (signature_provider) members.emplace_back("signatureProvider", str(signature_provider));
+        return object(std::move(members));
+    };
+    auto tc = [](const char* tool_name, json::Value arguments, json::Value result,
+                 const char* tool_call_id = nullptr) {
+        std::vector<std::pair<std::string, json::Value>> members = {
+            {"toolName", str(tool_name)},
+            {"arguments", std::move(arguments)},
+            {"result", std::move(result)}};
+        if (tool_call_id) members.emplace_back("toolCallId", str(tool_call_id));
+        return object(std::move(members));
+    };
+    auto tool_weather = []() {
+        return object(
+            {{"type", str("function")},
+             {"function",
+              object({{"name", str("get_weather")},
+                      {"description", str("Get current weather for a location")},
+                      {"parameters",
+                       object({{"type", str("object")},
+                               {"properties",
+                                object({{"location",
+                                         object({{"type", str("string")},
+                                                 {"description", str("City and state")}})}})},
+                               {"required", array({str("location")})}})}})}});
+    };
+    auto factory = [&](const char* name, json::Value messages,
+                       json::Value config = object({}),
+                       std::optional<std::string> system = std::nullopt) {
+        std::vector<std::pair<std::string, json::Value>> request = {
+            {"messages", std::move(messages)}};
+        if (system) request.emplace_back("systemPrompt", str(*system));
+        add(name, object({{"name", str(name)},
+                          {"mode", str("factory")},
+                          {"config", std::move(config)},
+                          {"requestInput", object(std::move(request))}}));
+    };
+    auto validate = [&](const char* name, json::Value request,
+                        std::optional<json::Value> config = std::nullopt) {
+        std::vector<std::pair<std::string, json::Value>> members = {
+            {"name", str(name)}, {"mode", str("validate")}, {"request", std::move(request)}};
+        if (config) members.emplace_back("config", std::move(*config));
+        add(name, object(std::move(members)));
+    };
+    auto serialized = [&](const char* name, const std::string& body,
+                          std::vector<json::Value> strings = {str("model")},
+                          std::vector<json::Value> arrays = {str("messages")}) {
+        add(name,
+            object({{"name", str(name)},
+                    {"mode", str("serialized")},
+                    {"serializedBody", str(body)},
+                    {"serializedRequiredStringFields", array(std::move(strings))},
+                    {"serializedRequiredArrayFields", array(std::move(arrays))}}));
+    };
+    auto stream = [&](const char* name, std::vector<json::Value> ops) {
+        add(name, object({{"name", str(name)},
+                          {"mode", str("stream")},
+                          {"ops", array(std::move(ops))}}));
+    };
+    auto compact = [](const json::Value& value) {
+        return serialize(value, FormatOptions{Format::Compact, false});
+    };
+    // data(): "L " + json.dumps(payload, separators=(",", ":"), ensure_ascii=False)
+    auto data = [&](json::Value payload) { return str("L " + compact(std::move(payload))); };
+    const char* kEnd = "E";
+
+    // ---- factory: system / options / think ---------------------------------------------------
+    factory("ollama_basic_text", array({msg("user_1", "Hello")}),
+            object({}), std::string("You are helpful."));
+    factory("ollama_system_blank_dropped", array({msg("user_1", "Hello")}),
+            object({}), std::string("   "));
+    factory("ollama_options_all", array({msg("user_1", "Hi")}),
+            object({{"temperature", float_number(0.7)},
+                    {"topP", float_number(0.9)},
+                    {"maxTokens", number(1024)}}));
+    factory("ollama_options_empty", array({msg("user_1", "Hi")}));
+    factory("ollama_nan_temperature_rejected", array({msg("user_1", "Hi")}),
+            object({{"temperature", str("NaN")}}));
+    factory("ollama_think_default_true", array({msg("user_1", "Hi")}),
+            object({{"modelId", str("llama3.2:3b")}}));
+    factory("ollama_think_effort_level", array({msg("user_1", "Hi")}),
+            object({{"modelId", str("gpt-oss:8b")}, {"thinkingLevel", str("high")}}));
+    factory("ollama_think_disabled", array({msg("user_1", "Hi")}),
+            object({{"modelId", str("gpt-oss:8b")}, {"thinkingEnabled", boolean(false)}}));
+
+    // ---- factory: images -----------------------------------------------------------------------
+    factory("ollama_images_registered",
+            array({msg("user_1", "look", "USER", std::nullopt,
+                       std::vector<std::string>{"files/a.png"})}));
+    factory("ollama_images_assistant_dropped",
+            array({msg("user_1", "draw"),
+                   msg("model_1", "done", "MODEL", std::nullopt,
+                       std::vector<std::string>{"files/a.png"})}));
+    factory("ollama_images_disabled",
+            array({msg("user_1", "look", "USER", std::nullopt,
+                       std::vector<std::string>{"files/a.png"})}),
+            object({{"includeImages", boolean(false)}}));
+    factory("ollama_missing_image_filtered",
+            array({msg("user_1", "look", "USER", std::nullopt,
+                       std::vector<std::string>{"files/missing.png"})}));
+    factory("ollama_whitespace_user_rejected", array({msg("user_1", "   ")}));
+
+    // ---- factory: tool rounds --------------------------------------------------------------------
+    factory("ollama_tool_round_segments",
+            array({msg("user_1", "Weather?"),
+                   msg("tool_1", "", "MODEL", "Ollama:llama3.2:3b", std::nullopt,
+                       array({seg("thought", "Looking it up."),
+                              seg("tool", "", "get_weather", R"({"location": "Oslo"})",
+                                  nullptr, "call_1")})),
+                   msg("result_1", "", "USER", std::nullopt, std::nullopt,
+                       array({seg("tool", "", "get_weather", nullptr, "Sunny", "call_1")})),
+                   msg("user_2", "Thanks!")}),
+            object({{"tools", array({tool_weather()})}}));
+    factory("ollama_tool_round_legacy",
+            array({msg("user_1", "Weather?"),
+                   msg("tool_1", "", "MODEL", std::nullopt, std::nullopt, std::nullopt,
+                       tc("get_weather", str(R"({"location": "Oslo"})"), str(""), "call_l")),
+                   msg("result_1", "", "USER", std::nullopt, std::nullopt, std::nullopt,
+                       tc("get_weather", str(R"({"location": "Oslo"})"), str("Sunny"))),
+                   msg("user_2", "Thanks!")}),
+            object({{"tools", array({tool_weather()})}}));
+    factory("ollama_empty_tool_row_contributes_nothing",
+            array({msg("user_1", "Hi"), msg("tool_1", "", "MODEL"), msg("user_2", "Thanks!")}));
+    factory("ollama_thought_segment_empty_thinking",
+            array({msg("user_1", "run it"),
+                   msg("model_1", "", "MODEL", std::nullopt, std::nullopt,
+                       array({seg("thought"),
+                              seg("tool", "", "get_weather", "{}", nullptr, "call_1")})),
+                   msg("result_1", "", "USER", std::nullopt, std::nullopt,
+                       array({seg("tool", "", "get_weather", nullptr, "ok", "call_1")})),
+                   msg("user_2", "Thanks!")}));
+    factory("ollama_tools_wire", array({msg("user_1", "Go")}),
+            object({{"tools", array({tool_weather()})}}));
+    factory("ollama_empty_messages_rejected", array({}));
+
+    // ---- validate: passing shapes ----------------------------------------------------------------
+    validate("validate_ok_tool_round",
+             object({{"model", str("llama3.2:3b")},
+                     {"messages",
+                      array({object({{"role", str("user")}, {"content", str("Weather?")}}),
+                             object({{"role", str("assistant")},
+                                     {"content", str("")},
+                                     {"tool_calls",
+                                      array({object(
+                                          {{"id", str("call_1")},
+                                           {"type", str("function")},
+                                           {"function",
+                                            object({{"name", str("get_weather")},
+                                                    {"arguments",
+                                                     object({{"location", str("Oslo")}})}})}})})}}),
+                             object({{"role", str("tool")},
+                                     {"content", str("Sunny")},
+                                     {"tool_name", str("get_weather")}}),
+                             object({{"role", str("user")}, {"content", str("Thanks")}})})}}));
+    validate("validate_ok_think_strings",
+             object({{"model", str("gpt-oss:8b")},
+                     {"think", str("low")},
+                     {"messages",
+                      array({object({{"role", str("user")}, {"content", str("hi")}})})}}));
+    validate("validate_ok_think_boolean",
+             object({{"model", str("llama3.2:3b")},
+                     {"think", boolean(true)},
+                     {"messages",
+                      array({object({{"role", str("user")}, {"content", str("hi")}})})}}));
+
+    // ---- validate: structural violations ----------------------------------------------------------
+    validate("validate_invalid_role",
+             object({{"model", str("llama3.2:3b")},
+                     {"messages",
+                      array({object({{"role", str("moderator")}, {"content", str("hi")}})})}}));
+    validate("validate_system_after_conversation",
+             object({{"model", str("llama3.2:3b")},
+                     {"messages",
+                      array({object({{"role", str("user")}, {"content", str("hi")}}),
+                             object({{"role", str("system")}, {"content", str("late system")}})})}}));
+    validate("validate_system_with_tool_fields",
+             object({{"model", str("llama3.2:3b")},
+                     {"messages",
+                      array({object({{"role", str("system")},
+                                     {"content", str("sys")},
+                                     {"tool_name", str("get_weather")}})})}}));
+    validate("validate_user_interrupts_pending",
+             object({{"model", str("llama3.2:3b")},
+                     {"messages",
+                      array({object({{"role", str("assistant")},
+                                     {"content", str("")},
+                                     {"tool_calls",
+                                      array({object(
+                                          {{"id", str("call_1")},
+                                           {"type", str("function")},
+                                           {"function",
+                                            object({{"name", str("get_weather")},
+                                                    {"arguments", object({})}})}})})}}),
+                             object({{"role", str("user")}, {"content", str("interrupt")}})})}}));
+    validate("validate_user_empty_content",
+             object({{"model", str("llama3.2:3b")},
+                     {"messages",
+                      array({object({{"role", str("user")}, {"content", str("   ")}})})}}));
+    validate("validate_user_carries_tool_fields",
+             object({{"model", str("llama3.2:3b")},
+                     {"messages",
+                      array({object({{"role", str("user")},
+                                     {"content", str("hi")},
+                                     {"tool_calls",
+                                      array({object(
+                                          {{"id", str("call_1")},
+                                           {"type", str("function")},
+                                           {"function",
+                                            object({{"name", str("x")},
+                                                    {"arguments", object({})}})}})})}})})}}));
+    validate("validate_assistant_tool_name",
+             object({{"model", str("llama3.2:3b")},
+                     {"messages",
+                      array({object({{"role", str("assistant")},
+                                     {"content", str("hi")},
+                                     {"tool_name", str("get_weather")}})})}}));
+    validate("validate_assistant_content_empty",
+             object({{"model", str("llama3.2:3b")},
+                     {"messages",
+                      array({object({{"role", str("assistant")}, {"content", str("")}})})}}));
+    validate("validate_assistant_starts_before_results",
+             object({{"model", str("llama3.2:3b")},
+                     {"messages",
+                      array({object({{"role", str("assistant")},
+                                     {"content", str("")},
+                                     {"tool_calls",
+                                      array({object(
+                                          {{"id", str("call_1")},
+                                           {"type", str("function")},
+                                           {"function",
+                                            object({{"name", str("one")},
+                                                    {"arguments", object({})}})}})})}}),
+                             object({{"role", str("assistant")}, {"content", str("more")}}),
+                             object({{"role", str("tool")},
+                                     {"content", str("result")},
+                                     {"tool_name", str("one")}})})}}));
+    validate("validate_call_type_not_function",
+             object({{"model", str("llama3.2:3b")},
+                     {"messages",
+                      array({object({{"role", str("assistant")},
+                                     {"content", str("")},
+                                     {"tool_calls",
+                                      array({object(
+                                          {{"id", str("call_1")},
+                                           {"type", str("tool")},
+                                           {"function",
+                                            object({{"name", str("get_weather")},
+                                                    {"arguments", object({})}})}})})}}),
+                             object({{"role", str("tool")},
+                                     {"content", str("Sunny")},
+                                     {"tool_name", str("get_weather")}})})}}));
+    validate("validate_call_name_unsafe",
+             object({{"model", str("llama3.2:3b")},
+                     {"messages",
+                      array({object({{"role", str("assistant")},
+                                     {"content", str("")},
+                                     {"tool_calls",
+                                      array({object(
+                                          {{"id", str("call_1")},
+                                           {"type", str("function")},
+                                           {"function",
+                                            object({{"name", str("bad name")},
+                                                    {"arguments", object({})}})}})})}}),
+                             object({{"role", str("tool")},
+                                     {"content", str("Sunny")},
+                                     {"tool_name", str("bad name")}})})}}));
+    validate("validate_call_arguments_not_object",
+             object({{"model", str("llama3.2:3b")},
+                     {"messages",
+                      array({object({{"role", str("assistant")},
+                                     {"content", str("")},
+                                     {"tool_calls",
+                                      array({object(
+                                          {{"id", str("call_1")},
+                                           {"type", str("function")},
+                                           {"function",
+                                            object({{"name", str("get_weather")},
+                                                    {"arguments", str("not an object")}})}})})}}),
+                             object({{"role", str("tool")},
+                                     {"content", str("Sunny")},
+                                     {"tool_name", str("get_weather")}})})}}));
+    validate("validate_tool_name_unsafe",
+             object({{"model", str("llama3.2:3b")},
+                     {"messages",
+                      array({object({{"role", str("tool")},
+                                     {"content", str("Sunny")},
+                                     {"tool_name", str("bad name")}})})}}));
+    validate("validate_tool_without_pending",
+             object({{"model", str("llama3.2:3b")},
+                     {"messages",
+                      array({object({{"role", str("user")}, {"content", str("hi")}}),
+                             object({{"role", str("tool")},
+                                     {"content", str("Sunny")},
+                                     {"tool_name", str("get_weather")}})})}}));
+    validate("validate_tool_result_carries_calls",
+             object({{"model", str("llama3.2:3b")},
+                     {"messages",
+                      array({object({{"role", str("assistant")},
+                                     {"content", str("")},
+                                     {"tool_calls",
+                                      array({object(
+                                          {{"id", str("call_1")},
+                                           {"type", str("function")},
+                                           {"function",
+                                            object({{"name", str("get_weather")},
+                                                    {"arguments", object({})}})}})})}}),
+                             object({{"role", str("tool")},
+                                     {"content", str("Sunny")},
+                                     {"tool_name", str("get_weather")},
+                                     {"tool_calls",
+                                      array({object(
+                                          {{"id", str("call_1")},
+                                           {"type", str("function")},
+                                           {"function",
+                                            object({{"name", str("get_weather")},
+                                                    {"arguments", object({})}})}})})}})})}}));
+    validate("validate_missing_results",
+             object({{"model", str("llama3.2:3b")},
+                     {"messages",
+                      array({object({{"role", str("user")}, {"content", str("hi")}}),
+                             object({{"role", str("assistant")},
+                                     {"content", str("")},
+                                     {"tool_calls",
+                                      array({object(
+                                          {{"id", str("call_1")},
+                                           {"type", str("function")},
+                                           {"function",
+                                            object({{"name", str("get_weather")},
+                                                    {"arguments", object({})}})}})})}})})}}));
+    validate("validate_history_starts_with_assistant",
+             object({{"model", str("llama3.2:3b")},
+                     {"messages",
+                      array({object({{"role", str("assistant")},
+                                     {"content", str("I start")}})})}}));
+    validate("validate_history_ends_with_assistant",
+             object({{"model", str("llama3.2:3b")},
+                     {"messages",
+                      array({object({{"role", str("user")}, {"content", str("hi")}}),
+                             object({{"role", str("assistant")},
+                                     {"content", str("answer")}})})}}));
+    validate("validate_think_object",
+             object({{"model", str("llama3.2:3b")},
+                     {"think", object({})},
+                     {"messages",
+                      array({object({{"role", str("user")}, {"content", str("hi")}})})}}));
+    validate("validate_think_number",
+             object({{"model", str("llama3.2:3b")},
+                     {"think", number(42)},
+                     {"messages",
+                      array({object({{"role", str("user")}, {"content", str("hi")}})})}}));
+    validate("validate_think_invalid_string",
+             object({{"model", str("llama3.2:3b")},
+                     {"think", str("ultra")},
+                     {"messages",
+                      array({object({{"role", str("user")}, {"content", str("hi")}})})}}));
+    validate("validate_model_blank",
+             object({{"model", str("   ")},
+                     {"messages",
+                      array({object({{"role", str("user")}, {"content", str("hi")}})})}}));
+    validate("validate_empty_messages",
+             object({{"model", str("llama3.2:3b")}, {"messages", array({})}}));
+    validate("validate_tools_unsafe_and_duplicate",
+             object({{"model", str("llama3.2:3b")},
+                     {"messages",
+                      array({object({{"role", str("user")}, {"content", str("hi")}})})},
+                     {"tools",
+                      array({object({{"type", str("function")},
+                                     {"function",
+                                      object({{"name", str("bad name")},
+                                              {"description", str("x")},
+                                              {"parameters",
+                                               object({{"type", str("object")},
+                                                       {"properties", object({})}})}})}}),
+                             object({{"type", str("function")},
+                                     {"function",
+                                      object({{"name", str("lookup")},
+                                              {"description", str("x")},
+                                              {"parameters",
+                                               object({{"type", str("object")},
+                                                       {"properties", object({})}})}})}}),
+                             object({{"type", str("function")},
+                                     {"function",
+                                      object({{"name", str("lookup")},
+                                              {"description", str("x")},
+                                              {"parameters",
+                                               object({{"type", str("object")},
+                                                       {"properties", object({})}})}})}})})}}));
+
+    // ---- validate: kotlinx decode behaviour --------------------------------------------------------
+    validate("validate_decode_model_missing", object({{"messages", array({})}}));
+    validate("validate_decode_messages_missing",
+             object({{"model", str("llama3.2:3b")}}));
+    validate("validate_decode_role_missing",
+             object({{"model", str("llama3.2:3b")},
+                     {"messages", array({object({{"content", str("hi")}})})}}));
+    validate("validate_decode_think_number_lexeme",
+             object({{"model", str("llama3.2:3b")},
+                     {"think", float_number(1.5)},
+                     {"messages",
+                      array({object({{"role", str("user")}, {"content", str("hi")}})})}}));
+
+    // ---- serialized-body gate -------------------------------------------------------------------------
+    serialized("serialized_ok", R"({"model":"llama3.2:3b","messages":[{"role":"user"}]})");
+    serialized("serialized_missing_model", R"({"messages":[{"role":"user"}]})");
+    serialized("serialized_empty_messages", R"({"model":"llama3.2:3b","messages":[]})");
+    serialized("serialized_not_object", "[]");
+
+    // ---- stream: NDJSON loop -------------------------------------------------------------------------------
+    stream("stream_text_done",
+           {data(object({{"message",
+                          object({{"role", str("assistant")}, {"content", str("Hel")}})},
+                         {"done", boolean(false)}})),
+            data(object({{"message",
+                          object({{"role", str("assistant")}, {"content", str("lo")}})},
+                         {"done", boolean(true)},
+                         {"done_reason", str("stop")},
+                         {"prompt_eval_count", number(10)},
+                         {"eval_count", number(5)}})),
+            data(object({{"message",
+                          object({{"role", str("assistant")}, {"content", str("late")}})}})),
+            str(kEnd)});
+    stream("stream_thinking_field",
+           {data(object({{"message",
+                          object({{"role", str("assistant")},
+                                  {"thinking", str("Let me think.")}})}})),
+            data(object({{"message",
+                          object({{"role", str("assistant")}, {"content", str("answer")}})},
+                         {"done", boolean(true)},
+                         {"done_reason", str("stop")},
+                         {"prompt_eval_count", number(3)},
+                         {"eval_count", number(4)}})),
+            str(kEnd)});
+    stream("stream_tool_batch_single",
+           {data(object({{"message",
+                          object({{"role", str("assistant")},
+                                  {"content", str("")},
+                                  {"tool_calls",
+                                   array({object(
+                                       {{"id", str("call_1")},
+                                        {"type", str("function")},
+                                        {"function",
+                                         object({{"name", str("get_weather")},
+                                                 {"arguments",
+                                                  object({{"location", str("Oslo")}})}})}})})}})}})),
+            data(object({{"message",
+                          object({{"role", str("assistant")}, {"content", str("checking")}})},
+                         {"done", boolean(true)},
+                         {"done_reason", str("stop")}})),
+            str(kEnd)});
+    stream("stream_tool_batch_multi",
+           {data(object({{"message",
+                          object({{"role", str("assistant")},
+                                  {"content", str("")},
+                                  {"tool_calls",
+                                   array({object({{"id", str("call_1")},
+                                                  {"type", str("function")},
+                                                  {"function",
+                                                   object({{"name", str("one")},
+                                                           {"arguments",
+                                                            object({{"a", number(1)}})}})}}),
+                                          object({{"id", str("call_2")},
+                                                  {"type", str("function")},
+                                                  {"function",
+                                                   object({{"name", str("two")},
+                                                           {"arguments",
+                                                            object({{"b", number(2)}})}})}})})}})}})),
+            data(object({{"done", boolean(true)}, {"done_reason", str("stop")}})),
+            str(kEnd)});
+    stream("stream_tool_batch_damaged",
+           {data(object({{"message",
+                          object({{"role", str("assistant")},
+                                  {"content", str("")},
+                                  {"tool_calls",
+                                   array({object({{"id", str("call_1")},
+                                                  {"type", str("function")},
+                                                  {"function",
+                                                   object({{"name", str("good")},
+                                                           {"arguments",
+                                                            object({{"a", number(1)}})}})}}),
+                                          object({{"id", str("call_2")},
+                                                  {"type", str("function")},
+                                                  {"function",
+                                                   object({{"name", str("bad name")},
+                                                           {"arguments", object({})}})}}),
+                                          object({{"id", str("call_3")},
+                                                  {"type", str("function")},
+                                                  {"function",
+                                                   object({{"name", str("weird")},
+                                                           {"arguments", str("not json")}})}})})}})}})),
+            data(object({{"done", boolean(true)}, {"done_reason", str("stop")}})),
+            str(kEnd)});
+    stream("stream_tool_args_variants",
+           {data(object({{"message",
+                          object({{"role", str("assistant")},
+                                  {"content", str("")},
+                                  {"tool_calls",
+                                   array({object(
+                                       {{"id", str("call_1")},
+                                        {"function",
+                                         object({{"name", str("from_string")},
+                                                 {"arguments", str(R"({"q":1})")}})}})})}})}})),
+            data(object({{"message",
+                          object({{"role", str("assistant")},
+                                  {"content", str("")},
+                                  {"tool_calls",
+                                   array({object(
+                                       {{"id", str("call_2")},
+                                        {"function",
+                                         object({{"name", str("from_number")},
+                                                 {"arguments", number(42)}})}})})}})}})),
+            data(object({{"message",
+                          object({{"role", str("assistant")},
+                                  {"content", str("")},
+                                  {"tool_calls",
+                                   array({object(
+                                       {{"id", str("call_3")},
+                                        {"function",
+                                         object({{"name", str("no_function_args")}})}})})}})}})),
+            data(object({{"message",
+                          object({{"role", str("assistant")},
+                                  {"content", str("")},
+                                  {"tool_calls",
+                                   array({object(
+                                       {{"id", str("")},
+                                        {"type", str("function")},
+                                        {"function",
+                                         object({{"name", str("blank_id")},
+                                                 {"arguments", object({})}})}})})}})}})),
+            data(object({{"done", boolean(true)}, {"done_reason", str("stop")}})),
+            str(kEnd)});
+    stream("stream_tool_duplicate_id_in_batch",
+           {data(object({{"message",
+                          object({{"role", str("assistant")},
+                                  {"content", str("")},
+                                  {"tool_calls",
+                                   array({object({{"id", str("call_1")},
+                                                  {"function",
+                                                   object({{"name", str("one")},
+                                                           {"arguments", object({})}})}}),
+                                          object({{"id", str("call_1")},
+                                                  {"function",
+                                                   object({{"name", str("two")},
+                                                           {"arguments", object({})}})}})})}})}})),
+            data(object({{"done", boolean(true)}, {"done_reason", str("stop")}})),
+            str(kEnd)});
+    stream("stream_error_field",
+           {data(object({{"error", str("model not loaded")}})),
+            data(object({{"message",
+                          object({{"role", str("assistant")}, {"content", str("late")}})}})),
+            str(kEnd)});
+    stream("stream_error_blank_ignored",
+           {data(object({{"error", str("   ")}})),
+            data(object({{"message",
+                          object({{"role", str("assistant")}, {"content", str("kept")}})},
+                         {"done", boolean(true)},
+                         {"done_reason", str("STOP")}})),
+            str(kEnd)});
+    stream("stream_done_reason_normalized",
+           {data(object({{"message",
+                          object({{"role", str("assistant")}, {"content", str("hi")}})},
+                         {"done", boolean(true)},
+                         {"done_reason", str("  Custom Stop  ")}})),
+            str(kEnd)});
+    stream("stream_done_reason_blank",
+           {data(object({{"done", boolean(true)}, {"done_reason", str("   ")}})), str(kEnd)});
+    stream("stream_break_on_done",
+           {data(object({{"message",
+                          object({{"role", str("assistant")}, {"content", str("a")}})},
+                         {"done", boolean(true)},
+                         {"done_reason", str("stop")}})),
+            data(object({{"message",
+                          object({{"role", str("assistant")}, {"content", str("after")}})}})),
+            str(kEnd)});
+    stream("stream_decode_failure_take512",
+           {str("L " + std::string(600, 'x')),
+            data(object({{"message",
+                          object({{"role", str("assistant")}, {"content", str("late")}})}})),
+            str(kEnd)});
+    stream("stream_usage_coercion",
+           {data(object({{"message",
+                          object({{"role", str("assistant")}, {"content", str("hi")}})},
+                         {"done", boolean(true)},
+                         {"prompt_eval_count", number(-3)},
+                         {"eval_count", number(7)}})),
+            str(kEnd)});
+    stream("stream_retryable_without_done",
+           {data(object({{"message",
+                          object({{"role", str("assistant")},
+                                  {"content", str("partial")}})}})),
+            str(kEnd)});
+
+    remove_stale(scenarios);
+    const FormatOptions pretty{Format::Pretty2, false}; // indent=2, ensure_ascii=False
+    for (const auto& [name, value] : entries) {
+        write_scenario(scenarios, name, value, pretty);
+    }
+    std::cout << "Wrote " << entries.size() << " scenarios to " << scenarios.string() << "\n";
+}
+
+// native-conversation-graph-importer/gen_scenarios.py — indent=2, ensure_ascii=False.
+void profile_native_conversation_graph_importer(const fs::path& scenarios) {
+    std::vector<std::pair<std::string, json::Value>> entries;
+    auto add = [&](const std::string& name, json::Value value) {
+        entries.emplace_back(name, std::move(value));
+    };
+
+    auto compact = [](const json::Value& value) {
+        return serialize(value, FormatOptions{Format::Compact, false});
+    };
+    auto conversation_entry = [](const char* conversation_id) {
+        return std::string("conv/items/") + hex_encode(conversation_id) + ".json";
+    };
+    // index(): {"conversations":[...]} compact; every item gains dataChangedAt=1 (setdefault).
+    auto index = [&](std::vector<json::Value> items) {
+        return str(compact(object({{"conversations", array(std::move(items))}})));
+    };
+    auto idx_item = [](const char* id, const char* entry) {
+        return object({{"id", str(id)},
+                       {"entry", str(entry)},
+                       {"dataChangedAt", number(1)}});
+    };
+    auto graph_item = [&](json::Value payload) { return str(compact(std::move(payload))); };
+    auto tasks_json = [&](std::vector<json::Value> tasks) {
+        return str(compact(object({{"tasks", array(std::move(tasks))}})));
+    };
+
+    // SQL rendering (python sql_value / insert): NULL, 1/0 for booleans, ints verbatim,
+    // strings single-quoted with '' escaping.
+    auto sql_value = [](const json::Value& value) -> std::string {
+        if (value.kind == json::Kind::String) {
+            std::string out = "'";
+            for (char c : value.text) {
+                if (c == '\'') out += "''";
+                else out += c;
+            }
+            out += "'";
+            return out;
+        }
+        if (value.kind == json::Kind::Literal) {
+            if (value.text == "null") return "NULL";
+            if (value.text == "true") return "1";
+            if (value.text == "false") return "0";
+            return value.text;
+        }
+        fail("unexpected sql value kind");
+    };
+    auto insert = [&](const char* table, std::vector<std::pair<std::string, json::Value>> values) {
+        std::string columns;
+        std::string list;
+        for (const auto& [key, value] : values) {
+            if (!columns.empty()) { columns += ", "; list += ", "; }
+            columns += key;
+            list += sql_value(value);
+        }
+        return std::string("INSERT INTO ") + table + " (" + columns + ") VALUES (" + list + ")";
+    };
+    auto seed_conversation = [&](const char* conv_id, const std::string& title = "t",
+                                 std::vector<std::pair<std::string, json::Value>> extra = {}) {
+        std::vector<std::pair<std::string, json::Value>> values = {
+            {"id", str(conv_id)},
+            {"title", str(title)},
+            {"lastUpdated", number(1)},
+            {"dataChangedAt", number(1)},
+            {"origin", str("user")},
+            {"graduated", number(0)},
+            {"draftText", str("")},
+            {"hasUnreadGeneration", number(0)},
+            {"isPinned", number(0)}};
+        for (auto& [key, value] : extra) {
+            bool replaced = false;
+            for (auto& member : values) {
+                if (member.first == key) { member.second = std::move(value); replaced = true; break; }
+            }
+            if (!replaced) values.emplace_back(key, std::move(value));
+        }
+        return str(insert("conversations", std::move(values)));
+    };
+    auto seed_run = [&](const char* run_id, const char* conv_id,
+                        std::vector<std::pair<std::string, json::Value>> extra = {}) {
+        std::vector<std::pair<std::string, json::Value>> values = {
+            {"id", str(run_id)},
+            {"conversationId", str(conv_id)},
+            {"parentRunId", null_value()},
+            {"status", str("COMPLETED")},
+            {"activeSlot", null_value()},
+            {"startedAt", number(1)},
+            {"lastCheckpointAt", number(1)},
+            {"stopRequestedAt", null_value()},
+            {"endedAt", number(2)},
+            {"endReason", str("MODEL_COMPLETED")},
+            {"currentPass", number(0)},
+            {"legacyAmbiguous", number(0)}};
+        for (auto& [key, value] : extra) {
+            bool replaced = false;
+            for (auto& member : values) {
+                if (member.first == key) { member.second = std::move(value); replaced = true; break; }
+            }
+            if (!replaced) values.emplace_back(key, std::move(value));
+        }
+        return str(insert("runs", std::move(values)));
+    };
+    auto seed_message = [&](const char* msg_id, const char* conv_id,
+                            std::vector<std::pair<std::string, json::Value>> extra = {}) {
+        std::vector<std::pair<std::string, json::Value>> values = {
+            {"id", str(msg_id)},
+            {"conversationId", str(conv_id)},
+            {"parentId", null_value()},
+            {"text", str("seed")},
+            {"images", str("[]")},
+            {"tokenCount", number(0)},
+            {"status", str("SUCCESS")},
+            {"participant", str("MODEL")},
+            {"timestamp", number(1)},
+            {"runId", null_value()},
+            {"runSequence", number(-1)},
+            {"consumedAtPass", null_value()},
+            {"sourceJson", null_value()},
+            {"toolCallJson", null_value()},
+            {"attachmentMeta", null_value()},
+            {"modelName", null_value()}};
+        for (auto& [key, value] : extra) {
+            bool replaced = false;
+            for (auto& member : values) {
+                if (member.first == key) { member.second = std::move(value); replaced = true; break; }
+            }
+            if (!replaced) values.emplace_back(key, std::move(value));
+        }
+        return str(insert("messages", std::move(values)));
+    };
+    auto seed_task = [&](const char* task_id,
+                         std::vector<std::pair<std::string, json::Value>> extra = {}) {
+        std::vector<std::pair<std::string, json::Value>> values = {
+            {"id", str(task_id)},
+            {"name", str("n")},
+            {"prompt", str("p")},
+            {"systemPrompt", null_value()},
+            {"systemPromptId", null_value()},
+            {"modelId", null_value()},
+            {"cronExpr", str("0 9 * * *")},
+            {"runAt", null_value()},
+            {"nextRunAt", number(7)},
+            {"enabled", number(1)},
+            {"createdAt", number(1)},
+            {"lastRunAt", null_value()}};
+        for (auto& [key, value] : extra) {
+            bool replaced = false;
+            for (auto& member : values) {
+                if (member.first == key) { member.second = std::move(value); replaced = true; break; }
+            }
+            if (!replaced) values.emplace_back(key, std::move(value));
+        }
+        return str(insert("tasks", std::move(values)));
+    };
+    auto seed_loop = [&](const char* conv_id,
+                         std::vector<std::pair<std::string, json::Value>> extra = {}) {
+        std::vector<std::pair<std::string, json::Value>> values = {
+            {"conversationId", str(conv_id)},
+            {"intervalMs", number(60000)},
+            {"prompt", null_value()},
+            {"nextFireAt", number(99)},
+            {"cycleCount", number(0)},
+            {"maxCycles", null_value()},
+            {"active", number(1)},
+            {"revision", number(3)}};
+        for (auto& [key, value] : extra) {
+            bool replaced = false;
+            for (auto& member : values) {
+                if (member.first == key) { member.second = std::move(value); replaced = true; break; }
+            }
+            if (!replaced) values.emplace_back(key, std::move(value));
+        }
+        return str(insert("loops", std::move(values)));
+    };
+    auto seed_embedding = [&](json::Value row_id, json::Value message_id,
+                             const char* model_id = "m-x") {
+        return str(std::string(
+            "INSERT INTO embeddings (id, messageId, modelId, embedding, chunkText, dimension, "
+            "sourceFingerprint) VALUES (") +
+               sql_value(row_id) + ", " + sql_value(message_id) + ", " + sql_value(str(model_id)) +
+               ", x'00', 'chunk', 2, 'fp')");
+    };
+    auto apply_extra = [](std::vector<std::pair<std::string, json::Value>>& values,
+                          std::vector<std::pair<std::string, json::Value>> extra) {
+        for (auto& [key, value] : extra) {
+            bool replaced = false;
+            for (auto& member : values) {
+                if (member.first == key) { member.second = std::move(value); replaced = true; break; }
+            }
+            if (!replaced) values.emplace_back(key, std::move(value));
+        }
+    };
+
+    auto gconv = [&](const char* conv_id, const std::string& title = "t",
+                    std::vector<std::pair<std::string, json::Value>> extra = {}) {
+        std::vector<std::pair<std::string, json::Value>> value = {
+            {"id", str(conv_id)}, {"title", str(title)}, {"lastUpdated", number(1)}};
+        apply_extra(value, std::move(extra));
+        return object(std::move(value));
+    };
+    auto grun = [&](const char* run_id, const char* conv_id, std::int64_t started = 1,
+                   std::vector<std::pair<std::string, json::Value>> extra = {}) {
+        std::vector<std::pair<std::string, json::Value>> value = {
+            {"id", str(run_id)},
+            {"conversationId", str(conv_id)},
+            {"status", str("COMPLETED")},
+            {"startedAt", number(started)},
+            {"lastCheckpointAt", number(started)},
+            {"endedAt", number(started + 1)},
+            {"endReason", str("MODEL_COMPLETED")}};
+        apply_extra(value, std::move(extra));
+        return object(std::move(value));
+    };
+    auto gmsg = [](const char* msg_id, const char* conv_id, std::int64_t ts,
+                   const char* participant = "MODEL", const char* status = "SUCCESS",
+                   std::optional<const char*> run_id = std::nullopt,
+                   std::optional<std::int64_t> run_seq = std::nullopt,
+                   std::optional<const char*> parent = std::nullopt,
+                   const char* text = "t", std::optional<json::Value> images = std::nullopt,
+                   std::optional<std::string> attachment_meta = std::nullopt) {
+        std::vector<std::pair<std::string, json::Value>> value = {
+            {"id", str(msg_id)},
+            {"conversationId", str(conv_id)},
+            {"text", str(text)},
+            {"timestamp", number(ts)},
+            {"participant", str(participant)},
+            {"status", str(status)}};
+        if (run_id) value.emplace_back("runId", str(*run_id));
+        if (run_seq) value.emplace_back("runSequence", number(*run_seq));
+        if (parent) value.emplace_back("parentId", str(*parent));
+        if (images) value.emplace_back("images", *std::move(images));
+        if (attachment_meta) value.emplace_back("attachmentMeta", str(*attachment_meta));
+        return object(std::move(value));
+    };
+
+    // write_scenario(): base keys in fixed order, then the remaining kwargs in call order.
+    auto scenario_obj =
+        [](const char* strategy, json::Value graph_version, json::Value semantic_snapshot,
+           json::Value steps, std::vector<std::pair<std::string, json::Value>> rest) {
+            std::vector<std::pair<std::string, json::Value>> members = {
+                {"appVersion", str("9.9.9")},
+                {"strategy", str(strategy)},
+                {"graphVersion", std::move(graph_version)},
+                {"semanticSnapshot", std::move(semantic_snapshot)},
+                {"steps", std::move(steps)}};
+            for (auto& [key, value] : rest) members.emplace_back(key, std::move(value));
+            return object(std::move(members));
+        };
+    const std::string kIndex = "conv/index.json";
+    const std::string kTasks = "conv/tasks.json";
+    const char* kMerge = "MERGE";
+    auto ss_default = [] { return array({null_value(), array({})}); };
+    auto ss_emb = [] { return array({str("emb-model"), array({str("c1")})}); };
+
+    const std::string c1 = conversation_entry("c1");
+    const std::string c2 = conversation_entry("c2");
+
+    // 01 — counts over the chained v5 graph (conversation bodies included).
+    add("01-count",
+        scenario_obj(kMerge, number(5), ss_default(),
+                     array({object({{"op", str("count")}})}),
+                     {{"entries", object({{kIndex,
+                       index({idx_item("c1", c1.c_str()), idx_item("c2", c2.c_str())})},
+                      {c1,
+                       graph_item(object(
+                           {{"conversations",
+                             array({gconv("c1")})},
+                            {"runs", array({})},
+                            {"messages", array({})},
+                            {"loops",
+                             array({object({{"conversationId", str("c1")},
+                                            {"intervalMs", number(60000)}})})}}))},
+                      {c2,
+                       graph_item(object(
+                           {{"conversations", array({gconv("c2")})},
+                            {"runs", array({})},
+                            {"messages", array({})},
+                            {"loops", array({})}}))},
+                      {kTasks,
+                       tasks_json({object({{"id", str("t1")},
+                                           {"name", str("n")},
+                                           {"prompt", str("p")},
+                                           {"cronExpr", str("0 9 * * *")},
+                                           {"createdAt", number(1)}})})}})}}));
+
+    // 02 — headers under REPLACE: dangling task cleared, unread dropped, prompt/task id
+    // resolution, run parent ordering, loop sanitize, draft restore, settings extraction.
+    add("02-headers-replace",
+        scenario_obj("REPLACE", number(5), ss_default(),
+                     array({object({{"op", str("headers")}})}),
+                     {{"resolveSystemPromptIds",
+                       object({{"old-p", str("resolved-p")}})},{"entries", object({
+                      {kIndex,
+                       index({idx_item("c1", c1.c_str()), idx_item("c2", c2.c_str())})},
+                      {c1,
+                       graph_item(object(
+                           {{"conversations",
+                             array({gconv(
+                                 "c1", "t",
+                                 {{"taskId", str("task-missing")},
+                                  {"systemPromptId", str("old-p")},
+                                  {"hasUnreadGeneration", boolean(true)},
+                                  {"draftAttachments",
+                                   str(compact(array({object(
+                                       {{"localId", str("a1")},
+                                        {"uri", str("media/images/e.png")},
+                                        {"type", str("image")}})})))},
+                                  {"conversationSettings",
+                                   object({{"temperature", float_number(0.7)},
+                                           {"maxTokens", number(512)}})}})})},
+                            // raw order is child-before-parent: headers must order parents first
+                            {"runs",
+                             array({grun("r2", "c1", 20, {{"parentRunId", str("r1")}}),
+                                    grun("r1", "c1", 10, {{"parentRunId", null_value()}})})},
+                            {"messages", array({})},
+                            {"loops",
+                             array({object({{"conversationId", str("c1")},
+                                            {"intervalMs", number(60000)},
+                                            {"prompt", str("  keep  ")},
+                                            {"cycleCount", number(-4)},
+                                            {"active", boolean(true)}})})}}))},
+                      {c2,
+                       graph_item(object(
+                           {{"conversations", array({gconv("c2")})},
+                            {"runs", array({})},
+                            {"messages", array({})},
+                            {"loops", array({})}}))},
+                      {kTasks,
+                       tasks_json({object({{"id", str("t1")},
+                                           {"name", str("  named  ")},
+                                           {"prompt", str("  body  ")},
+                                           {"systemPromptId", str("old-p")},
+                                           {"cronExpr", str(" 0 9 * * * ")},
+                                           {"nextRunAt", number(9)},
+                                           {"enabled", boolean(true)},
+                                           {"createdAt", number(1)}})})}})},
+                      {"restoredMedia",
+                       object({{"archiveFiles",
+                                object({{"media/images/e.png",
+                                         object({{"absolutePath", str("/restored/e.png")},
+                                                 {"uri", str("content://restored/e.png")}})}})}})}}));
+
+    // 03 — headers under MERGE: existing id sets keep the dangling task, duplicate run ids
+    // make the source unique flag false, and the id arrays carry the query+graph insertion order.
+    add("03-headers-merge",
+        scenario_obj(kMerge, number(5), ss_default(),
+                     array({object({{"op", str("headers")}})}),
+                     {{"seedSql",
+                       array({seed_conversation("keep", "existing"),
+                              seed_task("existing-task")})},{"entries", object({
+                      {kIndex, index({idx_item("c1", c1.c_str())})},
+                      {c1,
+                       graph_item(object(
+                           {{"conversations",
+                             array({gconv("c1", "t",
+                                         {{"taskId", str("existing-task")}})})},
+                            {"runs",
+                             array({grun("dup", "c1", 1), grun("dup", "c1", 2)})},
+                            {"messages", array({})},
+                            {"loops", array({})}}))},
+                      {kTasks, tasks_json({})}})}}));
+
+    // 04 — import under MERGE: upserts overwrite, the existing run is NOT re-inserted,
+    // existing messages survive unless they carry images, non-available conversations skip,
+    // task/loop sanitize, image restore, embedding clear, transfer + maintenance + ledger.
+    add("04-import-merge",
+        scenario_obj(kMerge, number(5), ss_emb(),
+                     array({object({{"op", str("import")}})}),
+                     {{"resolveSystemPromptIds", object({{"old", str("new")}})},
+                      {"seedSql",
+                       array({seed_conversation("c1", "OLD"),
+                              seed_run("r1", "c1",
+                                       {{"lastCheckpointAt", number(42)},
+                                        {"endedAt", number(77)}}),
+                              seed_message("m1", "c1",
+                                           {{"text", str("old m1")},
+                                            {"runId", str("r1")},
+                                            {"runSequence", number(0)}}),
+                              seed_task("t-keep",
+                                        {{"enabled", number(1)}, {"nextRunAt", number(7)}}),
+                              seed_embedding(number(1), str("m1"))})},{"entries", object({
+                      {kIndex, index({idx_item("c1", c1.c_str())})},
+                      {c1,
+                       graph_item(object(
+                           {{"conversations",
+                             array({gconv(
+                                 "c1", "t",
+                                 {{"title", str("NEW")},
+                                  {"taskId", str("t-keep")},
+                                  {"systemPromptId", str("old")}})})},
+                            {"runs",
+                             array({grun("r1", "c1", 99, {{"endedAt", number(100)}})})},
+                            {"messages",
+                             array({gmsg("m1", "c1", 10, "MODEL", "SUCCESS", "r1", 0,
+                                         std::nullopt, "new m1",
+                                         array({str("media/images/x.png")})),
+                                    gmsg("m2", "c1", 11, "MODEL", "SUCCESS", "r1", 1, "m1"),
+                                    gmsg("m3", "other", 12, "MODEL", "SUCCESS", "r1", 0)})},
+                            {"loops",
+                             array({object({{"conversationId", str("c1")},
+                                            {"intervalMs", number(60000)},
+                                            {"prompt", str("  loop  ")},
+                                            {"cycleCount", number(-1)},
+                                            {"active", boolean(true)}})})}}))},
+                      {kTasks,
+                       tasks_json({object({{"id", str("t-keep")},
+                                           {"name", str("  named  ")},
+                                           {"prompt", str("  CHANGED  ")},
+                                           {"cronExpr", str(" 0 9 * * * ")},
+                                           {"nextRunAt", number(9)},
+                                           {"enabled", boolean(true)},
+                                           {"createdAt", number(1)}}),
+                                   object({{"id", str("t-new")},
+                                           {"name", str("n2")},
+                                           {"prompt", str("p2")},
+                                           {"cronExpr", str("*/5 * * * *")},
+                                           {"createdAt", number(2)}})})}})},
+                      {"restoredMedia",
+                       object({{"archiveFiles",
+                                object({{"media/images/x.png",
+                                         object({{"absolutePath", str("/restored/x.png")},
+                                                 {"uri", str("content://restored/x.png")}})}})}})}}));
+
+    // 05 — import with incomplete ownership: the legacy backfill planner derives the runs,
+    // the assignments and the run-branch selections (re-encoded into the conversation row).
+    add("05-import-backfill",
+        scenario_obj(kMerge, number(5), ss_default(),
+                     array({object({{"op", str("import")}})}),
+                     {{"seedSql",
+                       array({seed_conversation(
+                           "c1", "t",
+                           {{"selectedBranchesJson", str(R"({"u1":"m1"})")}})})},{"entries", object({
+                      {kIndex, index({idx_item("c1", c1.c_str())})},
+                      {c1,
+                       graph_item(object(
+                           {{"conversations",
+                             array({gconv("c1", "t",
+                                         {{"selectedBranchesJson", str(R"({"u1":"m1"})")},
+                                          {"selectedRunBranchesJson", str(R"({"r1":"r1"})")}})})},
+                            {"runs", array({})},
+                            {"messages",
+                             array({gmsg("u1", "c1", 10, "USER", "SUCCESS", std::nullopt,
+                                         std::nullopt, "p0", "again"),
+                                    gmsg("m1", "c1", 11, "MODEL", "SUCCESS", std::nullopt,
+                                         std::nullopt, "u1")})},
+                            {"loops", array({})}}))},
+                      {kTasks, tasks_json({})}})}}));
+
+    // 06 — import under REPLACE: everything seeded is wiped (cascades included), the
+    // embeddings are cleared wholesale, the transfer records MODE_REPLACE, and the maintenance
+    // + semantic mutation rows land with the masked clock.
+    add("06-import-replace",
+        scenario_obj("REPLACE", number(5), ss_emb(),
+                     array({object({{"op", str("import")}})}),
+                     {{"seedSql",
+                       array({seed_conversation("gone", "GONE"),
+                              seed_run("gr", "gone"),
+                              seed_task("gone-task"),
+                              seed_loop("gone"),
+                              seed_message("gm", "gone", {{"runId", str("gr")}}),
+                              seed_embedding(number(1), str("any"))})},{"entries", object({
+                      {kIndex, index({idx_item("c1", c1.c_str())})},
+                      {c1,
+                       graph_item(object(
+                           {{"conversations", array({gconv("c1")})},
+                            {"runs", array({grun("r1", "c1")})},
+                            {"messages",
+                             array({gmsg("m1", "c1", 10, "MODEL", "SUCCESS", "r1", 0)})},
+                            {"loops",
+                             array({object({{"conversationId", str("c1")},
+                                            {"intervalMs", number(60000)}})})}}))},
+                      {kTasks,
+                       tasks_json({object({{"id", str("t1")},
+                                           {"name", str("n")},
+                                           {"prompt", str("p")},
+                                           {"cronExpr", str("0 9 * * *")},
+                                           {"createdAt", number(1)}})})}})}}));
+
+    // 07 — import with complete ownership where the repair planner infers a run parent:
+    // r2 becomes r1's child (legacyAmbiguous), the leading duplicate input u2 is deleted,
+    // m2 is reparented and resequenced, a PROCESS_RECOVERED run stops its SENDING model row,
+    // and the conversation's branch selections are re-encoded.
+    add("07-import-repair",
+        scenario_obj(kMerge, number(5), ss_default(),
+                     array({object({{"op", str("import")}})}),
+                     {{"seedSql",
+                       array({seed_conversation(
+                           "c1", "t",
+                           {{"selectedBranchesJson", str(R"({"u1":"m1"})")},
+                            {"selectedRunBranchesJson", str(R"({"r1":"r1"})")}})})},{"entries", object({
+                      {kIndex, index({idx_item("c1", c1.c_str())})},
+                      {c1,
+                       graph_item(object(
+                           {{"conversations",
+                             array({gconv("c1", "t",
+                                         {{"selectedBranchesJson", str(R"({"u1":"m1"})")},
+                                          {"selectedRunBranchesJson", str(R"({"r1":"r1"})")}})})},
+                            {"runs",
+                             array({grun("r1", "c1", 10), grun("r2", "c1", 20),
+                                    grun("r3", "c1", 30,
+                                         {{"endReason", str("PROCESS_RECOVERED")}})})},
+                            {"messages",
+                             array({gmsg("u1", "c1", 5, "USER", "SUCCESS", "r1", 0, "p0",
+                                         "same input"),
+                                    gmsg("m1", "c1", 11, "MODEL", "SUCCESS", "r1", 1, "u1"),
+                                    gmsg("u2", "c1", 12, "USER", "SUCCESS", "r2", 0, "p0",
+                                         "same input"),
+                                    gmsg("m2", "c1", 13, "MODEL", "SUCCESS", "r2", 1, "u2"),
+                                    gmsg("m3", "c1", 31, "MODEL", "SENDING", "r3", 0)})},
+                            {"loops", array({})}}))},
+                      {kTasks, tasks_json({})}})}}));
+
+    // 08 — the legacy (version < 5) stream: counts and headers over conversations.json.
+    add("08-legacy-headers",
+        scenario_obj(kMerge, number(4), ss_default(),
+                     array({object({{"op", str("count")}}), object({{"op", str("headers")}})}),
+                     {{"entries", object({{"conversations.json",
+                       str(compact(object(
+                           {{"conversations",
+                             array({gconv("c1", "t", {{"taskId", str("task-x")}})})},
+                            {"runs", array({grun("r1", "c1")})},
+                            {"messages", array({})},
+                            {"loops", array({})},
+                            {"tasks",
+                             array({object({{"id", str("task-x")},
+                                            {"name", str("n")},
+                                            {"prompt", str("p")},
+                                            {"cronExpr", str("0 9 * * *")},
+                                            {"createdAt", number(1)}})})}})))}})}}));
+
+    // 09 — a conversation without the required id: kotlinx decode failure inside the headers read.
+    add("09-headers-missing-id",
+        scenario_obj(kMerge, number(5), ss_default(),
+                     array({object({{"op", str("headers")}})}),
+                     {{"entries", object({{kIndex, index({idx_item("c1", c1.c_str())})},
+                      {c1,
+                       graph_item(object(
+                           {{"conversations",
+                             array({object({{"title", str("no id")},
+                                            {"lastUpdated", number(1)}})})},
+                            {"runs", array({})},
+                            {"messages", array({})},
+                            {"loops", array({})}}))},
+                      {kTasks, tasks_json({})}})}}));
+
+    // 10 — archiveVersion < 4: message images and attachment metadata restore through the
+    // legacy images/videos-by-message maps instead of the archiveFiles index.
+    add("10-import-legacy-media",
+        scenario_obj(kMerge, number(5), ss_default(),
+                     array({object({{"op", str("import")},
+                                    {"archiveVersion", number(3)}})}),
+                     {{"seedSql", array({seed_conversation("c1")})},{"entries", object({
+                      {kIndex, index({idx_item("c1", c1.c_str())})},
+                      {c1,
+                       graph_item(object(
+                           {{"conversations", array({gconv("c1")})},
+                            {"runs", array({grun("r1", "c1")})},
+                            {"messages",
+                             array({gmsg("m1", "c1", 10, "MODEL", "SUCCESS", "r1", 0,
+                                         std::nullopt, "t", array({}),
+                                         compact(object(
+                                             {{"items",
+                                               array({object({{"originalUri", str("archive/video0")},
+                                                              {"type", str("video")},
+                                                              {"file_size", number(9)}}),
+                                                      object({{"type", str("image")},
+                                                              {"image_index", number(0)},
+                                                              {"page_count", number(1)},
+                                                              {"originalUri",
+                                                               str("archive/image0")}})})}})))})},
+                            {"loops", array({})}}))},
+                      {kTasks, tasks_json({})}})},
+                      {"restoredMedia",
+                       object({{"archiveFiles", object({})},
+                               {"legacyImagesByMessage",
+                                object({{"m1",
+                                         object({{"0", str("legacy://images/m1/0")}})}})},
+                               {"legacyVideosByMessage",
+                                object({{"m1",
+                                         object({{"0", str("legacy://videos/m1/0")}})}})}})}}));
+
+    remove_stale(scenarios);
+    const FormatOptions pretty{Format::Pretty2, false}; // indent=2, ensure_ascii=False
+    for (const auto& [name, value] : entries) {
+        write_scenario(scenarios, name, value, pretty);
+    }
+    std::cout << "Wrote " << entries.size() << " scenarios to " << scenarios.string() << "\n";
+}
+
+// native-backup-archive/gen_scenarios.py — indent=2, ensure_ascii=False. The profile also
+// rebuilds fixtures/ byte-exactly: the zipfile layout Python's zipfile emits (version 20,
+// date 1980-01-01, external 0600, central 0x0314) over zlib raw deflate level 6, the
+// struct-packed RawZip archives (declared-size/CRC overrides, ZIP64 extra, dir entries with
+// data) and the truncated/garbage payloads.
+void profile_native_backup_archive(const fs::path& scenarios) {
+    std::vector<std::pair<std::string, json::Value>> entries;
+    auto add = [&](const std::string& name, json::Value value) {
+        entries.emplace_back(name, std::move(value));
+    };
+
+    // ---- fixtures --------------------------------------------------------------------------
+    const fs::path fixtures = scenarios.parent_path() / "fixtures";
+    std::error_code error;
+    fs::create_directories(fixtures, error);
+    for (const auto& entry : fs::directory_iterator(fixtures, error)) {
+        const std::string ext = entry.path().extension().string();
+        if (ext == ".zip" || ext == ".bin") fs::remove(entry.path(), error);
+    }
+    auto write_bytes = [&](const char* name, const std::string& bytes) {
+        std::ofstream stream(fixtures / name, std::ios::binary);
+        if (!stream) fail("error: cannot write " + (fixtures / name).string());
+        stream.write(bytes.data(), static_cast<std::streamsize>(bytes.size()));
+    };
+    auto put16 = [](std::string& out, std::uint16_t value) {
+        out += static_cast<char>(value & 0xFF);
+        out += static_cast<char>((value >> 8) & 0xFF);
+    };
+    auto put32 = [](std::string& out, std::uint32_t value) {
+        for (int shift = 0; shift < 32; shift += 8) {
+            out += static_cast<char>((value >> shift) & 0xFF);
+        }
+    };
+    auto put64 = [](std::string& out, std::uint64_t value) {
+        for (int shift = 0; shift < 64; shift += 8) {
+            out += static_cast<char>((value >> shift) & 0xFF);
+        }
+    };
+    // zlib raw deflate at level 6 — byte-identical to
+    // Python zlib.compressobj(6, zlib.DEFLATED, -15).
+    auto raw_deflate = [](const std::string& input) {
+        z_stream stream{};
+        if (deflateInit2(&stream, 6, Z_DEFLATED, -15, 8, Z_DEFAULT_STRATEGY) != Z_OK) {
+            fail("deflateInit2 failed");
+        }
+        stream.next_in = reinterpret_cast<Bytef*>(const_cast<char*>(input.data()));
+        stream.avail_in = static_cast<uInt>(input.size());
+        std::string out;
+        std::vector<char> buffer(256);
+        int status = Z_OK;
+        while (status != Z_STREAM_END) {
+            stream.next_out = reinterpret_cast<Bytef*>(buffer.data());
+            stream.avail_out = static_cast<uInt>(buffer.size());
+            status = deflate(&stream, Z_FINISH);
+            if (status != Z_OK && status != Z_STREAM_END) {
+                deflateEnd(&stream);
+                fail("deflate failed");
+            }
+            out.append(buffer.data(), buffer.size() - stream.avail_out);
+        }
+        deflateEnd(&stream);
+        return out;
+    };
+    auto crc_of = [](const std::string& data) -> std::uint32_t {
+        return static_cast<std::uint32_t>(crc32(
+            0L, reinterpret_cast<const Bytef*>(data.data()), static_cast<uInt>(data.size())));
+    };
+    struct ZipEntry {
+        std::string name;
+        std::string data;
+        bool deflate;
+    };
+    // zipfile.ZipFile + ZipInfo(date_time=(1980,1,1,0,0,0)), external 0600<<16,
+    // version_made 0x0314, UTF-8 flag off (all names ASCII), sizes patched in place.
+    auto build_zipfile = [&](const std::vector<ZipEntry>& zip_entries) {
+        std::string out;
+        std::string central;
+        for (const auto& entry : zip_entries) {
+            const std::uint32_t offset = static_cast<std::uint32_t>(out.size());
+            const std::string raw = entry.deflate ? raw_deflate(entry.data) : entry.data;
+            const std::uint32_t crc = crc_of(entry.data);
+            const std::uint16_t method = entry.deflate ? 8 : 0;
+            put32(out, 0x04034B50);
+            put16(out, 20);
+            put16(out, 0);
+            put16(out, method);
+            put16(out, 0);
+            put16(out, 33); // 1980-01-01
+            put32(out, crc);
+            put32(out, static_cast<std::uint32_t>(raw.size()));
+            put32(out, static_cast<std::uint32_t>(entry.data.size()));
+            put16(out, static_cast<std::uint16_t>(entry.name.size()));
+            put16(out, 0);
+            out += entry.name;
+            out += raw;
+            put32(central, 0x02014B50);
+            put16(central, 0x0314); // unix, 20
+            put16(central, 20);
+            put16(central, 0);
+            put16(central, method);
+            put16(central, 0);
+            put16(central, 33);
+            put32(central, crc);
+            put32(central, static_cast<std::uint32_t>(raw.size()));
+            put32(central, static_cast<std::uint32_t>(entry.data.size()));
+            put16(central, static_cast<std::uint16_t>(entry.name.size()));
+            put16(central, 0);
+            put16(central, 0);
+            put16(central, 0);
+            put16(central, 0);
+            put32(central, 0x01800000);
+            put32(central, offset);
+            central += entry.name;
+        }
+        const std::uint32_t cd_offset = static_cast<std::uint32_t>(out.size());
+        out += central;
+        put32(out, 0x06054B50);
+        put16(out, 0);
+        put16(out, 0);
+        put16(out, static_cast<std::uint16_t>(zip_entries.size()));
+        put16(out, static_cast<std::uint16_t>(zip_entries.size()));
+        put32(out, static_cast<std::uint32_t>(central.size()));
+        put32(out, cd_offset);
+        put16(out, 0);
+        return out;
+    };
+    struct RawEntry {
+        std::string name;
+        std::string data;
+        std::optional<std::uint64_t> size_override;
+        std::optional<std::uint32_t> crc_override;
+        bool is_dir = false;
+    };
+    // RawZip: byte-exact local/central headers; declared sizes and CRCs disagree with the
+    // payload, sizes above 4 GiB land in a central ZIP64 extra (local keeps the real length).
+    auto build_raw = [&](const std::vector<RawEntry>& raw_entries) {
+        std::string out;
+        std::string central;
+        for (const auto& entry : raw_entries) {
+            const std::uint32_t offset = static_cast<std::uint32_t>(out.size());
+            const std::uint32_t crc =
+                entry.crc_override ? *entry.crc_override : crc_of(entry.data);
+            const std::uint64_t size =
+                entry.size_override ? *entry.size_override : entry.data.size();
+            put32(out, 0x04034B50);
+            put16(out, 20);
+            put16(out, 0);
+            put16(out, 0);
+            put16(out, 0);
+            put16(out, 0);
+            put32(out, crc);
+            put32(out, static_cast<std::uint32_t>(entry.data.size()));
+            put32(out, static_cast<std::uint32_t>(entry.data.size()));
+            put16(out, static_cast<std::uint16_t>(entry.name.size()));
+            put16(out, 0);
+            out += entry.name;
+            out += entry.data;
+            std::uint64_t size_field = entry.data.size();
+            if (entry.size_override) {
+                size_field = *entry.size_override > 0xFFFFFFFFull
+                                 ? 0xFFFFFFFFull
+                                 : *entry.size_override;
+            }
+            std::string extra;
+            if (size > 0xFFFFFFFFull) {
+                put16(extra, 0x0001);
+                put16(extra, 8);
+                put64(extra, size);
+            }
+            put32(central, 0x02014B50);
+            put16(central, 20);
+            put16(central, 20);
+            put16(central, 0);
+            put16(central, 0);
+            put16(central, 0);
+            put16(central, 0);
+            put32(central, crc);
+            put32(central, static_cast<std::uint32_t>(entry.data.size()));
+            put32(central, static_cast<std::uint32_t>(size_field));
+            put16(central, static_cast<std::uint16_t>(entry.name.size()));
+            put16(central, static_cast<std::uint16_t>(extra.size()));
+            put16(central, 0);
+            put16(central, 0);
+            put16(central, 0);
+            put32(central, (entry.is_dir ? 040755u : 0600u) << 16);
+            put32(central, offset);
+            central += entry.name;
+            central += extra;
+        }
+        const std::uint32_t cd_offset = static_cast<std::uint32_t>(out.size());
+        out += central;
+        put32(out, 0x06054B50);
+        put16(out, 0);
+        put16(out, 0);
+        put16(out, static_cast<std::uint16_t>(raw_entries.size()));
+        put16(out, static_cast<std::uint16_t>(raw_entries.size()));
+        put32(out, static_cast<std::uint32_t>(central.size()));
+        put32(out, cd_offset);
+        put16(out, 0);
+        return out;
+    };
+    // A single DEFLATED entry whose stored block is truncated mid-payload (BFINAL=0,
+    // BTYPE=01 stored block with LEN/NLEN of the full payload but only two data bytes).
+    auto broken_deflate = [&](const char* name, const std::string& payload) {
+        std::string comp;
+        comp += '\x01';
+        put16(comp, static_cast<std::uint16_t>(payload.size()));
+        put16(comp, 0xFFFF);
+        comp += payload.substr(0, 2);
+        const std::uint32_t crc = crc_of(payload);
+        std::string out;
+        put32(out, 0x04034B50);
+        put16(out, 20);
+        put16(out, 0);
+        put16(out, 8);
+        put16(out, 0);
+        put16(out, 0);
+        put32(out, crc);
+        put32(out, static_cast<std::uint32_t>(comp.size()));
+        put32(out, static_cast<std::uint32_t>(payload.size()));
+        put16(out, static_cast<std::uint16_t>(std::string(name).size()));
+        put16(out, 0);
+        out += name;
+        out += comp;
+        std::string central;
+        put32(central, 0x02014B50);
+        put16(central, 20);
+        put16(central, 20);
+        put16(central, 0);
+        put16(central, 8);
+        put16(central, 0);
+        put16(central, 0);
+        put32(central, crc);
+        put32(central, static_cast<std::uint32_t>(comp.size()));
+        put32(central, static_cast<std::uint32_t>(payload.size()));
+        put16(central, static_cast<std::uint16_t>(std::string(name).size()));
+        put16(central, 0);
+        put16(central, 0);
+        put16(central, 0);
+        put16(central, 0);
+        put32(central, 0600u << 16);
+        put32(central, 0);
+        central += name;
+        const std::uint32_t cd_offset = static_cast<std::uint32_t>(out.size());
+        out += central;
+        put32(out, 0x06054B50);
+        put16(out, 0);
+        put16(out, 0);
+        put16(out, 1);
+        put16(out, 1);
+        put32(out, static_cast<std::uint32_t>(central.size()));
+        put32(out, cd_offset);
+        put16(out, 0);
+        return out;
+    };
+
+    // VALID_ENTRIES
+    const std::vector<ZipEntry> kValid = {
+        {"manifest.json", R"({"agora_export_version":6,"categories":["conversations"]})", true},
+        {"settings.json", R"({"selected_model":"m1"})", true},
+        {"system_prompts.json", R"([{"id":"p1","title":"T"}])", true},
+        {"api_keys.json", R"({"apiKeys":[]})", false},
+        {"conversations.json", R"([{"id":"c1"}])", true},
+        {"conv/tasks.json", R"({"records":[]})", true},
+        {"conv/items/aaaaaaaaaaaaaaaa.json", R"({"conversation":{}})", true},
+        {"media/images/11111111-2222-3333-4444-555555555555.png", "PNGDATA-ONE", true},
+        {"media/drafts/99999999-8888-7777-6666-555555555555.jpg", "DRAFT-IMAGE", false},
+        {"custom_font/font", "FONTDATA", true},
+        {"images/legacy.png", "LEGACY-IMAGE", true},
+        {"videos/legacy.mp4", "LEGACY-VIDEO", false},
+        {"custom_font/legacy.ttf", "LEGACY-FONT", false},
+        {"memories/memory_db/note.md", "# note", true},
+        {"theme.bin", std::string("\x00\x01\x02\x7fMETA", 8), false},
+        {"dir/", "", false},
+    };
+    const std::uint64_t kB = std::uint64_t(1) << 62; // ~Long.MAX/2
+    const std::string kValidBytes = build_zipfile(kValid);
+    write_bytes("valid-v6.zip", kValidBytes);
+
+    write_bytes("crc-mismatch-stream.zip",
+                build_raw({{"conv/tasks.json", R"({"records":[]})", std::nullopt,
+                            std::nullopt, false},
+                           {"conv/items/bbbbbbbbbbbbbbbb.json", R"({"conversation":{}})",
+                            std::nullopt, 0xDEADBEEFu, false}}));
+    write_bytes("crc-mismatch-metadata.zip",
+                build_raw({{"manifest.json", R"({"agora_export_version":6})", std::nullopt,
+                            0x0BADF00Du, false}}));
+    write_bytes("duplicate.zip",
+                build_raw({{"manifest.json", "one", std::nullopt, std::nullopt, false},
+                           {"manifest.json", "two", std::nullopt, std::nullopt, false}}));
+    write_bytes("parent-as-file.zip",
+                build_raw({{"a", "a-file", std::nullopt, std::nullopt, false},
+                           {"a/b.txt", "child", std::nullopt, std::nullopt, false}}));
+    write_bytes("backslash.zip",
+                build_raw({{R"(media\images\x.png)", "img", std::nullopt, std::nullopt,
+                            false}}));
+    write_bytes("drive-letter.zip",
+                build_raw({{"C:/x.png", "img", std::nullopt, std::nullopt, false}}));
+    write_bytes("absolute.zip",
+                build_raw({{"/abs.txt", "abs", std::nullopt, std::nullopt, false}}));
+    write_bytes("empty-segment.zip",
+                build_raw({{"a//b.txt", "x", std::nullopt, std::nullopt, false}}));
+    write_bytes("dot-segment.zip",
+                build_raw({{"a/./b.txt", "x", std::nullopt, std::nullopt, false}}));
+    write_bytes("parent-segment.zip",
+                build_raw({{"a/../b.txt", "x", std::nullopt, std::nullopt, false}}));
+    write_bytes("empty-name.zip",
+                build_raw({{"", "x", std::nullopt, std::nullopt, false}}));
+    write_bytes("dir-with-data.zip",
+                build_raw({{"d/", "data", std::nullopt, std::nullopt, true}}));
+    write_bytes("huge-metadata.zip",
+                build_raw({{"manifest.json", "m", kB, std::nullopt, false},
+                           {"settings.json", "s", kB, std::nullopt, false}}));
+    write_bytes("over-budget.zip",
+                build_raw({{"manifest.json", "m", 0x7FFFFFFFu, std::nullopt, false}}));
+    write_bytes("unknown-size.zip",
+                build_raw({{"manifest.json", "{}", 0xFFFFFFFFull, std::nullopt, false}}));
+    write_bytes("bad-deflate.zip",
+                broken_deflate("manifest.json", R"({"agora_export_version":6})"));
+    write_bytes("bad-deflate-stream.zip",
+                broken_deflate("conv/tasks.json", R"({"records":[]})"));
+    write_bytes("size-mismatch.zip",
+                build_raw({{"conv/tasks.json", R"({"records":[]})", 99, std::nullopt,
+                            false}}));
+    // A metadata entry whose declared size passes the budget but whose payload is larger.
+    write_bytes("big-payload.zip",
+                build_raw({{"manifest.json", std::string(50, 'x'), 10, std::nullopt,
+                            false}}));
+    // Streamed payloads (never consumed at open) whose sizes overflow the preflight spool sum.
+    write_bytes("huge-streamed.zip",
+                build_raw({{"conv/tasks.json", "{}", kB, std::nullopt, false},
+                           {"conv/items/aaaaaaaaaaaaaaaa.json", "{}", kB, std::nullopt,
+                            false}}));
+    // Conversation resources whose sizes overflow the selected-resource fold.
+    write_bytes("huge-resources.zip",
+                build_raw({{"media/images/one.png", "x", kB, std::nullopt, false},
+                           {"media/images/two.png", "y", kB, std::nullopt, false}}));
+    write_bytes("garbage.bin", "this is not a zip archive at all, definitely not"
+                               "this is not a zip archive at all, definitely not"
+                               "this is not a zip archive at all, definitely not");
+    write_bytes("truncated.zip", kValidBytes.substr(0, kValidBytes.size() / 3));
+
+    // ---- scenarios --------------------------------------------------------------------------
+    const std::int64_t kHuge = std::int64_t(1) << 50;
+    const char* kV6 = "valid-v6.zip";
+    auto one = [](const char* op_name) { return object({{"op", str(op_name)}}); };
+    auto op_field = [](const char* op_name, const char* key, json::Value value) {
+        return object({{"op", str(op_name)}, {key, std::move(value)}});
+    };
+    auto prefix_op = [](const char* name, std::int64_t count) {
+        return object({{"op", str("prefix")}, {"name", str(name)}, {"count", number(count)}});
+    };
+    auto stream_read = [](const char* key, std::int64_t count) {
+        return object({{"op", str("stream_read")}, {"key", str(key)}, {"count", number(count)}});
+    };
+    auto stream_skip = [](const char* key, std::int64_t count) {
+        return object({{"op", str("stream_skip")}, {"key", str(key)}, {"count", number(count)}});
+    };
+    auto stream_open = [](const char* key, const char* name) {
+        return object({{"op", str("stream_open")}, {"key", str(key)}, {"name", str(name)}});
+    };
+    auto open_op = [](const char* mode,
+                      std::vector<std::pair<std::string, json::Value>> extra = {}) {
+        std::vector<std::pair<std::string, json::Value>> members = {
+            {"op", str("open")}, {"mode", str(mode)}};
+        for (auto& [key, value] : extra) members.emplace_back(key, std::move(value));
+        return object(std::move(members));
+    };
+    auto copy_to = [&](const char* name, const char* target, std::int64_t max_bytes,
+                       std::int64_t available) {
+        return object({{"op", str("copy_to")},
+                       {"name", str(name)},
+                       {"target", str(target)},
+                       {"maxBytes", number(max_bytes)},
+                       {"available", number(available)}});
+    };
+    auto preflight = [&](bool conversations, bool settings, std::int64_t version,
+                         const char* dest, std::int64_t font_limit, std::int64_t available) {
+        return object({{"op", str("preflight")},
+                       {"conversations", boolean(conversations)},
+                       {"settings", boolean(settings)},
+                       {"version", number(version)},
+                       {"dest", str(dest)},
+                       {"fontLimit", number(font_limit)},
+                       {"available", number(available)}});
+    };
+    auto scen = [](const char* name, const char* archive, std::vector<json::Value> ops,
+                   std::optional<std::vector<json::Value>> setup_files = std::nullopt) {
+        std::vector<std::pair<std::string, json::Value>> members = {
+            {"name", str(name)}, {"archive", str(archive)}, {"ops", array(std::move(ops))}};
+        if (setup_files) members.emplace_back("setupFiles", array(std::move(*setup_files)));
+        return object(std::move(members));
+    };
+
+    // 1. functional probe matrix over the normal archive (file mode owns the copy: close
+    // deletes it)
+    add("01-open-file-probes",
+        scen("01-open-file-probes", kV6,
+             {open_op("file"),
+              one("names"),
+              op_field("size", "name", str("manifest.json")),
+              op_field("size", "name", str("nope.json")),
+              op_field("has", "name", str("conv/tasks.json")),
+              op_field("has", "name", str("nope.json")),
+              op_field("bytes", "name", str("manifest.json")),
+              op_field("bytes", "name",
+                       str("media/images/11111111-2222-3333-4444-555555555555.png")),
+              op_field("bytes", "name", str("conversations.json")),
+              op_field("bytes", "name", str("custom_font/font")),
+              op_field("bytes", "name", str("theme.bin")),
+              op_field("bytes", "name", str("missing.json")),
+              prefix_op("settings.json", 5),
+              prefix_op("settings.json", 500),
+              prefix_op("conv/tasks.json", 6),
+              prefix_op("theme.bin", 5),
+              prefix_op("media/images/11111111-2222-3333-4444-555555555555.png", 3),
+              prefix_op("missing.json", 3),
+              prefix_op("settings.json", -1),
+              one("temp_exists"),
+              one("close"),
+              one("temp_exists")}));
+
+    // 2. uri-backed open (Android path): descriptor stream, source closeable, no owned file.
+    add("02-open-uri-probes",
+        scen("02-open-uri-probes", kV6,
+             {open_op("uri"),
+              one("names"),
+              op_field("bytes", "name", str("custom_font/font")),
+              stream_open("res", "media/images/11111111-2222-3333-4444-555555555555.png"),
+              stream_open("s", "conv/tasks.json"),
+              stream_read("s", 7),
+              object({{"op", str("stream_close")}, {"key", str("s")}}),
+              one("close"),
+              one("temp_exists")}));
+
+    // 3. seekable channel open
+    add("03-open-channel-probes",
+        scen("03-open-channel-probes", kV6,
+             {open_op("channel"),
+              op_field("has", "name", str("manifest.json")),
+              op_field("size", "name", str("manifest.json")),
+              one("close"),
+              one("temp_exists")}));
+
+    // 4. non-seekable channel
+    add("04-open-nonseekable",
+        scen("04-open-nonseekable", kV6, {open_op("nonseek"), one("names"), one("close")}));
+
+    // 5. uri with no descriptor for it
+    add("05-open-uri-null",
+        scen("05-open-uri-null", kV6, {open_op("uri_null"), one("names"), one("temp_exists")}));
+
+    // 6. missing backing file: FileNotFoundException rethrown as-is (path masked in the trace)
+    add("06-open-missing-file",
+        scen("06-open-missing-file", "missing.zip",
+             {open_op("file"), one("names"), one("temp_exists")}));
+
+    // 7/8. metadata limit wiring
+    add("07-open-metadata-limit",
+        scen("07-open-metadata-limit", kV6,
+             {open_op("file", {{"metadataLimit", number(5)}}), one("names"),
+              one("temp_exists")}));
+    add("08-open-negative-metadata-limit",
+        scen("08-open-negative-metadata-limit", kV6,
+             {open_op("file", {{"metadataLimit", number(-1)}}), one("names"),
+              one("temp_exists")}));
+
+    // 9..24 open validation failures (Kotlin's own messages; commons messages are observed
+    // too)
+    const std::pair<const char*, const char*> kValidation[] = {
+        {"09-open-crc-mismatch-metadata", "crc-mismatch-metadata.zip"},
+        {"10-open-huge-metadata-overflow", "huge-metadata.zip"},
+        {"11-open-over-metadata-budget", "over-budget.zip"},
+        {"12-open-unknown-size", "unknown-size.zip"},
+        {"13-open-bad-deflate", "bad-deflate.zip"},
+        {"14-open-duplicate", "duplicate.zip"},
+        {"15-open-parent-as-file", "parent-as-file.zip"},
+        {"16-open-backslash", "backslash.zip"},
+        {"17-open-drive-letter", "drive-letter.zip"},
+        {"18-open-absolute", "absolute.zip"},
+        {"19-open-empty-segment", "empty-segment.zip"},
+        {"20-open-dot-segment", "dot-segment.zip"},
+        {"21-open-parent-segment", "parent-segment.zip"},
+        {"22-open-empty-name", "empty-name.zip"},
+        {"23-open-dir-with-data", "dir-with-data.zip"},
+        {"24-open-truncated", "truncated.zip"},
+    };
+    for (const auto& [name, archive] : kValidation) {
+        add(name, scen(name, archive, {open_op("file"), one("names"), one("temp_exists")}));
+    }
+
+    // 25. streamed CRC mismatch: verified only when the stream is read to its end
+    add("25-stream-crc-mismatch",
+        scen("25-stream-crc-mismatch", "crc-mismatch-stream.zip",
+             {open_op("file"),
+              stream_open("good", "conv/tasks.json"),
+              stream_read("good", 6),
+              object({{"op", str("stream_read_to_end")}, {"key", str("good")}}),
+              object({{"op", str("stream_close")}, {"key", str("good")}}),
+              stream_open("bad", "conv/items/bbbbbbbbbbbbbbbb.json"),
+              stream_read("bad", 5),
+              object({{"op", str("stream_read_to_end")}, {"key", str("bad")}}),
+              stream_open("early", "conv/items/bbbbbbbbbbbbbbbb.json"),
+              stream_read("early", 2),
+              object({{"op", str("stream_close")}, {"key", str("early")}}),
+              stream_open("skip", "conv/tasks.json"),
+              stream_skip("skip", 5),
+              stream_read("skip", 100),
+              object({{"op", str("stream_close")}, {"key", str("skip")}})}));
+
+    // 26. declared size vs payload
+    add("26-stream-size-mismatch",
+        scen("26-stream-size-mismatch", "size-mismatch.zip",
+             {open_op("file"),
+              stream_open("s", "conv/tasks.json"),
+              stream_read("s", 4),
+              object({{"op", str("stream_read_to_end")}, {"key", str("s")}})}));
+
+    // 27. copyTo matrix
+    add("27-copy-matrix",
+        scen("27-copy-matrix", kV6,
+             {open_op("file"),
+              copy_to("custom_font/font", "font.bin", kHuge, kHuge),
+              copy_to("media/images/11111111-2222-3333-4444-555555555555.png", "img.png",
+                      kHuge, kHuge),
+              copy_to("conv/tasks.json", "tasks.json", kHuge, kHuge),
+              copy_to("missing.bin", "nope.bin", kHuge, kHuge),
+              copy_to("settings.json", "small.json", 4, kHuge),
+              copy_to("settings.json", "poor.json", kHuge, 3),
+              one("temp_exists"),
+              one("close")}));
+
+    // 28. copyTo destination that cannot be created, and copyStreamToFile's buffer require
+    add("28-copy-destination-and-buffer",
+        scen("28-copy-destination-and-buffer", kV6,
+             {open_op("file"),
+              copy_to("settings.json", "blocker/out.json", kHuge, kHuge),
+              object({{"op", str("copy_stream_raw")},
+                      {"target", str("buffer.json")},
+                      {"input", str("abc")},
+                      {"bufferBytes", number(0)},
+                      {"sourceName", str("buffer.json")}}),
+              object({{"op", str("copy_stream_raw")},
+                      {"target", str("direct.bin")},
+                      {"input", str("payload")},
+                      {"declaredSize", number(99)},
+                      {"expectedCrc", number(0)},
+                      {"sourceName", str("direct.bin")}}),
+              object({{"op", str("copy_stream_raw")},
+                      {"target", str("crc.bin")},
+                      {"input", str("payload")},
+                      {"expectedCrc", number(12345)},
+                      {"sourceName", str("crc.bin")}}),
+              object({{"op", str("copy_stream_raw")},
+                      {"target", str("more.bin")},
+                      {"input", str("payload")},
+                      {"declaredSize", number(2)},
+                      {"sourceName", str("more.bin")}}),
+              one("close")},
+             std::vector<json::Value>{str("blocker")}));
+
+    // 29/30. preflight arithmetic
+    add("29-preflight-matrix",
+        scen("29-preflight-matrix", kV6,
+             {open_op("file"),
+              preflight(true, true, 6, "import_dest", 1000, kHuge),
+              preflight(false, false, 6, "import_dest2", 1000, kHuge),
+              preflight(true, false, 3, "import_dest3", 1000, kHuge),
+              preflight(true, true, 6, "import_dest4", 0, 40),
+              one("close")}));
+    add("30-preflight-overflow",
+        scen("30-preflight-overflow", "huge-streamed.zip",
+             {open_op("file"), preflight(true, false, 6, "dest", 1000, kHuge)}));
+    add("31-preflight-resource-overflow",
+        scen("31-preflight-resource-overflow", "huge-resources.zip",
+             {open_op("file"), preflight(true, false, 6, "dest", 1000, kHuge)}));
+    add("32-preflight-insufficient",
+        scen("32-preflight-insufficient", kV6,
+             {open_op("file"), preflight(true, true, 6, "tight", 1000, 10)}));
+
+    // 33. non-zip garbage through a seekable channel (commons' open message, observed)
+    add("33-open-channel-garbage",
+        scen("33-open-channel-garbage", "garbage.bin",
+             {open_op("channel", {{"channelFixture", str("garbage.bin")}}), one("names")}));
+
+    // 34. byte rendering (text vs hex), stream EOF verification, resource stream rejection and
+    // the driver's stream state machine
+    add("34-stream-rendering",
+        scen("34-stream-rendering", kV6,
+             {open_op("file"),
+              stream_open("theme", "theme.bin"),
+              stream_read("theme", 3),
+              stream_read("theme", 100),
+              stream_read("theme", 1),
+              object({{"op", str("stream_close")}, {"key", str("theme")}}),
+              stream_open("res", "media/images/11111111-2222-3333-4444-555555555555.png"),
+              stream_read("res", 4),
+              stream_open("font", "custom_font/font"),
+              stream_read("missing", 4),
+              object({{"op", str("stream_close")}, {"key", str("missing")}}),
+              one("close")}));
+
+    // 35. a damaged DEFLATED streamed payload: open succeeds (streamed payloads are not
+    // consumed until read), the read itself surfaces commons' channel-read failure
+    add("35-stream-bad-deflate",
+        scen("35-stream-bad-deflate", "bad-deflate-stream.zip",
+             {open_op("file"),
+              stream_open("s", "conv/tasks.json"),
+              stream_read("s", 8),
+              object({{"op", str("stream_close")}, {"key", str("s")}}),
+              one("temp_exists")}));
+
+    // 36. metadata whose declared size fits the budget but whose payload is larger
+    add("36-open-big-metadata-payload",
+        scen("36-open-big-metadata-payload", "big-payload.zip",
+             {open_op("file", {{"metadataLimit", number(40)}}), one("names"),
+              one("temp_exists")}));
+
+    remove_stale(scenarios);
+    const FormatOptions pretty{Format::Pretty2, false}; // indent=2, ensure_ascii=False
+    for (const auto& [name, value] : entries) {
+        write_scenario(scenarios, name, value, pretty);
+    }
+    std::cout << "Wrote " << entries.size() << " scenarios to " << scenarios.string() << "\n";
+}
+
 int main(int argc, char** argv) {
     if (argc != 3) {
         std::cerr << "usage: agora_scenarios <profile> <stand_dir>\n"
@@ -17082,7 +19445,11 @@ int main(int argc, char** argv) {
                   << "  http-policy            http-policy/gen_scenarios.py\n"
                   << "  export-extra-settings   export-extra-settings/gen_scenarios.py\n"
                   << "  shell-durable-jobs     shell-durable-jobs/gen_scenarios.py\n"
-                  << "  semantic-index-ledger  semantic-index-ledger/gen_scenarios.py\n";
+                  << "  semantic-index-ledger  semantic-index-ledger/gen_scenarios.py\n"
+                  << "  context-compact        context-compact/gen_scenarios.py\n"
+                  << "  ollama                 ollama/gen_scenarios.py\n"
+                  << "  native-backup-archive  native-backup-archive/gen_scenarios.py\n"
+                  << "  native-conversation-graph-importer native-conversation-graph-importer/gen_scenarios.py\n";
         return 2;
     }
     const std::string profile = argv[1];
@@ -17243,6 +19610,14 @@ int main(int argc, char** argv) {
         profile_shell_durable_jobs(scenarios);
     } else if (profile == "semantic-index-ledger") {
         profile_semantic_index_ledger(scenarios);
+    } else if (profile == "context-compact") {
+        profile_context_compact(scenarios);
+    } else if (profile == "ollama") {
+        profile_ollama(scenarios);
+    } else if (profile == "native-backup-archive") {
+        profile_native_backup_archive(scenarios);
+    } else if (profile == "native-conversation-graph-importer") {
+        profile_native_conversation_graph_importer(scenarios);
     } else {
         std::cerr << "unknown profile: " << profile << "\n";
         return 2;

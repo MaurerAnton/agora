@@ -302,6 +302,11 @@
     <string name="provider_no_local_models_desc">시작하려면 GGUF 모델을 가져오세요</string>
     <string name="provider_keys_summary">%1$d개의 API 키</string>
     <string name="provider_connection">연결</string>
+    <string name="provider_connection_test">연결 확인</string>
+    <string name="provider_connection_test_running">연결 확인 중…</string>
+    <string name="provider_connection_test_title">연결 테스트</string>
+    <string name="provider_connection_test_ok">연결 OK — 모든 요청에 응답했습니다.</string>
+    <string name="provider_connection_test_failed">연결 실패 — 아래 시도 항목을 확인하세요.</string>
     <string name="import_model_chat">GGUF 모델 가져오기</string>
     <string name="add_local_chat_model">로컬 모델 추가</string>
     <string name="local_ctx_size">컨텍스트 크기</string>

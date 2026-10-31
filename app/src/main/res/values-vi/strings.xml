@@ -305,6 +305,11 @@
     <string name="provider_no_local_models_desc">Nhập mô hình GGUF để bắt đầu</string>
     <string name="provider_keys_summary">%1$d khóa API</string>
     <string name="provider_connection">Kết nối</string>
+    <string name="provider_connection_test">Kiểm tra kết nối</string>
+    <string name="provider_connection_test_running">Đang kiểm tra kết nối…</string>
+    <string name="provider_connection_test_title">Kiểm tra kết nối</string>
+    <string name="provider_connection_test_ok">Kết nối OK — mọi yêu cầu đều có phản hồi.</string>
+    <string name="provider_connection_test_failed">Kết nối thất bại — xem các lần thử bên dưới.</string>
     <string name="import_model_chat">Nhập mô hình GGUF</string>
     <string name="add_local_chat_model">Thêm mô hình cục bộ</string>
     <string name="local_ctx_size">Kích thước ngữ cảnh</string>

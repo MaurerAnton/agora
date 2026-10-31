@@ -261,6 +261,9 @@ fun SettingsProviderDetailPage(
                                 }
                             }
                         }
+                        add {
+                            ProviderConnectionTestRow(currentName, viewModel)
+                        }
                         customConfig?.let { config ->
                             add {
                                 SettingsIconContent(icon = Icons.Default.DataObject) {

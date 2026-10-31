@@ -302,6 +302,11 @@
     <string name="provider_no_local_models_desc">Импортируйте модель GGUF, чтобы начать</string>
     <string name="provider_keys_summary">API-ключей: %1$d</string>
     <string name="provider_connection">Подключение</string>
+    <string name="provider_connection_test">Проверить соединение</string>
+    <string name="provider_connection_test_running">Проверка соединения…</string>
+    <string name="provider_connection_test_title">Проверка соединения</string>
+    <string name="provider_connection_test_ok">Соединение работает — все запросы получили ответ.</string>
+    <string name="provider_connection_test_failed">Соединение не установлено — см. попытки ниже.</string>
     <string name="import_model_chat">Импортировать модель GGUF</string>
     <string name="add_local_chat_model">Добавить локальную модель</string>
     <string name="local_ctx_size">Размер контекста</string>

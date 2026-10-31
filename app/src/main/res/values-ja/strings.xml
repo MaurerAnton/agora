@@ -302,6 +302,11 @@
     <string name="provider_no_local_models_desc">GGUF モデルをインポートして開始してください</string>
     <string name="provider_keys_summary">%1$d 個の API キー</string>
     <string name="provider_connection">接続</string>
+    <string name="provider_connection_test">接続を確認</string>
+    <string name="provider_connection_test_running">接続を確認中…</string>
+    <string name="provider_connection_test_title">接続テスト</string>
+    <string name="provider_connection_test_ok">接続 OK — すべてのリクエストに応答がありました。</string>
+    <string name="provider_connection_test_failed">接続に失敗しました — 下記の試行を確認してください。</string>
     <string name="import_model_chat">GGUF モデルをインポート</string>
     <string name="add_local_chat_model">ローカルモデルを追加</string>
     <string name="local_ctx_size">コンテキストサイズ</string>

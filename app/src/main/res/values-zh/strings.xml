@@ -358,6 +358,11 @@
     <string name="provider_no_local_models_desc">导入 GGUF 模型以开始使用</string>
     <string name="provider_keys_summary">%1$d 个 API 密钥</string>
     <string name="provider_connection">连接</string>
+    <string name="provider_connection_test">检查连通性</string>
+    <string name="provider_connection_test_running">正在检查连通性…</string>
+    <string name="provider_connection_test_title">连通性测试</string>
+    <string name="provider_connection_test_ok">连通性正常——所有请求均有回应。</string>
+    <string name="provider_connection_test_failed">连通性失败——请查看下方的尝试记录。</string>
     <string name="local_models_title">本地模型</string>
     <string name="local_model_idle_retention">模型空闲保留时间</string>
     <string name="local_model_idle_retention_desc">本地模型空闲后在卸载前继续驻留内存的时长</string>

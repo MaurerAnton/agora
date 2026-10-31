@@ -345,6 +345,11 @@
     <string name="provider_no_local_models_desc">Import a GGUF model to get started</string>
     <string name="provider_keys_summary">%1$d API key(s)</string>
     <string name="provider_connection">Connection</string>
+    <string name="provider_connection_test">Check connection</string>
+    <string name="provider_connection_test_running">Checking connection…</string>
+    <string name="provider_connection_test_title">Connection Test</string>
+    <string name="provider_connection_test_ok">Connection OK — every request answered.</string>
+    <string name="provider_connection_test_failed">Connection failed — see the attempts below.</string>
     <string name="import_model_chat">Import GGUF Model</string>
     <string name="add_local_chat_model">Add Local Model</string>
     <string name="local_ctx_size">Context Size</string>

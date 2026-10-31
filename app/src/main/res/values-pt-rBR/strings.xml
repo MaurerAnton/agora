@@ -302,6 +302,11 @@
     <string name="provider_no_local_models_desc">Importe um modelo GGUF para começar</string>
     <string name="provider_keys_summary">%1$d chave(s) de API</string>
     <string name="provider_connection">Conexão</string>
+    <string name="provider_connection_test">Verificar conexão</string>
+    <string name="provider_connection_test_running">Verificando conexão…</string>
+    <string name="provider_connection_test_title">Teste de conexão</string>
+    <string name="provider_connection_test_ok">Conexão OK — todas as solicitações responderam.</string>
+    <string name="provider_connection_test_failed">Falha na conexão — veja as tentativas abaixo.</string>
     <string name="import_model_chat">Importar modelo GGUF</string>
     <string name="add_local_chat_model">Adicionar modelo local</string>
     <string name="local_ctx_size">Tamanho do contexto</string>

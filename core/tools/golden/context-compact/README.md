@@ -44,7 +44,7 @@ projections).
 | `golden/*.trace` | Frozen Kotlin output, one per scenario |
 | `ContextCompactTraceDump.kt` | Driver: seeds SQLite, runs every interface member, dumps the tables |
 | ``agora_extract message-entity`` | Lifts `MessageEntity` out of `ChatEntities.kt` |
-| `gen_scenarios.py` | Deterministic scenario generator |
+| `agora_scenarios context-compact <stand>` | Deterministic scenario generator |
 | `run_golden.sh` | Extracts, compiles, freezes (`--freeze`) or verifies the traces |
 
 Every one of the 21 interface members is an operation, so no query goes unpinned.
@@ -107,7 +107,7 @@ export JAVA_HOME=/path/to/jdk17; export PATH=$JAVA_HOME/bin:$PATH
 KOTLINC=/path/to/kotlinc KOTLINX_JARS=core.jar:json.jar:coroutines.jar:sqlite-jdbc.jar \
   ./run_golden.sh          # verify
 KOTLINC=... KOTLINX_JARS=... ./run_golden.sh --freeze   # regenerate
-python3 gen_scenarios.py                                # rewrite scenarios
+../../../build/agora_scenarios context-compact .   # rewrite scenarios
 ```
 
 `run_golden.sh` wipes the stand's git-ignored `build/` before each run, so runs are idempotent.

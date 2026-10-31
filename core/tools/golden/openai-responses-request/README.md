@@ -18,7 +18,7 @@ pulls in the message-preparation and cost-model clusters, none of which these mo
 | `golden/*.trace` | Frozen Kotlin output, one per scenario |
 | `OpenAiResponsesRequestTraceDump.kt` | Driver: builds the chat messages / tools / request and renders the result |
 | `agora_extract responses-models` | Lifts the four request models out of `api/LlmProvider.kt` |
-| `gen_scenarios.py` | Deterministic scenario generator |
+| `agora_scenarios openai-responses-request <stand>` | Deterministic scenario generator |
 | `run_golden.sh` | Extracts, compiles, freezes (`--freeze`) or verifies the traces |
 
 ## What is pinned

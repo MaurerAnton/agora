@@ -74,7 +74,7 @@ targets the predicates that differ between the queries and between SQLite's two 
 ```
 
 `seed` fills the four tables with valid rows (conversation/message fields default the way the
-entities do). `gen_scenarios.py` writes nine scenarios over one shared dataset.
+entities do). `agora_scenarios chat-search-dao <stand>` writes nine scenarios over one shared dataset.
 
 ## Trace format (`golden/*.trace`)
 

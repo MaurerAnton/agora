@@ -19,7 +19,7 @@ present, so a shape change in `HttpClient.kt` fails the stand instead of driftin
 | `golden/*.trace` | Frozen canonical output, one per scenario |
 | `HttpPolicyTraceDump.kt` | The stand driver |
 | ``agora_extract http-policy`` | Lifts the policy declarations out of `HttpClient.kt` |
-| `gen_scenarios.py` | Generates the scenarios (deterministic; rerun after editing) |
+| `agora_scenarios http-policy <stand>` | Generates the scenarios (deterministic; rerun after editing) |
 | `run_golden.sh` | Extracts, compiles and regenerates or verifies the traces |
 
 ## What is pinned
@@ -102,7 +102,7 @@ JAVA_HOME=/path/to/jdk17 KOTLINC=/path/to/kotlinc \
 KOTLINX_JARS=core.jar:json.jar ./run_golden.sh            # verify
 JAVA_HOME=/path/to/jdk17 KOTLINC=/path/to/kotlinc \
 KOTLINX_JARS=core.jar:json.jar ./run_golden.sh --freeze   # regenerate
-python3 gen_scenarios.py                                  # rewrite scenarios
+../../../build/agora_scenarios http-policy .   # rewrite scenarios
 ```
 
 `run_golden.sh` wipes the stand's `build/` (git-ignored scratch, including the extracted

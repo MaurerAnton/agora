@@ -55,7 +55,8 @@ UUID ids) and the conversation/provider display helpers stay in Kotlin — see `
 ```
 KOTLINC=/path/to/kotlinc KOTLINX_JARS=core.jar:json.jar ./run_golden.sh          # verify
 KOTLINC=/path/to/kotlinc KOTLINX_JARS=core.jar:json.jar ./run_golden.sh --freeze # regenerate
-python3 gen_scenarios.py                                                          # rewrite scenarios
+# scenarios/*.json are the committed fixture inputs -- edit them directly;
+# run_golden.sh (verify / --freeze) walks them and pins the traces
 ```
 
 The Kotlin reference is extracted and compiled from the app tree on every run; the extractor fails

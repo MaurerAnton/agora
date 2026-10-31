@@ -14,7 +14,7 @@ Parity pin for `data/ExportExtraSettings.kt::restoreLegacyFromJsonObject`, the r
 | `golden/*.trace` | Frozen Kotlin output, one per scenario |
 | `ExportExtraSettingsTraceDump.kt` | Driver: runs the reader and prints the recorded call log |
 | `platform/` | DataStore preferences keys, crypto/debug shims, recording `SettingsManager` double |
-| `gen_scenarios.py` | Deterministic scenario generator |
+| `agora_scenarios export-extra-settings <stand>` | Deterministic scenario generator |
 | `run_golden.sh` | Compiles, freezes (`--freeze`) or verifies the traces |
 
 ## What is pinned

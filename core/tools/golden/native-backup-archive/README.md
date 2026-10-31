@@ -14,7 +14,7 @@ extraction and the storage preflight. The archive source and its collaborators c
 | `golden/*.trace` | Frozen canonical output, one per scenario |
 | `fixtures/*.zip` | The archives both ports read (24 committed, byte-exact) |
 | `NativeBackupArchiveTraceDump.kt` | The stand driver (calls the real archive) |
-| `gen_scenarios.py` | Builds fixtures + scenarios deterministically |
+| `agora_scenarios native-backup-archive <stand>` | Builds fixtures + scenarios deterministically |
 | `agora_extract graph-interface` | Lifts `NativeGraphEntrySource` verbatim from `NativeConversationGraphSource.kt` |
 | `platform/Uri.kt`, `platform/AndroidContext.kt`, `platform/ParcelFileDescriptor.kt` | The Android open-path surface |
 | `platform/SettingsManager.kt`, `Preferences.kt`, `SecretCrypto.kt`, `DebugLog.kt` | The DataStore storage double needed so `SettingsContracts.kt` compiles (same files as the secrets stand) |
@@ -63,7 +63,7 @@ extraction and the storage preflight. The archive source and its collaborators c
 
 ## Fixtures
 
-`gen_scenarios.py` builds them two ways:
+`agora_scenarios native-backup-archive <stand>` builds them two ways:
 
 * `zipfile` with fixed 1980 timestamps — the normal archives the functional scenarios open;
 * `RawZip`, a byte-exact assembler — wrong central CRCs and sizes (with a central ZIP64 extra
@@ -122,6 +122,6 @@ KOTLINX_JARS=core.jar:json.jar:coroutines.jar:/path/commons-compress-1.27.1.jar:
 # add --freeze to regenerate golden/
 ```
 
-`run_golden.sh` rebuilds `fixtures/` and `scenarios/` from `gen_scenarios.py` on every run
+`run_golden.sh` rebuilds `fixtures/` and `scenarios/` from `agora_scenarios native-backup-archive <stand>` on every run
 (deterministically), lifts the interface, compiles the app sources, and runs each scenario in its
 own working directory under `build/` (git-ignored).

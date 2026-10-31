@@ -37,7 +37,7 @@ unmarked level rolls the whole stack back) and `platform/StandChatDatabase.kt` (
 | `golden/*.trace` | Frozen Kotlin output, one per scenario |
 | `SemanticIndexLedgerTraceDump.kt` | Driver: seeds SQLite, runs the steps, dumps the tables |
 | `agora_extract embedding-entity` | Lifts `EmbeddingEntity` out of `ChatEntities.kt` |
-| `gen_scenarios.py` | Deterministic scenario generator |
+| `agora_scenarios semantic-index-ledger <stand>` | Deterministic scenario generator |
 | `run_golden.sh` | Extracts, compiles, freezes (`--freeze`) or verifies the traces |
 
 ## What is pinned
@@ -90,7 +90,7 @@ export JAVA_HOME=/path/to/jdk17; export PATH=$JAVA_HOME/bin:$PATH
 KOTLINC=/path/to/kotlinc KOTLINX_JARS=core.jar:json.jar:coroutines.jar:sqlite-jdbc.jar \
   ./run_golden.sh          # verify
 KOTLINC=... KOTLINX_JARS=... ./run_golden.sh --freeze   # regenerate
-python3 gen_scenarios.py                                # rewrite scenarios
+../../../build/agora_scenarios semantic-index-ledger .   # rewrite scenarios
 ```
 
 `run_golden.sh` wipes the stand's git-ignored `build/` before each run, so runs are idempotent.

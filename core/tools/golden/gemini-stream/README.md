@@ -46,7 +46,7 @@ The loop semantics, in provider order:
 | `GeminiStreamTraceDump.kt` | The stand driver (see "How the driver works") |
 | ``agora_extract gemini-stream`` | Verbatim extraction of the stream-side provider helpers |
 | `run_golden.sh` | Extracts, compiles and regenerates or verifies the traces |
-| `gen_scenarios.py` | Generates the transcripts (deterministic; rerun after editing) |
+| `agora_scenarios gemini-stream <stand>` | Generates the transcripts (deterministic; rerun after editing) |
 | `stubs/` | Leaf stubs for Android-only types the reference sources touch |
 
 ## Transcript format
@@ -115,7 +115,7 @@ not pinned (only `rawLine.take(512)` in UTF-16 units — a split surrogate pair 
 ```
 KOTLINC=/path/to/kotlinc KOTLINX_JARS=core.jar:json.jar ./run_golden.sh          # verify
 KOTLINC=/path/to/kotlinc KOTLINX_JARS=core.jar:json.jar ./run_golden.sh --freeze # regenerate
-python3 gen_scenarios.py                                                          # rewrite scenarios
+../../../build/agora_scenarios gemini-stream .   # rewrite scenarios
 ```
 
 The Kotlin reference is compiled from the app tree on every run; the extractor fails loudly if

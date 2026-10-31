@@ -53,7 +53,6 @@ or a `CancellationException`.
 shell-durable-jobs/
 ├── ShellDurableJobTraceDump.kt   trace driver (Kotlin reference execution)
 ├── platform/                     documented leaf doubles (see above)
-├── gen_scenarios.py              deterministic scenario corpus (146 scenarios)
 ├── scenarios/                    generated JSON inputs
 ├── golden/                       frozen traces (byte-exact reference output)
 ├── run_golden.sh                 compile + run + verify (or --freeze)

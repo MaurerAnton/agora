@@ -14,7 +14,7 @@ sequence and/or reader probes against a real spool file (`platform_spool.tmp`).
 | `scenarios/*.json` | 31 cases: writer sequences, raw spool content, reader probes, deterministic fuzz |
 | `golden/*.trace` | Frozen Kotlin output, one per scenario |
 | `ExportSpoolTraceDump.kt` | Driver: writes the spool, renders the index and runs the reads |
-| `gen_scenarios.py` | Deterministic scenario generator |
+| `agora_scenarios export-spool <stand>` | Deterministic scenario generator |
 | `run_golden.sh` | Compiles, freezes (`--freeze`) or verifies the traces |
 
 ## What is pinned

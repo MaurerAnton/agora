@@ -95,25 +95,38 @@ dismiss() {
   return 1
 }
 clean_ui() {
-  # System permission dialog first - it sits above everything; then the in-app
-  # update card. Repeat: both appear with their own delays.
+  # Order matters: a system window sits above everything (the cold-boot Pixel
+  # Launcher ANR appears nondeterministically and blocks taps), then the
+  # permission dialog, then the in-app update card. Repeat: each appears with
+  # its own delay.
   for _ in 1 2 3; do
+    dismiss "wait" "ждать" || true
     dismiss "don't allow" "don’t allow" "не разрешать" || true
     dismiss "later" "позже" || true
   done
 }
 
-dismiss "don't allow" "don’t allow" "не разрешать" || true
-dismiss "later" "позже" || true
+clean_ui
 
 # Onboarding: fresh install lands on Welcome; tap the first Skip/Start control we
 # can find so the second shot shows the actual chat surface. Bilingual patterns
-# cover the English and Russian first-run copy.
-if xy=$(tap_matching skip start "let's go" пропустить продолжить начать); then
-  echo "onboarding control at $xy"
-  # shellcheck disable=SC2086
-  adb shell input tap $xy
-  sleep 8
+# cover the English and Russian first-run copy. One retry after a cleanup pass -
+# a system dialog may have been covering the control the first time around.
+onboarded=1
+for _ in 1 2; do
+  if xy=$(tap_matching skip start "let's go" пропустить продолжить начать); then
+    echo "onboarding control at $xy"
+    # shellcheck disable=SC2086
+    adb shell input tap $xy
+    sleep 8
+    onboarded=0
+    break
+  fi
+  clean_ui
+  sleep 3
+done
+if [ "$onboarded" -eq 1 ]; then
+  echo "no onboarding control found; assuming no onboarding"
 fi
 clean_ui
 # Drop the keyboard the dismissal taps may have opened (tap an empty area - a BACK

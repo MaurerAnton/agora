@@ -181,19 +181,26 @@ if [ "$live_minutes" -le 0 ]; then
 elif [ "$live_tunnel" = "none" ]; then
   echo "live view off (tunnel=none)"
 elif [ "$live_tunnel" = "ssh" ]; then
-  # Keyless mode: a reverse SSH tunnel through localhost.run publishes the loopback adb port
-  # for exactly the hold duration. No account, no secret - and therefore a PUBLIC endpoint:
-  # anyone who learns the URL can speak adb while the hold lasts. Keep live_minutes small.
-  echo "starting keyless SSH reverse tunnel (mode=ssh)..."
+  # Keyless mode: a reverse SSH tunnel through serveo.net publishes the loopback adb port for
+  # exactly the hold duration - no account, no secret (localhost.run rejects anonymous
+  # forwarding with port 0, serveo allocates one). PUBLIC endpoint: anyone who learns the URL
+  # can speak adb while the hold lasts. Keep live_minutes small.
+  echo "starting keyless SSH reverse tunnel (mode=ssh, serveo.net)..."
   rm -f /tmp/tunnel.log
   ssh -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null \
       -o ServerAliveInterval=30 -o ExitOnForwardFailure=yes -o ConnectTimeout=15 \
-      -R 0:127.0.0.1:5555 -N -n nokey@localhost.run >/tmp/tunnel.log 2>&1 &
+      -R 0:127.0.0.1:5555 -N -n serveo.net >/tmp/tunnel.log 2>&1 &
   tunnel_pid=$!
   endpoint=""
   for _ in $(seq 1 45); do
-    endpoint=$(sed -nE 's/.*Forwarding TCP connections from +([^ ]+).*/\1/p' /tmp/tunnel.log 2>/dev/null | head -1 | tr -d '\r')
-    if [ -n "$endpoint" ]; then
+    port=$(sed -nE 's/.*Allocated port +([0-9]+).*/\1/p' /tmp/tunnel.log 2>/dev/null | head -1 | tr -d '\r')
+    forwarded=$(sed -nE 's/.*[Ff]orwarding TCP connections from +([^ ]+).*/\1/p' /tmp/tunnel.log 2>/dev/null | head -1 | tr -d '\r')
+    if [ -n "$port" ]; then
+      endpoint="serveo.net:${port}"
+      break
+    fi
+    if [ -n "$forwarded" ]; then
+      endpoint="${forwarded}"
       break
     fi
     kill -0 "$tunnel_pid" 2>/dev/null || break

@@ -28,6 +28,17 @@ on:
           - tailscale
           - ssh
           - none
+      flow:
+        description: >-
+          main = dismiss dialogs, skip onboarding, capture the chat surface. onboarding = page
+          through all 8 onboarding screens with one frame per page (diagnoses UI regressions
+          such as the disappearing Skip button).
+        required: false
+        default: "main"
+        type: choice
+        options:
+          - main
+          - onboarding
 
 permissions:
   contents: read
@@ -73,6 +84,7 @@ jobs:
         env:
           LIVE_MINUTES: ${{ github.event.inputs.live_minutes || '0' }}
           LIVE_TUNNEL: ${{ github.event.inputs.tunnel || 'tailscale' }}
+          FLOW: ${{ github.event.inputs.flow || 'main' }}
           TS_AUTHKEY: ${{ secrets.TS_AUTHKEY }}
         with:
           api-level: 34

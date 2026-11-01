@@ -108,6 +108,27 @@ clean_ui() {
 
 clean_ui
 
+if [ "${FLOW:-main}" = "onboarding" ]; then
+  # Diagnostic flow: page through every onboarding screen instead of skipping it, one frame
+  # per page plus a short slide-back pass - the frames show exactly where the Skip control
+  # vanishes, if anywhere. Every step waits past the intro gate (showContent keys the fade)
+  # and the 500ms pager animation.
+  echo "flow=onboarding: paging all 8 pages, one frame each"
+  for i in 0 1 2 3 4 5 6 7; do
+    if [ "$i" -gt 0 ]; then
+      adb shell input swipe 900 1300 150 1300 350
+      sleep 2.4
+    fi
+    shot "page_${i}"
+  done
+  # Slide two pages back: the report is about a vanishing control, so returns matter too.
+  adb shell input swipe 150 1300 900 1300 350
+  sleep 2.4
+  shot "page_back_6"
+  adb shell input swipe 150 1300 900 1300 350
+  sleep 2.4
+  shot "page_back_5"
+else
 # Onboarding: fresh install lands on Welcome; tap the first Skip/Start control we
 # can find so the second shot shows the actual chat surface. Bilingual patterns
 # cover the English and Russian first-run copy. One retry after a cleanup pass -
@@ -134,6 +155,7 @@ clean_ui
 adb shell input tap 540 700 >/dev/null 2>&1 || true
 sleep 2
 shot 02_after_onboarding
+fi
 
 # Give screenrecord time to finalise the container, then pull it.
 wait "$rec_pid" 2>/dev/null || true

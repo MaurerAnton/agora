@@ -170,6 +170,17 @@ if [ "${FLOW:-main}" = "onboarding" ]; then
   sleep 2
   shot "rot_back"
   dump_ui "rot_back"
+
+  # Intro timeline: relaunch and sample the first seconds densely. Skip is the escape hatch, so
+  # the first frame that shows the walkthrough at all must already carry the control.
+  echo "flow=onboarding: intro timeline after relaunch"
+  adb shell am force-stop "$pkg"
+  adb shell monkey -p "$pkg" -c android.intent.category.LAUNCHER 1 >/dev/null
+  for t in $(seq 1 14); do
+    sleep 0.6
+    shot "intro_${t}"
+    dump_ui "intro_${t}"
+  done
 else
 # Onboarding: fresh install lands on Welcome; tap the first Skip/Start control we
 # can find so the second shot shows the actual chat surface. Bilingual patterns

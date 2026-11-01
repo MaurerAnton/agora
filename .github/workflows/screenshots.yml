@@ -103,4 +103,5 @@ jobs:
           path: |
             screenshots/*.png
             screenshots/*.mp4
+            screenshots/*.xml
           if-no-files-found: error

@@ -48,6 +48,7 @@ import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.setValue
@@ -291,7 +292,10 @@ fun WelcomeScreen(
     val typedPages = remember { mutableSetOf<Int>() }
     val pagerState = rememberPagerState(pageCount = { pages.size })
     var exiting by remember { mutableStateOf(false) }
-    var showContent by remember { mutableStateOf(false) }
+    // rememberSaveable: orientation and screen size are declared in configChanges, but locale,
+    // uiMode (theme) and font scale changes still recreate the activity - a plain remember would
+    // then replay the two-second intro fade and hide the walkthrough again right after the switch.
+    var showContent by rememberSaveable { mutableStateOf(false) }
     val contentAlpha by animateFloatAsState(if (showContent) 1f else 0f, tween(600))
 
     // Persist whatever the API Key page collected for the selected provider. Custom
@@ -383,12 +387,16 @@ fun WelcomeScreen(
             // the keyboard is open; chat and settings surfaces handle IME insets.
             Column(modifier = Modifier.fillMaxSize(), horizontalAlignment = Alignment.CenterHorizontally) {
 
-                // Skip button
-                Box(Modifier.fillMaxWidth().padding(top = 48.dp, end = 16.dp).alpha(contentAlpha), contentAlignment = Alignment.CenterEnd) {
+                // Skip button. Deliberately outside the intro fade: this is the escape hatch, so
+                // it has to be visible and tappable from the first composed frame. Waiting for
+                // contentAlpha (2s delay + 600ms fade) left the walkthrough showing video with no
+                // way out, and every recreation replayed that silent window.
+                Box(Modifier.fillMaxWidth().padding(top = 48.dp, end = 16.dp), contentAlignment = Alignment.CenterEnd) {
+                    val canSkip = pagerState.currentPage < pages.size - 1
                     TextButton(
-                        onClick = { if (pagerState.currentPage < pages.size - 1) exiting = true },
-                        enabled = showContent && pagerState.currentPage < pages.size - 1,
-                        modifier = Modifier.alpha(if (pagerState.currentPage < pages.size - 1) 1f else 0f)
+                        onClick = { if (canSkip) exiting = true },
+                        enabled = canSkip,
+                        modifier = Modifier.alpha(if (canSkip) 1f else 0f)
                     ) { Text(stringResource(R.string.onboarding_skip)) }
                 }
 

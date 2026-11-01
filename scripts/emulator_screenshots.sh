@@ -148,44 +148,110 @@ adb pull /sdcard/agora_tour.mp4 "$out/tour.mp4" >/dev/null 2>&1 \
 # secret or a short job budget only costs the live part.
 live_minutes="${LIVE_MINUTES:-0}"
 case "$live_minutes" in ''|*[!0-9]*) live_minutes=0 ;; esac
-if [ "$live_minutes" -gt 0 ] && [ -n "${TS_AUTHKEY:-}" ]; then
-  echo "enabling live view for ${live_minutes} minutes..."
-  # Never fail the job on the live part: the captures are already on disk.
-  {
-    command -v tailscale >/dev/null || curl -fsSL https://tailscale.com/install.sh | sh
-    command -v socat >/dev/null || sudo apt-get install -y --no-install-recommends socat
-    # netfilter off: the runner's iptables belong to the platform (docker, gh cache),
-    # and a service listening on the tailscale address does not need Tailscale's rules.
-    sudo tailscale up --authkey="$TS_AUTHKEY" --netfilter-mode=off \
-      --hostname="agora-emu-${GITHUB_RUN_ID:-local}" --accept-dns=false
-  } || echo "tailscale setup failed; skipping live view"
+live_tunnel="${LIVE_TUNNEL:-tailscale}"  # tailscale | ssh | none
+hold_seconds=$((live_minutes * 60))
 
-  # The backend needs a moment to get an address after `up`.
-  ts_ip=""
-  for _ in $(seq 1 30); do
-    ts_ip="$(tailscale ip -4 2>/dev/null | head -1 || true)"
-    [ -n "$ts_ip" ] && break
-    sleep 2
-  done
+# Prints the connection recipe to the job log and to the Actions step summary, so the owner
+# can copy the two commands without digging through raw logs.
+announce_live() {
+  local serial="$1"
+  local warn="${2:-}"
+  echo "=== LIVE VIEW IS ON for ${live_minutes} min - on your machine run: ==="
+  echo "    adb connect ${serial}"
+  echo "    scrcpy -s ${serial}"
+  if [ -n "$warn" ]; then
+    echo "    NOTE: ${warn}"
+  fi
+  if [ -n "${GITHUB_STEP_SUMMARY:-}" ]; then
+    {
+      echo "### Live view: next ${live_minutes} minutes"
+      echo '```sh'
+      echo "adb connect ${serial}"
+      echo "scrcpy -s ${serial}"
+      echo '```'
+      if [ -n "$warn" ]; then
+        echo "> **Warning:** ${warn}"
+      fi
+    } >> "$GITHUB_STEP_SUMMARY"
+  fi
+}
 
-  if [ -n "$ts_ip" ]; then
-    # The emulator binds its adb port to the runner loopback only, so publish that
-    # raw-adb endpoint on the tailnet address; from the client side this is a plain
-    # `adb connect <ip>:5555`.
-    if sudo socat TCP-LISTEN:5555,bind="$ts_ip",fork,reuseaddr TCP:127.0.0.1:5555 >/dev/null 2>&1 & \
-       sleep 2 && ss -ltn 2>/dev/null | grep -q ":5555"; then
-      echo "=== LIVE VIEW IS ON for ${live_minutes} min — on your machine run: ==="
-      echo "    adb connect ${ts_ip}:5555"
-      echo "    scrcpy -s ${ts_ip}:5555"
-      sleep "$((live_minutes * 60))"
-    else
-      echo "could not publish port 5555 on ${ts_ip}; skipping live hold"
+if [ "$live_minutes" -le 0 ]; then
+  echo "live view off (LIVE_MINUTES=0)"
+elif [ "$live_tunnel" = "none" ]; then
+  echo "live view off (tunnel=none)"
+elif [ "$live_tunnel" = "ssh" ]; then
+  # Keyless mode: a reverse SSH tunnel through localhost.run publishes the loopback adb port
+  # for exactly the hold duration. No account, no secret - and therefore a PUBLIC endpoint:
+  # anyone who learns the URL can speak adb while the hold lasts. Keep live_minutes small.
+  echo "starting keyless SSH reverse tunnel (mode=ssh)..."
+  rm -f /tmp/tunnel.log
+  ssh -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null \
+      -o ServerAliveInterval=30 -o ExitOnForwardFailure=yes -o ConnectTimeout=15 \
+      -R 0:127.0.0.1:5555 -N -n nokey@localhost.run >/tmp/tunnel.log 2>&1 &
+  tunnel_pid=$!
+  endpoint=""
+  for _ in $(seq 1 45); do
+    endpoint=$(sed -nE 's/.*Forwarding TCP connections from +([^ ]+).*/\1/p' /tmp/tunnel.log 2>/dev/null | head -1 | tr -d '\r')
+    if [ -n "$endpoint" ]; then
+      break
     fi
+    kill -0 "$tunnel_pid" 2>/dev/null || break
+    sleep 1
+  done
+  if [ -z "$endpoint" ]; then
+    echo "ssh tunnel failed; output:"
+    cat /tmp/tunnel.log 2>/dev/null || true
+  elif timeout 6 bash -c "exec 3<>/dev/tcp/${endpoint%:*}/${endpoint##*:}" 2>/dev/null; then
+    announce_live "$endpoint" \
+      "mode=ssh - the adb endpoint is PUBLIC for the next ${live_minutes} min. Disconnect (adb disconnect) when done."
+    sleep "$hold_seconds"
+    kill "$tunnel_pid" 2>/dev/null || true
   else
-    echo "no tailnet address after 60s; skipping live hold"
+    echo "tunnel endpoint ${endpoint} is not reachable; skipping live hold"
+    kill "$tunnel_pid" 2>/dev/null || true
+  fi
+elif [ "$live_tunnel" = "tailscale" ]; then
+  if [ -z "${TS_AUTHKEY:-}" ]; then
+    echo "live view off: tunnel=tailscale but TS_AUTHKEY is not configured."
+    echo "  create one: gh secret set TS_AUTHKEY --body tskey-auth-...  (tailscale.com admin -> Keys)"
+  else
+    echo "enabling live view for ${live_minutes} minutes (tailscale)..."
+    # Never fail the job on the live part: the captures are already on disk.
+    {
+      command -v tailscale >/dev/null || curl -fsSL https://tailscale.com/install.sh | sh
+      command -v socat >/dev/null || sudo apt-get install -y --no-install-recommends socat
+      # netfilter off: the runner's iptables belong to the platform (docker, gh cache),
+      # and a service listening on the tailscale address does not need Tailscale's rules.
+      sudo tailscale up --authkey="$TS_AUTHKEY" --netfilter-mode=off \
+        --hostname="agora-emu-${GITHUB_RUN_ID:-local}" --accept-dns=false
+    } || echo "tailscale setup failed; skipping live view"
+
+    # The backend needs a moment to get an address after `up`.
+    ts_ip=""
+    for _ in $(seq 1 30); do
+      ts_ip="$(tailscale ip -4 2>/dev/null | head -1 || true)"
+      [ -n "$ts_ip" ] && break
+      sleep 2
+    done
+
+    if [ -n "$ts_ip" ]; then
+      # The emulator binds its adb port to the runner loopback only, so publish that
+      # raw-adb endpoint on the tailnet address; from the client side this is a plain
+      # `adb connect <ip>:5555`.
+      if sudo socat TCP-LISTEN:5555,bind="$ts_ip",fork,reuseaddr TCP:127.0.0.1:5555 >/dev/null 2>&1 & \
+         sleep 2 && ss -ltn 2>/dev/null | grep -q ":5555"; then
+        announce_live "${ts_ip}:5555" ""
+        sleep "$hold_seconds"
+      else
+        echo "could not publish port 5555 on ${ts_ip}; skipping live hold"
+      fi
+    else
+      echo "no tailnet address after 60s; skipping live hold"
+    fi
   fi
 else
-  echo "live view off (LIVE_MINUTES=${live_minutes}, TS_AUTHKEY $([ -n "${TS_AUTHKEY:-}" ] && echo set || echo 'not configured'))"
+  echo "unknown LIVE_TUNNEL=${live_tunnel} (expected tailscale|ssh|none); live view off"
 fi
 
 echo "captured:"

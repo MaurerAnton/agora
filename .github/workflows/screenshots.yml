@@ -13,11 +13,21 @@ on:
     inputs:
       live_minutes:
         description: >-
-          Keep the emulator alive that many minutes after capture and expose it over
-          Tailscale so you can watch/drive it live with scrcpy (needs the TS_AUTHKEY
-          secret). 0 = capture only.
+          Keep the emulator alive that many minutes after capture and expose its adb port so
+          you can watch/drive it live with scrcpy. 0 = capture only.
         required: false
         default: "0"
+      tunnel:
+        description: >-
+          Live tunnel: tailscale (authenticated, needs the TS_AUTHKEY secret) or ssh (keyless
+          public endpoint - adb reachable by anyone who learns the URL while the hold lasts).
+        required: false
+        default: "tailscale"
+        type: choice
+        options:
+          - tailscale
+          - ssh
+          - none
 
 permissions:
   contents: read
@@ -62,6 +72,7 @@ jobs:
         uses: reactivecircus/android-emulator-runner@v2
         env:
           LIVE_MINUTES: ${{ github.event.inputs.live_minutes || '0' }}
+          LIVE_TUNNEL: ${{ github.event.inputs.tunnel || 'tailscale' }}
           TS_AUTHKEY: ${{ secrets.TS_AUTHKEY }}
         with:
           api-level: 34

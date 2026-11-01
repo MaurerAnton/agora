@@ -1,5 +1,7 @@
 package com.newoether.agora.api.util
 
+import com.newoether.agora.model.ImageArtifact
+import okhttp3.RequestBody
 import java.io.File
 import java.security.MessageDigest
 import java.util.UUID
@@ -15,6 +17,8 @@ internal class Base64FilePart(
     val byteCount: Long,
     val lastModified: Long,
     val sha256: ByteArray,
+    /** Declared by the artifact that was projected; empty when only a path was registered. */
+    val mimeType: String = "",
 ) {
     val diagnosticMarker: String
         get() = "[STREAMED_BASE64:${byteCount}_BYTES]"
@@ -34,7 +38,14 @@ internal data class StreamingJsonBody(
     val parts: List<Base64FilePart>,
     val diagnosticJson: String,
     val contentLength: Long,
-)
+) {
+    /**
+     * The okhttp form of this descriptor. Callers that build the request envelope read it as a
+     * property; [toRequestBody] stays the spelling used inside the providers.
+     */
+    val body: RequestBody
+        get() = toRequestBody()
+}
 
 /**
  * Projects image files into JSON as opaque placeholders. The final request body replaces each
@@ -44,7 +55,16 @@ internal data class StreamingJsonBody(
 internal class Base64FileRegistry {
     private val files = mutableListOf<Base64FilePart>()
 
-    fun register(path: String): String? {
+    fun register(path: String): String? = registerPart(path, "")?.placeholder
+
+    /**
+     * Projects an artifact and keeps its declared mime type, which the wire envelope needs next to
+     * the base64 placeholder.
+     */
+    fun register(artifact: ImageArtifact): Base64FilePart? =
+        registerPart(artifact.path, artifact.mimeType)
+
+    private fun registerPart(path: String, mimeType: String): Base64FilePart? {
         val part = runCatching {
             val file = File(path).canonicalFile
             if (!file.isFile) return@runCatching null
@@ -60,10 +80,11 @@ internal class Base64FileRegistry {
                 byteCount = byteCount,
                 lastModified = lastModified,
                 sha256 = sha256,
+                mimeType = mimeType,
             )
         }.getOrNull() ?: return null
         files += part
-        return part.placeholder
+        return part
     }
 
     fun prepare(templateJson: String): StreamingJsonBody? {

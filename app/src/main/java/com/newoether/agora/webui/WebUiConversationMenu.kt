@@ -9,13 +9,12 @@ internal fun routeConversationMenu(
     session: WebUiChatSession,
     lifecycle: ConversationLifecycleController,
     generation: MessageGenerationController,
-    generating: Set<String>,
     deleted: (WebSyncEvent.ConversationDelete) -> Unit,
 ) {
     val id = command.conversationId?.takeIf(String::isNotBlank) ?: return
     when (command.type) {
         "pin" -> command.enabled?.let { lifecycle.setPinned(id, it) }
-        "conversation_title" -> if (id !in generating) generation.generateTitle(id, session)
+        "conversation_title" -> generation.generateTitle(id, session)
         "conversation_rename" -> command.text?.trim()?.takeIf(String::isNotEmpty)?.let { lifecycle.rename(id, it) }
         "conversation_delete" -> {
             if (command.actionId <= 0L) return

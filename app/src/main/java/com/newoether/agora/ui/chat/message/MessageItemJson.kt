@@ -22,7 +22,9 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
+import com.newoether.agora.R
 import com.newoether.agora.model.MessagePersistenceGuard
 import com.newoether.agora.ui.theme.ChatType
 import com.newoether.agora.util.NoAutoScrollSelectionContainer
@@ -74,8 +76,24 @@ private fun JsonLabelPill(label: String, color: androidx.compose.ui.graphics.Col
     }
 }
 
+internal val StreamingJsonNode.emptyContainerLiteral: String?
+    get() = when {
+        !complete -> null
+        this is StreamingJsonArray && values.isEmpty() -> "[]"
+        this is StreamingJsonObject && entries.isEmpty() -> "{}"
+        else -> null
+    }
+
 @Composable
 private fun JsonNodeView(node: StreamingJsonNode, depth: Int = 0) {
+    if (node.emptyContainerLiteral != null) {
+        Text(
+            text = stringResource(R.string.tool_json_empty_container),
+            style = ChatType.thoughtBody,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
+        )
+        return
+    }
     when (node) {
         is StreamingJsonObject -> JsonObjectView(node, depth)
         is StreamingJsonArray -> JsonArrayView(node, depth)
@@ -102,16 +120,17 @@ private fun JsonObjectView(obj: StreamingJsonObject, depth: Int) {
                                     value,
                                     modifier = Modifier.weight(1f),
                                 )
-                                is StreamingJsonObject -> Text(
-                                    "{…}",
-                                    style = ChatType.thoughtBody,
-                                    color = MaterialTheme.colorScheme.onSurfaceVariant,
-                                )
-                                is StreamingJsonArray -> Text(
-                                    "[…]",
-                                    style = ChatType.thoughtBody,
-                                    color = MaterialTheme.colorScheme.onSurfaceVariant,
-                                )
+                                is StreamingJsonObject, is StreamingJsonArray -> {
+                                    if (value.emptyContainerLiteral != null) {
+                                        Box(Modifier.weight(1f)) { JsonNodeView(value, depth) }
+                                    } else {
+                                        Text(
+                                            if (value is StreamingJsonObject) "{…}" else "[…]",
+                                            style = ChatType.thoughtBody,
+                                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                        )
+                                    }
+                                }
                             }
                         }
                     }
@@ -121,14 +140,14 @@ private fun JsonObjectView(obj: StreamingJsonObject, depth: Int) {
                             modifier = Modifier.fillMaxWidth().padding(top = 2.dp),
                         )
                     }
-                    when (value) {
+                    when (val nested = value.takeIf { it?.emptyContainerLiteral == null }) {
                         is StreamingJsonObject -> {
                             Box(
                                 modifier = Modifier
                                     .padding(start = ((depth + 1) * 16).dp)
                                     .padding(top = 2.dp),
                             ) {
-                                JsonObjectView(value, depth + 1)
+                                JsonObjectView(nested, depth + 1)
                             }
                         }
                         is StreamingJsonArray -> {
@@ -137,7 +156,7 @@ private fun JsonObjectView(obj: StreamingJsonObject, depth: Int) {
                                     .padding(start = ((depth + 1) * 16).dp)
                                     .padding(top = 2.dp),
                             ) {
-                                JsonArrayView(value, depth + 1)
+                                JsonArrayView(nested, depth + 1)
                             }
                         }
                         else -> Unit
@@ -164,10 +183,8 @@ private fun JsonArrayView(arr: StreamingJsonArray, depth: Int) {
                             item,
                             modifier = Modifier.weight(1f),
                         )
-                        is StreamingJsonObject ->
-                            Box(Modifier.weight(1f)) { JsonObjectView(item, depth) }
-                        is StreamingJsonArray ->
-                            Box(Modifier.weight(1f)) { JsonArrayView(item, depth) }
+                        is StreamingJsonObject, is StreamingJsonArray ->
+                            Box(Modifier.weight(1f)) { JsonNodeView(item, depth) }
                     }
                 }
             }

@@ -6,6 +6,7 @@ import androidx.compose.animation.ContentTransform
 import androidx.compose.animation.EnterTransition
 import androidx.compose.animation.ExitTransition
 import androidx.compose.animation.core.CubicBezierEasing
+import androidx.compose.animation.core.MutableTransitionState
 import androidx.compose.animation.core.tween
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
@@ -22,6 +23,8 @@ import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.SideEffect
+import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.TransformOrigin
@@ -178,9 +181,13 @@ internal fun ChatSwitchingOverlay(
     isTransitioningToNewChat: Boolean,
     topBarHeight: Dp,
     bottomBarHeight: Dp,
+    animateInitialAppearance: Boolean = false,
 ) {
+    val visible = isSwitching && !isTransitioningToNewChat
+    val appearance = remember { MutableTransitionState(visible && !animateInitialAppearance) }
+    SideEffect { appearance.targetState = visible }
     AnimatedVisibility(
-        visible = isSwitching && !isTransitioningToNewChat,
+        visibleState = appearance,
         enter = fadeIn(animationSpec = tween(200)),
         exit = fadeOut(animationSpec = tween(200))
     ) {

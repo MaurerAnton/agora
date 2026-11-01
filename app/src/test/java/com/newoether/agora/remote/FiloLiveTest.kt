@@ -18,7 +18,7 @@ class FiloLiveTest {
         assumeTrue(url != null && tokenFile != null && threadFile != null)
         val client = FiloClient(url!!, File(tokenFile!!).readText().trim())
         val thread = File(threadFile!!).readText().trim()
-        assertTrue(client.connect().isNotBlank())
+        assertNotNull(client.connect())
         assertTrue(client.sessions().sessions.any { it.id == thread })
         assertTrue(client.conversation(thread).messages.any { it.text == "FILO_ANDROID_READY" })
         val clientId = UUID.randomUUID().toString()

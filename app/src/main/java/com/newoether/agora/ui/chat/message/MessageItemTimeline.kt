@@ -662,7 +662,8 @@ internal fun TimelineInfoSegmentCard(
             val isTool = seg.type == "tool"
             val isTranscription = seg.type == "transcription"
             if (isTool) {
-                Icon(Icons.Default.Build, null, modifier = Modifier.size(16.dp), tint = iconTint)
+                Icon(toolHeaderIcon(ToolPresentationResolver.kindForToolName(seg.toolName)), null,
+                    modifier = Modifier.size(16.dp), tint = iconTint)
             } else if (isTranscription) {
                 Icon(Icons.Filled.Image, null, modifier = Modifier.size(16.dp), tint = iconTint)
             } else {

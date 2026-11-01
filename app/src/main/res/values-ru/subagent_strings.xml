@@ -1,0 +1,37 @@
+<resources>
+    <string name="message_source_subagent">Субагент</string>
+    <string name="subagent_running">Выполняется</string>
+    <string name="subagent_completed">Завершено</string>
+    <string name="subagent_failed">Ошибка</string>
+    <string name="subagent_stopped">Остановлено</string>
+    <string name="subagent_idle">Ожидание</string>
+    <string name="subagents_model_list_title">Модели</string>
+    <string name="subagents_recommended_model_title">Рекомендуемая модель</string>
+    <string name="subagents_no_recommended_model">Без предпочтений</string>
+    <string name="subagents_no_models">Модели не добавлены</string>
+    <string name="subagents_no_models_desc">Добавьте модель для запуска новых субагентов</string>
+    <string name="subagents_add_models">Добавить модели</string>
+    <string name="subagents_add_models_title">Добавить модели субагентов</string>
+    <string name="subagents_capsule_display_title">Отображение капсул</string>
+    <string name="subagents_capsule_display_desc">Показывать субагентов отдельно или в одной капсуле</string>
+    <string name="subagents_capsule_display_individual">По отдельности</string>
+    <string name="subagents_capsule_display_grouped">Вместе</string>
+    <string name="subagents_limits_title">Ограничения</string>
+    <string name="subagents_max_total">Общее число субагентов</string>
+    <string name="subagents_max_total_desc">Максимальное число существующих субагентов для каждой родительской беседы, включая завершённых. Уменьшение лимита не останавливает и не удаляет существующих субагентов.</string>
+    <string name="subagents_max_concurrent">Одновременные субагенты</string>
+    <string name="subagents_max_concurrent_desc">Максимальное число одновременно работающих субагентов для каждой родительской беседы. Остальные задачи ждут; при уменьшении лимита работающие субагенты могут завершить работу.</string>
+    <string name="subagents_limit_value">%1$d</string>
+    <plurals name="subagents_running_count">
+        <item quantity="one">%d выполняется</item>
+        <item quantity="few">%d выполняются</item>
+        <item quantity="many">%d выполняются</item>
+        <item quantity="other">%d выполняются</item>
+    </plurals>
+    <plurals name="subagents_count">
+        <item quantity="one">%d субагент</item>
+        <item quantity="few">%d субагента</item>
+        <item quantity="many">%d субагентов</item>
+        <item quantity="other">%d субагента</item>
+    </plurals>
+</resources>

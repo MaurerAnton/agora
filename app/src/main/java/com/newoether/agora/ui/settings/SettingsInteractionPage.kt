@@ -1,7 +1,6 @@
 package com.newoether.agora.ui.settings
 
 import androidx.compose.foundation.clickable
-import androidx.compose.foundation.rememberScrollState
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.outlined.HelpOutline
 import androidx.compose.material3.Icon
@@ -23,7 +22,25 @@ import com.newoether.agora.viewmodel.ChatViewModel
 @Composable
 fun SettingsInteractionPage(viewModel: ChatViewModel, onBack: () -> Unit) {
     val askUserEnabled by viewModel.settings.askUserEnabled.collectAsState()
-    val scrollState = rememberScrollState()
+    val timeoutMinutes by viewModel.settings.askUserTimeoutMinutes.collectAsState()
+    SettingsInteractionContent(
+        askUserEnabled = askUserEnabled,
+        timeoutMinutes = timeoutMinutes,
+        onEnabledChange = viewModel.settings::setAskUserEnabled,
+        onTimeoutChange = viewModel.settings::setAskUserTimeoutMinutes,
+        onBack = onBack,
+    )
+}
+
+@Composable
+internal fun SettingsInteractionContent(
+    askUserEnabled: Boolean,
+    timeoutMinutes: Int,
+    onEnabledChange: (Boolean) -> Unit,
+    onTimeoutChange: (Int) -> Unit,
+    onBack: () -> Unit,
+) {
+    val scrollState = rememberSettingsScrollState()
     CollapsingSettingsScaffold(
         title = stringResource(R.string.settings_interaction),
         onBack = onBack,
@@ -49,12 +66,18 @@ fun SettingsInteractionPage(viewModel: ChatViewModel, onBack: () -> Unit) {
                             trailingContent = {
                                 Switch(
                                     checked = askUserEnabled,
-                                    onCheckedChange = viewModel.settings::setAskUserEnabled,
+                                    onCheckedChange = onEnabledChange,
                                 )
                             },
                             modifier = Modifier.clickable {
-                                viewModel.settings.setAskUserEnabled(!askUserEnabled)
+                                onEnabledChange(!askUserEnabled)
                             },
+                        )
+                    }
+                    add {
+                        InteractionTimeoutSlider(
+                            value = timeoutMinutes,
+                            onValueChange = onTimeoutChange,
                         )
                     }
                 },

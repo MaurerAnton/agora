@@ -48,10 +48,13 @@ internal object CustomProviderIdentityPolicy {
 
     fun isStableId(value: String): Boolean = stableIdPattern.matches(value.trim())
 
+    /** Cheap precheck: text without the prefix cannot hold a stable ID. */
+    fun mayContainStableId(text: String?): Boolean = text != null && text.contains(PREFIX, ignoreCase = true)
+
     fun replaceStableIdsForDisplay(
         text: String,
         replacement: (String) -> String,
-    ): String = stableIdInTextPattern.replace(text) { match ->
+    ): String = if (!mayContainStableId(text)) text else stableIdInTextPattern.replace(text) { match ->
         replacement(match.value)
     }
 
@@ -221,9 +224,32 @@ private fun String?.replaceCustomProviderIdsForDisplayOrNull(
     customProviders: List<CustomProviderConfig>,
 ): String? = this?.let { replaceCustomProviderIdsForDisplay(it, customProviders) }
 
+/**
+ * Whether any displayed field may hold a stable provider ID. Display projection runs for every
+ * message of the open path on each stream snapshot, so a message without one is returned as is,
+ * without a regex pass or a copy, and keeps its identity for Compose skipping.
+ */
+private fun ChatMessage.mayHoldProviderIds(): Boolean {
+    val ids = CustomProviderIdentityPolicy::mayContainStableId
+    return ids(text) || ids(thoughts) || ids(thoughtTitle) || ids(retryText) ||
+        toolCall?.let { call ->
+            ids(call.toolName) || ids(call.arguments) || ids(call.result) || ids(call.displayName) ||
+                ids(call.target) || ids(call.resultText) || ids(call.structuredResult)
+        } == true ||
+        segments?.any { segment ->
+            segment.type != "citation" && (ids(segment.content) || ids(segment.toolName) ||
+                ids(segment.toolArgs) || ids(segment.toolResult) || ids(segment.toolProgress) ||
+                ids(segment.toolTarget) || ids(segment.toolDisplayName) || ids(segment.toolResultText) ||
+                ids(segment.toolStructuredResult))
+        } == true ||
+        attachmentMeta?.items?.any { item ->
+            ids(item.fileName) || ids(item.warning) || ids(item.textContent) || ids(item.transcription)
+        } == true
+}
+
 fun ChatMessage.forDisplay(
     customProviders: List<CustomProviderConfig>,
-): ChatMessage = copy(
+): ChatMessage = if (!mayHoldProviderIds()) this else copy(
     text = replaceCustomProviderIdsForDisplay(text, customProviders),
     thoughts = thoughts.replaceCustomProviderIdsForDisplayOrNull(customProviders),
     thoughtTitle = thoughtTitle.replaceCustomProviderIdsForDisplayOrNull(customProviders),
@@ -240,6 +266,7 @@ private fun ToolCallData.forDisplay(
     arguments = replaceCustomProviderIdsForDisplay(arguments, customProviders),
     result = replaceCustomProviderIdsForDisplay(result, customProviders),
     displayName = displayName.replaceCustomProviderIdsForDisplayOrNull(customProviders),
+    target = target.replaceCustomProviderIdsForDisplayOrNull(customProviders),
     resultText = resultText.replaceCustomProviderIdsForDisplayOrNull(customProviders),
     structuredResult = structuredResult.replaceCustomProviderIdsForDisplayOrNull(customProviders),
 )

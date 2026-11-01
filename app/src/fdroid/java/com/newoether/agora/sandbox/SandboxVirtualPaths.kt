@@ -9,13 +9,18 @@ internal fun normalizeVirtualPath(path: String): String {
     return if (collapsed.length > 1) collapsed.trimEnd('/') else collapsed
 }
 
-internal fun globMatch(files: List<String>, pattern: String): List<String> {
+/**
+ * Relative patterns resolve against [basePath] (the search root), like Conch and SSH. A pattern
+ * without '/' matches a basename at any depth.
+ */
+internal fun globMatch(files: List<String>, pattern: String, basePath: String = "/"): List<String> {
     val cleanPattern = pattern.trim().replace('\\', '/')
+    val base = normalizeVirtualPath(basePath).trimEnd('/')
     val adjusted = when {
-        cleanPattern.isBlank() -> "/**"
+        cleanPattern.isBlank() -> "$base/**"
         cleanPattern.startsWith("/") -> cleanPattern
-        cleanPattern.contains("/") -> "/$cleanPattern"
-        else -> "/**/$cleanPattern"
+        cleanPattern.contains("/") -> "$base/$cleanPattern"
+        else -> "$base/**/$cleanPattern"
     }
     return files.filter { file -> PortableGlobMatcher.matches(adjusted, file) }
 }

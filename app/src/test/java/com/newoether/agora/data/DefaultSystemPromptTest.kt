@@ -8,6 +8,21 @@ import java.util.Locale
 
 class DefaultSystemPromptTest {
     @Test
+    fun toolRenameUpgradesOnlyExactDefaultsAndChangesOnlyToolNames() {
+        val old = DefaultSystemPrompt.versionBeforeToolRenameForMigration(Locale.ENGLISH)
+        val renamed = DefaultSystemPrompt.versionBeforeToolGuidesForMigration(Locale.ENGLISH)
+        val current = DefaultSystemPrompt.create(Locale.ENGLISH)
+        assertEquals(old.systemItems.map { it.type to com.newoether.agora.tool.BuiltInToolNames.canonicalTemplate(it.value) },
+            renamed.systemItems.map { it.type to it.value })
+        val customized = old.copy(systemItems = old.systemItems + PromptTemplateItem(type = PromptItemType.CUSTOM, value = "custom"))
+        val migrated = migrateUnmodifiedBuiltInDefault(listOf(old, customized), Locale.ENGLISH)
+        assertEquals(current.systemItems.map { it.type to it.value }, migrated[0].systemItems.map { it.type to it.value })
+        assertEquals(customized, migrated[1])
+        assertEquals(old.resolvedUserItems.map { it.type to it.value }, current.resolvedUserItems.map { it.type to it.value })
+        assertEquals(old.resolvedAssistantItems.map { it.type to it.value }, current.resolvedAssistantItems.map { it.type to it.value })
+    }
+
+    @Test
     fun sentDateExample_includesEnglishWeekday() {
         assertEquals("2026-05-09 Sat", PredefinedVariables.EXAMPLE_VALUES[PredefinedVariables.SENT_DATE])
     }
@@ -34,8 +49,8 @@ class DefaultSystemPromptTest {
         assertFalse(systemPrompt.contains("<agora_runtime_context>"))
         assertFalse(systemPrompt.contains("<current_date>"))
         assertFalse(systemPrompt.contains("<current_time>"))
-        assertTrue(systemPrompt.contains("<active_memory_context>\nUser prefers concise answers.\n</active_memory_context>"))
-        assertTrue(systemPrompt.contains("Shell and device files:"))
+        assertTrue(systemPrompt.contains("<active_memory>\nUser prefers concise answers.\n</active_memory>"))
+        assertTrue(systemPrompt.contains("## Devices"))
         assertTrue(systemPrompt.contains("configured shell server or the Local Sandbox"))
         assertFalse(systemPrompt.contains("generate_image"))
     }
@@ -114,6 +129,74 @@ class DefaultSystemPromptTest {
             ),
         )
         val titleModified = previous.copy(title = "My Default")
+
+        assertEquals(
+            listOf(contentModified, titleModified),
+            migrateUnmodifiedBuiltInDefault(
+                prompts = listOf(contentModified, titleModified),
+                locale = Locale.ENGLISH,
+            ),
+        )
+    }
+
+    @Test
+    fun create_requiresBackslashMathDelimiters() {
+        val systemPrompt = PredefinedVariables.compile(
+            DefaultSystemPrompt.create(Locale.ENGLISH).systemItems,
+            emptyMap(),
+        )
+
+        assertTrue(
+            systemPrompt.contains(
+                "- Use Markdown when it improves readability. " +
+                    "For math, write inline formulas as \\( ... \\) and display formulas as \\[ ... \\]. " +
+                    "Do not use \$ or \$\$ as delimiters.\n\n## Tools"
+            )
+        )
+        val beforeRule = PredefinedVariables.compile(
+            DefaultSystemPrompt.versionBeforeMathRuleForMigration(Locale.ENGLISH).systemItems,
+            emptyMap(),
+        )
+        assertTrue(beforeRule.contains("Use Markdown when it improves readability.\n\n<active_memory_context>"))
+        assertFalse(beforeRule.contains("For math"))
+    }
+
+    @Test
+    fun unmodifiedDefaultBeforeMathRuleIsMigratedInPlace() {
+        val beforeRule = DefaultSystemPrompt.versionBeforeMathRuleForMigration(Locale.SIMPLIFIED_CHINESE)
+            .copy(id = "default-id")
+        val migrated = migrateUnmodifiedBuiltInDefault(
+            prompts = listOf(beforeRule),
+            locale = Locale.SIMPLIFIED_CHINESE,
+        ).single()
+        val current = DefaultSystemPrompt.create(Locale.SIMPLIFIED_CHINESE)
+
+        assertEquals("default-id", migrated.id)
+        assertEquals(beforeRule.title, migrated.title)
+        assertEquals(
+            current.resolvedSystemItems.map { it.type to it.value },
+            migrated.resolvedSystemItems.map { it.type to it.value },
+        )
+        assertEquals(
+            current.resolvedUserItems.map { it.type to it.value },
+            migrated.resolvedUserItems.map { it.type to it.value },
+        )
+        assertEquals(
+            current.resolvedAssistantItems.map { it.type to it.value },
+            migrated.resolvedAssistantItems.map { it.type to it.value },
+        )
+    }
+
+    @Test
+    fun modifiedDefaultsBeforeMathRuleAreNotMigrated() {
+        val beforeRule = DefaultSystemPrompt.versionBeforeMathRuleForMigration(Locale.ENGLISH)
+        val contentModified = beforeRule.copy(
+            systemItems = beforeRule.systemItems + PromptTemplateItem(
+                type = PromptItemType.CUSTOM,
+                value = "custom",
+            ),
+        )
+        val titleModified = beforeRule.copy(title = "My Default")
 
         assertEquals(
             listOf(contentModified, titleModified),

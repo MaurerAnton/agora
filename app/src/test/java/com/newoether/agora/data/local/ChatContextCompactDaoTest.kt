@@ -63,7 +63,7 @@ class ChatContextCompactDaoTest {
         coEvery { dao.getLiveRun(conversation.id) } returns null
         coEvery { dao.getConversation(conversation.id) } returns conversation
         coEvery { dao.getRun(compact.runId) } returns oldRun
-        coEvery { dao.getMessagesForRuns(listOf(compact.runId)) } returns listOf(compact)
+        coEvery { dao.isOnlyMessageInRun(compact.runId, compact.id) } returns true
         coEvery { dao.insertRun(replacementRun) } just Runs
         coEvery {
             dao.replaceContextCompactMessageRun(
@@ -112,6 +112,7 @@ class ChatContextCompactDaoTest {
             dao.updateSelectionsForRunDeletion(any(), any(), any(), any())
             dao.deleteRun(oldRun.id)
         }
+        coVerify(exactly = 0) { dao.getMessagesForRuns(any()) }
         coVerify(exactly = 0) { dao.insertMessage(any()) }
 
         coVerify(exactly = 0) { dao.reparentMessageChildren(any(), any()) }
@@ -128,13 +129,6 @@ class ChatContextCompactDaoTest {
             sequence = 1,
             participant = Participant.MODEL,
         )
-        val sibling = message(
-            id = "sibling",
-            parentId = compact.id,
-            runId = compact.runId,
-            sequence = 2,
-            participant = Participant.MODEL,
-        )
         val oldRun = activeRun().copy(
             id = compact.runId,
             status = RunStatus.COMPLETED,
@@ -149,7 +143,7 @@ class ChatContextCompactDaoTest {
         coEvery { dao.getMessage(compact.id) } returns compact
         coEvery { dao.getLiveRun(compact.conversationId) } returns null
         coEvery { dao.getRun(oldRun.id) } returns oldRun
-        coEvery { dao.getMessagesForRuns(listOf(oldRun.id)) } returns listOf(compact, sibling)
+        coEvery { dao.isOnlyMessageInRun(oldRun.id, compact.id) } returns false
 
         try {
             dao.beginRecompactContextCompact(
@@ -163,6 +157,7 @@ class ChatContextCompactDaoTest {
             // Fail closed: substituting this Run would affect the sibling message.
         }
 
+        coVerify(exactly = 0) { dao.getMessagesForRuns(any()) }
         coVerify(exactly = 0) { dao.insertRun(any()) }
         coVerify(exactly = 0) {
             dao.replaceContextCompactMessageRun(any(), any(), any(), any())
@@ -188,18 +183,18 @@ class ChatContextCompactDaoTest {
         )
         val user = message("user", null, run.id, 0, Participant.USER)
         val compact = message("compact_boundary", user.id, run.id, 1, Participant.MODEL)
-        val model = message("model", compact.id, run.id, 2, Participant.MODEL)
         coEvery { dao.removeContextCompact(compact.id) } coAnswers { callOriginal() }
         coEvery { dao.getMessage(compact.id) } returns compact
         coEvery { dao.getConversation(conversation.id) } returns conversation
         coEvery { dao.getRun(run.id) } returns run
-        coEvery { dao.getMessagesForRuns(listOf(run.id)) } returns listOf(user, compact, model)
+        coEvery { dao.isOnlyMessageInRun(run.id, compact.id) } returns false
         coEvery { dao.reparentMessageChildren(compact.id, user.id) } returns 1
         coEvery { dao.deleteEmbeddingsByMessageIds(listOf(compact.id)) } just Runs
         coEvery { dao.deleteMessagesByIds(listOf(compact.id)) } just Runs
         coEvery { dao.updateSelectionsForRunDeletion(any(), any(), any(), any()) } returns 1
 
         assertEquals(true, dao.removeContextCompact(compact.id))
+        coVerify(exactly = 0) { dao.getMessagesForRuns(any()) }
 
         coVerify(exactly = 0) { dao.deleteRun(run.id) }
         coVerify(exactly = 0) { dao.reparentRunChildren(any(), any()) }
@@ -233,7 +228,7 @@ class ChatContextCompactDaoTest {
         coEvery { dao.getMessage(compact.id) } returns compact
         coEvery { dao.getConversation(conversation.id) } returns conversation
         coEvery { dao.getRun(compactRun.id) } returns compactRun
-        coEvery { dao.getMessagesForRuns(listOf(compactRun.id)) } returns listOf(compact)
+        coEvery { dao.isOnlyMessageInRun(compactRun.id, compact.id) } returns true
         coEvery { dao.reparentMessageChildren(compact.id, compact.parentId) } returns 1
         coEvery { dao.deleteEmbeddingsByMessageIds(listOf(compact.id)) } just Runs
         coEvery { dao.deleteMessagesByIds(listOf(compact.id)) } just Runs
@@ -244,6 +239,7 @@ class ChatContextCompactDaoTest {
         coEvery { dao.deleteRun(compactRun.id) } returns 1
 
         assertEquals(true, dao.removeContextCompact(compact.id))
+        coVerify(exactly = 0) { dao.getMessagesForRuns(any()) }
 
         coVerify(exactly = 1) {
             dao.reparentMessageChildren(compact.id, compact.parentId)

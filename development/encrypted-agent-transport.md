@@ -11,6 +11,9 @@ Conch and Filo must validate the complete authenticated request before native wo
 An unsigned HTTP error cannot prove non-execution or authorize a mutating retry.
 Encrypted streams must authenticate event kind and sequence as well as bytes. Missing,
 duplicated, reordered, cross-request and post-terminal frames cannot become success.
+Authenticated `http_end` is necessary but not sufficient: the reader also confirms
+HTTP response-body EOF before returning successful EOF. A second terminal frame,
+any trailing frame or garbage bytes is an error in both Go and Android clients.
 Neither redirects nor a connection failure may transparently replay a command.
 Encrypted file/job responses also require the server response HMAC, using a distinct
 HKDF subkey of the request's fresh session key and binding status and ciphertext.
@@ -30,6 +33,16 @@ read bounds and legitimate key rotation. A source fix, a passed focused test and
 installed fleet update are distinct statuses. Do not declare the old mobile parser
 safe merely because a server can emit authenticated framing metadata.
 
+## Agora Conch retries
+
+Conch handshake GETs and read-only file/job requests silently use Agora's shared five-retry budget.
+Read-only encrypted POST retries rebuild the complete envelope with fresh keys and nonce; never
+resend a previously accepted encrypted envelope. The safe list is file read/image/glob/grep and job
+list/get. Mutating file/job requests and command stream opening retry only proven pre-connect
+failures. Once a command may have been sent, neither a response error nor stream interruption
+permits command replay. Authentication/framing failures and cancellation are terminal.
+This policy does not change the Filo channel below.
+
 ## Shared Filo channel
 
 Filo uses Conch's Go `crypto` and `encryptedhttp` packages without a separate
@@ -43,7 +56,10 @@ Agora's default Filo client requires this channel. Read requests may cache a ver
 server key and recover once using a fresh handshake. Mutations always perform a fresh
 handshake and have no automatic retry. Upload chunks are bounded at 256 KiB, the
 channel request at 512 KiB, and decrypted response chunks at 16 KiB. Images and event
-streams use the same incremental encrypted transport. There is no plaintext fallback.
+streams use the same incremental encrypted transport. Decrypted Filo application HTTP
+bodies and SSE lines are bounded at 4 MiB before UTF-8 allocation; conversation pages
+are at most 3 MiB. These application limits do not change channel frame/request limits.
+There is no plaintext fallback.
 Application fixture tests inject a plain local transport explicitly so they can test
 the API beneath encryption; production transport is covered by Go/Android fixtures.
 

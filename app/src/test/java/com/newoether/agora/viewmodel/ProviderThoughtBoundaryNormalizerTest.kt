@@ -15,6 +15,72 @@ import org.junit.Test
 
 class ProviderThoughtBoundaryNormalizerTest {
     @Test
+    fun `untagged mixed language thought stays thought before a native tool`() = runTest {
+        val thought = "I should inspect the browser process tree.\n\n" +
+            "42 个 chrome.exe 中，只有这一组是桌面浏览器。我现在只结束这一组浏览器进程。\n\n"
+        val tool = StreamEvent.ToolCallRequest(
+            id = "call_browser",
+            name = "file_read",
+            arguments = "{}",
+            streamKey = "browser_stream",
+        )
+        val events = normalize(
+            thought.map { StreamEvent.ThoughtChunk(it.toString()) } + tool,
+            TOOLS,
+        )
+
+        assertEquals(thought, events.filterIsInstance<StreamEvent.ThoughtChunk>()
+            .joinToString("") { it.thought })
+        assertTrue(events.none { it is StreamEvent.TextChunk })
+        assertEquals(tool, events.last())
+    }
+
+    @Test
+    fun `both close variants recover answer at every transport boundary`() = runTest {
+        for (close in listOf("</think>", "</thinking>")) {
+            val source = "English reasoning\n\n${close}中文正文"
+            for (split in 0..source.length) {
+                val events = normalize(
+                    listOf(
+                        StreamEvent.ThoughtChunk(source.substring(0, split)),
+                        StreamEvent.ThoughtChunk(source.substring(split)),
+                        StreamEvent.ThoughtChunk("，后续正文"),
+                    )
+                )
+
+                assertEquals("$close split=$split", "English reasoning\n\n",
+                    events.filterIsInstance<StreamEvent.ThoughtChunk>()
+                        .joinToString("") { it.thought })
+                assertEquals("$close split=$split", "中文正文，后续正文",
+                    events.filterIsInstance<StreamEvent.TextChunk>()
+                        .joinToString("") { it.text })
+            }
+        }
+    }
+
+    @Test
+    fun `body thinking tags recover both variants across every transport boundary`() = runTest {
+        for (tag in listOf("think", "thinking")) {
+            val source = "正文前缀<$tag>reasoning</$tag>正文后缀"
+            for (split in 0..source.length) {
+                val events = normalize(
+                    listOf(
+                        StreamEvent.TextChunk(source.substring(0, split)),
+                        StreamEvent.TextChunk(source.substring(split)),
+                    )
+                )
+
+                assertEquals("$tag split=$split", "reasoning",
+                    events.filterIsInstance<StreamEvent.ThoughtChunk>()
+                        .joinToString("") { it.thought })
+                assertEquals("$tag split=$split", "正文前缀正文后缀",
+                    events.filterIsInstance<StreamEvent.TextChunk>()
+                        .joinToString("") { it.text })
+            }
+        }
+    }
+
+    @Test
     fun `implicit close splits thought and answer while preserving metadata`() = runTest {
         val events = normalize(
             listOf(

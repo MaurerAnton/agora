@@ -32,7 +32,8 @@ internal fun shouldPostGenerationTerminalNotification(
     if (conversationVisible == null) {
         return !appInForeground &&
             messageStatus == MessageStatus.SUCCESS &&
-            !hasPendingGuidance
+            !hasPendingGuidance &&
+            !isContextCompact
     }
     val terminalNeedsAttention =
         messageStatus == MessageStatus.ERROR ||
@@ -64,7 +65,7 @@ internal fun generationTerminalDisposition(
     )
     else -> GenerationTerminalDisposition(
         RunStatus.COMPLETED,
-        RunEndReason.MODEL_COMPLETED,
+        if (hasPendingGuidance) RunEndReason.CONTINUATION_PENDING else RunEndReason.MODEL_COMPLETED,
         markConversationUnread = !hasPendingGuidance && conversationVisible != true,
     )
 }

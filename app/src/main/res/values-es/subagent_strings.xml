@@ -1,0 +1,33 @@
+<resources>
+    <string name="message_source_subagent">Subagente</string>
+    <string name="subagent_running">En ejecución</string>
+    <string name="subagent_completed">Completado</string>
+    <string name="subagent_failed">Fallido</string>
+    <string name="subagent_stopped">Detenido</string>
+    <string name="subagent_idle">Inactivo</string>
+    <string name="subagents_model_list_title">Modelos</string>
+    <string name="subagents_recommended_model_title">Modelo recomendado</string>
+    <string name="subagents_no_recommended_model">Sin preferencia</string>
+    <string name="subagents_no_models">No hay modelos añadidos</string>
+    <string name="subagents_no_models_desc">Añade un modelo para iniciar nuevos subagentes</string>
+    <string name="subagents_add_models">Añadir modelos</string>
+    <string name="subagents_add_models_title">Añadir modelos de subagentes</string>
+    <string name="subagents_capsule_display_title">Visualización de cápsulas</string>
+    <string name="subagents_capsule_display_desc">Mostrar los subagentes por separado o en una sola cápsula</string>
+    <string name="subagents_capsule_display_individual">Individual</string>
+    <string name="subagents_capsule_display_grouped">Agrupada</string>
+    <string name="subagents_limits_title">Límites</string>
+    <string name="subagents_max_total">Total de subagentes</string>
+    <string name="subagents_max_total_desc">Máximo de subagentes existentes por conversación principal, incluidos los completados. Reducir este límite no detiene ni elimina los subagentes existentes.</string>
+    <string name="subagents_max_concurrent">Subagentes simultáneos</string>
+    <string name="subagents_max_concurrent_desc">Máximo de subagentes en ejecución simultánea por conversación principal. Las tareas adicionales esperan; reducir este límite permite que los subagentes en ejecución terminen.</string>
+    <string name="subagents_limit_value">%1$d</string>
+    <plurals name="subagents_running_count">
+        <item quantity="one">%d en ejecución</item>
+        <item quantity="other">%d en ejecución</item>
+    </plurals>
+    <plurals name="subagents_count">
+        <item quantity="one">%d subagente</item>
+        <item quantity="other">%d subagentes</item>
+    </plurals>
+</resources>

@@ -41,16 +41,6 @@ private val SegmentGap = 2.dp
 /** A part that holds tokens stays visible even when its share rounds down to a hairline. */
 private val MinSegmentWidth = 4.dp
 
-/*
- * Segment colors are fixed instead of read from the theme roles. A seeded Material scheme gives
- * secondary, tertiary and surfaceVariant nearly the same muted hue, so the transcript segment was
- * indistinguishable from the free budget behind it. Categorical data needs categorical colors, and
- * these three stay legible on both the light and the dark surface.
- */
-private val SystemPromptColor = Color(0xFF3DD6A0)
-private val ToolsColor = Color(0xFF5B9DFF)
-private val MessagesColor = Color(0xFFF2C14E)
-
 /** Menu width that keeps the bar long enough for a small segment to stay visible. */
 internal val CONTEXT_MENU_WIDTH = 240.dp
 
@@ -105,10 +95,10 @@ internal fun ContextCompositionBar(
     // show and the whole remainder is free.
     val reserved = if (compactEnabled) contextReservedTokens(budget, compactThresholdPercent) else null
     val free = (budget - used - (reserved ?: 0)).coerceAtLeast(0)
-    val systemColor = SystemPromptColor
-    val toolColor = ToolsColor
+    val systemColor = MaterialTheme.colorScheme.primary
+    val toolColor = MaterialTheme.colorScheme.secondary
     // The transcript is the part that grows into the compact threshold, so it carries the warning.
-    val messageColor = if (overCompactThreshold) MaterialTheme.colorScheme.error else MessagesColor
+    val messageColor = if (overCompactThreshold) MaterialTheme.colorScheme.error else MaterialTheme.colorScheme.tertiary
     val freeColor = MaterialTheme.colorScheme.surfaceVariant
     val reservedColor = MaterialTheme.colorScheme.outline
     Column(modifier = modifier, verticalArrangement = Arrangement.spacedBy(16.dp)) {

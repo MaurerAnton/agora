@@ -16,8 +16,10 @@ import com.newoether.agora.model.Participant
 import com.newoether.agora.util.Constants
 import com.newoether.agora.util.DebugLog
 import kotlinx.coroutines.CancellationException
+import kotlinx.coroutines.CompletableDeferred
 import kotlinx.coroutines.flow.collect
 import java.util.UUID
+import java.util.concurrent.ConcurrentHashMap
 
 private val TITLE_WHITESPACE = Regex("\\s+")
 
@@ -71,44 +73,102 @@ class ConversationTitleGenerator(
         data class Failure(val reason: String) : Result
     }
 
-    suspend fun generateAndPersist(conversationId: String): Result {
+    companion object {
+        // Foreground and headless owners share the repository, so admission is process-wide.
+        private val activeRequests = ConcurrentHashMap<
+            Pair<ConversationRepository, String>, CompletableDeferred<Result>
+        >()
+    }
+
+    /** Task fallback belongs beside the shared title generation and persistence rules. */
+    internal suspend fun updateTaskTitle(conversationId: String, response: String) {
         settings.awaitInitialLoad()
         providers.awaitInitialSync()
-
-        val conversation = conversations.getConversation(conversationId)
-            ?: return Result.Failure("Conversation not found")
-        val path = ConversationUiState.resolvePath(
-            allMessages = conversations.getMessageTopologySnapshot(conversationId)
-                .map { message -> message.toUiChatMessageStub() },
-            streamingMsg = null,
-            selectedChildren = conversations.restoreBranchSelections(conversationId),
-        )
-        suspend fun firstMatchingMessage(
-            participant: Participant,
-            predicate: (ChatMessage) -> Boolean,
-        ): ChatMessage? {
-            for (message in path) {
-                if (message.participant != participant) continue
-                val entity = conversations.getMessage(message.id) ?: continue
-                val projected = projectProviderMessages(
-                    entities = listOf(entity),
-                    includeStoredTranscriptions = true,
-                ).singleOrNull() ?: continue
-                if (predicate(projected)) return projected
+        if (settings.titleGenerationEnabled.value) {
+            when (generateAndPersist(conversationId)) {
+                is Result.Success -> return
+                is Result.Failure -> DebugLog.w("ConversationTitleGenerator", "Using task response title fallback")
             }
-            return null
         }
-        val firstUser = firstMatchingMessage(Participant.USER) { message ->
-            titleSourceText(message).isNotBlank()
-        } ?: return Result.Failure("Conversation has no user message")
-        val firstModel = firstMatchingMessage(Participant.MODEL) { message ->
-            message.text.isNotBlank()
+        val fallback = fallbackConversationTitle(response)
+        if (fallback.isBlank()) return
+        conversations.getConversation(conversationId)?.let { conversation ->
+            conversations.updateConversationTitleIfUnchanged(conversationId, conversation.title, fallback)
         }
+    }
+    suspend fun generateAndPersist(
+        conversationId: String,
+        runtimeSnapshot: ConversationGenerationSnapshot? = null,
+        onStarted: suspend () -> Unit = {},
+    ): Result {
+        val key = conversations to conversationId
+        val completion = CompletableDeferred<Result>()
+        activeRequests.putIfAbsent(key, completion)?.let { return it.await() }
+        try {
+            val result = generate(conversationId, runtimeSnapshot, onStarted)
+            completion.complete(result)
+            return result
+        } catch (e: CancellationException) {
+            completion.completeExceptionally(e)
+            throw e
+        } catch (e: Exception) {
+            DebugLog.e("ConversationTitleGenerator", "Title generation failed", e)
+            val result = Result.Failure(e.localizedMessage ?: "Title generation failed")
+            completion.complete(result)
+            return result
+        } finally {
+            activeRequests.remove(key, completion)
+        }
+    }
 
+    private suspend fun generate(
+        conversationId: String,
+        runtimeSnapshot: ConversationGenerationSnapshot?,
+        onStarted: suspend () -> Unit,
+    ): Result {
+        var sourceEntity: com.newoether.agora.data.local.MessageEntity? = null
+        var sourceModel: String? = null
+        // Freeze the selected path and its first user payload in one Room read.
+        // Settings, notifications and local-model admission must not delay this source capture.
+        val conversation = conversations.withReadSnapshot { reader ->
+            val target = reader.getConversation(conversationId)
+                ?: return@withReadSnapshot null
+            val topology = reader.getMessageContextTopology(conversationId)
+            val streaming = runtimeSnapshot
+                ?.takeIf { it.conversationId == conversationId && it.isGenerating }
+                ?.streamingMessage
+                ?.takeIf { live ->
+                    !live.runId.isNullOrBlank() && topology.any { row ->
+                        row.conversationId == conversationId && row.id == live.id &&
+                            row.parentId == live.parentId && row.runId == live.runId &&
+                            row.runSequence == live.runSequence && row.participant == live.participant
+                    }
+                }
+            val path = ConversationUiState.resolvePath(
+                allMessages = topology.map { it.toUiChatMessageStub() },
+                streamingMsg = streaming,
+                selectedChildren = com.newoether.agora.data.repository.ConversationBranchSelections(reader)
+                    .restoreBranchSelections(conversationId),
+            )
+            sourceModel = path.firstOrNull { it.participant == Participant.MODEL }?.modelName
+            val firstUser = path.firstOrNull { it.participant == Participant.USER }
+            if (firstUser != null) {
+                sourceEntity = reader.getMessage(firstUser.id)?.takeIf { it.conversationId == conversationId }
+            }
+            target
+        } ?: return Result.Failure("Conversation not found")
+        val summary = sourceEntity?.let { entity ->
+            projectProviderMessages(listOf(entity), includeStoredTranscriptions = true)
+                .singleOrNull()?.let(::titleSourceText)
+        }.orEmpty()
+        if (summary.isBlank()) return Result.Failure("Conversation has no usable text")
+
+        settings.awaitInitialLoad()
+        providers.awaitInitialSync()
         val configuredTitleModel = settings.titleGenerationModel.value
         val prefixedModelId = configuredTitleModel?.takeIf { it.isNotBlank() }
             ?: conversation.modelId?.takeIf { it.isNotBlank() }
-            ?: firstModel?.modelName?.takeIf { it.isNotBlank() }
+            ?: sourceModel?.takeIf { it.isNotBlank() }
             ?: settings.selectedModel.value
         if (prefixedModelId.isBlank()) return Result.Failure("No title model selected")
 
@@ -119,12 +179,6 @@ class ConversationTitleGenerator(
             return Result.Failure("Provider not configured: $providerName")
         }
 
-        val firstUserSource = titleSourceText(firstUser)
-        val summary = if (firstModel != null) {
-            "User: $firstUserSource\nAssistant: ${firstModel.text.take(500)}"
-        } else {
-            firstUserSource
-        }
         val titlePrompt = listOf(
             ChatMessage(
                 text = "Generate a short title (5 words maximum) for this conversation:\n\n" +
@@ -177,6 +231,10 @@ class ConversationTitleGenerator(
                     requestTrace.recordParsedEvent(event)
                     when (event) {
                         is StreamEvent.TextChunk -> title += event.text
+                        is StreamEvent.Retrying -> if (event.resetCurrentAttempt) {
+                            title = ""
+                            providerError = null
+                        }
                         is StreamEvent.Error -> providerError = event.message
                         else -> Unit
                     }
@@ -184,6 +242,7 @@ class ConversationTitleGenerator(
             }
         }
 
+        onStarted()
         try {
             // LocalProvider owns process-wide local-model serialization. Acquiring that mutex
             // here as well would re-enter the same non-reentrant lock while collecting its Flow.

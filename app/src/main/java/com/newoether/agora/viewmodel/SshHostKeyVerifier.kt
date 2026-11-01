@@ -1,6 +1,8 @@
 package com.newoether.agora.viewmodel
 
+import com.newoether.agora.data.ShellDeviceConfig
 import com.newoether.agora.util.SshClient
+import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
@@ -11,32 +13,20 @@ internal class HostKeyCaptureSession(
     val close: () -> Unit,
 )
 
-/**
- * Connects in capture mode and returns the server host key with its SHA-256 fingerprint for user
- * review and pinning. The key exchange precedes authentication, so a bad password may still yield
- * a valid key. This verifier owns no saved device state.
- */
+/** Captures a server key for explicit review. Authentication uses the current editor draft. */
 internal class SshHostKeyVerifier(
-    private val createSession: (
-        host: String,
-        port: Int,
-        user: String,
-        password: String,
-    ) -> HostKeyCaptureSession = ::createHostKeyCaptureSession,
+    private val createSession: (ShellDeviceConfig) -> HostKeyCaptureSession = ::createHostKeyCaptureSession,
     private val fingerprint: (String) -> String = SshClient::fingerprintSha256,
     private val ioDispatcher: CoroutineDispatcher = Dispatchers.IO,
 ) {
-    suspend fun verify(
-        host: String,
-        port: Int,
-        user: String,
-        password: String,
-    ): Result<Pair<String, String>> = withContext(ioDispatcher) {
-        if (host.isBlank()) return@withContext Result.failure(Exception("Host is empty"))
-        val session = createSession(host, port, user.ifBlank { "root" }, password)
+    suspend fun verify(device: ShellDeviceConfig): Result<Pair<String, String>> = withContext(ioDispatcher) {
+        if (device.sshHost.isBlank()) return@withContext Result.failure(Exception("Host is empty"))
+        val session = createSession(device.copy(sshUser = device.sshUser.ifBlank { "root" }))
         try {
             try {
                 session.probe()
+            } catch (cancelled: CancellationException) {
+                throw cancelled
             } catch (_: Exception) {
                 // Authentication may fail after the handshake; the presented host key is still valid.
             }
@@ -52,17 +42,9 @@ internal class SshHostKeyVerifier(
     }
 }
 
-private fun createHostKeyCaptureSession(
-    host: String,
-    port: Int,
-    user: String,
-    password: String,
-): HostKeyCaptureSession {
+private fun createHostKeyCaptureSession(device: ShellDeviceConfig): HostKeyCaptureSession {
     val client = SshClient(
-        host = host,
-        port = port,
-        user = user,
-        password = password,
+        device = device,
         pinnedHostKey = "",
         allowUnknownHostKey = true,
     )

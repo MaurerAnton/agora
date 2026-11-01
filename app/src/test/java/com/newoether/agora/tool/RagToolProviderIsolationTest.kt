@@ -43,10 +43,45 @@ class RagToolProviderIsolationTest {
             result.getValue("conversations").jsonArray.single().jsonObject
                 .getValue("id").jsonPrimitive.content,
         )
+        assertEquals("false", result.getValue("conversations").jsonArray.single().jsonObject
+            .getValue("is_generating").jsonPrimitive.content)
         coVerify(exactly = 1) { conversations.getSearchableConversationCount() }
         coVerify(exactly = 1) {
             conversations.getSearchableConversationsPage(0, 20, descending = true)
         }
+        coVerify(exactly = 0) { conversations.getAllConversationsList() }
+    }
+
+    @Test
+    fun listConversationsSnapshotsLiveGenerationStateOncePerPageAndRefreshesOnEachCall() = runTest {
+        val registry = com.newoether.agora.viewmodel.ConversationStateRegistry { }
+        var automation = setOf("background", "hidden-child")
+        var snapshotReads = 0
+        val liveProvider = RagToolProvider(conversations) {
+            snapshotReads++
+            registry.activeConversationIds.value + automation
+        }
+        coEvery { conversations.getSearchableConversationCount() } returns 3
+        coEvery { conversations.getSearchableConversationsPage(0, 20, true) } returns
+            listOf("foreground", "background", "idle").map { ChatEntity(id = it, title = it) }
+        suspend fun states(): List<Boolean> = Json.parseToJsonElement(
+            liveProvider.execute("list_conversations", "{}", context),
+        ).jsonObject.getValue("conversations").jsonArray.map {
+            val value = it.jsonObject.getValue("is_generating").jsonPrimitive
+            assertTrue(!value.isString)
+            value.content.toBooleanStrict()
+        }
+        registry.markActive("foreground")
+        assertEquals(listOf(true, true, false), states())
+        registry.markIdle("foreground")
+        automation = emptySet()
+        registry.markActive("idle")
+        assertEquals(listOf(false, false, true), states())
+        registry.markIdle("idle")
+        assertEquals(listOf(false, false, false), states())
+        assertEquals(3, snapshotReads)
+        coVerify(exactly = 0) { conversations.getMessageTopologySnapshot(any()) }
+        coVerify(exactly = 0) { conversations.getMessagesByIds(any()) }
         coVerify(exactly = 0) { conversations.getAllConversationsList() }
     }
 
@@ -64,6 +99,16 @@ class RagToolProviderIsolationTest {
 
         assertEquals("not_found", result.getValue("error").jsonPrimitive.content)
         coVerify(exactly = 0) { conversations.getMessageTopologySnapshot(any()) }
+    }
+
+    @Test
+    fun keywordSearchPropagatesCancellationInsteadOfReturningSearchError() = runTest {
+        coEvery { conversations.searchMessages("cancel", any()) } throws
+            kotlinx.coroutines.CancellationException("cancelled search")
+        try {
+            provider.execute("search_conversations", """{"query":"cancel"}""", context)
+            org.junit.Assert.fail("Cancellation must escape tool execution")
+        } catch (_: kotlinx.coroutines.CancellationException) { }
     }
 
     @Test
@@ -196,6 +241,39 @@ class RagToolProviderIsolationTest {
         assertEquals(listOf(first.text, answer.text), read.getValue("messages").jsonArray.map {
             it.jsonObject.getValue("text").jsonPrimitive.content
         })
+    }
+
+    @Test fun readConversationReturnsTerminalErrorAndExactIdentityAlongsidePartialAnswer() = runTest {
+        val message = MessageEntity(id = "failed-model", conversationId = "conv", text = "Partial answer",
+            participant = Participant.MODEL, status = MessageStatus.ERROR, timestamp = 123L,
+            runId = "run", runSequence = 4L,
+            toolCallJson = """[{"type":"answer","content":"Partial answer"},{"type":"error","content":"Connection closed","errorCode":"connection_closed"}]""")
+        coEvery { conversations.getSearchableConversation("conv") } returns ChatEntity("conv", "Conversation")
+        coEvery { conversations.getMessageTopologySnapshot("conv") } returns listOf(topology(message))
+        coEvery { conversations.getMessagesByIds(listOf(message.id)) } returns listOf(message)
+        val result = Json.parseToJsonElement(provider.execute("read_conversation",
+            """{"conversation_id":"conv"}""", context)).jsonObject
+        val row = result.getValue("messages").jsonArray.single().jsonObject
+        assertEquals("Partial answer", row.getValue("text").jsonPrimitive.content)
+        assertEquals("Connection closed", row.getValue("error").jsonPrimitive.content)
+        assertEquals("connection_closed", row.getValue("error_code").jsonPrimitive.content)
+        assertEquals("ERROR", row.getValue("status").jsonPrimitive.content)
+        assertEquals(message.id, row.getValue("message_id").jsonPrimitive.content)
+        assertEquals("run", row.getValue("run_id").jsonPrimitive.content)
+        assertEquals("4", row.getValue("run_sequence").jsonPrimitive.content)
+    }
+
+    @Test
+    fun childReadPassesExactCallerAndRejectsBeforeLoadingMessageTopology() = runTest {
+        val parentContext = context.copy(conversationId = "parent")
+        coEvery { conversations.getSearchableConversation("foreign-child", "parent") } returns null
+        val result = Json.parseToJsonElement(provider.execute(
+            "read_conversation", """{"conversation_id":"foreign-child"}""", parentContext,
+        )).jsonObject
+        assertEquals("not_found", result.getValue("error").jsonPrimitive.content)
+        coVerify(exactly = 1) { conversations.getSearchableConversation("foreign-child", "parent") }
+        coVerify(exactly = 0) { conversations.getMessageTopologySnapshot(any()) }
+        coVerify(exactly = 0) { conversations.getMessagesByIds(any()) }
     }
 
     private fun topology(message: MessageEntity) = MessageContextTopology(

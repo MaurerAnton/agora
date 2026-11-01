@@ -3,6 +3,8 @@ package com.newoether.agora.remote
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Job
+import kotlinx.coroutines.delay
+import kotlinx.coroutines.isActive
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
@@ -20,6 +22,7 @@ internal class RemoteDeviceDirectory(
     private val selectDevice: (String?) -> Unit,
     private val refresh: () -> Unit,
     private val updateDevice: (String, (RemoteDevice) -> RemoteDevice) -> Unit,
+    private val sourcesChanged: (String, List<RemoteAdapter>, Boolean) -> Unit,
     private val report: (String, Exception?) -> RemoteFailure?,
 ) {
     private val state = mutableState.asStateFlow()
@@ -27,10 +30,24 @@ internal class RemoteDeviceDirectory(
     val clients: Map<String, FiloClient> get() = mutableClients
     private val configurations = mutableMapOf<String, RemoteConnection>()
     private val checks = mutableMapOf<String, Job>()
+    private var desktopObservation: Job? = null
+    private var observedDevice: String? = null
+    private var observationGeneration = 0L
     private var storing: Job? = null
+
+    fun admitted(id: String, client: FiloClient, desktop: RemoteDeviceStatus) {
+        val advertised = client.adapters
+        val prior = state.value.devices.firstOrNull { it.id == id } ?: return
+        val multi = advertised?.any { !it.legacy } == true || advertised?.isEmpty() == true
+        val sources = if (multi) advertised.orEmpty() else emptyList()
+        updateDevice(id) { it.copy(status = RemoteDeviceStatus.CONNECTED, failure = null,
+            desktopStatus = desktop, adapters = sources, multiAdapter = multi) }
+        sourcesChanged(id, prior.adapters, prior.multiAdapter)
+    }
 
     fun restoreConnections() {
         if (storing?.isActive == true) return
+        observeDesktop(null)
         report("restore_started", null)
         mutableState.value = state.value.copy(restoring = true, storageError = false)
         selectDevice(null)
@@ -79,6 +96,7 @@ internal class RemoteDeviceDirectory(
                 val connection = RemoteConnection(savedName, id, token.trim())
                 connections.save(connection, previous)
                 val replaced = previous ?: id
+                if (observedDevice == replaced) observeDesktop(null)
                 checks.remove(replaced)?.cancel()
                 mutableClients.remove(replaced)
                 configurations.remove(replaced)
@@ -119,6 +137,7 @@ internal class RemoteDeviceDirectory(
         storing = scope.launch {
             try {
                 connections.remove(id)
+                if (observedDevice == id) observeDesktop(null)
                 checks.remove(id)?.cancel()
                 mutableClients.remove(id)
                 configurations.remove(id)
@@ -140,21 +159,77 @@ internal class RemoteDeviceDirectory(
         }
     }
 
+    /** The selected visible Remote page observes native Desktop state through one serial owner. */
+    fun observeDesktop(id: String?) {
+        val admitted = id?.takeIf { requested ->
+            state.value.deviceId == requested && state.value.devices.any {
+                it.id == requested && it.status == RemoteDeviceStatus.CONNECTED
+            }
+        }
+        if (observedDevice == admitted && (admitted == null || desktopObservation?.isActive == true)) return
+        desktopObservation?.cancel()
+        observedDevice = admitted
+        val generation = ++observationGeneration
+        desktopObservation = null
+        val observedId = admitted ?: return
+        val client = mutableClients[observedId] ?: return
+        desktopObservation = scope.launch {
+            while (isActive) {
+                // Initial gateway admission already supplied the first Desktop snapshot.
+                delay(3000)
+                if (checks[observedId]?.isActive == true) continue
+                if (state.value.devices.firstOrNull { it.id == observedId }?.status != RemoteDeviceStatus.CONNECTED) return@launch
+                try {
+                    val desktop = checkSlots.withPermit { client.connect() }
+                    if (generation != observationGeneration || mutableClients[observedId] !== client) return@launch
+                    val advertised = client.adapters
+                    val prior = state.value.devices.firstOrNull { it.id == observedId } ?: return@launch
+                    val multi = advertised?.any { !it.legacy } == true || advertised?.isEmpty() == true
+                    val sources = if (advertised == null) prior.adapters else if (multi) advertised else emptyList()
+                    updateDevice(observedId) { it.copy(desktopStatus = desktop, adapters = sources, multiAdapter = multi) }
+                    sourcesChanged(observedId, prior.adapters, prior.multiAdapter)
+                } catch (cancelled: CancellationException) { throw cancelled }
+                catch (_: Exception) {
+                    if (generation != observationGeneration || mutableClients[observedId] !== client) return@launch
+                    // Failed observation cannot keep claiming an online Desktop or erase readable history.
+                    updateDevice(observedId) { it.copy(desktopStatus = RemoteDeviceStatus.IDLE,
+                        adapters = it.adapters.map { source -> source.copy(state = "disconnected") }) }
+                }
+            }
+        }
+    }
+
+    /** New authenticated unavailability supersedes all older status reads on this page. */
+    fun sourceUnavailable(id: String, adapterId: String) {
+        if (observedDevice == id) observeDesktop(null)
+        checks.remove(id)?.cancel()
+        updateDevice(id) { it.copy(status = RemoteDeviceStatus.CONNECTED, failure = null,
+            desktopStatus = if (adapterId == RemoteAdapter.LEGACY_DESKTOP || adapterId == "codex-desktop")
+                RemoteDeviceStatus.ERROR else it.desktopStatus,
+            adapters = it.adapters.map { source -> if (source.id == adapterId) source.copy(state = "unavailable") else source }) }
+        observeDesktop(id)
+    }
     fun checkDevice(id: String) {
         val client = mutableClients[id] ?: return
         if (checks[id]?.isActive == true) return
-        updateDevice(id) { it.copy(status = RemoteDeviceStatus.CONNECTING, failure = null) }
+        if (observedDevice == id) observeDesktop(null)
+        updateDevice(id) { it.copy(status = RemoteDeviceStatus.CONNECTING, failure = null,
+            desktopStatus = RemoteDeviceStatus.IDLE) }
         checks[id] = scope.launch {
             try {
-                checkSlots.withPermit { client.connect() }
-                if (mutableClients[id] !== client) return@launch
-                updateDevice(id) { it.copy(status = RemoteDeviceStatus.CONNECTED, failure = null) }
-                if (state.value.deviceId == id) refresh()
+                val desktop = checkSlots.withPermit { client.connect() }
+                if (!isActive || mutableClients[id] !== client) return@launch
+                admitted(id, client, desktop)
+                if (state.value.deviceId == id) {
+                    if (state.value.isDraft) mutableState.value = state.value.copy(loading = false, failure = null)
+                    refresh()
+                }
             } catch (cancelled: CancellationException) { throw cancelled }
             catch (error: Exception) {
-                if (mutableClients[id] !== client) return@launch
+                if (!isActive || mutableClients[id] !== client) return@launch
                 val failure = report("check_failed", error)
-                updateDevice(id) { it.copy(status = RemoteDeviceStatus.ERROR, failure = failure) }
+                updateDevice(id) { it.copy(status = RemoteDeviceStatus.ERROR, failure = failure,
+                    desktopStatus = RemoteDeviceStatus.IDLE) }
                 if (state.value.deviceId == id) mutableState.value = state.value.copy(loading = false, failure = failure)
             }
         }

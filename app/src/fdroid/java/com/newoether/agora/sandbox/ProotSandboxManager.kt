@@ -6,8 +6,11 @@ import android.os.Environment
 import com.newoether.agora.R
 import com.newoether.agora.data.repository.SettingsRepository
 import com.newoether.agora.util.SHELL_COMMAND_OUTPUT_MAX_BYTES
+import com.newoether.agora.util.ShellFileEdit
 import com.newoether.agora.util.ShellFileEditResult
 import com.newoether.agora.util.ShellFileReadResult
+import com.newoether.agora.util.ShellGrepOptions
+import com.newoether.agora.util.ShellGrepResult
 import com.newoether.agora.util.readBoundedShellOutput
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.CoroutineScope
@@ -322,6 +325,8 @@ class ProotSandboxManager(
 
     override fun getSandboxHomeDir(): File? = homeMountDir
 
+    override fun resolveHostFile(path: String): File = resolvePath(path)
+
     override suspend fun reset(): Boolean = withContext(Dispatchers.IO + NonCancellable) {
         // Quiesce manager jobs before deletion; cancellation alone does not finish their IO.
         val previousScope = sandboxScope
@@ -477,8 +482,8 @@ class ProotSandboxManager(
         limit: Long,
     ): ShellFileReadResult = pathResolver.fileRead(path, offset, limit)
 
-    override suspend fun fileWrite(path: String, content: String): String? =
-        pathResolver.fileWrite(path, content, mutationMutex)
+    override suspend fun fileWrite(path: String, content: String, expectedSha256: String): String? =
+        pathResolver.fileWrite(path, content, mutationMutex, expectedSha256)
 
     override suspend fun fileGlob(
         pattern: String,
@@ -490,16 +495,16 @@ class ProotSandboxManager(
         pattern: String,
         basePath: String,
         fileGlob: String,
-    ): Result<Pair<List<SandboxManager.GrepMatch>, Boolean>> =
-        pathResolver.fileGrep(pattern, basePath, homeMountPath, fileGlob)
+        options: ShellGrepOptions,
+    ): Result<ShellGrepResult> =
+        pathResolver.fileGrep(pattern, basePath, homeMountPath, fileGlob, options)
 
     override suspend fun fileEdit(
         path: String,
-        oldString: String,
-        newString: String,
-        replaceAll: Boolean,
+        edits: List<ShellFileEdit>,
+        expectedSha256: String,
     ): ShellFileEditResult =
-        pathResolver.fileEdit(path, oldString, newString, replaceAll, mutationMutex)
+        pathResolver.fileEdit(path, edits, mutationMutex, expectedSha256)
 
     // ── Package Management ──────────────────────────────
     // Downloads target + all transitive deps + stale base-package upgrades via

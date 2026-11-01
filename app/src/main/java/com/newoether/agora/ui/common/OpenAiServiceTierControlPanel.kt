@@ -12,15 +12,23 @@ import androidx.compose.material.icons.filled.Speed
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Slider
+import androidx.compose.material3.SliderDefaults
 import androidx.compose.material3.Switch
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.alpha
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.semantics.ProgressBarRangeInfo
+import androidx.compose.ui.semantics.progressBarRangeInfo
+import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import com.newoether.agora.R
@@ -40,10 +48,12 @@ fun OpenAiServiceTierControlPanel(
     tierLabels: Map<String, String> = emptyMap(),
     controlsEnabled: Boolean = true,
     settingsRevision: Long = 0,
+    knownSelection: Boolean = true,
 ) {
     val normalizedTier = if (availableTiers == null) OpenAiServiceTiers.normalize(tier) else tier
     val tiers = availableTiers ?: OpenAiServiceTiers.values
-    val sliderEnabled = (enabled || !showEnabledToggle) && controlsEnabled && tiers.size > 1
+    val sliderEnabled = (enabled || !showEnabledToggle) && controlsEnabled &&
+        (tiers.size > 1 || tiers.size == 1 && !knownSelection)
     val tierGate = remember(tiers, settingsRevision) {
         PersistedSliderFeedbackGate(
             initialPersisted = normalizedTier,
@@ -53,6 +63,8 @@ fun OpenAiServiceTierControlPanel(
         )
     }
     LaunchedEffect(normalizedTier, tierGate) { tierGate.reconcile(normalizedTier) }
+    var choosingTier by remember(knownSelection, normalizedTier, tiers, settingsRevision) { mutableStateOf(false) }
+    val showSelection = knownSelection || choosingTier
     val sliderPosition = tierGate.displayed
 
     Column(modifier = modifier.fillMaxWidth()) {
@@ -117,7 +129,7 @@ fun OpenAiServiceTierControlPanel(
                         modifier = Modifier.weight(1f),
                     )
                     Text(
-                        text = tiers.getOrNull(sliderPosition.roundToInt()).let { selected ->
+                        text = if (!showSelection) "" else tiers.getOrNull(sliderPosition.roundToInt()).let { selected ->
                             tierLabels[selected] ?: if (availableTiers == null) serviceTierLabel(selected.orEmpty())
                             else selected.orEmpty()
                         },
@@ -134,10 +146,15 @@ fun OpenAiServiceTierControlPanel(
                 )
                 Slider(
                     value = sliderPosition,
-                    onValueChange = { if (sliderEnabled) tierGate.updateFromGesture(it) },
+                    onValueChange = {
+                        if (sliderEnabled) {
+                            choosingTier = true
+                            tierGate.updateFromGesture(it.coerceIn(0f, tiers.lastIndex.toFloat()))
+                        }
+                    },
                     onValueChangeFinished = {
                         if (sliderEnabled) {
-                            val index = sliderPosition
+                            val index = tierGate.displayed
                                 .roundToInt()
                                 .coerceIn(tiers.indices)
                             val selectedTier = tiers[index]
@@ -147,14 +164,22 @@ fun OpenAiServiceTierControlPanel(
                                 tierGate.expectPersisted(selectedTier, index.toFloat())
                             }
                             if (availableTiers == null) onEnabledChange(true)
-                            if (selectedTier != normalizedTier) onTierChange(selectedTier)
+                            if (selectedTier != normalizedTier || !knownSelection) onTierChange(selectedTier)
                         }
                     },
                     valueRange = 0f..tiers.lastIndex.coerceAtLeast(1).toFloat(),
                     steps = (tiers.size - 2).coerceAtLeast(0),
                     modifier = Modifier
                         .fillMaxWidth()
-                        .padding(top = 8.dp),
+                        .padding(top = 8.dp)
+                        .semantics {
+                            if (!showSelection) progressBarRangeInfo = ProgressBarRangeInfo.Indeterminate
+                        },
+                    colors = if (showSelection) SliderDefaults.colors() else SliderDefaults.colors(
+                        thumbColor = Color.Transparent, disabledThumbColor = Color.Transparent,
+                        activeTrackColor = MaterialTheme.colorScheme.secondaryContainer,
+                        activeTickColor = MaterialTheme.colorScheme.onSecondaryContainer,
+                    ),
                     enabled = sliderEnabled,
                 )
             }

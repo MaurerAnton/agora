@@ -1,6 +1,7 @@
 import { h } from "./vendor/preact.mjs";
 import htm from "./vendor/htm.mjs";
 import { useLayoutEffect, useRef } from "./vendor/preact-hooks.mjs";
+import { attachScrollbar } from "./material/scrollbar.js";
 
 export const html = htm.bind(h);
 
@@ -14,6 +15,21 @@ export function useDialog(dialog, onClosed, focusReturn) {
     const restore = focusReturn?.current ?? document.activeElement;
     let disposed = false;
     node.showModal();
+    const scrollers = new Map();
+    const bindScrollers = () => {
+      for (const [host, detach] of scrollers) {
+        if (!node.contains(host)) { detach(); scrollers.delete(host); }
+      }
+      for (const host of node.querySelectorAll("section, div, textarea, pre")) {
+        if (host.closest("dialog") !== node || host.classList.contains("scrollbar-overlay")) continue;
+        if (/^(auto|scroll)$/.test(getComputedStyle(host).overflowY) && !scrollers.has(host)) {
+          scrollers.set(host, attachScrollbar(host));
+        }
+      }
+    };
+    const scrollContent = new MutationObserver(bindScrollers);
+    scrollContent.observe(node, { childList: true, subtree: true });
+    bindScrollers();
     const block = event => {
       if (!node.hasAttribute("data-closing")) return;
       if (event.type === "keydown" && event.key === "Tab") return;
@@ -61,6 +77,8 @@ export function useDialog(dialog, onClosed, focusReturn) {
       node.removeEventListener("keydown", block, true);
       node.removeEventListener("animationend", ended);
       node.removeEventListener("animationcancel", ended);
+      scrollContent.disconnect();
+      for (const detach of scrollers.values()) detach();
       observer.disconnect();
       node.close();
     };

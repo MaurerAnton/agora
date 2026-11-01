@@ -22,9 +22,16 @@ internal data class RemoteUpload(
 )
 @Serializable private data class UploadOffset(val offset: Long)
 
+private val legacyUploadId = Regex("[a-f0-9]{32}")
+private val scopedUploadId = Regex("filo\\.scope\\.[A-Za-z0-9_-]+\\.[A-Za-z0-9_-]{43}")
+
+internal fun validRemoteUploadId(id: String, scoped: Boolean): Boolean =
+    if (scoped) id.length <= 24576 && scopedUploadId.matches(id) else legacyUploadId.matches(id)
+
 /** The bounded chunk wire shares Filo's authenticated request transport. */
 internal suspend fun uploadRemoteAttachment(
     item: SelectedAttachment,
+    scoped: Boolean = false,
     request: suspend (String, String, RequestBody) -> String,
 ): RemoteUpload = withContext(Dispatchers.IO) {
     val file = item.localPath?.let(::File) ?: throw FiloInputException()
@@ -46,7 +53,7 @@ internal suspend fun uploadRemoteAttachment(
     val proposal = RemoteUpload(name = item.fileName ?: "attachment", mime = item.mimeType ?: "application/octet-stream",
         size = size, sha256 = sha256)
     val begin = json.decodeFromString<RemoteUpload>(request("v1/uploads", "POST", json.encodeToString(proposal).toRequestBody(jsonType)))
-    require(begin.id.matches(Regex("[a-f0-9]{32}")) && begin.name == proposal.name && begin.mime == proposal.mime &&
+    require(validRemoteUploadId(begin.id, scoped) && begin.name == proposal.name && begin.mime == proposal.mime &&
         begin.size == size && begin.sha256 == sha256) { "Invalid upload receipt" }
     var offset = 0L
     file.inputStream().use { input ->
@@ -63,7 +70,8 @@ internal suspend fun uploadRemoteAttachment(
     }
     if (offset != size) throw IOException("Attachment changed during upload")
     val complete = json.decodeFromString<RemoteUpload>(request("v1/uploads/${begin.id}/complete", "POST", "{}".toRequestBody(jsonType)))
-    require(complete.copy(path = null) == begin.copy(path = null) && !complete.path.isNullOrBlank()) {
+    val validPath = if (scoped) complete.path.isNullOrBlank() else !complete.path.isNullOrBlank()
+    require(complete.copy(path = null) == begin.copy(path = null) && validPath) {
         "Attachment completion was not confirmed"
     }
     complete

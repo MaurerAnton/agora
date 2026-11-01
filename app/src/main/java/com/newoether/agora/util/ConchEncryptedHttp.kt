@@ -16,14 +16,18 @@ import okhttp3.ResponseBody
 import okio.*
 
 /** Conch's existing handshake, request HMAC and sequenced AEAD stream for any Filo API. */
-internal class ConchChannelException(message: String, cause: Throwable? = null) : IOException(message, cause)
+internal open class ConchChannelException(message: String, cause: Throwable? = null) : IOException(message, cause)
+
+/** These transport categories describe the failure, not whether a mutation executed. */
+internal class ConchAuthenticationException(message: String) : ConchChannelException(message)
+internal class ConchServiceException(message: String) : ConchChannelException(message)
 
 internal class ConchEncryptedHttp(private val token: String) : Interceptor {
     @Volatile private var serverReadKey: String? = null
     override fun intercept(chain: Interceptor.Chain): Response = try {
         exchange(chain, freshHandshake = false)
     } catch (error: IOException) {
-        if (chain.request().method != "GET" || chain.call().isCanceled()) throw error
+        if (error is ConchAuthenticationException || chain.request().method != "GET" || chain.call().isCanceled()) throw error
         exchange(chain, freshHandshake = true)
     }
 
@@ -34,9 +38,10 @@ internal class ConchEncryptedHttp(private val token: String) : Interceptor {
         val handshakeRequest = Request.Builder().url(origin.newBuilder().addPathSegment("public-key")
             .addQueryParameter("challenge", challenge).build()).build()
         val serverKey = (serverReadKey.takeIf { original.method == "GET" && !freshHandshake }) ?: chain.proceed(handshakeRequest).use { response ->
-            if (!response.isSuccessful) throw ConchChannelException("Encrypted handshake failed")
+            if (response.code == 401 || response.code == 403) throw ConchAuthenticationException("Encrypted handshake rejected the token")
+            if (!response.isSuccessful) throw ConchServiceException("Encrypted handshake failed")
             ConchHandshake.decode(response.body.source().readBoundedWireText(64L * 1024))
-                .also { if (!it.verify(token, challenge)) throw ConchChannelException("Unauthenticated encrypted handshake") }.public_key
+                .also { if (!it.verify(token, challenge)) throw ConchAuthenticationException("Unauthenticated encrypted handshake") }.public_key
         }
         serverReadKey = serverKey
         val pair = ShellCrypto.generateEphemeralKeyPair()
@@ -70,7 +75,8 @@ internal class ConchEncryptedHttp(private val token: String) : Interceptor {
                 ShellCrypto.sha256Hex(encrypted.toByteArray(Charsets.UTF_8)), nonce, public)).build()
         val response = chain.proceed(request)
         try {
-            if (!response.isSuccessful) throw ConchChannelException("Encrypted request was not accepted")
+            if (response.code == 401 || response.code == 403) throw ConchAuthenticationException("Encrypted request rejected the token")
+            if (!response.isSuccessful) throw ConchServiceException("Encrypted request failed")
             val frames = ConchHttpFrames(response.body.source(), key)
             val header = frames.read()
             if (header.first != "http_headers") throw ConchChannelException("Missing encrypted HTTP headers")
@@ -106,6 +112,10 @@ internal class ConchHttpFrames(private val source: BufferedSource, private val k
         sequence++
         return kind to value
     }
+    fun requireEnd() {
+        // The HTTP response body ends even when its connection remains reusable.
+        if (!source.exhausted()) throw ConchChannelException("Bytes after encrypted HTTP terminal frame")
+    }
     fun timeout() = source.timeout()
     fun close() { source.close(); key.fill(0) }
 }
@@ -113,13 +123,21 @@ internal class ConchHttpFrames(private val source: BufferedSource, private val k
 internal class ConchHttpBodySource(private val frames: ConchHttpFrames) : Source {
     private val pending = Buffer()
     private var ended = false
+    private var terminalError: IOException? = null
     override fun read(sink: Buffer, byteCount: Long): Long {
         require(byteCount >= 0)
         if (byteCount == 0L) return 0
+        terminalError?.let { throw it }
         while (pending.size == 0L && !ended) {
             val (kind, frame) = frames.read()
             when (kind) {
-                "http_end" -> ended = true
+                "http_end" -> {
+                    try { frames.requireEnd() } catch (error: IOException) {
+                        terminalError = error
+                        throw error
+                    }
+                    ended = true
+                }
                 "http_body" -> {
                     val raw = frame["body"]?.jsonPrimitive?.content ?: throw ConchChannelException("Missing encrypted bytes")
                     val bytes = try { Base64.decode(raw, Base64.DEFAULT) } catch (error: IllegalArgumentException) {

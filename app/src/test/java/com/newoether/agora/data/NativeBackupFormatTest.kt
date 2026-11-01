@@ -33,10 +33,18 @@ class NativeBackupFormatTest {
             type = "ssh",
             apiKey = "conch-secret",
             sshPassword = "ssh-secret",
+            sshAuthMode = SSH_AUTH_PRIVATE_KEY,
+            sshPrivateKey = "private-key-secret",
+            sshPrivateKeyName = "id_ed25519",
+            sshKeyPassphrase = "passphrase-secret",
             sshHostKey = "public-host-pin",
         ).withoutSecrets()
         assertEquals("", shell.apiKey)
         assertEquals("", shell.sshPassword)
+        assertEquals("", shell.sshPrivateKey)
+        assertEquals("", shell.sshKeyPassphrase)
+        assertEquals(SSH_AUTH_PRIVATE_KEY, shell.sshAuthMode)
+        assertEquals("id_ed25519", shell.sshPrivateKeyName)
         assertEquals("public-host-pin", shell.sshHostKey)
 
         val mcp = McpServerConfig(
@@ -72,6 +80,8 @@ class NativeBackupFormatTest {
             Json.encodeToString(listOf(remote))
         assertFalse(portableJson.contains("conch-secret"))
         assertFalse(portableJson.contains("ssh-secret"))
+        assertFalse(portableJson.contains("private-key-secret"))
+        assertFalse(portableJson.contains("passphrase-secret"))
         assertFalse(portableJson.contains("mcp-secret"))
         assertFalse(portableJson.contains("embedding-secret"))
         assertFalse(portableJson.contains("/data/user/0"))
@@ -85,6 +95,8 @@ class NativeBackupFormatTest {
                 "device-id" to ShellDeviceSecrets(
                     apiKey = "shell-key",
                     sshPassword = "shell-password",
+                    sshPrivateKey = "private-key-secret",
+                    sshKeyPassphrase = "passphrase-secret",
                 ),
             ),
             embeddingApiKeys = mapOf("embedding-id" to "embedding-key"),
@@ -96,6 +108,9 @@ class NativeBackupFormatTest {
         assertTrue(encoded.contains("\"device-id\""))
         assertTrue(encoded.contains("proxy-secret"))
         assertTrue(encoded.contains("shell-password"))
+        assertTrue(encoded.contains("private-key-secret"))
+        assertTrue(encoded.contains("passphrase-secret"))
+        assertEquals(data, Json.decodeFromString<NativeBackupSecrets>(encoded))
         assertTrue(encoded.contains("embedding-key"))
         assertTrue(encoded.contains("mcp-key"))
     }

@@ -4,6 +4,7 @@ import com.newoether.agora.api.*
 
 import com.newoether.agora.util.DebugLog
 import com.newoether.agora.api.util.Base64FileRegistry
+import com.newoether.agora.api.util.imageArtifactsForSend
 import com.newoether.agora.api.util.buildToolCallId
 import com.newoether.agora.api.util.RequestFormatException
 import com.newoether.agora.api.util.ProviderRetryPolicy
@@ -196,13 +197,13 @@ class OllamaProvider : LlmProvider {
             }
 
             val images = if (config.includeImages && msg.participant == Participant.USER) {
-                msg.images.mapNotNull(base64Files::register)
+                msg.imageArtifactsForSend().mapNotNull { base64Files.register(it)?.placeholder }
             } else null
 
             // Normal message: text + images only
             entries.add(OllamaMessage(
                 role = if (msg.participant == Participant.USER) "user" else "assistant",
-                content = msg.text,
+                content = msg.text.ifEmpty { "Continue" },
                 images = images?.takeIf { it.isNotEmpty() }
             ))
             entries
@@ -313,6 +314,8 @@ class OllamaProvider : LlmProvider {
                                 handle.readLine()
                             } catch (e: java.net.SocketTimeoutException) {
                                 if (!currentCoroutineContext().isActive) break
+                                streamError = e.asRetryableResponseBodyReadError()
+                                if (streamError != null) break
                                 if (++consecutiveReadTimeouts >= 3) {
                                     timedOut = true
                                     break
@@ -436,7 +439,14 @@ class OllamaProvider : LlmProvider {
                         )
                         DebugLog.d("AgoraSSE", "[Ollama] ${termination.describe()}")
                         if (termination.isRetryable && attempt < maxAttempts) {
-                            emit(StreamEvent.Retrying(attempt, ProviderRetryPolicy.MAX_RETRIES))
+                            emit(
+                                StreamEvent.Retrying(
+                                    attempt,
+                                    ProviderRetryPolicy.MAX_RETRIES,
+                                    resetCurrentAttempt = termination.producedContent ||
+                                        ProviderRetryPolicy.requiresResponseReadRetry(termination.streamError),
+                                ),
+                            )
                             delay(ProviderRetryPolicy.delayMillis(attempt))
                         } else {
                             termination.toError("Ollama")?.let { emit(StreamEvent.Error(it)) }
@@ -458,7 +468,7 @@ class OllamaProvider : LlmProvider {
                             ) && attempt < maxAttempts
                         ) {
                             emit(StreamEvent.Retrying(attempt, ProviderRetryPolicy.MAX_RETRIES))
-                            delay(ProviderRetryPolicy.delayMillis(attempt))
+                            delay(ProviderRetryPolicy.delayMillis(attempt, handle.retryAfter))
                         } else {
                             val genError = providerHttpError(handle.code, errorRaw, url)
                             emit(StreamEvent.Error(genError))

@@ -48,7 +48,7 @@ internal class CurrentConversationRuntimeFacade(
         val state = registry.getOrCreate(conversationId)
         scope.launch(ioDispatcher) {
             state.queueMutationMutex.withLock {
-                state.removeQueuedSend(queuedSendId)?.let(state::discardQueuedSend)
+                state.dismissQueuedSend(queuedSendId)
             }
         }
     }

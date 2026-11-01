@@ -18,14 +18,15 @@ object SearchResultFormatter {
         return try {
             val type = Json.parseToJsonElement(text).jsonObject["type"]
                 ?.let { (it as? JsonPrimitive)?.content }
+                ?.let(com.newoether.agora.tool.BuiltInToolNames::canonical)
             type == "web_search" ||
-                type == "search_conversations" ||
-                type == "execute_shell_command" ||
-                type == "list_shells" ||
-                type == "list_memory_files" ||
-                type == "list_skill_files" ||
-                type == "list_conversations" ||
-                type == "read_conversation"
+                type == "conversation_search" ||
+                type == "shell_exec" ||
+                type == "shell_list" ||
+                type == "memory_list" ||
+                type == "skill_list" ||
+                type == "conversation_list" ||
+                type == "conversation_read"
         } catch (_: Exception) {
             false
         }
@@ -37,14 +38,14 @@ object SearchResultFormatter {
             val json = Json.parseToJsonElement(text).jsonObject
             val error = json["error"]?.let { (it as? JsonPrimitive)?.content }
             if (error != null) return formatError(json, error, context)
-            when (json["type"]?.let { (it as? JsonPrimitive)?.content }) {
+            when (json["type"]?.let { (it as? JsonPrimitive)?.content }?.let(com.newoether.agora.tool.BuiltInToolNames::canonical)) {
                 "web_search" -> formatWebSearch(json, context)
-                "search_conversations" -> formatConversationSearch(json, context)
-                "list_conversations" -> formatConversationList(json, context)
-                "read_conversation" -> formatConversationRead(json, context)
-                "list_memory_files", "list_skill_files" -> formatMemoryList(json)
-                "list_shells" -> formatShellList(json, context)
-                "execute_shell_command" -> formatShellCommand(json, context)
+                "conversation_search" -> formatConversationSearch(json, context)
+                "conversation_list" -> formatConversationList(json, context)
+                "conversation_read" -> formatConversationRead(json, context)
+                "memory_list", "skill_list" -> formatMemoryList(json)
+                "shell_list" -> formatShellList(json, context)
+                "shell_exec" -> formatShellCommand(json, context)
                 else -> text
             }
         } catch (_: Exception) {
@@ -186,6 +187,36 @@ object SearchResultFormatter {
         return "$header\n\n$body${if (footer.isNotEmpty()) "\n\n$footer" else ""}"
     }
 
+    private fun formatHistoryDetails(message: JsonObject, context: Context): String = buildString {
+        (message["details_error"] as? JsonPrimitive)?.content?.let { error ->
+            append("\n\n${context.getString(R.string.conversation_details_error, error)}")
+        }
+        message["thinking"]?.jsonArray?.forEach { element ->
+            val text = (element.jsonObject["text"] as? JsonPrimitive)?.content.orEmpty()
+            if (text.isNotEmpty()) append("\n\n${context.getString(R.string.thinking)}:\n$text")
+        }
+        message["tool_calls"]?.jsonArray?.forEach { element ->
+            val tool = element.jsonObject
+            val name = (tool["display_name"] as? JsonPrimitive)?.content
+                ?: (tool["name"] as? JsonPrimitive)?.content.orEmpty()
+            val state = (tool["state"] as? JsonPrimitive)?.content.orEmpty()
+            append("\n\n${context.getString(R.string.tool_context)}: $name")
+            if (state.isNotEmpty()) append(" ($state)")
+            (tool["arguments"] as? JsonPrimitive)?.content?.let { append("\n$it") }
+            val result = (tool["result_text"] as? JsonPrimitive)?.content?.takeIf { it.isNotBlank() }
+                ?: (tool["result"] as? JsonPrimitive)?.content
+            listOfNotNull(
+                result,
+                (tool["structured_result"] as? JsonPrimitive)?.content,
+                (tool["image_transcription"] as? JsonPrimitive)?.content,
+            ).filter { it.isNotBlank() }.distinct().forEach { append("\n$it") }
+        }
+        if ((message["tool_calls_has_more"] as? JsonPrimitive)?.content == "true") {
+            val nextOffset = (message["tool_calls_next_offset"] as? JsonPrimitive)?.content?.toIntOrNull() ?: 0
+            append("\n${context.getString(R.string.conversation_tools_more, nextOffset)}")
+        }
+    }
+
     private fun formatConversationRead(json: JsonObject, context: Context): String {
         val title = (json["title"] as? JsonPrimitive)?.content ?: context.getString(R.string.search_untitled)
         val offset = (json["offset"] as? JsonPrimitive)?.content?.toIntOrNull() ?: 0
@@ -201,7 +232,8 @@ object SearchResultFormatter {
                 val participant = (obj["participant"] as? JsonPrimitive)?.content ?: ""
                 val role = if (participant == "USER") userRole else modelRole
                 val text = (obj["text"] as? JsonPrimitive)?.content ?: ""
-                "$role: $text"
+                val error = (obj["error"] as? JsonPrimitive)?.content?.takeIf { it.isNotBlank() && it != text }
+                "$role: $text" + error?.let { "\n$it" }.orEmpty() + formatHistoryDetails(obj, context)
             }
         } else {
             context.getString(R.string.conversation_read_empty)

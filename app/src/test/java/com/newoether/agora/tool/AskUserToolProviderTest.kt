@@ -4,7 +4,9 @@ import com.newoether.agora.viewmodel.AskUserController
 import com.newoether.agora.viewmodel.GenerationContext
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.async
+import kotlinx.coroutines.cancelAndJoin
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.test.advanceTimeBy
 import kotlinx.coroutines.test.runCurrent
 import kotlinx.coroutines.test.runTest
 import kotlinx.serialization.json.Json
@@ -24,8 +26,7 @@ import org.junit.Test
  * What the model gets back from `ask_user`, and what it leaves on screen.
  *
  * A single question and a set of questions are the same tool call with different arguments, so both
- * shapes are pinned here, along with the two ways a call can end without answers: a refused
- * argument combination and a stopped generation.
+ * shapes are pinned here, along with configured expiry, invalid arguments and generation stop.
  */
 @OptIn(ExperimentalCoroutinesApi::class)
 class AskUserToolProviderTest {
@@ -54,6 +55,74 @@ class AskUserToolProviderTest {
         assertTrue(answer["answered"]!!.jsonPrimitive.boolean)
         assertEquals(listOf("B"), choicesOf(answer))
         assertNull(answer["answers"])
+        assertTrue(controller.requests.value.isEmpty())
+    }
+
+    @Test
+    fun `blocking calls expire at the default five minutes and configured one or sixty minutes`() = runTest {
+        val cases = listOf(
+            ctx to 300_000L,
+            ctx.copy(askUserTimeoutMinutes = 1) to 60_000L,
+            ctx.copy(askUserTimeoutMinutes = 60) to 3_600_000L,
+        )
+        for ((context, timeoutMs) in cases) {
+            val controller = AskUserController()
+            val startedAt = testScheduler.currentTime
+            val call = async {
+                AskUserToolProvider(controller).execute("ask_user", """{"question":"Choose?","options":["A"]}""", context)
+            }
+            runCurrent()
+            val request = controller.requests.value.single()
+
+            advanceTimeBy(timeoutMs - 1L)
+            runCurrent()
+            assertFalse("Expired before ${context.askUserTimeoutMinutes} minutes", call.isCompleted)
+            assertEquals(listOf(request), controller.requests.value)
+            advanceTimeBy(1L)
+            runCurrent()
+
+            assertTrue("Still waiting at ${context.askUserTimeoutMinutes} minutes", call.isCompleted)
+            val answer = body(call.await())
+            assertFalse(answer["answered"]!!.jsonPrimitive.boolean)
+            assertNull(answer["choices"])
+            assertNull(answer["text"])
+            assertNull(answer["answers"])
+            assertEquals(timeoutMs, testScheduler.currentTime - startedAt)
+            assertTrue(controller.requests.value.isEmpty())
+        }
+    }
+
+    @Test
+    fun `group expiry preserves later submitted answers and leaves the first unanswered`() = runTest {
+        val controller = AskUserController()
+        val result = async {
+            AskUserToolProvider(controller).execute(
+                "ask_user",
+                """{"questions":[{"question":"First?","options":["A"]},
+                    {"question":"Second?"},{"question":"Third?","options":["C"]}]}""",
+                ctx.copy(askUserTimeoutMinutes = 1),
+            )
+        }
+        runCurrent()
+        val waiting = controller.requests.value
+        advanceTimeBy(30_000L)
+        controller.submit(waiting[1].id, emptyList(), "typed answer")
+        advanceTimeBy(29_999L)
+        controller.submit(waiting[2].id, listOf("C"))
+        runCurrent()
+        assertFalse(result.isCompleted)
+        advanceTimeBy(1L)
+        runCurrent()
+
+        assertTrue(result.isCompleted)
+        val answers = body(result.await())["answers"]!!.jsonArray.map { it.jsonObject }
+        assertEquals(listOf("First?", "Second?", "Third?"), answers.map { it["question"]!!.jsonPrimitive.content })
+        assertEquals(listOf(false, true, true), answers.map { it["answered"]!!.jsonPrimitive.boolean })
+        assertTrue(choicesOf(answers[0]).isEmpty())
+        assertNull(answers[0]["text"])
+        assertEquals("typed answer", answers[1]["text"]!!.jsonPrimitive.content)
+        assertEquals(listOf("C"), choicesOf(answers[2]))
+        assertEquals(60_000L, testScheduler.currentTime)
         assertTrue(controller.requests.value.isEmpty())
     }
 
@@ -148,17 +217,32 @@ class AskUserToolProviderTest {
     }
 
     @Test
-    fun `a non-blocking set returns at once and says how many are waiting`() = runTest {
+    fun `a non-blocking set returns immediately and still delivers after the configured timeout`() = runTest {
         val controller = AskUserController()
+        val delivered = mutableListOf<AskUserController.DeferredAnswer>()
+        backgroundScope.launch { controller.deferredAnswers.collect { delivered += it } }
+        runCurrent()
         val result = AskUserToolProvider(controller).execute(
             "ask_user",
             """{"blocking":false,"questions":[{"question":"First?"},{"question":"Second?"}]}""",
-            ctx,
+            ctx.copy(askUserTimeoutMinutes = 1),
         )
         val answer = body(result)
         assertEquals("queued", answer["delivery"]?.jsonPrimitive?.content)
         assertEquals(2, answer["questions"]!!.jsonPrimitive.int)
-        assertEquals(2, controller.requests.value.size)
+        assertEquals(0L, testScheduler.currentTime)
+        val waiting = controller.requests.value
+        assertEquals(2, waiting.size)
+
+        advanceTimeBy(3_600_001L)
+        runCurrent()
+        assertEquals(waiting, controller.requests.value)
+        assertTrue(delivered.isEmpty())
+        controller.submit(waiting[1].id, emptyList(), "later answer")
+        runCurrent()
+        assertEquals("c1", delivered.single().conversationId)
+        assertEquals("Second?\nlater answer", delivered.single().text)
+        assertEquals(listOf(waiting[0]), controller.requests.value)
     }
 
     @Test
@@ -174,10 +258,12 @@ class AskUserToolProviderTest {
     }
 
     @Test
-    fun `stopping the generation leaves no question waiting on screen`() = runTest {
+    fun `stopping the generation cancels its group without a result or queued answer`() = runTest {
         val controller = AskUserController()
+        val delivered = mutableListOf<AskUserController.DeferredAnswer>()
+        backgroundScope.launch { controller.deferredAnswers.collect { delivered += it } }
         val provider = AskUserToolProvider(controller)
-        val call = launch {
+        val call = async {
             provider.execute(
                 "ask_user",
                 """{"questions":[{"question":"First?"},{"question":"Second?"}]}""",
@@ -185,12 +271,18 @@ class AskUserToolProviderTest {
             )
         }
         runCurrent()
-        assertEquals(2, controller.requests.value.size)
+        val waiting = controller.requests.value
+        assertEquals(2, waiting.size)
+        controller.submit(waiting[1].id, emptyList(), "already submitted")
 
-        call.cancel()
+        call.cancelAndJoin()
         runCurrent()
 
-        // Both cards belong to a wait that no longer exists, so neither may stay behind.
+        assertTrue(call.isCancelled)
         assertTrue(controller.requests.value.isEmpty())
+        waiting.forEach { assertEquals(AskUserController.Answer.Unanswered, controller.awaitAnswer(it)) }
+        advanceTimeBy(300_000L)
+        runCurrent()
+        assertTrue(delivered.isEmpty())
     }
 }

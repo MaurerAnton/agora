@@ -45,6 +45,20 @@ internal class GenerationThoughtTiming(
         currentDurationMs = 0L
     }
 
+    /** Restores the exact request-boundary timing without retaining a failed attempt's clock. */
+    fun capture(): () -> Unit {
+        val cumulative = cumulativeDurationMs
+        val duration = currentDurationMs
+        val total = totalDurationMs
+        val wasRunning = currentStartedAtMs != null
+        return {
+            cumulativeDurationMs = cumulative
+            currentDurationMs = duration
+            totalDurationMs = total
+            currentStartedAtMs = if (wasRunning) nowMs() else null
+        }
+    }
+
     fun adoptTotalDuration(durationMs: Long?) {
         totalDurationMs = durationMs
     }

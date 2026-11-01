@@ -72,8 +72,15 @@ class DataExporter(
         val id: String,
         val title: String,
         val lastUpdated: Long,
+        val createdAt: Long? = null,
         val dataChangedAt: Long = 0L,
         val isPinned: Boolean = false,
+        val parentConversationId: String? = null,
+        val subagentResultJson: String? = null,
+        val subagentResultId: String? = null,
+        val subagentResultStatus: String? = null,
+        val subagentDeliveredResultId: String? = null,
+        val todoJson: String? = null,
         val selectedBranchesJson: String? = null,
         val systemPromptId: String? = null,
         val modelId: String? = null,
@@ -261,8 +268,15 @@ class DataExporter(
                                         id = conversation.id,
                                         title = conversation.title,
                                         lastUpdated = conversation.lastUpdated,
+                                        createdAt = conversation.createdAt,
                                         dataChangedAt = conversation.dataChangedAt,
                                         isPinned = conversation.isPinned,
+                                        parentConversationId = conversation.parentConversationId,
+                                        subagentResultJson = conversation.subagentResultJson,
+                                        subagentResultId = conversation.subagentResultId,
+                                        subagentResultStatus = conversation.subagentResultStatus,
+                                        subagentDeliveredResultId = conversation.subagentDeliveredResultId,
+                                        todoJson = conversation.todoJson,
                                         selectedBranchesJson = conversation.selectedBranchesJson,
                                         systemPromptId = conversation.systemPromptId,
                                         modelId = conversation.modelId,
@@ -481,18 +495,13 @@ class DataExporter(
 
                         if (message.images.isNotEmpty()) {
                             val oldToNewImageIndex = mutableMapOf<Int, Int>()
-                            archivedImagesByMessage[message.id] = buildList {
-                                message.images.forEachIndexed { oldIndex, source ->
-                                    copySource(
-                                        source,
-                                        NativeBackupFormat.IMAGE_MEDIA_PREFIX,
-                                        referencedMedia,
-                                    )?.let { entry ->
-                                        oldToNewImageIndex[oldIndex] = size
-                                        add(entry)
-                                        imagesExported++
-                                    }
-                                }
+                            archivedImagesByMessage[message.id] = message.images.mapIndexed { index, source ->
+                                oldToNewImageIndex[index] = index
+                                copySource(
+                                    source,
+                                    NativeBackupFormat.IMAGE_MEDIA_PREFIX,
+                                    referencedMedia,
+                                )?.also { imagesExported++ }.orEmpty()
                             }
                             attachmentMetaByMessage[message.id] =
                                 NativeBackupMediaPolicy.rewriteAttachmentMetaForExport(
@@ -551,6 +560,7 @@ class DataExporter(
                             toolCallJson = NativeBackupMediaPolicy.rewriteToolImagePathsForExport(
                                 raw = message.toolCallJson,
                                 archiveEntryForSource = trackedLookup(referencedMedia),
+                                onMissingResource = { missingResourceCount++ },
                             ),
                             attachmentMeta = if (message.id in attachmentMetaByMessage) {
                                 attachmentMetaByMessage[message.id]

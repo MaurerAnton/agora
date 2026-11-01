@@ -34,7 +34,7 @@ class ImageGenToolProvider(private val app: Application) : ToolProvider {
         if (!ctx.imageGenEnabled) return emptyList()
         return listOf(
             ToolDefinition(function = ToolFunction(
-                name = "generate_image",
+                name = "image_generate",
                 description = "Generate an image from a text prompt. The generated image is shown to the user automatically — do NOT attempt to embed or describe the raw image data. Use this whenever the user asks to create, draw, paint, or generate a picture.",
                 parameters = ToolParameters(
                     properties = mapOf(
@@ -47,7 +47,7 @@ class ImageGenToolProvider(private val app: Application) : ToolProvider {
         )
     }
 
-    override fun handles(name: String): Boolean = name == "generate_image"
+    override fun handles(name: String): Boolean = BuiltInToolNames.canonical(name) == "image_generate"
 
     override suspend fun execute(
         name: String,
@@ -111,6 +111,7 @@ class ImageGenToolProvider(private val app: Application) : ToolProvider {
                     mapOf("Authorization" to "Bearer $apiKey"),
                     callTimeoutMillis = Constants.IMAGE_GENERATION_TIMEOUT_MS,
                     readTimeoutMillis = Constants.IMAGE_GENERATION_TIMEOUT_MS,
+                    replaySafe = false,
                 ) ?: return@withContext err("no_response", null) to null
 
                 val json = Json.decodeFromString<Map<String, kotlinx.serialization.json.JsonElement>>(response)
@@ -147,7 +148,7 @@ class ImageGenToolProvider(private val app: Application) : ToolProvider {
             } catch (e: CancellationException) {
                 throw e
             } catch (e: Exception) {
-                DebugLog.e("ImageGenTool", "generate_image failed", e)
+                DebugLog.e("ImageGenTool", "image_generate failed", e)
                 err("generation_error", e.message) to null
             }
         }

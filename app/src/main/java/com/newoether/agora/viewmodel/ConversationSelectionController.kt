@@ -276,7 +276,7 @@ internal class ConversationSelectionController(
         }
     }
 
-    fun settleDeletedSelectedConversation(conversationId: String) {
+    fun settleDeletedSelectedConversation(conversationId: String, parentConversationId: String? = null) {
         require(conversationId.isNotBlank())
         if (_isNewChatMode.value) return
         val pendingRequest = switching.request.value
@@ -292,7 +292,19 @@ internal class ConversationSelectionController(
         ) {
             return
         }
-        createNewChat()
+        if (parentConversationId == null) {
+            createNewChat()
+        } else {
+            selectConversation(
+                conversationId = parentConversationId,
+                hapticOnCompletion = false,
+                force = true,
+                onFailure = {
+                    // Superseding navigation owns the active request and must not be replaced.
+                    if (!switching.isSwitching.value) createNewChat()
+                },
+            )
+        }
     }
 
     fun selectConversation(
@@ -447,6 +459,13 @@ internal class ConversationSelectionController(
         scrollToTarget: Boolean = true,
     ): Long? {
         if (_currentConversationId.value != conversationId || _isNewChatMode.value) return null
+        val pendingRequest = switching.request.value
+        if (
+            pendingRequest?.kind == SwitchingRequestKind.CONVERSATION &&
+            pendingRequest.conversationId != conversationId
+        ) {
+            return null
+        }
         val request = switching.beginTreeMutation(conversationId, scrollToTarget)
         try {
             fadeDelay()

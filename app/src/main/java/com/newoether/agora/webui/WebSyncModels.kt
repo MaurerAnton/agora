@@ -65,6 +65,16 @@ internal sealed interface WebSyncEvent {
     ) : WebSyncEvent
     @Serializable @SerialName("interactions")
     data class Interactions(val conversationId: String?, val seq: Long, val actionId: Long, val items: List<JsonObject>) : WebSyncEvent
+    @Serializable @SerialName("todo")
+    data class Todo(
+        val conversationId: String?, val seq: Long,
+        val items: List<com.newoether.agora.model.ConversationTodoItem>,
+    ) : WebSyncEvent
+    @Serializable @SerialName("subagents")
+    data class Subagents(
+        val conversationId: String?, val seq: Long, val parentConversationId: String?,
+        val items: List<com.newoether.agora.model.SubagentSummary>,
+    ) : WebSyncEvent
     @Serializable @SerialName("conversations")
     data class Conversations(val items: List<WebConversation>, val hasMore: Boolean = false, val limit: Int = WebUiSync.DRAWER_PAGE_SIZE) : WebSyncEvent
 
@@ -93,6 +103,18 @@ internal sealed interface WebSyncEvent {
     @Serializable @SerialName("streaming")
     data class Streaming(val conversationId: String, val message: WebMessage?, val seq: Long = 0L) : WebSyncEvent
 
+    /**
+     * The next frame of the in-flight message [messageId] as a [webJsonPatch] against the frame
+     * this connection sent last. A new message, or the end of streaming, is a full [Streaming].
+     */
+    @Serializable @SerialName("streaming_patch")
+    data class StreamingPatch(
+        val conversationId: String,
+        val messageId: String,
+        val patch: JsonObject,
+        val seq: Long = 0L,
+    ) : WebSyncEvent
+
     @Serializable @SerialName("deleted")
     data class Deleted(val conversationId: String, val seq: Long = 0L) : WebSyncEvent
 
@@ -105,6 +127,7 @@ internal sealed interface WebSyncEvent {
     data class ConversationDelete(val conversationId: String, val actionId: Long, val success: Boolean) : WebSyncEvent
 
     /** The phone's display settings and live-timer strings; sent first and on each change. */
+    @OptIn(ExperimentalSerializationApi::class)
     @Serializable @SerialName("display")
     data class Display(
         val toolCallDisplayMode: String,
@@ -114,6 +137,8 @@ internal sealed interface WebSyncEvent {
         val blurEffectsEnabled: Boolean,
         val reduceMotion: Boolean,
         val liveThinking: WebLiveTimerStrings,
+        @EncodeDefault val stickToBottom: Boolean = true,
+        @EncodeDefault val subagentCapsuleDisplayMode: String = com.newoether.agora.data.SubagentCapsuleDisplayModes.DEFAULT,
     ) : WebSyncEvent
 
     @Serializable @SerialName("load_failed")
@@ -185,6 +210,7 @@ internal data class WebConversation(
     val generating: Boolean,
     val unread: Boolean,
     val isPinned: Boolean = false,
+    val interaction: String? = null,
 )
 
 @OptIn(ExperimentalSerializationApi::class)
@@ -221,11 +247,17 @@ internal data class WebMessage(
     /** The token figures of the message info dialog, projected by the phone's own owner. */
     val usage: WebTokenUsage? = null,
     val attachments: List<JsonObject> = emptyList(),
+    /** Offline source/detail text cost for browser history paging, never Provider usage. */
+    val loadTokens: Int = 0,
 )
 
-/** The origin of a message the app sent by itself: a task run, a loop cycle or ask_user answers. */
+/** The origin of an automatic input, including optional compact Subagent completion display. */
 @Serializable
-internal data class WebMessageSource(val kind: String, val askUser: List<WebAskUserItem> = emptyList())
+internal data class WebMessageSource(
+    val kind: String,
+    val askUser: List<WebAskUserItem> = emptyList(),
+    val subagentResult: com.newoether.agora.model.MessageSource.SubagentResult? = null,
+)
 
 /** One asked question. A null [answer] renders the localized unanswered label, as on the phone. */
 @Serializable
@@ -246,6 +278,25 @@ internal data class WebText(
     val markdown: String,
     val math: List<WebMath> = emptyList(),
     val sourceMap: List<List<Int>> = emptyList(),
+    val citations: List<WebCitationMarker> = emptyList(),
+)
+
+@Serializable
+internal data class WebCitationMarker(
+    val token: String,
+    val label: String,
+    val sources: List<WebCitation>,
+    val accessibilityLabel: String = "",
+)
+
+@Serializable
+internal data class WebCitation(
+    val id: String,
+    val title: String,
+    val url: String?,
+    val fileName: String?,
+    val location: String?,
+    val excerpt: String?,
 )
 
 @Serializable

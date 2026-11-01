@@ -1,0 +1,31 @@
+<resources>
+    <string name="message_source_subagent">子代理</string>
+    <string name="subagent_running">執行中</string>
+    <string name="subagent_completed">已完成</string>
+    <string name="subagent_failed">失敗</string>
+    <string name="subagent_stopped">已停止</string>
+    <string name="subagent_idle">閒置</string>
+    <string name="subagents_model_list_title">模型列表</string>
+    <string name="subagents_recommended_model_title">推薦模型</string>
+    <string name="subagents_no_recommended_model">不指定</string>
+    <string name="subagents_no_models">未新增模型</string>
+    <string name="subagents_no_models_desc">新增模型後才可啟動新的子代理</string>
+    <string name="subagents_add_models">新增模型</string>
+    <string name="subagents_add_models_title">新增子代理模型</string>
+    <string name="subagents_capsule_display_title">膠囊顯示方式</string>
+    <string name="subagents_capsule_display_desc">將子代理個別顯示，或合併到一個膠囊中</string>
+    <string name="subagents_capsule_display_individual">個別顯示</string>
+    <string name="subagents_capsule_display_grouped">合併顯示</string>
+    <string name="subagents_limits_title">數量限制</string>
+    <string name="subagents_max_total">子代理總數</string>
+    <string name="subagents_max_total_desc">每個父對話可保留的子代理數量上限，包含已完成的子代理。調低上限不會停止或刪除既有子代理。</string>
+    <string name="subagents_max_concurrent">同時執行數量</string>
+    <string name="subagents_max_concurrent_desc">每個父對話同時執行的子代理數量上限。超出的工作會等待；調低上限後，正在執行的子代理仍可完成。</string>
+    <string name="subagents_limit_value">%1$d</string>
+    <plurals name="subagents_running_count">
+        <item quantity="other">%d 個執行中</item>
+    </plurals>
+    <plurals name="subagents_count">
+        <item quantity="other">%d 個子代理</item>
+    </plurals>
+</resources>

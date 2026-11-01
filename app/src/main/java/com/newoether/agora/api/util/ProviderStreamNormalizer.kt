@@ -54,9 +54,44 @@ internal class ProviderStreamNormalizer(
     private var malformedTextTool = false
     private val malformedTextCalls = mutableListOf<StreamEvent.ToolCallRequest>()
     private var finished = false
+    private val pendingFormatting = mutableListOf<StreamEvent>()
+    private var hasModelOutput = false
 
     suspend fun emit(event: StreamEvent, downstream: suspend (StreamEvent) -> Unit) {
         check(!finished) { "Provider stream normalizer already finished" }
+        // Keep retryable formatting out of parsers and consumers until this attempt commits output.
+        // Queue following metadata too, so successful prefixes keep their original event order.
+        if (event is StreamEvent.Retrying) {
+            pendingFormatting.removeAll { it is StreamEvent.TextChunk || it is StreamEvent.ThoughtChunk }
+            flushPendingFormatting(downstream)
+        } else if (!hasModelOutput) {
+            val formattingOnly = when (event) {
+                is StreamEvent.TextChunk -> event.text.isBlank()
+                is StreamEvent.ThoughtChunk -> event.thought.isBlank() && event.signature == null
+                else -> false
+            }
+            if (formattingOnly) {
+                pendingFormatting += event
+                return
+            }
+            if (event.carriesModelOutput()) {
+                hasModelOutput = true
+                flushPendingFormatting(downstream)
+            } else if (pendingFormatting.isNotEmpty() && event !is StreamEvent.Error) {
+                pendingFormatting += event
+                return
+            }
+        }
+        emitNormalized(event, downstream)
+    }
+
+    private suspend fun flushPendingFormatting(downstream: suspend (StreamEvent) -> Unit) {
+        val pending = pendingFormatting.toList()
+        pendingFormatting.clear()
+        pending.forEach { emitNormalized(it, downstream) }
+    }
+
+    private suspend fun emitNormalized(event: StreamEvent, downstream: suspend (StreamEvent) -> Unit) {
         when (event) {
             is StreamEvent.TextChunk -> {
                 flushStructuredThinking(downstream)
@@ -92,6 +127,7 @@ internal class ProviderStreamNormalizer(
         releaseTextTools: Boolean = true,
     ) {
         if (finished) return
+        flushPendingFormatting(downstream)
         flushThinking(downstream)
         if (releaseTextTools) {
             finishTextTools(downstream)

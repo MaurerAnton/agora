@@ -18,6 +18,7 @@ import com.newoether.agora.model.SelectedAttachment
 import com.newoether.agora.util.Constants
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.CoroutineStart
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
@@ -67,6 +68,7 @@ internal class MessageGenerationController(
     private val titleGenerator = ConversationTitleGenerator(convRepo, settings, providerRegistry)
     private val contextCompactor = ContextCompactor(
         conversations = convRepo,
+        appContext = appContext,
         generationErrorFormatter = { raw ->
             normalizePersistedGenerationErrorText(appContext, raw)
         },
@@ -730,46 +732,66 @@ internal class MessageGenerationController(
         state: ConversationGenerationState,
     ) {
         val guidanceClaimRevision = state.guidanceClaimRevision()
+        val originOwnerToken = request.generationRequest.uiToken
+        state.retainRunHandoff(originOwnerToken)
         // The current Assistant must release first. Suppress exactly that release's ordinary queue
         // drain so the already-decided Compact generation owns the next standard slot.
         state.deferNextQueueDrain()
-        state.scope.launch {
-            state.awaitSendAvailable()
-            val compactLaunch = compactController.startAutomaticStandard(
-                conversationId = request.generationRequest.conversationId,
-                contextLimit = request.generationRequest.snapshot.config.maxContextWindow,
-                config = request.config,
-                state = state,
-            ) ?: return@launch
-            compactLaunch.job.join()
-            val compactMessageId = compactLaunch.messageId
-            val compactStatus = convRepo.getMessage(compactMessageId)?.status
-            if (!automaticCompactAllowsHandoff(compactStatus)) return@launch
-
-            // Queue inspection and no-input continuation admission share the queue mutex, so
-            // guidance arriving at Compact settlement cannot lose the Queue-before-Loop race.
-            launchStandardContinuationAfterGuidance(
-                state = state,
-                guidanceClaimRevision = guidanceClaimRevision,
-            ) {
-                standardContinuationLauncher.launch(
-                    request = StandardGenerationContinuationRequest(
+        state.scope.launch(start = CoroutineStart.UNDISPATCHED) {
+            try {
+                executionCoordinator.withGenerationAdmission(state.conversationId) admission@ {
+                    state.awaitSendAvailable()
+                    val compactLaunch = compactController.startAutomaticStandard(
                         conversationId = request.generationRequest.conversationId,
-                        parentMessageId = compactMessageId,
-                        snapshot = request.generationRequest.snapshot,
-                        touchConversationOnAdmission = false,
-                    ),
-                    state = state,
-                )
+                        contextLimit = request.generationRequest.snapshot.config.maxContextWindow,
+                        config = request.config,
+                        state = state,
+                        continuesAfterSuccess = true,
+                    ) ?: return@admission
+                    try {
+                        compactLaunch.job.join()
+                        state.awaitSendAvailable()
+                        val compactMessageId = compactLaunch.messageId
+                        val compactStatus = convRepo.getMessage(compactMessageId)?.status
+                        if (!automaticCompactAllowsHandoff(compactStatus)) {
+                            state.finishRunHandoff(compactLaunch.uiToken)
+                            return@admission
+                        }
+
+                        // Guidance inspection and continuation admission share the ordinary queue boundary.
+                        val continuation = launchStandardContinuationAfterGuidance(
+                            state = state,
+                            guidanceClaimRevision = guidanceClaimRevision,
+                            handoffOwnerToken = compactLaunch.uiToken,
+                        ) {
+                            standardContinuationLauncher.launch(
+                                request = StandardGenerationContinuationRequest(
+                                    conversationId = request.generationRequest.conversationId,
+                                    parentMessageId = compactMessageId,
+                                    snapshot = request.generationRequest.snapshot,
+                                    touchConversationOnAdmission = false,
+                                ),
+                                state = state,
+                            )
+                        }
+                        continuation?.job?.join()
+                    } catch (error: Exception) {
+                        state.finishRunHandoff(compactLaunch.uiToken)
+                        throw error
+                    }
+                }
+            } finally {
+                state.finishRunHandoff(originOwnerToken)
             }
         }
     }
 
     /** Title notices go to [origin], or runtime-wide when the request has none. */
     fun generateTitle(conversationId: String, origin: ChatClient?) {
-        scope.launch {
+        val runtimeSnapshot = registry.get(conversationId)?.generationSnapshot?.value
+        scope.launch(start = CoroutineStart.UNDISPATCHED) {
             titleGenerator.generateWithNotifications(
-                conversationId, settings, appContext,
+                conversationId, settings, appContext, runtimeSnapshot,
             ) { message -> origin?.showSnackbar(message) ?: onSnackbar(message) }
         }
     }

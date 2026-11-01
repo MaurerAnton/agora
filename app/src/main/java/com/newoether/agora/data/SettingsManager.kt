@@ -1,9 +1,6 @@
 package com.newoether.agora.data
 
 import android.content.Context
-import com.newoether.agora.model.OpenAiServiceTiers
-import com.newoether.agora.model.ThinkingLevels
-import com.newoether.agora.model.ContextBudget
 import com.newoether.agora.model.ThinkingSegmentDisplayModes
 import com.newoether.agora.model.ToolCallDisplayModes
 import com.newoether.agora.util.DebugLog
@@ -19,7 +16,7 @@ import java.util.Locale
 import kotlinx.coroutines.flow.map
 
 internal val Context.dataStore by preferencesDataStore(
-    name = "settings", produceMigrations = { listOf(modelProviderNamesMigration) },
+    name = "settings", produceMigrations = { listOf(modelProviderNamesMigration, toolCallDisplayModeMigration) },
 )
 
 class SettingsManager(private val context: Context) {
@@ -27,6 +24,9 @@ class SettingsManager(private val context: Context) {
     internal val modelPreferenceStore = SettingsModelPreferenceStore(context.dataStore, json)
     internal val backupPreferenceStore = SettingsBackupPreferenceStore(context.dataStore)
     internal val systemPromptStore = SettingsSystemPromptStore(context.dataStore, json)
+    internal val shellDeviceStore = SettingsShellDeviceStore(context.dataStore, json)
+    /** Generation, retrieval and per-request parameters live in SettingsGenerationParameters.kt. */
+    private val generationParameters = SettingsGenerationParametersStore(context.dataStore, json)
 
     companion object {
         const val DEFAULT_PROXY_HOST = "127.0.0.1"
@@ -59,70 +59,36 @@ class SettingsManager(private val context: Context) {
     val systemPrompts: Flow<List<SystemPromptEntry>> = systemPromptStore.systemPrompts
     val activeSystemPromptId: Flow<String?> = systemPromptStore.activeSystemPromptId
 
-    val maxContextWindow: Flow<Int> = context.dataStore.data.map { preferences ->
-        ContextBudget.normalize(
-            preferences[CONTEXT_TOKEN_BUDGET]?.toIntOrNull()
-                ?: preferences[MAX_CONTEXT_WINDOW]?.toIntOrNull()
-        )
-    }
-    val visualizeContextRollout: Flow<Boolean> = context.dataStore.data.map { it[VISUALIZE_CONTEXT_ROLLOUT] ?: false }
-    val contextCompactEnabled: Flow<Boolean> = context.dataStore.data.map {
-        it[CONTEXT_COMPACT_ENABLED] ?: DEFAULT_CONTEXT_COMPACT_ENABLED
-    }
-    val contextCompactModel: Flow<String?> = context.dataStore.data.map { it[CONTEXT_COMPACT_MODEL] }
-    val contextCompactPrompt: Flow<String> = context.dataStore.data.map { pref ->
-        pref[CONTEXT_COMPACT_PROMPT]?.takeIf { it.isNotBlank() } ?: BuiltInPrompts.CONTEXT_COMPACT_SYSTEM
-    }
-    val contextCompactRetainCount: Flow<Int> = context.dataStore.data.map {
-        it[CONTEXT_COMPACT_RETAIN_COUNT] ?: DEFAULT_CONTEXT_COMPACT_RETAIN_COUNT
-    }
-    val contextCompactPreserveSystemPrompt: Flow<Boolean> = context.dataStore.data.map {
-        it[CONTEXT_COMPACT_PRESERVE_SYSTEM_PROMPT]
-            ?: DEFAULT_CONTEXT_COMPACT_PRESERVE_SYSTEM_PROMPT
-    }
-    val contextCompactThresholdPercent: Flow<Int> = context.dataStore.data.map {
-        it[CONTEXT_COMPACT_THRESHOLD_PERCENT]
-            ?.takeIf(CONTEXT_COMPACT_THRESHOLD_PERCENT_RANGE::contains)
-            ?: DEFAULT_CONTEXT_COMPACT_THRESHOLD_PERCENT
-    }
-    val codeExecutionEnabled: Flow<Boolean> = context.dataStore.data.map { it[CODE_EXECUTION_ENABLED] ?: false }
-    val googleSearchEnabled: Flow<Boolean> = context.dataStore.data.map { it[GOOGLE_SEARCH_ENABLED] ?: false }
-    val thinkingEnabled: Flow<Boolean> = context.dataStore.data.map { it[THINKING_ENABLED] ?: true }
-    val autoRegenOnCjk: Flow<Boolean> = context.dataStore.data.map { it[AUTO_REGEN_ON_CJK] ?: true }
-    val maxCjkRetries: Flow<Int> = context.dataStore.data.map { it[MAX_CJK_AUTO_RETRIES]?.coerceIn(0, 99) ?: 2 }
-    val thinkingLevel: Flow<String> = context.dataStore.data.map { ThinkingLevels.normalize(it[THINKING_LEVEL]) }
-    val thinkingBudgetEnabled: Flow<Boolean> = context.dataStore.data.map { pref ->
-        pref[THINKING_BUDGET_ENABLED] ?: (ThinkingLevels.legacyBudgetTokens(pref[THINKING_LEVEL]) != null)
-    }
-    val thinkingBudgetTokens: Flow<Int> = context.dataStore.data.map { pref ->
-        pref[THINKING_BUDGET_TOKENS]
-            ?: ThinkingLevels.legacyBudgetTokens(pref[THINKING_LEVEL])
-            ?: ThinkingLevels.DefaultBudgetTokens
-    }
-    val openAiServiceTierEnabled: Flow<Boolean> =
-        context.dataStore.data.map { it[OPENAI_SERVICE_TIER_ENABLED] ?: false }
-    val openAiServiceTier: Flow<String> = context.dataStore.data.map { pref ->
-        OpenAiServiceTiers.normalize(pref[OPENAI_SERVICE_TIER])
-    }
-    val openAiResponsesApiEnabled: Flow<Boolean> =
-        context.dataStore.data.map { it[OPENAI_RESPONSES_API_ENABLED] ?: false }
-    val titleGenerationEnabled: Flow<Boolean> = context.dataStore.data.map { it[TITLE_GENERATION_ENABLED] ?: true }
-    val titleGenerationModel: Flow<String?> = context.dataStore.data.map { it[TITLE_GENERATION_MODEL] }
-    val titleGenerationPrompt: Flow<String> = context.dataStore.data.map { pref ->
-        pref[TITLE_GENERATION_PROMPT]?.takeIf { it.isNotBlank() } ?: BuiltInPrompts.TITLE_GENERATION_SYSTEM
-    }
-    val titleGenerationNotificationsEnabled: Flow<Boolean> = context.dataStore.data.map {
-        it[TITLE_GENERATION_NOTIFICATIONS_ENABLED] ?: true
-    }
-    val imageTranscriptionEnabled: Flow<Boolean> = context.dataStore.data.map {
-        it[IMAGE_TRANSCRIPTION_ENABLED] ?: true
-    }
-    val imageTranscriptionEnabledModels: Flow<Set<String>> = context.dataStore.data.map { it[IMAGE_TRANSCRIPTION_ENABLED_MODELS] ?: emptySet() }
-    val imageTranscriptionModel: Flow<String?> = context.dataStore.data.map { it[IMAGE_TRANSCRIPTION_MODEL] }
-    val imageTranscriptionBatchSize: Flow<Int> = context.dataStore.data.map { it[IMAGE_TRANSCRIPTION_BATCH_SIZE] ?: 3 }
-    val imageTranscriptionPrompt: Flow<String> = context.dataStore.data.map { pref ->
-        pref[IMAGE_TRANSCRIPTION_PROMPT]?.takeIf { it.isNotBlank() } ?: BuiltInPrompts.IMAGE_TRANSCRIPTION_USER
-    }
+    val maxContextWindow: Flow<Int> = generationParameters.maxContextWindow
+    val visualizeContextRollout: Flow<Boolean> = generationParameters.visualizeContextRollout
+    val contextCompactEnabled: Flow<Boolean> = generationParameters.contextCompactEnabled
+    val contextCompactModel: Flow<String?> = generationParameters.contextCompactModel
+    val contextCompactPrompt: Flow<String> = generationParameters.contextCompactPrompt
+    val contextCompactRetainCount: Flow<Int> = generationParameters.contextCompactRetainCount
+    val contextCompactPreserveSystemPrompt: Flow<Boolean> =
+        generationParameters.contextCompactPreserveSystemPrompt
+    val contextCompactThresholdPercent: Flow<Int> = generationParameters.contextCompactThresholdPercent
+    val codeExecutionEnabled: Flow<Boolean> = generationParameters.codeExecutionEnabled
+    val googleSearchEnabled: Flow<Boolean> = generationParameters.googleSearchEnabled
+    val thinkingEnabled: Flow<Boolean> = generationParameters.thinkingEnabled
+    val autoRegenOnCjk: Flow<Boolean> = generationParameters.autoRegenOnCjk
+    val maxCjkRetries: Flow<Int> = generationParameters.maxCjkRetries
+    val thinkingLevel: Flow<String> = generationParameters.thinkingLevel
+    val thinkingBudgetEnabled: Flow<Boolean> = generationParameters.thinkingBudgetEnabled
+    val thinkingBudgetTokens: Flow<Int> = generationParameters.thinkingBudgetTokens
+    val openAiServiceTierEnabled: Flow<Boolean> = generationParameters.openAiServiceTierEnabled
+    val openAiServiceTier: Flow<String> = generationParameters.openAiServiceTier
+    val openAiResponsesApiEnabled: Flow<Boolean> = generationParameters.openAiResponsesApiEnabled
+    val titleGenerationEnabled: Flow<Boolean> = generationParameters.titleGenerationEnabled
+    val titleGenerationModel: Flow<String?> = generationParameters.titleGenerationModel
+    val titleGenerationPrompt: Flow<String> = generationParameters.titleGenerationPrompt
+    val titleGenerationNotificationsEnabled: Flow<Boolean> =
+        generationParameters.titleGenerationNotificationsEnabled
+    val imageTranscriptionEnabled: Flow<Boolean> = generationParameters.imageTranscriptionEnabled
+    val imageTranscriptionEnabledModels: Flow<Set<String>> = generationParameters.imageTranscriptionEnabledModels
+    val imageTranscriptionModel: Flow<String?> = generationParameters.imageTranscriptionModel
+    val imageTranscriptionBatchSize: Flow<Int> = generationParameters.imageTranscriptionBatchSize
+    val imageTranscriptionPrompt: Flow<String> = generationParameters.imageTranscriptionPrompt
 
     val accessPastConversations: Flow<Boolean> = context.dataStore.data.map { it[ACCESS_PAST_CONVERSATIONS] ?: true }
     val accessSavedMemories: Flow<Boolean> = context.dataStore.data.map { it[ACCESS_SAVED_MEMORIES] ?: true }
@@ -132,53 +98,42 @@ class SettingsManager(private val context: Context) {
     val accessSkillsModify: Flow<Boolean> = context.dataStore.data.map { pref ->
         pref[ACCESS_SKILLS_MODIFY] ?: pref[ACCESS_SKILLS] ?: true
     }
-    val ragSearchEnabled: Flow<Boolean> = context.dataStore.data.map { it[RAG_SEARCH_ENABLED] ?: false }
-    val modelSearchMethod: Flow<String> = context.dataStore.data.map { it[MODEL_SEARCH_METHOD] ?: "keyword" }
-    val manualSearchMethod: Flow<String> = context.dataStore.data.map { it[MANUAL_SEARCH_METHOD] ?: "keyword" }
-    val embeddingModels: Flow<List<EmbeddingModelConfig>> = context.dataStore.data.map { pref ->
-        val jsonStr = pref[EMBEDDING_MODELS_JSON] ?: "[]"
-        try { json.decodeFromString<List<EmbeddingModelConfig>>(jsonStr) } catch (e: Exception) { emptyList() }
-    }
-    val activeEmbeddingModelId: Flow<String> = context.dataStore.data.map { it[ACTIVE_EMBEDDING_MODEL_ID] ?: "" }
+    val ragSearchEnabled: Flow<Boolean> = generationParameters.ragSearchEnabled
+    val modelSearchMethod: Flow<String> = generationParameters.modelSearchMethod
+    val manualSearchMethod: Flow<String> = generationParameters.manualSearchMethod
+    val embeddingModels: Flow<List<EmbeddingModelConfig>> = generationParameters.embeddingModels
+    val activeEmbeddingModelId: Flow<String> = generationParameters.activeEmbeddingModelId
 
     val appLanguage: Flow<String> = context.dataStore.data.map { it[APP_LANGUAGE] ?: "system" }
-    val webSearchEnabled: Flow<Boolean> = context.dataStore.data.map { it[WEB_SEARCH_ENABLED] ?: true }
-    val webSearchProvider: Flow<String> = context.dataStore.data.map {
-        normalizeWebSearchProvider(it[WEB_SEARCH_PROVIDER])
-    }
-    val webSearchApiKeys: Flow<Map<String, String>> = context.dataStore.data.map { preferences ->
-        decodeWebSearchApiKeys(preferences, json)
-    }
-    val webSearchNumResults: Flow<Int> = context.dataStore.data.map { it[WEB_SEARCH_NUM_RESULTS] ?: 5 }
-    val webSearchBaseUrl: Flow<String> = context.dataStore.data.map { it[WEB_SEARCH_BASE_URL] ?: "" }
+    val webSearchEnabled: Flow<Boolean> = generationParameters.webSearchEnabled
+    val webSearchProvider: Flow<String> = generationParameters.webSearchProvider
+    val webSearchApiKeys: Flow<Map<String, String>> = generationParameters.webSearchApiKeys
+    val webSearchNumResults: Flow<Int> = generationParameters.webSearchNumResults
+    val webSearchBaseUrl: Flow<String> = generationParameters.webSearchBaseUrl
 
     // ── Image generation ──────────────────────────────────────
-    val imageGenEnabled: Flow<Boolean> = context.dataStore.data.map { it[IMAGE_GEN_ENABLED] ?: false }
-    // Selected image model "Provider:modelId" (null = none chosen). Creds reused from that provider.
-    val imageGenModel: Flow<String?> = context.dataStore.data.map { it[IMAGE_GEN_MODEL] }
-    val imageGenSize: Flow<String> = context.dataStore.data.map { it[IMAGE_GEN_SIZE] ?: "1024x1024" }
-    val searchContextWindow: Flow<Int> = context.dataStore.data.map { it[SEARCH_CONTEXT_WINDOW] ?: 8 }
-    val searchMatchLimit: Flow<Int> = context.dataStore.data.map { it[SEARCH_MATCH_LIMIT] ?: 10 }
-    val ragThreshold: Flow<Float> = context.dataStore.data.map { it[RAG_THRESHOLD]?.toFloatOrNull() ?: 0.5f }
-    val defaultTemperature: Flow<Float?> = context.dataStore.data.map { it[DEFAULT_TEMPERATURE]?.toFloatOrNull() }
-    val defaultMaxTokens: Flow<Int?> = context.dataStore.data.map { it[DEFAULT_MAX_TOKENS] }
-    val defaultTopP: Flow<Float?> = context.dataStore.data.map { it[DEFAULT_TOP_P]?.toFloatOrNull() }
-    val defaultFrequencyPenalty: Flow<Float?> = context.dataStore.data.map { it[DEFAULT_FREQUENCY_PENALTY]?.toFloatOrNull() }
-    val defaultPresencePenalty: Flow<Float?> = context.dataStore.data.map { it[DEFAULT_PRESENCE_PENALTY]?.toFloatOrNull() }
-    val conversationSettings: Flow<Map<String, ConversationSettings>> =
-        context.dataStore.data.map { preferences -> decodeConversationSettings(preferences, json) }
+    val imageQuality = ImageQualitySettingsStore(context.dataStore)
+    val imageGenEnabled: Flow<Boolean> = generationParameters.imageGenEnabled
+    val imageGenModel: Flow<String?> = generationParameters.imageGenModel
+    val imageGenSize: Flow<String> = generationParameters.imageGenSize
+    val searchContextWindow: Flow<Int> = generationParameters.searchContextWindow
+    val searchMatchLimit: Flow<Int> = generationParameters.searchMatchLimit
+    val ragThreshold: Flow<Float> = generationParameters.ragThreshold
+    val defaultTemperature: Flow<Float?> = generationParameters.defaultTemperature
+    val defaultMaxTokens: Flow<Int?> = generationParameters.defaultMaxTokens
+    val defaultTopP: Flow<Float?> = generationParameters.defaultTopP
+    val defaultFrequencyPenalty: Flow<Float?> = generationParameters.defaultFrequencyPenalty
+    val defaultPresencePenalty: Flow<Float?> = generationParameters.defaultPresencePenalty
+    val conversationSettings: Flow<Map<String, ConversationSettings>> = generationParameters.conversationSettings
     val autoCacheEnabled: Flow<Boolean> = context.dataStore.data.map { it[AUTO_CACHE_ENABLED] ?: true }
     val showUncachedNotification: Flow<Boolean> =
         context.dataStore.data.map { it[SHOW_UNCACHED_NOTIFICATION] ?: true }
     val autoUpdateCheck: Flow<Boolean> = context.dataStore.data.map { it[AUTO_UPDATE_CHECK] ?: true }
     val lastUpdateCheckTime: Flow<Long> = context.dataStore.data.map { it[LAST_UPDATE_CHECK_TIME] ?: 0L }
     val localChatModels: Flow<List<LocalChatModelConfig>> = modelPreferenceStore.localChatModels
-    val localModelIdleRetentionMinutes: Flow<Int> = context.dataStore.data.map {
-        normalizeLocalModelIdleRetentionMinutes(it[LOCAL_MODEL_IDLE_RETENTION_MINUTES])
-    }
-    val localLowContextModeEnabled: Flow<Boolean> = context.dataStore.data.map {
-        it[LOCAL_LOW_CONTEXT_MODE_ENABLED] ?: DEFAULT_LOCAL_LOW_CONTEXT_MODE_ENABLED
-    }
+    val phoneUse = com.newoether.agora.phone.PhoneUseSettingsStore(context.dataStore)
+    val localModelIdleRetentionMinutes: Flow<Int> = modelPreferenceStore.localModelIdleRetentionMinutes
+    val localLowContextModeEnabled: Flow<Boolean> = modelPreferenceStore.localLowContextModeEnabled
     val customProviders: Flow<List<CustomProviderConfig>> = modelPreferenceStore.customProviders
 
     val showDocumentationFab: Flow<Boolean> = context.dataStore.data.map { it[SHOW_DOCUMENTATION_FAB] ?: true }
@@ -205,6 +160,25 @@ class SettingsManager(private val context: Context) {
     // Confirm before the model runs state-changing commands on remote shell servers. Default on.
     val shellConfirmEnabled: Flow<Boolean> = context.dataStore.data.map { it[SHELL_CONFIRM_ENABLED] ?: true }
     val askUserEnabled: Flow<Boolean> = context.dataStore.data.map { it[ASK_USER_ENABLED] ?: true }
+    val askUserTimeoutMinutes: Flow<Int> = context.dataStore.data.map { normalizeAskUserTimeoutMinutes(it[ASK_USER_TIMEOUT_MINUTES]) }
+    val todoEnabled: Flow<Boolean> = context.dataStore.data.map { it[TODO_ENABLED] ?: true }
+    val subagentToolsEnabled: Flow<Boolean> = context.dataStore.data.map { it[SUBAGENT_TOOLS_ENABLED] ?: true }
+    val subagentDeleteEnabled: Flow<Boolean> = context.dataStore.data.map { it[SUBAGENT_DELETE_ENABLED] ?: false }
+    val subagentMaxTotal: Flow<Int> = context.dataStore.data.map { normalizeSubagentMaxTotal(it[SUBAGENT_MAX_TOTAL]) }
+    val subagentMaxConcurrent: Flow<Int> = context.dataStore.data.map {
+        normalizeSubagentMaxConcurrent(it[SUBAGENT_MAX_CONCURRENT], normalizeSubagentMaxTotal(it[SUBAGENT_MAX_TOTAL]))
+    }
+    val subagentCapsuleDisplayMode: Flow<String> = context.dataStore.data.map {
+        SubagentCapsuleDisplayModes.normalize(it[SUBAGENT_CAPSULE_DISPLAY_MODE])
+    }
+    val subagentEnabledModels: Flow<Set<String>?> = modelPreferenceStore.subagentEnabledModels
+    val subagentRecommendedModel: Flow<String?> = modelPreferenceStore.subagentRecommendedModel
+    val subagentModelIds: Flow<Set<String>> = modelPreferenceStore.subagentModelIds
+    suspend fun addSubagentModels(models: Set<String>) = modelPreferenceStore.addSubagentModels(models)
+    suspend fun removeSubagentModel(model: String) = modelPreferenceStore.removeSubagentModel(model)
+    suspend fun saveSubagentEnabledModels(models: Set<String>?, merge: Boolean = false) =
+        modelPreferenceStore.saveSubagentEnabledModels(models, merge)
+    suspend fun saveSubagentRecommendedModel(model: String?) = modelPreferenceStore.saveSubagentRecommendedModel(model)
     val shellDevices: Flow<List<ShellDeviceConfig>> =
         context.dataStore.data.map { preferences -> decodeEncryptedShellDevices(preferences, json) }
     val mcpServers: Flow<List<McpServerConfig>> = context.dataStore.data.map { pref ->
@@ -333,55 +307,25 @@ class SettingsManager(private val context: Context) {
     ) = systemPromptStore.initialize(locale, now)
 
     suspend fun setActiveSystemPromptId(id: String?) = systemPromptStore.setActive(id)
-    suspend fun saveMaxContextWindow(window: Int) {
-        context.dataStore.edit {
-            it[CONTEXT_TOKEN_BUDGET] = ContextBudget.normalize(window).toString()
-        }
-    }
-    suspend fun saveVisualizeContextRollout(enabled: Boolean) {
-        context.dataStore.edit { it[VISUALIZE_CONTEXT_ROLLOUT] = enabled }
-    }
-    suspend fun saveCodeExecutionEnabled(enabled: Boolean) {
-        context.dataStore.edit { it[CODE_EXECUTION_ENABLED] = enabled }
-    }
-    suspend fun saveGoogleSearchEnabled(enabled: Boolean) {
-        context.dataStore.edit { it[GOOGLE_SEARCH_ENABLED] = enabled }
-    }
-    suspend fun saveThinkingEnabled(enabled: Boolean) {
-        context.dataStore.edit { it[THINKING_ENABLED] = enabled }
-    }
-    suspend fun saveAutoRegenOnCjk(enabled: Boolean) {
-        context.dataStore.edit { it[AUTO_REGEN_ON_CJK] = enabled }
-    }
-    suspend fun saveMaxCjkRetries(retries: Int) {
-        context.dataStore.edit { it[MAX_CJK_AUTO_RETRIES] = retries.coerceIn(0, 99) }
-    }
-    suspend fun saveThinkingLevel(level: String) {
-        context.dataStore.edit { it[THINKING_LEVEL] = ThinkingLevels.normalize(level) }
-    }
-    suspend fun saveThinkingBudgetEnabled(enabled: Boolean) {
-        context.dataStore.edit { it[THINKING_BUDGET_ENABLED] = enabled }
-    }
-    suspend fun saveThinkingBudgetTokens(tokens: Int) {
-        context.dataStore.edit { it[THINKING_BUDGET_TOKENS] = tokens.coerceAtLeast(1) }
-    }
-    suspend fun saveOpenAiServiceTierEnabled(enabled: Boolean) {
-        context.dataStore.edit { it[OPENAI_SERVICE_TIER_ENABLED] = enabled }
-    }
-    suspend fun saveOpenAiServiceTier(tier: String) {
-        context.dataStore.edit {
-            it[OPENAI_SERVICE_TIER] = OpenAiServiceTiers.normalize(tier)
-        }
-    }
-    suspend fun saveOpenAiResponsesApiEnabled(enabled: Boolean) {
-        context.dataStore.edit { it[OPENAI_RESPONSES_API_ENABLED] = enabled }
-    }
-    suspend fun saveTitleGenerationEnabled(enabled: Boolean) {
-        context.dataStore.edit { it[TITLE_GENERATION_ENABLED] = enabled }
-    }
-    suspend fun saveTitleGenerationNotificationsEnabled(enabled: Boolean) {
-        context.dataStore.edit { it[TITLE_GENERATION_NOTIFICATIONS_ENABLED] = enabled }
-    }
+    suspend fun saveMaxContextWindow(window: Int) = generationParameters.saveMaxContextWindow(window)
+    suspend fun saveVisualizeContextRollout(enabled: Boolean) =
+        generationParameters.saveVisualizeContextRollout(enabled)
+    suspend fun saveCodeExecutionEnabled(enabled: Boolean) = generationParameters.saveCodeExecutionEnabled(enabled)
+    suspend fun saveGoogleSearchEnabled(enabled: Boolean) = generationParameters.saveGoogleSearchEnabled(enabled)
+    suspend fun saveThinkingEnabled(enabled: Boolean) = generationParameters.saveThinkingEnabled(enabled)
+    suspend fun saveAutoRegenOnCjk(enabled: Boolean) = generationParameters.saveAutoRegenOnCjk(enabled)
+    suspend fun saveMaxCjkRetries(retries: Int) = generationParameters.saveMaxCjkRetries(retries)
+    suspend fun saveThinkingLevel(level: String) = generationParameters.saveThinkingLevel(level)
+    suspend fun saveThinkingBudgetEnabled(enabled: Boolean) = generationParameters.saveThinkingBudgetEnabled(enabled)
+    suspend fun saveThinkingBudgetTokens(tokens: Int) = generationParameters.saveThinkingBudgetTokens(tokens)
+    suspend fun saveOpenAiServiceTierEnabled(enabled: Boolean) =
+        generationParameters.saveOpenAiServiceTierEnabled(enabled)
+    suspend fun saveOpenAiServiceTier(tier: String) = generationParameters.saveOpenAiServiceTier(tier)
+    suspend fun saveOpenAiResponsesApiEnabled(enabled: Boolean) =
+        generationParameters.saveOpenAiResponsesApiEnabled(enabled)
+    suspend fun saveTitleGenerationEnabled(enabled: Boolean) = generationParameters.saveTitleGenerationEnabled(enabled)
+    suspend fun saveTitleGenerationNotificationsEnabled(enabled: Boolean) =
+        generationParameters.saveTitleGenerationNotificationsEnabled(enabled)
     suspend fun saveAccessPastConversations(enabled: Boolean) {
         context.dataStore.edit { it[ACCESS_PAST_CONVERSATIONS] = enabled }
     }
@@ -397,9 +341,7 @@ class SettingsManager(private val context: Context) {
     suspend fun saveAccessSkillsModify(enabled: Boolean) {
         context.dataStore.edit { it[ACCESS_SKILLS_MODIFY] = enabled }
     }
-    suspend fun saveRagSearchEnabled(enabled: Boolean) {
-        context.dataStore.edit { it[RAG_SEARCH_ENABLED] = enabled }
-    }
+    suspend fun saveRagSearchEnabled(enabled: Boolean) = generationParameters.saveRagSearchEnabled(enabled)
     suspend fun saveAutoCacheEnabled(enabled: Boolean) {
         context.dataStore.edit { it[AUTO_CACHE_ENABLED] = enabled }
     }
@@ -412,135 +354,46 @@ class SettingsManager(private val context: Context) {
     suspend fun saveLastUpdateCheckTime(time: Long) {
         context.dataStore.edit { it[LAST_UPDATE_CHECK_TIME] = time }
     }
-    suspend fun saveModelSearchMethod(method: String) {
-        context.dataStore.edit { it[MODEL_SEARCH_METHOD] = method }
-    }
-    suspend fun saveManualSearchMethod(method: String) {
-        context.dataStore.edit { it[MANUAL_SEARCH_METHOD] = method }
-    }
-    suspend fun saveEmbeddingModels(models: List<EmbeddingModelConfig>) {
-        context.dataStore.edit { it[EMBEDDING_MODELS_JSON] = json.encodeToString(models) }
-    }
-    suspend fun setActiveEmbeddingModelId(id: String) {
-        context.dataStore.edit { it[ACTIVE_EMBEDDING_MODEL_ID] = id }
-    }
+    suspend fun saveModelSearchMethod(method: String) = generationParameters.saveModelSearchMethod(method)
+    suspend fun saveManualSearchMethod(method: String) = generationParameters.saveManualSearchMethod(method)
+    suspend fun saveEmbeddingModels(models: List<EmbeddingModelConfig>) =
+        generationParameters.saveEmbeddingModels(models)
+    suspend fun setActiveEmbeddingModelId(id: String) = generationParameters.setActiveEmbeddingModelId(id)
     suspend fun saveAppLanguage(language: String) {
         context.dataStore.edit { it[APP_LANGUAGE] = language }
     }
-    suspend fun saveWebSearchEnabled(enabled: Boolean) {
-        context.dataStore.edit { it[WEB_SEARCH_ENABLED] = enabled }
-    }
-    suspend fun saveWebSearchProvider(provider: String) {
-        context.dataStore.edit { it[WEB_SEARCH_PROVIDER] = normalizeWebSearchProvider(provider) }
-    }
-    suspend fun saveWebSearchApiKey(provider: String, apiKey: String) {
-        context.dataStore.edit { prefs ->
-            val current = com.newoether.agora.util.SecretCrypto.decrypt(prefs[WEB_SEARCH_API_KEYS_JSON] ?: "{}")
-            val map = try { json.decodeFromString<MutableMap<String, String>>(current) } catch (e: Exception) { mutableMapOf() }
-            if (apiKey.isBlank()) map.remove(provider) else map[provider] = apiKey
-            prefs[WEB_SEARCH_API_KEYS_JSON] = com.newoether.agora.util.SecretCrypto.encrypt(json.encodeToString(map))
-        }
-    }
-    suspend fun saveWebSearchApiKeys(keys: Map<String, String>) {
-        val nonBlank = keys.filterValues { it.isNotBlank() }
-        context.dataStore.edit { prefs ->
-            if (nonBlank.isEmpty()) {
-                prefs.remove(WEB_SEARCH_API_KEYS_JSON)
-            } else {
-                prefs[WEB_SEARCH_API_KEYS_JSON] =
-                    com.newoether.agora.util.SecretCrypto.encrypt(json.encodeToString(nonBlank))
-            }
-        }
-    }
-    suspend fun saveWebSearchNumResults(n: Int) {
-        context.dataStore.edit { it[WEB_SEARCH_NUM_RESULTS] = n.coerceIn(1, 10) }
-    }
-    suspend fun saveWebSearchBaseUrl(url: String) {
-        context.dataStore.edit { it[WEB_SEARCH_BASE_URL] = url }
-    }
-    suspend fun saveImageGenEnabled(enabled: Boolean) {
-        context.dataStore.edit { it[IMAGE_GEN_ENABLED] = enabled }
-    }
-    suspend fun saveImageGenModel(model: String?) {
-        context.dataStore.edit {
-            if (model == null) it.remove(IMAGE_GEN_MODEL) else it[IMAGE_GEN_MODEL] = model
-        }
-    }
-    suspend fun saveImageGenSize(size: String) {
-        context.dataStore.edit { it[IMAGE_GEN_SIZE] = size }
-    }
-    suspend fun saveSearchMatchLimit(n: Int) {
-        context.dataStore.edit { it[SEARCH_MATCH_LIMIT] = n }
-    }
-    suspend fun saveSearchContextWindow(n: Int) {
-        context.dataStore.edit { it[SEARCH_CONTEXT_WINDOW] = n }
-    }
-    suspend fun saveRagThreshold(threshold: Float) {
-        context.dataStore.edit { it[RAG_THRESHOLD] = threshold.toString() }
-    }
-    suspend fun saveDefaultTemperature(value: Float?) {
-        context.dataStore.edit { prefs ->
-            if (value == null) prefs.remove(DEFAULT_TEMPERATURE) else prefs[DEFAULT_TEMPERATURE] = value.toString()
-        }
-    }
-    suspend fun saveDefaultMaxTokens(value: Int?) {
-        context.dataStore.edit { prefs ->
-            if (value == null) prefs.remove(DEFAULT_MAX_TOKENS) else prefs[DEFAULT_MAX_TOKENS] = value
-        }
-    }
-    suspend fun saveDefaultTopP(value: Float?) {
-        context.dataStore.edit { prefs ->
-            if (value == null) prefs.remove(DEFAULT_TOP_P) else prefs[DEFAULT_TOP_P] = value.toString()
-        }
-    }
-    suspend fun saveDefaultFrequencyPenalty(value: Float?) {
-        context.dataStore.edit { prefs ->
-            if (value == null) prefs.remove(DEFAULT_FREQUENCY_PENALTY) else prefs[DEFAULT_FREQUENCY_PENALTY] = value.toString()
-        }
-    }
-    suspend fun saveDefaultPresencePenalty(value: Float?) {
-        context.dataStore.edit { prefs ->
-            if (value == null) prefs.remove(DEFAULT_PRESENCE_PENALTY) else prefs[DEFAULT_PRESENCE_PENALTY] = value.toString()
-        }
-    }
+    suspend fun saveWebSearchEnabled(enabled: Boolean) = generationParameters.saveWebSearchEnabled(enabled)
+    suspend fun saveWebSearchProvider(provider: String) = generationParameters.saveWebSearchProvider(provider)
+    suspend fun saveWebSearchApiKey(provider: String, apiKey: String) =
+        generationParameters.saveWebSearchApiKey(provider, apiKey)
+    suspend fun saveWebSearchApiKeys(keys: Map<String, String>) = generationParameters.saveWebSearchApiKeys(keys)
+    suspend fun saveWebSearchNumResults(n: Int) = generationParameters.saveWebSearchNumResults(n)
+    suspend fun saveWebSearchBaseUrl(url: String) = generationParameters.saveWebSearchBaseUrl(url)
+    suspend fun saveImageGenEnabled(enabled: Boolean) = generationParameters.saveImageGenEnabled(enabled)
+    suspend fun saveImageGenModel(model: String?) = generationParameters.saveImageGenModel(model)
+    suspend fun saveImageGenSize(size: String) = generationParameters.saveImageGenSize(size)
+    suspend fun saveSearchMatchLimit(n: Int) = generationParameters.saveSearchMatchLimit(n)
+    suspend fun saveSearchContextWindow(n: Int) = generationParameters.saveSearchContextWindow(n)
+    suspend fun saveRagThreshold(threshold: Float) = generationParameters.saveRagThreshold(threshold)
+    suspend fun saveDefaultTemperature(value: Float?) = generationParameters.saveDefaultTemperature(value)
+    suspend fun saveDefaultMaxTokens(value: Int?) = generationParameters.saveDefaultMaxTokens(value)
+    suspend fun saveDefaultTopP(value: Float?) = generationParameters.saveDefaultTopP(value)
+    suspend fun saveDefaultFrequencyPenalty(value: Float?) = generationParameters.saveDefaultFrequencyPenalty(value)
+    suspend fun saveDefaultPresencePenalty(value: Float?) = generationParameters.saveDefaultPresencePenalty(value)
     suspend fun saveConversationSettings(
         conversationId: String,
         settings: ConversationSettings?,
-    ): Map<String, ConversationSettings> {
-        var updated: Map<String, ConversationSettings> = emptyMap()
-        context.dataStore.edit { prefs ->
-            val map = decodeConversationSettings(prefs, json).toMutableMap()
-            if (settings == null || settings.isAllNull()) map.remove(conversationId)
-            else map[conversationId] = settings.normalizedServiceTier()
-            updated = map.toMap()
-            prefs[CONVERSATION_SETTINGS_JSON] = json.encodeToString(map)
-        }
-        return updated
-    }
-    suspend fun saveConversationSettingsMap(settings: Map<String, ConversationSettings>) {
-        val nonEmpty = settings.filterValues { !it.isAllNull() }
-            .mapValues { (_, value) -> value.normalizedServiceTier() }
-        context.dataStore.edit { prefs ->
-            if (nonEmpty.isEmpty()) {
-                prefs.remove(CONVERSATION_SETTINGS_JSON)
-            } else {
-                prefs[CONVERSATION_SETTINGS_JSON] = json.encodeToString(nonEmpty)
-            }
-        }
-    }
+    ): Map<String, ConversationSettings> = generationParameters.saveConversationSettings(conversationId, settings)
+    suspend fun saveConversationSettingsMap(settings: Map<String, ConversationSettings>) =
+        generationParameters.saveConversationSettingsMap(settings)
     suspend fun saveLocalChatModels(models: List<LocalChatModelConfig>) =
         modelPreferenceStore.saveLocalChatModels(models)
 
-    suspend fun saveLocalModelIdleRetentionMinutes(minutes: Int) {
-        context.dataStore.edit {
-            it[LOCAL_MODEL_IDLE_RETENTION_MINUTES] =
-                normalizeLocalModelIdleRetentionMinutes(minutes)
-        }
-    }
+    suspend fun saveLocalModelIdleRetentionMinutes(minutes: Int) =
+        modelPreferenceStore.saveLocalModelIdleRetentionMinutes(minutes)
 
-    suspend fun saveLocalLowContextModeEnabled(enabled: Boolean) {
-        context.dataStore.edit { it[LOCAL_LOW_CONTEXT_MODE_ENABLED] = enabled }
-    }
+    suspend fun saveLocalLowContextModeEnabled(enabled: Boolean) =
+        modelPreferenceStore.saveLocalLowContextModeEnabled(enabled)
 
     suspend fun saveCustomProviders(providers: List<CustomProviderConfig>) =
         modelPreferenceStore.saveCustomProviders(providers)
@@ -552,65 +405,25 @@ class SettingsManager(private val context: Context) {
         completed: List<CustomProviderIdentityMigration>,
     ) = modelPreferenceStore.clearLegacyCustomProviderNames(completed)
 
-    suspend fun saveContextCompactEnabled(enabled: Boolean) {
-        context.dataStore.edit { it[CONTEXT_COMPACT_ENABLED] = enabled }
-    }
-    suspend fun saveContextCompactModel(model: String?) {
-        context.dataStore.edit { prefs ->
-            if (model == null) prefs.remove(CONTEXT_COMPACT_MODEL) else prefs[CONTEXT_COMPACT_MODEL] = model
-        }
-    }
-    suspend fun saveContextCompactPrompt(prompt: String) {
-        context.dataStore.edit { prefs ->
-            if (prompt.isBlank()) prefs.remove(CONTEXT_COMPACT_PROMPT) else prefs[CONTEXT_COMPACT_PROMPT] = prompt
-        }
-    }
-    suspend fun saveContextCompactRetainCount(count: Int) {
-        require(count >= 0)
-        context.dataStore.edit { it[CONTEXT_COMPACT_RETAIN_COUNT] = count }
-    }
-    suspend fun saveContextCompactPreserveSystemPrompt(enabled: Boolean) {
-        context.dataStore.edit { it[CONTEXT_COMPACT_PRESERVE_SYSTEM_PROMPT] = enabled }
-    }
+    suspend fun saveContextCompactEnabled(enabled: Boolean) = generationParameters.saveContextCompactEnabled(enabled)
+    suspend fun saveContextCompactModel(model: String?) = generationParameters.saveContextCompactModel(model)
+    suspend fun saveContextCompactPrompt(prompt: String) = generationParameters.saveContextCompactPrompt(prompt)
+    suspend fun saveContextCompactRetainCount(count: Int) = generationParameters.saveContextCompactRetainCount(count)
+    suspend fun saveContextCompactPreserveSystemPrompt(enabled: Boolean) =
+        generationParameters.saveContextCompactPreserveSystemPrompt(enabled)
 
-    suspend fun saveContextCompactThresholdPercent(percent: Int) {
-        require(percent in CONTEXT_COMPACT_THRESHOLD_PERCENT_RANGE)
-        context.dataStore.edit { it[CONTEXT_COMPACT_THRESHOLD_PERCENT] = percent }
-    }
+    suspend fun saveContextCompactThresholdPercent(percent: Int) =
+        generationParameters.saveContextCompactThresholdPercent(percent)
 
-    suspend fun saveTitleGenerationModel(model: String?) {
-        context.dataStore.edit {
-            if (model == null) it.remove(TITLE_GENERATION_MODEL)
-            else it[TITLE_GENERATION_MODEL] = model
-        }
-    }
-    suspend fun saveTitleGenerationPrompt(prompt: String) {
-        context.dataStore.edit {
-            if (prompt.isBlank()) it.remove(TITLE_GENERATION_PROMPT)
-            else it[TITLE_GENERATION_PROMPT] = prompt
-        }
-    }
-    suspend fun saveImageTranscriptionEnabledModels(models: Set<String>) {
-        context.dataStore.edit { it[IMAGE_TRANSCRIPTION_ENABLED_MODELS] = models }
-    }
-    suspend fun saveImageTranscriptionEnabled(enabled: Boolean) {
-        context.dataStore.edit { it[IMAGE_TRANSCRIPTION_ENABLED] = enabled }
-    }
-    suspend fun saveImageTranscriptionModel(model: String?) {
-        context.dataStore.edit {
-            if (model == null) it.remove(IMAGE_TRANSCRIPTION_MODEL)
-            else it[IMAGE_TRANSCRIPTION_MODEL] = model
-        }
-    }
-    suspend fun saveImageTranscriptionBatchSize(size: Int) {
-        context.dataStore.edit { it[IMAGE_TRANSCRIPTION_BATCH_SIZE] = size.coerceIn(1, 10) }
-    }
-    suspend fun saveImageTranscriptionPrompt(prompt: String) {
-        context.dataStore.edit {
-            if (prompt.isBlank()) it.remove(IMAGE_TRANSCRIPTION_PROMPT)
-            else it[IMAGE_TRANSCRIPTION_PROMPT] = prompt
-        }
-    }
+    suspend fun saveTitleGenerationModel(model: String?) = generationParameters.saveTitleGenerationModel(model)
+    suspend fun saveTitleGenerationPrompt(prompt: String) = generationParameters.saveTitleGenerationPrompt(prompt)
+    suspend fun saveImageTranscriptionEnabledModels(models: Set<String>) =
+        generationParameters.saveImageTranscriptionEnabledModels(models)
+    suspend fun saveImageTranscriptionEnabled(enabled: Boolean) =
+        generationParameters.saveImageTranscriptionEnabled(enabled)
+    suspend fun saveImageTranscriptionModel(model: String?) = generationParameters.saveImageTranscriptionModel(model)
+    suspend fun saveImageTranscriptionBatchSize(size: Int) = generationParameters.saveImageTranscriptionBatchSize(size)
+    suspend fun saveImageTranscriptionPrompt(prompt: String) = generationParameters.saveImageTranscriptionPrompt(prompt)
     suspend fun saveShowDocumentationFab(enabled: Boolean) {
         context.dataStore.edit { it[SHOW_DOCUMENTATION_FAB] = enabled }
     }
@@ -654,8 +467,32 @@ class SettingsManager(private val context: Context) {
     suspend fun saveAskUserEnabled(enabled: Boolean) {
         context.dataStore.edit { it[ASK_USER_ENABLED] = enabled }
     }
+    suspend fun saveAskUserTimeoutMinutes(minutes: Int) {
+        context.dataStore.edit { it[ASK_USER_TIMEOUT_MINUTES] = normalizeAskUserTimeoutMinutes(minutes) }
+    }
+    suspend fun saveTodoEnabled(enabled: Boolean) {
+        context.dataStore.edit { it[TODO_ENABLED] = enabled }
+    }
+    suspend fun saveSubagentMaxTotal(value: Int) = saveSubagentLimits(maxTotal = value)
+    suspend fun saveSubagentMaxConcurrent(value: Int) = saveSubagentLimits(maxConcurrent = value)
+    internal suspend fun saveSubagentLimits(maxTotal: Int? = null, maxConcurrent: Int? = null) {
+        context.dataStore.edit { prefs ->
+            val previousTotal = normalizeSubagentMaxTotal(prefs[SUBAGENT_MAX_TOTAL])
+            val total = normalizeSubagentMaxTotal(maxTotal ?: previousTotal)
+            val concurrent = maxConcurrent ?: normalizeSubagentMaxConcurrent(prefs[SUBAGENT_MAX_CONCURRENT], previousTotal)
+            prefs[SUBAGENT_MAX_TOTAL] = total
+            prefs[SUBAGENT_MAX_CONCURRENT] = normalizeSubagentMaxConcurrent(concurrent, total)
+        }
+    }
+    suspend fun saveSubagentCapsuleDisplayMode(mode: String) {
+        context.dataStore.edit { it[SUBAGENT_CAPSULE_DISPLAY_MODE] = SubagentCapsuleDisplayModes.normalize(mode) }
+    }
+    suspend fun saveSubagentToolsEnabled(enabled: Boolean) {
+        context.dataStore.edit { it[SUBAGENT_TOOLS_ENABLED] = enabled }
+    }
+    suspend fun saveSubagentDeleteEnabled(enabled: Boolean) { context.dataStore.edit { it[SUBAGENT_DELETE_ENABLED] = enabled } }
     suspend fun saveShellDevices(devices: List<ShellDeviceConfig>) {
-        context.dataStore.edit { it[SHELL_DEVICES_JSON] = com.newoether.agora.util.SecretCrypto.encrypt(json.encodeToString(devices)) }
+        context.dataStore.edit { it[SHELL_DEVICES_JSON] = encryptShellDevices(devices, json) }
     }
     suspend fun saveMcpServers(servers: List<McpServerConfig>) {
         context.dataStore.edit {

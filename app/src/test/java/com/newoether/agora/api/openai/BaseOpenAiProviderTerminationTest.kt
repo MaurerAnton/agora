@@ -450,9 +450,10 @@ class BaseOpenAiProviderTerminationTest : OpenAiSseTestFixture() {
     }
 
     @Test
-    fun responsesHostedWebSearchWithoutDoneFailsClosed() = withServer(
+    fun responsesHostedWebSearchWithoutDoneRetriesBeforeOneFinalParseError() = withServer(
         terminalGraceMillis = 100L,
         responsesApiEnabled = true,
+        connectionCount = 6,
         response = { socket, _ ->
             socket.writeSse(
                 """{"type":"response.output_item.added","sequence_number":1,"output_index":0,"item":{"id":"ws_1","type":"web_search_call","status":"in_progress"}}""",
@@ -461,11 +462,13 @@ class BaseOpenAiProviderTerminationTest : OpenAiSseTestFixture() {
                 """{"type":"response.completed","sequence_number":2,"response":{"status":"completed"}}""",
             )
         },
-    ) { provider, config, _ ->
+    ) { provider, config, server ->
         val events = collect(provider, config)
 
-        assertEquals(1, events.filterIsInstance<StreamEvent.HostedToolCallUpdate>().size)
-        assertEquals(1, events.filterIsInstance<StreamEvent.Error>().size)
+        assertEquals(6, server.requests.size)
+        assertEquals(6, events.filterIsInstance<StreamEvent.HostedToolCallUpdate>().size)
+        assertEquals((1..5).map { StreamEvent.Retrying(it, 5, resetCurrentAttempt = true) }, events.filterIsInstance<StreamEvent.Retrying>())
+        assertTrue(events.filterIsInstance<StreamEvent.Error>().single().error is GenerationError.SseParse)
         assertTrue(events.none { it is StreamEvent.ToolCallRequest })
     }
 
@@ -494,22 +497,20 @@ class BaseOpenAiProviderTerminationTest : OpenAiSseTestFixture() {
     }
 
     @Test
-    fun responsesHostedWebSearchRejectsDoneIdentityChange() = withServer(
-        terminalGraceMillis = 100L,
-        responsesApiEnabled = true,
-        response = { socket, _ ->
-            socket.writeSse(
-                """{"type":"response.output_item.added","sequence_number":1,"output_index":0,"item":{"id":"ws_1","type":"web_search_call","status":"in_progress"}}""",
-            )
-            socket.writeSse(
-                """{"type":"response.output_item.done","sequence_number":2,"output_index":0,"item":{"id":"ws_2","type":"web_search_call","status":"completed","action":{"type":"search","query":"Agora"}}}""",
-            )
-        },
-    ) { provider, config, _ ->
-        val events = collect(provider, config)
-
+    fun responsesHostedWebSearchIdentityParseFailureRetriesWithResetThenSucceeds() {
+        val events = collectWithMockedStream(
+            listOf(
+                """data: {"type":"response.output_item.added","sequence_number":1,"output_index":0,"item":{"id":"ws_1","type":"web_search_call","status":"in_progress"}}""",
+                """data: {"type":"response.output_item.done","sequence_number":2,"output_index":0,"item":{"id":"ws_2","type":"web_search_call","status":"completed","action":{"type":"search","query":"Agora"}}}""",
+                """data: {"type":"response.output_text.delta","sequence_number":1,"delta":"replacement"}""",
+                """data: {"type":"response.completed","sequence_number":2,"response":{"status":"completed"}}""",
+            ),
+            responsesApiEnabled = true,
+        )
         assertEquals(1, events.filterIsInstance<StreamEvent.HostedToolCallUpdate>().size)
-        assertEquals(1, events.filterIsInstance<StreamEvent.Error>().size)
+        assertEquals(StreamEvent.Retrying(1, 5, resetCurrentAttempt = true), events.filterIsInstance<StreamEvent.Retrying>().single())
+        assertEquals("replacement", events.filterIsInstance<StreamEvent.TextChunk>().single().text)
+        assertTrue(events.none { it is StreamEvent.Error })
         assertTrue(events.none { it is StreamEvent.ToolCallRequest })
     }
 
@@ -643,7 +644,7 @@ class BaseOpenAiProviderTerminationTest : OpenAiSseTestFixture() {
     }
 
     @Test
-    fun responseBodyReadRetryHonorsCurrentPassOutputBoundary() {
+    fun responseBodyReadRetryResetsPartialCurrentAttemptAndKeepsCompletedToolHistory() {
         val matching = IOException("The server response could not be read.")
         val success = "data: {\"choices\":[{\"index\":0,\"delta\":{\"content\":\"complete\"},\"finish_reason\":\"stop\"}]}"
 
@@ -651,12 +652,13 @@ class BaseOpenAiProviderTerminationTest : OpenAiSseTestFixture() {
             listOf(matching, "data: {\"type\":\"response.completed\",\"sequence_number\":1,\"response\":{\"status\":\"completed\"}}"),
             responsesApiEnabled = true,
         )
-        assertEquals(StreamEvent.Retrying(1, 5), responses.filterIsInstance<StreamEvent.Retrying>().single())
+        assertEquals(StreamEvent.Retrying(1, 5, resetCurrentAttempt = true), responses.filterIsInstance<StreamEvent.Retrying>().single())
         val partial = collectWithMockedStream(
-            listOf("data: {\"choices\":[{\"index\":0,\"delta\":{\"content\":\"partial\"}}]}", matching),
+            listOf("data: {\"choices\":[{\"index\":0,\"delta\":{\"content\":\"partial\"}}]}", matching, success, "data: [DONE]"),
         )
-        assertTrue(partial.none { it is StreamEvent.Retrying })
-        assertTrue(partial.filterIsInstance<StreamEvent.Error>().single().error is GenerationError.Network)
+        assertEquals(StreamEvent.Retrying(1, 5, resetCurrentAttempt = true), partial.filterIsInstance<StreamEvent.Retrying>().single())
+        assertEquals(listOf("partial", "complete"), partial.filterIsInstance<StreamEvent.TextChunk>().map { it.text })
+        assertTrue(partial.none { it is StreamEvent.Error })
         val toolCall = ToolCallData("file_edit", "{}", "", toolCallId = "call-1")
         val afterTool = collectWithMockedStream(
             reads = listOf(matching, success, "data: [DONE]"),
@@ -666,7 +668,7 @@ class BaseOpenAiProviderTerminationTest : OpenAiSseTestFixture() {
                 ChatMessage("result_call", text = "done", participant = Participant.USER, toolCall = toolCall.copy(result = "done")),
             ),
         )
-        assertEquals(1, afterTool.filterIsInstance<StreamEvent.Retrying>().size)
+        assertEquals(StreamEvent.Retrying(1, 5, resetCurrentAttempt = true), afterTool.filterIsInstance<StreamEvent.Retrying>().single())
         assertEquals("complete", afterTool.filterIsInstance<StreamEvent.TextChunk>().single().text)
         val nonmatching = collectWithMockedStream(listOf(IOException("unexpected stream reset")))
         assertTrue(nonmatching.none { it is StreamEvent.Retrying })
@@ -674,22 +676,17 @@ class BaseOpenAiProviderTerminationTest : OpenAiSseTestFixture() {
     }
 
     @Test
-    fun responsesPartialTextThenMalformedSseDoesNotRetryAndReportsOneParseError() = withServer(
-        terminalGraceMillis = 100L,
-        responsesApiEnabled = true,
-        response = { socket, _ ->
-            socket.writeSse(
-                """{"type":"response.output_text.delta","sequence_number":1,"delta":"partial"}"""
-            )
-            socket.writeSse("not-json")
-        },
-    ) { provider, config, server ->
-        val events = collect(provider, config)
-        assertEquals(1, server.requests.size)
-        assertTrue(events.none { it is StreamEvent.Retrying })
-        assertEquals("partial", events.filterIsInstance<StreamEvent.TextChunk>().single().text)
+    fun responsesPartialTextThenMalformedSseRetriesBeforeOneExhaustedParseError() {
+        val attempt = listOf(
+            """data: {"type":"response.output_text.delta","sequence_number":1,"delta":"partial"}""",
+            "data: not-json",
+        )
+        val events = collectWithMockedStream(List(6) { attempt }.flatten(), responsesApiEnabled = true)
+        assertEquals((1..5).map { StreamEvent.Retrying(it, 5, resetCurrentAttempt = true) }, events.filterIsInstance<StreamEvent.Retrying>())
+        assertEquals(List(6) { "partial" }, events.filterIsInstance<StreamEvent.TextChunk>().map { it.text })
         assertEquals(1, events.filterIsInstance<StreamEvent.Error>().size)
         assertTrue(events.filterIsInstance<StreamEvent.Error>().single().error is GenerationError.SseParse)
+        assertTrue(events.indexOfLast { it is StreamEvent.Retrying } < events.indexOfFirst { it is StreamEvent.Error })
     }
 
     @Test
@@ -698,7 +695,7 @@ class BaseOpenAiProviderTerminationTest : OpenAiSseTestFixture() {
             listOf("data: not-json", "data: {\"type\":\"response.completed\",\"sequence_number\":1,\"response\":{\"status\":\"completed\"}}"),
             responsesApiEnabled = true,
         )
-        assertEquals(StreamEvent.Retrying(1, 5), retried.filterIsInstance<StreamEvent.Retrying>().single())
+        assertEquals(StreamEvent.Retrying(1, 5, resetCurrentAttempt = true), retried.filterIsInstance<StreamEvent.Retrying>().single())
         assertTrue(retried.none { it is StreamEvent.Error })
     }
 

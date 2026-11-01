@@ -36,6 +36,18 @@ internal class SettingsModelPreferenceStore(
     private val dataStore: DataStore<Preferences>,
     private val json: Json,
 ) {
+    val localModelIdleRetentionMinutes: Flow<Int> = dataStore.data.map {
+        normalizeLocalModelIdleRetentionMinutes(it[LOCAL_MODEL_IDLE_RETENTION_MINUTES])
+    }
+    val localLowContextModeEnabled: Flow<Boolean> = dataStore.data.map {
+        it[LOCAL_LOW_CONTEXT_MODE_ENABLED] ?: DEFAULT_LOCAL_LOW_CONTEXT_MODE_ENABLED
+    }
+    suspend fun saveLocalModelIdleRetentionMinutes(minutes: Int) {
+        dataStore.edit { it[LOCAL_MODEL_IDLE_RETENTION_MINUTES] = normalizeLocalModelIdleRetentionMinutes(minutes) }
+    }
+    suspend fun saveLocalLowContextModeEnabled(enabled: Boolean) {
+        dataStore.edit { it[LOCAL_LOW_CONTEXT_MODE_ENABLED] = enabled }
+    }
     val selectedModel: Flow<String> = dataStore.data.map { it[SELECTED_MODEL] ?: Constants.EXAMPLE_MODEL_ID }
     val anthropicCacheEnabled: Flow<Boolean> = dataStore.data.map { it[ANTHROPIC_CACHE_ENABLED] ?: true }
     val anthropicCacheTtl: Flow<String> = dataStore.data.map { it[ANTHROPIC_CACHE_TTL] ?: "1h" }
@@ -87,6 +99,59 @@ internal class SettingsModelPreferenceStore(
         dataStore.data.map { it[CUSTOM_MODELS] ?: emptySet() }
 
     val enabledModels: Flow<Set<String>> = dataStore.data.map { it[ENABLED_MODELS] ?: emptySet() }
+    val subagentEnabledModels: Flow<Set<String>?> = dataStore.data.map { it[SUBAGENT_ENABLED_MODELS] }
+    val subagentRecommendedModel: Flow<String?> = dataStore.data.map { it[SUBAGENT_RECOMMENDED_MODEL] }
+    val subagentModelIds: Flow<Set<String>> = dataStore.data.map { it.allowedSubagentModels() }
+
+    private fun Preferences.allowedSubagentModels(): Set<String> {
+        val enabled = this[ENABLED_MODELS] ?: emptySet()
+        return this[SUBAGENT_ENABLED_MODELS].orEmpty().intersect(enabled)
+    }
+
+    private fun MutablePreferences.clearInvalidSubagentRecommendation() {
+        if (this[SUBAGENT_RECOMMENDED_MODEL] !in allowedSubagentModels()) {
+            remove(SUBAGENT_RECOMMENDED_MODEL)
+        }
+    }
+
+    suspend fun saveSubagentEnabledModels(models: Set<String>?, merge: Boolean = false) {
+        dataStore.edit { prefs ->
+            when {
+                models == null && merge -> Unit
+                models == null -> prefs.remove(SUBAGENT_ENABLED_MODELS)
+                merge -> prefs[SUBAGENT_ENABLED_MODELS] =
+                    prefs[SUBAGENT_ENABLED_MODELS].orEmpty() + models
+                else -> prefs[SUBAGENT_ENABLED_MODELS] = models
+            }
+            prefs.clearInvalidSubagentRecommendation()
+        }
+    }
+
+    suspend fun addSubagentModels(models: Set<String>) {
+        dataStore.edit { prefs ->
+            val additions = models.intersect(prefs[ENABLED_MODELS].orEmpty())
+            if (additions.isEmpty()) return@edit
+            prefs[SUBAGENT_ENABLED_MODELS] =
+                prefs[SUBAGENT_ENABLED_MODELS].orEmpty() + additions
+        }
+    }
+
+    suspend fun removeSubagentModel(model: String) {
+        dataStore.edit { prefs ->
+            prefs[SUBAGENT_ENABLED_MODELS] =
+                prefs[SUBAGENT_ENABLED_MODELS].orEmpty() - model
+            prefs.clearInvalidSubagentRecommendation()
+        }
+    }
+
+    suspend fun saveSubagentRecommendedModel(model: String?) {
+        dataStore.edit { prefs ->
+            // A settings picker may have become stale while it was open.
+            if (model != null && model !in prefs.allowedSubagentModels()) return@edit
+            if (model == null) prefs.remove(SUBAGENT_RECOMMENDED_MODEL)
+            else prefs[SUBAGENT_RECOMMENDED_MODEL] = model
+        }
+    }
 
     val modelAliases: Flow<Map<String, String>> = dataStore.data.map { pref ->
         val jsonStr = pref[MODEL_ALIASES_JSON] ?: "{}"
@@ -302,6 +367,9 @@ internal class SettingsModelPreferenceStore(
                 (prefs[IMAGE_TRANSCRIPTION_ENABLED_MODELS] ?: emptySet())
                     .replaceModelReference(oldModelId, newModelId)
             prefs[IMAGE_TRANSCRIPTION_ENABLED_MODELS] = updatedTranscriptionTargets
+            prefs[SUBAGENT_ENABLED_MODELS]?.let {
+                prefs[SUBAGENT_ENABLED_MODELS] = it.replaceModelReference(oldModelId, newModelId)
+            }
 
             fun replaceNullableReference(key: androidx.datastore.preferences.core.Preferences.Key<String>) {
                 when (
@@ -319,11 +387,15 @@ internal class SettingsModelPreferenceStore(
             replaceNullableReference(IMAGE_TRANSCRIPTION_MODEL)
             replaceNullableReference(IMAGE_GEN_MODEL)
             replaceNullableReference(CONTEXT_COMPACT_MODEL)
+            replaceNullableReference(SUBAGENT_RECOMMENDED_MODEL)
         }
     }
 
     suspend fun saveEnabledModels(models: Set<String>) {
-        dataStore.edit { it[ENABLED_MODELS] = models }
+        dataStore.edit {
+            it[ENABLED_MODELS] = models
+            it.clearInvalidSubagentRecommendation()
+        }
     }
 
     suspend fun saveModelAliases(aliases: Map<String, String>) {
@@ -503,6 +575,9 @@ internal class SettingsModelPreferenceStore(
             val rawCustomModels = prefs[CUSTOM_MODELS]
             val rawEnabledModels = prefs[ENABLED_MODELS]
             val rawTranscriptionModels = prefs[IMAGE_TRANSCRIPTION_ENABLED_MODELS]
+            val rawSubagentModels = prefs[SUBAGENT_ENABLED_MODELS]
+            val subagentModels = rawSubagentModels?.mapTo(linkedSetOf(), ::remap).orEmpty()
+            if (rawSubagentModels != null) prefs[SUBAGENT_ENABLED_MODELS] = subagentModels
             val customModels = rawCustomModels?.mapTo(linkedSetOf(), ::remap).orEmpty()
             val enabledModels = rawEnabledModels?.mapTo(linkedSetOf(), ::remap).orEmpty()
             val transcriptionModels = rawTranscriptionModels
@@ -516,6 +591,7 @@ internal class SettingsModelPreferenceStore(
             modelReferencesChanged =
                 (rawCustomModels != null && rawCustomModels != customModels) ||
                 (rawEnabledModels != null && rawEnabledModels != enabledModels) ||
+                (rawSubagentModels != null && rawSubagentModels != subagentModels) ||
                 (rawTranscriptionModels != null &&
                     rawTranscriptionModels != transcriptionModels)
             val scalarKeys = listOf(
@@ -524,6 +600,7 @@ internal class SettingsModelPreferenceStore(
                 IMAGE_TRANSCRIPTION_MODEL,
                 IMAGE_GEN_MODEL,
                 CONTEXT_COMPACT_MODEL,
+                SUBAGENT_RECOMMENDED_MODEL,
             )
             val scalarModels = scalarKeys.mapNotNull { key ->
                 prefs[key]?.let { modelId ->
@@ -554,6 +631,7 @@ internal class SettingsModelPreferenceStore(
                         addAll(customModels)
                         addAll(enabledModels)
                         addAll(transcriptionModels)
+                        addAll(subagentModels)
                         addAll(scalarModels)
                         remappedCatalogs?.values?.forEach(::addAll)
                     },
@@ -572,7 +650,7 @@ internal class SettingsModelPreferenceStore(
             prefs[MODEL_PROVIDER_NAMES_JSON] = json.encodeToString(
                 repairOrphanedCustomProviderPreferenceKeys(
                     aliases = remappedVisibility,
-                    knownModelReferences = customModels + enabledModels + transcriptionModels +
+                    knownModelReferences = customModels + enabledModels + transcriptionModels + subagentModels +
                         scalarModels + remappedCatalogs.orEmpty().values.flatten(),
                     activeProviderIds = normalization.providers.mapTo(linkedSetOf()) { it.providerId },
                 ),

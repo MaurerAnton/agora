@@ -40,8 +40,8 @@ class ContextCompactTest {
             )
         )
 
-        assertEquals(1, canonical.size)
-        assertEquals("summary\n\nnew request", canonical.single().text)
+        assertEquals(listOf("context_summary_compact_boundary", "u1"), canonical.map { it.id })
+        assertEquals(listOf("summary", "new request"), canonical.map { it.text })
         assertTrue(canonical.none { it.text.contains("<context_summary>") })
     }
 
@@ -55,12 +55,12 @@ class ContextCompactTest {
 
         val prepared = prepareMessages(source, contextTokenBudget = 4_096)
 
-        assertEquals(1, prepared.size)
+        assertEquals(listOf("context_summary_compact_boundary", "u1"), prepared.map { it.id })
         assertEquals(
-            "<context_summary>\nsummary\n</context_summary>\n\nnew request",
-            prepared.single().text,
+            listOf("<context_summary>\nsummary\n</context_summary>", "new request"),
+            prepared.map { it.text },
         )
-        assertTrue(prepared.single().text.contains("Please continue.").not())
+        assertTrue(prepared.none { it.text.contains("Please continue.") })
         assertEquals("summary", source[1].text)
         assertTrue(source.none { it.text.contains("<context_summary>") })
     }
@@ -291,8 +291,9 @@ class ContextCompactTest {
         val canonical = canonicalContextMessages(history)
         val prepared = prepareMessages(history, contextTokenBudget = 4_096)
 
-        assertEquals(listOf("old\n\nordinary follow-up"), canonical.map { it.text })
-        assertEquals(canonical.map { it.text }, prepared.map { it.text })
+        assertEquals(listOf("u0", "u1"), canonical.map { it.id })
+        assertEquals(listOf("old", "ordinary follow-up"), canonical.map { it.text })
+        assertEquals(canonical, prepared)
         assertTrue(canonical.none { it.text.contains("private partial summary") })
         assertTrue(prepared.none { it.text.contains("<context_summary>") })
         assertTrue(prepared.none { it.text.contains("Please continue.") })

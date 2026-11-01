@@ -8,6 +8,9 @@ import com.newoether.agora.util.Constants
 import com.newoether.agora.util.SHELL_COMMAND_MAX_BYTES
 import com.newoether.agora.util.SHELL_WORKDIR_MAX_BYTES
 import com.newoether.agora.util.SHELL_FILE_WRITE_MAX_BYTES
+import com.newoether.agora.util.SHELL_FILE_GREP_MAX_CONTEXT_LINES
+import com.newoether.agora.util.ShellGrepOptions
+import com.newoether.agora.util.shellFileSha256
 import com.newoether.agora.viewmodel.GenerationContext
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.CancellationException
@@ -16,6 +19,7 @@ import kotlinx.coroutines.awaitAll
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.collect
 import kotlinx.coroutines.flow.flow
+import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.supervisorScope
 import kotlinx.coroutines.withContext
 import kotlinx.coroutines.withTimeoutOrNull
@@ -113,7 +117,7 @@ class ShellToolProvider(
             "Unknown server: $serverName. Use ${allNames[0]} or omit the server parameter."
         } else {
             val names = allNames.joinToString(", ")
-            if (serverName.isBlank()) "Multiple servers available. Use list_shells to see them, then specify one: $names."
+            if (serverName.isBlank()) "Multiple servers available. Use shell_list to see them, then specify one: $names."
             else "Unknown server: $serverName. Available: $names."
         }
     }
@@ -142,45 +146,61 @@ class ShellToolProvider(
         ShellToolDefinitions.build(ctx)
 
     override suspend fun execute(name: String, arguments: String, ctx: GenerationContext): String {
-        return when (name) {
-            "list_shells" -> listShells(ctx)
-            "execute_shell_command" -> executeShellCommand(arguments, ctx)
-            "list_shell_jobs" -> durableJobs.listShellJobs(arguments, ctx)
-            "get_shell_job" -> durableJobs.getShellJob(arguments, ctx)
-            "wait_for_job" -> durableJobs.waitForShellJob(arguments, ctx)
-            "stop_shell_job" -> stopShellJob(arguments, ctx)
+        return when (BuiltInToolNames.canonical(name)) {
+            "shell_list" -> listShells(ctx)
+            "shell_exec" -> executeShellCommand(arguments, ctx)
+            "shell_job_list" -> durableJobs.listShellJobs(arguments, ctx)
+            "shell_job_get" -> durableJobs.getShellJob(arguments, ctx)
+            "shell_job_wait" -> durableJobs.waitForShellJob(arguments, ctx)
+            "shell_job_stop" -> stopShellJob(arguments, ctx)
             "file_read" -> executeFileRead(arguments, ctx)
             "file_write" -> executeFileWrite(arguments, ctx)
-            "file_edit" -> executeFileEdit(arguments, ctx)
+            "file_edit" -> executeFileEdit(arguments, ctx, "file_edit")
+            "file_multi_edit" -> executeFileEdit(arguments, ctx, "file_multi_edit")
             "file_glob" -> executeFileGlob(arguments, ctx)
             "file_grep" -> executeFileGrep(arguments, ctx)
-            "view_image" -> executeViewImage(arguments, ctx).text
+            "file_view_image" -> executeViewImage(arguments, ctx).text
             else -> "Unknown tool: $name"
         }
     }
+
+    override suspend fun executeOneShotResult(
+        name: String,
+        arguments: String,
+        ctx: GenerationContext,
+    ): ToolExecutionResult = shellModelFacingResult(name, arguments, ToolExecutionResult(execute(name, arguments, ctx)))
 
     override fun executeEvents(
         name: String,
         arguments: String,
         ctx: GenerationContext,
+    ): Flow<ToolExecutionEvent> = executeRawEvents(name, arguments, ctx).map { event ->
+        if (event !is ToolExecutionEvent.Completed) event
+        else ToolExecutionEvent.Completed(shellModelFacingResult(name, arguments, event.result))
+    }
+
+    private fun executeRawEvents(
+        name: String,
+        arguments: String,
+        ctx: GenerationContext,
     ): Flow<ToolExecutionEvent> {
-        return when (name) {
-            "execute_shell_command" -> executeShellCommandEvents(arguments, ctx)
-            "wait_for_job" -> waitForShellJobEvents(arguments, ctx)
-            "view_image" -> flow {
+        return when (BuiltInToolNames.canonical(name)) {
+            "shell_exec" -> executeShellCommandEvents(arguments, ctx)
+            "shell_job_wait" -> waitForShellJobEvents(arguments, ctx)
+            "file_view_image" -> flow {
                 emit(ToolExecutionEvent.Completed(executeViewImage(arguments, ctx)))
             }
             else -> super<ToolProvider>.executeEvents(name, arguments, ctx)
         }
     }
 
-    override fun handles(name: String): Boolean = name in setOf(
-        "list_shells", "execute_shell_command",
-        "list_shell_jobs", "get_shell_job", "wait_for_job", "stop_shell_job",
-        "file_read", "file_write", "file_edit", "file_glob", "file_grep", "view_image"
+    override fun handles(name: String): Boolean = BuiltInToolNames.canonical(name) in setOf(
+        "shell_list", "shell_exec",
+        "shell_job_list", "shell_job_get", "shell_job_wait", "shell_job_stop",
+        "file_read", "file_write", "file_edit", "file_multi_edit", "file_glob", "file_grep", "file_view_image"
     )
 
-    // ── list_shells ────────────────────────────────────────
+    // ── shell_list ────────────────────────────────────────
 
     private suspend fun listShells(ctx: GenerationContext): String {
         val items = buildList {
@@ -205,7 +225,7 @@ class ShellToolProvider(
             }
         }
         return buildJsonObject {
-            put("type", "list_shells")
+            put("type", "shell_list")
             putJsonArray("devices") { items.forEach { add(it) } }
         }.toString()
     }
@@ -215,11 +235,11 @@ class ShellToolProvider(
     private suspend fun executeShellCommand(arguments: String, ctx: GenerationContext): String {
         val args = parseToolArgs(arguments)
         val command = arg(args, "command")
-        if (command.isBlank()) return jsonError("execute_shell_command", "no_command")
+        if (command.isBlank()) return jsonError("shell_exec", "no_command")
         val serverName = arg(args, "server")
         val workdir = arg(args, "workdir")
         shellCommandValidationError(command, workdir)?.let { message ->
-            return jsonError("execute_shell_command", message, server = serverName)
+            return jsonError("shell_exec", message, server = serverName)
         }
         val background = boolArg(args, "background")
         val foregroundMaxMs = Constants.TOOL_EXECUTION_TIMEOUT_MS.toInt()
@@ -230,11 +250,11 @@ class ShellToolProvider(
         }
         val rawTimeout = arg(args, "timeout_ms")
         if (rawTimeout.isBlank()) return jsonError(
-            "execute_shell_command", "timeout_ms is required", server = serverName, command = command,
+            "shell_exec", "timeout_ms is required", server = serverName, command = command,
         )
         val timeoutMs = (rawTimeout.toIntOrNull()
             ?: return jsonError(
-                "execute_shell_command",
+                "shell_exec",
                 "timeout_ms must be an integer, got \"$rawTimeout\"",
                 server = serverName,
                 command = command,
@@ -242,7 +262,7 @@ class ShellToolProvider(
         if (background) {
             val backend = getConchBackend(serverName, ctx)
                 ?: return jsonError(
-                    "execute_shell_command",
+                    "shell_exec",
                     conchServerNotFoundMessage(serverName, ctx),
                     server = serverName,
                     command = command,
@@ -250,18 +270,18 @@ class ShellToolProvider(
             return try {
                 if (!confirmTarget(ctx, backend.device, "start background job: $ $command")) {
                     return jsonError(
-                        "execute_shell_command",
+                        "shell_exec",
                         "denied_by_user: the user declined to run this background command",
                         server = backend.device.name,
                         command = command,
                     )
                 }
-                backend.startJob(command, workdir, timeoutMs)
+                backend.startJob(command, workdir, timeoutMs, arg(args, "description"))
             } catch (cancelled: CancellationException) {
                 throw cancelled
             } catch (e: Exception) {
                 jsonError(
-                    "execute_shell_command",
+                    "shell_exec",
                     e.message ?: "Failed to start background job",
                     server = backend.device.name,
                     command = command,
@@ -272,7 +292,7 @@ class ShellToolProvider(
         }
 
         val backend = getBackend(serverName, ctx)
-            ?: return jsonError("execute_shell_command", serverNotFoundMessage(serverName, ctx))
+            ?: return jsonError("shell_exec", serverNotFoundMessage(serverName, ctx))
         return try {
             // Gate on the backend's ACTUAL target: with a blank server name the sandbox wins
             // resolution, while resolveShellDevice() would name an unrelated remote device.
@@ -284,7 +304,7 @@ class ShellToolProvider(
                         backend.device == null && ctx.sandboxSharedStorageEnabled,
                 )
             ) {
-                return jsonError("execute_shell_command", "denied_by_user: the user declined to run this command", server = serverName, command = command)
+                return jsonError("shell_exec", "denied_by_user: the user declined to run this command", server = serverName, command = command)
             }
             if (backend is ConchBackend) {
                 durableJobs.executeDurableForeground(
@@ -292,6 +312,7 @@ class ShellToolProvider(
                     command = command,
                     workdir = workdir,
                     waitMs = timeoutMs.coerceAtMost(maxWaitMs(ctx)),
+                    description = arg(args, "description"),
                 )
             } else {
                 backend.executeCommand(command, workdir, timeoutMs)
@@ -314,7 +335,7 @@ class ShellToolProvider(
         val args = parseToolArgs(arguments)
         val command = arg(args, "command")
         if (command.isBlank()) {
-            emit(ToolExecutionEvent.Completed(jsonError("execute_shell_command", "no_command")))
+            emit(ToolExecutionEvent.Completed(jsonError("shell_exec", "no_command")))
             return@flow
         }
         val serverName = arg(args, "server")
@@ -322,7 +343,7 @@ class ShellToolProvider(
         shellCommandValidationError(command, workdir)?.let { message ->
             emit(
                 ToolExecutionEvent.Completed(
-                    jsonError("execute_shell_command", message, server = serverName),
+                    jsonError("shell_exec", message, server = serverName),
                 ),
             )
             return@flow
@@ -333,7 +354,7 @@ class ShellToolProvider(
                 emit(
                     ToolExecutionEvent.Completed(
                         jsonError(
-                            "execute_shell_command",
+                            "shell_exec",
                             conchServerNotFoundMessage(serverName, ctx),
                             server = serverName,
                             command = command,
@@ -354,7 +375,7 @@ class ShellToolProvider(
             emit(
                 ToolExecutionEvent.Completed(
                     jsonError(
-                        "execute_shell_command", "timeout_ms is required",
+                        "shell_exec", "timeout_ms is required",
                         server = serverName, command = command,
                     ),
                 ),
@@ -366,7 +387,7 @@ class ShellToolProvider(
                 emit(
                     ToolExecutionEvent.Completed(
                         jsonError(
-                            "execute_shell_command",
+                            "shell_exec",
                             "timeout_ms must be an integer, got \"$rawTimeout\"",
                             server = serverName,
                             command = command,
@@ -379,7 +400,7 @@ class ShellToolProvider(
         if (backend == null) {
             emit(
                 ToolExecutionEvent.Completed(
-                    jsonError("execute_shell_command", serverNotFoundMessage(serverName, ctx)),
+                    jsonError("shell_exec", serverNotFoundMessage(serverName, ctx)),
                 ),
             )
             return@flow
@@ -401,7 +422,7 @@ class ShellToolProvider(
                 emit(
                     ToolExecutionEvent.Completed(
                         jsonError(
-                            "execute_shell_command",
+                            "shell_exec",
                             "denied_by_user: the user declined to run this command",
                             server = serverName,
                             command = command,
@@ -419,6 +440,7 @@ class ShellToolProvider(
                             command = command,
                             workdir = workdir,
                             waitMs = timeoutMs.coerceAtMost(maxWaitMs(ctx)),
+                            description = arg(args, "description"),
                             onOutput = { delta ->
                                 emit(ToolExecutionEvent.OutputDelta(delta))
                             },
@@ -457,18 +479,18 @@ class ShellToolProvider(
     private suspend fun stopShellJob(arguments: String, ctx: GenerationContext): String {
         val args = parseToolArgs(arguments)
         val jobId = arg(args, "job_id")
-        if (jobId.isBlank()) return jsonError("stop_shell_job", "job_id is required")
+        if (jobId.isBlank()) return jsonError("shell_job_stop", "job_id is required")
         val serverName = arg(args, "server")
         val backend = getConchBackend(serverName, ctx)
             ?: return jsonError(
-                "stop_shell_job",
+                "shell_job_stop",
                 conchServerNotFoundMessage(serverName, ctx),
                 server = serverName,
             )
         return try {
             if (!confirmTarget(ctx, backend.device, "stop background shell job: $jobId")) {
                 return jsonError(
-                    "stop_shell_job",
+                    "shell_job_stop",
                     "denied_by_user: the user declined to stop this job",
                     server = backend.device.name,
                 )
@@ -478,7 +500,7 @@ class ShellToolProvider(
             throw cancelled
         } catch (e: Exception) {
             jsonError(
-                "stop_shell_job",
+                "shell_job_stop",
                 e.message ?: "Failed to stop shell job",
                 server = backend.device.name,
             )
@@ -497,7 +519,7 @@ class ShellToolProvider(
         val path = arg(args, "path")
         if (path.isBlank()) {
             return ToolExecutionResult(
-                text = jsonError("view_image", "path is required"),
+                text = jsonError("file_view_image", "path is required"),
                 isError = true,
             )
         }
@@ -505,7 +527,7 @@ class ShellToolProvider(
         val store = imageStore
             ?: return ToolExecutionResult(
                 text = jsonError(
-                    "view_image",
+                    "file_view_image",
                     "Tool image storage is unavailable",
                     server = serverName,
                 ),
@@ -514,7 +536,7 @@ class ShellToolProvider(
         val backend = getConchBackend(serverName, ctx)
             ?: return ToolExecutionResult(
                 text = jsonError(
-                    "view_image",
+                    "file_view_image",
                     conchServerNotFoundMessage(serverName, ctx),
                     server = serverName,
                 ),
@@ -525,7 +547,7 @@ class ShellToolProvider(
             if (remote.error != null) {
                 return ToolExecutionResult(
                     text = jsonError(
-                        "view_image",
+                        "file_view_image",
                         remote.error,
                         server = backend.device.name,
                     ),
@@ -541,7 +563,7 @@ class ShellToolProvider(
             }
             ToolExecutionResult(
                 text = buildJsonObject {
-                    put("type", "view_image")
+                    put("type", "file_view_image")
                     put("server", backend.device.name)
                     put("path", path)
                     put("mime_type", attachment.mimeType)
@@ -556,7 +578,7 @@ class ShellToolProvider(
         } catch (error: Exception) {
             ToolExecutionResult(
                 text = jsonError(
-                    "view_image",
+                    "file_view_image",
                     error.message ?: "Failed to load image",
                     server = backend.device.name,
                 ),
@@ -567,51 +589,20 @@ class ShellToolProvider(
         }
     }
 
-    private suspend fun executeFileRead(arguments: String, ctx: GenerationContext): String {
-        val args = parseToolArgs(arguments)
-        val path = arg(args, "path")
-        if (path.isBlank()) return jsonError("file_read", "path is required")
-        val serverName = arg(args, "server")
-        val offset = arg(args, "offset").toLongOrNull() ?: 0L
-        val limit = arg(args, "limit").toLongOrNull() ?: 0L
-
-        val backend = getBackend(serverName, ctx)
-            ?: return jsonError("file_read", serverNotFoundMessage(serverName, ctx))
-        try {
-            val result = try {
-                backend.fileRead(path, offset, limit)
-            } catch (e: CancellationException) {
-                throw e
-            } catch (e: Exception) {
-                return jsonError(
-                    "file_read",
-                    e.message ?: "Read failed",
-                    server = backend.device?.name ?: "Local Sandbox",
-                )
-            }
-            result.error?.let {
-                return jsonError(
-                    "file_read",
-                    it,
-                    server = backend.device?.name ?: "Local Sandbox",
-                )
-            }
-            return boundedFileReadJson(
-                server = backend.device?.name ?: "Local Sandbox",
-                path = path,
-                result = result,
-            )
-        } finally {
-            backend.close()
-        }
-    }
+    private suspend fun executeFileRead(arguments: String, ctx: GenerationContext): String =
+        executeDiskFileRead(
+            arguments = arguments,
+            openBackend = { server -> getBackend(server, ctx) },
+            missingServer = { server -> serverNotFoundMessage(server, ctx) },
+        )
 
     private suspend fun executeFileWrite(arguments: String, ctx: GenerationContext): String {
         val args = parseToolArgs(arguments)
         val path = arg(args, "path")
         if (path.isBlank()) return jsonError("file_write", "path is required")
         val content = arg(args, "content")
-        if (content.isBlank()) return jsonError("file_write", "content is required")
+        // Whitespace-only content is legitimate; only a missing field is an error.
+        if (args["content"] !is JsonPrimitive) return jsonError("file_write", "content is required")
         if (content.toByteArray(Charsets.UTF_8).size > SHELL_FILE_WRITE_MAX_BYTES) {
             return jsonError("file_write", "content exceeds 1MB limit")
         }
@@ -630,28 +621,33 @@ class ShellToolProvider(
             ) {
                 return jsonError("file_write", "denied_by_user: the user declined to write this file", server = serverName)
             }
-            val error = backend.fileWrite(path, content)
+            val error = backend.fileWrite(path, content, arg(args, "expected_sha256").trim())
             if (error != null) return error
             return buildJsonObject {
                 put("type", "file_write"); put("path", path); put("ok", true)
+                put("sha256", shellFileSha256(content.toByteArray(Charsets.UTF_8)))
             }.toString()
         } finally {
             backend.close()
         }
     }
 
-    private suspend fun executeFileEdit(arguments: String, ctx: GenerationContext): String {
+    /**
+     * Serves file_edit and file_multi_edit; each tool parses only its own schema. Successful
+     * results keep type "file_edit" so both render with the same detail view.
+     */
+    private suspend fun executeFileEdit(arguments: String, ctx: GenerationContext, toolName: String): String {
         val args = parseToolArgs(arguments)
         val path = arg(args, "path")
-        if (path.isBlank()) return jsonError("file_edit", "path is required")
-        val oldStr = arg(args, "old_string")
-        if (oldStr.isBlank()) return jsonError("file_edit", "old_string is required")
-        val newStr = arg(args, "new_string")
-        val replaceAll = arg(args, "replace_all").equals("true", ignoreCase = true)
+        if (path.isBlank()) return jsonError(toolName, "path is required")
+        val parsed = if (toolName == "file_multi_edit") parseFileMultiEditArgs(args) else parseFileEditArgs(args)
+        val edits = parsed.getOrElse { e ->
+            return jsonError(toolName, e.message ?: "invalid edit arguments")
+        }
         val serverName = arg(args, "server")
 
         val backend = getBackend(serverName, ctx)
-            ?: return jsonError("file_edit", serverNotFoundMessage(serverName, ctx))
+            ?: return jsonError(toolName, serverNotFoundMessage(serverName, ctx))
         try {
             if (!confirmTarget(
                     ctx,
@@ -661,33 +657,27 @@ class ShellToolProvider(
                         backend.device == null && targetsSharedStorage(path),
                 )
             ) {
-                return jsonError("file_edit", "denied_by_user: the user declined to edit this file", server = serverName)
+                return jsonError(toolName, "denied_by_user: the user declined to edit this file", server = serverName)
             }
             val result = try {
-                backend.fileEdit(path, oldStr, newStr, replaceAll)
+                backend.fileEdit(path, edits, arg(args, "expected_sha256").trim())
             } catch (e: CancellationException) {
                 throw e
             } catch (e: Exception) {
                 return jsonError(
-                    "file_edit",
+                    toolName,
                     e.message ?: "Edit failed",
                     server = backend.device?.name ?: "Local Sandbox",
                 )
             }
             result.error?.let {
                 return jsonError(
-                    "file_edit",
+                    toolName,
                     it,
                     server = backend.device?.name ?: "Local Sandbox",
                 )
             }
-            return buildJsonObject {
-                put("type", "file_edit")
-                put("server", backend.device?.name ?: "Local Sandbox")
-                put("path", path)
-                put("replaced", result.replacements)
-                if (result.sha256.isNotBlank()) put("sha256", result.sha256)
-            }.toString()
+            return fileEditSuccessJson(backend.device?.name ?: "Local Sandbox", path, result, edits.size)
         } finally {
             backend.close()
         }
@@ -728,25 +718,21 @@ class ShellToolProvider(
         val serverName = arg(args, "server")
         val basePath = arg(args, "path")
         val fileGlob = arg(args, "glob")
+        val rawContext = arg(args, "context")
+        val requestedContext = if (rawContext.isBlank()) 0 else rawContext.toIntOrNull()
+            ?: return jsonError("file_grep", "context must be an integer")
+        val context = requestedContext.coerceIn(0, SHELL_FILE_GREP_MAX_CONTEXT_LINES)
+        val options = ShellGrepOptions(
+            caseInsensitive = boolArg(args, "case_insensitive"),
+            context = context,
+        )
 
         val backend = getBackend(serverName, ctx)
             ?: return jsonError("file_grep", serverNotFoundMessage(serverName, ctx))
         try {
-            val result = backend.fileGrep(pattern, basePath, fileGlob)
+            val result = backend.fileGrep(pattern, basePath, fileGlob, options)
             return result.fold(
-                onSuccess = { (matches, truncated) ->
-                    buildJsonObject {
-                        put("type", "file_grep"); put("pattern", pattern)
-                        putJsonArray("matches") {
-                            matches.forEach { m ->
-                                add(buildJsonObject {
-                                    put("path", m.path); put("line", m.line); put("content", m.content)
-                                })
-                            }
-                        }
-                        put("truncated", truncated)
-                    }.toString()
-                },
+                onSuccess = { grep -> fileGrepJson(pattern, grep, contextRequested = context > 0) },
                 onFailure = { e -> jsonError("file_grep", e.message ?: "Unknown error") }
             )
         } finally {

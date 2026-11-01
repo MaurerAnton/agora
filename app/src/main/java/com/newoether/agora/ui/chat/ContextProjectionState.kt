@@ -23,6 +23,12 @@ internal fun rememberContextProjectionInvalidationKey(
     val imageGenEnabled by settings.imageGenEnabled.collectAsState()
     val imageGenModel by settings.imageGenModel.collectAsState()
     val automationToolsEnabled by settings.automationToolsEnabled.collectAsState()
+    val todoEnabled by settings.todoEnabled.collectAsState()
+    val subagentToolsEnabled by settings.subagentToolsEnabled.collectAsState()
+    val subagentDeleteEnabled by settings.subagentDeleteEnabled.collectAsState()
+    val enabledModels by settings.enabledModels.collectAsState()
+    val subagentEnabledModels by settings.subagentEnabledModels.collectAsState()
+    val subagentRecommendedModel by settings.subagentRecommendedModel.collectAsState()
     val sandboxEnabled by settings.sandboxEnabled.collectAsState()
     val sandboxSharedStorageEnabled by settings.sandboxSharedStorageEnabled.collectAsState()
     val mcpServers by viewModel.mcpServerSnapshots.collectAsState()
@@ -40,6 +46,12 @@ internal fun rememberContextProjectionInvalidationKey(
         imageGenEnabled,
         imageGenModel,
         automationToolsEnabled,
+        todoEnabled,
+        subagentToolsEnabled,
+        subagentDeleteEnabled,
+        enabledModels,
+        subagentEnabledModels,
+        subagentRecommendedModel,
         sandboxEnabled,
         sandboxSharedStorageEnabled,
         mcpServers,

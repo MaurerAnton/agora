@@ -129,6 +129,9 @@ object MessagePersistenceGuard {
         if (segments.any { it.responseOutputItems.isNotEmpty() }) {
             error("Responses continuation state exceeds the $maxBytes-byte persistence budget")
         }
+        if (segments.any { it.toolRoundId != null }) {
+            error("Tool round references exceed the $maxBytes-byte persistence budget")
+        }
         return null
     }
 

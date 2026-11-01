@@ -84,7 +84,7 @@
     <string name="prompts_template_blank">Trống</string>
     <string name="prompts_template_blank_desc">Bắt đầu với một gợi ý hệ thống trống có thể chỉnh sửa.</string>
     <string name="prompts_template_default">Mặc định</string>
-    <string name="prompts_template_default_desc">Sử dụng gợi ý mặc định của Agora với ngữ cảnh thời gian chạy, bộ nhớ, tìm kiếm web, shell và hướng dẫn tệp thiết bị.</string>
+    <string name="prompts_template_default_desc">Dùng quy tắc trả lời mặc định của Agora, hướng dẫn công cụ, danh mục kỹ năng và bộ nhớ đang hoạt động.</string>
     <string name="prompts_duplicate">Tạo bản sao</string>
     <string name="prompts_duplicate_title">Bản sao %1$s</string>
     <string name="prompts_empty_preview">Gợi ý trống</string>
@@ -196,12 +196,10 @@
     <string name="tool_call_display_mode">Khối suy nghĩ &amp; công cụ</string>
     <string name="tool_call_display_mode_timeline">Dòng thời gian</string>
     <string name="tool_call_display_mode_grouped_timeline">Nhóm lại</string>
-    <string name="tool_call_display_mode_compact">Thu gọn</string>
     <string name="tool_call_display_mode_timeline_desc">Hiển thị câu trả lời, suy nghĩ và khối công cụ theo thứ tự thời gian</string>
     <string name="tool_call_display_mode_grouped_timeline_desc">Giữ thứ tự dòng thời gian nhưng gộp các khối suy nghĩ, công cụ và hình ảnh liên tiếp</string>
     <string name="auto_expand_active_group">Tự động mở rộng nhóm đang hoạt động</string>
     <string name="auto_expand_active_group_desc">Tự động mở rộng nhóm suy luận và công cụ hiện tại, rồi thu gọn khi mô hình chuyển sang bước tiếp theo.</string>
-    <string name="tool_call_display_mode_compact_desc">Nhóm các khối suy nghĩ và công cụ phía trên câu trả lời</string>
 
     <!-- Settings - Web Search Page -->
     <string name="web_search_title">Tìm kiếm Web</string>
@@ -268,6 +266,15 @@
     <string name="shell_device_port">Cổng</string>
     <string name="shell_device_user">Tên đăng nhập</string>
     <string name="shell_device_password">Mật khẩu</string>
+    <string name="shell_ssh_auth_method">Phương thức xác thực</string>
+    <string name="shell_ssh_auth_private_key">Khóa riêng tư</string>
+    <string name="shell_ssh_import_private_key">Nhập khóa riêng tư</string>
+    <string name="shell_ssh_private_key_desc">Nhập khóa riêng tư SSH có kích thước tối đa 256 KiB.</string>
+    <string name="shell_ssh_private_key_passphrase">Cụm mật khẩu của khóa</string>
+    <string name="shell_ssh_private_key_invalid">Khóa riêng tư SSH không hợp lệ hoặc không được hỗ trợ</string>
+    <string name="shell_ssh_private_key_too_large">Khóa riêng tư vượt quá 256 KiB</string>
+    <string name="shell_ssh_private_key_read_failed">Không thể đọc khóa riêng tư</string>
+    <string name="shell_ssh_private_key_passphrase_invalid">Cụm mật khẩu của khóa không đúng</string>
 
     <!-- Settings - Sandbox Management -->
     <string name="sandbox_mgmt_title">Quản lý hộp cát</string>
@@ -486,9 +493,51 @@
     <string name="settings_interaction">Tương tác</string>
     <string name="settings_interaction_desc">Những câu hỏi trợ lý gửi cho bạn</string>
     <string name="ask_user_enable">Cho phép trợ lý hỏi</string>
+    <string name="ask_user_timeout">Thời gian chờ</string>
+    <string name="ask_user_timeout_desc">Thời gian đợi một nhóm câu hỏi cần trả lời trước khi tiếp tục. Câu hỏi chưa được trả lời sẽ bị bỏ qua khi hết giờ.</string>
+    <string name="ask_user_timeout_minutes">%1$d phút</string>
     <string name="ask_user_enable_desc">Cấp cho mô hình công cụ để hỏi bạn và chờ bạn chọn</string>
     <string name="unsaved_changes_title">Thay đổi chưa lưu</string>
     <string name="unsaved_changes_message">Có thay đổi chưa lưu. Hủy bỏ chúng?</string>
     <string name="unsaved_changes_discard">Hủy bỏ</string>
     <string name="unsaved_changes_keep_editing">Tiếp tục chỉnh sửa</string>
+    <string name="shell_authentication">Xác thực</string>
+    <string name="shell_ssh_host_key">Khóa máy chủ</string>
+    <!-- Installation guides -->
+    <string name="install_guide_purpose">Giới thiệu</string>
+    <string name="install_guide_project_address">Địa chỉ dự án</string>
+    <string name="install_guide_install">Cài đặt</string>
+    <string name="install_guide_connect">Kết nối trong Agora</string>
+    <string name="install_guide_platform">Hệ thống đích</string>
+    <string name="install_guide_copy_command">Sao chép lệnh</string>
+    <string name="install_guide_run_on_target">Sao chép lệnh và chạy trên máy tính đích hoặc trong phiên Termux của thiết bị đích.</string>
+    <string name="install_guide_source">Xem mã nguồn</string>
+    <string name="install_guide_name_mapping">Chọn tên duy nhất cho thiết bị này, rồi lưu trong Thêm thiết bị.</string>
+    <string name="install_guide_windows">Windows</string>
+    <string name="install_guide_linux">Linux</string>
+    <string name="install_guide_termux">Termux</string>
+    <string name="conch_guide_title">Conch là gì?</string>
+    <string name="conch_guide_description">Conch cho phép Agora chạy lệnh Shell và làm việc với tệp trên các thiết bị của bạn.</string>
+    <string name="conch_guide_windows_terminal">Mở cửa sổ PowerShell thông thường trên máy tính Windows đích.</string>
+    <string name="conch_guide_linux_terminal">Mở terminal bằng người dùng Linux thông thường. Chế độ người dùng mặc định không cần sudo.</string>
+    <string name="conch_guide_termux_terminal">Mở Termux trên thiết bị Android đích. Trình cài đặt dùng người dùng Termux, không cần root.</string>
+    <string name="conch_guide_system_mode">Chế độ hệ thống</string>
+    <string name="conch_guide_system_mode_desc">Tùy chọn cài đặt cho toàn hệ thống. Cần PowerShell với quyền quản trị trên Windows hoặc quyền root trên Linux.</string>
+    <string name="conch_guide_user_mode">Cài đặt mới mặc định dùng chế độ người dùng. Chỉ chọn chế độ hệ thống khi cần dịch vụ cho toàn hệ thống.</string>
+    <string name="conch_guide_linger">Trên Linux, chạy trước khi đăng nhập cần chủ động bật linger. Chỉ bật nếu bạn cần cách hoạt động này.</string>
+    <string name="conch_guide_mode_preserved">Với bản cài đặt hiện có, giữ nguyên chế độ hiện tại trừ khi bạn chủ động muốn thay đổi.</string>
+    <string name="conch_guide_address_mapping">Nhập địa chỉ dịch vụ có thể truy cập do trình cài đặt hiển thị vào URL máy chủ.</string>
+    <string name="conch_guide_key_mapping">Sao chép khóa API của trình cài đặt vào Khóa API. Giữ khóa ở chế độ riêng tư.</string>
+    <string name="filo_guide_title">Filo là gì?</string>
+    <string name="filo_guide_description">Filo kết nối Agora với các phiên lập trình gốc được hỗ trợ trên máy tính của bạn.</string>
+    <string name="filo_guide_windows_terminal">Trên máy tính Windows x64 đích, mở PowerShell với quyền quản trị.</string>
+    <string name="filo_guide_selected_user">Chọn tài khoản Windows chạy ứng dụng gốc. Để truy cập Codex Desktop, ứng dụng phải được cài đặt và khởi tạo cho tài khoản đó.</string>
+    <string name="filo_guide_address_mapping">Nhập URL dịch vụ có thể truy cập qua IPv4 tailnet của máy đích. localhost chỉ hoạt động trên máy tính đích.</string>
+    <string name="filo_guide_token_mapping">Sao chép mã truy cập của trình cài đặt vào Mã truy cập. Giữ mã ở chế độ riêng tư.</string>
+    <string name="filo_guide_scope">Nguồn và thao tác điều khiển phụ thuộc vào ứng dụng đã cài cùng khả năng được công bố. Claude Code cần chủ động bật Mod. Chat và Cowork không được hỗ trợ.</string>
+    <string name="install_guide_help">Trợ giúp</string>
+    <string name="install_guide_open_terminal">Mở terminal</string>
+    <string name="install_guide_run_command">Sao chép và chạy lệnh</string>
+    <string name="conch_guide_finish">Thêm thiết bị bằng địa chỉ dịch vụ và khóa API do trình cài đặt hiển thị.</string>
+    <string name="filo_guide_finish">Khi được hỏi, chọn tài khoản Windows và các nguồn. Sau đó thêm thiết bị bằng URL dịch vụ và mã truy cập do trình cài đặt hiển thị.</string>
 </resources>

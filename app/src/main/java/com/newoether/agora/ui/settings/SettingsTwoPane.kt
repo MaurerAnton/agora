@@ -22,6 +22,7 @@ import androidx.compose.foundation.layout.statusBars
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.LazyListState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
@@ -55,10 +56,13 @@ private val SettingsNavigationPaneShape = RoundedCornerShape(
 internal fun SettingsTwoPaneScreen(
     viewModel: ChatViewModel,
     settingsGroups: List<SettingsGroupData>,
+    navigationListState: LazyListState,
     selectedCategory: String,
     onCategorySelected: (String) -> Unit,
     onBack: () -> Unit,
 ) {
+    val parentScrollPath = LocalSettingsScrollPath.current
+    val retainScroll = LocalSettingsScrollRetentionActive.current
     Row(
         modifier = Modifier
             .fillMaxSize()
@@ -66,6 +70,7 @@ internal fun SettingsTwoPaneScreen(
     ) {
         SettingsNavigationPane(
             settingsGroups = settingsGroups,
+            listState = navigationListState,
             selectedCategory = selectedCategory,
             onCategorySelected = onCategorySelected,
             onBack = onBack,
@@ -94,11 +99,16 @@ internal fun SettingsTwoPaneScreen(
                         animationSpec = tween(durationMillis = 250),
                         label = "settingsCategory",
                     ) { category ->
-                        SettingsDestination(
-                            category = category,
-                            viewModel = viewModel,
-                            onBack = onBack,
-                        )
+                        CompositionLocalProvider(
+                            LocalSettingsScrollPath provides (parentScrollPath + category),
+                            LocalSettingsScrollRetentionActive provides (retainScroll && category == selectedCategory),
+                        ) {
+                            SettingsDestination(
+                                category = category,
+                                viewModel = viewModel,
+                                onBack = onBack,
+                            )
+                        }
                     }
                 }
             }
@@ -109,6 +119,7 @@ internal fun SettingsTwoPaneScreen(
 @Composable
 private fun SettingsNavigationPane(
     settingsGroups: List<SettingsGroupData>,
+    listState: LazyListState,
     selectedCategory: String,
     onCategorySelected: (String) -> Unit,
     onBack: () -> Unit,
@@ -134,6 +145,7 @@ private fun SettingsNavigationPane(
             )
         }
         LazyColumn(
+            state = listState,
             modifier = Modifier.fillMaxSize(),
             contentPadding = androidx.compose.foundation.layout.PaddingValues(
                 start = 12.dp,
@@ -364,9 +376,12 @@ internal fun SettingsDestination(
         "context" -> SettingsContextPage(viewModel, onBack)
         "websearch" -> SettingsWebSearchPage(viewModel, onBack)
         "imagegen" -> SettingsImageGenPage(viewModel, onBack)
+        "phoneuse" -> SettingsPhoneUsePage(viewModel, onBack)
         "shell" -> SettingsShellPage(viewModel, onBack)
         "tor" -> SettingsTorPage(viewModel, onBack)
         "interaction" -> SettingsInteractionPage(viewModel, onBack)
+        "todo" -> SettingsTodoPage(viewModel, onBack)
+        "subagents" -> SettingsSubagentPage(viewModel, onBack)
         "mcp" -> SettingsMcpPage(viewModel, onBack)
         "automation" -> SettingsAutomationPage(viewModel, onBack)
         "proxy" -> SettingsProxyPage(viewModel, onBack)

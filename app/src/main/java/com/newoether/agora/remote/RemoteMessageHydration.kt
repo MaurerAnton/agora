@@ -47,7 +47,7 @@ internal class RemoteMessageHydration(
     private data class Target(val group: RemoteMessageGroup, val runtime: RemoteRuntime?, val retry: Long)
 
     private fun checkOwner(owner: String) {
-        if (state.value.owner != owner) throw CancellationException()
+        if (state.value.payloadOwner != owner) throw CancellationException()
         if (cacheOwner != owner) {
             cacheOwner = owner
             cache = HydratedMessagePayloadLru(maxEntries = Int.MAX_VALUE, maxWeightBytes = maxRecordBytes)
@@ -95,7 +95,7 @@ internal class RemoteMessageHydration(
 
     private fun target(owner: String, id: String): Target? {
         val snapshot = state.value
-        if (!snapshot.hydrationEnabled || snapshot.owner != owner) return null
+        if (!snapshot.hydrationEnabled || snapshot.payloadOwner != owner) return null
         val group = snapshot.messageGroups.firstOrNull { it.stub.id == id } ?: return null
         return Target(group, snapshot.runtime.takeIf { snapshot.messageGroups.lastOrNull()?.stub?.id == id },
             snapshot.hydrationRevision)
@@ -188,7 +188,7 @@ internal class RemoteMessageHydration(
         val wanted = group.nodes.mapTo(HashSet()) { it.id }
         do {
             currentCoroutineContext().ensureActive()
-            if (state.value.owner != owner || !state.value.hydrationEnabled) throw CancellationException()
+            if (state.value.payloadOwner != owner || !state.value.hydrationEnabled) throw CancellationException()
             require(visited.add(cursor)) { "Filo history cursor did not advance" }
             val page = read(owner, cursor)
             currentCoroutineContext().ensureActive()
@@ -263,7 +263,7 @@ internal class RemoteMessageHydration(
     suspend fun loadToolImage(owner: String, id: String, revision: String): com.newoether.agora.model.ToolImageAttachment {
         fun validate() {
             val snapshot = state.value
-            if (snapshot.owner != owner || !snapshot.hydrationEnabled || snapshot.messageGroups.none { group ->
+            if (snapshot.payloadOwner != owner || !snapshot.hydrationEnabled || snapshot.messageGroups.none { group ->
                 group.nodes.any { it.id == id && it.revision == revision && it.activity?.hasImage == true }
             }) throw CancellationException()
         }

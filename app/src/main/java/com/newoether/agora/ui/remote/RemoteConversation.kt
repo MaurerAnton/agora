@@ -27,6 +27,7 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import com.newoether.agora.R
+import com.newoether.agora.data.inferModelAlias
 import com.newoether.agora.data.repository.SettingsRepository
 import com.newoether.agora.model.StableMessageList
 import com.newoether.agora.model.MessageStatus
@@ -50,16 +51,11 @@ internal fun RemoteConversation(
     state: RemoteState, vm: RemoteViewModel, settings: SettingsRepository, active: Boolean, onBack: () -> Unit,
     onSnackbarOffsetChanged: (androidx.compose.ui.unit.Dp) -> Unit,
     onMediaClick: (List<String>, Int) -> Unit,
-    onMessage: (String, String?, (() -> Unit)?) -> Unit,
 ) {
     val owner = state.owner ?: return
+    val payloadOwner = state.payloadOwner ?: return
     val session = state.session ?: return
-    val connectionStatus = when (state.devices.firstOrNull { it.id == state.deviceId }?.status) {
-        RemoteDeviceStatus.CONNECTED -> com.newoether.agora.mcp.McpConnectionStatus.CONNECTED
-        RemoteDeviceStatus.CONNECTING -> com.newoether.agora.mcp.McpConnectionStatus.CONNECTING
-        RemoteDeviceStatus.ERROR -> com.newoether.agora.mcp.McpConnectionStatus.ERROR
-        else -> com.newoether.agora.mcp.McpConnectionStatus.IDLE
-    }
+    val connectionStatus = state.remoteConnectionStatus()
     val density = LocalDensity.current
     val motion = LocalAgoraMotionPolicy.current
     val haptics = LocalAgoraHaptics.current
@@ -81,7 +77,7 @@ internal fun RemoteConversation(
     val attachments = state.attachments[owner].orEmpty()
     val running = state.runtime?.isRunning == true
     val stopping = state.isStopping
-    val ready = state.isDraft || state.runtime?.status in setOf("idle", "active", "ready")
+    val ready = state.isDraft || state.runtime?.status in setOf("idle", "active", "running", "ready")
     val newChatEntry = remember(owner) { state.composerFocusOwner == owner }
     ChatLaunchInteractionEffects(
         initialComposerFocusReady = active && ready && state.composerFocusOwner == owner,
@@ -100,16 +96,25 @@ internal fun RemoteConversation(
     var lastToolsDismissTime by remember(owner) { mutableLongStateOf(0L) }
     var showThinkingSheet by remember(owner) { mutableStateOf(false) }
     var showOpenAiServiceTierSheet by remember(owner) { mutableStateOf(false) }
-    val effortChoices = state.settingsModel?.reasoningEfforts.orEmpty()
+    val effortChoices = state.effortChoices
     val tierChoices = state.settingsModel?.serviceTiers.orEmpty()
     val ultraFastLabel = stringResource(R.string.openai_service_tier_ultrafast)
     val tierLabels = tierChoices.associate { it.id to if (it.id == "ultrafast") ultraFastLabel else it.name }
     val settingsEnabled = active && state.canEditSettings
+    val thinkingControlEnabled = settingsEnabled && "effort" in state.capabilities.settings && effortChoices.isNotEmpty()
+    val tierSupported = "serviceTier" in state.selectedAdapter.capabilities.settings
+    val tierControlEnabled = settingsEnabled && tierSupported && "serviceTier" in state.capabilities.settings && state.settingsModel?.serviceTiers != null
     val thinkingEnabled = state.selectedEffort != null && state.selectedEffort != "none"
     val thinkingLevel = state.selectedEffort.orEmpty()
     val openAiServiceTierEnabled = state.selectedServiceTier != null
     val openAiServiceTier = state.selectedServiceTier.orEmpty()
-    val serviceTierKnown = state.isDraft || state.runtime?.serviceTierKnown == true || state.runtime?.serviceTier != null
+    val serviceTierKnown = state.serviceTierKnown
+    LaunchedEffect(tierSupported) {
+        if (!tierSupported) showOpenAiServiceTierSheet = false
+    }
+    LaunchedEffect(state.canChooseModel) {
+        if (!state.canChooseModel && activeMenu == "model") activeMenu = null
+    }
     LaunchedEffect(active) {
         if (!active) {
             activeMenu = null
@@ -135,17 +140,17 @@ internal fun RemoteConversation(
                 !showThinkingSheet && !showOpenAiServiceTierSheet) haptics.confirm()
         }
     }
-    val observe = remember(owner) { { id: String -> vm.observeMessage(owner, id) } }
-    val loadToolImage: suspend (String, String) -> com.newoether.agora.model.ToolImageAttachment = remember(owner, vm) {
+    val observe = remember(owner, payloadOwner) { { id: String -> vm.observeMessage(owner, id) } }
+    val loadToolImage: suspend (String, String) -> com.newoether.agora.model.ToolImageAttachment = remember(owner, payloadOwner, vm) {
         { id, revision -> vm.loadToolImage(owner, id, revision) }
     }
-    val initialMessage = remember(owner) { { id: String ->
+    val initialMessage = remember(owner, payloadOwner) { { id: String ->
         if (vm.state.value.owner == owner) vm.cachedMessage(owner, id) else null
     } }
     val streaming = tail?.let { message ->
-        key(owner, message.id) {
+        key(payloadOwner, message.id) {
             // A suspended observer does not delete the body already shown during navigation.
-            val flow = remember(owner, message.id) { vm.observeMessage(owner, message.id).filterNotNull() }
+            val flow = remember(payloadOwner, message.id) { vm.observeMessage(owner, message.id).filterNotNull() }
             val payload by flow.collectAsState(initial = vm.cachedMessage(owner, message.id))
             payload
         }
@@ -156,8 +161,8 @@ internal fun RemoteConversation(
     val historyOverscroll = rememberRemoteHistoryOverscroll(scroll.listState)
     val focusManager = LocalFocusManager.current
     val searchMessages: suspend (String, List<String>) -> List<com.newoether.agora.model.ChatMessage> =
-        remember(owner, state.hydrationRevision) { { _, ids -> vm.searchMessages(owner, ids) } }
-    val searchAllMessages = remember(owner, vm, state.hydrationEnabled) {
+        remember(owner, payloadOwner, state.hydrationRevision) { { _, ids -> vm.searchMessages(owner, ids) } }
+    val searchAllMessages = remember(owner, payloadOwner, vm, state.hydrationEnabled) {
         { query: String -> vm.searchHistory(query) }
     }
     val interaction = rememberConversationInteractionState(owner, messageState, scroll.listState, searchMessages,
@@ -233,8 +238,6 @@ internal fun RemoteConversation(
         historyProgress.targetState = active && !switching && !interaction.searchActive &&
             state.loadingMore && atHistoryBoundary
     }
-    val unknownDeliveryText = stringResource(R.string.remote_unknown)
-    val checkedDeliveryText = stringResource(R.string.remote_check)
     Box(Modifier.fillMaxSize().background(MaterialTheme.colorScheme.background).clearFocusOnTap()
         .onSizeChanged { scroll.recordViewportHeight(it.height) }) {
         val dark = MaterialTheme.colorScheme.background.luminance() < 0.5f
@@ -251,12 +254,8 @@ internal fun RemoteConversation(
                 totalTokens = state.runtime?.contextTokens ?: 0,
                 contextTokenBudget = state.runtime?.contextWindow ?: 0,
                 contextAvailable = state.runtime?.contextTokens != null && state.runtime?.contextWindow != null,
-                subtitle = stringResource(when (connectionStatus) {
-                    com.newoether.agora.mcp.McpConnectionStatus.CONNECTED -> R.string.remote_online
-                    com.newoether.agora.mcp.McpConnectionStatus.CONNECTING -> R.string.remote_connecting
-                    else -> R.string.remote_offline
-                }),
-                subtitleLeading = { com.newoether.agora.ui.settings.McpStatusDot(connectionStatus) },
+                subtitle = stringResource(remoteConnectionStatusLabel(connectionStatus)),
+                subtitleLeading = { RemoteStatusDot(connectionStatus) },
                 searchActive = interaction.searchActive, searchQuery = interaction.searchQuery,
                 searchMatchIndex = interaction.searchMatchIndex, searchMatchCount = interaction.searchMatches.size,
                 onSearchQueryChange = interaction::updateSearchQuery,
@@ -264,7 +263,7 @@ internal fun RemoteConversation(
                 onSearchNext = { if (interaction.nextSearchMatch()) haptics.selection() },
                 onSearchDismiss = { interaction.dismissSearch(); focusManager.clearFocus() },
                 onNavigateBack = onBack, onOpenDrawer = onBack, onSystemPromptClick = {}, onNewChat = vm::newSession,
-                newChatEnabled = active && !state.controlling,
+                newChatEnabled = active && state.canCreate && !state.controlling,
                 moreMenuContent = { dismiss ->
                     AgoraDropdownMenuItem(
                         text = { Text(stringResource(R.string.conversation_search)) },
@@ -328,12 +327,25 @@ internal fun RemoteConversation(
                     scroll.requestAbsoluteBottomScroll()
                 }
 
-                ChatSwitchingOverlay(
-                    isSwitching = switching && !state.error,
-                    isTransitioningToNewChat = newChatEntry,
-                    topBarHeight = topBarHeight,
-                    bottomBarHeight = barHeight,
-                )
+                if (!switching || state.error || newChatEntry) {
+                    RemoteEmptyConversation(
+                        state = state,
+                        active = active,
+                        topBarHeight = topBarHeight,
+                        bottomBarHeight = barHeight,
+                        onRetry = vm::retryConnection,
+                    )
+                }
+                key(owner) {
+                    ChatSwitchingOverlay(
+                        isSwitching = (switching && !state.error && !newChatEntry) ||
+                            (messages.isEmpty() && state.loading),
+                        isTransitioningToNewChat = false,
+                        topBarHeight = topBarHeight,
+                        bottomBarHeight = barHeight,
+                        animateInitialAppearance = true,
+                    )
+                }
             }
         }
         ChatComposerSurface(expanded, { barHeightPx = it }, Modifier.align(Alignment.BottomCenter), spacer.outerHeightPx) {
@@ -351,19 +363,25 @@ internal fun RemoteConversation(
                 },
                 controls = {
                     ComposerControlGroup {
-                        RemoteAttachmentPicker(owner, active && !submitting, vm)
+                        // Keep native model text visible even when switching is unavailable.
+                        RemoteAttachmentPicker(owner, active, state.capabilities.uploads && !submitting, vm)
+                        val modelChoice = active && state.canChooseModel && state.selectedModel != null &&
+                            state.models.isNotEmpty() && !state.modelsLoading && !state.loading &&
+                            !submitting && !stopping && !state.controlling
                         ComposerModelSelector(
-                            displayText = (state.models.firstOrNull { it.id == state.selectedModel }?.name
-                                ?: state.selectedModel)?.replace('-', ' ') ?: stringResource(
-                                    if (state.modelsLoading || state.loading) R.string.loading_label else R.string.remote_model_unavailable),
-                            isModelValid = state.selectedModel != null, expanded = activeMenu == "model",
-                            enabled = active && ready && !submitting && !stopping && !state.controlling && state.models.isNotEmpty(),
+                            displayText = (state.models.takeIf { state.capabilities.models }
+                                ?.firstOrNull { it.id == state.selectedModel }?.displayName(state.selectedAdapter.family)
+                                ?: state.selectedModel?.let(::inferModelAlias)) ?: stringResource(
+                                    if (state.capabilities.models && (state.modelsLoading || state.loading)) R.string.loading_label
+                                    else R.string.remote_model_unavailable),
+                            isModelValid = state.selectedModel != null, expanded = activeMenu == "model" && modelChoice,
+                            enabled = modelChoice,
                             onClick = {
                                 val now = System.currentTimeMillis()
                                 if (activeMenu == "model") activeMenu = null
                                 else if (now - lastModelDismissTime > 200) {
                                     activeMenu = "model"
-                                    vm.refreshModels()
+                                    if (state.capabilities.models) vm.refreshModels()
                                 }
                             },
                             onDismissRequest = {
@@ -373,11 +391,23 @@ internal fun RemoteConversation(
                                 }
                             },
                             menuContent = {
-                                val sortedModels = remember(state.models) { state.models.sortedBy { it.id.lowercase() } }
+                                val sortedModels = remember(state.models, state.capabilities.models) {
+                                    if (state.capabilities.models) state.models.sortedBy { it.id.lowercase() } else emptyList()
+                                }
+                                if (!state.capabilities.models) AgoraDropdownMenuItem(
+                                    text = { Text(stringResource(R.string.remote_model_unavailable)) },
+                                    enabled = false,
+                                    onClick = {},
+                                ) else if (sortedModels.isEmpty()) AgoraDropdownMenuItem(
+                                    text = { Text(stringResource(if (state.modelsLoading) R.string.loading_label else R.string.retry)) },
+                                    enabled = !state.modelsLoading,
+                                    onClick = vm::refreshModels,
+                                )
                                 sortedModels.forEach { model ->
                                     ComposerModelMenuItem(
-                                        displayText = model.name.replace('-', ' '),
+                                        displayText = model.displayName(state.selectedAdapter.family),
                                         selected = model.id == state.selectedModel,
+                                        enabled = modelChoice,
                                         onClick = {
                                             haptics.selection()
                                             vm.setModel(model.id)
@@ -454,9 +484,9 @@ internal fun RemoteConversation(
                                         }
                                     },
                                     onClick = { activeMenu = null; showThinkingSheet = true },
-                                    enabled = effortChoices.isNotEmpty() && state.selectedEffort != null,
+                                    enabled = thinkingControlEnabled,
                                 )
-                                AgoraDropdownMenuItem(
+                                if (tierSupported) AgoraDropdownMenuItem(
                                     text = {
                                         Row(verticalAlignment = Alignment.CenterVertically) {
                                             Icon(
@@ -480,21 +510,19 @@ internal fun RemoteConversation(
                                             }
                                         }
                                     },
-                                    enabled = state.settingsModel?.serviceTiers != null && serviceTierKnown,
+                                    enabled = tierControlEnabled,
                                     onClick = { activeMenu = null; showOpenAiServiceTierSheet = true },
                                 )
                             }
                         }
                     }
                     val showStop = running && !stopping && field.text.isBlank() && attachments.isEmpty()
-                    ComposerSendButton(isActionable = active && !stopping && !state.controlling && !submitting &&
-                        (if (showStop) state.runtime?.activeTurnId != null else field.text.isNotBlank() || attachments.isNotEmpty()),
+                    ComposerSendButton(isActionable = active && !stopping && !state.controlling && !state.controlPending && (showStop || !state.settingsPending) && !submitting &&
+                        !(attempt?.delivery == RemoteDelivery.UNKNOWN && attempt.receiptKind == "submitted_observed" && !showStop) &&
+                        (if (showStop) state.canStop else state.canSend && (field.text.isNotBlank() || attachments.isNotEmpty())),
                         isBusy = submitting || stopping, showStop = showStop,
                         onBusyShown = { shownBusyAttempt = attempt?.clientId }) {
                         if (showStop) vm.stop()
-                        else if (attempt?.delivery == RemoteDelivery.UNKNOWN) onMessage(unknownDeliveryText, checkedDeliveryText) {
-                            vm.acknowledgeUnknown(owner)
-                        }
                         else { vm.editDraft(owner, field.text.toString()); vm.send() }
                     }
                 })
@@ -507,16 +535,7 @@ internal fun RemoteConversation(
         ) {
             com.newoether.agora.ui.components.DialogWindowEdgeToEdge()
             Column(Modifier.fillMaxWidth().navigationBarsPadding().padding(horizontal = 16.dp, vertical = 16.dp)) {
-                com.newoether.agora.ui.common.ThinkingControlPanel(
-                    enabled = thinkingEnabled, level = thinkingLevel,
-                    budgetEnabled = false, budgetTokens = 4096,
-                    onEnabledChange = {}, onLevelChange = vm::setThinkingLevel,
-                    onBudgetEnabledChange = {}, onBudgetTokensChange = {},
-                    animateSections = true,
-                    availableEfforts = effortChoices, controlsEnabled = settingsEnabled,
-                    showHeader = false, showEnabledToggle = false, showBudgetControls = false,
-                    settingsRevision = state.settingsRevision,
-                )
+                RemoteThinkingControl(state, thinkingControlEnabled, vm::setThinkingLevel)
                 Spacer(Modifier.height(24.dp))
             }
         }
@@ -528,15 +547,7 @@ internal fun RemoteConversation(
         ) {
             com.newoether.agora.ui.components.DialogWindowEdgeToEdge()
             Column(Modifier.fillMaxWidth().navigationBarsPadding().padding(horizontal = 16.dp, vertical = 16.dp)) {
-                com.newoether.agora.ui.common.OpenAiServiceTierControlPanel(
-                    enabled = openAiServiceTierEnabled, tier = openAiServiceTier,
-                    onEnabledChange = {}, onTierChange = { vm.setServiceTier(it.takeIf(String::isNotEmpty)) },
-                    availableTiers = listOf("") + tierChoices.filterNot { it.id == "default" }.map { it.id },
-                    tierLabels = tierLabels +
-                        ("" to stringResource(R.string.openai_service_tier_default)),
-                    controlsEnabled = settingsEnabled, showHeader = false, showEnabledToggle = false,
-                    settingsRevision = state.settingsRevision,
-                )
+                RemoteServiceTierControl(state, tierControlEnabled, tierLabels, vm::setServiceTier)
                 Spacer(Modifier.height(24.dp))
             }
         }

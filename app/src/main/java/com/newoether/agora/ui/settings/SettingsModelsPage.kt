@@ -9,10 +9,7 @@ import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
 import androidx.compose.animation.shrinkVertically
 import androidx.compose.ui.layout.onGloballyPositioned
-import androidx.compose.ui.layout.layout
-import androidx.compose.ui.unit.offset
 import androidx.compose.foundation.clickable
-import androidx.compose.foundation.selection.toggleable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
@@ -20,6 +17,7 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.input.rememberTextFieldState
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
+import androidx.compose.material.icons.filled.Tag
 import androidx.compose.material.icons.filled.AutoAwesome
 import androidx.compose.material.icons.filled.Chat
 import androidx.compose.material.icons.filled.Clear
@@ -35,7 +33,6 @@ import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
@@ -582,6 +579,7 @@ fun SettingsModelsPage(viewModel: ChatViewModel, onBack: () -> Unit) {
                             onValueChange = { customModelId = it },
                             singleLine = true,
                             label = { Text(stringResource(R.string.model_id_label)) },
+                            leadingIcon = { Icon(Icons.Default.Tag, contentDescription = null) },
                             isError = modelAlreadyExists,
                             supportingText = if (modelAlreadyExists) {
                                 { Text(stringResource(R.string.models_custom_exists)) }
@@ -763,38 +761,5 @@ fun SettingsModelsPage(viewModel: ChatViewModel, onBack: () -> Unit) {
             },
             dismissButton = { TextButton(onClick = { showModelAliasDialog = null }) { Text(stringResource(R.string.provider_cancel)) } }
         )
-    }
-}
-@Composable
-private fun ModelProviderNameSwitch(checked: Boolean, onCheckedChange: (Boolean) -> Unit) {
-    val rippleOutset = 8.dp
-    Row(
-        modifier = Modifier.fillMaxWidth()
-            .padding(top = 8.dp)
-            .layout { measurable, constraints ->
-                val outset = rippleOutset.roundToPx()
-                val placeable = measurable.measure(constraints.offset(horizontal = outset * 2))
-                layout(placeable.width - outset * 2, placeable.height) {
-                    placeable.placeRelative(-outset, 0)
-                }
-            }
-            .clip(RoundedCornerShape(16.dp))
-            .toggleable(value = checked, role = Role.Switch, onValueChange = onCheckedChange)
-            .padding(horizontal = rippleOutset, vertical = 12.dp),
-        verticalAlignment = Alignment.CenterVertically,
-    ) {
-        Column(modifier = Modifier.weight(1f).padding(start = 8.dp, end = 12.dp)) {
-            Text(
-                stringResource(R.string.models_show_provider_name),
-                style = MaterialTheme.typography.bodyLarge,
-                color = Color.White,
-            )
-            Text(
-                stringResource(R.string.models_show_provider_name_desc),
-                style = MaterialTheme.typography.bodySmall,
-                color = MaterialTheme.colorScheme.onSurfaceVariant,
-            )
-        }
-        Switch(checked = checked, onCheckedChange = null)
     }
 }

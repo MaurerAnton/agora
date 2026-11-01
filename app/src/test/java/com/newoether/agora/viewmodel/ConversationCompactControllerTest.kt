@@ -46,7 +46,7 @@ class ConversationCompactControllerTest {
         )
         coVerify(exactly = 0) {
             conversations.getProviderContextTopologySnapshot(any())
-            conversations.getContextMessagesByIds(any())
+            conversations.withReadSnapshot<Any?>(any())
         }
     }
 
@@ -77,6 +77,7 @@ class ConversationCompactControllerTest {
                 job = completedJob,
                 modelMessageId = "compact_message",
                 started = CompletableDeferred(true),
+                uiToken = 1L,
             )
 
         val started = controller(
@@ -107,6 +108,8 @@ class ConversationCompactControllerTest {
             launchRequest.captured.snapshot.config.initialUserPrompt,
         )
         assertTrue(launchRequest.captured.queueDrainRequiresSuccess)
+        assertFalse(launchRequest.captured.continuesAfterSuccess)
+        assertEquals(1L, started!!.uiToken)
         assertFalse(launchRequest.captured.alreadyHoldsConversationLock)
         controller(
             conversations,
@@ -120,9 +123,11 @@ class ConversationCompactControllerTest {
             config = automaticConfig(),
             state = state,
             alreadyHoldsConversationLock = true,
+            continuesAfterSuccess = true,
         )
         // Headless Task callers forward their held automation lease to the ordinary launcher.
         assertTrue(launchRequest.captured.alreadyHoldsConversationLock)
+        assertTrue(launchRequest.captured.continuesAfterSuccess)
         assertFalse(launchRequest.captured.snapshot.config.thinkingEnabled)
         assertFalse(launchRequest.captured.snapshot.context.webSearchEnabled)
         assertFalse(launchRequest.captured.snapshot.context.shellEnabled)
@@ -175,6 +180,7 @@ class ConversationCompactControllerTest {
                 job = Job().apply { complete() },
                 modelMessageId = requireNotNull(request.modelMessageId),
                 started = CompletableDeferred(true),
+                uiToken = 1L,
             )
         }
         coEvery { conversations.getMessage(any()) } answers {
@@ -281,6 +287,7 @@ class ConversationCompactControllerTest {
                 job = Job().apply { complete() },
                 modelMessageId = target.id,
                 started = CompletableDeferred(true),
+                uiToken = 1L,
             )
 
         val result = controller(
@@ -337,6 +344,7 @@ class ConversationCompactControllerTest {
             job = Job().apply { complete() },
             modelMessageId = "compact_message",
             started = CompletableDeferred(true),
+            uiToken = 1L,
         )
 
         val started = controller(
@@ -508,6 +516,7 @@ class ConversationCompactControllerTest {
                 job = Job().apply { complete() },
                 modelMessageId = messageId,
                 started = CompletableDeferred(true),
+                uiToken = 1L,
             )
         }
 

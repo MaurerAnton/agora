@@ -1,0 +1,31 @@
+<resources>
+    <string name="message_source_subagent">하위 에이전트</string>
+    <string name="subagent_running">실행 중</string>
+    <string name="subagent_completed">완료</string>
+    <string name="subagent_failed">실패</string>
+    <string name="subagent_stopped">중지됨</string>
+    <string name="subagent_idle">대기 중</string>
+    <string name="subagents_model_list_title">모델 목록</string>
+    <string name="subagents_recommended_model_title">추천 모델</string>
+    <string name="subagents_no_recommended_model">지정 안 함</string>
+    <string name="subagents_no_models">추가된 모델 없음</string>
+    <string name="subagents_no_models_desc">새 하위 에이전트를 시작하려면 모델을 추가하세요</string>
+    <string name="subagents_add_models">모델 추가</string>
+    <string name="subagents_add_models_title">하위 에이전트 모델 추가</string>
+    <string name="subagents_capsule_display_title">캡슐 표시 방식</string>
+    <string name="subagents_capsule_display_desc">하위 에이전트를 개별 캡슐 또는 하나의 캡슐로 표시합니다</string>
+    <string name="subagents_capsule_display_individual">개별 표시</string>
+    <string name="subagents_capsule_display_grouped">통합 표시</string>
+    <string name="subagents_limits_title">제한</string>
+    <string name="subagents_max_total">전체 하위 에이전트 수</string>
+    <string name="subagents_max_total_desc">상위 대화마다 보유할 수 있는 하위 에이전트의 최대 수입니다. 완료된 항목도 포함됩니다. 제한을 낮춰도 기존 하위 에이전트를 중지하거나 삭제하지 않습니다.</string>
+    <string name="subagents_max_concurrent">동시 실행 수</string>
+    <string name="subagents_max_concurrent_desc">상위 대화마다 동시에 실행할 수 있는 하위 에이전트의 최대 수입니다. 초과 작업은 대기하며, 제한을 낮춰도 실행 중인 하위 에이전트는 완료할 수 있습니다.</string>
+    <string name="subagents_limit_value">%1$d</string>
+    <plurals name="subagents_running_count">
+        <item quantity="other">%d개 실행 중</item>
+    </plurals>
+    <plurals name="subagents_count">
+        <item quantity="other">하위 에이전트 %d개</item>
+    </plurals>
+</resources>

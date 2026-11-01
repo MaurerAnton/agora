@@ -83,7 +83,7 @@ private fun canonicalContextMessages(
         appendContinuationForApi = appendContinuationForApi,
     )
     val canonical = validateToolMessages(
-        stripEmptyTurns(compacted.distinctBy(ChatMessage::id))
+        stripEmptyTurns(canonicalToolNames(compacted.distinctBy(ChatMessage::id)))
     )
     return stripEmptyTurns(mergeConsecutiveSameRole(canonical))
 }

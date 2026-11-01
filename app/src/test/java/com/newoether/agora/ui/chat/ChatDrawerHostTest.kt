@@ -97,6 +97,9 @@ class ChatDrawerHostTest {
         assertTrue(drawer.contains("onRequestClose: suspend () -> Unit"))
         assertFalse(drawer.contains("DrawerState"))
         assertTrue(effects.contains("enabled = onNavigateBack != null && !drawerState.shouldHandleBack"))
+        val navigation = source("MainActivity.kt")
+        assertTrue(navigation.contains("drawerEnabled = taskHistoryPreview.backTaskId(currentConversationId, isNewChatMode) == null"))
+        assertFalse(navigation.contains("drawerEnabled = (isNewChatMode || subagentParentId == null)"))
 
         val titleBlock = topBar
             .substringAfter("// Reserve the trailing capsule first; the title may only use the remaining width.")

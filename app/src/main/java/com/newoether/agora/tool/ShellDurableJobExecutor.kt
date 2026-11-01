@@ -56,14 +56,15 @@ internal class ShellDurableJobExecutor {
         workdir: String,
         waitMs: Int,
         onOutput: suspend (String) -> Unit = {},
+        description: String = "",
     ): String {
         val startResult = try {
-            backend.startJob(command, workdir, BACKGROUND_JOB_MAX_MS)
+            backend.startJob(command, workdir, BACKGROUND_JOB_MAX_MS, description)
         } catch (cancelled: CancellationException) {
             throw cancelled
         } catch (e: Exception) {
             return jsonError(
-                "execute_shell_command",
+                "shell_exec",
                 e.message ?: "Failed to start durable foreground job",
                 server = backend.device.name,
                 command = command,
@@ -78,7 +79,7 @@ internal class ShellDurableJobExecutor {
         val jobId = (startObj["job_id"] as? JsonPrimitive)?.content
             ?.takeIf(String::isNotBlank)
             ?: return jsonError(
-                "execute_shell_command",
+                "shell_exec",
                 "Conch started a job without returning job_id",
                 server = backend.device.name,
                 command = command,
@@ -100,7 +101,7 @@ internal class ShellDurableJobExecutor {
                 lastFailure = e.message ?: e.javaClass.simpleName
                 if (consecutiveFailures >= MAX_WAIT_POLL_FAILURES) {
                     return buildJsonObject {
-                        put("type", "execute_shell_command")
+                        put("type", "shell_exec")
                         put("error", "poll_failed")
                         put(
                             "message",
@@ -115,7 +116,7 @@ internal class ShellDurableJobExecutor {
                         put(
                             "note",
                             "The command may still be running. Keep this job_id and retry with " +
-                                "wait_for_job or get_shell_job; it was not killed or restarted.",
+                                "shell_job_wait or shell_job_get; it was not killed or restarted.",
                         )
                     }.toString()
                 }
@@ -135,7 +136,7 @@ internal class ShellDurableJobExecutor {
                 if (isTerminalJobPayload(raw)) {
                     val result = runCatching { Json.parseToJsonElement(raw) }.getOrNull()
                     return buildJsonObject {
-                        put("type", "execute_shell_command")
+                        put("type", "shell_exec")
                         put("server", backend.device.name)
                         put("command", command)
                         put("job_id", jobId)
@@ -147,7 +148,7 @@ internal class ShellDurableJobExecutor {
             val elapsed = System.currentTimeMillis() - start
             if (elapsed >= waitMs) {
                 return buildJsonObject {
-                    put("type", "execute_shell_command")
+                    put("type", "shell_exec")
                     put("server", backend.device.name)
                     put("command", command)
                     put("job_id", jobId)
@@ -157,7 +158,7 @@ internal class ShellDurableJobExecutor {
                     put(
                         "note",
                         "Foreground wait expired; the same durable job is still running. Use " +
-                            "wait_for_job to await it. The command was not killed or restarted.",
+                            "shell_job_wait to await it. The command was not killed or restarted.",
                     )
                 }.toString()
             }
@@ -175,7 +176,7 @@ internal class ShellDurableJobExecutor {
             throw cancelled
         }
         return jsonError(
-            "execute_shell_command",
+            "shell_exec",
             "cancelled while durable job $jobId continues on ${backend.device.name}",
             server = backend.device.name,
             command = command,
@@ -187,17 +188,19 @@ internal class ShellDurableJobExecutor {
         val serverName = arg(args, "server")
         val backend = getConchBackend(serverName, ctx)
             ?: return jsonError(
-                "list_shell_jobs",
+                "shell_job_list",
                 conchServerNotFoundMessage(serverName, ctx),
                 server = serverName,
             )
         return try {
-            backend.listJobs()
+            val offset = (arg(args, "offset").toIntOrNull() ?: 0).coerceAtLeast(0)
+            val limit = arg(args, "limit").toIntOrNull()?.takeIf { it > 0 }?.coerceAtMost(100) ?: 100
+            backend.listJobs(offset, limit)
         } catch (cancelled: CancellationException) {
             throw cancelled
         } catch (e: Exception) {
             jsonError(
-                "list_shell_jobs",
+                "shell_job_list",
                 e.message ?: "Failed to list shell jobs",
                 server = backend.device.name,
             )
@@ -209,11 +212,11 @@ internal class ShellDurableJobExecutor {
     suspend fun getShellJob(arguments: String, ctx: GenerationContext): String {
         val args = parseToolArgs(arguments)
         val jobId = arg(args, "job_id")
-        if (jobId.isBlank()) return jsonError("get_shell_job", "job_id is required")
+        if (jobId.isBlank()) return jsonError("shell_job_get", "job_id is required")
         val serverName = arg(args, "server")
         val backend = getConchBackend(serverName, ctx)
             ?: return jsonError(
-                "get_shell_job",
+                "shell_job_get",
                 conchServerNotFoundMessage(serverName, ctx),
                 server = serverName,
             )
@@ -223,7 +226,7 @@ internal class ShellDurableJobExecutor {
             throw cancelled
         } catch (e: Exception) {
             jsonError(
-                "get_shell_job",
+                "shell_job_get",
                 e.message ?: "Failed to get shell job",
                 server = backend.device.name,
             )
@@ -239,21 +242,21 @@ internal class ShellDurableJobExecutor {
     ): String {
         val args = parseToolArgs(arguments)
         val jobId = arg(args, "job_id")
-        if (jobId.isBlank()) return jsonError("wait_for_job", "job_id is required")
+        if (jobId.isBlank()) return jsonError("shell_job_wait", "job_id is required")
         val serverName = arg(args, "server")
         val rawTimeout = arg(args, "timeout_ms")
         if (rawTimeout.isBlank()) return jsonError(
-            "wait_for_job", "timeout_ms is required", server = serverName,
+            "shell_job_wait", "timeout_ms is required", server = serverName,
         )
         val requestedMs = rawTimeout.toIntOrNull()
             ?: return jsonError(
-                "wait_for_job",
+                "shell_job_wait",
                 "timeout_ms must be an integer, got \"$rawTimeout\"",
                 server = serverName,
             )
         val backend = getConchBackend(serverName, ctx)
             ?: return jsonError(
-                "wait_for_job",
+                "shell_job_wait",
                 conchServerNotFoundMessage(serverName, ctx),
                 server = serverName,
             )
@@ -308,7 +311,7 @@ internal class ShellDurableJobExecutor {
                 lastFailure = e.message ?: e.javaClass.simpleName
                 if (consecutiveFailures >= MAX_WAIT_POLL_FAILURES) {
                     return buildJsonObject {
-                        put("type", "wait_for_job")
+                        put("type", "shell_job_wait")
                         put("error", "poll_failed")
                         put(
                             "message",
@@ -344,7 +347,7 @@ internal class ShellDurableJobExecutor {
             if (raw != null && isTerminalJobPayload(raw)) {
                 val result = runCatching { Json.parseToJsonElement(raw) }.getOrNull()
                 return buildJsonObject {
-                    put("type", "wait_for_job")
+                    put("type", "shell_job_wait")
                     put("job_id", jobId)
                     put("waited_ms", nowMs() - start)
                     if (result != null) put("result", result) else put("result_raw", raw)
@@ -356,7 +359,7 @@ internal class ShellDurableJobExecutor {
                     " The requested timeout_ms=$it exceeded this tool call's ceiling of ${ceilingMs}ms and was clamped, so the job has only been waited on for that long."
                 } ?: ""
                 return buildJsonObject {
-                    put("type", "wait_for_job")
+                    put("type", "shell_job_wait")
                     put("job_id", jobId)
                     put("state", "running")
                     put("waited_ms", elapsed)
@@ -368,8 +371,8 @@ internal class ShellDurableJobExecutor {
                     }
                     put(
                         "note",
-                        "Job still running. Call wait_for_job again to keep waiting, or " +
-                            "get_shell_job for a one-shot look.$clampNote",
+                        "Job still running. Call shell_job_wait again to keep waiting, or " +
+                            "shell_job_get for a one-shot look.$clampNote",
                     )
                 }.toString()
             }
@@ -378,7 +381,7 @@ internal class ShellDurableJobExecutor {
             delayMs(pollIntervalMs.coerceAtMost(remaining).toLong())
             pollIntervalMs = (pollIntervalMs * 2).coerceAtMost(MAX_WAIT_POLL_MS)
         }
-        return jsonError("wait_for_job", "cancelled", server = serverName)
+        return jsonError("shell_job_wait", "cancelled", server = serverName)
     }
 
     /**
@@ -505,9 +508,10 @@ internal data class TerminalShellJobAcknowledgement(
 internal fun terminalShellJobAcknowledgements(
     calls: List<ToolCallData>,
 ): List<TerminalShellJobAcknowledgement> = calls.mapNotNull { call ->
-    if (call.toolName !in ACKNOWLEDGEABLE_SHELL_TOOLS) return@mapNotNull null
+    if (BuiltInToolNames.canonical(call.toolName) !in ACKNOWLEDGEABLE_SHELL_TOOLS) return@mapNotNull null
     val envelope = runCatching {
-        Json.parseToJsonElement(call.result).jsonObject
+        // Shell tools hand the model plain text; the JSON envelope is the structured result.
+        Json.parseToJsonElement(call.structuredResult ?: call.result).jsonObject
     }.getOrNull() ?: return@mapNotNull null
     val nested = envelope["result"] as? JsonObject
     val state = nested.stringValue("state") ?: envelope.stringValue("state")
@@ -533,9 +537,9 @@ private fun JsonObject?.stringValue(key: String): String? =
     (this?.get(key) as? JsonPrimitive)?.content?.takeIf(String::isNotBlank)
 
 private val ACKNOWLEDGEABLE_SHELL_TOOLS = setOf(
-    "execute_shell_command",
-    "get_shell_job",
-    "wait_for_job",
+    "shell_exec",
+    "shell_job_get",
+    "shell_job_wait",
 )
 
 private val TERMINAL_ACK_STATES = setOf(

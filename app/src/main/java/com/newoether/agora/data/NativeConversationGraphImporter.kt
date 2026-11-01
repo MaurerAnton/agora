@@ -1,5 +1,8 @@
 package com.newoether.agora.data
 
+import com.newoether.agora.data.NativeExportChatEntity as ExportChatEntity
+
+import kotlinx.coroutines.ensureActive
 import android.util.JsonReader
 import com.newoether.agora.automation.LoopPolicy
 import com.newoether.agora.data.DataImporter.ImportStrategy
@@ -170,13 +173,26 @@ internal class NativeConversationGraphImporter(
             mutableSetOf()
         }.apply { addAll(tasks.map { it.id }) }
 
+        val earliestRunTimes = rawRuns.groupingBy { it.conversationId }
+            .fold(Long.MAX_VALUE) { earliest, run -> minOf(earliest, run.startedAt) }
         val conversations = rawConversations.map { conversation ->
             sanitizeImportedConversation(
                 ChatEntity(
                     id = conversation.id,
                     title = conversation.title,
                     lastUpdated = conversation.lastUpdated,
+                    createdAt = conversation.createdAt ?: minOf(conversation.lastUpdated,
+                        earliestRunTimes[conversation.id] ?: conversation.lastUpdated),
                     isPinned = conversation.isPinned,
+                    parentConversationId = conversation.parentConversationId,
+                    subagentResultJson = conversation.subagentResultJson,
+                    subagentResultId = conversation.subagentResultId,
+                    subagentResultStatus = conversation.subagentResultStatus,
+                    // Restored work is dormant and must not trigger fresh paid generations.
+                    subagentDeliveredResultId = conversation.subagentResultId,
+                    todoJson = com.newoether.agora.model.ConversationTodo.encode(
+                        com.newoether.agora.model.ConversationTodo.decode(conversation.todoJson),
+                    ),
                     selectedBranchesJson = conversation.selectedBranchesJson,
                     systemPromptId = resolveSystemPromptId(conversation.systemPromptId),
                     modelId = conversation.modelId,
@@ -201,6 +217,7 @@ internal class NativeConversationGraphImporter(
         } else {
             mutableSetOf()
         }.apply { addAll(conversations.map { it.id }) }
+        validateSubagentArchiveOwners(conversations, availableConversationIds, chatDao::getConversation)
 
         val availableRawRuns = rawRuns.filter {
             it.conversationId in availableConversationIds
@@ -255,24 +272,16 @@ internal class NativeConversationGraphImporter(
             MessageStatus.SUCCESS
         }
         val oldToNewImageIndex = mutableMapOf<Int, Int>()
+        val legacyImagePaths = restoredMedia.legacyImagesByMessage[id].orEmpty().toSortedMap()
         val restoredImages = if (archiveVersion >= 4) {
-            buildList {
-                images.forEachIndexed { oldIndex, entry ->
-                    restoredMedia.archiveFiles[entry]?.uri?.let { uri ->
-                        oldToNewImageIndex[oldIndex] = size
-                        add(uri)
-                    }
-                }
+            images.mapIndexed { index, entry ->
+                oldToNewImageIndex[index] = index
+                restoredMedia.archiveFiles[entry]?.absolutePath.orEmpty()
             }
         } else {
-            buildList {
-                restoredMedia.legacyImagesByMessage[id]
-                    .orEmpty()
-                    .toSortedMap()
-                    .forEach { (oldIndex, uri) ->
-                        oldToNewImageIndex[oldIndex] = size
-                        add(uri)
-                    }
+            legacyImagePaths.entries.mapIndexed { index, (oldIndex, path) ->
+                oldToNewImageIndex[oldIndex] = index
+                path
             }
         }
         return MessageEntity(
@@ -320,6 +329,11 @@ internal class NativeConversationGraphImporter(
                 restoredUriForArchiveEntry = { entry ->
                     restoredMedia.archiveFiles[entry]?.uri
                 },
+                restoredPathForArchiveEntry = { entry ->
+                    restoredMedia.archiveFiles[entry]?.absolutePath
+                },
+                originalImageSources = images,
+                legacyImagePaths = legacyImagePaths,
             ),
             runId = assignment.runId,
             runSequence = assignment.runSequence,
@@ -328,9 +342,9 @@ internal class NativeConversationGraphImporter(
         )
     }
 
-    private suspend fun importMessagesFromGraph(
+    private suspend fun prepareMessagesFromGraph(
         stream: InputStream,
-        strategy: ImportStrategy,
+        write: (MessageEntity) -> Unit,
         availableConversationIds: Set<String>,
         restoredMedia: RestoredMedia,
         assignments: Map<String, PlannedMessageAssignment>,
@@ -339,23 +353,6 @@ internal class NativeConversationGraphImporter(
         messageParentOverrides: Map<String, String>,
         archiveVersion: Int,
     ) {
-        val batch = mutableListOf<MessageEntity>()
-
-        suspend fun flushBatch() {
-            if (batch.isEmpty()) return
-            val existingIds = if (strategy == ImportStrategy.MERGE) {
-                chatDao.findExistingMessageIds(batch.map { it.id }).toSet()
-            } else {
-                emptySet()
-            }
-            batch.forEach { message ->
-                if (message.id !in existingIds || message.images.isNotEmpty()) {
-                    chatDao.upsertMessage(message)
-                }
-            }
-            batch.clear()
-        }
-
         JsonReader(InputStreamReader(stream, Charsets.UTF_8)).use { reader ->
             reader.beginObject()
             while (reader.hasNext()) {
@@ -381,17 +378,14 @@ internal class NativeConversationGraphImporter(
                         messageParentOverrides[exported.id]?.let { repairedParentId ->
                             message = message.copy(parentId = repairedParentId)
                         }
-                        batch.add(message)
-                        if (batch.size >= IMPORT_MESSAGE_BATCH_SIZE) {
-                            flushBatch()
-                        }
+                        kotlinx.coroutines.currentCoroutineContext().ensureActive()
+                        write(message)
                     }
                 }
                 reader.endArray()
             }
             reader.endObject()
         }
-        flushBatch()
     }
 
     private fun planNativeRunGraph(
@@ -612,61 +606,64 @@ internal class NativeConversationGraphImporter(
                 ConversationSettingsImportTransferEntity.MODE_MERGE
             },
         )
-        val at = System.currentTimeMillis()
-        database.withSemanticGraphMutation(
-            snapshot = semanticSnapshot,
-            clearMessageIds = plannedRunGraph.assignments.keys,
-            clearAllEmbeddings = strategy == ImportStrategy.REPLACE,
-            updatedAt = at,
-        ) {
-            if (strategy == ImportStrategy.REPLACE) {
-                chatDao.deleteAllLoops()
-                chatDao.deleteAllConversations()
-                chatDao.deleteAllTasks()
-            }
-            headers.tasks.forEach { chatDao.upsertTask(it) }
-            headers.conversations.forEach { conversation ->
-                val derivedRunSelections = plannedRunGraph.legacyRunSelections[conversation.id]
-                val derivedMessageSelections =
-                    plannedRunGraph.messageSelectionOverrides[conversation.id]
-                chatDao.upsertConversation(
-                    conversation.copy(
-                        selectedBranchesJson = derivedMessageSelections
-                            ?.let(::encodeStoredSelections)
-                            ?: conversation.selectedBranchesJson,
-                        selectedRunBranchesJson = derivedRunSelections
-                            ?.let(::encodeStoredSelections)
-                            ?: conversation.selectedRunBranchesJson,
+        val conversations = headers.conversations.map { conversation ->
+            conversation.copy(
+                selectedBranchesJson = plannedRunGraph.messageSelectionOverrides[conversation.id]
+                    ?.let(::encodeStoredSelections) ?: conversation.selectedBranchesJson,
+                selectedRunBranchesJson = plannedRunGraph.legacyRunSelections[conversation.id]
+                    ?.let(::encodeStoredSelections) ?: conversation.selectedRunBranchesJson,
+            )
+        }
+        graphSource.withPreparedMessages(
+            prepare = { write ->
+                graphSource.open().use { stream ->
+                    prepareMessagesFromGraph(
+                        stream, write, headers.availableConversationIds, restoredMedia,
+                        plannedRunGraph.assignments, plannedRunGraph.recoveredRunIds,
+                        plannedRunGraph.deletedMessageIds, plannedRunGraph.messageParentOverrides,
+                        archiveVersion,
                     )
-                )
-            }
-            for (run in plannedRunGraph.runs) {
-                if (chatDao.getRun(run.id) == null) chatDao.insertRun(run)
-            }
-            graphSource.open().use { stream ->
-                importMessagesFromGraph(
-                    stream = stream,
-                    strategy = strategy,
-                    availableConversationIds = headers.availableConversationIds,
-                    restoredMedia = restoredMedia,
-                    assignments = plannedRunGraph.assignments,
-                    recoveredRunIds = plannedRunGraph.recoveredRunIds,
-                    deletedMessageIds = plannedRunGraph.deletedMessageIds,
-                    messageParentOverrides = plannedRunGraph.messageParentOverrides,
-                    archiveVersion = archiveVersion,
-                )
-            }
-            headers.loops.forEach { chatDao.upsertLoop(it) }
-            importedSettings.keys.forEach { conversationId ->
-                chatDao.deleteConversationSettingsTransfer(conversationId)
-            }
-            chatDao.upsertConversationSettingsImportTransfer(settingsTransfer)
-            MaintenanceDebtEntity.RECONCILE_KINDS.forEach { kind ->
-                database.maintenanceDebtDao().enqueue(
-                    kind,
-                    MaintenanceDebtEntity.RECONCILE_IDENTITY,
-                    at,
-                )
+                }
+            },
+        ) { prepared ->
+            val at = System.currentTimeMillis()
+            database.withSemanticGraphMutation(
+                snapshot = semanticSnapshot,
+                clearMessageIds = plannedRunGraph.assignments.keys,
+                clearAllEmbeddings = strategy == ImportStrategy.REPLACE,
+                updatedAt = at,
+            ) {
+                if (strategy == ImportStrategy.REPLACE) {
+                    chatDao.deleteAllLoops()
+                    chatDao.deleteAllConversations()
+                    chatDao.deleteAllTasks()
+                }
+                headers.tasks.forEach { chatDao.upsertTask(it) }
+                conversations.forEach { chatDao.upsertConversation(it) }
+                for (run in plannedRunGraph.runs) {
+                    if (chatDao.getRun(run.id) == null) chatDao.insertRun(run)
+                }
+                for (batch in prepared.chunked(IMPORT_MESSAGE_BATCH_SIZE)) {
+                    kotlinx.coroutines.currentCoroutineContext().ensureActive()
+                    val existingIds = if (strategy == ImportStrategy.MERGE) {
+                        chatDao.findExistingMessageIds(batch.map { it.id }).toSet()
+                    } else emptySet()
+                    batch.forEach { message ->
+                        if (message.id !in existingIds || message.images.isNotEmpty()) chatDao.upsertMessage(message)
+                    }
+                }
+                headers.loops.forEach { chatDao.upsertLoop(it) }
+                importedSettings.keys.forEach { conversationId ->
+                    chatDao.deleteConversationSettingsTransfer(conversationId)
+                }
+                chatDao.upsertConversationSettingsImportTransfer(settingsTransfer)
+                MaintenanceDebtEntity.RECONCILE_KINDS.forEach { kind ->
+                    database.maintenanceDebtDao().enqueue(
+                        kind,
+                        MaintenanceDebtEntity.RECONCILE_IDENTITY,
+                        at,
+                    )
+                }
             }
         }
         scheduleMaintenance()
@@ -674,25 +671,6 @@ internal class NativeConversationGraphImporter(
     }
 
     // Internal data classes for parsing export files
-    @Serializable
-    private data class ExportChatEntity(
-        val id: String,
-        val title: String,
-        val lastUpdated: Long,
-        val isPinned: Boolean = false,
-        val selectedBranchesJson: String? = null,
-        val systemPromptId: String? = null,
-        val modelId: String? = null,
-        val taskId: String? = null,
-        val origin: String = "user",
-        val graduated: Boolean = false,
-        val selectedRunBranchesJson: String? = null,
-        val draftText: String = "",
-        val draftAttachments: String? = null,
-        val conversationSettings: ConversationSettings? = null,
-        /** v1-v3 compatibility only; never restored across devices. */
-        val hasUnreadGeneration: Boolean = false,
-    )
 
     @Serializable
     private data class ExportRunEntity(

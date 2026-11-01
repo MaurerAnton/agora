@@ -1,11 +1,11 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
     <string name="remote_failed">Remote could not complete this action. See the error details.</string>
-    <string name="remote_unknown">Delivery is unconfirmed. Check the conversation in Codex before sending again.</string>
+    <string name="remote_unknown">Could not confirm that the message was sent.</string>
     <string name="remote_rejected">Codex did not accept this message. Check the error details before trying again.</string>
     <string name="remote_storage_failed">Agora could not access local Remote storage. Check available space.</string>
     <string name="remote_network_failed">Cannot reach Filo. Check the target computer, service address and network.</string>
-    <string name="remote_auth_failed">Filo rejected the access token. Use the token from the target computer.</string>
+    <string name="remote_auth_failed">Filo could not authenticate this request. This does not necessarily mean the access token is wrong. If it persists, check the target computer’s token and clock.</string>
     <string name="remote_configuration_failed">Enter a valid service URL and a 64-character access token.</string>
     <string name="remote_protocol_failed">Agora could not verify or read the Filo response. Check that both apps are up to date.</string>
     <string name="remote_service_failed">Codex could not complete the request.</string>
@@ -14,7 +14,7 @@
     <string name="remote_response_too_large">The response or attachment exceeds the supported size.</string>
     <string name="remote_invalid_request">Filo could not read this request. Check the supplied values.</string>
     <string name="remote_not_found">The requested item is no longer available. Refresh the list.</string>
-    <string name="remote_not_supported">This operation is unavailable in the connected client.</string>
+    <string name="remote_not_supported">This source does not support this action.</string>
     <string name="remote_desktop_unavailable">Filo cannot reach Codex Desktop. Open Codex on the target computer.</string>
     <string name="remote_session_unavailable">Codex has not made this conversation ready. Check it on the target computer.</string>
     <string name="remote_helper_unavailable">Filo cannot reach its user helper. Check the Filo service on the target computer.</string>

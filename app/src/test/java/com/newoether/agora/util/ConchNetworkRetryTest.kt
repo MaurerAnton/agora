@@ -109,6 +109,47 @@ class ConchNetworkRetryTest {
     }
 
     @Test
+    fun readOnlyOwnerRebuildsSixAttemptsButNeverReplaysMutations() = kotlinx.coroutines.test.runTest {
+        listOf("/file/read", "/jobs/list", "/file/write", "/execute").forEach { path ->
+            var envelopes = 0
+            try {
+                ConchNetwork.retryRead(path) {
+                    envelopes++
+                    throw java.io.EOFException()
+                }
+            } catch (_: java.io.EOFException) { }
+            assertEquals(path, if (ConchNetwork.isReadOnly(path)) 6 else 1, envelopes)
+        }
+    }
+
+    @Test
+    fun brokenErrorBodyPreservesHttpStatusForTheOuterRetryOwner() {
+        listOf(401, 503).forEach { status ->
+            ServerSocket(0).use { server ->
+                val worker = thread(isDaemon = true) {
+                    server.accept().use { socket ->
+                        readCompleteRequest(socket)
+                        socket.getOutputStream().apply {
+                            write("HTTP/1.1 $status X\r\nContent-Length: 100\r\nRetry-After: 120\r\nConnection: close\r\n\r\nx".toByteArray())
+                            flush()
+                        }
+                    }
+                }
+                val failure = runCatching {
+                    ConchNetwork.postTextResponse(
+                        "http://127.0.0.1:${server.localPort}/file/read", "{}", emptyMap(), maxRetries = 0,
+                    )
+                }.exceptionOrNull()
+                assertTrue(failure is NetworkHttpException)
+                assertEquals(status, (failure as NetworkHttpException).statusCode)
+                assertEquals("120", failure.retryAfter)
+                assertEquals(status == 503, NetworkRetryPolicy.isTransient(failure))
+                worker.join(1_000)
+            }
+        }
+    }
+
+    @Test
     fun connectionClosedAfterRequestIsNeverReplayed() {
         val (server, connections) = startFakeConch(Behaviour.CLOSE_BEFORE_RESPONSE_THEN_ANSWER)
         try {

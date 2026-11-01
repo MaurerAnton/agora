@@ -1,6 +1,5 @@
 package com.newoether.agora.ui.settings.datacontrol
 
-import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
@@ -14,6 +13,7 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import com.newoether.agora.R
+import com.newoether.agora.ui.components.optionClickable
 import com.newoether.agora.ui.settings.PillTabSwitcher
 import com.newoether.agora.data.DataExporter
 import com.newoether.agora.data.DataImporter
@@ -90,7 +90,7 @@ internal fun CheckRow(checked: Boolean, onToggle: (Boolean) -> Unit, label: Stri
     Row(
         modifier = Modifier
             .fillMaxWidth()
-            .clickable { onToggle(!checked) }
+            .optionClickable { onToggle(!checked) }
             .padding(vertical = 6.dp),
         verticalAlignment = Alignment.CenterVertically
     ) {

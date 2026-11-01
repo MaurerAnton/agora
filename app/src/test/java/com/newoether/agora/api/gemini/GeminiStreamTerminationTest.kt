@@ -135,12 +135,12 @@ class GeminiStreamTerminationTest {
     }
 
     @Test
-    fun eofWithoutFinishReasonIsIncompleteAndOnlyEmptyAttemptRetries() {
+    fun eofWithoutFinishReasonRetriesAndReplacesPartialAttempt() {
         val empty = geminiStreamTermination(false, null, false)
         val partial = geminiStreamTermination(false, null, true)
 
         assertTrue(empty.isRetryable)
-        assertFalse(partial.isRetryable)
+        assertTrue(partial.isRetryable)
         assertTrue(partial.toError("Gemini") is GenerationError.IncompleteStream)
     }
 
@@ -157,11 +157,11 @@ class GeminiStreamTerminationTest {
     }
 
     @Test
-    fun streamErrorRetriesOnlyBeforeVisibleOutput() {
+    fun transientStreamErrorRetriesAfterVisibleOutput() {
         val error = GenerationError.Api(null, "failed_to_generate", "failed to generate")
 
         assertTrue(geminiStreamTermination(false, null, false, error).isRetryable)
-        assertFalse(geminiStreamTermination(false, null, true, error).isRetryable)
+        assertTrue(geminiStreamTermination(false, null, true, error).isRetryable)
     }
 
     @Test
@@ -293,7 +293,7 @@ class GeminiStreamTerminationTest {
             toolCallInFlight = true,
         )
 
-        assertFalse(termination.isRetryable)
+        assertTrue(termination.isRetryable)
         assertTrue(termination.toError("Gemini") is GenerationError.IncompleteStream)
     }
 

@@ -19,9 +19,15 @@ data class GenerationPromptTemplate(
     /**
      * Active memory read once when the template is captured, so every Provider pass of one Run
      * (initial request, tool continuations, retries) sees the same text and keeps the prompt
-     * cache stable. Mid-Run edits become visible through read_active_memory and land next Run.
+     * cache stable. Mid-Run edits become visible through active_memory_read and land next Run.
      */
     val activeMemory: String = "",
+    /**
+     * Skill catalog frozen with the template for the same reason as [activeMemory]: mid-Run
+     * skill edits must not rewrite the system prompt between Provider passes. Empty when skill
+     * access was off at capture time. Edits land next Run.
+     */
+    val skillCatalog: String = "",
 )
 
 data class GenerationConfig(
@@ -65,7 +71,22 @@ data class GenerationConfig(
 )
 
 data class GenerationContext(
+    val phoneEnabled: Boolean = false,
+    val phoneMode: String = "accessibility",
+    val phoneAllowAutomation: Boolean = false,
+    val phoneReady: Boolean = false,
+    val automationCaller: Boolean = false,
     val conversationId: String? = null,
+    val subagentToolsEnabled: Boolean = false,
+    /** Exposes agent_delete; effective only together with [subagentToolsEnabled]. */
+    val subagentDeleteEnabled: Boolean = false,
+    val enabledModelIds: List<String> = emptyList(),
+    /** Null and empty both allow no new subagents; global enabled IDs are not a fallback. */
+    val subagentModelIds: List<String>? = null,
+    val subagentRecommendedModel: String? = null,
+    val todoEnabled: Boolean = true,
+    /** Supplied only by the authorized executor, never by Provider arguments. */
+    val toolEffectIdentity: RunEffectIdentity? = null,
     val accessSavedMemories: Boolean = true,
     val accessActiveMemory: Boolean = true,
     val skillReadAccess: Boolean = true,
@@ -85,6 +106,7 @@ data class GenerationContext(
     val webSearchBaseUrl: String = "",
     val imageGenEnabled: Boolean = false,
     val askUserEnabled: Boolean = false,
+    val askUserTimeoutMinutes: Int = com.newoether.agora.data.DEFAULT_ASK_USER_TIMEOUT_MINUTES,
     val imageGenApiKey: String = "",
     val imageGenBaseUrl: String = "",
     val imageGenModel: String = "gpt-image-1",
@@ -131,6 +153,12 @@ internal data class AutomaticCompactConfig(
     /** Frozen API-only USER templates included in the exact Auto Compact threshold projection. */
     val userPrepend: String? = null,
     val userPostpend: String? = null,
+    val assistantPrepend: String? = null,
+    val assistantPostpend: String? = null,
+    /** Main-request templates resolve at the same accounting boundary, independently of Compact. */
+    val mainPromptTemplate: GenerationPromptTemplate? = null,
+    /** Main-request transcription policy. Compact's policy applies only to its summary request. */
+    val mainImageTranscriptionEnabled: Boolean = false,
     /** Filled by the effect owner that has the exact frozen tool-definition set. */
     val fixedTokenCost: Int = 0,
     /**
@@ -211,6 +239,8 @@ internal data class GenerationCallbacks(
      *  each round boundary and ends the generation there so the queue can flush immediately
      *  (steering) instead of waiting out the entire loop. Headless runs keep the default. */
     val hasQueuedSends: () -> Boolean = { false },
+    /** An already-scheduled ordinary successor keeps successful terminalization interim. */
+    val hasPendingContinuation: Boolean = false,
     /** Null for headless automation, which retains its existing foreground/background policy. */
     val isConversationVisible: (() -> Boolean)? = null,
     /** A validated Provider outcome is necessary but not sufficient: runtime identity must accept

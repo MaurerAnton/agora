@@ -1,0 +1,33 @@
+<resources>
+    <string name="message_source_subagent">Subagent</string>
+    <string name="subagent_running">Running</string>
+    <string name="subagent_completed">Completed</string>
+    <string name="subagent_failed">Failed</string>
+    <string name="subagent_stopped">Stopped</string>
+    <string name="subagent_idle">Idle</string>
+    <string name="subagents_model_list_title">Models</string>
+    <string name="subagents_recommended_model_title">Recommended Model</string>
+    <string name="subagents_no_recommended_model">No Preference</string>
+    <string name="subagents_no_models">No Models Added</string>
+    <string name="subagents_no_models_desc">Add a model to start new subagents</string>
+    <string name="subagents_add_models">Add Models</string>
+    <string name="subagents_add_models_title">Add Subagent Models</string>
+    <string name="subagents_limits_title">Limits</string>
+    <string name="subagents_max_total">Total Subagents</string>
+    <string name="subagents_max_total_desc">Maximum existing subagents per parent conversation, including completed ones. Lowering this limit does not stop or delete existing subagents.</string>
+    <string name="subagents_max_concurrent">Concurrent Subagents</string>
+    <string name="subagents_max_concurrent_desc">Maximum subagents running at the same time per parent conversation. Extra work waits; lowering this limit lets running subagents finish.</string>
+    <string name="subagents_limit_value">%1$d</string>
+    <string name="subagents_capsule_display_title">Capsule Display</string>
+    <string name="subagents_capsule_display_desc">Show subagents individually or together in one capsule</string>
+    <string name="subagents_capsule_display_individual">Individual</string>
+    <string name="subagents_capsule_display_grouped">Grouped</string>
+    <plurals name="subagents_running_count">
+        <item quantity="one">%d Running</item>
+        <item quantity="other">%d Running</item>
+    </plurals>
+    <plurals name="subagents_count">
+        <item quantity="one">%d Subagent</item>
+        <item quantity="other">%d Subagents</item>
+    </plurals>
+</resources>

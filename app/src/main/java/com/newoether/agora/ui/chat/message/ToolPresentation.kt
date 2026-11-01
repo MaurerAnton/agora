@@ -47,7 +47,18 @@ internal enum class ToolKind {
     TASK_DELETE,
     LOOP_START,
     LOOP_STOP,
+    PHONE,
     ASK_USER,
+    TODO_READ,
+    TODO_UPDATE,
+    SUBAGENT_SPAWN,
+    SUBAGENT_SEND,
+    SUBAGENT_WAIT,
+    SUBAGENT_LIST,
+    SUBAGENT_STOP,
+    SUBAGENT_DELETE,
+    MCP_LIST,
+    MCP_SEARCH,
     MCP,
     UNKNOWN,
 }
@@ -123,12 +134,39 @@ internal object ToolPresentationResolver {
         )
     }
 
-    fun kindForToolName(toolName: String?): ToolKind = kindFor(toolName.orEmpty())
+    fun kindForToolName(toolName: String?): ToolKind =
+        kindFor(com.newoether.agora.tool.BuiltInToolNames.canonical(toolName.orEmpty()))
+
+    private const val RESOLVED_CACHE_SIZE = 64
+
+    // Composition resolves every visible tool row on each stream snapshot. A finished segment no
+    // longer changes, so its presentation is computed once instead of re-parsing its result JSON.
+    private val resolvedFinished = object : LinkedHashMap<MessageSegment, ToolPresentation>(
+        RESOLVED_CACHE_SIZE, 0.75f, true,
+    ) {
+        override fun removeEldestEntry(eldest: MutableMap.MutableEntry<MessageSegment, ToolPresentation>) =
+            size > RESOLVED_CACHE_SIZE
+    }
 
     fun resolve(segment: MessageSegment): ToolPresentation {
-        val toolName = segment.toolName.orEmpty()
+        if (segment.toolResult == null) return compute(segment)
+        synchronized(resolvedFinished) { resolvedFinished[segment] }?.let { return it }
+        val presentation = compute(segment)
+        synchronized(resolvedFinished) { resolvedFinished[segment] = presentation }
+        return presentation
+    }
+
+    private fun compute(segment: MessageSegment): ToolPresentation {
+        val toolName = if (segment.remoteToolSource == null) {
+            com.newoether.agora.tool.BuiltInToolNames.canonical(segment.toolName.orEmpty())
+        } else segment.toolName.orEmpty()
+        val remoteShell = if (segment.remoteToolSource != null && isRemoteShellTool(toolName)) {
+            mapRemoteToolDetail(segment.remoteToolSource, toolName, segment.toolArgs,
+                segment.toolResult ?: segment.toolProgress, segment.toolState)
+        } else null
+        val remoteShellBody = remoteShell?.body as? ToolDetailBody.Shell
         val malformed = malformedCallOriginals(toolName, segment.toolArgs)
-        val kind = kindFor(toolName)
+        val kind = if (remoteShellBody != null) ToolKind.SHELL_EXECUTE else kindForToolName(toolName)
         val displayArguments = malformed?.arguments ?: segment.toolArgs
         val resultElement = parseElement(
             segment.toolStructuredResult ?: segment.toolResult.takeUnless {
@@ -138,7 +176,8 @@ internal object ToolPresentationResolver {
         val resultEnvelope = resultElement as? JsonObject
         val resultObject = effectiveResultObject(kind, resultEnvelope)
         val errorCode = resultObject.string("error") ?: resultEnvelope.string("error")
-        val exitCode = resultObject.int("exit_code") ?: resultEnvelope.int("exit_code")
+        val exitCode = remoteShellBody?.status?.toIntOrNull()
+            ?: resultObject.int("exit_code") ?: resultEnvelope.int("exit_code")
         val explicitState = stateFromWire(segment.toolState)
         // Until a result arrives, arguments can still be a JSON prefix and can also contain a very
         // large file payload. Never strictly parse that growing buffer on the UI thread. The
@@ -168,12 +207,12 @@ internal object ToolPresentationResolver {
         val failedFlag = resultObject.boolean("failed") == true ||
             resultEnvelope.boolean("failed") == true
         val wireFailure = explicitState == ToolPresentationState.FAILED
-        val failed = !declaredEmpty &&
-            (failureCode != null || failedFlag || wireFailure)
+        val failed = !declaredEmpty && (failureCode != null || failedFlag || wireFailure)
         val semanticEmpty = !failed && isSemanticEmpty(
             kind = kind,
             rawResult = segment.toolResult.orEmpty(),
             result = resultObject,
+            value = resultElement,
             count = count,
             errorCode = errorCode,
         )
@@ -216,7 +255,7 @@ internal object ToolPresentationResolver {
             rawStructuredResult = segment.toolStructuredResult,
             liveOutput = segment.toolProgress,
             subject = normalizeToolSummarySubject(
-                subject(kind, args, resultObject)
+                remoteShell?.codeArgument?.text ?: subject(kind, args, resultObject)
                     ?: subject(kind, args, resultEnvelope)
                     ?: streamingHints.subject,
             ),
@@ -262,41 +301,53 @@ internal object ToolPresentationResolver {
     }
 
     private fun kindFor(name: String): ToolKind = when (name) {
-        "list_memory_files" -> ToolKind.MEMORY_LIST
-        "read_memory_file", "read_active_memory" -> ToolKind.MEMORY_READ
-        "create_memory_file" -> ToolKind.MEMORY_CREATE
-        "edit_memory_file" -> ToolKind.MEMORY_EDIT
-        "delete_memory_file" -> ToolKind.MEMORY_DELETE
-        "update_active_memory" -> ToolKind.MEMORY_UPDATE_ACTIVE
-        "list_skill_files" -> ToolKind.SKILL_LIST
-        "read_skill_file" -> ToolKind.SKILL_READ
-        "create_skill_file" -> ToolKind.SKILL_CREATE
-        "edit_skill_file" -> ToolKind.SKILL_EDIT
-        "delete_skill_file" -> ToolKind.SKILL_DELETE
+        "memory_list" -> ToolKind.MEMORY_LIST
+        "memory_read", "active_memory_read" -> ToolKind.MEMORY_READ
+        "memory_create" -> ToolKind.MEMORY_CREATE
+        "memory_edit" -> ToolKind.MEMORY_EDIT
+        "memory_delete" -> ToolKind.MEMORY_DELETE
+        "active_memory_update" -> ToolKind.MEMORY_UPDATE_ACTIVE
+        "skill_list" -> ToolKind.SKILL_LIST
+        "skill_read" -> ToolKind.SKILL_READ
+        "skill_create" -> ToolKind.SKILL_CREATE
+        "skill_edit" -> ToolKind.SKILL_EDIT
+        "skill_delete" -> ToolKind.SKILL_DELETE
         "web_search", "openai_search", "google_search" -> ToolKind.WEB_SEARCH
         "web_fetch" -> ToolKind.WEB_FETCH
-        "search_conversations" -> ToolKind.CONVERSATION_SEARCH
-        "list_conversations" -> ToolKind.CONVERSATION_LIST
-        "read_conversation" -> ToolKind.CONVERSATION_READ
-        "list_shells" -> ToolKind.SHELL_LIST
-        "execute_shell_command" -> ToolKind.SHELL_EXECUTE
-        "list_shell_jobs" -> ToolKind.SHELL_JOB_LIST
-        "get_shell_job" -> ToolKind.SHELL_JOB_GET
-        "wait_for_job" -> ToolKind.SHELL_JOB_WAIT
-        "stop_shell_job" -> ToolKind.SHELL_JOB_STOP
+        "conversation_search" -> ToolKind.CONVERSATION_SEARCH
+        "conversation_list" -> ToolKind.CONVERSATION_LIST
+        "conversation_read" -> ToolKind.CONVERSATION_READ
+        "shell_list" -> ToolKind.SHELL_LIST
+        "shell_exec" -> ToolKind.SHELL_EXECUTE
+        "shell_job_list" -> ToolKind.SHELL_JOB_LIST
+        "shell_job_get" -> ToolKind.SHELL_JOB_GET
+        "shell_job_wait" -> ToolKind.SHELL_JOB_WAIT
+        "shell_job_stop" -> ToolKind.SHELL_JOB_STOP
         "file_read" -> ToolKind.FILE_READ
         "file_write" -> ToolKind.FILE_WRITE
-        "file_edit" -> ToolKind.FILE_EDIT
+        "file_edit", "file_multi_edit" -> ToolKind.FILE_EDIT
         "file_glob" -> ToolKind.FILE_GLOB
         "file_grep" -> ToolKind.FILE_GREP
-        "view_image" -> ToolKind.IMAGE_VIEW
-        "generate_image" -> ToolKind.IMAGE_GENERATE
-        "create_task" -> ToolKind.TASK_CREATE
-        "list_tasks" -> ToolKind.TASK_LIST
-        "delete_task" -> ToolKind.TASK_DELETE
-        "start_loop" -> ToolKind.LOOP_START
-        "stop_loop" -> ToolKind.LOOP_STOP
+        "file_view_image" -> ToolKind.IMAGE_VIEW
+        "image_generate" -> ToolKind.IMAGE_GENERATE
+        "task_create" -> ToolKind.TASK_CREATE
+        "task_list" -> ToolKind.TASK_LIST
+        "task_delete" -> ToolKind.TASK_DELETE
+        "loop_start" -> ToolKind.LOOP_START
+        "loop_stop" -> ToolKind.LOOP_STOP
+        "phone_claim", "phone_release", "phone_screenshot", "phone_ui_tree", "phone_tap",
+        "phone_long_press", "phone_swipe", "phone_type", "phone_key", "phone_app_launch", "phone_app_list" -> ToolKind.PHONE
         "ask_user" -> ToolKind.ASK_USER
+        "todo_read" -> ToolKind.TODO_READ
+        "todo_update" -> ToolKind.TODO_UPDATE
+        "agent_spawn" -> ToolKind.SUBAGENT_SPAWN
+        "agent_send_message" -> ToolKind.SUBAGENT_SEND
+        "agent_wait" -> ToolKind.SUBAGENT_WAIT
+        "agent_list" -> ToolKind.SUBAGENT_LIST
+        "agent_stop" -> ToolKind.SUBAGENT_STOP
+        "agent_delete" -> ToolKind.SUBAGENT_DELETE
+        "mcp_list_servers" -> ToolKind.MCP_LIST
+        "mcp_search_tools" -> ToolKind.MCP_SEARCH
         else -> if (name.startsWith("mcp_")) ToolKind.MCP else ToolKind.UNKNOWN
     }
 
@@ -320,6 +371,8 @@ internal object ToolPresentationResolver {
     }
 
     private fun semanticCount(kind: ToolKind, result: JsonObject?): Int? = when (kind) {
+        ToolKind.MCP_LIST -> result.int("returned") ?: result.arraySize("servers")
+        ToolKind.MCP_SEARCH -> result.int("returned") ?: result.arraySize("tools")
         ToolKind.MEMORY_LIST,
         ToolKind.SKILL_LIST -> result.arraySize("files")
         ToolKind.WEB_SEARCH -> result.arraySize("results")
@@ -354,6 +407,7 @@ internal object ToolPresentationResolver {
         kind: ToolKind,
         rawResult: String,
         result: JsonObject?,
+        value: JsonElement?,
         count: Int?,
         errorCode: String?,
     ): Boolean {
@@ -361,6 +415,8 @@ internal object ToolPresentationResolver {
         if (count != null && count == 0) return true
         if (errorCode == "no_results") return true
         return when (kind) {
+            ToolKind.TODO_READ, ToolKind.SUBAGENT_LIST -> (value as? JsonArray)?.isEmpty() == true
+            ToolKind.SUBAGENT_WAIT -> result.array("results")?.isEmpty() == true
             ToolKind.FILE_READ -> result.string("content").isNullOrEmpty()
             else -> false
         }
@@ -381,6 +437,7 @@ internal object ToolPresentationResolver {
         ToolKind.SKILL_EDIT,
         ToolKind.SKILL_DELETE -> arguments.string("name")
         ToolKind.WEB_SEARCH,
+        ToolKind.MCP_SEARCH,
         ToolKind.CONVERSATION_SEARCH -> arguments.string("query")
         ToolKind.WEB_FETCH -> arguments.string("url")
         ToolKind.CONVERSATION_READ -> result.string("title")

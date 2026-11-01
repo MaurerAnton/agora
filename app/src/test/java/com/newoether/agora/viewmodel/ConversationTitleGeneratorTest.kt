@@ -1,10 +1,12 @@
 package com.newoether.agora.viewmodel
+import com.newoether.agora.api.GenerationError
 import com.newoether.agora.api.LlmProvider
 import com.newoether.agora.api.ProviderConfig
 import com.newoether.agora.api.StreamEvent
 import com.newoether.agora.data.CustomEndpointProtocol
 import com.newoether.agora.data.CustomProviderConfig
 import com.newoether.agora.data.local.ChatEntity
+import com.newoether.agora.data.local.ChatDao
 import com.newoether.agora.data.local.MessageEntity
 import com.newoether.agora.data.local.MessageContextTopology
 import com.newoether.agora.data.repository.ConversationRepository
@@ -16,6 +18,7 @@ import com.newoether.agora.model.ChatMessage
 import com.newoether.agora.model.Participant
 import com.newoether.agora.model.MessageStatus
 import io.mockk.coEvery
+import io.mockk.coVerify
 import io.mockk.every
 import io.mockk.mockk
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -34,7 +37,8 @@ class ConversationTitleGeneratorTest {
             anthropicCacheEnabled = false, anthropicCacheTtl = "5m",
         )
         val settings = mockk<SettingsRepository>(relaxed = true)
-        val conversations = mockk<ConversationRepository>(relaxed = true)
+        val dao = mockk<ChatDao>(relaxed = true)
+        val conversations = ConversationRepository(dao, database = null)
         val registry = mockk<ProviderRegistry>(relaxed = true)
         val provider = mockk<LlmProvider>()
         val captured = mutableListOf<ProviderConfig>()
@@ -43,16 +47,16 @@ class ConversationTitleGeneratorTest {
             participant = Participant.USER, status = MessageStatus.SUCCESS,
             timestamp = 1L, runId = "run", runSequence = 0L,
         )
-        coEvery { conversations.getConversation("conversation") } returns ChatEntity("conversation", "Old")
-        coEvery { conversations.getMessageTopologySnapshot("conversation") } returns listOf(
+        coEvery { dao.getConversation("conversation") } returns ChatEntity("conversation", "Old")
+        coEvery { dao.getMessageContextTopology("conversation") } returns listOf(
             MessageContextTopology(
                 user.id, user.conversationId, null, user.status, user.participant,
                 user.timestamp, modelName = null, runId = user.runId,
                 runSequence = user.runSequence, consumedAtPass = null,
             ),
         )
-        coEvery { conversations.getMessage("user") } returns user
-        coEvery { conversations.updateConversationTitleIfUnchanged(any(), any(), any()) } returns true
+        coEvery { dao.getMessage("user") } returns user
+        coEvery { dao.updateConversationTitleIfUnchanged(any(), any(), any(), any()) } returns 1
         every { settings.titleGenerationPrompt } returns MutableStateFlow("Title prompt")
         every { settings.anthropicCacheEnabled } returns MutableStateFlow(true)
         every { settings.anthropicCacheTtl } returns MutableStateFlow("1h")
@@ -71,6 +75,55 @@ class ConversationTitleGeneratorTest {
         assertEquals(listOf(true, false), captured.map { it.anthropicCacheEnabled })
         assertEquals(listOf("1h", "5m"), captured.map { it.anthropicCacheTtl })
     }
+    @Test
+    fun titleResetRetryDiscardsTheFailedPrefixAndErrorBeforePersisting() = runTest {
+        val settings = mockk<SettingsRepository>(relaxed = true)
+        val dao = mockk<ChatDao>(relaxed = true)
+        val conversations = ConversationRepository(dao, database = null)
+        val registry = mockk<ProviderRegistry>(relaxed = true)
+        val provider = mockk<LlmProvider>()
+        val user = MessageEntity(
+            id = "user", conversationId = "conversation", text = "Hello",
+            participant = Participant.USER, status = MessageStatus.SUCCESS,
+            timestamp = 1L, runId = "run", runSequence = 0L,
+        )
+        coEvery { dao.getConversation("conversation") } returns ChatEntity("conversation", "Old")
+        coEvery { dao.getMessageContextTopology("conversation") } returns listOf(
+            MessageContextTopology(
+                user.id, user.conversationId, null, user.status, user.participant,
+                user.timestamp, modelName = null, runId = user.runId,
+                runSequence = user.runSequence, consumedAtPass = null,
+            ),
+        )
+        coEvery { dao.getMessage("user") } returns user
+        coEvery { dao.updateConversationTitleIfUnchanged(any(), any(), any(), any()) } returns 1
+        every { settings.titleGenerationModel } returns MutableStateFlow("Anthropic:model")
+        every { settings.titleGenerationPrompt } returns MutableStateFlow("Title prompt")
+        every { settings.anthropicCacheEnabled } returns MutableStateFlow(true)
+        every { settings.anthropicCacheTtl } returns MutableStateFlow("1h")
+        every { settings.customProviders } returns MutableStateFlow(emptyList())
+        every { registry.canonicalModelId(any()) } answers { firstArg() }
+        every { registry.providerForModel(any()) } returns "Anthropic"
+        every { registry.isConfigured(any(), any()) } returns true
+        every { registry.getInstanceOrNull(any()) } returns provider
+        every { registry.getEffectiveBaseUrl(any()) } returns null
+        every { provider.generateResponse(any(), any()) } returns flowOf(
+            StreamEvent.TextChunk("Failed attempt prefix "),
+            StreamEvent.Error(GenerationError.SseParse("malformed", "Invalid response")),
+            StreamEvent.Retrying(attempt = 1, maxAttempts = 5, resetCurrentAttempt = true),
+            StreamEvent.TextChunk("  Recovered\n"),
+            StreamEvent.TextChunk("title  "),
+        )
+        val generator = ConversationTitleGenerator(conversations, settings, registry)
+
+        val result = generator.generateAndPersist("conversation")
+
+        assertEquals(ConversationTitleGenerator.Result.Success("Recovered title"), result)
+        coVerify(exactly = 1) {
+            dao.updateConversationTitleIfUnchanged("conversation", "Old", "Recovered title", any())
+        }
+    }
+
     @Test
     fun initialTitleCollapsesWhitespaceAndFitsThirtyTwoCodePoints() {
         val prompt = "  " + "a".repeat(20) + "\n" + "b".repeat(20) + "  "

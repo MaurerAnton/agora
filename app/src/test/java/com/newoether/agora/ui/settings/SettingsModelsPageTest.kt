@@ -178,7 +178,9 @@ class SettingsModelsPageTest {
         assertFalse(beforeSave.contains("updateModelAlias("))
         assertEquals(1, Regex("updateModelAlias\\(").findAll(rename).count())
         assertTrue(rename.contains("R.string.provider_save"))
-        val switch = page.substringAfter("private fun ModelProviderNameSwitch(")
+        val switch = sourceFile(
+            "app/src/main/java/com/newoether/agora/ui/settings/ModelProviderNameSwitch.kt",
+        )
         assertFalse(switch.contains("viewModel"))
         assertTrue(switch.contains("role = Role.Switch"))
     }

@@ -99,6 +99,10 @@ internal object PortableSettingsArchive {
         put("webSearchProvider", JsonPrimitive(sm.webSearchProvider.first()))
         put("webSearchNumResults", JsonPrimitive(sm.webSearchNumResults.first()))
         put("webSearchBaseUrl", JsonPrimitive(sm.webSearchBaseUrl.first()))
+        val imageQuality = sm.imageQuality.settings.first()
+        put("imageQualityMode", JsonPrimitive(imageQuality.mode))
+        put("imageQualityMaxLongEdge", JsonPrimitive(imageQuality.customMaxLongEdge))
+        put("imageQualityJpegQuality", JsonPrimitive(imageQuality.customJpegQuality))
         put("imageGenEnabled", JsonPrimitive(sm.imageGenEnabled.first()))
         putNullableString("imageGenModel", sm.imageGenModel.first())
         put("imageGenSize", JsonPrimitive(sm.imageGenSize.first()))
@@ -121,6 +125,19 @@ internal object PortableSettingsArchive {
         put("shellEnabled", JsonPrimitive(sm.shellEnabled.first()))
         put("shellConfirmEnabled", JsonPrimitive(sm.shellConfirmEnabled.first()))
         put("askUserEnabled", JsonPrimitive(sm.askUserEnabled.first()))
+        put("askUserTimeoutMinutes", JsonPrimitive(sm.askUserTimeoutMinutes.first()))
+        put("todoEnabled", JsonPrimitive(sm.todoEnabled.first()))
+        put("subagentToolsEnabled", JsonPrimitive(sm.subagentToolsEnabled.first()))
+        put("subagentDeleteEnabled", JsonPrimitive(sm.subagentDeleteEnabled.first()))
+        val subagentMaxTotal = sm.subagentMaxTotal.first()
+        put("subagentMaxTotal", JsonPrimitive(subagentMaxTotal))
+        put(
+            "subagentMaxConcurrent",
+            JsonPrimitive(normalizeSubagentMaxConcurrent(sm.subagentMaxConcurrent.first(), subagentMaxTotal)),
+        )
+        put("subagentCapsuleDisplayMode", JsonPrimitive(sm.subagentCapsuleDisplayMode.first()))
+        putEncoded("subagentEnabledModels", sm.subagentEnabledModels.first())
+        putNullableString("subagentRecommendedModel", sm.subagentRecommendedModel.first())
         putEncoded("shellDevices", sm.shellDevices.first().map(ShellDeviceConfig::withoutSecrets))
         put("automationToolsEnabled", JsonPrimitive(sm.automationToolsEnabled.first()))
         put("exactExecutionEnabled", JsonPrimitive(sm.exactExecutionEnabled.first()))
@@ -206,6 +223,16 @@ internal object PortableSettingsArchive {
             record["anthropicCacheEnabled"]?.let { value ->
                 require(value is JsonPrimitive && !value.isString && value.booleanOrNull != null) {
                     "Invalid Anthropic cache switch"
+                }
+            }
+        }
+        obj["imageQualityMode"]?.let { value ->
+            require(value is JsonPrimitive && value.isString) { "Invalid image quality mode" }
+        }
+        listOf("imageQualityMaxLongEdge", "imageQualityJpegQuality").forEach { key ->
+            obj[key]?.let { value ->
+                require(value is JsonPrimitive && !value.isString && value.intOrNull != null) {
+                    "Invalid image quality integer"
                 }
             }
         }
@@ -315,7 +342,9 @@ internal object PortableSettingsArchive {
         obj.string("manualSearchMethod")?.let { sm.saveManualSearchMethod(it) }
 
         val remoteModelsElement = obj["remoteEmbeddingModels"] ?: obj["embeddingModels"]
-        if (remoteModelsElement != null || replace) {
+        val hasActiveReference = obj.containsKey("activeRemoteEmbeddingModelId") ||
+            obj.containsKey("activeEmbeddingModelId")
+        if (remoteModelsElement != null || replace || hasActiveReference) {
             val importedRemote = remoteModelsElement
                 ?.let { runCatching { json.decodeFromJsonElement<List<EmbeddingModelConfig>>(it) }.getOrNull() }
                 .orEmpty()
@@ -359,9 +388,12 @@ internal object PortableSettingsArchive {
             }
             val previousActive = sm.activeEmbeddingModelId.first()
             val active = requestedActive
-                ?.takeIf { requested -> finalModels.any { it.id == requested } }
+                ?.takeIf { requested -> finalRemote.any { it.id == requested } }
                 ?: previousActive.takeIf { previous ->
-                    finalModels.any { it.id == previous && it.type == EmbeddingModelType.LOCAL }
+                    finalModels.any {
+                        it.id == previous &&
+                            (it.type == EmbeddingModelType.LOCAL || (!replace && !hasActiveReference))
+                    }
                 }
                 .orEmpty()
             sm.setActiveEmbeddingModelId(active)
@@ -372,6 +404,11 @@ internal object PortableSettingsArchive {
         obj.string("webSearchProvider")?.let { sm.saveWebSearchProvider(it) }
         obj.int("webSearchNumResults")?.let { sm.saveWebSearchNumResults(it) }
         obj.string("webSearchBaseUrl")?.let { sm.saveWebSearchBaseUrl(it) }
+        sm.imageQuality.update(
+            mode = obj.string("imageQualityMode"),
+            customMaxLongEdge = obj.int("imageQualityMaxLongEdge"),
+            customJpegQuality = obj.int("imageQualityJpegQuality"),
+        )
         obj.boolean("imageGenEnabled")?.let { sm.saveImageGenEnabled(it) }
         if (obj.containsKey("imageGenModel")) {
             sm.saveImageGenModel(obj.nullableString("imageGenModel")?.let(::remapModel))
@@ -403,6 +440,24 @@ internal object PortableSettingsArchive {
         obj.boolean("shellEnabled")?.let { sm.saveShellEnabled(it) }
         obj.boolean("shellConfirmEnabled")?.let { sm.saveShellConfirmEnabled(it) }
         obj.boolean("askUserEnabled")?.let { sm.saveAskUserEnabled(it) }
+        obj.int("askUserTimeoutMinutes")?.let { sm.saveAskUserTimeoutMinutes(it) }
+        obj.boolean("todoEnabled")?.let { sm.saveTodoEnabled(it) }
+        obj.boolean("subagentToolsEnabled")?.let { sm.saveSubagentToolsEnabled(it) }
+        obj.boolean("subagentDeleteEnabled")?.let { sm.saveSubagentDeleteEnabled(it) }
+        val subagentMaxTotal = obj.int("subagentMaxTotal")
+        val subagentMaxConcurrent = obj.int("subagentMaxConcurrent")
+        if (subagentMaxTotal != null || subagentMaxConcurrent != null) {
+            sm.saveSubagentLimits(subagentMaxTotal, subagentMaxConcurrent)
+        }
+        obj.string("subagentCapsuleDisplayMode")?.let { sm.saveSubagentCapsuleDisplayMode(it) }
+        obj.decode<Set<String>>("subagentEnabledModels")?.let { imported ->
+            sm.saveSubagentEnabledModels(imported.mapTo(linkedSetOf(), ::remapModel), merge = !replace)
+        }
+        obj.nullableString("subagentRecommendedModel")?.let(::remapModel)?.let { recommended ->
+            if (recommended in sm.subagentModelIds.first()) {
+                sm.saveSubagentRecommendedModel(recommended)
+            }
+        }
         val shellElement = obj["shellDevices"]
         if (shellElement != null || replace) {
             val decoded = shellElement
@@ -418,6 +473,10 @@ internal object PortableSettingsArchive {
                     } else {
                         existing?.sshPassword.orEmpty()
                     },
+                    // Private keys were introduced after secrets moved out of structural settings.
+                    // Even legacy mode cannot authorize a settings-embedded private key.
+                    sshPrivateKey = existing?.sshPrivateKey.orEmpty(),
+                    sshKeyPassphrase = existing?.sshKeyPassphrase.orEmpty(),
                 )
             }
             sm.saveShellDevices(

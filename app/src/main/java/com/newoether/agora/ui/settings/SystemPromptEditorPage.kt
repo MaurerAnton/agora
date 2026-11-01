@@ -23,6 +23,7 @@ import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.automirrored.outlined.PlaylistAdd
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.CalendarMonth
+import androidx.compose.material.icons.filled.Code
 import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.Extension
 import androidx.compose.material.icons.filled.History
@@ -47,6 +48,7 @@ import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import com.newoether.agora.R
 import com.newoether.agora.ui.components.DialogWindowEdgeToEdge
+import com.newoether.agora.data.HtmlPreviewGuidance
 import com.newoether.agora.data.PredefinedVariables
 import com.newoether.agora.data.PromptItemType
 import com.newoether.agora.data.PromptTemplateItem
@@ -58,6 +60,7 @@ import com.newoether.agora.ui.components.AgoraDropdownMenuItem
 import com.newoether.agora.ui.components.rememberUnsavedChangesBack
 import com.newoether.agora.ui.components.sheetOptionClickable
 
+@Composable
 private fun variableDisplayName(key: String): String = when (key) {
     PredefinedVariables.TIME -> "Current Time"
     PredefinedVariables.DATE -> "Current Date"
@@ -69,7 +72,7 @@ private fun variableDisplayName(key: String): String = when (key) {
     PredefinedVariables.MESSAGE_MODEL_ID -> "Message Model ID"
     PredefinedVariables.MODEL_ID -> "Current Model ID (Legacy)"
     PredefinedVariables.PROMPT -> "Prompt"
-    else -> key
+    else -> stringResource(R.string.unknown)
 }
 
 private fun variableIcon(key: String): ImageVector = when (key) {
@@ -134,6 +137,7 @@ fun SystemPromptEditorPage(
         else -> assistantItems
     }
 
+    val hasHtmlPreviewGuidance = HtmlPreviewGuidance.isPresent(systemItems)
     val initialTitle = remember { title }
     val initialSystemItems = remember { systemItems.toList() }
     val initialUserItems = remember { userItems.toList() }
@@ -290,7 +294,13 @@ fun SystemPromptEditorPage(
                                     PromptTemplateItem(type = PromptItemType.CUSTOM, value = "")
                                 )
                             },
-                            onInsertVariable = { insertAtIndex = i; showVariablePicker = true }
+                            onInsertVariable = { insertAtIndex = i; showVariablePicker = true },
+                            onInsertHtmlPreview = if (selectedTab == 0) ({
+                                if (!HtmlPreviewGuidance.isPresent(systemItems)) {
+                                    systemItems.add(i, HtmlPreviewGuidance.item())
+                                }
+                            }) else null,
+                            htmlPreviewEnabled = !hasHtmlPreviewGuidance,
                         )
 
                         TemplateItemRow(
@@ -323,7 +333,13 @@ fun SystemPromptEditorPage(
                         },
                         onInsertVariable = {
                             insertAtIndex = currentItems.size; showVariablePicker = true
-                        }
+                        },
+                        onInsertHtmlPreview = if (selectedTab == 0) ({
+                            if (!HtmlPreviewGuidance.isPresent(systemItems)) {
+                                systemItems.add(HtmlPreviewGuidance.item())
+                            }
+                        }) else null,
+                        htmlPreviewEnabled = !hasHtmlPreviewGuidance,
                     )
 
                     Spacer(modifier = Modifier.height(4.dp))
@@ -382,28 +398,30 @@ fun SystemPromptEditorPage(
             )
             Spacer(modifier = Modifier.height(8.dp))
             val availableVars = if (selectedTab == 0) PredefinedVariables.ALL.filter { it !in PredefinedVariables.PER_MESSAGE_VARS } else PredefinedVariables.ALL
-            for (key in availableVars) {
-                SettingsItem(
-                    headlineContent = { Text(variableDisplayName(key)) },
-                    supportingContent = { Text("{${key}}") },
-                    leadingContent = {
-                        Icon(variableIcon(key), contentDescription = null, tint = MaterialTheme.colorScheme.primary)
-                    },
-                    startPadding = SETTINGS_ITEM_SHEET_PADDING,
-                    endPadding = SETTINGS_ITEM_SHEET_PADDING,
-                    modifier = Modifier.fillMaxWidth().sheetOptionClickable {
-                        val item = PromptTemplateItem(type = PromptItemType.PREDEFINED, value = key)
-                        if (targetIndex >= 0 && targetIndex <= currentItems.size) {
-                            currentItems.add(targetIndex, item)
-                        } else {
-                            currentItems.add(item)
+            Column(Modifier.weight(1f, fill = false).verticalScroll(rememberScrollState())) {
+                for (key in availableVars) {
+                    SettingsItem(
+                        headlineContent = { Text(variableDisplayName(key)) },
+                        supportingContent = { Text("{${key}}") },
+                        leadingContent = {
+                            Icon(variableIcon(key), contentDescription = null, tint = MaterialTheme.colorScheme.primary)
+                        },
+                        startPadding = SETTINGS_ITEM_SHEET_PADDING,
+                        endPadding = SETTINGS_ITEM_SHEET_PADDING,
+                        modifier = Modifier.fillMaxWidth().sheetOptionClickable {
+                            val item = PromptTemplateItem(type = PromptItemType.PREDEFINED, value = key)
+                            if (targetIndex >= 0 && targetIndex <= currentItems.size) {
+                                currentItems.add(targetIndex, item)
+                            } else {
+                                currentItems.add(item)
+                            }
+                            showVariablePicker = false
+                            insertAtIndex = -1
                         }
-                        showVariablePicker = false
-                        insertAtIndex = -1
-                    }
-                )
+                    )
+                }
+                Spacer(modifier = Modifier.height(16.dp))
             }
-            Spacer(modifier = Modifier.height(16.dp))
         }
     }
 }
@@ -411,7 +429,9 @@ fun SystemPromptEditorPage(
 @Composable
 private fun InsertBetweenButton(
     onInsertText: () -> Unit,
-    onInsertVariable: () -> Unit
+    onInsertVariable: () -> Unit,
+    onInsertHtmlPreview: (() -> Unit)? = null,
+    htmlPreviewEnabled: Boolean = true,
 ) {
     var expanded by remember { mutableStateOf(false) }
     Box(
@@ -451,6 +471,14 @@ private fun InsertBetweenButton(
                     leadingIcon = { Icon(Icons.AutoMirrored.Outlined.PlaylistAdd, null) },
                     onClick = { expanded = false; onInsertVariable() }
                 )
+                if (onInsertHtmlPreview != null) {
+                    AgoraDropdownMenuItem(
+                        text = { Text(stringResource(R.string.html_preview_insert)) },
+                        leadingIcon = { Icon(Icons.Default.Code, null) },
+                        enabled = htmlPreviewEnabled,
+                        onClick = { expanded = false; onInsertHtmlPreview() },
+                    )
+                }
             }
 
         }

@@ -28,6 +28,9 @@
     <string name="tool_shell_job_stopped_default">Stopped shell job</string>
     <string name="tool_read_file_done_default">Read file</string>
     <string name="tool_read_file_truncated">Partial content shown · continue at byte %1$d</string>
+    <string name="tool_read_file_truncated_line">Partial content shown · continue at line %1$d</string>
+    <string name="tool_edit_count">%1$d edits</string>
+    <string name="tool_edit_replace_all">Replace all</string>
     <string name="tool_wrote_file_default">Wrote file</string>
     <string name="tool_edited_file_default">Edited file</string>
     <string name="tool_read_file_empty_default">Read file · empty</string>

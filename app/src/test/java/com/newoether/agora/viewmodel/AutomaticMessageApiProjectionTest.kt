@@ -57,6 +57,17 @@ class AutomaticMessageApiProjectionTest {
         assertEquals("done", projected[2].text)
     }
 
+    @Test
+    fun `compact completion display preserves the full model input`() {
+        val body = "worker (child) [failed]\nFull answer <code>\nError: Connection closed"
+        val source = MessageSource(MessageSource.Kind.SUBAGENT,
+            subagentResults = mapOf("child" to "result"),
+            subagentResult = MessageSource.SubagentResult("worker", "failed", "Connection closed", "closed"))
+        assertEquals("<subagent_result>\nworker (child) [failed]\nFull answer &lt;code&gt;\nError: Connection closed\n</subagent_result>",
+            automaticMessageApiText(source, body))
+        assertEquals(body, message("receipt", Participant.USER, body, source).text)
+    }
+
     private fun message(id: String, participant: Participant, text: String, source: MessageSource?) =
         ChatMessage(id = id, text = text, participant = participant, timestamp = 1L, source = source)
 }

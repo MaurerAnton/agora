@@ -30,6 +30,7 @@ internal data class CitationInlineMarker(
 internal data class CitationMarkdownProjection(
     val markdown: String,
     val markers: List<CitationInlineMarker>,
+    val sourcePositions: List<Int> = emptyList(),
 )
 
 private data class CitationProjectionCandidate(
@@ -56,10 +57,12 @@ internal fun citationInlineLabel(source: CitationRecord): String =
 internal fun projectCitationMarkdown(
     answerText: String,
     citations: List<CitationRecord>,
+    includeSourcePositions: Boolean = false,
 ): CitationMarkdownProjection {
     val normalized = CitationPolicy.deduplicate(citations, answerText)
+    val originalPositions = if (includeSourcePositions) answerText.indices.toList() else emptyList()
     if (answerText.isEmpty()) {
-        return CitationMarkdownProjection(answerText, emptyList())
+        return CitationMarkdownProjection(answerText, emptyList(), originalPositions)
     }
     val unsupported by lazy(LazyThreadSafetyMode.NONE) {
         unsupportedMarkdownRanges(answerText)
@@ -150,7 +153,7 @@ internal fun projectCitationMarkdown(
             compareBy(CitationProjectionCandidate::sourceIndex)
                 .thenBy(CitationProjectionCandidate::startIndex),
         )
-    if (placements.isEmpty()) return CitationMarkdownProjection(answerText, emptyList())
+    if (placements.isEmpty()) return CitationMarkdownProjection(answerText, emptyList(), originalPositions)
 
     val usedTokens = answerText.toSet().toMutableSet()
     var nextToken = CitationTokenStart
@@ -176,7 +179,7 @@ internal fun projectCitationMarkdown(
     }
     val usablePlacements = placements.filter { it.source.sourceId in markerBySource }
     if (usablePlacements.isEmpty()) {
-        return CitationMarkdownProjection(answerText, emptyList())
+        return CitationMarkdownProjection(answerText, emptyList(), originalPositions)
     }
 
     val edits = usablePlacements
@@ -201,22 +204,30 @@ internal fun projectCitationMarkdown(
                 .thenByDescending(CitationProjectionEdit::endIndex),
         )
     val projected = StringBuilder(answerText)
+    val projectedPositions = if (includeSourcePositions) originalPositions.toMutableList() else null
     edits.forEach { edit ->
         if (edit.startIndex == edit.endIndex) {
             projected.insert(edit.startIndex, edit.replacement)
         } else {
             projected.replace(edit.startIndex, edit.endIndex, edit.replacement)
         }
+        projectedPositions?.apply {
+            subList(edit.startIndex, edit.endIndex).clear()
+            addAll(edit.startIndex, List(edit.replacement.length) { edit.startIndex })
+        }
     }
 
     val markerByToken = markerBySource.values.associateBy(CitationInlineMarker::token)
     val visibleMarkerBySources = linkedMapOf<List<String>, CitationInlineMarker>()
     val collapsed = StringBuilder(projected.length)
+    val collapsedPositions = if (includeSourcePositions) mutableListOf<Int>() else null
     var projectedIndex = 0
     while (projectedIndex < projected.length) {
+        val markerPosition = projectedPositions?.get(projectedIndex)
         val firstMarker = markerByToken[projected[projectedIndex]]
         if (firstMarker == null) {
             collapsed.append(projected[projectedIndex])
+            collapsedPositions?.add(requireNotNull(markerPosition))
             projectedIndex += 1
             continue
         }
@@ -246,10 +257,12 @@ internal fun projectCitationMarkdown(
             }
         }
         collapsed.append(marker.token)
+        collapsedPositions?.add(requireNotNull(markerPosition))
     }
     return CitationMarkdownProjection(
         markdown = collapsed.toString(),
         markers = visibleMarkerBySources.values.toList(),
+        sourcePositions = collapsedPositions.orEmpty(),
     )
 }
 
@@ -323,19 +336,26 @@ internal fun citationMarkdownProjection(
     answerText: String,
     citations: List<CitationRecord>,
     isStreaming: Boolean,
+    includeSourcePositions: Boolean = false,
 ): CitationMarkdownProjection? {
     if (answerText.isEmpty()) return null
-    return if (isStreaming) {
+    val projection = if (isStreaming) {
         val markdown = withholdTrailingCitationWrapper(answerText)
         val partialStart = TrailingPlainCitationArtifact.find(markdown)?.range?.first
+        val visible = partialStart?.let { markdown.substring(0, it) } ?: markdown
         CitationMarkdownProjection(
-            markdown = CitationPolicy.stripPrivateMarkers(partialStart?.let { markdown.substring(0, it) } ?: markdown),
+            markdown = visible,
             markers = emptyList(),
+            sourcePositions = if (includeSourcePositions) visible.indices.toList() else emptyList(),
         )
     } else {
-        val projection = projectCitationMarkdown(answerText, citations)
-        projection.copy(markdown = CitationPolicy.stripPrivateMarkers(projection.markdown))
+        projectCitationMarkdown(answerText, citations, includeSourcePositions)
     }
+    val positions = if (includeSourcePositions) projection.sourcePositions.toMutableList() else null
+    return projection.copy(
+        markdown = CitationPolicy.stripPrivateMarkers(projection.markdown, positions),
+        sourcePositions = positions.orEmpty(),
+    )
 }
 
 internal fun citationRecordsForAnswerSlice(

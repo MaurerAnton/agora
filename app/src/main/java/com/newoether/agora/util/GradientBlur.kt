@@ -219,6 +219,35 @@ fun Modifier.verticalEdgeFade(edgeFadeDp: Float = 20f, topWeight: Float = 1f, bo
         }
 }
 
+/** Draw-only horizontal counterpart of the drawer's vertical alpha mask. */
+fun Modifier.horizontalEdgeFade(
+    edgeFadeDp: Float = 40f,
+    leftWeight: Float = 1f,
+    rightWeight: Float = 1f,
+): Modifier = composed {
+    val fadePx = edgeFadeDp.coerceAtLeast(0f) * LocalDensity.current.density
+    val leftAlpha = leftWeight.coerceIn(0f, 1f)
+    val rightAlpha = rightWeight.coerceIn(0f, 1f)
+    if (fadePx <= 0f || (leftAlpha <= 0f && rightAlpha <= 0f)) return@composed this
+
+    Modifier.graphicsLayer { compositingStrategy = CompositingStrategy.Offscreen }
+        .drawWithContent {
+            drawContent()
+            val fade = (fadePx / size.width.coerceAtLeast(1f)).coerceIn(0f, 0.5f)
+            drawRect(
+                brush = Brush.horizontalGradient(
+                    colorStops = arrayOf(
+                        0f to Color.Black.copy(alpha = 1f - leftAlpha),
+                        fade to Color.Black,
+                        (1f - fade) to Color.Black,
+                        1f to Color.Black.copy(alpha = 1f - rightAlpha),
+                    ),
+                ),
+                blendMode = BlendMode.DstIn,
+            )
+        }
+}
+
 /**
  * Gradient blur using a fixed 9-tap separable kernel.
  *

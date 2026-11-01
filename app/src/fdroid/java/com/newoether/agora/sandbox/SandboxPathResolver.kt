@@ -1,5 +1,6 @@
 package com.newoether.agora.sandbox
 
+import com.newoether.agora.util.SHELL_FILE_SEARCH_SKIPPED_DIRS
 import java.io.File
 
 internal data class ResolvedSandboxPath(
@@ -73,6 +74,7 @@ internal class SandboxPathResolver(
     ) {
         try { dir.listFiles()?.forEach {
             if (it.isDirectory) {
+                if (it.name in SHELL_FILE_SEARCH_SKIPPED_DIRS) return@forEach
                 if (remaining < 0 || remaining > 1) {
                     walkVirtualFiles(it, result, physicalRootAbsPath, virtualRoot, if (remaining < 0) -1 else remaining - 1)
                 }

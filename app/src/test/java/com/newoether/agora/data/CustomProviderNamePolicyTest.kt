@@ -51,6 +51,22 @@ class CustomProviderNamePolicyTest {
     }
 
     @Test
+    fun creationRejectsTrimmedReservedAndNewlyAddedNamesWithoutMutatingTheList() {
+        val names = mutableListOf("Existing")
+        assertFalse(CustomProviderNamePolicy.hasConflict("  Gateway  ", names))
+
+        names += "Gateway"
+        val snapshot = names.toList()
+
+        assertTrue(CustomProviderNamePolicy.hasConflict("  gAtEwAy  ", names))
+        assertTrue(CustomProviderNamePolicy.hasConflict("  openai  ", names))
+        assertTrue(CustomProviderNamePolicy.hasConflict("  LOCAL  ", names))
+        assertTrue(CustomProviderNamePolicy.hasConflict("   ", names))
+        assertFalse(CustomProviderNamePolicy.hasConflict("  Another Gateway  ", names))
+        assertEquals(snapshot, names)
+    }
+
+    @Test
     fun renameCanKeepItsOwnNameOrChangeOnlyItsCase() {
         val existing = listOf("Example", "Other")
 

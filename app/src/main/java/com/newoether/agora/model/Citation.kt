@@ -51,6 +51,7 @@ object CitationPolicy {
         "cite(?:turn\\d+[a-z]+\\d+)+",
         RegexOption.IGNORE_CASE,
     )
+    private val markerDelimiter = Regex("[\uE200\uE201\uE202]")
     private val trailingPlainPrivateArtifact = Regex(
         "cite(?:turn\\d+[a-z]+\\d+)*(?:turn(?:\\d+(?:[a-z]+\\d*)?)?)$",
         RegexOption.IGNORE_CASE,
@@ -194,15 +195,19 @@ object CitationPolicy {
         }.getOrNull()?.takeIf { it.length <= MAX_URL_CHARS }
     }
 
-    fun stripPrivateMarkers(text: String): String = text
-        .replace(privateEnvelope, "")
-        .replace(barePrivateEnvelope, "")
-        .replace(cjkTurnMarker, "")
-        .replace(plainPrivateArtifact, "")
-        .replace(trailingPlainPrivateArtifact, "")
-        .replace("\uE200", "")
-        .replace("\uE201", "")
-        .replace("\uE202", "")
+    fun stripPrivateMarkers(text: String, sourcePositions: MutableList<Int>? = null): String {
+        var cleaned = text
+        for (pattern in listOf(privateEnvelope, barePrivateEnvelope, cjkTurnMarker, plainPrivateArtifact,
+            trailingPlainPrivateArtifact, markerDelimiter)) {
+            if (sourcePositions != null) {
+                pattern.findAll(cleaned).toList().asReversed().forEach { match ->
+                    sourcePositions.subList(match.range.first, match.range.last + 1).clear()
+                }
+            }
+            cleaned = cleaned.replace(pattern, "")
+        }
+        return cleaned
+    }
 
     fun copyText(answer: String, citations: List<CitationRecord>): String {
         val cleaned = stripPrivateMarkers(answer)

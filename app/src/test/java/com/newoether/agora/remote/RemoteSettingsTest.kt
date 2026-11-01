@@ -26,8 +26,9 @@ class RemoteSettingsTest {
     @Before fun setup() {
         Dispatchers.setMain(dispatcher)
         coEvery { store.load() } returns emptyList()
+        every { client.adapters } returns null
         every { client.address } returns "http://computer/"
-        coEvery { client.connect() } returns "Computer"
+        coEvery { client.connect() } returns RemoteDeviceStatus.CONNECTED
         coEvery { client.sessions(any()) } returns RemoteSessionPage(listOf(session), null)
         coEvery { client.models() } returns listOf(model)
         coEvery { client.conversation(any(), any()) } answers { bodyPage(emptyList(), null, emptyList(), runtime) }
@@ -136,11 +137,13 @@ class RemoteSettingsTest {
         vm.setThinkingLevel("ultra"); runCurrent()
         vm.selectSession(session.copy(id = "second")); runCurrent()
         vm.setThinkingLevel("low"); runCurrent()
-        assertTrue(vm.state.value.controlling)
+        assertTrue(vm.state.value.settingsPending)
+        assertTrue(vm.state.value.canEditSettings)
         old.complete(Unit); runCurrent()
-        assertTrue(vm.state.value.controlling)
+        assertTrue(vm.state.value.settingsPending)
         assertEquals("second", vm.state.value.session?.id)
         current.complete(Unit); runCurrent()
+        assertFalse(vm.state.value.settingsPending)
         assertFalse(vm.state.value.controlling)
         vm.setVisible(false)
     }
@@ -172,6 +175,56 @@ class RemoteSettingsTest {
         vm.setVisible(false)
     }
 
+    @Test fun modelChangeDropsUnsupportedDraftEffortInsteadOfSendingItToTheNextModel() = runTest(dispatcher) {
+        val plain = RemoteModel("plain", "Plain")
+        coEvery { client.models() } returns listOf(model, plain)
+        coEvery { client.create(any(), any(), any(), any()) } returns session
+        val vm = open(draft = true)
+        vm.setThinkingLevel("ultra"); vm.setServiceTier("priority")
+        vm.setModel("plain")
+        assertNull(vm.state.value.selectedEffort)
+        assertNull(vm.state.value.selectedServiceTier)
+        vm.editDraft(vm.state.value.owner!!, "hello"); vm.send(); runCurrent()
+        coVerify(exactly = 1) { client.create("hello", any(), emptyList(), RemoteSettings(model = "plain")) }
+        vm.setVisible(false)
+    }
+    @Test fun draftTierSurvivesWhenNativeModelDoesNotOfferThinking() = runTest(dispatcher) {
+        coEvery { client.models() } returns listOf(model.copy(reasoningEfforts = null, defaultReasoningEffort = null))
+        coEvery { client.create(any(), any(), any(), any()) } returns session
+        val vm = open(draft = true)
+        vm.setServiceTier("priority")
+        vm.editDraft(vm.state.value.owner!!, "hello"); vm.send(); runCurrent()
+        coVerify(exactly = 1) {
+            client.create("hello", any(), emptyList(), RemoteSettings("model", null, "priority", true))
+        }
+        vm.setVisible(false)
+    }
+    @Test fun retiredSettingsWithUnknownNativeValuesCanBeExplicitlySelectedAndReadBack() = runTest(dispatcher) {
+        runtime = runtime.copy(status = "notLoaded", activeTurnId = null, effort = null,
+            serviceTier = null, serviceTierKnown = false)
+        val vm = open()
+        assertTrue(vm.state.value.canEditSettings)
+        assertNull(vm.state.value.selectedEffort)
+        assertFalse(vm.state.value.serviceTierKnown)
+        vm.setServiceTier(null); runCurrent()
+        assertTrue(vm.state.value.serviceTierKnown)
+        assertNull(vm.state.value.selectedServiceTier)
+        coVerify(exactly = 1) { client.updateSettings("session", RemoteSettings(updateServiceTier = true)) }
+        vm.setThinkingLevel("ultra"); runCurrent()
+        assertEquals("ultra", vm.state.value.selectedEffort)
+        coVerify(exactly = 1) { client.updateSettings("session", RemoteSettings(effort = "ultra")) }
+        vm.setVisible(false)
+    }
+    @Test fun retiredUnknownModelCanBeReplacedUsingTheNativeCatalog() = runTest(dispatcher) {
+        runtime = runtime.copy(status = "notLoaded", activeTurnId = null, model = "retired")
+        val vm = open()
+        assertNull(vm.state.value.settingsModel)
+        assertTrue(vm.state.value.canChooseModel)
+        vm.setModel("model"); runCurrent()
+        assertEquals("model", vm.state.value.selectedModel)
+        coVerify(exactly = 1) { client.updateSettings("session", any()) }
+        vm.setVisible(false)
+    }
     @Test fun changingModelResetsOnlyIncompatibleOptions() {
         val state = RemoteState(session = session, runtime = runtime.copy(effort = "ultra", serviceTier = "priority"), models = listOf(model))
         assertEquals(RemoteSettings("small", "low", null, true),

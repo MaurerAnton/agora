@@ -49,6 +49,31 @@ class MessageSourceTest {
     }
 
     @Test
+    fun `completion display round trips without replacing result payload`() {
+        val display = MessageSource.SubagentResult("worker", "failed", "Connection closed", "connection_closed")
+        val source = MessageSource(MessageSource.Kind.SUBAGENT,
+            subagentResults = mapOf("child" to "result"), subagentResult = display)
+        val restored = MessageSource.decode(MessageSource.encode(source))!!
+        assertEquals(source, restored)
+        assertEquals(display, restored.subagentResultDisplay("Full original result"))
+        assertEquals(source, MessageSource.decode(MessageSource.sanitizeImported(MessageSource.encode(source), Participant.USER)))
+    }
+
+    @Test
+    fun `legacy completion display trusts only its exact receipt header`() {
+        val source = MessageSource(MessageSource.Kind.SUBAGENT, subagentResults = mapOf("child" to "result"))
+        assertEquals(MessageSource.SubagentResult("worker", "completed"),
+            source.subagentResultDisplay("worker (child) [completed]\nFull result mentions failed"))
+        assertEquals(MessageSource.SubagentResult("", ""),
+            source.subagentResultDisplay("worker (other) [failed]\nFull result"))
+        assertEquals(MessageSource.SubagentResult("", ""),
+            source.subagentResultDisplay("Arbitrary prose says completed"))
+        assertNull(MessageSource(MessageSource.Kind.SUBAGENT).subagentResultDisplay("Child instruction"))
+        assertNull(MessageSource.TASK.subagentResultDisplay("Task prompt"))
+        assertNull(MessageSource.decode("""{"kind":"loop","subagentResult":{"name":"bad","status":"failed"}}"""))
+    }
+
+    @Test
     fun `backup v6 keeps the v5 secrets boundary`() {
         assertEquals(6, NativeBackupFormat.CURRENT_VERSION)
         assertEquals(5, NativeBackupFormat.SEPARATE_SECRETS_SINCE_VERSION)

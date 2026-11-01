@@ -3,7 +3,7 @@ import { useLayoutEffect, useRef } from "./vendor/preact-hooks.mjs";
 import { html, runSpring } from "./html.js";
 import { t } from "./i18n.js";
 import {
-  icon, ICON_CALL_SPLIT, ICON_LOGOUT, ICON_PSYCHOLOGY, ICON_SEARCH, ICON_SHARE,
+  icon, ICON_CALL_SPLIT, ICON_DELETE, ICON_EDIT, ICON_LOGOUT, ICON_PSYCHOLOGY, ICON_SEARCH, ICON_SHARE,
 } from "./icons.js";
 
 /**
@@ -11,7 +11,7 @@ import {
  * the alpha, and a focus trap that returns ownership to whoever opened it. Every menu in the frame
  * (top bar, drawer row, message row) is a MoreMenu so they cannot drift apart.
  */
-export function MoreMenu({ expanded, reduceMotion, anchor, onSignOut, onClose, onExited, children, above = false, matchAnchorWidth = false, onFork, onShare, pageActionsEnabled, onSystemPrompt, promptEnabled, onSearch }) {
+export function MoreMenu({ expanded, reduceMotion, anchor, onSignOut, onClose, onExited, children, above = false, matchAnchorWidth = false, onFork, onShare, pageActionsEnabled, onSystemPrompt, promptEnabled, onSearch, onRename, onDelete, conversationActionsEnabled }) {
   const menu = useRef(null);
   const layer = useRef(null);
   const motion = useRef({ scale: 0.8, alpha: 0, scaleVelocity: 0, alphaVelocity: 0 });
@@ -109,6 +109,12 @@ export function MoreMenu({ expanded, reduceMotion, anchor, onSignOut, onClose, o
       </button>
       <button class="dropdown-item" role="menuitem" type="button" disabled=${!pageActionsEnabled} onClick=${onShare}>
         ${icon(ICON_SHARE)}<span>${t.share}</span>
+      </button>
+      <button class="dropdown-item" role="menuitem" type="button" disabled=${!onRename || !conversationActionsEnabled} onClick=${onRename}>
+        ${icon(ICON_EDIT)}<span>${t.rename}</span>
+      </button>
+      <button class="dropdown-item destructive" role="menuitem" type="button" disabled=${!onDelete || !conversationActionsEnabled} onClick=${onDelete}>
+        ${icon(ICON_DELETE)}<span>${t.delete}</span>
       </button>
       <button class="dropdown-item" role="menuitem" type="button" onClick=${onSignOut}>
         ${icon(ICON_LOGOUT)}<span>${t.signOut}</span>

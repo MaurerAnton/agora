@@ -1,5 +1,8 @@
 package com.newoether.agora.viewmodel
 
+import com.newoether.agora.data.ShellDeviceConfig
+import com.newoether.agora.data.SSH_AUTH_PRIVATE_KEY
+import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.test.StandardTestDispatcher
 import kotlinx.coroutines.test.runTest
 import org.junit.Assert.assertEquals
@@ -12,14 +15,14 @@ class ConnectionDiagnosticsTest {
     fun blankSshHostFailsBeforeCreatingSession() = runTest {
         var created = false
         val verifier = SshHostKeyVerifier(
-            createSession = { _, _, _, _ ->
+            createSession = { _ ->
                 created = true
                 error("unexpected")
             },
             ioDispatcher = StandardTestDispatcher(testScheduler),
         )
 
-        val result = verifier.verify(" ", 22, "user", "password")
+        val result = verifier.verify(ShellDeviceConfig(name = "SSH", sshHost = " ", sshUser = "user", sshPassword = "password"))
 
         assertEquals("Host is empty", result.exceptionOrNull()?.message)
         assertFalse(created)
@@ -29,8 +32,8 @@ class ConnectionDiagnosticsTest {
     fun sshProbeUsesRootDefaultReturnsFingerprintAndAlwaysCloses() = runTest {
         val calls = mutableListOf<String>()
         val verifier = SshHostKeyVerifier(
-            createSession = { host, port, user, password ->
-                calls += "$host:$port:$user:$password"
+            createSession = { device ->
+                calls += "${device.sshHost}:${device.sshPort}:${device.sshUser}:${device.sshPassword}"
                 HostKeyCaptureSession(
                     probe = { calls += "probe" },
                     capturedHostKey = { "key" },
@@ -41,7 +44,7 @@ class ConnectionDiagnosticsTest {
             ioDispatcher = StandardTestDispatcher(testScheduler),
         )
 
-        val result = verifier.verify("host", 2222, "", "secret")
+        val result = verifier.verify(ShellDeviceConfig(name = "SSH", sshHost = "host", sshPort = 2222, sshUser = "", sshPassword = "secret"))
 
         assertEquals("key" to "fingerprint:key", result.getOrNull())
         assertEquals(listOf("host:2222:root:secret", "probe", "close"), calls)
@@ -51,7 +54,7 @@ class ConnectionDiagnosticsTest {
     fun sshAuthenticationFailureStillAcceptsCapturedKey() = runTest {
         var closed = false
         val verifier = SshHostKeyVerifier(
-            createSession = { _, _, _, _ ->
+            createSession = { _ ->
                 HostKeyCaptureSession(
                     probe = { throw IllegalStateException("auth") },
                     capturedHostKey = { "key" },
@@ -62,7 +65,7 @@ class ConnectionDiagnosticsTest {
             ioDispatcher = StandardTestDispatcher(testScheduler),
         )
 
-        val result = verifier.verify("host", 22, "user", "bad")
+        val result = verifier.verify(ShellDeviceConfig(name = "SSH", sshHost = "host", sshUser = "user", sshPassword = "bad"))
 
         assertTrue(result.isSuccess)
         assertTrue(closed)
@@ -72,7 +75,7 @@ class ConnectionDiagnosticsTest {
     fun missingSshKeyFailsAfterClosingSession() = runTest {
         var closed = false
         val verifier = SshHostKeyVerifier(
-            createSession = { _, _, _, _ ->
+            createSession = { _ ->
                 HostKeyCaptureSession(
                     probe = {},
                     capturedHostKey = { null },
@@ -82,12 +85,37 @@ class ConnectionDiagnosticsTest {
             ioDispatcher = StandardTestDispatcher(testScheduler),
         )
 
-        val result = verifier.verify("host", 22, "user", "password")
+        val result = verifier.verify(ShellDeviceConfig(name = "SSH", sshHost = "host", sshUser = "user", sshPassword = "password"))
 
         assertEquals(
             "Could not reach host or no host key presented",
             result.exceptionOrNull()?.message,
         )
+        assertTrue(closed)
+    }
+
+    @Test
+    fun sshProbePreservesPrivateKeySelectionAndCancellationCloses() = runTest {
+        val device = ShellDeviceConfig(
+            name = "SSH", sshHost = "host", sshAuthMode = SSH_AUTH_PRIVATE_KEY,
+            sshPrivateKey = "private-key", sshKeyPassphrase = "passphrase",
+        )
+        var received: ShellDeviceConfig? = null
+        var closed = false
+        val verifier = SshHostKeyVerifier(
+            createSession = {
+                received = it
+                HostKeyCaptureSession(
+                    probe = { throw CancellationException("cancelled") },
+                    capturedHostKey = { "must not be accepted" },
+                    close = { closed = true },
+                )
+            },
+            ioDispatcher = StandardTestDispatcher(testScheduler),
+        )
+        val error = runCatching { verifier.verify(device) }.exceptionOrNull()
+        assertTrue(error is CancellationException)
+        assertEquals(device, received)
         assertTrue(closed)
     }
 

@@ -9,7 +9,12 @@ internal object NativeBackupSecretsPolicy {
                 ShellDeviceSecrets(
                     apiKey = device.apiKey,
                     sshPassword = device.sshPassword,
-                ).takeIf { it.apiKey.isNotBlank() || it.sshPassword.isNotBlank() }
+                    sshPrivateKey = device.sshPrivateKey,
+                    sshKeyPassphrase = device.sshKeyPassphrase,
+                ).takeIf {
+                    it.apiKey.isNotBlank() || it.sshPassword.isNotBlank() ||
+                        !it.sshPrivateKey.isNullOrBlank() || !it.sshKeyPassphrase.isNullOrBlank()
+                }
                     ?.let { device.id to it }
             }
             .toMap()
@@ -98,12 +103,16 @@ internal object NativeBackupSecretsPolicy {
                 byId != null -> device.copy(
                     apiKey = byId.apiKey,
                     sshPassword = byId.sshPassword,
+                    sshPrivateKey = byId.sshPrivateKey ?: if (replace) "" else device.sshPrivateKey,
+                    sshKeyPassphrase = byId.sshKeyPassphrase ?: if (replace) "" else device.sshKeyPassphrase,
                 )
                 legacyApiKey != null -> device.copy(
                     apiKey = legacyApiKey,
                     sshPassword = if (replace) "" else device.sshPassword,
+                    sshPrivateKey = if (replace) "" else device.sshPrivateKey,
+                    sshKeyPassphrase = if (replace) "" else device.sshKeyPassphrase,
                 )
-                replace -> device.copy(apiKey = "", sshPassword = "")
+                replace -> device.withoutSecrets()
                 else -> device
             }
         }

@@ -2,6 +2,7 @@ package com.newoether.agora.viewmodel
 
 import com.newoether.agora.data.repository.ConversationRepository
 import com.newoether.agora.util.DebugLog
+import java.util.concurrent.ConcurrentHashMap
 import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.CoroutineScope
@@ -14,8 +15,8 @@ import kotlinx.coroutines.withContext
  * Coordinates durable conversation metadata changes and deletion cleanup for every client.
  *
  * A deletion is issued by one [ChatClient] (its origin). The origin covers its own page while it
- * shows the conversation; every client that still shows the conversation when it is deleted falls
- * back to New Chat, and clients other than the origin are told why first.
+ * shows the conversation; clients still showing it return to its surviving parent, or New Chat
+ * when no parent remains. Clients other than the origin are told why first.
  */
 internal class ConversationLifecycleController(
     private val conversations: ConversationRepository,
@@ -24,11 +25,14 @@ internal class ConversationLifecycleController(
     private val stopLoop: suspend (String) -> Unit,
     private val tryWithConversationLock: suspend (String, suspend () -> Unit) -> Boolean,
     private val removeRuntime: (String) -> Unit,
-    private val stopGeneration: (conversationId: String, origin: ChatClient) -> Unit,
+    private val stopGeneration: suspend (conversationId: String, origin: ChatClient) -> Unit,
     private val deletedElsewhereText: () -> String,
+    private val deletedByParentText: () -> String = deletedElsewhereText,
     private val ioDispatcher: CoroutineDispatcher = Dispatchers.IO,
     private val mainDispatcher: CoroutineDispatcher = Dispatchers.Main,
 ) {
+    private val pendingDeletes = ConcurrentHashMap<String, Any>()
+
     fun rename(conversationId: String, newTitle: String) {
         scope.launch {
             conversations.updateConversationTitle(conversationId, newTitle)
@@ -47,10 +51,13 @@ internal class ConversationLifecycleController(
         expectedMessageIds: Set<String>? = null,
         onResult: (Boolean) -> Unit = {},
     ): Boolean {
-        if (clients.isSubmissionFrozen(conversationId)) return false
-        scope.launch(ioDispatcher) {
+        val request = Any()
+        if (clients.isSubmissionFrozen(conversationId) || pendingDeletes.putIfAbsent(conversationId, request) != null) return false
+        val confirmedMessageIds = expectedMessageIds?.toSet()
+        val job = scope.launch(ioDispatcher) {
             var deleted = false
             var viewersAtCommit = emptyList<ChatClient>()
+            var parentConversationId: String? = null
             val selectedAtDispatch = origin.openConversationId == conversationId
             var transitionRequestId: Long? = null
             try {
@@ -62,17 +69,18 @@ internal class ConversationLifecycleController(
                         scrollToTarget = false,
                     )
                 }
+                if (clients.isSubmissionFrozen(conversationId)) return@launch
+                if (!matchesConfirmation(conversationId, confirmedMessageIds)) return@launch
+                // Running execution owns the coordinator until its coroutine finishes. Await the
+                // canonical Stop barriers outside that lock, including for nonviewed owners.
+                stopLoop(conversationId)
+                stopGeneration(conversationId, origin)
                 tryWithConversationLock(conversationId) {
-                    // Send admission uses this same lock. Only the winner may stop live work.
                     if (clients.isSubmissionFrozen(conversationId)) return@tryWithConversationLock
-                    if (
-                        expectedMessageIds != null &&
-                        conversations.getMessageTopologySnapshot(conversationId)
-                            .mapTo(linkedSetOf()) { it.id } != expectedMessageIds
-                    ) return@tryWithConversationLock
+                    if (!matchesConfirmation(conversationId, confirmedMessageIds)) return@tryWithConversationLock
+                    if (conversations.getLiveRun(conversationId) != null) return@tryWithConversationLock
+                    parentConversationId = conversations.getConversation(conversationId)?.parentConversationId
                     viewersAtCommit = clients.showing(conversationId)
-                    if (viewersAtCommit.isNotEmpty()) stopGeneration(conversationId, origin)
-                    stopLoop(conversationId)
                     conversations.deleteConversation(conversationId)
                     deleted = true
                 }
@@ -82,8 +90,8 @@ internal class ConversationLifecycleController(
                         withContext(mainDispatcher) {
                             viewersAtCommit.forEach { viewer ->
                                 if (viewer !== origin) viewer.showSnackbar(deletedElsewhereText())
-                                // The origin hands its already-visible overlay to New Chat.
-                                viewer.settleDeletedConversation(conversationId)
+                                // The selection owner rejects settlement over a newer selection.
+                                viewer.settleDeletedConversation(conversationId, parentConversationId)
                             }
                         }
                     }
@@ -100,6 +108,7 @@ internal class ConversationLifecycleController(
                 }
             } finally {
                 withContext(NonCancellable + mainDispatcher) {
+                    pendingDeletes.remove(conversationId, request)
                     if (selectedAtDispatch && (!deleted || origin !in viewersAtCommit)) {
                         origin.failTreeMutation(transitionRequestId)
                     }
@@ -107,6 +116,53 @@ internal class ConversationLifecycleController(
                 }
             }
         }
+        job.invokeOnCompletion { pendingDeletes.remove(conversationId, request) }
         return true
     }
+
+    /**
+     * Deletes an idle Subagent on its parent's agent_delete request. No client issued it, so every
+     * client still showing the child is told why and settles to the surviving parent. Unlike
+     * [delete] this never stops work: a live Run, frozen submission, concurrent delete or changed
+     * ownership rejects the request and leaves the child intact.
+     */
+    suspend fun deleteIdleSubagent(conversationId: String, parentConversationId: String): Boolean {
+        val request = Any()
+        if (clients.isSubmissionFrozen(conversationId) || pendingDeletes.putIfAbsent(conversationId, request) != null) {
+            return false
+        }
+        try {
+            var deleted = false
+            var viewersAtCommit = emptyList<ChatClient>()
+            withContext(ioDispatcher) {
+                tryWithConversationLock(conversationId) {
+                    if (clients.isSubmissionFrozen(conversationId)) return@tryWithConversationLock
+                    if (conversations.getLiveRun(conversationId) != null) return@tryWithConversationLock
+                    val child = conversations.getConversation(conversationId)
+                    if (child?.parentConversationId != parentConversationId) return@tryWithConversationLock
+                    viewersAtCommit = clients.showing(conversationId)
+                    conversations.deleteConversation(conversationId)
+                    deleted = true
+                }
+            }
+            if (deleted) {
+                removeRuntime(conversationId)
+                if (viewersAtCommit.isNotEmpty()) {
+                    withContext(NonCancellable + mainDispatcher) {
+                        viewersAtCommit.forEach { viewer ->
+                            viewer.showSnackbar(deletedByParentText())
+                            viewer.settleDeletedConversation(conversationId, parentConversationId)
+                        }
+                    }
+                }
+            }
+            return deleted
+        } finally {
+            pendingDeletes.remove(conversationId, request)
+        }
+    }
+
+    private suspend fun matchesConfirmation(conversationId: String, expectedMessageIds: Set<String>?): Boolean =
+        expectedMessageIds == null || conversations.getMessageTopologySnapshot(conversationId)
+            .mapTo(linkedSetOf()) { it.id } == expectedMessageIds
 }

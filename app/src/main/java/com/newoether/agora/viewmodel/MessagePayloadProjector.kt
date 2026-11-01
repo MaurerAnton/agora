@@ -26,7 +26,7 @@ internal class MessagePayloadProjector(
 
     suspend fun <I, O> projectAll(
         inputs: List<I>,
-        transform: (I) -> O,
+        transform: suspend (I) -> O,
     ): List<O> = coroutineScope {
         inputs.map { input ->
             async { project { transform(input) } }

@@ -16,7 +16,6 @@ import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.CompletableDeferred
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.NonCancellable
-import kotlinx.coroutines.isActive
 import kotlinx.coroutines.withContext
 import kotlinx.serialization.encodeToString
 import kotlinx.serialization.json.Json
@@ -144,6 +143,8 @@ internal class DirectAcceptedInputEffectExecutor(
         var bindingOutcome: ConversationGenerationState.RunBindingOutcome =
             ConversationGenerationState.RunBindingOutcome.Rejected
         var inputGraphCommitted = false
+        var titleGenerationEnabled = request.generationSnapshot?.titleGenerationEnabled == true
+        var titleGenerationStarted = false
         var newConversationTransferAttempted = false
         var newConversationSelectionAttempted = false
         var newConversationSelected = false
@@ -186,6 +187,13 @@ internal class DirectAcceptedInputEffectExecutor(
             return newConversationSelected
         }
 
+        fun generateNewConversationTitleIfNeeded() {
+            if (request.wasNewChat && titleGenerationEnabled && !titleGenerationStarted) {
+                titleGenerationStarted = true
+                onGenerateTitle(request.conversationId, request.origin)
+            }
+        }
+
         suspend fun reconcileCommittedInput(): Boolean = withContext(NonCancellable) {
             if (!inputGraphCommitted) {
                 inputGraphCommitted = conversations.getRun(request.runId) != null
@@ -208,12 +216,14 @@ internal class DirectAcceptedInputEffectExecutor(
                 runCatching { request.onModelMessageCreated?.invoke(modelMessageId) }
             }
             publishNewChatIfNeeded(SendAcceptance.Direct(userMessageId, request.conversationId))
+            generateNewConversationTitleIfNeeded()
             true
         }
 
         try {
             markStage(if (request.alreadyHoldsLock) "lock-already-owned" else "await-conversation-lock")
             withOptionalLock(request.conversationId, request.alreadyHoldsLock) generationLock@ {
+                if (!state.acquireGenerationAdmission(request.uiToken, executionCoordinator)) return@generationLock
                 markStage("resolve-generation-snapshot")
                 val generationSnapshot = request.generationSnapshot
                     ?: requestBuilder.captureAdmissionSnapshot(
@@ -222,7 +232,9 @@ internal class DirectAcceptedInputEffectExecutor(
                         modelId = request.modelId,
                         conversationOverride = request.newConversation,
                         conversationSettingsOverride = request.newConversationSettings,
+                        automationCaller = request.requestKind == "task" || request.requestKind == "loop",
                     )
+                titleGenerationEnabled = generationSnapshot.titleGenerationEnabled
                 markStage("commit-message-graph")
                 val graphCommit = graphWriter.commit(
                     request = AcceptedInputGraphWriter.Request(
@@ -314,6 +326,7 @@ internal class DirectAcceptedInputEffectExecutor(
                     }
                     roomProjectionFences?.let(clients::releaseRoomProjectionFences)
                     roomProjectionFences = null
+                    generateNewConversationTitleIfNeeded()
                 }
 
                 if (!runBound) {
@@ -345,15 +358,6 @@ internal class DirectAcceptedInputEffectExecutor(
                     state,
                 )
                 markStage("generation-returned")
-                val lastMessage = conversations.getMessage(modelMessageId)
-                if (
-                    request.wasNewChat &&
-                    generationSnapshot.titleGenerationEnabled &&
-                    kotlinx.coroutines.currentCoroutineContext().isActive &&
-                    lastMessage?.status != MessageStatus.ERROR
-                ) {
-                    onGenerateTitle(request.conversationId, request.origin)
-                }
             }
         } catch (error: CancellationException) {
             markStage("cancelled")

@@ -26,6 +26,7 @@ import kotlinx.coroutines.test.runCurrent
 import kotlinx.coroutines.test.runTest
 import kotlinx.serialization.json.Json
 import kotlinx.serialization.json.JsonObject
+import kotlinx.serialization.json.decodeFromJsonElement
 import kotlinx.serialization.json.jsonObject
 import kotlinx.serialization.json.jsonPrimitive
 import org.junit.Assert.assertEquals
@@ -46,6 +47,12 @@ class WebUiConversationMenuTest {
     )
     private val conversations = mockk<ConversationRepository> {
         every { observeDrawerConversations(any()) } answers { list.map { rows -> rows.take(firstArg<Int>()) } }
+        every { subagentJobs } returns MutableStateFlow(emptyMap())
+        every { subagentGenerationIds } returns MutableStateFlow(emptySet())
+        every { chatDao } returns mockk {
+            every { observeSubagentParentIds(any()) } returns kotlinx.coroutines.flow.flowOf(emptyList())
+            every { observeParentConversationId(any()) } returns kotlinx.coroutines.flow.flowOf(null)
+        }
     }
     private val generation = mockk<com.newoether.agora.viewmodel.MessageGenerationController>(relaxed = true)
     private val generating = MutableStateFlow<Set<String>>(emptySet())
@@ -76,6 +83,27 @@ class WebUiConversationMenuTest {
         coEvery { endUploads() } just Runs
     }
 
+    private val questions = com.newoether.agora.viewmodel.AskUserController()
+    private val approval = com.newoether.agora.viewmodel.ShellConfirmationController(MutableStateFlow(true), {})
+
+    @Test
+    fun drawerPublishesPendingInteractionsWithoutOpeningTheConversationAndClearsOnAnswer() = sync { _, received ->
+        received()
+        val request = questions.open("b", "Choose", emptyList(), false, blocking = false)
+        val rows = received().last { it.type == "conversations" }["items"]!!.let {
+            kotlinx.serialization.json.Json.decodeFromJsonElement<List<WebConversation>>(it)
+        }
+        assertEquals("question", rows.single { it.id == "b" }.interaction)
+        assertEquals(null, rows.single { it.id == "a" }.interaction)
+        questions.submit(request.id, emptyList(), "answer")
+        val cleared = received().last { it.type == "conversations" }["items"]!!.let {
+            kotlinx.serialization.json.Json.decodeFromJsonElement<List<WebConversation>>(it)
+        }
+        assertTrue(cleared.all { it.interaction == null })
+        coVerify(exactly = 0) { session.open(any(), any()) }
+        verify(exactly = 0) { registry.getOrCreate(any()) }
+    }
+
     @Test
     fun titleUsesTheCanonicalGeneratorWithTheNamedDrawerRowAndThisBrowserAsOrigin() = sync { send, _ ->
         send("""{"type":"conversation_title","conversationId":"b"}""")
@@ -84,12 +112,14 @@ class WebUiConversationMenuTest {
         send("""{"type":"conversation_title","conversationId":"b"}""")
         send("""{"type":"conversation_title"}""")
         send("""{"type":"conversation_title","conversationId":" "}""")
-        verify(exactly = 1) { generation.generateTitle(any(), any()) }
+        verify(exactly = 2) { generation.generateTitle("b", session) }
+        verify(exactly = 2) { generation.generateTitle(any(), any()) }
     }
 
     @Test
     fun pinUsesTheConversationLifecycleOwnerThePhoneUses() = sync { send, received ->
         received()
+        generating.value = setOf("b")
         send("""{"type":"pin","conversationId":"b","enabled":true}""")
         verify(exactly = 1) { lifecycle.setPinned("b", true) }
         coVerify(exactly = 0) { conversations.setConversationPinned(any(), any()) }
@@ -98,6 +128,7 @@ class WebUiConversationMenuTest {
     @Test
     fun renameUsesTheConversationLifecycleOwnerAndABlankTitleIsNotACommand() = sync { send, received ->
         received()
+        generating.value = setOf("b")
         send("""{"type":"conversation_rename","conversationId":"b","text":"  Kept  "}""")
         verify(exactly = 1) { lifecycle.rename("b", "Kept") }
         send("""{"type":"conversation_rename","conversationId":"b","text":"   "}""")
@@ -108,6 +139,7 @@ class WebUiConversationMenuTest {
     @Test
     fun deleteRunsTheConversationLifecycleOwnerWithThisConnectionAsOriginAndAnswersItsActionId() = sync { send, received ->
         received()
+        generating.value = setOf("b")
         send("""{"type":"conversation_delete","conversationId":"b","actionId":7}""")
         val event = received().single { it.type == "conversation_delete" }
         assertEquals("b", event.string("conversationId"))
@@ -181,8 +213,8 @@ class WebUiConversationMenuTest {
             forkShare = mockk(relaxed = true),
             conversationLifecycle = lifecycle,
             generation = generation,
-            askUser = com.newoether.agora.viewmodel.AskUserController(),
-            shellConfirmation = com.newoether.agora.viewmodel.ShellConfirmationController(MutableStateFlow(true), {}),
+            askUser = questions,
+            shellConfirmation = approval,
             contextAccounting = WebUiContextAccounting(
                 conversations, mockk(), { mockk() }, { it }, MutableStateFlow(90), MutableStateFlow(true),
             ),

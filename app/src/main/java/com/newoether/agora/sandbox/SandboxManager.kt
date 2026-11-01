@@ -1,7 +1,10 @@
 package com.newoether.agora.sandbox
 
+import com.newoether.agora.util.ShellFileEdit
 import com.newoether.agora.util.ShellFileEditResult
 import com.newoether.agora.util.ShellFileReadResult
+import com.newoether.agora.util.ShellGrepOptions
+import com.newoether.agora.util.ShellGrepResult
 import java.io.File
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.StateFlow
@@ -76,8 +79,11 @@ interface SandboxManager {
     /** Read a bounded file slice and return transport-neutral metadata. */
     suspend fun fileRead(path: String, offset: Long = 0, limit: Long = 0): ShellFileReadResult
 
-    /** Write a file into the sandbox filesystem. Returns null on success. */
-    suspend fun fileWrite(path: String, content: String): String?
+    /**
+     * Write a file into the sandbox filesystem. Returns null on success. A non-blank
+     * [expectedSha256] must match the current file or nothing is written.
+     */
+    suspend fun fileWrite(path: String, content: String, expectedSha256: String = ""): String?
 
     /**
      * List files matching a glob pattern within the sandbox.
@@ -94,15 +100,15 @@ interface SandboxManager {
     suspend fun fileGrep(
         pattern: String,
         basePath: String = "",
-        fileGlob: String = ""
-    ): Result<Pair<List<GrepMatch>, Boolean>>
+        fileGlob: String = "",
+        options: ShellGrepOptions = ShellGrepOptions(),
+    ): Result<ShellGrepResult>
 
-    /** Edit a file atomically within the sandbox mutation boundary. */
+    /** Apply ordered edits atomically within the sandbox mutation boundary; all or nothing. */
     suspend fun fileEdit(
         path: String,
-        oldString: String,
-        newString: String,
-        replaceAll: Boolean = false
+        edits: List<ShellFileEdit>,
+        expectedSha256: String = "",
     ): ShellFileEditResult
 
     /** Install a package via Alpine apk. */
@@ -125,6 +131,12 @@ interface SandboxManager {
 
     /** Physical directory mounted as /home inside the sandbox, or null if not available. */
     fun getSandboxHomeDir(): File?
+
+    /**
+     * Physical file for a sandbox path, resolved with the same mount and traversal rules as the
+     * file tools. Null when the flavor has no sandbox; throws when the path is outside every mount.
+     */
+    fun resolveHostFile(path: String): File? = null
 
     // ── Nested types ───────────────────────────────────────
 

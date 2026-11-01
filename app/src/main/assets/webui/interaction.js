@@ -6,7 +6,7 @@ import { icon, ICON_COLLAPSE_CONTENT, ICON_EXPAND_CONTENT, ICON_TERMINAL, ICON_H
 
 const keyOf = item => `${item.kind}:${item.id}`;
 const easing = "cubic-bezier(.4,0,.2,1)";
-function tweenProgress(time) {
+export function tweenProgress(time) {
   let low = 0, high = 1, value = time;
   for (let step = 0; step < 12; step++) {
     value = (low + high) / 2;
@@ -17,7 +17,7 @@ function tweenProgress(time) {
 }
 
 /** Request state belongs to the process controllers; only drafts and retained visuals live here. */
-export function InteractionBar({ state }) {
+export function InteractionBar({ state, enter = true }) {
   const owner = `${state.connectionId || ""}:${state.openId || ""}`;
   const items = state.connected ? state.interactions : [];
   const desired = useRef(null);
@@ -32,19 +32,32 @@ export function InteractionBar({ state }) {
   const signature = items.map(keyOf).join("|");
   let memory = shown && saved.current.get(shown.owner);
   if (shown && !memory) {
-    memory = { page: keyOf(shown.items[0]), folded: false, drafts: new Map(), trust: new Map() };
+    memory = { page: keyOf(shown.items[0]), folded: false, drafts: new Map(), trust: new Map(), keys: new Set() };
     saved.current.set(shown.owner, memory);
   }
   const pages = shown?.owner === owner && items.length ? items : shown?.items || [];
   const index = Math.max(0, pages.findIndex(item => keyOf(item) === memory?.page));
   const current = pages[index];
   const active = !!shown && shown.owner === owner && !!items.length;
-  const busy = !active || !!state.interactionPending;
+  const admitted = useRef(null);
+  if (active && enter) admitted.current = shown.owner;
+  const visible = active && enter;
+  const busy = !visible || !!state.interactionPending;
   const target = sync.interactionTarget();
   function change() { redraw(value => value + 1); }
+  function revealStart() {
+    if (visible && host.current) host.current.dataset.toolsReveal = owner;
+  }
+  function expand() {
+    if (busy) return;
+    memory.folded = false;
+    revealStart();
+    change();
+  }
   function draft(item) {
-    if (!memory.drafts.has(item.id)) memory.drafts.set(item.id, { choices: [], text: "", own: !item.options?.length });
-    return memory.drafts.get(item.id);
+    const key = keyOf(item);
+    if (!memory.drafts.has(key)) memory.drafts.set(key, { choices: [], text: "", own: !item.options?.length });
+    return memory.drafts.get(key);
   }
   function move(delta) {
     if (busy || !pages[index + delta]) return;
@@ -58,6 +71,14 @@ export function InteractionBar({ state }) {
     }));
     sync.interactionCommand("question_submit", { answers }, target);
   }
+
+  useLayoutEffect(() => {
+    if (visible) {
+      const keys = new Set(items.map(keyOf));
+      if ([...keys].some(key => !memory.keys.has(key))) revealStart();
+      memory.keys = keys;
+    } else if (host.current) delete host.current.dataset.toolsReveal;
+  }, [owner, visible, signature]);
 
   useLayoutEffect(() => {
     if (!focusAnswer.current) return;
@@ -74,7 +95,7 @@ export function InteractionBar({ state }) {
     if (!shown && desired.current) setShown(desired.current);
     if (shown?.owner === owner && items.length) {
       if (shown.items !== items) setShown({ owner, items });
-      const live = new Set(items.map(item => item.id));
+      const live = new Set(items.map(keyOf));
       for (const id of memory.drafts.keys()) if (!live.has(id)) memory.drafts.delete(id);
       for (const id of memory.trust.keys()) if (!live.has(id)) memory.trust.delete(id);
       if (!items.some(item => keyOf(item) === memory.page)) memory.page = keyOf(items[0]);
@@ -86,29 +107,40 @@ export function InteractionBar({ state }) {
     if (!node || !content) return;
     const state = motion.current;
     cancelAnimationFrame(state.frame);
-    const from = state.progress, to = active ? 1 : 0, start = performance.now();
+    const from = state.progress, to = visible ? 1 : 0, start = performance.now();
     const draw = () => {
-      node.style.height = `${(content.offsetHeight + 8) * state.progress}px`;
-      node.closest(".chat")?.style.setProperty("--chat-interaction-lift", `${content.offsetHeight * state.progress}px`);
+      if (visible) delete node.dataset.toolsExiting;
+      const spatial = reduced ? to : state.progress;
+      node.dataset.toolsProgress = String(spatial);
+      node.dataset.toolsOpacity = String(state.progress);
+      node.style.height = `${content.offsetHeight * spatial}px`;
       content.style.opacity = String(state.progress);
-      content.style.transform = `scale(${.9 + .1 * state.progress})`;
+      content.style.visibility = state.progress === 0 ? "hidden" : "";
+      content.style.transform = `scale(${reduced ? 1 : .96 + .04 * state.progress})`;
     };
     const observer = new ResizeObserver(draw);
     observer.observe(content);
     function tick(now) {
-      const elapsed = reduced ? 1 : Math.min(1, (now - start) / 180);
+      const elapsed = Math.min(1, (now - start) / 180);
       state.progress = from + (to - from) * tweenProgress(elapsed);
       draw();
       if (elapsed < 1) state.frame = requestAnimationFrame(tick);
-      else if (!active) {
-        const next = desired.current;
-        if (shown.owner === owner && !next) saved.current.delete(shown.owner);
-        setShown(next);
+      else if (!visible) {
+        node.dataset.toolsExiting = "false";
+        admitted.current = null;
+        if (!active) {
+          const next = desired.current;
+          if (shown.owner === owner && !next) saved.current.delete(shown.owner);
+          state.animations.forEach(animation => animation.cancel());
+          state.animations = [];
+          state.page = null;
+          setShown(next);
+        }
       }
     }
     tick(start);
     return () => { cancelAnimationFrame(state.frame); observer.disconnect(); };
-  }, [shown?.owner, active, reduced]);
+  }, [shown?.owner, active, visible, reduced]);
 
   useLayoutEffect(() => {
     const content = body.current, state = motion.current;
@@ -120,6 +152,7 @@ export function InteractionBar({ state }) {
     state.animations = [];
     if (previous?.owner === shown.owner && previous.key !== keyOf(current) && active && !reduced && !memory.folded) {
       const outgoing = previous.node.cloneNode(true);
+      outgoing.querySelectorAll('input[type="radio"]').forEach(input => input.removeAttribute("name"));
       outgoing.inert = true;
       outgoing.setAttribute("aria-hidden", "true");
       outgoing.classList.add("interaction-outgoing");
@@ -149,8 +182,10 @@ export function InteractionBar({ state }) {
     if (state.fold?.owner !== shown.owner) state.fold = { owner: shown.owner, progress: target, frame: 0 };
     const fold = state.fold, from = fold.progress, start = performance.now();
     const draw = () => {
-      content.style.width = `${host.current.clientWidth}px`;
-      container.style.width = `${host.current.clientWidth + (Math.min(label.offsetWidth, host.current.clientWidth) - host.current.clientWidth) * fold.progress}px`;
+      // Match the shared row's two 12px insets so the slot and rounded card occupy one width.
+      const width = Math.max(0, host.current.closest(".tools-scroll").clientWidth - 24);
+      content.style.width = `${width}px`;
+      container.style.width = `${width + (Math.min(label.offsetWidth, width) - width) * fold.progress}px`;
       container.style.height = `${content.offsetHeight + (48 - content.offsetHeight) * fold.progress}px`;
       content.style.opacity = String(Math.max(0, 1 - fold.progress * 2));
       label.style.opacity = String(Math.max(0, fold.progress * 2 - 1));
@@ -164,7 +199,7 @@ export function InteractionBar({ state }) {
     tick(start);
     const observer = new ResizeObserver(draw);
     observer.observe(content);
-    observer.observe(host.current);
+    observer.observe(host.current.closest(".tools-scroll"));
     observer.observe(label);
     return () => {
       cancelAnimationFrame(fold.frame);
@@ -173,7 +208,6 @@ export function InteractionBar({ state }) {
   }, [shown?.owner, memory?.folded, reduced]);
 
   useLayoutEffect(() => () => {
-    host.current?.closest(".chat")?.style.removeProperty("--chat-interaction-lift");
     cancelAnimationFrame(motion.current.frame);
     motion.current.animations.forEach(animation => animation.cancel());
     cancelAnimationFrame(motion.current.fold?.frame);
@@ -181,15 +215,17 @@ export function InteractionBar({ state }) {
 
   if (!shown || !current) return null;
   const value = current.kind === "question" ? draft(current) : null;
-  return html`<div class="interaction-host" ref=${host} data-owner=${shown.owner}>
+  return html`<div class="interaction-host tools-item" ref=${host} data-tools-key="interaction" data-owner=${shown.owner}
+    data-tools-expanded=${visible && !memory.folded ? "true" : null}
+    data-tools-exiting=${!visible && admitted.current === shown.owner ? "true" : null}>
     <section class=${`interaction-card${memory.folded ? " folded" : ""}`} ref=${card}
-      inert=${!active} aria-hidden=${!active ? "true" : null} aria-label=${t.interactionTitle}>
+      inert=${!visible} aria-hidden=${!visible ? "true" : null} aria-label=${t.interactionTitle}>
       <button type="button" class="interaction-capsule" ref=${capsule} disabled=${busy || !memory.folded}
         aria-hidden=${memory.folded ? null : "true"} tabIndex=${memory.folded ? 0 : -1}
-        onClick=${() => { memory.folded = false; change(); }}>
+        onClick=${expand}>
         ${icon(current.kind === "shell" ? ICON_TERMINAL : ICON_HELP)}<span>${current.kind === "shell" ? t.interactionApproval : t.interactionTitle}</span>${icon(ICON_EXPAND_CONTENT)}
       </button>
-      <div class="interaction-full" ref=${full} inert=${memory.folded || !active} aria-hidden=${memory.folded ? "true" : null}>
+      <div class="interaction-full" ref=${full} inert=${memory.folded || !visible} aria-hidden=${memory.folded ? "true" : null}>
         <header class="interaction-header">${icon(current.kind === "shell" ? ICON_TERMINAL : ICON_HELP)}
           <strong>${current.kind === "shell" ? t.shellConfirm : t.interactionTitle}</strong>
           ${current.kind === "shell" && html`<span class="interaction-server">${current.server}</span>`}
@@ -200,13 +236,13 @@ export function InteractionBar({ state }) {
         <div class="interaction-pages"><div class="interaction-body" ref=${body}>
           ${current.kind === "shell" ? html`
             <pre class=${state.display?.autoWrapCodeBlocks ? "wrapped" : ""}>${current.summary}</pre>
-            <label class="interaction-trust"><input type="checkbox" checked=${memory.trust.get(current.id) || false} disabled=${busy}
-              onChange=${event => { memory.trust.set(current.id, event.target.checked); change(); }} />${t.shellTrust}</label>
+            <label class="interaction-trust"><input type="checkbox" checked=${memory.trust.get(keyOf(current)) || false} disabled=${busy}
+              onChange=${event => { memory.trust.set(keyOf(current), event.target.checked); change(); }} />${t.shellTrust}</label>
           ` : html`
             <div class="interaction-question">${current.question}</div>
             <div class="interaction-options" role="group" aria-label=${current.question}>
               ${(current.options || []).map(option => html`<label key=${option} class=${`interaction-option${value.choices.includes(option) ? " selected" : ""}`}>
-                <input type=${current.allowMultiple ? "checkbox" : "radio"} name=${`question-${current.id}`} checked=${value.choices.includes(option)} disabled=${busy}
+                <input key=${current.allowMultiple ? "checkbox" : "radio"} type=${current.allowMultiple ? "checkbox" : "radio"} name=${`question-${current.id}`} checked=${value.choices.includes(option)} disabled=${busy}
                   onChange=${event => {
                     value.choices = current.allowMultiple ? value.choices.includes(option) ? value.choices.filter(choice => choice !== option) : [...value.choices, option] : [option];
                     if (!current.allowMultiple) { value.own = false; event.currentTarget.closest('.interaction-body').querySelector('textarea').blur(); }
@@ -215,7 +251,7 @@ export function InteractionBar({ state }) {
                 <span>${option}</span>
               </label>`)}
               ${current.options?.length > 0 && html`<label class=${`interaction-option${value.own ? " selected" : ""}`}>
-                <input type=${current.allowMultiple ? "checkbox" : "radio"} name=${`question-${current.id}`} checked=${value.own} disabled=${busy}
+                <input key=${current.allowMultiple ? "checkbox" : "radio"} type=${current.allowMultiple ? "checkbox" : "radio"} name=${`question-${current.id}`} checked=${value.own} disabled=${busy}
                   onChange=${event => {
                     value.own = current.allowMultiple ? !value.own : true;
                     if (!current.allowMultiple) value.choices = [];
@@ -241,7 +277,7 @@ export function InteractionBar({ state }) {
           ${index < pages.length - 1 && html`<button type="button" class=${current.kind === "question" ? "filled-button" : "text-button"} disabled=${busy} onClick=${() => move(1)}>${t.questionNext}</button>`}
           ${current.kind === "shell" ? html`
             <button type="button" class="text-button deny" disabled=${busy} onClick=${() => sync.interactionCommand("shell_decision", { requestId: current.id, enabled: false }, target)}>${t.deny}</button>
-            <button type="button" class="filled-button" disabled=${busy} onClick=${() => sync.interactionCommand("shell_decision", { requestId: current.id, enabled: true, alwaysAllow: memory.trust.get(current.id) || false }, target)}>${t.allow}</button>
+            <button type="button" class="filled-button" disabled=${busy} onClick=${() => sync.interactionCommand("shell_decision", { requestId: current.id, enabled: true, alwaysAllow: memory.trust.get(keyOf(current)) || false }, target)}>${t.allow}</button>
           ` : html`
             ${index === pages.length - 1 && html`<button type="button" class="filled-button" disabled=${busy || !items.some(item => item.kind === "question" && (draft(item).choices.length || draft(item).own && draft(item).text.trim()))} onClick=${submit}>${t.send}</button>`}
           `}

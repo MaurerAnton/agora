@@ -7,6 +7,7 @@ import com.newoether.agora.util.DebugLog
 import com.newoether.agora.util.SecretCrypto
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
+import kotlinx.serialization.encodeToString
 import kotlinx.serialization.json.Json
 import java.util.UUID
 
@@ -18,6 +19,8 @@ data class ApiKeyEntry(
     val provider: String = Constants.PROVIDER_GOOGLE
 )
 
+const val SSH_AUTH_PASSWORD = "password"
+const val SSH_AUTH_PRIVATE_KEY = "private_key"
 @Serializable
 data class ShellDeviceConfig(
     val id: String = UUID.randomUUID().toString(),
@@ -33,6 +36,10 @@ data class ShellDeviceConfig(
     val sshPort: Int = 22,
     val sshUser: String = "root",
     val sshPassword: String = "",
+    val sshAuthMode: String = SSH_AUTH_PASSWORD,
+    val sshPrivateKey: String = "",
+    val sshPrivateKeyName: String = "",
+    val sshKeyPassphrase: String = "",
     // Pinned SSH host key (base64 of the server public-key blob). Blank = not yet
     // pinned (trust-on-first-use); once set, connections must match or are rejected.
     val sshHostKey: String = ""
@@ -70,6 +77,8 @@ data class SystemPromptEntry(
     // Legacy fields retained only so prompts saved before structured message templates deserialize.
     val userPrependItems: List<PromptTemplateItem> = emptyList(),
     val userPostpendItems: List<PromptTemplateItem> = emptyList(),
+    /** Completed built-in migration revision; absent legacy JSON starts at zero. Never prompt text. */
+    val builtInMigrationVersion: Int = 0,
 ) {
     val resolvedSystemItems: List<PromptTemplateItem>
         get() = if (systemItems.isNotEmpty()) systemItems
@@ -120,6 +129,13 @@ internal fun decodeConversationSettings(
 internal fun ConversationSettings.normalizedServiceTier(): ConversationSettings =
     if (openAiServiceTier == null) this
     else copy(openAiServiceTier = OpenAiServiceTiers.normalize(openAiServiceTier))
+
+internal fun encryptShellDevices(devices: List<ShellDeviceConfig>, json: Json): String {
+    val stored = SecretCrypto.encrypt(json.encodeToString(devices))
+    check(devices.none { it.sshPrivateKey.isNotEmpty() || it.sshKeyPassphrase.isNotEmpty() } ||
+        SecretCrypto.isEncrypted(stored)) { "Could not encrypt SSH private-key credentials" }
+    return stored
+}
 
 internal fun decodeEncryptedShellDevices(preferences: Preferences, json: Json): List<ShellDeviceConfig> {
     val raw = SecretCrypto.decrypt(preferences[SHELL_DEVICES_JSON] ?: "[]")

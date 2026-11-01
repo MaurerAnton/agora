@@ -27,7 +27,6 @@ import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.lazy.items
-import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -112,7 +111,7 @@ internal fun SettingsDeveloperCapturePage(
     val density = LocalDensity.current
     val motionPolicy = LocalAgoraMotionPolicy.current
     val scope = rememberCoroutineScope()
-    val listState = rememberLazyListState()
+    val listState = rememberSettingsLazyListState()
     val snapshot by DeveloperDiagnostics.snapshots.collectAsState()
     val hasNavigableEvents = snapshot.events.isNotEmpty()
     val edgeTolerancePx = with(density) { CaptureEdgeTolerance.roundToPx() }

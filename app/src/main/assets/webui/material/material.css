@@ -28,14 +28,11 @@
  * it, exactly as in the shader, so the wave needs one animatable property and no other. */
 @property --md-wave-p { syntax: "<number>"; inherits: false; initial-value: 0; }
 
-/* The press geometry inside the control's own box, set by material/ripple.js: the press point, the
- * control's centre, and RippleShader's in_maxRadius. The state layer rides this transition and fades
- * in and out over 150ms, the duration this frame already spends on a hover reveal; the 15ms it used
- * was a single frame, so a hover arrived as a snap. */
+/* Hover entry and exit use the owner-selected 50ms linear transition. */
 :is(.shell, .sign-in-page) :is(button, [role="button"], [role="menuitem"], .conversation-row,
     .info-item.sheet-item, .info-group-header, .queued-message, .tool-search-result,
     .interaction-option, .prompt-option, .prompt-radio, .interaction-trust):not(:disabled):not([aria-disabled="true"]):not(:has(input:disabled)) {
-  transition: --md-state var(--md-state-duration, 150ms) linear, var(--md-component-transition, color 0s);
+  transition: --md-state var(--md-state-duration, 50ms) linear, var(--md-component-transition, color 0s);
   --md-wave-ox: 50%;
   --md-wave-oy: 50%;
   --md-wave-cx: 50%;
@@ -63,7 +60,8 @@
       rgb(from currentColor r g b / calc(var(--md-wave-a) * 0.15625)) 83.333%,
       rgb(from currentColor r g b / calc(var(--md-wave-a) * 0.04297)) 91.667%,
       transparent 100%),
-    linear-gradient(rgb(from currentColor r g b / var(--md-state)), rgb(from currentColor r g b / var(--md-state)));
+    linear-gradient(rgb(from currentColor r g b / var(--md-state)), rgb(from currentColor r g b / var(--md-state))),
+    var(--md-component-background, linear-gradient(transparent, transparent));
 }
 /* Image children cover a host background, so the same indication paints above media content. */
 :is(.shell, .sign-in-page) button:has(> img) { position: relative; }

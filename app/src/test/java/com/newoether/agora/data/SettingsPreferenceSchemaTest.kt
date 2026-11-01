@@ -18,6 +18,12 @@ class SettingsPreferenceSchemaTest {
         assertEquals("anthropic_cache_enabled", ANTHROPIC_CACHE_ENABLED.name)
         assertEquals("anthropic_cache_ttl", ANTHROPIC_CACHE_TTL.name)
         assertEquals("mcp_servers_json", MCP_SERVERS_JSON.name)
+        assertEquals("todo_enabled", TODO_ENABLED.name)
+        assertEquals("subagent_tools_enabled", SUBAGENT_TOOLS_ENABLED.name)
+        assertEquals("subagent_max_total", SUBAGENT_MAX_TOTAL.name)
+        assertEquals("subagent_max_concurrent", SUBAGENT_MAX_CONCURRENT.name)
+        assertEquals("subagent_enabled_models", SUBAGENT_ENABLED_MODELS.name)
+        assertEquals("subagent_recommended_model", SUBAGENT_RECOMMENDED_MODEL.name)
         assertEquals("stick_to_bottom", STICK_TO_BOTTOM.name)
         assertEquals(
             "local_model_idle_retention_minutes",

@@ -44,6 +44,21 @@ class NativeRunArchivePolicyTest {
     }
 
     @Test
+    fun continuationHandoff_preservesItsTerminalReasonWithoutRestarting() {
+        val run = NativeRunArchivePolicy.terminalize(snapshot(
+            status = "COMPLETED",
+            lastCheckpointAt = 150,
+            endedAt = 160,
+            endReason = RunEndReason.CONTINUATION_PENDING.name,
+        ))
+
+        assertEquals(RunStatus.COMPLETED, run.status)
+        assertEquals(RunEndReason.CONTINUATION_PENDING, run.endReason)
+        assertNull(run.activeSlot)
+        assertEquals(160L, run.endedAt)
+    }
+
+    @Test
     fun completeOwnership_requiresMatchingRunsAndUniqueSequences() {
         val runs = listOf(terminalRun("run", "conversation"))
         val valid = listOf(

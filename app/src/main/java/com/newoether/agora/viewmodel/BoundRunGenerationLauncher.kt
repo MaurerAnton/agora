@@ -22,6 +22,7 @@ internal data class BoundRunGenerationRequest(
     val runId: String,
     val pass: Int,
     val requestKind: String,
+    val continuesAfterSuccess: Boolean = false,
     val transformFinalText: (String, MessageStatus) -> String = { text, _ -> text },
 ) {
     init {
@@ -129,6 +130,7 @@ internal class BoundRunGenerationLauncher(
                             { visible(request.conversationId) }
                         },
                         transformFinalText = request.transformFinalText,
+                    hasPendingContinuation = request.continuesAfterSuccess,
                         onToolRoundPersisted = {
                             if (
                                 automaticCompactNeeded(

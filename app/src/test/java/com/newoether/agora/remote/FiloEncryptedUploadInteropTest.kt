@@ -21,7 +21,7 @@ class FiloEncryptedUploadInteropTest {
         val file = temporary.newFile("original.bin")
         file.writeBytes(ByteArray(600_003) { it.toByte() })
         val client = FiloClient(url!!, "a".repeat(64))
-        assertTrue(client.connect().isNotBlank())
+        assertNotNull(client.connect())
         val uploaded = client.upload(SelectedAttachment(uri = file.toURI().toString(), type = "file",
             fileName = "original.bin", mimeType = "application/octet-stream", fileSize = file.length(), localPath = file.path))
         assertEquals(file.length(), uploaded.size)

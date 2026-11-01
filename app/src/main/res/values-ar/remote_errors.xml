@@ -1,11 +1,11 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
     <string name="remote_failed">تعذر إكمال الإجراء عن بُعد. راجع تفاصيل الخطأ.</string>
-    <string name="remote_unknown">لم يتأكد التسليم. تحقق من المحادثة في Codex قبل الإرسال مجددًا.</string>
+    <string name="remote_unknown">تعذر تأكيد إرسال الرسالة.</string>
     <string name="remote_rejected">لم يقبل Codex الرسالة. راجع تفاصيل الخطأ قبل المحاولة مجددًا.</string>
     <string name="remote_storage_failed">تعذر على Agora الوصول إلى بيانات Remote المحلية. تحقق من المساحة المتاحة.</string>
     <string name="remote_network_failed">تعذر الاتصال بـ Filo. تحقق من الكمبيوتر المستهدف وعنوان الخدمة والشبكة.</string>
-    <string name="remote_auth_failed">رفض Filo رمز الوصول. استخدم الرمز الموجود على الكمبيوتر المستهدف.</string>
+    <string name="remote_auth_failed">تعذر على Filo مصادقة هذا الطلب. لا يعني ذلك بالضرورة أن رمز الوصول غير صحيح. إذا استمرت المشكلة، تحقق من الرمز والوقت على الكمبيوتر المستهدف.</string>
     <string name="remote_configuration_failed">أدخل عنوان URL صالحًا للخدمة ورمز وصول من 64 حرفًا.</string>
     <string name="remote_protocol_failed">تعذر على Agora التحقق من استجابة Filo أو قراءتها. تأكد من تحديث التطبيقين.</string>
     <string name="remote_service_failed">تعذر على Codex إكمال الطلب.</string>
@@ -14,7 +14,7 @@
     <string name="remote_response_too_large">تتجاوز الاستجابة أو المرفق الحجم المدعوم.</string>
     <string name="remote_invalid_request">تعذر على Filo قراءة الطلب. تحقق من القيم المدخلة.</string>
     <string name="remote_not_found">لم يعد العنصر المطلوب متاحًا. حدّث القائمة.</string>
-    <string name="remote_not_supported">لا يدعم العميل المتصل هذه العملية.</string>
+    <string name="remote_not_supported">هذا المصدر لا يدعم هذا الإجراء.</string>
     <string name="remote_desktop_unavailable">تعذر على Filo الاتصال بـ Codex Desktop. افتح Codex على الكمبيوتر المستهدف.</string>
     <string name="remote_session_unavailable">لم يجهّز Codex هذه المحادثة بعد. تحقق منها على الكمبيوتر المستهدف.</string>
     <string name="remote_helper_unavailable">تعذر على Filo الاتصال بعملية المستخدم المساعدة. تحقق من خدمة Filo على الكمبيوتر المستهدف.</string>

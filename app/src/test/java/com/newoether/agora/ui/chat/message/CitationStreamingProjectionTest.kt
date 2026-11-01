@@ -11,6 +11,23 @@ import org.junit.Test
 
 internal class CitationStreamingProjectionTest : CitationContentTestFixture() {
     @Test
+    fun originalPositionsSurviveGroupedInsertionsWrappersAndPrivateMarkerCleanup() {
+        for (answer in listOf("Alpha beta", "Alpha ([link](https://example.com/a)) beta",
+            "Alpha \uE200cite\uE202turn9search9\uE201 beta")) {
+            val source = citation(answer, "Example", "https://example.com/a", ranges = arrayOf(0 until 5))
+            val projection = requireNotNull(citationMarkdownProjection(answer, listOf(source), false, true))
+            assertEquals(projection.markdown.length, projection.sourcePositions.size)
+            val index = projection.markdown.indexOf("beta")
+            assertEquals(answer.indexOf("beta"), projection.sourcePositions[index])
+            for (position in projection.markdown.indices) {
+                if (projection.markers.none { it.token == projection.markdown[position] }) {
+                    assertEquals(answer[projection.sourcePositions[position]], projection.markdown[position])
+                }
+            }
+        }
+    }
+
+    @Test
     fun validClaimsStayUnprojectedWhileStreamingThenReuseOneTerminalCapsule() {
         val answer = "Alpha and beta."
         val source = citation(

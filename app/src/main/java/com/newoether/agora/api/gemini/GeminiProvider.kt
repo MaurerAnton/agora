@@ -1,13 +1,13 @@
 package com.newoether.agora.api.gemini
 
 import com.newoether.agora.api.*
-
 import com.newoether.agora.util.DebugLog
 import com.newoether.agora.model.ChatMessage
 import com.newoether.agora.model.MessageSegment
 import com.newoether.agora.model.ModelId
 import com.newoether.agora.model.ThinkingProviderFamily
 import com.newoether.agora.api.util.Base64FileRegistry
+import com.newoether.agora.api.util.imageArtifactsForSend
 import com.newoether.agora.api.util.resolvedThinking
 import com.newoether.agora.api.util.adaptToolRoundsForProvider
 import com.newoether.agora.api.util.RequestFormatException
@@ -38,16 +38,6 @@ import com.newoether.agora.api.util.ToolSchemaJson
 import kotlinx.serialization.json.JsonObject
 import kotlinx.serialization.json.JsonPrimitive
 import java.util.UUID
-
-// Gemini thought summaries carry their headline as **bold** or a markdown heading.
-// Hoisted to file level: extraction runs on every streamed thought chunk, and Regex
-// construction (Pattern.compile) is far too expensive to repeat per chunk.
-private val THOUGHT_TITLE_BOLD = Regex("\\*\\*(.*?)\\*\\*")
-private val THOUGHT_TITLE_HEADING = Regex("(?m)^#+\\s*(.*)$")
-
-private fun extractThoughtTitle(content: String): String? =
-    THOUGHT_TITLE_BOLD.find(content)?.groupValues?.get(1)
-        ?: THOUGHT_TITLE_HEADING.find(content)?.groupValues?.get(1)
 
 /**
  * A Gemini thought signature is opaque state signed by the model that produced it, so only that
@@ -249,7 +239,7 @@ class GeminiProvider(
     ): Flow<StreamEvent> = flow {
         val baseUrl = config.baseUrl?.trimEnd('/')?.ifBlank { null } ?: defaultBaseUrl
         val cleanModelName = config.modelId.removePrefix("models/")
-        
+
         val requiresFunctionCallSignature =
             cleanModelName.contains("gemini-3", ignoreCase = true) ||
                 cleanModelName.contains("gemini-3.5", ignoreCase = true)
@@ -347,19 +337,19 @@ class GeminiProvider(
                 }
             }
             if (config.includeImages && msg.participant == Participant.USER) {
-                for (imagePath in msg.images) {
-                    val placeholder = base64Files.register(imagePath) ?: continue
+                for (artifact in msg.imageArtifactsForSend()) {
+                    val image = base64Files.register(artifact) ?: continue
                     parts.add(
                         ApiRequestPart(
                             inlineData = ApiInlineData(
-                                mimeType = com.newoether.agora.api.util.imageMimeType(imagePath),
-                                data = placeholder,
+                                mimeType = image.mimeType,
+                                data = image.placeholder,
                             ),
                         ),
                     )
                 }
             }
-            if (parts.isEmpty()) parts.add(ApiRequestPart(text = "[Attachment unavailable]"))
+            if (parts.isEmpty()) parts.add(ApiRequestPart(text = "Continue"))
             entries.add(ApiRequestContent(
                 role = if (msg.participant == Participant.USER) "user" else "model",
                 parts = parts
@@ -526,6 +516,8 @@ class GeminiProvider(
                                 handle.readLine()
                             } catch (e: java.net.SocketTimeoutException) {
                                 if (!currentCoroutineContext().isActive) break
+                                streamError = e.asRetryableResponseBodyReadError()
+                                if (streamError != null) break
                                 if (++consecutiveReadTimeouts >= 3) {
                                     timedOut = true
                                     break
@@ -707,7 +699,14 @@ class GeminiProvider(
                         }
                         DebugLog.d("AgoraSSE", "[$name] ${termination.describe()}")
                         if (termination.isRetryable && attempt < maxAttempts) {
-                            emit(StreamEvent.Retrying(attempt, ProviderRetryPolicy.MAX_RETRIES))
+                            emit(
+                                StreamEvent.Retrying(
+                                    attempt,
+                                    ProviderRetryPolicy.MAX_RETRIES,
+                                    resetCurrentAttempt = termination.producedContent ||
+                                        ProviderRetryPolicy.requiresResponseReadRetry(termination.streamError),
+                                ),
+                            )
                             delay(ProviderRetryPolicy.delayMillis(attempt))
                         } else {
                             termination.toError(name)?.let { emit(StreamEvent.Error(it)) }
@@ -727,7 +726,7 @@ class GeminiProvider(
                         )
                         if (retryable && attempt < maxAttempts) {
                             emit(StreamEvent.Retrying(attempt, ProviderRetryPolicy.MAX_RETRIES))
-                            delay(ProviderRetryPolicy.delayMillis(attempt))
+                            delay(ProviderRetryPolicy.delayMillis(attempt, handle.retryAfter))
                         } else {
                             val genError = providerHttpError(handle.code, errorRaw, finalUrlString)
                             emit(StreamEvent.Error(genError))

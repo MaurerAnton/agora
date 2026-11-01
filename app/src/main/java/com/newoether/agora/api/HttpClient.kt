@@ -1,5 +1,9 @@
 package com.newoether.agora.api
 
+import com.newoether.agora.api.util.ProviderRetryPolicy
+import com.newoether.agora.api.util.asRetryableResponseBodyReadError
+import com.newoether.agora.util.NetworkRequestProgress
+import com.newoether.agora.util.executeWithNetworkRetry
 import com.newoether.agora.diagnostics.DeveloperDiagnostics
 import com.newoether.agora.diagnostics.DiagnosticRequestContext
 import okhttp3.MediaType.Companion.toMediaType
@@ -244,6 +248,9 @@ object HttpClient {
                 mark("tls_end", "version=${handshake?.tlsVersion}")
             override fun connectEnd(call: Call, inetSocketAddress: InetSocketAddress, proxy: Proxy, protocol: Protocol?) =
                 mark("connect_end", "protocol=$protocol")
+            override fun requestHeadersStart(call: Call) {
+                call.request().tag(NetworkRequestProgress::class.java)?.started = true
+            }
             override fun requestBodyStart(call: Call) = mark("request_body_start")
             override fun requestBodyEnd(call: Call, byteCount: Long) = mark("request_body_end", "bytes=$byteCount")
             override fun responseHeadersStart(call: Call) = mark("response_headers_start")
@@ -258,6 +265,8 @@ object HttpClient {
         .proxySelector(proxySelector)
         .proxyAuthenticator(proxyAuthenticator)
         .build()
+
+    private val providerCalls by lazy { client.newBuilder().retryOnConnectionFailure(false).build() }
 
     /** Every currently-live streaming handle in the process. Per-conversation scopes additionally
      * index their own handles for targeted Stop; this global set remains the process-shutdown
@@ -279,6 +288,7 @@ object HttpClient {
         private val firstLineObserved = AtomicBoolean(false)
         private val wireLineNumber = java.util.concurrent.atomic.AtomicLong(0L)
 
+        val retryAfter: String? get() = response.get()?.header("Retry-After")
         val code: Int get() = checkNotNull(response.get()) { "Response headers are not available" }.code
         val source: BufferedSource? get() = response.get()?.body?.source()
         val errorBody: String?
@@ -296,8 +306,11 @@ object HttpClient {
                     )
                 }
                 body
-            } catch (_: Exception) {
-                null
+            } catch (cancelled: kotlinx.coroutines.CancellationException) {
+                throw cancelled
+            } catch (failure: Exception) {
+                // Keep explicit read diagnostics available to the provider's existing retry owner.
+                (failure.asRetryableResponseBodyReadError() as? GenerationError.Network)?.message
             }
 
         internal fun attach(openedResponse: okhttp3.Response) {
@@ -375,7 +388,7 @@ object HttpClient {
         jsonBody: String,
         headers: Map<String, String> = emptyMap(),
         scope: com.newoether.agora.viewmodel.StreamScope?,
-        callClient: okhttp3.Call.Factory = client,
+        callClient: okhttp3.Call.Factory = providerCalls,
         maxLineBytes: Long? = null,
         maxErrorBytes: Long? = null,
     ): StreamHandle = streamPostBody(
@@ -408,7 +421,7 @@ object HttpClient {
         headers: Map<String, String> = emptyMap(),
         diagnosticBody: String? = null,
         scope: com.newoether.agora.viewmodel.StreamScope?,
-        callClient: okhttp3.Call.Factory = client,
+        callClient: okhttp3.Call.Factory = providerCalls,
         maxLineBytes: Long? = null,
         maxErrorBytes: Long? = null,
     ): StreamHandle {
@@ -452,6 +465,7 @@ object HttpClient {
     private val coroutineStreamScope =
         ThreadLocal<com.newoether.agora.viewmodel.StreamScope?>()
     private val coroutineRequestTrace = ThreadLocal<RequestTrace?>()
+    private val coroutineRequestJob = ThreadLocal<kotlinx.coroutines.Job?>()
 
     /** Bind [scope] to the current generation coroutine. Thread-context propagation keeps the
      * value stable across suspensions/dispatcher hops without exposing process-global mutable
@@ -462,13 +476,17 @@ object HttpClient {
         block: suspend () -> T,
     ): T = withContext(
         coroutineStreamScope.asContextElement(scope) +
-            coroutineRequestTrace.asContextElement(requestTrace)
+            coroutineRequestTrace.asContextElement(requestTrace) +
+            coroutineRequestJob.asContextElement(kotlinx.coroutines.currentCoroutineContext()[kotlinx.coroutines.Job])
     ) {
         block()
     }
 
     internal fun boundStreamScope(): com.newoether.agora.viewmodel.StreamScope? =
         coroutineStreamScope.get()
+
+    internal fun isRequestCancelled(): Boolean =
+        coroutineRequestJob.get()?.isActive == false || Thread.currentThread().isInterrupted
 
     internal fun boundRequestTrace(): RequestTrace? = coroutineRequestTrace.get()
 
@@ -481,23 +499,20 @@ object HttpClient {
         liveHandles.clear()
     }
 
-    private fun newCall(
+    private fun <T> executeBuffered(
         request: Request,
         callTimeoutMillis: Long?,
         readTimeoutMillis: Long? = null,
-    ): okhttp3.Call {
+        replaySafe: Boolean = true,
+        read: (okhttp3.Response) -> T,
+    ): T {
         val callClient = readTimeoutMillis?.let { timeoutMillis ->
             require(timeoutMillis > 0L)
-            client.newBuilder()
-                .readTimeout(timeoutMillis, TimeUnit.MILLISECONDS)
-                .build()
+            client.newBuilder().readTimeout(timeoutMillis, TimeUnit.MILLISECONDS).build()
         } ?: client
-        return callClient.newCall(request).also { call ->
-            callTimeoutMillis?.let {
-                require(it > 0L)
-                call.timeout().timeout(it, TimeUnit.MILLISECONDS)
-            }
-        }
+        return callClient.executeWithNetworkRetry(
+            request, replaySafe = replaySafe, callTimeoutMillis = callTimeoutMillis, read = read,
+        )
     }
 
     fun post(
@@ -506,17 +521,13 @@ object HttpClient {
         headers: Map<String, String> = emptyMap(),
         callTimeoutMillis: Long? = null,
         readTimeoutMillis: Long? = null,
+        replaySafe: Boolean = true,
     ): String? {
         guardCleartextCredentials(url, headers)
         val body = jsonBody.toRequestBody(JSON)
         val requestBuilder = Request.Builder().url(url).post(body)
         headers.forEach { (k, v) -> requestBuilder.addHeader(k, v) }
-        val response = newCall(
-            request = requestBuilder.build(),
-            callTimeoutMillis = callTimeoutMillis,
-            readTimeoutMillis = readTimeoutMillis,
-        ).execute()
-        return response.use {
+        return executeBuffered(requestBuilder.build(), callTimeoutMillis, readTimeoutMillis, replaySafe) {
             if (it.isSuccessful) it.body?.string()
             else {
                 DebugLog.e("HttpClient", "POST failed status=${it.code}")
@@ -535,7 +546,7 @@ object HttpClient {
         val body = bodyText.toRequestBody(JSON)
         val requestBuilder = Request.Builder().url(url).post(body)
         headers.forEach { (key, value) -> requestBuilder.addHeader(key, value) }
-        return newCall(requestBuilder.build(), callTimeoutMillis).execute().use { response ->
+        return executeBuffered(requestBuilder.build(), callTimeoutMillis) { response ->
             TextResponse(
                 code = response.code,
                 body = response.body?.string().orEmpty(),
@@ -560,8 +571,7 @@ object HttpClient {
         guardCleartextCredentials(url, headers)
         val requestBuilder = Request.Builder().url(url).get()
         headers.forEach { (k, v) -> requestBuilder.addHeader(k, v) }
-        val response = newCall(requestBuilder.build(), callTimeoutMillis).execute()
-        return response.use {
+        return executeBuffered(requestBuilder.build(), callTimeoutMillis) {
             TextResponse(
                 code = it.code,
                 body = it.body.string(),
@@ -577,7 +587,7 @@ object HttpClient {
         guardCleartextCredentials(url, headers)
         val requestBuilder = Request.Builder().url(url).get()
         headers.forEach { (key, value) -> requestBuilder.addHeader(key, value) }
-        return client.newCall(requestBuilder.build()).execute().use { response ->
+        return executeBuffered(requestBuilder.build(), null) { response ->
             TextResponse(
                 code = response.code,
                 body = response.body?.string().orEmpty(),
@@ -596,12 +606,7 @@ object HttpClient {
         guardCleartextCredentials(url, headers)
         val requestBuilder = Request.Builder().url(url).get()
         headers.forEach { (k, v) -> requestBuilder.addHeader(k, v) }
-        val response = newCall(
-            request = requestBuilder.build(),
-            callTimeoutMillis = callTimeoutMillis,
-            readTimeoutMillis = readTimeoutMillis,
-        ).execute()
-        return response.use {
+        return executeBuffered(requestBuilder.build(), callTimeoutMillis, readTimeoutMillis) {
             if (it.isSuccessful) it.body?.bytes() else null
         }
     }

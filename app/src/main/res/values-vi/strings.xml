@@ -86,7 +86,7 @@
     <string name="tool_file_write">Ghi tệp</string>
     <string name="tool_file_edit">Sửa tệp</string>
     <string name="tool_file_glob">Tìm tệp</string>
-    <string name="tool_file_grep">Tìm kiếm tệp</string>
+    <string name="tool_file_grep">Tìm trong tệp</string>
 
     <!-- Tool in-progress states (doing) -->
     <string name="tool_listing_conversations">Đang liệt kê cuộc trò chuyện…</string>
@@ -95,7 +95,7 @@
     <string name="tool_writing_file">Đang ghi %1$s…</string>
     <string name="tool_editing_file">Đang sửa %1$s…</string>
     <string name="tool_finding_files">Đang tìm %1$s…</string>
-    <string name="tool_searching_file">Đang tìm kiếm %1$s…</string>
+    <string name="tool_searching_file">Đang tìm %1$s trong tệp…</string>
     <string name="tool_executing_shell">Đang thực thi: %1$s…</string>
     <string name="tool_reading_memory">Đang đọc %1$s…</string>
     <string name="tool_saving_memory">Đang lưu %1$s…</string>
@@ -204,6 +204,22 @@
     <string name="embedding_custom_model_desc">Nhập bất kỳ tên mô hình nào được nhà cung cấp hỗ trợ</string>
     <string name="embedding_batch_size">Kích thước lô (Batch Size)</string>
     <string name="embedding_batch_size_desc">Số tin nhắn cần lưu bộ nhớ đệm cho mỗi yêu cầu (1-100)</string>
+    <string name="embedding_add_model">Thêm mô hình</string>
+    <string name="embedding_edit_model">Sửa mô hình</string>
+    <string name="embedding_choose_type">Chọn loại mô hình</string>
+    <string name="embedding_type_remote_desc">Dùng API embedding như OpenAI, Voyage AI hoặc Ollama.</string>
+    <string name="embedding_type_local_desc">Chạy mô hình embedding GGUF trên thiết bị này.</string>
+    <string name="embedding_provider_custom">Tùy chỉnh</string>
+    <string name="embedding_connection">Kết nối</string>
+    <string name="embedding_general">Chung</string>
+    <string name="embedding_cache_status">Bộ nhớ đệm</string>
+    <string name="embedding_use_saved_key">Dùng khóa %1$s đã lưu</string>
+    <string name="embedding_use_saved_key_desc">Lấy từ cài đặt nhà cung cấp trò chuyện</string>
+    <string name="embedding_model_id_hint">ID mô hình, ví dụ text-embedding-3-small</string>
+    <string name="embedding_model_locked_desc">Embedding đã lưu thuộc về mô hình này. Thêm mô hình mới để đổi.</string>
+    <string name="embedding_model_file">Tệp mô hình</string>
+    <string name="embedding_replace_file">Thay thế</string>
+    <string name="embedding_test_failed">Kiểm tra kết nối thất bại: %1$s</string>
     <string name="local_model_ready">Đã nhập mô hình.</string>
     <string name="import_model">Nhập mô hình (.gguf)</string>
     <string name="importing_model">Đang nhập...</string>
@@ -258,6 +274,8 @@
     <string name="conversation_read_empty">Không có tin nhắn nào trong nhánh đã chọn.</string>
     <string name="conversation_read_page">Trang: tin nhắn từ %1$d-%2$d</string>
     <string name="conversation_read_more">Sử dụng giá trị offset lớn hơn để xem thêm tin nhắn.</string>
+    <string name="conversation_tools_more">Có thêm lời gọi công cụ cho tin nhắn này (tool_offset: %1$d).</string>
+    <string name="conversation_details_error">Không thể đọc chi tiết tin nhắn đã lưu (%1$s).</string>
 
     <!-- General -->
     <string name="back">Quay lại</string>
@@ -305,11 +323,6 @@
     <string name="provider_no_local_models_desc">Nhập mô hình GGUF để bắt đầu</string>
     <string name="provider_keys_summary">%1$d khóa API</string>
     <string name="provider_connection">Kết nối</string>
-    <string name="provider_connection_test">Kiểm tra kết nối</string>
-    <string name="provider_connection_test_running">Đang kiểm tra kết nối…</string>
-    <string name="provider_connection_test_title">Kiểm tra kết nối</string>
-    <string name="provider_connection_test_ok">Kết nối OK — mọi yêu cầu đều có phản hồi.</string>
-    <string name="provider_connection_test_failed">Kết nối thất bại — xem các lần thử bên dưới.</string>
     <string name="import_model_chat">Nhập mô hình GGUF</string>
     <string name="add_local_chat_model">Thêm mô hình cục bộ</string>
     <string name="local_ctx_size">Kích thước ngữ cảnh</string>
@@ -564,7 +577,7 @@
     <!-- SSH host-key pinning -->
     <string name="shell_ssh_verify_host_key">Xác minh &amp; ghim khóa máy chủ</string>
     <string name="shell_ssh_host_key_pinned">Khóa máy chủ đã được ghim</string>
-    <string name="shell_ssh_host_key_not_pinned">Khóa máy chủ chưa được ghim — có nguy cơ bị chặn bắt dữ liệu</string>
+    <string name="shell_ssh_host_key_not_pinned">Khóa máy chủ chưa được ghim, có nguy cơ bị chặn bắt dữ liệu</string>
     <string name="shell_ssh_verify_title">Xác minh khóa máy chủ SSH</string>
     <string name="shell_ssh_verify_message">Xác nhận xem dấu vân tay này có khớp với máy chủ của bạn trước khi tin cậy hay không. Ghim giúp bảo vệ chống lại tấn công giả mạo (man-in-the-middle).</string>
     <string name="shell_ssh_trust">Tin cậy &amp; ghim</string>
@@ -800,6 +813,9 @@
     <string name="tool_edit_skill">Sửa kỹ năng</string>
     <string name="tool_delete_skill">Xóa kỹ năng</string>
     <string name="tool_read_file_truncated">Đang hiển thị một phần nội dung · tiếp tục từ byte %1$d</string>
+    <string name="tool_read_file_truncated_line">Đang hiển thị một phần nội dung · tiếp tục từ dòng %1$d</string>
+    <string name="tool_edit_count">%1$d thay đổi</string>
+    <string name="tool_edit_replace_all">Thay thế tất cả</string>
     <string name="low_context_mode">Chế độ ngữ cảnh thấp</string>
     <string name="low_context_mode_default_desc">Bật chế độ ngữ cảnh thấp theo mặc định</string>
     <string name="learn_more">Tìm hiểu thêm...</string>
@@ -824,7 +840,61 @@
     <string name="message_source_loop">Vòng lặp</string>
     <string name="message_source_ask_user">Hỏi người dùng</string>
     <string name="message_source_unanswered">Chưa trả lời</string>
+    <string name="settings_todo">Danh sách việc cần làm</string>
+    <string name="settings_todo_desc">Danh sách công việc của cuộc trò chuyện do mô hình quản lý</string>
+    <string name="todo_enable">Bật danh sách việc cần làm</string>
+    <string name="todo_enable_desc">Cho phép mô hình đọc và cập nhật danh sách công việc của cuộc trò chuyện. Tắt tùy chọn này vẫn giữ các danh sách hiện có.</string>
+    <string name="settings_subagents">Tác nhân phụ</string>
+    <string name="settings_subagents_desc">Giao việc cho các cuộc trò chuyện độc lập</string>
+    <string name="subagents_enable">Bật tác nhân phụ</string>
+    <string name="subagents_enable_desc">Cho phép mô hình giao việc cho các cuộc trò chuyện độc lập. Tắt tùy chọn này không dừng các tác nhân phụ hiện có.</string>
+    <string name="local_projector_title">Bộ Chiếu Thị Giác</string>
+    <string name="local_projector_desc">Tùy chọn: nhập tệp mmproj GGUF tương thích với mô hình trò chuyện để hỗ trợ nhập hình ảnh</string>
+    <string name="local_model_error_id_required">Cần có ID mô hình</string>
+    <string name="local_model_error_id_invalid">Chỉ dùng a-z, 0-9, dấu chấm, gạch dưới và gạch nối</string>
+    <string name="local_model_error_id_taken">ID mô hình này đã được sử dụng</string>
+    <string name="local_model_error_file_required">Hãy nhập tệp mô hình GGUF</string>
+    <string name="local_model_error_context">Kích thước ngữ cảnh phải là số nguyên dương</string>
+    <string name="local_model_error_temperature">Nhiệt độ phải nằm trong khoảng từ 0 đến 2</string>
+    <string name="local_model_error_top_p">Top P phải nằm trong khoảng từ 0 đến 1</string>
+    <string name="local_model_error_max_tokens">Số token tối đa phải là số nguyên dương</string>
+    <string name="local_model_error_output">Số token tối đa không được vượt quá kích thước ngữ cảnh</string>
+    <string name="tool_read_todo">Đọc danh sách việc cần làm</string>
+    <string name="tool_update_todo">Cập nhật danh sách việc cần làm</string>
+    <string name="tool_spawn_agent">Khởi chạy tác nhân phụ</string>
+    <string name="tool_send_agent_message">Gửi tin nhắn cho tác nhân phụ</string>
+    <string name="tool_wait_agents">Chờ tác nhân phụ</string>
+    <string name="tool_list_agents">Liệt kê tác nhân phụ</string>
+    <string name="tool_stop_agent">Dừng tác nhân phụ</string>
+    <string name="tool_reading_todo">Đang đọc danh sách việc cần làm…</string>
+    <string name="tool_updating_todo">Đang cập nhật danh sách việc cần làm…</string>
+    <string name="tool_spawning_agent">Đang khởi chạy tác nhân phụ…</string>
+    <string name="tool_sending_agent_message">Đang đưa tin nhắn cho tác nhân phụ vào hàng đợi…</string>
+    <string name="tool_waiting_agents">Đang chờ tác nhân phụ…</string>
+    <string name="tool_listing_agents">Đang liệt kê tác nhân phụ…</string>
+    <string name="tool_stopping_agent">Đang dừng tác nhân phụ…</string>
+    <string name="tool_read_todo_done">Đã đọc danh sách việc cần làm</string>
+    <string name="tool_updated_todo">Đã cập nhật danh sách việc cần làm</string>
+    <string name="tool_spawned_agent">Đã khởi chạy tác nhân phụ</string>
+    <string name="tool_queued_agent_message">Đã đưa tin nhắn cho tác nhân phụ vào hàng đợi</string>
+    <string name="tool_waited_agents">Đã kết thúc chờ tác nhân phụ</string>
+    <string name="tool_listed_agents">Đã liệt kê tác nhân phụ</string>
+    <string name="tool_stopped_agent">Đã dừng tác nhân phụ</string>
+    <string name="tool_delete_agent">Xóa tác nhân phụ</string>
+    <string name="tool_deleting_agent">Đang xóa tác nhân phụ…</string>
+    <string name="tool_deleted_agent">Đã xóa tác nhân phụ</string>
+    <string name="subagents_allow_delete">Cho phép xóa tác nhân phụ</string>
+    <string name="subagents_allow_delete_desc">Cho phép cuộc trò chuyện cha xóa vĩnh viễn các tác nhân phụ đang rảnh để giải phóng chỗ. Tác nhân phụ đang chạy và kết quả chưa được gửi sẽ không bao giờ bị xóa.</string>
+    <string name="subagent_deleted_by_parent">Tác nhân phụ này đã bị cuộc trò chuyện cha xóa.</string>
+    <string name="tool_todo_empty">Danh sách việc cần làm trống</string>
+    <string name="tool_agents_empty">Không có tác nhân phụ</string>
+    <string name="tool_agent_results_empty">Không có kết quả nào từ tác nhân phụ được trả về</string>
 
+    <string name="provider_connection_test">Kiểm tra kết nối</string>
+    <string name="provider_connection_test_running">Đang kiểm tra kết nối…</string>
+    <string name="provider_connection_test_title">Kiểm tra kết nối</string>
+    <string name="provider_connection_test_ok">Kết nối OK — mọi yêu cầu đều có phản hồi.</string>
+    <string name="provider_connection_test_failed">Kết nối thất bại — xem các lần thử bên dưới.</string>
     <!-- Settings - Tor -->
     <string name="tor_title">Tor</string>
     <string name="tor_desc">Route API requests through Tor network</string>
@@ -834,7 +904,6 @@
     <string name="tor_socks_port">Port</string>
     <string name="tor_socks_port_desc">Tor SOCKS5 proxy port (default: 9050)</string>
     <string name="tor_info">Requires a running Tor daemon with SOCKS5 proxy. Install Orbot from F-Droid or run tor on your device.</string>
-
     <!-- Auto-regenerate on Chinese -->
     <string name="auto_regen_cjk_title">Auto-regenerate on Chinese</string>
     <string name="auto_regen_cjk_desc">Stop and retry the answer if Chinese characters appear while it streams</string>
@@ -848,4 +917,5 @@
     <string name="memory_move_title">Move to folder: %1$s</string>
     <string name="memory_new_folder">New or existing folder (empty = root)</string>
     <string name="memory_new_folder_title">New folder</string>
+
 </resources>

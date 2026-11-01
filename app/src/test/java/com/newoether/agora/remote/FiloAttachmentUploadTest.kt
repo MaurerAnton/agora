@@ -83,6 +83,48 @@ class FiloAttachmentUploadTest {
         assertEquals(1, calls)
     }
 
+    @Test fun uploadReceiptModesRemainDistinctAndCompletionCannotSubstituteIdentity() = runBlocking {
+        val scopedId = "filo.scope.cGF5bG9hZA.${"b".repeat(43)}"
+        val cases = listOf(
+            Triple(false, scopedId, null),
+            Triple(true, "a".repeat(32), null),
+            Triple(true, "filo.scope../elsewhere", null),
+            Triple(false, "a".repeat(32), null),
+            Triple(true, scopedId, "C:/unexpected/native-path"),
+        )
+        val json = Json { ignoreUnknownKeys = true }
+        for ((scoped, id, path) in cases) {
+            var chunks = 0
+            var metadata: RemoteUpload? = null
+            val failure = runCatching { uploadRemoteAttachment(fixture(byteArrayOf(7)), scoped) { route, method, body ->
+                val buffer = Buffer(); body.writeTo(buffer)
+                when {
+                    route == "v1/uploads" -> {
+                        metadata = json.decodeFromString<RemoteUpload>(buffer.readUtf8()).copy(id = id)
+                        json.encodeToString(metadata!!)
+                    }
+                    method == "PUT" -> { chunks++; "{\"offset\":1}" }
+                    else -> json.encodeToString(metadata!!.copy(path = path))
+                }
+            } }.exceptionOrNull()
+            assertTrue("scoped=$scoped id=$id", failure is IllegalArgumentException)
+            assertEquals(if (validRemoteUploadId(id, scoped)) 1 else 0, chunks)
+        }
+        var metadata: RemoteUpload? = null
+        val failure = runCatching { uploadRemoteAttachment(fixture(byteArrayOf(7)), true) { route, method, body ->
+            val buffer = Buffer(); body.writeTo(buffer)
+            when {
+                route == "v1/uploads" -> {
+                    metadata = json.decodeFromString<RemoteUpload>(buffer.readUtf8()).copy(id = scopedId)
+                    json.encodeToString(metadata!!)
+                }
+                method == "PUT" -> "{\"offset\":1}"
+                else -> json.encodeToString(metadata!!.copy(id = "filo.scope.other.${"b".repeat(43)}"))
+            }
+        } }.exceptionOrNull()
+        assertTrue(failure is IllegalArgumentException)
+    }
+
     @Test fun changedLocalFileNeverStartsNetworkUpload() = runBlocking {
         val item = fixture(byteArrayOf(7)).copy(fileSize = 2)
         var calls = 0

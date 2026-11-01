@@ -106,7 +106,19 @@ sealed class GenerationError {
     /** Wraps an unexpected exception. */
     data class Unknown(
         val cause: Throwable
-    ) : GenerationError()
+    ) : GenerationError() {
+        fun detail(): String {
+            val visited = java.util.Collections.newSetFromMap(
+                java.util.IdentityHashMap<Throwable, Boolean>()
+            )
+            var current: Throwable? = cause
+            while (current != null && visited.add(current)) {
+                current.localizedMessage?.takeIf(String::isNotBlank)?.let { return it }
+                current = current.cause
+            }
+            return cause.javaClass.name
+        }
+    }
 
     /** Generation was cancelled by the user. */
     object Cancelled : GenerationError()
@@ -151,7 +163,7 @@ sealed class GenerationError {
         is LocalModel -> message
         is Configuration -> message
         is RequestFormat -> "Request validation failed before sending ($provider): $details"
-        is Unknown -> cause.localizedMessage ?: "An unexpected error occurred."
+        is Unknown -> detail()
         Cancelled -> "Generation cancelled."
         Timeout -> "Request timed out."
     }

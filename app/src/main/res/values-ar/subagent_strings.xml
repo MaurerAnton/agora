@@ -1,0 +1,41 @@
+<resources>
+    <string name="message_source_subagent">وكيل فرعي</string>
+    <string name="subagent_running">قيد التشغيل</string>
+    <string name="subagent_completed">مكتمل</string>
+    <string name="subagent_failed">فشل</string>
+    <string name="subagent_stopped">متوقف</string>
+    <string name="subagent_idle">خامل</string>
+    <string name="subagents_model_list_title">النماذج</string>
+    <string name="subagents_recommended_model_title">النموذج الموصى به</string>
+    <string name="subagents_no_recommended_model">بلا تفضيل</string>
+    <string name="subagents_no_models">لم تتم إضافة نماذج</string>
+    <string name="subagents_no_models_desc">أضف نموذجًا لبدء وكلاء فرعيين جدد</string>
+    <string name="subagents_add_models">إضافة نماذج</string>
+    <string name="subagents_add_models_title">إضافة نماذج للوكلاء الفرعيين</string>
+    <string name="subagents_capsule_display_title">عرض الكبسولات</string>
+    <string name="subagents_capsule_display_desc">عرض الوكلاء الفرعيين بشكل منفصل أو في كبسولة واحدة</string>
+    <string name="subagents_capsule_display_individual">منفصل</string>
+    <string name="subagents_capsule_display_grouped">مجمع</string>
+    <string name="subagents_limits_title">الحدود</string>
+    <string name="subagents_max_total">إجمالي الوكلاء الفرعيين</string>
+    <string name="subagents_max_total_desc">الحد الأقصى للوكلاء الفرعيين الموجودين لكل محادثة رئيسية، بما في ذلك المكتملون. خفض هذا الحد لا يوقف الوكلاء الفرعيين الموجودين ولا يحذفهم.</string>
+    <string name="subagents_max_concurrent">الوكلاء الفرعيون المتزامنون</string>
+    <string name="subagents_max_concurrent_desc">الحد الأقصى للوكلاء الفرعيين الذين يعملون في الوقت نفسه لكل محادثة رئيسية. تنتظر المهام الإضافية؛ ويتيح خفض هذا الحد للوكلاء الجاري تشغيلهم إكمال عملهم.</string>
+    <string name="subagents_limit_value">%1$d</string>
+    <plurals name="subagents_running_count">
+        <item quantity="zero">%d قيد التشغيل</item>
+        <item quantity="one">%d قيد التشغيل</item>
+        <item quantity="two">%d قيد التشغيل</item>
+        <item quantity="few">%d قيد التشغيل</item>
+        <item quantity="many">%d قيد التشغيل</item>
+        <item quantity="other">%d قيد التشغيل</item>
+    </plurals>
+    <plurals name="subagents_count">
+        <item quantity="zero">%d وكيل فرعي</item>
+        <item quantity="one">%d وكيل فرعي</item>
+        <item quantity="two">%d وكيلين فرعيين</item>
+        <item quantity="few">%d وكلاء فرعيين</item>
+        <item quantity="many">%d وكيلاً فرعياً</item>
+        <item quantity="other">%d وكيل فرعي</item>
+    </plurals>
+</resources>

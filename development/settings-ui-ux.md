@@ -31,6 +31,9 @@ layout, states, density, or interaction design has been approved.
 - Every full-screen Settings surface uses `CollapsingSettingsScaffold` or
   `CollapsingSettingsLazyScaffold` so it has the established collapsing large
   heading. Do not replace it with a page-local top bar or title treatment.
+- Pull-to-refresh in the shared lazy scaffold drops its indicator from the safe page top, above
+  the collapsing heading, toolbar and list. The refresh container encloses those layers so the
+  Material indicator is drawn last; do not offset its entry below the toolbar.
 - Organize content into named categories with `SettingsGroup`. Standard cards use
   `SettingsItem` and contain a leading icon, a title, and a supporting
   description. Omitting any of those elements requires an explicit approved
@@ -47,6 +50,13 @@ layout, states, density, or interaction design has been approved.
   `SettingsScreen.kt` for `SettingsGroup` and `SettingsItem`, and
   `SettingsAnimations.kt` for page transitions. Copy their behavior through the
   shared APIs rather than recreating their dimensions or motion locally.
+- Returning from a Settings child page restores the previous page's browsing scroll position,
+  including lazy-list offset and collapsing-title progress. Keep positions separate by stable
+  destination/provider/model identity and use the existing scroll owner. If content shrinks,
+  clamp through the ordinary scroll/list state instead of jumping to an unrelated item.
+  Restoration is in place, not a new scroll animation. This retains browsing state only and
+  never saves or revives a discarded explicit-save editor draft. Narrow and two-pane navigation
+  follow the same rule within the Settings session.
 
 ## Anthropic Provider cache controls
 - Built-in Anthropic and custom Anthropic-protocol Provider details place an Advanced group directly
@@ -63,6 +73,23 @@ layout, states, density, or interaction design has been approved.
   `cache_control`; enabled sends ephemeral caching with the selected duration. It does not disable
   relay-owned caching, negotiate relay policy, add block-level breakpoints, or retry with altered
   cache parameters. Provider settings must reach every applicable request caller.
+
+## Generation image quality
+- Generation places its immediate-save Image Quality group last, after generation parameters.
+  Its whole-row Quality Mode SettingsItem has a leading image icon, title,
+  effective longest-edge/JPEG description and a trailing selected value. It opens the shared
+  Appearance-style dropdown with a selected-item checkmark and the existing menu surface treatment.
+- Modes are Light, Balanced, High and Custom. `image-processing.md` owns their numeric policy.
+  Only Custom shows the two controls Maximum Long Edge and JPEG Quality. Each control retains a
+  leading icon, title, supporting description and displayed value, and uses the existing persisted
+  slider feedback gate. A drag updates its local displayed value and commits once on release;
+  stale persistence emissions do not interrupt the gesture or overwrite its pending final value.
+  Maximum Long Edge uses seven discrete integer stops: 128, 256, 512, 1024, 2048, 4096 and 8192 px.
+  An existing off-stop integer remains displayed and persisted unchanged until the user selects
+  a stop. JPEG Quality retains its existing range and interaction.
+- Mode changes persist immediately, retain custom values and apply to newly processed images.
+  There is no Save action or save-on-exit draft. The existing Generation scaffold/navigation and
+  shared SettingsGroup own spacing and navigation. All supported locales define the complete copy.
 
 ## Appearance defaults
 
@@ -105,8 +132,10 @@ and WebUI share this contract.
   content, and a full-row ripple.
 - Keep counts and status details on a second line. Do not place them beside the
   primary label.
-- Destructive actions use the error color. Primary creation and save actions
-  use the primary color. Disabled appearance is owned by the component.
+- Destructive actions use the error color. Primary creation and save buttons
+  use the primary color. Top-bar Save icon actions use the scaffold's normal
+  foreground, including Add Provider; they do not set a primary tint.
+  Disabled appearance is owned by the component.
 - Settings destination rows never use a passive next-page chevron. Details,
   more, refresh, external-link, and other actual action icons use the full
   `onSurfaceVariant` color.
@@ -123,6 +152,40 @@ and WebUI share this contract.
 - The FAB belongs on the actionable configuration surface that the manual explains. For list/detail flows, place it on the Add/Edit detail editor and not on a root list that cannot configure the documented fields.
 - Gate the FAB with the shared documentation-visibility setting and add the established 80 dp bottom spacer only to the same scrollable surface.
 - Every target path must be present in MkDocs navigation and resolve for every built locale through a maintained page or the configured English fallback.
+
+## Conch and Filo installation guides
+
+Owner screenshot corrections on 2026-10-21 place `What Is Conch?` and `What Is Filo?` in a top Help
+group on Add Device, before Connection. Device lists and Edit pages do not duplicate the entries.
+Help uses the shared scaffold, guarded transition and scroll owner. Opening help retains the current
+editor-owned draft; the top-bar Back restores that same draft without saving. The guide has no
+separate in-page Back or return button (owner correction, 2026-10-22). Closed
+or outgoing editor callbacks cannot regain authority on return. DocumentationFab remains unchanged.
+Conch and Filo help pages have exactly three named `SettingsGroup` categories in this order:
+Introduction, Installation, and Project Address (owner correction, 2026-10-21 21:45). Introduction
+uses one standard icon/title/supporting-description item. Installation has exactly three numbered
+steps in one group: open the target terminal, copy and run the maintained command, then one short
+sentence on adding the device with the installer's address and credential. Conch target-system choices appear at the start of Installation,
+before the numbered steps, not in a fourth category. Owner screenshot correction on 2026-10-22
+uses the existing `PillTabSwitcher` instead of radio rows. Its icon/title/chips card uses
+`SettingsIconContent` with the same 16 dp top/bottom inset as ordinary cards and a 12 dp title-to-chips
+gap. The control does not repeat a supporting description. Windows/Linux/Termux labels wrap without
+truncation on narrow screens, at large fonts and in RTL; selection and disabled semantics remain
+accessible. Step numbers reserve the same 24 dp leading width as standard icons. Step two renders
+the exact command with the shared `ChatMarkdownCodeBlock`, wrapped and selectable. Copy uses the
+block's own header copy target above the code, like chat Markdown (owner correction, 2026-10-22),
+labelled with the shell language. There is no separate Copy Command button. The header copy is
+disabled and fenced by page ownership, so an outgoing or closed page cannot copy. Project Address contains one whole-row external link
+with a Code icon, GitHub title,
+visible repository address, and the established external-link icon and launcher. Do not leave the
+introduction or project link as ungrouped text/buttons or add separate Advanced, Copy Command or
+Connect groups or repeated explanatory paragraphs. Commands are displayed/copied only.
+Conch uses default user-mode commands: ordinary Windows PowerShell, Linux without sudo and Termux
+without root. Advanced mode/linger instructions stay in the linked source; existing modes are never
+silently changed. Filo targets Windows x64 administrator PowerShell. Its final step names the
+Windows account/source choice and the installer's service URL/token.
+Do not promise generic LAN, macOS/Linux, Chat/Cowork or unsupported native control. Credentials stay
+in the existing editor. Source links retain the established external-link icon and launcher.
 
 ## Motion and state
 
@@ -166,6 +229,206 @@ and WebUI share this contract.
 - Search Settings places `Show Uncached Notification` directly below Auto Cache only while Auto
   Cache is disabled. Its default-on stored value is retained while hidden; enabling Auto Cache hides
   the row rather than changing that value.
+
+## Conversation Search model editors
+
+- The Add Model type picker uses Cloud for Remote and the Provider Local AutoAwesome stars for Local.
+- Model identifier fields, including Local Chat, Remote Embedding Add/Edit and manual custom models,
+  use the localized `Model ID` label and Badge icon. API Key fields retain their key icon.
+- Remote Add uses a Cloud-icon Provider SettingsItem with the current provider as its trailing value.
+  The whole row opens the same selected-item dropdown style as Model Search Method; provider chips
+  are not shown. The Model group contains one Badge Model ID field with a model-ID hint, without preset chips.
+- Local Add shows the shared ModelImportItem with an AutoAwesome icon and a fixed Embedding Model
+  (.gguf) title. Its description identifies a GGUF embedding model for local semantic search.
+- Failed remote embedding connection tests use the existing app snackbar with localized failure
+  text, not an inline error item that changes the form layout. Failure keeps the editor and draft
+  unchanged, and never saves the model. A closed/discarded editor must not emit a late result.
+- Embedding, Local Chat, vision-projector and SSH private-key imports share ModelImportItem.
+  Titles stay fixed across states; Chat/Embedding titles retain `(.gguf)`. Empty rows use the item's
+  inactive icon (VisibilityOff for projector), onSurfaceVariant gray, `Not imported · <purpose>`
+  supporting text and a trailing FileUpload action. Importing disables the row, shows `Importing…`
+  and only the leading progress indicator. Imported rows use the original icon in primary
+  (Visibility for projector), `<filename> · <size>` supporting text, and an optional enablement line
+  (`Image input enabled` for projector). Titles use the ordinary onSurface headline color.
+- Whole-row clicks import or replace. Only removable optional items have a trailing Delete action;
+  required main model files have none. A fixed 24dp leading slot and 48dp trailing slot prevent
+  action/icon changes from moving text. Leading state and supporting text crossfade for 250ms.
+  The motion-aware progress indicator and shared Reduced Motion policy remain authoritative.
+- File-backed rows read basename and length from the saved path on IO, including on editor re-entry.
+  A missing file uses an error-colored warning icon and `File missing`, without an enablement claim.
+  SSH keys have no retained source file: their saved filename and stored UTF-8 byte length supply
+  metadata to the same component without writing key files or exposing key content.
+- Local Edit omits Model File, including the private generated filename. The model's stored identity
+  remains immutable. Both editors retain explicit Save and their unsaved-draft Back guard.
+- Edit Cache uses a stable title and the existing cache status as supporting text, with the existing
+  fixed action/progress slot. Cache state, progress and Cache/Re-cache behavior are unchanged.
+
+## Provider Local model editors
+
+- Provider -> Local keeps its model list and global Advanced controls. Import GGUF Model and
+  each model's Edit action navigate through the existing Settings transition owner to a full-page
+  Add/Edit Local Model editor, not an AlertDialog.
+- Reuse the collapsing Settings scaffold, groups and icon/field rows. New models import a GGUF
+  through the same shared import row as Embedding with a fixed Chat Model (.gguf) title; copy
+  identifies a Chat model running conversations on-device. The optional Vision Projector row has
+  a fixed title, VisibilityOff/Visibility state icons and copy requiring a matching mmproj GGUF for
+  image input. Existing main model files stay unchanged and are omitted from Edit. Keep Model ID,
+  alias, optional vision projector and the existing numeric settings.
+- Save is explicit. Back discards only after the shared unsaved-changes guard; field edits,
+  navigation and picker dismissal never persist a model. Unsaved imported files are draft-owned;
+  replacing or discarding them cleans only those files, never an existing model/projector.
+- Preserve ID validation and uniqueness, positive context/output limits, temperature 0-2, Top P
+  0-1 and maximum output not exceeding context size. New context/output defaults and existing
+  stored values remain governed by local-model-runtime.md.
+- The editor owns the Provider documentation FAB and matching bottom clearance when enabled.
+
+## Add Provider creation editor
+
+- Add Provider on the Providers list navigates to a separate full-page editor through the shared
+  Settings transition owner, never an Add Provider dialog. Existing provider destinations stay unchanged.
+- Reuse the collapsing Settings scaffold, icon/field rows and named groups. Keep the current protocol
+  selector, Provider name and Base URL fields, name-conflict policy and required URL validation.
+- Only explicit Save creates a provider. Back uses the shared unsaved-draft guard and never persists
+  partial values. Save trims the name and URL and returns to the existing Providers list.
+- Provider documentation uses the shared FAB, visibility setting and bottom clearance.
+
+## Shell device list and editors
+
+- Shell devices use the existing guarded Settings list/detail navigation. Each root card has a
+  bounded whole-card ripple. The whole row and its right-side MoreVert IconButton open the same
+  shared Edit/Delete dropdown; only Edit opens the full-page editor. Edit uses the pencil icon.
+  The menu anchors to the trailing IconButton's Box, not the whole card, matching MCP's 48 dp
+  touch target and 6 dp end padding. No inline expansion or passive disclosure glyph is present.
+  Delete captures the device and requires confirmation; device deletion appears only in this list
+  menu. The detail editor has no device-delete action or deletion dialog.
+- Root headlines retain the compact Conch/SSH badge: 4 dp corners, 6 dp horizontal/1 dp vertical
+  padding, labelSmall and primaryContainer/onPrimaryContainer for both types. Only a nonblank
+  description appears below the name, with at most two lines and ellipsis. Addresses and connection
+  summaries remain in the detail editor; blank descriptions add no fallback copy or supporting row.
+- Add/Edit follows the MCP details reference: shared collapsing scaffold. Add places Help first;
+  Connection follows with type first, then name/description and endpoint fields, followed by Authentication and SSH Host Key.
+  Name and description share one Label-icon item with 12 dp between their independent fields.
+  SSH host and port share one Dns-icon item: host fills the remaining width, port is 96 dp and the
+  gap is 12 dp. Insufficient width or larger fonts stack the fields with 12 dp vertical spacing.
+  Username starts the Key-icon Authentication item above the authentication method with 12 dp
+  spacing. Conch retains its URL and API key fields. Type and authentication reuse PillTabSwitcher.
+  Text fields reuse McpLabeledField with 16 dp outlined corners and an 8 dp label/input gap. Values
+  and placeholders use bodyMedium and full onSurfaceVariant; labels retain bodyLarge Medium.
+  Do not enlarge hints or shrink headings. Short and enlarged-font editors remain scrollable.
+  Keep the root list's scroll and collapsing-title position through the existing scroll owner.
+- The detail editor owns the shared `shell.md` documentation FAB and its conditional 80 dp bottom
+  clearance. The root list has neither. Sandbox management keeps its existing `sandbox.md` entry.
+- Save is explicit. Successful persistence animates back to the list through the shared transition
+  owner; failure retains the draft. Back uses the shared unsaved-changes guard and never saves.
+  Save's icon/progress uses one fixed 48 dp slot and a 250 ms Crossfade. Private-key validation
+  stays on IO, while encrypted storage and atomic name admission keep their existing owner.
+- Each entry captures a fresh immutable device snapshot. Persisted list emissions never reset an
+  open draft or revive a completed editor. Leaving immediately fences save, verification and picker
+  callbacks, including during the retained outgoing animation and re-entry into the same device ID.
+  Late completion from an older save attempt cannot close a newer retry or a different page.
+- Storage exceptions complete through the repository's explicit error callback. They release Saving,
+  keep the draft and show the existing generic save-failed snackbar, without reporting a name conflict.
+  Coroutine cancellation propagates without a false success or error callback.
+- Losing the current category/page identity permanently closes that editor entry and clears its root
+  route, even if a quick two-pane Crossfade returns before disposal. A later open captures a fresh
+  persisted snapshot; the retained outgoing draft and its asynchronous results never regain authority.
+- Shell device names are required and unique after trimming, ignoring case, matching shell-tool
+  routing. Editing a device excludes its own stable ID from conflicts. `Local Sandbox` is reserved.
+- A new device remains a local draft until explicit Save succeeds. Duplicate names use the existing
+  localized name-error presentation and disable Save without changing the draft.
+- The persisted decision rechecks the latest list inside one DataStore edit. Concurrent creates or
+  renames cannot bypass validation through stale UI snapshots; failed admission preserves all data.
+  Import/secret restoration keeps its separate legacy compatibility and identity rules.
+
+## SSH private-key authentication
+
+- New SSH drafts leave Username empty and show the technical identity `root` only as a gray
+  bodyMedium placeholder through McpLabeledField. A new editor projects the default root value to
+  an empty opening snapshot; untouched Back does not report a false change. Explicit supplied
+  non-default usernames and all saved usernames, including root, remain actual editable values.
+  Switching connection type initializes an empty username. Save and host-key Verify normalize an
+  empty or whitespace-only username to root without inserting it into the visible draft.
+- The explicit-save Shell detail editor offers Password and Private Key authentication.
+  The private-key choice replaces the password field with an import action and the selected
+  filename, using the shared two-line Settings import/action presentation with a fixed leading
+  icon/progress slot and localized 256 KiB import description. An encrypted key additionally
+  shows its masked passphrase field through the shared secret-visibility owner. Do not expose a
+  raw filesystem-path field or private-key text editor.
+- SAF import reads and validates at most 256 KiB on IO. Cancellation, unreadable or unsupported
+  files retain the previous draft and report localized feedback. An imported key remains only in
+  the local editor draft until explicit Save; Back/navigation never persist it. No key files or
+  durable source URI grants are created. Picker/validation completion must match the current editor.
+- Password remains the default for existing devices. Only the selected authentication method is
+  used by commands and host-key Verify. Preserve explicit trust/pinning and do not fall back from
+  failed key authentication to a retained password. Switching device type clears irrelevant fields.
+- The unpinned host-key warning uses ordinary locale punctuation rather than a dash separator
+  (owner screenshot correction, 2026-10-22). Simplified Chinese reads `未固定主机密钥，易受中间人攻击`;
+  translations preserve both the unpinned state and interception risk. Trust and verification behavior stay unchanged.
+- The existing encrypted device configuration stores private-key content and its passphrase.
+  File labels and authentication mode contain no key bytes; backup boundaries belong to
+  import-export.md. Failed validation must not log keys, passphrases or source file content.
+
+## Interaction timeout
+
+- Interaction adds a Timeout slider directly below the Ask User enable switch, using the existing
+  Local Model Idle Retention slider layout and `PersistedSliderFeedbackGate`. It stays configurable
+  while Ask User is disabled, has no Save action, and saves once when the gesture finishes.
+- Use seven discrete minute presets: 1, 2, 5, 10, 15, 30 and 60, default 5. The track has seven
+  positions rather than sixty ticks. Show the localized selected duration beside the title.
+- One blocking Ask User call, including a question set, shares this time budget. Expiry preserves
+  already submitted answers and returns other questions unanswered without choosing for the user.
+  Non-blocking questions are unchanged. Newly captured generation contexts receive new settings;
+  editing the slider does not restart an existing wait.
+- Timeout is a portable Settings preference governed by `import-export.md`.
+
+## Todo List and Subagent settings
+
+- Tools contains separate Todo List (Checklist icon) and Subagents (AccountTree icon) destinations.
+  Each uses the existing Interaction settings reference: collapsing scaffold, named group, and one
+  whole-row SettingsItem switch with a leading icon, title and supporting description. No Save action.
+- Enable Todo List controls model read/update tools; Enable Subagents controls delegation tools.
+  Both global switches default on, persist immediately and enter newly captured generation contexts.
+  Child conversations never receive delegation tools even when enabled; Compact still disables both.
+- Subagents adds an immediate-save model list copied from Image Transcription: model/provider rows,
+  provider or Local icons, per-row remove menu, and the same multi-select Add Models dialog geometry,
+  typography, controls and spacing. It contains only
+  globally enabled model IDs. An unconfigured, missing or null list defaults to empty and allows
+  no new spawn; it never inherits the global model set. First Add includes only the selected models.
+  Existing explicitly configured lists are preserved. Disabling or removing a candidate never cancels existing children.
+- The Recommended Model section copies the Image Transcription model setting row and single-choice
+  picker, including its 64dp minimum row height, typography, icons, control geometry and spacing,
+  with a No Preference option. Choices come from the current Subagent list. Removing the selected
+  candidate clears its recommendation. The preference appears only as a nonbinding tool hint and
+  never substitutes for an explicitly chosen model. Neither section has a Save action.
+- Disabling does not erase stored lists, hide existing navigation, stop children or discard completion
+  delivery. Existing admitted work keeps its frozen context, like other tool-access preferences.
+- While delegation is enabled, the Subagents group shows a second whole-row switch, Allow Deleting
+  Subagents (Delete icon), default off, immediate save. It controls only the parent's `agent_delete`
+  tool (message-generation.md 8.14); manual deletion through the child's conversation menu is
+  unaffected. Chinese copy is 允许删除子代理.
+- Capsule Display and Limits follow the Models group, in that order, outside the delegation-enabled
+  condition so both remain configurable while delegation is disabled. Capsule Display follows the
+  Appearance selector row: its trailing value uses primary `labelLarge`, a 96dp end-aligned text
+  slot with 4dp end padding and one-line ellipsis, and the shared dropdown is anchored in that same
+  trailing slot with `surfaceContainer` and 16dp tonal elevation.
+- The Limits group contains
+  Total Subagents (1–16, default 16) and Concurrent Subagents (1–16, default 4) integer sliders,
+  with no unlimited option. Reuse `LocalModelIdleRetentionSlider` layout and
+  `PersistedSliderFeedbackGate`; `SubagentLimitSlider` owns the shared presentation for both
+  real controls. Each gesture updates its displayed value locally and saves once on completion,
+  with no Save action. Persistence echoes must not overwrite a pending gesture or final value.
+- Concurrent Subagents cannot exceed Total Subagents. Its range ends at the smaller of 16 and
+  the persisted total; a total of 1 leaves a disabled slider fixed at 1 with no negative steps.
+  Both controls stay visible and configurable while delegation tools are disabled. Total counts
+  all existing children of each parent, including completed ones. Concurrent limits simultaneous
+  child execution per parent; extra work waits through the existing execution admission owner.
+  Lowering either limit never stops or deletes existing children and lets running work finish.
+- Subagents includes an immediate-save Capsule display row with its leading icon, description,
+  current value and existing selected-check dropdown: Individual and Grouped (default). It stays
+  available when delegation is disabled because existing child navigation stays available. Chinese
+  copy is胶囊显示方式/独立显示/合并显示. There is no Save action. Native/WebUI capsule and sheet behavior
+  belongs to application-ui.md39; persistence/default/restore belongs to import-export.md.
+- Both preferences follow portable Settings export, restore and Replace defaults in import-export.md.
 
 ## Diagnostic Capture
 
@@ -222,6 +485,20 @@ and WebUI share this contract.
   export date and time with milliseconds in `yyyy-MM-dd_HH-mm-ss-SSS` form.
   Filename and content `generatedAtMillis` derive from the same export instant.
   Existing format identifiers, extensions, MIME types and capture content remain unchanged.
+
+## System Prompt templates
+- The explicit-save editor offers only the ordinary context variables. Tool guidance is static text
+  in the Default template, with no per-tool guide cards or example values. Retired saved variables
+  remain removable rows with the existing localized Unknown label and technical key underneath;
+  preview compilation contributes no text for them. Opening or leaving the editor never deletes
+  or rewrites those saved items. Save and unsaved Back behavior stay unchanged.
+- The explicit-save editor also offers an HTML Preview Guidance insertion as an ordinary CUSTOM text
+  item, following [interactive-html.md](interactive-html.md). It edits only the draft and remains fully
+  editable/removable; it is not a predefined tool variable or runtime prompt injection.
+- The existing variable picker keeps its title, SettingsItem rows, spacing and scroll behavior.
+  Selection changes the draft only. Default copy describes response rules, tool guidance, the Skill
+  catalog and Active Memory. Exact template ordering, migration and ownership follow
+  message-generation.md 9.2.
 
 ## Copy and localization
 

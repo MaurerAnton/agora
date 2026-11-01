@@ -31,8 +31,10 @@ internal fun PublishWebUiTheme(webUi: WebUiController, fontPreference: String, c
     SideEffect { webUi.publishTheme(theme) }
 }
 
-private fun ColorScheme.webRoles(): Map<String, Int> = mapOf<String, Color>(
+internal fun ColorScheme.webRoles(): Map<String, Int> = mapOf<String, Color>(
     "primary" to primary,
+    "secondary" to secondary,
+    "tertiary" to tertiary,
     "onPrimary" to onPrimary,
     "primaryContainer" to primaryContainer,
     "onPrimaryContainer" to onPrimaryContainer,

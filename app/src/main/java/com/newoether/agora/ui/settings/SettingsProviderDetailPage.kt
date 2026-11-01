@@ -1,18 +1,12 @@
 package com.newoether.agora.ui.settings
 
-import com.newoether.agora.util.DebugLog
-import androidx.activity.compose.rememberLauncherForActivityResult
-import androidx.activity.result.contract.ActivityResultContracts
+import androidx.activity.compose.BackHandler
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.selection.toggleable
 import androidx.compose.foundation.layout.*
-import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.text.input.TextFieldState
-import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.AutoAwesome
 import androidx.compose.material.icons.filled.Chat
 import androidx.compose.material.icons.filled.Cached
@@ -26,7 +20,6 @@ import androidx.compose.material.icons.filled.Memory
 import androidx.compose.material.icons.filled.MoreVert
 import androidx.compose.material.icons.filled.Visibility
 import androidx.compose.material3.*
-import com.newoether.agora.ui.motion.MotionAwareCircularProgressIndicator as CircularProgressIndicator
 import androidx.compose.runtime.*
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.ui.Alignment
@@ -63,12 +56,51 @@ import com.newoether.agora.ui.components.SecretVisibilityToggle
 import com.newoether.agora.ui.components.rememberSecretVisible
 import com.newoether.agora.ui.components.secretVisualTransformation
 
-@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun SettingsProviderDetailPage(
     providerName: String,
     viewModel: ChatViewModel,
     onBack: () -> Unit,
+) {
+    var editorRoute by remember(providerName) { mutableStateOf<LocalChatEditorRoute?>(null) }
+    val showDocFab by viewModel.settings.showDocumentationFab.collectAsState()
+    BackHandler(enabled = editorRoute != null) { editorRoute = null }
+    GuardedAnimatedContent(
+        targetState = editorRoute,
+        forward = editorRoute != null,
+        contentKey = { route -> route?.initial?.id ?: if (route != null) "add" else null },
+    ) { route ->
+        if (route != null) {
+            SettingsSecondaryPane {
+                LocalChatModelEditor(
+                    initial = route.initial,
+                    viewModel = viewModel,
+                    onBack = { editorRoute = null },
+                    showDocFab = showDocFab,
+                )
+            }
+        } else {
+            ProviderDetailSettingsList(
+                providerName = providerName,
+                viewModel = viewModel,
+                onBack = onBack,
+                onAddModel = { editorRoute = LocalChatEditorRoute(null) },
+                onEditModel = { editorRoute = LocalChatEditorRoute(it) },
+            )
+        }
+    }
+}
+
+private data class LocalChatEditorRoute(val initial: LocalChatModelConfig?)
+
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+private fun ProviderDetailSettingsList(
+    providerName: String,
+    viewModel: ChatViewModel,
+    onBack: () -> Unit,
+    onAddModel: () -> Unit,
+    onEditModel: (LocalChatModelConfig) -> Unit,
 ) {
     val apiKeys by viewModel.settings.apiKeys.collectAsState()
     val activeApiKeyIds by viewModel.settings.activeApiKeyIds.collectAsState()
@@ -90,96 +122,13 @@ fun SettingsProviderDetailPage(
     val customConfig = customProviders.firstOrNull { it.name == currentName }
     val isCustom = customConfig != null
 
-    val context = LocalContext.current
-    val scope = rememberCoroutineScope()
-    fun deleteFilesAsync(vararg paths: String?) {
-        val targets = paths.filterNotNull().filter(String::isNotBlank)
-        if (targets.isNotEmpty()) {
-            scope.launch(Dispatchers.IO) {
-                targets.forEach { java.io.File(it).delete() }
-            }
-        }
-    }
-
     // Dialogs
     var showKeyDialog by remember { mutableStateOf<ApiKeyEntry?>(null) }
     var showDeleteKeyConfirm by remember { mutableStateOf<ApiKeyEntry?>(null) }
-    var importingModel by remember { mutableStateOf(false) }
-    var copiedFilePath by remember { mutableStateOf<String?>(null) }
-    var showAddModelDialog by remember { mutableStateOf(false) }
-    var showEditModelDialog by remember { mutableStateOf<LocalChatModelConfig?>(null) }
     var showDeleteModelConfirm by remember { mutableStateOf<LocalChatModelConfig?>(null) }
-    var showGgufError by remember { mutableStateOf(false) }
-    var mmprojPickedUri by remember { mutableStateOf<String?>(null) }
     var showRenameProvider by remember { mutableStateOf(false) }
     var showDeleteProvider by remember { mutableStateOf(false) }
     var providerMenuExpanded by remember { mutableStateOf(false) }
-
-    val filePickerLauncher = rememberLauncherForActivityResult(ActivityResultContracts.OpenDocument()) { uri ->
-        if (uri != null) {
-            importingModel = true
-            scope.launch {
-                val importedPath = withContext(Dispatchers.IO) {
-                    try {
-                        val dest = java.io.File(
-                            context.filesDir,
-                            "chat_model_${java.util.UUID.randomUUID()}.gguf",
-                        )
-                        val copied = context.contentResolver.openInputStream(uri)?.use { input ->
-                            dest.outputStream().use { output -> input.copyTo(output) }
-                            true
-                        } == true
-                        if (!copied) return@withContext null
-                        val magic = ByteArray(4)
-                        dest.inputStream().use { it.read(magic) }
-                        val valid = magic[0] == 'G'.code.toByte() &&
-                            magic[1] == 'G'.code.toByte() &&
-                            magic[2] == 'U'.code.toByte() &&
-                            magic[3] == 'F'.code.toByte()
-                        if (valid) {
-                            dest.absolutePath
-                        } else {
-                            dest.delete()
-                            null
-                        }
-                    } catch (e: Exception) {
-                        DebugLog.e("ProviderDetail", "GGUF import", e)
-                        null
-                    }
-                }
-                if (importedPath == null) {
-                    showGgufError = true
-                } else {
-                    copiedFilePath = importedPath
-                    showAddModelDialog = true
-                }
-                importingModel = false
-            }
-        }
-    }
-    val mmprojLauncher = rememberLauncherForActivityResult(ActivityResultContracts.OpenDocument()) { uri ->
-        if (uri != null) {
-            scope.launch {
-                val importedPath = withContext(Dispatchers.IO) {
-                    try {
-                        val dest = java.io.File(
-                            context.filesDir,
-                            "mmproj_${java.util.UUID.randomUUID()}.gguf",
-                        )
-                        val copied = context.contentResolver.openInputStream(uri)?.use { input ->
-                            dest.outputStream().use { output -> input.copyTo(output) }
-                            true
-                        } == true
-                        if (copied) dest.absolutePath else null
-                    } catch (e: Exception) {
-                        DebugLog.e("ProviderDetail", "mmproj import", e)
-                        null
-                    }
-                }
-                if (importedPath != null) mmprojPickedUri = importedPath
-            }
-        }
-    }
 
     CollapsingSettingsScaffold(
         title = if (isLocal) stringResource(R.string.local_title) else currentName,
@@ -418,7 +367,7 @@ fun SettingsProviderDetailPage(
                                         Box {
                                             IconButton(onClick = { showMenu = true }, modifier = Modifier.size(24.dp)) { Icon(Icons.Default.MoreVert, stringResource(R.string.options), modifier = Modifier.size(18.dp)) }
                                             AgoraDropdownMenu(expanded = showMenu, onDismissRequest = { showMenu = false }, containerColor = MaterialTheme.colorScheme.surfaceContainer, tonalElevation = 16.dp) {
-                                                AgoraDropdownMenuItem(text = { Text(stringResource(R.string.edit)) }, leadingIcon = { Icon(Icons.Default.Edit, null) }, onClick = { showMenu = false; showEditModelDialog = model })
+                                                AgoraDropdownMenuItem(text = { Text(stringResource(R.string.edit)) }, leadingIcon = { Icon(Icons.Default.Edit, null) }, onClick = { showMenu = false; onEditModel(model) })
                                                 AgoraDropdownMenuItem(text = { Text(stringResource(R.string.delete), color = MaterialTheme.colorScheme.error) }, leadingIcon = { Icon(Icons.Default.Delete, null, tint = MaterialTheme.colorScheme.error) }, onClick = { showMenu = false; showDeleteModelConfirm = model })
                                             }
                                         }
@@ -427,21 +376,10 @@ fun SettingsProviderDetailPage(
                             }
                         }
                         add {
-                            Box(modifier = Modifier.fillMaxWidth().heightIn(min = 56.dp).clickable(enabled = !importingModel) { filePickerLauncher.launch(arrayOf("*/*")) }.padding(horizontal = 16.dp), contentAlignment = Alignment.Center) {
-                                if (importingModel) {
-                                    Row(verticalAlignment = Alignment.CenterVertically) {
-                                        CircularProgressIndicator(modifier = Modifier.size(18.dp), strokeWidth = 2.dp)
-                                        Spacer(modifier = Modifier.width(8.dp))
-                                        Text(stringResource(R.string.importing_model), color = MaterialTheme.colorScheme.primary, style = MaterialTheme.typography.labelLarge)
-                                    }
-                                } else {
-                                    Row(verticalAlignment = Alignment.CenterVertically) {
-                                        Icon(Icons.Default.Add, null, modifier = Modifier.size(18.dp), tint = MaterialTheme.colorScheme.primary)
-                                        Spacer(modifier = Modifier.width(8.dp))
-                                        Text(stringResource(R.string.import_model_chat), color = MaterialTheme.colorScheme.primary, style = MaterialTheme.typography.labelLarge)
-                                    }
-                                }
-                            }
+                            SettingsAddItem(
+                                label = stringResource(R.string.import_model_chat),
+                                onClick = onAddModel,
+                            )
                         }
                     }
                 )
@@ -594,150 +532,6 @@ fun SettingsProviderDetailPage(
     }
 
     // --- Dialogs ---
-    if (showGgufError) {
-        AlertDialog(containerColor = MaterialTheme.colorScheme.surfaceContainer, onDismissRequest = { showGgufError = false }, title = { Text(stringResource(R.string.import_invalid_gguf_title), fontWeight = FontWeight.Bold) }, text = { Text(stringResource(R.string.import_invalid_gguf_desc)) }, confirmButton = { TextButton(onClick = { showGgufError = false }) { Text(stringResource(R.string.ok)) } })
-    }
-
-    // Add model dialog
-    if (showAddModelDialog && copiedFilePath != null) {
-        var modelId by remember { mutableStateOf("") }; var modelAlias by remember { mutableStateOf("") }
-        var addMmprojPath by remember { mutableStateOf("") }
-        var nCtx by remember { mutableStateOf("16384") }; var temperature by remember { mutableStateOf("0.7") }; var topP by remember { mutableStateOf("0.9") }; var maxTokens by remember { mutableStateOf("1024") }
-        var idError by remember { mutableStateOf<String?>(null) }; var formError by remember { mutableStateOf<String?>(null) }
-        val idRegex = remember { Regex("^[a-z0-9._-]+\$") }
-        LaunchedEffect(mmprojPickedUri) {
-            mmprojPickedUri?.let { newPath ->
-                deleteFilesAsync(addMmprojPath)
-                addMmprojPath = newPath
-                mmprojPickedUri = null
-            }
-        }
-        AlertDialog(
-            modifier = Modifier.clearFocusOnTap(),
-            containerColor = MaterialTheme.colorScheme.surfaceContainer,
-            onDismissRequest = {
-                deleteFilesAsync(copiedFilePath, addMmprojPath)
-                showAddModelDialog = false; copiedFilePath = null
-            },
-            title = { Text(stringResource(R.string.add_local_chat_model), fontWeight = FontWeight.Bold) },
-            text = { Column(Modifier.fillMaxWidth().verticalScroll(rememberScrollState())) {
-                OutlinedTextField(value = modelId, onValueChange = { modelId = it; idError = null }, label = { Text(stringResource(R.string.model_id_label)) }, supportingText = if (idError != null) {{ Text(idError!!, color = MaterialTheme.colorScheme.error) }} else null, isError = idError != null, shape = RoundedCornerShape(16.dp), modifier = Modifier.fillMaxWidth())
-                Spacer(modifier = Modifier.height(8.dp))
-                OutlinedTextField(value = modelAlias, onValueChange = { modelAlias = it }, label = { Text(stringResource(R.string.model_alias_label)) }, shape = RoundedCornerShape(16.dp), modifier = Modifier.fillMaxWidth())
-                Spacer(modifier = Modifier.height(8.dp))
-                OutlinedTextField(value = nCtx, onValueChange = { nCtx = it }, label = { Text(stringResource(R.string.local_ctx_size)) }, keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number), shape = RoundedCornerShape(16.dp), modifier = Modifier.fillMaxWidth())
-                Spacer(modifier = Modifier.height(8.dp))
-                Row(verticalAlignment = Alignment.CenterVertically) {
-                    val hasMmproj = addMmprojPath.isNotBlank()
-                    OutlinedButton(onClick = { mmprojLauncher.launch(arrayOf("*/*")) }, shape = RoundedCornerShape(16.dp), modifier = Modifier.weight(1f), colors = ButtonDefaults.outlinedButtonColors(contentColor = if (hasMmproj) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurfaceVariant)) {
-                        Icon(Icons.Default.Add, null, modifier = Modifier.size(18.dp)); Spacer(modifier = Modifier.width(6.dp)); Text(if (hasMmproj) addMmprojPath.split("/").lastOrNull() ?: "" else stringResource(R.string.local_mmproj_path_label), maxLines = 1, overflow = TextOverflow.Ellipsis)
-                    }
-                    if (hasMmproj) {
-                        Spacer(modifier = Modifier.width(8.dp))
-                        TextButton(onClick = {
-                            val removedPath = addMmprojPath
-                            addMmprojPath = ""
-                            deleteFilesAsync(removedPath)
-                        }) { Text(stringResource(R.string.remove), color = MaterialTheme.colorScheme.error) }
-                    }
-                }
-                Spacer(modifier = Modifier.height(8.dp))
-                OutlinedTextField(value = temperature, onValueChange = { temperature = it }, label = { Text(stringResource(R.string.local_temperature)) }, keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Decimal), shape = RoundedCornerShape(16.dp), modifier = Modifier.fillMaxWidth())
-                Spacer(modifier = Modifier.height(8.dp))
-                OutlinedTextField(value = topP, onValueChange = { topP = it }, label = { Text(stringResource(R.string.local_top_p)) }, keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Decimal), shape = RoundedCornerShape(16.dp), modifier = Modifier.fillMaxWidth())
-                Spacer(modifier = Modifier.height(8.dp))
-                OutlinedTextField(value = maxTokens, onValueChange = { maxTokens = it }, label = { Text(stringResource(R.string.local_max_tokens)) }, keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number), shape = RoundedCornerShape(16.dp), modifier = Modifier.fillMaxWidth())
-                formError?.let { Spacer(modifier = Modifier.height(8.dp)); Text(it, color = MaterialTheme.colorScheme.error, style = MaterialTheme.typography.bodySmall) }
-            }},
-            confirmButton = { TextButton(onClick = {
-                val id = modelId.trim(); idError = null; formError = null
-                if (id.isBlank()) { idError = "ID is required"; return@TextButton }
-                if (!idRegex.matches(id)) { idError = "Only a-z, 0-9, . _ - allowed"; return@TextButton }
-                if (viewModel.modelManager.isLocalModelIdTaken(id)) { idError = "Already in use"; return@TextButton }
-                val n = nCtx.toIntOrNull()?.takeIf { it > 0 } ?: run { formError = "Context size must be positive"; return@TextButton }
-                val t = temperature.toFloatOrNull()?.takeIf { it in 0f..2f } ?: run { formError = "Temperature must be 0–2"; return@TextButton }
-                val p = topP.toFloatOrNull()?.takeIf { it in 0f..1f } ?: run { formError = "Top P must be 0–1"; return@TextButton }
-                val m = maxTokens.toIntOrNull()?.takeIf { it > 0 } ?: run { formError = "Max tokens must be positive"; return@TextButton }
-                if (m > n) { formError = "Max tokens must not exceed context size"; return@TextButton }
-                viewModel.modelManager.addLocalChatModel(LocalChatModelConfig(modelId = id, alias = modelAlias.ifBlank { id }, localFilePath = copiedFilePath!!, mmprojPath = addMmprojPath.trim(), nCtx = n, temperature = t, topP = p, maxTokens = m))
-                showAddModelDialog = false; copiedFilePath = null
-            }) { Text(stringResource(R.string.add)) } },
-            dismissButton = { TextButton(onClick = {
-                deleteFilesAsync(copiedFilePath, addMmprojPath)
-                showAddModelDialog = false; copiedFilePath = null
-            }) { Text(stringResource(R.string.cancel)) } }
-        )
-    }
-
-    // Edit model dialog
-    showEditModelDialog?.let { model ->
-        var editModelId by remember { mutableStateOf(model.modelId) }; var editAlias by remember { mutableStateOf(model.alias) }; var editMmprojPath by remember { mutableStateOf(model.mmprojPath) }
-        var editNCtx by remember { mutableStateOf(model.nCtx.toString()) }; var editTemp by remember { mutableStateOf(model.temperature.toString()) }; var editTopP by remember { mutableStateOf(model.topP.toString()) }; var editMaxTokens by remember { mutableStateOf(model.maxTokens.toString()) }
-        var editIdError by remember { mutableStateOf<String?>(null) }; var editFormError by remember { mutableStateOf<String?>(null) }
-        val idRegex = remember { Regex("^[a-z0-9._-]+\$") }
-        LaunchedEffect(mmprojPickedUri) {
-            mmprojPickedUri?.let { newPath ->
-                if (editMmprojPath != model.mmprojPath) deleteFilesAsync(editMmprojPath)
-                editMmprojPath = newPath
-                mmprojPickedUri = null
-            }
-        }
-        AlertDialog(
-            modifier = Modifier.clearFocusOnTap(),
-            containerColor = MaterialTheme.colorScheme.surfaceContainer,
-            onDismissRequest = {
-                if (editMmprojPath != model.mmprojPath) deleteFilesAsync(editMmprojPath)
-                showEditModelDialog = null
-            },
-            title = { Text(stringResource(R.string.edit), fontWeight = FontWeight.Bold) },
-            text = { Column(Modifier.fillMaxWidth().verticalScroll(rememberScrollState())) {
-                OutlinedTextField(value = editModelId, onValueChange = { editModelId = it; editIdError = null }, label = { Text(stringResource(R.string.model_id_label)) }, supportingText = if (editIdError != null) {{ Text(editIdError!!, color = MaterialTheme.colorScheme.error) }} else null, isError = editIdError != null, shape = RoundedCornerShape(16.dp), modifier = Modifier.fillMaxWidth())
-                Spacer(modifier = Modifier.height(8.dp))
-                OutlinedTextField(value = editAlias, onValueChange = { editAlias = it }, label = { Text(stringResource(R.string.model_alias_label)) }, shape = RoundedCornerShape(16.dp), modifier = Modifier.fillMaxWidth())
-                Spacer(modifier = Modifier.height(8.dp))
-                OutlinedTextField(value = editNCtx, onValueChange = { editNCtx = it }, label = { Text(stringResource(R.string.local_ctx_size)) }, keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number), shape = RoundedCornerShape(16.dp), modifier = Modifier.fillMaxWidth())
-                Spacer(modifier = Modifier.height(8.dp))
-                Row(verticalAlignment = Alignment.CenterVertically) {
-                    val hasMmproj = editMmprojPath.isNotBlank()
-                    OutlinedButton(onClick = { mmprojLauncher.launch(arrayOf("*/*")) }, shape = RoundedCornerShape(16.dp), modifier = Modifier.weight(1f), colors = ButtonDefaults.outlinedButtonColors(contentColor = if (hasMmproj) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurfaceVariant)) {
-                        Icon(Icons.Default.Add, null, modifier = Modifier.size(18.dp)); Spacer(modifier = Modifier.width(6.dp)); Text(if (hasMmproj) editMmprojPath.split("/").lastOrNull() ?: "" else stringResource(R.string.local_mmproj_path_label), maxLines = 1, overflow = TextOverflow.Ellipsis)
-                    }
-                    if (hasMmproj) {
-                        Spacer(modifier = Modifier.width(8.dp))
-                        TextButton(onClick = {
-                            val removedPath = editMmprojPath
-                            editMmprojPath = ""
-                            if (removedPath != model.mmprojPath) deleteFilesAsync(removedPath)
-                        }) { Text(stringResource(R.string.remove), color = MaterialTheme.colorScheme.error) }
-                    }
-                }
-                Spacer(modifier = Modifier.height(8.dp))
-                OutlinedTextField(value = editTemp, onValueChange = { editTemp = it }, label = { Text(stringResource(R.string.local_temperature)) }, keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Decimal), shape = RoundedCornerShape(16.dp), modifier = Modifier.fillMaxWidth())
-                Spacer(modifier = Modifier.height(8.dp))
-                OutlinedTextField(value = editTopP, onValueChange = { editTopP = it }, label = { Text(stringResource(R.string.local_top_p)) }, keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Decimal), shape = RoundedCornerShape(16.dp), modifier = Modifier.fillMaxWidth())
-                Spacer(modifier = Modifier.height(8.dp))
-                OutlinedTextField(value = editMaxTokens, onValueChange = { editMaxTokens = it }, label = { Text(stringResource(R.string.local_max_tokens)) }, keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number), shape = RoundedCornerShape(16.dp), modifier = Modifier.fillMaxWidth())
-                editFormError?.let { Spacer(modifier = Modifier.height(8.dp)); Text(it, color = MaterialTheme.colorScheme.error, style = MaterialTheme.typography.bodySmall) }
-            }},
-            confirmButton = { TextButton(onClick = {
-                val id = editModelId.trim(); editIdError = null; editFormError = null
-                if (id.isBlank()) { editIdError = "ID is required"; return@TextButton }
-                if (!idRegex.matches(id)) { editIdError = "Only a-z, 0-9, . _ - allowed"; return@TextButton }
-                if (viewModel.modelManager.isLocalModelIdTaken(id, excludeId = model.id)) { editIdError = "Already in use"; return@TextButton }
-                val n = editNCtx.toIntOrNull()?.takeIf { it > 0 } ?: run { editFormError = "Context size must be positive"; return@TextButton }
-                val t = editTemp.toFloatOrNull()?.takeIf { it in 0f..2f } ?: run { editFormError = "Temperature must be 0–2"; return@TextButton }
-                val p = editTopP.toFloatOrNull()?.takeIf { it in 0f..1f } ?: run { editFormError = "Top P must be 0–1"; return@TextButton }
-                val m = editMaxTokens.toIntOrNull()?.takeIf { it > 0 } ?: run { editFormError = "Max tokens must be positive"; return@TextButton }
-                if (m > n) { editFormError = "Max tokens must not exceed context size"; return@TextButton }
-                viewModel.modelManager.updateLocalChatModel(model.id, id, editAlias.ifBlank { id }, n, t, p, m, mmprojPath = editMmprojPath.trim())
-                showEditModelDialog = null
-            }) { Text(stringResource(R.string.save)) } },
-            dismissButton = { TextButton(onClick = {
-                if (editMmprojPath != model.mmprojPath) deleteFilesAsync(editMmprojPath)
-                showEditModelDialog = null
-            }) { Text(stringResource(R.string.cancel)) } }
-        )
-    }
 
     // Delete model confirm
     showDeleteModelConfirm?.let { model ->

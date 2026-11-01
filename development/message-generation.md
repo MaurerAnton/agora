@@ -85,6 +85,13 @@ writes are automation-owned rather than direct manual tree edits.
 
 ## 4. Global context-boundary contract
 
+Automatically sourced Task, Loop, Ask User and Subagent user messages cannot be edited. The shared
+edit service rejects both source-tagged visible inputs before replacement admission and durable
+source-tagged inputs at the serialized boundary, before cloning or creating a Run. UI availability
+is not the mutation fence. Ordinary unmarked user inputs keep canonical edit behavior. Optional
+Subagent completion display metadata remains presentation-only; full stored result text, Provider
+input, completion receipts and one-shot delivery semantics do not change.
+
 For every ordinary Provider request:
 
 1. Start at the request's latest selected parent message.
@@ -100,8 +107,10 @@ For every ordinary Provider request:
    prepared API request; Room, UI projection, context usage, and retained-message projection keep
    the durable raw summary. If no real USER message follows that Compact and no existing API-only
    initial USER prompt terminates the request, shared request preparation appends `Please continue.`
-   as API-only USER input. Consecutive USER input is canonicalized with one blank line while
-   preserving the boundary position and following message order.
+   as API-only USER input. Each ordinary USER message keeps its own canonical identity, payload
+   and position, including adjacent input after the Compact. Anthropic/Gemini wire adapters may
+   place those ordered payloads in separate content blocks/parts of one role envelope without
+   concatenating text or mutating canonical messages, Room rows or receipt ownership.
    A Compact generation may echo the request-only wrapper. Every streaming UI snapshot, Room
    checkpoint, and terminal message must normalize complete or partial wrapper markers before
    publication or persistence, including both `ChatMessage.text` and answer segment content.
@@ -160,7 +169,20 @@ using their externally managed WorkManager foreground execution. Process death d
 coroutine or Provider stream. During interactive App startup, orphaned durable Runs remain dormant:
 Agora must not enumerate conversations or Runs, instantiate per-conversation runtime state, or run
 recovery validation. The ordinary orphaned-Run recovery contract begins only after the user explicitly
-opens that exact conversation and may inspect and recover only that owner.
+opens a conversation. `ConversationOpenRecovery` owns that shared Native/WebUI admission boundary:
+recover the selected owner first, then validate all indexed children of its proven parent family one
+at a time through the same ordinary recovery transaction. Narrow parent and child-ID reads establish
+scope; no child payload mass load or runtime-session creation is permitted. Recheck child membership
+under its process execution lock and the same Room transaction; skip a held execution lock and any
+registered delegation Job, including lazy admission and cancelled-job cleanup until manager removal.
+Cancellation stops the family walk; a child failure is reported without aborting its siblings or the
+selected page. Unrelated owners stay dormant. Validation never starts generation or creates/replays
+completion delivery. Ordinary recovery retains `STOPPED` with `PROCESS_RECOVERED`. In the same
+transaction, family validation updates only the child status cache using the payload-free exact
+terminal projection and status CAS; completion JSON, IDs and delivery receipts stay unchanged. A Run
+captured live before recovery and confirmed `PROCESS_RECOVERED` afterward proves a fresh interruption
+and forces failed even over a synthetic old cache. Without that evidence, an unordered synthetic
+admission failure is preserved; later success replaces an old failure only with proven Run ordering.
 
 The optional Automation Wake Lock is a default-off execution-side lease, not a Run, admission,
 queue, Worker, foreground-service, or recovery owner. Both Task and Loop entry paths acquire it only
@@ -181,7 +203,8 @@ notifications use the complete formatted generation error rather than replacing 
 with a generic failure body. The durable read boundary runs only for a foreground, presented Chat
 conversation; after its unread write succeeds, it cancels that conversation's stable notification
 without affecting any other conversation. Headless Task/Loop execution retains its independent
-foreground/background notification policy.
+foreground/background notification policy, but Compact SUCCESS never posts a completion notification
+in either path; Compact ERROR handling is unchanged.
 
 The continuous answering haptic texture has one side-effect owner: `AnsweringHapticEffect`. It may
 run only while haptics are enabled, the app is foreground, Chat owns top-level presentation, and the
@@ -265,10 +288,22 @@ durable message identity and cannot become a parallel message graph.
   typed after the tap even when that visible edit reaches the controller after freeze begins.
 - One accepted Send creates one fresh Run, durable USER input, and MODEL placeholder atomically. A
   durable acceptance whose draft clear fails enters a non-resendable clear-only recovery state.
+- Enabled automatic title generation starts once after the first New Chat Send is durably accepted
+  and published, before ordinary reply execution. Durable-commit reconciliation preserves that
+  trigger; reply failure or Stop does not suppress it. Existing-conversation sends do not retrigger.
+  Automatic and manual title requests freeze only the selected branch's first USER payload before
+  settings/provider waits, including available attachment text/metadata. They never substitute a
+  later USER or include assistant output. Shared single-flight and conditional title writes preserve
+  manual renames/deletion; title work remains independent of the ordinary Run lifecycle.
 - Direct and queued Send acceptance preserve focus, IME visibility, and expanded Composer state.
   Accepted draft clearing owns no presentation dismissal. Explicit navigation, user gestures, and
   the drawer threshold retain the dismissal ownership defined in application-ui.md.
-- One claimed FIFO drain enters the same Send transaction and creates a fresh Run.
+- One claimed FIFO drain enters the same Send transaction and creates a fresh Run. It clears the
+  current pending batch once and persists every retained queued entry as its own ordered USER
+  message, with unchanged identity, text, attachments and source metadata. Adjacent entries are
+  never concatenated, including typed input, ask_user answer messages and Subagent completions.
+  The complete batch starts one model request/reply cycle, not one request per queued entry;
+  the last retained entry still selects the generation snapshot for that shared Run.
 - Input queued while another generation owns the slot stays memory-owned until a legal boundary.
 - Claim failure returns the exact batch to the front; durable success transfers ownership exactly
   once. No item may be lost, duplicated, reordered, or attached to the terminal origin Run.
@@ -359,6 +394,15 @@ message/status, stale identity, or any other Compact anomaly stops this automati
 claimed guidance remains owned and ordered but is not automatically invoked or cleared after that
 failure; only a later explicit user action may resume ordinary queue admission.
 
+A caller with an already-scheduled ordinary continuation marks successful terminalization as
+`CONTINUATION_PENDING`, including an automatic Compact that will hand off again. This never reopens
+its Run or grants tool authority. Accepted reducer transitions may retain the existing Phone Use
+resource epoch until the admitted successor binds; see [phone-use.md](phone-use.md) section 3.
+The existing runtime resource owner retains the exact scheduling token before execution. Empty
+queue drains respect that obligation, while queue-versus-continuation admission remains serialized
+by `queueMutationMutex`. Guidance winning this decision transfers the cleanup obligation to the
+ordinary queue; failed or abandoned continuation releases only its original unclaimed resource.
+
 ### 8.7 Compact UI
 
 Compact may own a capsule renderer, message label/menu, haptic exclusion, and stable presentation.
@@ -401,6 +445,13 @@ normally.
 
 A terminal Compact error remains visible in both locations:
 
+The WebUI projects the Compact detail error through the existing Kotlin message-presentation owner,
+using the same `assistantErrorContent` resolver as Compose, including legacy Compact participants.
+The browser renders that projected value beside its existing Markdown with the shared selectable
+neutral terminal text. It does not parse errors from summary text or infer failure from empty output.
+The Compact capsule's 18px error glyph is the filled Compose `Icons.Default.Error`; attachment and
+media error glyphs are unaffected.
+
 - the detail Bottom Sheet places the shared neutral-gray generation error bar beside the Markdown
   body;
 - the capsule uses a theme-derived neutral-gray palette independently of the neutral terminal bar,
@@ -436,17 +487,34 @@ Provider completion with no answer, thought, follow-up, guidance, or other succe
 ordinary generation error. Terminal persistence must include a nonblank error value so every
 consumer can render the shared error bar.
 
-For every applicable remote Provider, a zero-output parse/protocol failure presented through the
-localized `The server response could not be read.` error and a response-body read exception whose
-cause chain contains that exact phrase both enter the Provider's existing retry sequence. Eligibility
-is evaluated only from the current Provider pass: it must have produced no nonblank Answer, Thought,
-Tool, hosted-tool, or other Provider output. An active `SENDING` state with no output in that pass and
-an established but empty Answer both remain zero-output. A Provider pass started after a completed
-Tool call is evaluated independently: output from the preceding pass does not disqualify the new
-`SENDING` pass. Once the current pass produces any Provider output, either failure is terminal and
-must not replay it. This rule reuses the existing initial request plus at most five retries, delays,
-`Retrying` presentation, cancellation, and exhaustion behavior; it does not classify unrelated
-`IOException`, DNS, timeout, or other transport detail as retryable.
+Agora-owned network requests share `NetworkRetryPolicy`: one initial attempt and five retries.
+Classification inspects exception types and their cause chains, with message matching only as a
+fallback. EOF, premature stream termination, socket reset/abort/closed/broken pipe, timeouts,
+connect/DNS failures, interrupted TLS connections and transient HTTP/2 resets retry. HTTP
+408/425/429/500/502/503/504/529 retry. Authentication, certificate validation, permanent client
+errors, exhausted account quota/billing and cancellation never retry, even when their message
+contains a transport diagnostic. Temporary rate limits remain transient.
+
+Every network Provider uses its existing single retry loop and emits `Retrying(n, 5)` before each
+retry; only exhaustion publishes a final error. This includes ordinary chat, Subagents, Task, Loop,
+Compact, titles and image transcription. Transient failures retry both before and after current-pass
+Answer, Thought, Tool or hosted-tool output. Typed parse/read failures follow the same rule.
+Each replay explicitly resets only the failed request attempt: restore its complete pre-request
+output/citation/signature/timing/usage baseline, discard its unaccepted local calls and parser state,
+and force the restored checkpoint through the existing writer before waiting. Previously completed
+tool passes remain unchanged; local tools from the failed attempt never gain execution authority.
+The exhausted final attempt keeps its partial output and reports one error. Direct consumers reset
+only their current request/image, preserving completed images. Actual model token-cap outcomes
+remain terminal unless an independent response-read failure occurred. Formatting-only output stays
+held by the existing normalizer and is discarded on retry.
+
+Backoff uses equal jitter within 0.5–1, 1–2, 2–4, 4–8 and 8–16 seconds. Retry-After seconds or HTTP
+dates are a minimum delay and are never shortened. Stop cancels requests and backoff. A retry stays
+on the same endpoint; known permanent HTTP failures do not trigger OpenAI endpoint fallback.
+Other Agora model-list, MCP, web/search, image-download and tool/control requests use the same
+budget silently, without new UI messages. Side-effectful requests replay only after a proven
+pre-send connection failure or reliable deduplication; an unknown execution outcome is terminal.
+Filo and Remote transport keep their separate contract and are excluded from this retry policy.
 
 Every Compact Run success-gates all automatic handoff, not only the no-input loop and regardless of
 whether the caller is foreground UI, Task, or Loop. Its ordinary launcher installs the queue-release
@@ -463,65 +531,9 @@ input; it leaves that input pending for a later explicit user action.
 
 ### 8.10 Provider-hosted output and OpenAI-compatible controls
 
-#### Complete forwarding and explicit unsupported evidence (2026-09-08)
-
-The owner's following requirements are binding acceptance criteria, not a claim that the current
-implementation already satisfies them:
-
-```text
-帮我全面核查所有provider，不得有任何一个遗漏，不得有任何一个字段遗漏。每一个provider我必须看到所有字段的完整透传，且必须在最终api request内出现，还必须有效
-```
-
-```text
-对于不支持的字段，每一个都必须明确标出不支持的source，里面必须看到不支持的声明。如果没有source且没有支持该结论的声明，视为不合格。其他情况，必须透传，不得有任何遗漏借口。
-```
-
-1. Inventory every Provider, transport branch, configuration field and final request field. Include
-   built-in, custom and synthetic/local paths, nested message/tool fields, and every generation
-   caller. No Provider, field or branch may disappear from the audit because it is inconvenient,
-   untested, unknown, previously classified as not applicable, or inherited from another adapter.
-2. Trace every configured field to the final dispatched API request and show its exact location,
-   value, encoding and any transformation. Configuration objects, helper output and UI state alone
-   are not wire evidence. Body, headers and URL are distinct request locations; client-local
-   controls must show their final request effect rather than being silently excluded. A Local or
-   synthetic path must identify its real execution boundary and must not fabricate an HTTP request.
-3. Every field must be effective as well as forwarded. Distinguish final production-request capture,
-   upstream semantic evidence and actual behavior verification. HTTP success, compilation, a passed
-   test count or mere field presence cannot prove effectiveness. Sent-but-ignored, rejected,
-   incorrectly transformed and unverified fields must not receive an effective-forwarding pass.
-4. Every unsupported-field conclusion requires a directly inspectable source and the exact statement
-   in that source establishing non-support, with its Provider, protocol, model/version and operating
-   mode scope and retrieval date. Cite each field individually, even when several share a source.
-   Documentation silence, absence from a schema or SDK, legacy code, old contracts and previous
-   audit conclusions are not an explicit unsupported statement.
-5. A missing source or a source without a statement supporting that exact conclusion fails
-   acceptance. Mark it evidence-insufficient and unresolved, never supported, unsupported, N/A or
-   passed by assumption. It cannot authorize dropping a configured field. Apart from explicitly
-   evidenced non-support, complete forwarding remains mandatory; no silent omission, field-removal
-   retry, hidden default substitution or display-only setting may replace it.
-6. Deliver the complete Provider-by-field report to the owner with no blank/unaccounted cells.
-   Record the final request path, actual value/mapping, effectiveness evidence and verification
-   status for each field. Negative claims must include their source statement. Any missing field,
-   unproven exemption or unverified effect prevents an all-Providers/all-fields completion claim.
-
-This evidence gate takes precedence over earlier applicability, omission and N/A assertions in this
-document, including the provider-specific prose below. Those assertions do not themselves establish
-upstream non-support and must be revalidated field by field. Persisting this contract does not grant
-authorization for production/test edits, credentials, paid requests, Git mutations or deployment.
-
-The owner's repair-scope clarification on 2026-09-08 is:
-
-```text
-我让你修provider字段问题！
-```
-
-Repair Provider field forwarding, encoding, validation, decoding and continuation replay within the
-existing product. Do not turn this work into a new parameter-editor feature, Skill permission
-migration or backup-policy redesign. Those unrelated choices are not prerequisites for Provider
-field repair. Keep every Provider and unresolved field accounted for; a bounded completed batch
-does not establish completion of the full audit or model-side effectiveness.
-
-The complete binding requirements are maintained in [Provider Output and Controls Contract](provider-output.md).
+The complete binding requirements, including complete forwarding, explicit unsupported evidence,
+and the owner's repair-scope clarification, are maintained in the
+[Provider Output and Controls Contract](provider-output.md).
 Read that contract for every change in this scope.
 
 ### 8.11 Provider reuse and mandatory minimum-abstraction rule
@@ -572,7 +584,167 @@ conversation title, user text and attachment summaries, assistant answer and tra
 and error content. Inline text versus Markdown-file transport, share selection, and Android chooser
 behavior remain transport/UI concerns and may not reintroduce private Thinking or tool payloads.
 
+### 8.13 Conversation Todo tools
+`TodoToolProvider` exposes `todo_read` and `todo_update` through the ordinary tool executor for an
+opened conversation. One optional `conversations.todoJson` value owns the complete ordered list;
+it is conversation-scoped, not branch-scoped or reconstructed from tool history. Each item has
+nonblank `content` and a `pending`, `in_progress`, or `completed` status. `todo_update` replaces the
+whole list and an empty array clears it. Todo does not schedule automation or create a Task/Loop.
+The executor supplies the authorized `RunEffectIdentity`, never Provider arguments. A single Room
+statement accepts a mutation only for the exact conversation and live ACTIVE Run/pass, active slot
+and absent Stop request, and advances `dataChangedAt` without touching conversation recency, drafts,
+messages or branches. Stale, stopping and terminal writes fail without mutation. Compact disables
+these tools with its other tools. Only explicit selected-owner observation may load Todo; startup
+and drawer queries never read or enumerate Todo payloads. Native and browser capsules are read-only
+projections described in application-ui.md. Required checks cover replacement/clear, stale Run/pass,
+Stop-before-write, unrelated-owner isolation, selected-only observation and archive compatibility.
+
+### 8.13a Ask User waiting
+
+`AskUserController` remains the exact-request waiter and answer owner. Blocking calls use one
+configured timeout for the whole question set, captured in `GenerationContext` at admission.
+`AskUserToolProvider` delegates that wait to the controller. The default is five minutes; Settings
+provides 1, 2, 5, 10, 15, 30 and 60 minute presets. The generic tool execution deadline does not
+shorten this budget. Expiry returns already submitted answers in question order and marks all
+remaining questions unanswered, removes those exact requests/waiters, and ignores late answers.
+It never invents approval or a selected option. The controller serializes answer claim/completion
+with the expiry snapshot and exact-request removal in one bounded decision; no suspending wait
+holds that lock. Stop/cancellation propagates normally and cleans
+all questions in the call without delivering a tool result or queued message. Non-blocking calls
+return immediately and retain their existing deferred-answer delivery without this timer. Settings
+changes affect future captured contexts only; no global timer, request state owner or restart is added.
+
+### 8.13b Built-in tool name compatibility
+
+Built-in definitions use namespace_action protocol names: the domain comes first and the detail
+after (`memory_read`, `task_create`, `phone_tap`). Every new built-in tool must follow this rule and
+join an existing domain prefix when one applies; never put the verb first. `BuiltInToolNames` is the sole legacy alias
+map. Execution canonicalizes the called name and frozen authorized names before permission checks
+and provider dispatch. Historical Room rows stay unchanged. Immutable request projection canonicalizes
+call/result names, segment names and Responses function_call.name before validation, preserving IDs,
+arguments, results, signatures and opaque provider fields. Every provider, including custom request
+resolvers and local templates, consumes that projection. Native tool presentation accepts both names;
+external Remote tool names retain their external meaning. Internal localized resource keys are not
+protocol names and remain stable.
+
+Memory entries belong to Agora's named internal store, while file_* tools target device files.
+Memory read/edit path and missing-entry errors suggest file_read with server. Bare Markdown disk reads
+remain legal and receive an additive memory_read hint. Active-memory replace mode and its default,
+all argument schemas and edit operations remain unchanged. Only exact unmodified built-in prompt
+versions are migrated; custom prompts and stored conversation history are never renamed in place.
+
+## 8.14 Isolated Subagents
+Subagents are ordinary conversations with indexed `parentConversationId` ownership, reachable through
+parent-family navigation and using the canonical generation, tools, Stop and branch pipelines.
+Parent-scoped child lists use stable ascending conversation creation time and child ID, so later
+messages, title edits and status changes never reorder existing children. One root
+may create multiple children; a child never receives any subagent-control tools. New spawn candidates
+are the configured Subagent model set intersected with globally enabled complete model IDs, without
+inferred metadata. Missing, null and explicitly empty model sets all allow no new spawn; no
+fallback to globally enabled models is permitted. Existing explicit sets remain intact. Candidate
+IDs and a valid optional recommended ID are frozen with the parent
+request. The recommendation is only a tool-description hint: model_id remains required, and an explicit
+valid choice is never overridden. Spawn also rechecks current global/configured membership before
+creating a child. Changes do not cancel or alter admitted child work, follow-up delivery, wait or Stop.
+Child context contains only its explicit task and its own subsequent messages. Conversation-history tools are disabled in
+children so they cannot read the parent's history indirectly. Other tool access and conversation
+settings inherit the parent's admitted access, subject to current global permission switches.
+`SubagentManager` owns launch/cancellation and completion-outbox delivery, never Run state.
+Per-parent total capacity defaults to 16 (range 1–16); simultaneous child generation defaults to 4
+(range 1–16, no greater than total). Neither has an unlimited value. Total counts all currently linked
+children, including completed, failed and stopped children, and is checked in the same Room transaction
+as parent Run/pass authorization, child creation and settings transfer. Concurrent spawn cannot exceed it.
+Deleting a child frees total capacity; lowering the setting never deletes or stops existing children.
+The shared execution coordinator admits child generation using durable parent ownership across initial
+spawn, ordinary follow-up FIFO drain, direct/manual generation and continuations. Parent generation and
+unrelated families do not consume its allowance. `agent_spawn` atomically reserves an allowance before
+creating a child; at capacity it returns a tool error explaining the current count/limit and `agent_wait`,
+without creating a child, settings transfer, worker or waiting request. `agent_send_message` reserves the
+same allowance before preparing or queueing a follow-up: an idle child's wake-up is rejected at capacity,
+while an already admitted child retains its existing allowance. The ordinary FIFO lease owns that
+reservation until durable admission transfers it to generation, or dismissal/disposal releases it; failed
+claims retain it with the exact requeued input. Creation/preparation failure and cancellation release
+untransferred reservations, including a worker cancelled before its lazy body starts.
+Existing workers retain one allowance across Compact/ordinary handoffs; nested generation reuses it.
+Release follows the canonical durable terminal and installed-Job barriers. The coordinator's admitted
+child IDs also drive agent_list/capsule running and the parent-list loading projection, including
+pre-Run wake-up and handoff gaps. Lowering concurrency leaves admitted work intact and rejects new
+tool-requested children until below the limit. Direct/manual generation and ordinary continuations keep
+their cancellation-safe event-driven admission; increasing the limit wakes those existing waiters.
+No second input queue, polling worker, startup scan or automatic process-death restart is introduced.
+Terminal completion payloads keep generated `text` separate from `errorText` and optional `errorCode`
+read from the exact terminal message's persisted error segment. Engine failures carry that terminal
+message ID even after the streaming overlay is cleared; completion projection never substitutes a
+chronological message or partial answer for it. Failed completions apply the same
+error-text formatter and localized missing-detail fallback as the child timeline's gray terminal
+text, so hiding diagnostics in the receipt bubble never hides them from the parent model. Generated
+partial answers must not supply that fallback. agent_list demand-loads available
+diagnostics only for its failed owned children; ordinary capsule observation stays payload-free.
+agent_wait exposes `error` and
+`error_code`; automatic completion queue messages include the same detail without replacing the
+answer or changing receipt identity. Legacy error-only text remains readable; partial answers alone
+must never be classified as error detail. conversation_read exposes each selected-branch message's
+message_id, status, run_id and run_sequence alongside text/time, and the same structured error detail
+when present. This does not authorize unrelated-owner reads, receipt replay or status inference from prose.
+Compact settlement is not a Subagent completion: it creates no completion outbox or parent-queue
+input, and successful Compact emits no system completion notification. While a delegation worker
+owns the task, intermediate ordinary Run settlements also do not publish task results; the worker
+publishes the final task outcome once after its engine call settles. Standalone ordinary child
+completion still uses the committed terminal outbox, but standalone Compact does not. Successful
+Runs yielding to queued guidance or an ordinary continuation persist `CONTINUATION_PENDING` as their
+terminal reason. They remain closed Runs but cannot become Subagent completion results, even when
+their output is empty or partial and the delegation worker has already retired. Only the final
+non-continuation outcome may publish the task result.
+`agent_spawn`, `agent_send_message`, `agent_wait`, `agent_list`, `agent_stop` and `agent_delete`
+require an exact live parent Run/pass. `agent_delete` exists only when the frozen context also has
+`subagentDeleteEnabled` (global default off). It never stops work: a child that is running, has a
+live Run, generation slot or queued messages, or holds an undelivered completion is rejected with
+an explicit error. Accepted deletion uses `ConversationLifecycleController`'s idle-Subagent path
+under the child's conversation lock with ownership rechecked at commit; every client still showing
+the child receives the localized parent-deletion notice and settles to the surviving parent.
+`agent_send_message` accepts follow-ups for idle or busy children through the
+child's existing visible FIFO message queue and returns an explicit queued item receipt. Every
+model-originated spawn prompt and follow-up carries the existing `subagent` message source; manually
+typed child input carries no automatic source. This source distinction survives each separate FIFO
+message, claim/rollback, durable graph admission and API projection, and does not create a completion
+receipt for an instruction. It never
+interrupts or injects into an active Provider/tool pass. Idle acceptance requests the ordinary drain;
+busy acceptance waits for the canonical Run boundary. Queue removal/send-now, separate FIFO messages,
+fresh-Run batch admission, failure rollback and Stop/Compact ownership follow the ordinary queue rules. Child tool isolation
+and the parent's admitted permission restrictions apply to the queued generation, not just direct
+launch. No manager-owned second queue, polling worker, direct-send fallback or startup restart is
+introduced. Stop cancels actual work and waits for ordinary terminal settlement. A wait
+that returns a result acknowledges that exact completion through its committed ordinary tool result,
+so it cannot also be automatically delivered. Otherwise completed results enter the parent's existing
+visible FIFO message queue as ordinary input tagged `subagent`, not a hidden direct engine invocation.
+They share the queue's pending/claimed ownership, remove/send-now controls, single-request fresh-Run
+batch drain, rollback and Stop/Compact handoff rules. Typed input, ask_user answer messages and
+Subagent results remain separate FIFO messages with their original source metadata and exact receipts.
+All completion receipts in the admitted batch commit atomically with its messages and fresh Run.
+Completion delivery requests the ordinary queue drain after releasing the queue mutex only when it
+has added at least one new result and the parent is idle. Busy parents wait for canonical settlement;
+completion delivery never interrupts active work. Repeated events or reopening with results already
+pending or claimed do not request another drain. The ordinary drain remains the sole admission owner,
+including FIFO batch transfer, fresh-Run creation and Stop/Compact handoff permission.
+Repeated delivery events cannot duplicate pending or claimed entries; removing a queued result must
+not silently reinsert it. Failures before admission preserve recoverable ownership; failures after
+admission never resend that input. No parallel queue, direct-generation fallback or delayed retry is
+introduced. There are no startup owner scans or automatic process-death restarts. Opening a parent may
+offer its still-pending outbox to the same queue; imported pending results are treated as delivered to
+avoid unsolicited execution.
+Parent deletion cancels child execution and Loops before atomically deleting the owned graph and
+scheduling attachment cleanup. Fork creates an independent conversation, not another linked child.
+Required tests cover stale identity, one-level isolation, concurrent completion/wait, Stop settlement,
+process death/receipt atomicity, parent deletion, unrelated-owner preservation, archive roundtrip,
+Compact success suppression, and exactly one final result after Compact/ordinary Run handoffs.
+
 ## 9. Context assembly contract in module terms
+
+Global `todoEnabled` and `subagentToolsEnabled` preferences default on and are frozen with other
+permission switches when a generation context is captured. Request preparation and context-display
+projection may narrow delegation access for children but must never turn a disabled permission on.
+Compact narrows both to false. Disabling these tools does not delete lists, cancel admitted children,
+remove existing navigation or suppress ordinary completion delivery.
 
 `GenerationApiPathBuilder` receives one immutable durable snapshot and a requested parent ID. It
 walks only that parent chain, stops at the first successful Compact encountered upward, expands
@@ -596,10 +768,26 @@ reachable safe prefix. It must never jump to a Compact on another branch.
 ### 9.1 Immutable materialization and single rollout ownership
 
 The Room read side may optimize payload materialization, but it may not select a different context.
+An independent Room pool and executor own a DEFERRED WAL read snapshot; context, title input,
+and task-recovery reads never enter the foreground write transaction lane. Export reuses that same
+read boundary with background priority. Actual read/modify/write recovery and queue decisions retain
+their atomic write boundary. Database open/close also run off the main thread, and the snapshot
+remains attached to its caller's cancellation. Nullable transaction results never replay the operation.
+Each invocation owns and finally closes its database and executors; concurrent readers do not queue
+behind another snapshot's long read transaction. Tests cover opening after a foreground writer has
+started, multiple simultaneous readers, and cancellation of only some readers. Per-call connection
+and executor construction has a resource cost; this isolation does not imply a shared reusable pool.
+Tool-round sequence allocation retains the canonical per-Run MAX-plus-one rule in the same write
+transaction. Schema 44 adds a covering (runId, runSequence) index, so allocation reads indexed metadata
+without visiting message bodies or adding a second sequence authority. The same migration adds
+owner/id and Provider/model indexes for direct continuation and identity lookup; building these
+indexes has a one-time upgrade cost proportional to indexed rows, with no content rewrite.
 One immutable read transaction captures the selected-branch state, payload-free message topology,
 and every full row reachable from the requested parent or selected visible path. The transaction
 walks the same durable parent chain, applies the nearest-SUCCESS-Compact boundary regardless of
 summary text content, and expands the same run-matched tool/result side chains in established order.
+Once those rows are captured and validated, pure tool-round materialization and Provider/status
+formatting run outside the transaction to keep unrelated durable mutations from waiting on CPU work.
 Only full payload rows outside that canonical path may be omitted. There is no pre-rollout,
 overscan, payload-size product limit, topology-retry approximation, or alternate Compact boundary.
 
@@ -661,6 +849,24 @@ Memory or Skill access may make the corresponding predefined variable resolvable
 authorized tools, but content enters the ordinary system prompt only where the user placed that
 variable. Removing a variable from the template must remove that content from the dispatched system
 prompt without a construction-layer fallback.
+The shipped default begins with one custom text item containing Response, Tools, Memory, Skills,
+Past conversations, Web, Devices, Subagents and automation, and Asking the user in that order.
+These sections are static, including when their tools are disabled or Compact preserves the ordinary
+system prompt. A normal editable HTML preview guidance text item follows that first item, as specified
+by [interactive-html.md](interactive-html.md). The explicit Skill catalog block follows, then Active
+Memory with their existing variables and surrounding text. Tool availability never trims these
+sections or injects them into custom templates. Custom text and whitespace remain verbatim.
+`GenerationPromptRendering` compiles request and preview values without changing stored items.
+`GenerationContextAccounting` uses the dispatch tool-definition source for fixed cost/composition
+and Compact accounting. Preview compilation occurs once in its captured snapshot; it does not need
+another tool-dependent rendering pass. The request resolver uses one compiled prompt instance for
+rollout cost and wire output. Startup recognizes the exact default that used conditional guide
+variables plus all four older known defaults. Any changed title, system text or User/Assistant
+wrapper prevents replacement. Retired predefined guide items in customized templates are retained
+as removable unknown variables and compile to empty in both previews and requests. They are absent
+from the picker and example values. Literal custom text is never stripped. Historical factories
+remain exact and independent of future default text changes.
+
 Every predefined variable in the structured System Prompt is late-bound for each actual outbound
 Provider API request. The stored template contains only ordered text and variable identities. Editing,
 saving, conversation creation, context preview, queue admission, Run/message graph admission, and
@@ -669,6 +875,10 @@ later request.
 Immediately before each initial request, tool-continuation request, and transport retry is serialized,
 the request path must read the variable's current authorized value and compile the complete system
 prompt for that request. A later request in the same Run may therefore resolve different values.
+Exception for prompt-cache stability: `{active_memory}` and `{skill_catalog}` are read once when the
+Run's prompt template is captured and reused unchanged for every request of that Run (initial,
+tool-continuation and retry). Edits or access changes made during the Run apply from the next Run.
+The stored template still never persists a resolved value.
 `{current_model_id}` resolves once per dispatch from the model selected for that request. The legacy
 `{model_id}` name remains a read-only compatibility alias for the same value. `{message_model_id}` is
 message-scoped: ordinary User and Assistant wrappers resolve it independently from each durable
@@ -707,7 +917,8 @@ The shared Provider preparation order is deterministic:
 1. remove non-successful Compact rows from Provider history and project the nearest successful
    Compact as the established USER summary boundary;
 2. deduplicate durable IDs, project terminal generation status on the same assistant turn, validate
-   tool protocol fail-closed, remove empty normal turns, and merge consecutive ordinary roles;
+   tool protocol fail-closed, remove empty normal turns, and merge consecutive ordinary assistant
+   rows while preserving every distinct ordinary USER message boundary;
 3. treat one tool request and all consecutive result rows as one indivisible protocol unit while
    every ordinary canonical message is one unit;
 4. scan complete units newest-to-oldest until the estimated message budget is reached, retaining at
@@ -722,7 +933,8 @@ context budget is stored; explicit global/conversation values and legacy normali
 authoritative. This default does not increase an embedded Local model's configured `nCtx`.
 
 Fixed request cost consists of the system prompt, complete enabled tool schemas, and the optional
-API-only initial USER prompt. It is subtracted exactly once from the configured budget before
+API-only initial USER prompt. MCP uses the three fixed entries in [mcp-tools.md](mcp-tools.md);
+directory data and discovered schemas are history result cost. Fixed cost is subtracted exactly once before
 history rollout. The initial prompt is excluded from retained-history selection and appended
 exactly once afterward as the final USER request item. It is never merged into Room history,
 persisted, rendered, or treated as a durable retention anchor.
@@ -737,11 +949,13 @@ descriptors, and the optional API-only initial USER prompt. Every Provider-visib
 page, video frame, assistant-generated image projected to the latest USER, and tool-result image
 projected to its synthetic USER turn.
 
-Exact tokenization and visual-token pricing vary by selected model and custom Provider, so the
-shared estimator remains intentionally conservative: text uses its deterministic cross-provider
-heuristic and every projected image uses the established fixed per-image estimate. It may
-overestimate, but it may not omit a Provider-visible category. Display-only citations, tool
-progress, presentation metadata, and attachment metadata that is not serialized are excluded.
+Exact tokenization and visual-token pricing vary by selected model and custom Provider. Image
+processing, preview/dispatch identity and dimension-based estimation follow
+[image-processing.md](image-processing.md). Every image is estimated from its own transmitted
+artifact dimensions and actual request detail/resolution mode using the most accurate verified
+model rule available; unknown rules remain explicitly heuristic. The former fixed per-image rule
+is superseded. The estimator must not omit a Provider-visible category. Display-only citations,
+tool progress, presentation metadata and attachment metadata that is not serialized are excluded.
 
 The Chat top-bar token subtitle and Bottom Bar context indicator report the same full selected canonical
 context estimate plus fixed request cost; neither surface replaces that number with the already-retained
@@ -764,10 +978,13 @@ over a newer identity.
 
 Rollout may consume a projection only when it is completed, not loading, not failed, and its
 conversation ID and `selectedBranchesJson` exactly match the visible conversation. Branch-switch
-and deletion covers wait without a fixed projection timeout for matching completion, then for the
-existing graph/layout settlement. Matching failure is completion for cover release only: rollout
-stays disabled and presentation remains neutral; failure or loading must never be interpreted as an
-empty all-rolled-out context.
+and deletion covers wait up to eight seconds for matching completion, then continue through the
+existing graph/layout settlement even if accounting is still pending. Timeout releases only this
+wait and does not cancel canonical accounting or authorize rollout. Matching failure is completion
+for cover release only: rollout stays disabled and presentation remains neutral; failure or loading
+must never be interpreted as an empty all-rolled-out context. Explicit invalidation changes the UI
+request revision even when Room has already emitted an equal graph, so a discarded in-flight result
+is always followed by a fresh projection request.
 
 Context rollout visualization is presentation-only. A MODEL message in `SENDING`, `THINKING`,
 `TOOL_CALLING`, or `TRANSCRIBING` is generation-in-progress and must remain at normal opacity even
@@ -791,7 +1008,9 @@ retained-message calculation.
 5. **Durable-before-external.** Provider execution begins only after the Run/message graph commits
    and the process state binds that exact Run.
 6. **Terminal-before-handoff.** Compact, queue, or loop continuation starts only after the origin
-   Run's legal terminal boundary. Checkpoint writers close before terminal persistence.
+   Run's legal terminal boundary. Checkpoint writers close before terminal persistence. A worker
+   awaiting settlement tracks its exact generation owner through both durable and installed-Job
+   barriers; a successor's claimed slot must not extend that wait while it needs the worker's lock.
 7. **Short lock scope.** Queue mutexes and graph/selection locks protect only decisions and
    transactions; never hold them across Provider streams, tool execution, or UI waits.
 8. **Revalidation.** UI-derived targets, parent links, terminal status, Run ownership, and selected
@@ -812,7 +1031,17 @@ retained-message calculation.
     largest-field-first reductions in memory, and encodes the bounded aggregate once. It must not
     repeatedly serialize an unbounded checkpoint aggregate. The exact encoded UTF-8 bound remains
     authoritative, and protected Provider continuation state fails explicitly rather than becoming
-    SQL NULL.
+    SQL NULL. Once a tool round commits, the root timeline stores only its `toolRoundId` and
+    `toolCallId` reference in that exact position, not another copy of the tool body. The live overlay
+    may keep the display body, but every checkpoint and terminal/Stop write uses the same reference
+    projection. References are marked only after the identified round transaction succeeds; an
+    uncommitted call retains its complete checkpoint/rollback behavior. Selected-message hydration
+    reads only the referenced immutable protocol rows, verifies conversation/Run/call ownership, and
+    restores bodies in reference order without importing opaque continuation into display state.
+    Provider history keeps using ordinary protocol rows exactly once. Missing/ambiguous bodies and
+    oversized reference metadata fail explicitly, never silently discard history. Legacy inline
+    roots remain readable. Fork remaps references with message identity; native archives preserve
+    both references and protocol rows without materializing a full root aggregate.
 12. **Fail closed.** Missing/cyclic parents, shared legacy Runs that cannot be substituted safely,
     selection drift, stale identity, and partial transaction results reject the operation rather
     than guessing or broadening mutation scope.
@@ -851,6 +1080,6 @@ retained-message calculation.
 | Delete isolation | Target-only delete, direct-child reparent, unchanged surviving rows, independent Run presentation. |
 | Priority | Only Compact SUCCESS permits handoff; then pending and already-claimed queue guidance beat loop and the no-guidance path admits loop once. ERROR/STOPPED/cancellation/anomaly starts neither. |
 | Request terminal role | Compact dispatch appends one non-durable initial USER invocation after an Assistant or tool-result parent; provider-visible input ends USER and fixed token accounting includes it. |
-| Provider-hosted output | OpenAI-compatible Chat requests serialize applicable numeric and model-specific thinking controls; Responses requests serialize the five normalized `service_tier` values after mapping the stored tier to the actual model's supported choices and serialize enabled `web_search` plus reasoning summaries; impossible thinking-off requests fail before HTTP; summary indices preserve part boundaries and headings supply titles; OpenAI Search and Gemini Google Search/Code Execution settle display-only tool blocks without local execution; Gemini Code Execution replays typed parts and fails closed when a result is missing. |
+| Provider-hosted output | OpenAI-compatible Chat requests serialize applicable numeric and model-specific thinking controls; Responses requests serialize the five normalized `service_tier` values after mapping the stored tier to the actual model's supported choices and serialize enabled `web_search` plus reasoning summaries; mandatory-thinking models resolve off to their lowest legal setting before HTTP; summary indices preserve part boundaries and headings supply titles; OpenAI Search and Gemini Google Search/Code Execution settle display-only tool blocks without local execution; Gemini Code Execution replays typed parts and fails closed when a result is missing. |
 | Races and failures | Stop before/after bind, consecutive origin/Compact release suppressions in both settlement orders, selection drift, missing target/status, transaction rollback, stale callbacks, checkpoint-versus-terminal ordering, and queue claim failure. |
 | UI stability | Compact row/pill vertical bounds do not change across progress and terminal content; entrance is draw-only and does not alter apparent vertical spacing; message and Thinking Tool terminal text reuse the shared neutral body-text tokens and alpha without Segment error cards. |

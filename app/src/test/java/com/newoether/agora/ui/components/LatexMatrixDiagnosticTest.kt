@@ -3,11 +3,13 @@ package com.newoether.agora.ui.components
 import androidx.test.core.app.ApplicationProvider
 import com.newoether.agora.ui.chat.message.toRenderableMarkdownText
 import org.junit.Assert.assertEquals
+import org.junit.Assert.assertTrue
 import org.junit.Before
 import org.junit.Test
 import org.junit.runner.RunWith
 import org.robolectric.RobolectricTestRunner
 import org.robolectric.annotation.Config
+import org.robolectric.annotation.GraphicsMode
 
 /**
  * Diagnostic only, pending the owner's decision on the matrix defect.
@@ -17,6 +19,7 @@ import org.robolectric.annotation.Config
  */
 @RunWith(RobolectricTestRunner::class)
 @Config(sdk = [35], application = android.app.Application::class)
+@GraphicsMode(GraphicsMode.Mode.NATIVE)
 class LatexMatrixDiagnosticTest {
     @Before
     fun initLatex() {
@@ -55,7 +58,61 @@ class LatexMatrixDiagnosticTest {
         }
     }
 
-    /** The renderer itself is proven sound separately; this keeps the focus on the text pipeline. */
+    private val reportedMatrix = """\begin{pmatrix} 2 & -1 & 4 \\ 0 & 3 & 7 \\ 5 & 6 & -2 \end{pmatrix}"""
+
+    @Test
+    fun environmentMacroReflectionEntryRemainsCallable() {
+        org.scilab.forge.jlatexmath.TeXFormula(reportedMatrix)
+        val handler = org.scilab.forge.jlatexmath.MacroInfo(
+            "org.scilab.forge.jlatexmath.NewCommandMacro", "executeMacro", 1f,
+        )
+        val parser = org.scilab.forge.jlatexmath.TeXParser(
+            "", org.scilab.forge.jlatexmath.TeXFormula(), false,
+        )
+        val arguments = arrayOfNulls<String>(12).apply {
+            this[0] = "pmatrix@env"
+            this[1] = "2 & -1 & 4"
+        }
+        val expansion = handler.invoke(parser, arguments) as String
+        assertTrue("environment expands through the reflected handler", expansion.contains("\\begin{matrix}"))
+        assertTrue("environment expansion retains its argument", expansion.contains("2 & -1 & 4"))
+    }
+
+    @Test
+    fun reportedMatrixBuildsInTheCurrentJlatexmathDependency() {
+        val source = "\$$reportedMatrix\$"
+        val formula = parseLatexSpans(source, parseInlineDollarMath = true).single { it.isLatex }
+        assertEquals(reportedMatrix, formula.content)
+        assertEquals(false, formula.display)
+        val drawable = ru.noties.jlatexmath.JLatexMathDrawable.builder(formula.content)
+            .textSize(60f)
+            .color(0xFF000000.toInt())
+            .build()
+        assertTrue("matrix drawable width", drawable.intrinsicWidth > 0)
+        assertTrue("matrix drawable height", drawable.intrinsicHeight > 0)
+        println("LATEXDIAG matrix drawable=${drawable.intrinsicWidth}x${drawable.intrinsicHeight}")
+    }
+
+    @Test
+    fun reportedMatrixDrawsInkThroughTheProductionBitmapRenderer() {
+        val bitmap = requireNotNull(renderLatexToBitmap(reportedMatrix, textSize = 60f)) {
+            "Matrix bitmap failed; inspect LatexRenderer exception in the test log"
+        }
+        try {
+            var ink = 0
+            for (y in 0 until bitmap.height) {
+                for (x in 0 until bitmap.width) {
+                    if ((bitmap.getPixel(x, y) ushr 24) > 128) ink++
+                }
+            }
+            assertTrue("matrix bitmap must contain visible ink", ink > 0)
+            println("LATEXDIAG matrix bitmap=${bitmap.width}x${bitmap.height}, ink=$ink")
+        } finally {
+            bitmap.recycle()
+        }
+    }
+
+    /** Parsing keeps the full matrix before the renderer is invoked. */
     @Test
     fun spanParsingKeepsTheMatrixWhole() {
         val spans = parseLatexSpans("$$\n$matrix\n$$", parseInlineDollarMath = false)

@@ -24,6 +24,14 @@ import com.newoether.agora.data.local.migration.MIGRATION_31_32
 import com.newoether.agora.data.local.migration.MIGRATION_32_33
 import com.newoether.agora.data.local.migration.MIGRATION_33_34
 import com.newoether.agora.data.local.migration.MIGRATION_34_35
+import com.newoether.agora.data.local.migration.MIGRATION_39_40
+import com.newoether.agora.data.local.migration.MIGRATION_40_41
+import com.newoether.agora.data.local.migration.MIGRATION_41_42
+import com.newoether.agora.data.local.migration.MIGRATION_44_45
+import com.newoether.agora.data.local.migration.MIGRATION_45_46
+import com.newoether.agora.data.local.migration.MIGRATION_43_44
+import com.newoether.agora.data.local.migration.MIGRATION_42_43
+import com.newoether.agora.data.local.migration.installAttachmentReferenceTriggers
 import java.util.concurrent.Executor
 
 @Database(
@@ -40,6 +48,13 @@ import java.util.concurrent.Executor
         MaintenanceDebtEntity::class,
         SemanticIndexLedgerEntity::class,
         SemanticIndexWorkEntity::class,
+        SemanticSourceEntity::class,
+        SemanticConversationEntity::class,
+        SemanticModelConversationEntity::class,
+        SemanticMetadataStateEntity::class,
+        AttachmentReferenceOwner::class,
+        AttachmentReference::class,
+        AttachmentReferenceState::class,
     ],
     version = ChatDatabase.CURRENT_VERSION,
     exportSchema = true
@@ -48,9 +63,10 @@ abstract class ChatDatabase : RoomDatabase() {
     abstract fun chatDao(): ChatDao
     abstract fun maintenanceDebtDao(): MaintenanceDebtDao
     abstract fun semanticIndexDao(): SemanticIndexDao
+    abstract fun semanticMetadataDao(): SemanticMetadataDao
 
     companion object {
-        const val CURRENT_VERSION = 36
+        const val CURRENT_VERSION = 46
         const val DB_NAME = "agora_db"
 
         val ALL_MIGRATIONS = listOf(
@@ -203,6 +219,42 @@ abstract class ChatDatabase : RoomDatabase() {
                     db.execSQL("ALTER TABLE conversations ADD COLUMN isPinned INTEGER NOT NULL DEFAULT 0")
                 }
             },
+            object : Migration(36, 37) {
+                override fun migrate(db: SupportSQLiteDatabase) {
+                    db.execSQL("ALTER TABLE conversations ADD COLUMN todoJson TEXT")
+                }
+            },
+            object : Migration(37, 38) {
+                override fun migrate(db: SupportSQLiteDatabase) {
+                    db.execSQL("ALTER TABLE conversations ADD COLUMN parentConversationId TEXT")
+                    db.execSQL("ALTER TABLE conversations ADD COLUMN subagentResultJson TEXT")
+                    db.execSQL("ALTER TABLE conversations ADD COLUMN subagentResultId TEXT")
+                    db.execSQL("ALTER TABLE conversations ADD COLUMN subagentResultStatus TEXT")
+                    db.execSQL("ALTER TABLE conversations ADD COLUMN subagentDeliveredResultId TEXT")
+                    db.execSQL("CREATE INDEX IF NOT EXISTS index_conversations_parentConversationId ON conversations (parentConversationId)")
+                }
+            },
+            object : Migration(38, 39) {
+                override fun migrate(db: SupportSQLiteDatabase) {
+                    db.execSQL("ALTER TABLE conversations ADD COLUMN createdAt INTEGER NOT NULL DEFAULT 0")
+                    // Legacy rows have no exact creation record. Freeze their earliest stored activity once.
+                    db.execSQL("""
+                        UPDATE conversations SET createdAt = MIN(lastUpdated,
+                            COALESCE((SELECT MIN(startedAt) FROM runs
+                                WHERE conversationId = conversations.id), lastUpdated),
+                            COALESCE((SELECT MIN(timestamp) FROM messages
+                                WHERE conversationId = conversations.id), lastUpdated))
+                    """)
+                    db.execSQL("UPDATE conversations SET dataChangedAt = MAX(dataChangedAt + 1, lastUpdated, createdAt)")
+                }
+            },
+            MIGRATION_39_40,
+            MIGRATION_40_41,
+            MIGRATION_41_42,
+            MIGRATION_42_43,
+            MIGRATION_43_44,
+            MIGRATION_44_45,
+            MIGRATION_45_46,
         )
 
         fun inspectCompatibility(context: Context): DatabaseCompatibility {
@@ -229,6 +281,7 @@ abstract class ChatDatabase : RoomDatabase() {
             context: Context,
             queryExecutor: Executor? = null,
             transactionExecutor: Executor? = null,
+            queryCallback: QueryCallback? = null,
         ): ChatDatabase {
             val compatibility = inspectCompatibility(context)
             check(compatibility.canOpen) {
@@ -241,6 +294,14 @@ abstract class ChatDatabase : RoomDatabase() {
                 ChatDatabase::class.java,
                 DB_NAME,
             ).addMigrations(*ALL_MIGRATIONS.toTypedArray())
+                .addCallback(object : Callback() {
+                    override fun onCreate(db: SupportSQLiteDatabase) {
+                        installAttachmentReferenceTriggers(db)
+                    }
+                })
+            queryCallback?.let { callback ->
+                builder.setQueryCallback(callback, queryExecutor ?: Executor { it.run() })
+            }
             queryExecutor?.let { builder.setQueryExecutor(it) }
             transactionExecutor?.let { builder.setTransactionExecutor(it) }
             val database = builder.build()

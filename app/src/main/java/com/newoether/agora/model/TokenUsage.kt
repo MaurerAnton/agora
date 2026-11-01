@@ -134,6 +134,12 @@ internal class RequestTokenUsageAccumulator(
         requestActive = true
     }
 
+    /** Drops only the failed attempt; completed tool-round usage remains authoritative. */
+    fun resetCurrentAttempt() {
+        currentRequestUsage = null
+        resetGenerationTiming()
+    }
+
     fun observeRequestSnapshot(usage: TokenUsage) {
         check(requestActive) { "Token usage arrived outside a provider request" }
         currentRequestUsage = usage

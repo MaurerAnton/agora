@@ -17,6 +17,11 @@ import com.newoether.agora.data.replaceCustomProviderIdsForDisplay
 
 
 import com.newoether.agora.data.repository.ConversationRepository
+import com.newoether.agora.data.repository.observeConversationTodo
+import com.newoether.agora.data.repository.observeDrawerGeneratingConversationIds
+import com.newoether.agora.ui.chat.observeDrawerInteractions
+import com.newoether.agora.data.repository.observeSubagents
+import com.newoether.agora.data.repository.observeParentConversationId
 import com.newoether.agora.data.repository.ConversationSettingsTransferCoordinator
 import com.newoether.agora.data.repository.SettingsRepository
 import com.newoether.agora.model.ChatConversation
@@ -86,14 +91,23 @@ class ChatViewModel(
     )
     internal val messagePayloadHydration =
         ConversationMessagePayloadHydration(convRepo, appContext)
+    /** Display-only `shell://` Markdown images for native chat, read from the live device settings. */
+    internal val shellMarkdownMedia = com.newoether.agora.ui.chat.message.ShellMarkdownMedia(
+        context = appContext,
+        devices = { settingsRepository.shellDevices.value },
+        sandboxEnabled = { settingsRepository.sandboxEnabled.value },
+        sandbox = { sandboxFactory?.takeIf { it.isAvailable() }?.create() },
+    )
+    private val attachmentProcessor = AttachmentImportProcessor(application)
     private val composerDrafts = ComposerDraftController(
         persistence = conversationWorkspaces,
         conversations = conversationRepository,
+        hydrateAttachment = attachmentProcessor::hydrateDraftAttachment,
     )
     internal val conversationComposer = ConversationComposerController(
         scope = viewModelScope,
         drafts = composerDrafts,
-        processor = AttachmentImportProcessor(application),
+        processor = attachmentProcessor,
         sandboxHomeDir = {
             sandboxFactory?.takeIf { it.isAvailable() }?.let {
                 File(application.filesDir, "sandbox-home")
@@ -178,36 +192,15 @@ class ChatViewModel(
         )
     }
 
-    private fun startInitJobs() {
-        viewModelScope.launch {
-        // Apply Tor SOCKS proxy settings
-        viewModelScope.launch(Dispatchers.IO) {
-            combine(
-                settingsManager.torEnabled,
-                settingsManager.torSocksPort
-            ) { enabled, port -> Pair(enabled, port) }
-            .collect { (enabled, port) ->
-                if (enabled) {
-                    com.newoether.agora.api.HttpClient.setProxy(
-                        com.newoether.agora.api.HttpClient.ProxyConfig(
-                            type = com.newoether.agora.api.HttpClient.ProxyType.SOCKS,
-                            host = "127.0.0.1",
-                            port = port,
-                        )
-                    )
-                } else {
-                    com.newoether.agora.api.HttpClient.setProxy(null)
-                }
-            }
-        }
-
-            conversations.filterNotNull().first()
-            startProcessServices()
-            proxySettingsSynchronizer.start()
-            startupMaintenance.start()
-            localModelCatalogSynchronizer.start()
-        }
-    }
+    private fun startInitJobs() = startChatViewModelInitJobs(
+        scope = viewModelScope,
+        conversations = conversations,
+        settingsManager = settingsManager,
+        startProcessServices = startProcessServices,
+        proxySettingsSynchronizer = proxySettingsSynchronizer,
+        startupMaintenance = { startupMaintenance },
+        localModelCatalogSynchronizer = localModelCatalogSynchronizer,
+    )
 
     // Per-conversation generation lifecycle (IO scope, job, slot, race-free stop/persist tokens)
     // lives in [ConversationGenerationState], one per conversation via [generationRegistry].
@@ -303,6 +296,35 @@ class ChatViewModel(
     val conversations: StateFlow<List<ChatConversation>?> = convRepo.getAllConversations()
         .stateIn(viewModelScope, SharingStarted.Eagerly, null)
     val currentConversationId: StateFlow<String?> get() = selectionController.currentConversationId
+    internal val currentSubagentFamily = observeSelectedSubagentFamily(
+        selectedConversationId = currentConversationId,
+        observeParent = convRepo::observeParentConversationId,
+        observeSubagents = convRepo::observeSubagents,
+    ).stateIn(
+        viewModelScope,
+        SharingStarted.Eagerly,
+        SubagentFamilySnapshot(),
+    )
+    val currentSubagents = combine(currentConversationId, currentSubagentFamily) { id, family ->
+        id to family.forSelection(id)?.agents.orEmpty()
+    }.stateIn(
+        viewModelScope,
+        SharingStarted.WhileSubscribed(0, replayExpirationMillis = 0),
+        null to emptyList(),
+    )
+
+    private val subagentDeliveryOnOpen = viewModelScope.launch {
+        currentConversationId.collect { id -> id?.let(chatRuntime.onConversationOpened) }
+    }
+
+    val currentConversationTodo = observeSelectedConversationTodo(
+        currentConversationId, convRepo::observeConversationTodo,
+    ).stateIn(viewModelScope, SharingStarted.Eagerly, null to emptyList())
+    private val currentInteractions = combine(
+        currentConversationId, askUser.requests, shellConfirmation.pendingShellCommand,
+    ) { id, questions, shell ->
+        id to com.newoether.agora.ui.chat.interaction.userInteractions(id, questions, shell)
+    }
     val selectedConversationGenerationSnapshot: StateFlow<ConversationGenerationSnapshot>
         get() = selectionController.selectedConversationGenerationSnapshot
     @OptIn(kotlinx.coroutines.ExperimentalCoroutinesApi::class)
@@ -339,75 +361,27 @@ class ChatViewModel(
     private val renderStore: ConversationRenderStore get() = conversationUi.renderStore
 
     /** This phone UI as a [ChatClient] of the process runtime; attached in init, detached in onCleared. */
-    private val phoneClient: ChatClient = object : ChatClient {
-        override val openConversationId: String? get() = currentConversationId.value
-        override val renderStore: ConversationRenderStore get() = conversationUi.renderStore
-        override fun isConversationVisible(conversationId: String): Boolean =
-            AppForegroundTracker.isInForeground &&
-                AppForegroundTracker.isChatPresented &&
-                currentConversationId.value == conversationId
-        override val branchTransitions: BranchReplacementTransitionCoordinator
-            get() = regenerationTransitions
-        override suspend fun awaitProjectedPath(conversationId: String, messageId: String) {
-            combine(messages, currentConversationId) { path, openConversationId ->
-                openConversationId != conversationId || path.any { it.id == messageId }
-            }.first { projectedOrClosed -> projectedOrClosed }
-        }
-        override fun requestScrollToBottomAfter(
-            conversationId: String,
-            messageId: String,
-            attachedOnly: Boolean,
-        ) = scrollRequests.requestAbsoluteBottomAfter(conversationId, messageId, attachedOnly)
-        override fun onSendAccepted(conversationId: String, messageId: String) {
-            // Feedback belongs to the conversation on screen. A send from the new-chat page
-            // qualifies because that page becomes this very conversation, but its id is only
-            // published after acceptance, so it is matched via isNewChatMode rather than by id.
-            val currentId = currentConversationId.value
-            val targetsOpenConversation = currentId == conversationId ||
-                (currentId == null && isNewChatMode.value)
-            if (targetsOpenConversation) onSendAccepted?.invoke(conversationId, messageId)
-        }
-        override suspend fun applyCommittedNewConversationState(conversationId: String) =
-            conversationWorkspaces.applyCommittedNewConversationState(conversationId)
-        override suspend fun publishAcceptedNewConversation(
-            conversationId: String,
-            modelId: String,
-            entryId: Long,
-        ): Boolean = withContext(Dispatchers.Main.immediate) {
-            selectionController.publishAcceptedConversationIfOriginStillOpen(
-                conversationId,
-                modelId,
-                entryId,
-            )
-        }.also { selected ->
-            if (selected) {
-                // The send's own bottom scroll handles the first message; skip the open scroll.
-                scrollRequests.suppressNextOpenScroll = true
-                _firstMessageCommitted.tryEmit(conversationId)
-            }
-        }
-        override suspend fun beginTreeMutation(conversationId: String, scrollToTarget: Boolean) =
-            selectionController.beginTreeMutation(conversationId, scrollToTarget)
-        override fun settleTreeMutation(requestId: Long?, targetMessageId: String?) =
-            selectionController.markTreeMutationReady(requestId, targetMessageId)
-        override fun failTreeMutation(requestId: Long?) = selectionController.failTreeMutation(requestId)
-        override fun showSnackbar(message: String) = emitSnackbar(message)
-        override fun openConversation(conversationId: String) {
-            viewModelScope.launch { selectionController.selectConversation(conversationId) }
-        }
-        override fun showShareText(text: String) {
-            _conversationShareText.tryEmit(text)
-        }
-        override fun settleDeletedConversation(conversationId: String) =
-            selectionController.settleDeletedSelectedConversation(conversationId)
-        override fun isSubmissionFrozen(conversationId: String): Boolean =
-            conversationComposerSubmission.isFrozen(conversationId)
-        override fun onGenerationActivityChanged(conversationId: String, active: Boolean) =
-            if (active) conversationUi.markActive(conversationId) else conversationUi.markIdle(conversationId)
-    }
+    private val phoneClient: ChatClient = PhoneChatClient(
+        scope = viewModelScope,
+        selection = { selectionController },
+        ui = { conversationUi },
+        workspaces = conversationWorkspaces,
+        transitions = { regenerationTransitions },
+        scrollRequests = scrollRequests,
+        sendAcceptedFeedback = { onSendAccepted },
+        submission = { conversationComposerSubmission },
+        shareText = { _conversationShareText },
+        firstMessageCommitted = { _firstMessageCommitted },
+        emitSnackbar = { message -> emitSnackbar(message) },
+    )
     val allMessages: StateFlow<List<ChatMessage>> = conversationUi.allMessages
-    val loadedMessagesConversationId: StateFlow<String?> =
-        conversationUi.loadedMessagesConversationId
+    val loadedMessagesConversationId: StateFlow<String?> = observeConversationContentReadiness(
+        selectedConversationId = currentConversationId,
+        loadedMessagesConversationId = conversationUi.loadedMessagesConversationId,
+        todo = currentConversationTodo,
+        family = currentSubagentFamily,
+        interactions = currentInteractions,
+    ).stateIn(viewModelScope, SharingStarted.Eagerly, null)
 
     private val providerModelSync = ProviderModelSyncController(
         providers = providerRegistry,
@@ -469,15 +443,15 @@ class ChatViewModel(
     val generationSnapshot: StateFlow<ConversationGenerationSnapshot> =
         conversationUi.generationSnapshot
 
-    /** Every conversation currently mutating its message tree through foreground generation or
-     * headless Task/Loop execution. Drawer rows use this per-id set instead of the open
-     * conversation's open UI loading mirror. */
-    val generatingConversationIds: StateFlow<Set<String>> = combine(
-        generationRegistry.activeConversationIds,
-        conversationExecutionCoordinator.activeAutomationConversationIds,
-    ) { foreground, automation ->
-        foreground + automation
-    }.stateIn(viewModelScope, SharingStarted.Eagerly, emptySet())
+    /** Drawer activity includes each active conversation and the parent of any active Subagent. */
+    val generatingConversationIds: StateFlow<Set<String>> = convRepo.observeDrawerGeneratingConversationIds(
+        foregroundIds = generationRegistry.activeConversationIds,
+        automationIds = conversationExecutionCoordinator.activeAutomationConversationIds,
+    ).stateIn(viewModelScope, SharingStarted.Eagerly, emptySet())
+
+    internal val drawerInteractions = convRepo.observeDrawerInteractions(
+        askUser.requests, shellConfirmation.pendingShellCommand,
+    ).stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), emptyMap())
 
     val isSwitching: StateFlow<Boolean> get() = selectionController.isSwitching
 
@@ -518,6 +492,7 @@ class ChatViewModel(
     private val contextProjector by lazy {
         ConversationContextProjector(
             conversations = convRepo,
+            appContext = appContext,
             requestBuilder = chatRuntime.requestBuilder,
             generationManager = { generationManager },
             generationErrorFormatter = { raw ->
@@ -530,6 +505,8 @@ class ChatViewModel(
 
     internal val conversationContextProjection: StateFlow<ConversationContextProjection>
         get() = contextProjector.projection
+    internal val conversationContextInvalidationRevision: StateFlow<Long>
+        get() = contextProjector.invalidationRevision
 
     internal fun requestConversationContext(
         conversationId: String?,

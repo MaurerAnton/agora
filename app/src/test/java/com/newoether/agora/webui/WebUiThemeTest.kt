@@ -1,5 +1,6 @@
 package com.newoether.agora.webui
 
+import androidx.compose.ui.graphics.toArgb
 import io.ktor.client.request.get
 import io.ktor.client.statement.bodyAsText
 import io.ktor.http.HttpHeaders
@@ -21,6 +22,29 @@ class WebUiThemeTest {
         assertTrue(css.contains("--md-on-surface-variant:#aabbcc80;"))
         assertTrue(css.contains("@font-face{font-family:\"AgoraApp\";src:url(\"${WebUiTheme.FONT_PATH}?v="))
         assertTrue(css.contains("--app-font:\"AgoraApp\","))
+    }
+
+    @Test
+    fun contextCategoryRolesArePublishedForEveryTheme() {
+        for (preset in com.newoether.agora.ui.theme.ColorSchemePreset.entries) {
+            for (style in com.newoether.agora.ui.theme.SchemeStyle.entries) {
+                for (dark in listOf(false, true)) {
+                    val scheme = com.newoether.agora.ui.theme.colorSchemeForPreset(preset, style, dark)
+                    val roles = scheme.webRoles()
+                    val css = WebUiTheme(dark, roles, WebUiFont.System).toCss()
+                    for ((role, color) in mapOf("primary" to scheme.primary,
+                        "secondary" to scheme.secondary, "tertiary" to scheme.tertiary,
+                        "surfaceVariant" to scheme.surfaceVariant, "outline" to scheme.outline,
+                        "error" to scheme.error)) {
+                        val argb = color.toArgb()
+                        assertEquals(argb, roles[role])
+                        if (role in listOf("primary", "secondary", "tertiary")) {
+                            assertTrue(css.contains("--md-$role:#%06x;".format(argb and 0xFFFFFF)))
+                        }
+                    }
+                }
+            }
+        }
     }
 
     @Test

@@ -1,15 +1,11 @@
 package com.newoether.agora.viewmodel
 
-import com.newoether.agora.model.AttachmentMeta
 import com.newoether.agora.model.MessageSource
 import com.newoether.agora.model.SelectedAttachment
 import com.newoether.agora.util.AttachmentFiles
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
-import kotlinx.serialization.decodeFromString
-import kotlinx.serialization.encodeToString
-import kotlinx.serialization.json.Json
 import java.util.UUID
 
 /**
@@ -32,6 +28,8 @@ internal data class QueuedSend(
     val createdAt: Long = System.currentTimeMillis(),
     /** Null for a message the user typed; set for automatic input such as ask_user answers. */
     val source: MessageSource? = null,
+    /** Retained until the ordinary generation owns admission, or this pending input is discarded. */
+    val releaseGenerationAdmission: (() -> Unit)? = null,
 )
 
 internal data class GuidanceBatchLease(
@@ -42,64 +40,6 @@ internal data class GuidanceBatchLease(
         require(id.isNotBlank())
         require(batch.isNotEmpty())
     }
-}
-
-/**
- * One queue drain becomes one Run whose user bubbles are the FIFO batch with ADJACENT sends of the
- * same kind merged: consecutive typed messages form one bubble, consecutive ask_user answers form
- * another. Order, content and attachment ownership are preserved.
- */
-internal fun mergeQueuedGuidance(batch: List<QueuedSend>): List<QueuedSend> {
-    require(batch.isNotEmpty())
-    val groups = mutableListOf<MutableList<QueuedSend>>()
-    batch.forEach { queued ->
-        val last = groups.lastOrNull()
-        if (last != null && last.last().source?.kind == queued.source?.kind) last += queued
-        else groups += mutableListOf(queued)
-    }
-    return groups.map(::mergeSameKind)
-}
-
-private fun mergeSameKind(batch: List<QueuedSend>): QueuedSend {
-    val first = batch.first()
-    val source = first.source?.let { firstSource ->
-        if (firstSource.kind == MessageSource.Kind.ASK_USER) {
-            MessageSource.askUser(batch.flatMap { checkNotNull(it.source).askUser })
-        } else {
-            firstSource
-        }
-    }
-    val attachmentItems = buildList {
-        var imageOffset = 0
-        batch.forEach { queued ->
-            queued.preparedAttachmentMetaJson
-                ?.let { raw -> Json.decodeFromString<AttachmentMeta>(raw).items }
-                .orEmpty()
-                .forEach { item ->
-                    add(
-                        item.imageIndex?.let { index ->
-                            item.copy(imageIndex = imageOffset + index)
-                        } ?: item,
-                    )
-                }
-            imageOffset += queued.preparedImages.size
-        }
-    }
-    return first.copy(
-        text = if (source != null && source.kind == MessageSource.Kind.ASK_USER) {
-            source.askUserReadableText()
-        } else {
-            batch.joinToString(separator = "\n\n", transform = QueuedSend::text)
-        },
-        source = source,
-        modelId = batch.last().modelId,
-        attachments = batch.flatMap(QueuedSend::attachments),
-        preparedImages = batch.flatMap(QueuedSend::preparedImages),
-        preparedAttachmentMetaJson = attachmentItems
-            .takeIf(List<*>::isNotEmpty)
-            ?.let { Json.encodeToString(AttachmentMeta(it)) },
-        generationSnapshot = batch.last().generationSnapshot,
-    )
 }
 
 /**
@@ -135,6 +75,24 @@ internal class GuidanceLeaseStore(
         }
     }
 
+    /** Exact outbox identity stays owned while pending or claimed by an in-flight drain. */
+    fun containsSubagentResult(childId: String, resultId: String): Boolean = synchronized(lock) {
+        (_queuedSends.value.asSequence() + claimedGuidance.values.asSequence().flatten()).any {
+            it.source?.subagentResults?.get(childId) == resultId
+        }
+    }
+
+    /** A committed wait result supersedes only its exact pending automatic notifications. */
+    fun removeSubagentResults(receipts: Map<String, String>): List<QueuedSend> = synchronized(lock) {
+        val removed = _queuedSends.value.filter { send ->
+            val source = send.source
+            source?.kind == MessageSource.Kind.SUBAGENT && source.subagentResults.isNotEmpty() &&
+                source.subagentResults.all { (id, resultId) -> receipts[id] == resultId }
+        }
+        _queuedSends.value = _queuedSends.value - removed.toSet()
+        removed
+    }
+
     fun remove(id: String): QueuedSend? = synchronized(lock) {
         val removed = _queuedSends.value.firstOrNull { it.id == id } ?: return null
         _queuedSends.value = _queuedSends.value.filterNot { it.id == id }
@@ -151,13 +109,29 @@ internal class GuidanceLeaseStore(
         lease
     }
 
+    /** Only consumed automatic inputs may be retired from a claimed batch before admission. */
+    fun retireSubagentResults(lease: GuidanceBatchLease, receipts: Set<Pair<String, String>>): GuidanceBatchLease? =
+        synchronized(lock) {
+            check(claimedGuidance[lease.id] == lease.batch)
+            val retained = lease.batch.filterNot { send ->
+                val results = send.source?.subagentResults.orEmpty()
+                results.isNotEmpty() && results.all { (id, resultId) -> (id to resultId) in receipts }
+            }
+            if (retained.isEmpty()) claimedGuidance.remove(lease.id)
+            else claimedGuidance[lease.id] = retained
+            retained.takeIf { it.isNotEmpty() }?.let { GuidanceBatchLease(lease.id, it) }
+        }
+
     /** Settle one exact lease without allowing duplicate or unknown results to mutate the queue. */
     fun settle(leaseId: String, durable: Boolean): Boolean {
         var orphaned = emptyList<QueuedSend>()
         synchronized(lock) {
             val batch = claimedGuidance.remove(leaseId) ?: return false
             when {
-                durable -> batch.forEach(AttachmentFiles::releaseLivePaths)
+                durable -> batch.forEach {
+                    it.releaseGenerationAdmission?.invoke()
+                    AttachmentFiles.releaseLivePaths(it)
+                }
                 disposed -> orphaned = batch
                 else -> _queuedSends.value = batch + _queuedSends.value
             }
@@ -167,6 +141,7 @@ internal class GuidanceLeaseStore(
     }
 
     fun discard(send: QueuedSend) {
+        send.releaseGenerationAdmission?.invoke()
         AttachmentFiles.releaseLivePaths(send)
         if (send.attachments.isNotEmpty()) reclaimAttachments(send.attachments)
     }

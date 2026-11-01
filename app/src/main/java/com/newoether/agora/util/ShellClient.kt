@@ -30,16 +30,28 @@ data class ShellFileReadResult(
     val limit: Long,
     val truncated: Boolean,
     val error: String? = null,
+    /**
+     * Raw file bytes consumed from [offset], including split UTF-8 bytes trimmed from either end.
+     * Paging continues at offset + bytesRead. -1 means unknown (an older Conch server); callers then
+     * fall back to the UTF-8 length of [content], which is exact for valid UTF-8.
+     */
+    val bytesRead: Long = -1L,
+    /** SHA-256 of the whole file for expected_sha256; empty when the backend did not compute it. */
+    val sha256: String = "",
 )
 
 data class ShellFileEditResult(
     val replacements: Int,
     val sha256: String = "",
     val error: String? = null,
+    /** Excerpts of the edited file; empty on older Conch servers that predate snippets. */
+    val snippets: List<ShellFileEditSnippet> = emptyList(),
+    val snippetsTruncated: Boolean = false,
 )
 
+/** One line per '\n' plus a final unterminated line; a trailing newline adds no empty line. */
 internal fun shellFileLineCount(content: String): Int =
-    if (content.isEmpty()) 0 else content.count { it == '\n' } + 1
+    content.count { it == '\n' } + if (content.isEmpty() || content.endsWith('\n')) 0 else 1
 
 internal fun String.shellUtf8Prefix(maxBytes: Int): String {
     if (maxBytes <= 0) return ""
@@ -134,10 +146,15 @@ internal fun fileEditMatchRanges(content: String, oldString: String): List<IntRa
     return matches
 }
 
+/**
+ * Replaces [matches] with [newString]. When [inserted] is given, it receives the half-open
+ * [start, end) range of each replacement in the returned content, in match order.
+ */
 internal fun replaceFileEditMatches(
     content: String,
     matches: List<IntRange>,
     newString: String,
+    inserted: MutableList<IntArray>? = null,
 ): String {
     if (matches.isEmpty()) return content
 
@@ -152,7 +169,9 @@ internal fun replaceFileEditMatches(
                 ?: fileLineEnding
                 ?: preferredFileEditLineEnding(newString)
                 ?: "\n"
+            val insertedStart = length
             append(newString.withFileEditLineEnding(lineEnding))
+            inserted?.add(intArrayOf(insertedStart, length))
             sourceIndex = match.last + 1
         }
         append(content, sourceIndex, content.length)
@@ -164,20 +183,52 @@ internal fun editShellFileContent(
     oldString: String,
     newString: String,
     replaceAll: Boolean,
+): Pair<String?, ShellFileEditResult> =
+    editShellFileContent(content, listOf(ShellFileEdit(oldString, newString, replaceAll)))
+
+/**
+ * Applies [edits] in order, each seeing the previous result. Any failure returns a null content so
+ * callers write nothing. A single edit keeps the legacy error wording; batches prefix the index,
+ * matching the Conch server.
+ */
+internal fun editShellFileContent(
+    content: String,
+    edits: List<ShellFileEdit>,
 ): Pair<String?, ShellFileEditResult> {
-    val matches = fileEditMatchRanges(content, oldString)
-    if (matches.isEmpty()) {
-        return null to ShellFileEditResult(0, error = "old_string not found in file")
+    val batched = edits.size > 1
+    var current = content
+    var total = 0
+    val tracker = FileEditRangeTracker()
+    for ((index, edit) in edits.withIndex()) {
+        val prefix = if (batched) "edits[$index]: " else ""
+        val suffix = if (batched) "; no changes written" else ""
+        if (edit.oldString.isEmpty()) {
+            return null to ShellFileEditResult(0, error = "${prefix}old_string is required")
+        }
+        val matches = fileEditMatchRanges(current, edit.oldString)
+        if (matches.isEmpty()) {
+            val detail = if (batched && index > 0) " after applying earlier edits" else ""
+            return null to ShellFileEditResult(0, error = "${prefix}old_string not found in file$detail$suffix")
+        }
+        if (matches.size > 1 && !edit.replaceAll) {
+            return null to ShellFileEditResult(
+                0,
+                error = "${prefix}found ${matches.size} matches of old_string; " +
+                    "set replace_all=true or provide a unique match$suffix",
+            )
+        }
+        val selectedMatches = if (edit.replaceAll) matches else matches.take(1)
+        val inserted = mutableListOf<IntArray>()
+        current = replaceFileEditMatches(current, selectedMatches, edit.newString, inserted)
+        tracker.apply(selectedMatches, inserted)
+        total += selectedMatches.size
     }
-    if (matches.size > 1 && !replaceAll) {
-        return null to ShellFileEditResult(
-            0,
-            error = "found ${matches.size} matches of old_string; set replace_all=true or provide a unique match",
-        )
-    }
-    val selectedMatches = if (replaceAll) matches else matches.take(1)
-    return replaceFileEditMatches(content, selectedMatches, newString) to
-        ShellFileEditResult(selectedMatches.size)
+    val (snippets, snippetsTruncated) = tracker.snippets(current)
+    return current to ShellFileEditResult(
+        replacements = total,
+        snippets = snippets,
+        snippetsTruncated = snippetsTruncated,
+    )
 }
 
 internal fun shellFileSha256(content: ByteArray): String =
@@ -289,6 +340,7 @@ class ShellClient(
             lastError = null
             true
         } catch (e: Exception) {
+            NetworkRetryPolicy.throwIfCancelled(e)
             lastError = describeConchConnectionFailure(serverUrl, e)
             DebugLog.w("ShellClient", lastError!!)
             false
@@ -377,13 +429,23 @@ class ShellClient(
     data class GrepMatch(
         val path: String,
         val line: Int,
-        val content: String
+        val content: String,
+        val before: List<String> = emptyList(),
+        val after: List<String> = emptyList(),
     )
 
     private suspend fun encryptedPost(
         path: String,
         payload: String,
         callTimeoutMillis: Long? = null,
+    ): String = ConchNetwork.retryRead(path) {
+        encryptedPostOnce(path, payload, callTimeoutMillis)
+    }
+
+    private suspend fun encryptedPostOnce(
+        path: String,
+        payload: String,
+        callTimeoutMillis: Long?,
     ): String {
         if (apiKey.isBlank()) {
             val response = try {
@@ -392,15 +454,19 @@ class ShellClient(
                     payload,
                     mapOf("Content-Type" to "application/json"),
                     callTimeoutMillis,
+                    replaySafe = ConchNetwork.isReadOnly(path),
+                    maxRetries = if (ConchNetwork.isReadOnly(path)) 0 else NetworkRetryPolicy.MAX_RETRIES,
                 )
             } catch (e: Exception) {
+                NetworkRetryPolicy.throwIfCancelled(e)
                 throw IllegalStateException(
                     describeConchRequestFailure(serverUrl, "$path request", e),
                     e,
                 )
             }
             if (!response.isSuccessful) {
-                throw IllegalStateException(
+                throw NetworkHttpException(
+                    response.code, response.retryAfter,
                     "Conch at $serverUrl returned HTTP ${response.code}: " +
                         response.body.take(240).ifBlank { "empty response" },
                 )
@@ -441,15 +507,19 @@ class ShellClient(
                 encryptedBody,
                 headers,
                 callTimeoutMillis,
+                replaySafe = ConchNetwork.isReadOnly(path),
+                maxRetries = if (ConchNetwork.isReadOnly(path)) 0 else NetworkRetryPolicy.MAX_RETRIES,
             )
         } catch (e: Exception) {
+            NetworkRetryPolicy.throwIfCancelled(e)
             throw IllegalStateException(
                 describeConchRequestFailure(serverUrl, "$path request", e),
                 e,
             )
         }
         if (!response.isSuccessful) {
-            throw IllegalStateException(
+            throw NetworkHttpException(
+                response.code, response.retryAfter,
                 "Conch at $serverUrl returned HTTP ${response.code}: " +
                     response.body.take(240).ifBlank { "empty response" },
             )
@@ -513,6 +583,9 @@ class ShellClient(
             limit = effectiveLimit,
             truncated = json["truncated"]?.jsonPrimitive?.content?.toBooleanStrictOrNull()
                 ?: (normalizedOffset + content.toByteArray(Charsets.UTF_8).size < totalBytes),
+            // Absent on servers that predate the field.
+            bytesRead = json["bytesRead"]?.jsonPrimitive?.content?.toLongOrNull() ?: -1L,
+            sha256 = json["sha256"]?.jsonPrimitive?.content.orEmpty(),
         )
     }
 
@@ -531,11 +604,12 @@ class ShellClient(
         )
     }
 
-    suspend fun fileWrite(path: String, content: String): String? {
-        val payload = buildJsonBodyFile(mapOf(
-            "path" to path,
-            "content" to content
-        ))
+    suspend fun fileWrite(path: String, content: String, expectedSha256: String = ""): String? {
+        val payload = buildJsonObject {
+            put("path", path)
+            put("content", content)
+            if (expectedSha256.isNotBlank()) put("expected_sha256", expectedSha256.trim())
+        }.toString()
         val jsonStr = filePost("/file/write", payload)
         val json = Json.parseToJsonElement(jsonStr).jsonObject
         return json["error"]?.jsonPrimitive?.content
@@ -546,20 +620,65 @@ class ShellClient(
         oldString: String,
         newString: String,
         replaceAll: Boolean,
+    ): ShellFileEditResult = fileEdit(path, listOf(ShellFileEdit(oldString, newString, replaceAll)))
+
+    /**
+     * A single edit uses the legacy fields every Conch understands. Several edits use the `edits`
+     * array; servers without batch support ignore it and reject the request as "old_string is
+     * required", which is mapped to an explicit hint.
+     */
+    suspend fun fileEdit(
+        path: String,
+        edits: List<ShellFileEdit>,
+        expectedSha256: String = "",
     ): ShellFileEditResult {
-        val payload = buildJsonBodyFileMixed(mapOf(
-            "path" to path,
-            "old_string" to oldString,
-            "new_string" to newString,
-            "replace_all" to replaceAll,
-        ))
+        val payload = buildJsonObject {
+            put("path", path)
+            if (expectedSha256.isNotBlank()) put("expected_sha256", expectedSha256.trim())
+            val single = edits.singleOrNull()
+            if (single != null) {
+                put("old_string", single.oldString)
+                put("new_string", single.newString)
+                put("replace_all", single.replaceAll)
+            } else {
+                put("edits", kotlinx.serialization.json.buildJsonArray {
+                    edits.forEach { edit ->
+                        add(buildJsonObject {
+                            put("old_string", edit.oldString)
+                            put("new_string", edit.newString)
+                            put("replace_all", edit.replaceAll)
+                        })
+                    }
+                })
+            }
+        }.toString()
         val jsonStr = filePost("/file/edit", payload)
         val json = Json.parseToJsonElement(jsonStr).jsonObject
         val error = json["error"]?.jsonPrimitive?.content
-        if (error != null) return ShellFileEditResult(0, error = error)
+        if (error != null) {
+            if (edits.size > 1 && error == "old_string is required") {
+                return ShellFileEditResult(
+                    0,
+                    error = "this Conch server does not support batched edits (edits); " +
+                        "nothing was written. Update Conch, or send one edit per file_edit call.",
+                )
+            }
+            return ShellFileEditResult(0, error = error)
+        }
+        val snippets = (json["snippets"] as? kotlinx.serialization.json.JsonArray).orEmpty().mapNotNull { item ->
+            val snippet = item as? kotlinx.serialization.json.JsonObject ?: return@mapNotNull null
+            val startLine = (snippet["start_line"] as? kotlinx.serialization.json.JsonPrimitive)
+                ?.content?.toIntOrNull() ?: return@mapNotNull null
+            val lines = (snippet["lines"] as? kotlinx.serialization.json.JsonArray).orEmpty().mapNotNull {
+                (it as? kotlinx.serialization.json.JsonPrimitive)?.takeIf { line -> line.isString }?.content
+            }
+            ShellFileEditSnippet(startLine, lines)
+        }
         return ShellFileEditResult(
             replacements = json["replacements"]?.jsonPrimitive?.content?.toIntOrNull() ?: 0,
             sha256 = json["sha256"]?.jsonPrimitive?.content.orEmpty(),
+            snippets = snippets,
+            snippetsTruncated = json["snippets_truncated"]?.jsonPrimitive?.content?.toBooleanStrictOrNull() == true,
         )
     }
 
@@ -585,25 +704,41 @@ class ShellClient(
         pattern: String,
         basePath: String = "",
         fileGlob: String = "",
-    ): Result<Pair<List<GrepMatch>, Boolean>> {
-        val params = mutableMapOf("pattern" to pattern)
-        if (basePath.isNotBlank()) params["path"] = basePath
-        if (fileGlob.isNotBlank()) params["glob"] = fileGlob
-        val payload = buildJsonBodyFile(params)
+        options: ShellGrepOptions = ShellGrepOptions(),
+    ): Result<ShellGrepResult> {
+        val payload = buildJsonObject {
+            // An inline flag works on every Conch (Go RE2), while a case_insensitive field would be
+            // silently ignored by older servers and return case-sensitive results.
+            put("pattern", if (options.caseInsensitive) "(?i)$pattern" else pattern)
+            if (basePath.isNotBlank()) put("path", basePath)
+            if (fileGlob.isNotBlank()) put("glob", fileGlob)
+            if (options.context > 0) put("context", options.context)
+        }.toString()
         val jsonStr = filePost("/file/grep", payload)
         val json = Json.parseToJsonElement(jsonStr).jsonObject
         val error = json["error"]?.jsonPrimitive?.content
         if (error != null) return Result.failure(Exception(error))
+        fun lines(value: kotlinx.serialization.json.JsonElement?): List<String> =
+            (value as? kotlinx.serialization.json.JsonArray)?.map { it.jsonPrimitive.content }.orEmpty()
         val matches = json["matches"]?.jsonArray?.map {
             val obj = it.jsonObject
             GrepMatch(
                 path = obj["path"]?.jsonPrimitive?.content ?: "",
                 line = obj["line"]?.jsonPrimitive?.content?.toIntOrNull() ?: 0,
-                content = obj["content"]?.jsonPrimitive?.content ?: ""
+                content = obj["content"]?.jsonPrimitive?.content ?: "",
+                before = lines(obj["before"]),
+                after = lines(obj["after"]),
             )
         } ?: emptyList()
-        val truncated = json["truncated"]?.jsonPrimitive?.content?.toBooleanStrictOrNull() ?: false
-        return Result.success(matches to truncated)
+        return Result.success(
+            ShellGrepResult(
+                matches = matches,
+                truncated = json["truncated"]?.jsonPrimitive?.content?.toBooleanStrictOrNull() ?: false,
+                skippedLargeFiles = json["skippedLargeFiles"]?.jsonPrimitive?.content?.toIntOrNull() ?: 0,
+                contextSupported = options.context == 0 ||
+                    json["contextSupported"]?.jsonPrimitive?.content?.toBooleanStrictOrNull() == true,
+            ),
+        )
     }
 
     private fun buildJsonBodyFileMixed(params: Map<String, Any>): String {
@@ -631,13 +766,14 @@ class ShellClient(
         command: String,
         timeoutMs: Int,
         workdir: String,
+        description: String = "",
     ): String = encryptedPost(
         "/jobs/start",
-        buildJsonBody(command, timeoutMs, workdir),
+        shellJobStartBody(command, timeoutMs, workdir, description),
     )
 
-    suspend fun listJobs(): String =
-        encryptedPost("/jobs/list", "{}")
+    suspend fun listJobs(offset: Int = 0, limit: Int = 100): String =
+        encryptedPost("/jobs/list", shellJobListBody(offset, limit))
 
     suspend fun getJob(jobId: String): String =
         encryptedPost("/jobs/get", buildJsonObject { put("job_id", jobId) }.toString())

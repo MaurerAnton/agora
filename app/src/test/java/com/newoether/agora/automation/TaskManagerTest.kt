@@ -209,8 +209,9 @@ class TaskManagerTest {
             title = "Task",
             taskId = stored.id,
         )
+        val reader = mockk<com.newoether.agora.data.local.ChatDao>()
         coEvery {
-            conversations.getProviderContextTopologySnapshot("execution")
+            reader.getProviderContextTopologySnapshot("execution")
         } returns ProviderContextTopologySnapshot(
             selectedBranchesJson = null,
             messages = listOf(
@@ -228,11 +229,11 @@ class TaskManagerTest {
                 ),
             ),
         )
-        coEvery { conversations.getMessage(assistant.id) } returns assistant
+        coEvery { reader.getMessage(assistant.id) } returns assistant
         coEvery {
-            conversations.withProviderContextSnapshot<Any?>(any())
+            conversations.withReadSnapshot<Any?>(any())
         } coAnswers {
-            firstArg<suspend () -> Any?>().invoke()
+            firstArg<suspend (com.newoether.agora.data.local.ChatDao) -> Any?>().invoke(reader)
         }
         val manager = TaskManager(repository, conversations, engine, backgroundScope)
 
@@ -242,6 +243,35 @@ class TaskManagerTest {
         assertEquals("execution", success.conversationId)
         assertEquals("done", success.response)
         coVerify(exactly = 0) { engine.runOnceWithAutomationGuardsHeld(any(), any(), any(), any(), any(), any()) }
+    }
+
+    @Test
+    fun successReleasesRunningPresentationBeforeTitleGenerationFinishes() = runTest {
+        val repository = mockk<TaskRepository>()
+        val conversations = mockk<ConversationRepository>()
+        val engine = mockk<TaskExecutionEngine>()
+        var stored = task().copy(nextRunAt = 0L)
+        coEvery { repository.getTask(stored.id) } coAnswers { stored }
+        coEvery { repository.upsertTask(any()) } coAnswers { stored = firstArg() }
+        coEvery { conversations.recoverConversationRuntime(any(), any()) } returns 0
+        coEvery { conversations.getConversation(any()) } returns null
+        coEvery { conversations.upsertConversation(any()) } returns Unit
+        coEvery { engine.runOnceWithAutomationGuardsHeld(any(), any(), any(), any(), any(), any(), any()) } returns
+            TaskExecutionEngine.Result.Success("assistant", "Done")
+        val title = kotlinx.coroutines.CompletableDeferred<Unit>()
+        var titleStarted = false
+        val manager = TaskManager(repository, conversations, engine, backgroundScope,
+            titleExecutionConversation = { _, _ -> titleStarted = true; title.await() })
+
+        manager.runNow(stored)
+        assertTrue(stored.id in manager.runningTaskIds.value)
+        runCurrent()
+        assertTrue(titleStarted)
+        assertFalse(stored.id in manager.runningTaskIds.value)
+        assertTrue((stored.lastRunAt ?: 0L) > 0L)
+        title.complete(Unit)
+        runCurrent()
+        assertFalse(stored.id in manager.runningTaskIds.value)
     }
 
     private fun task(

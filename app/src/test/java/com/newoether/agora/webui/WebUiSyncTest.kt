@@ -3,11 +3,9 @@ import com.newoether.agora.data.CustomProviderConfig
 import com.newoether.agora.data.CustomEndpointProtocol
 
 import com.newoether.agora.automation.ConversationExecutionCoordinator
-import com.newoether.agora.data.local.MessageContextTopology
 import com.newoether.agora.data.local.DrawerConversationRow
 import com.newoether.agora.data.repository.ConversationRepository
 import com.newoether.agora.model.ChatConversation
-import com.newoether.agora.model.ChatMessage
 import com.newoether.agora.model.MessageStatus
 import com.newoether.agora.model.Participant
 import com.newoether.agora.model.ThinkingSegmentDisplayModes
@@ -78,7 +76,21 @@ class WebUiSyncTest {
         "m1" to message("m1", "root", Participant.MODEL, "x \\(a^2\\) y"),
         "m2" to message("m2", "root", Participant.MODEL, "other"),
     )
-    private val conversations = mockk<ConversationRepository> {
+    private val todo = MutableStateFlow<String?>(null)
+    internal val todoDao = mockk<com.newoether.agora.data.local.ChatDao> {
+        every { observeConversationTodo(any()) } returns todo
+        every { observeParentConversationId(any()) } returns flowOf(null)
+        every { observeSubagents(any()) } returns flowOf(emptyList())
+        every { observeSubagentParentIds(any()) } returns flowOf(emptyList())
+        coEvery { getSubagentFamilyRootId(any()) } answers { firstArg<String>() }
+        coEvery { getSubagentIds(any()) } returns emptyList()
+        coEvery { getLiveRun(any()) } returns null
+        coEvery { getValidatedSubagentStatus(any()) } returns null
+    }
+    internal val conversations = mockk<ConversationRepository> {
+        every { chatDao } returns todoDao
+        every { subagentJobs } returns MutableStateFlow(emptyMap())
+        every { subagentGenerationIds } returns MutableStateFlow(emptySet())
         every { observeDrawerConversations(any()) } answers {
             val limit = firstArg<Int>()
             list.map { rows -> rows.take(limit).map { DrawerConversationRow(it.id, it.title, it.hasUnreadGeneration, it.isPinned) } }
@@ -87,16 +99,20 @@ class WebUiSyncTest {
         coEvery { setConversationPinned(any(), any()) } returns true
         every { observeMessageTopology("a") } returns topology
         coEvery { recoverConversationRuntime(any(), any()) } returns 0
+        coEvery { withProviderContextSnapshot<Unit>(any()) } coAnswers {
+            firstArg<suspend () -> Unit>().invoke()
+        }
     }
     private val state = mockk<ConversationGenerationState> {
         every { generationSnapshot } returns snapshot
     }
-    private val registry = mockk<ConversationStateRegistry> {
+    internal val executionCoordinator = ConversationExecutionCoordinator()
+    internal val registry = mockk<ConversationStateRegistry> {
         every { activeConversationIds } returns MutableStateFlow(setOf("b"))
         every { getOrCreate("a") } returns state
     }
     private val hydration = mockk<ConversationMessagePayloadHydration> {
-        every { observeMessage(any(), any()) } answers { flowOf(bodies[firstArg<String>()]) }
+        every { observeMessages(any(), any(), any()) } answers { flowOf(secondArg<List<String>>().mapNotNull(bodies::get)) }
     }
     private val display = MutableStateFlow(
         WebDisplayContext(
@@ -146,25 +162,23 @@ class WebUiSyncTest {
     }
 
     @Test
-    fun drawerPagesAreBoundedAndDuplicateLoadRequestsDoNotAdvanceTwice() = sync { send, received ->
+    fun todoIsObservedOnlyForTheSelectedOwnerAndCarriesItsSequence() = sync { send, received ->
         received()
-        list.value = (0 until 200).map { ChatConversation(id = "c$it", title = "Conversation $it", isPinned = it == 0) }
-        val first = received().single { it.type == "conversations" }
-        assertEquals(80, first["items"]!!.jsonArray.size)
-        assertEquals("true", first.string("hasMore"))
-        assertEquals("true", first["items"]!!.jsonArray.first().jsonObject.string("isPinned"))
-        send("""{"type":"list_more","tokens":80}""")
-        assertEquals(160, received().single { it.type == "conversations" }["items"]!!.jsonArray.size)
-        send("""{"type":"list_more","tokens":80}""")
-        assertTrue(received().none { it.type == "conversations" })
-        send("""{"type":"list_more","tokens":160}""")
-        val last = received().single { it.type == "conversations" }
-        assertEquals(200, last["items"]!!.jsonArray.size)
-        assertFalse(last["hasMore"]?.jsonPrimitive?.content?.toBoolean() == true)
-        verify(exactly = 0) { conversations.getAllConversations() }
-        coVerify(exactly = 0) { conversations.recoverConversationRuntime(any(), any()) }
+        io.mockk.verify(exactly = 0) { todoDao.observeConversationTodo(any()) }
+        send("""{"type":"open","conversationId":"a","seq":11}""")
+        val opened = received().single { it.type == "todo" }
+        assertEquals("a", opened.string("conversationId"))
+        assertEquals("11", opened.string("seq"))
+        todo.value = """[{"content":"Check result","status":"in_progress"}]"""
+        val changed = received().single { it.type == "todo" }
+        assertEquals("Check result", changed["items"]!!.jsonArray.single().jsonObject.string("content"))
+        send("""{"type":"open","seq":12}""")
+        val cleared = received().single { it.type == "todo" }
+        assertEquals("12", cleared.string("seq"))
+        todo.value = """[{"content":"Late result","status":"completed"}]"""
+        assertTrue(received().none { it.type == "todo" })
+        io.mockk.verify(exactly = 1) { todoDao.observeConversationTodo("a") }
     }
-
     @Test fun removedPromptEditorCommandsDoNothingAndExistingSelectionStillRoutes() = sync { send, received ->
         received()
         for (type in listOf("prompt_new", "prompt_preview", "prompt_create")) {
@@ -477,7 +491,7 @@ class WebUiSyncTest {
         val math = text["math"]!!.jsonArray.single().jsonObject
         assertEquals("a^2", math.string("tex"))
         assertEquals("false", math.string("display"))
-        verify(exactly = 0) { hydration.observeMessage("m2", any()) }
+        verify(exactly = 0) { hydration.observeMessages("a", match { "m2" in it }, any()) }
     }
 
     @Test
@@ -496,6 +510,9 @@ class WebUiSyncTest {
         assertEquals("true", path.string("generating"))
         val streaming = events.single { it.type == "streaming" }["message"]!!.jsonObject
         assertEquals("partial", streaming["text"]!!.jsonObject.string("markdown"))
+        // A later frame of the same message carries only its appended text.
+        snapshot.value = snapshot.value.copy(streamingMessage = message("m3", "m1", Participant.MODEL, "partial reply", MessageStatus.SENDING))
+        assertEquals(" reply", received().single { it.type == "streaming_patch" }["patch"]!!.jsonObject["o"]!!.jsonObject["text"]!!.jsonObject["o"]!!.jsonObject["markdown"]!!.jsonObject.string("a"))
     }
 
     @Test
@@ -548,8 +565,8 @@ class WebUiSyncTest {
             assertEquals("m1", events.single { it.type == "payload" }["message"]!!.jsonObject.string("id"))
         }
         coVerify(exactly = 1) { conversations.recoverConversationRuntime("a", any()) }
-        verify(exactly = 1) { hydration.observeMessage("m1", any()) }
-        verify(exactly = 0) { hydration.observeMessage("m2", any()) }
+        verify(exactly = 1) { hydration.observeMessages("a", listOf("m1"), any()) }
+        verify(exactly = 0) { hydration.observeMessages("a", match { "m2" in it }, any()) }
     }
 
     @Test
@@ -584,7 +601,7 @@ class WebUiSyncTest {
             queries += query
             (0 until 25).map { index ->
                 com.newoether.agora.data.local.MessageEntity(
-                    id = "search-$index", conversationId = if (index < 3) "a" else "b",
+                    id = "search-$index", conversationId = when { index == 0 -> "child"; index < 3 -> "a"; else -> "b" },
                     text = "x".repeat(50) + "Needle" + "y".repeat(50), participant = Participant.USER,
                     timestamp = index.toLong(), runId = "run-search",
                 ) to (0.9f - index * 0.01f)
@@ -612,7 +629,7 @@ class WebUiSyncTest {
         assertEquals(2, items[0].jsonObject["snippets"]!!.jsonArray.size)
         assertEquals("…" + "x".repeat(20) + "Needle" + "y".repeat(20) + "…",
             items[0].jsonObject["snippets"]!!.jsonArray[0].jsonObject.string("text"))
-        coVerify(exactly = 1) { conversations.getDrawerConversations(listOf("a", "b")) }
+        coVerify(exactly = 1) { conversations.getDrawerConversations(listOf("child", "a", "b")) }
         coVerify(exactly = 0) { conversations.recoverConversationRuntime(any(), any()) }
         verify(exactly = 0) { conversations.observeConversation(any()) }
         send("""{"type":"search","connectionId":"$connection","revision":1,"text":"old"}""")
@@ -726,7 +743,7 @@ class WebUiSyncTest {
             assertTrue(received().none { it.type == "conversation_search" })
         } finally { unmockkObject(DebugLog) }
     }
-    private fun sync(
+    internal fun sync(
         block: suspend TestScope.(send: suspend (String) -> Unit, received: () -> List<JsonObject>) -> Unit,
     ) = runTest {
         val sync = webUiSync(StandardTestDispatcher(testScheduler))
@@ -748,7 +765,7 @@ class WebUiSyncTest {
     private fun webUiSync(dispatcher: kotlinx.coroutines.CoroutineDispatcher) = WebUiSync(
         conversations = conversations,
         registry = registry,
-        executionCoordinator = ConversationExecutionCoordinator(),
+        executionCoordinator = executionCoordinator,
         hydration = hydration,
         customProviders = customProviders,
         display = display,
@@ -762,39 +779,4 @@ class WebUiSyncTest {
         projectionDispatcher = dispatcher,
     )
 
-    private val JsonObject.type: String get() = string("type")
-
-    private fun JsonObject.string(key: String): String = this[key]!!.jsonPrimitive.content
-
-    private fun JsonObject.ids(): List<String> =
-        this["messages"]!!.jsonArray.map { it.jsonObject.string("id") }
-
-    private fun topology(id: String, parent: String?, participant: Participant, timestamp: Long) =
-        MessageContextTopology(
-            id = id,
-            conversationId = "a",
-            parentId = parent,
-            status = MessageStatus.SUCCESS,
-            participant = participant,
-            timestamp = timestamp,
-            modelName = null,
-            runId = "run-$id",
-            runSequence = timestamp,
-            consumedAtPass = null,
-        )
-
-    private fun message(
-        id: String,
-        parent: String?,
-        participant: Participant,
-        text: String,
-        status: MessageStatus = MessageStatus.SUCCESS,
-    ) = ChatMessage(
-        id = id,
-        parentId = parent,
-        text = text,
-        participant = participant,
-        status = status,
-        timestamp = 10,
-    )
 }

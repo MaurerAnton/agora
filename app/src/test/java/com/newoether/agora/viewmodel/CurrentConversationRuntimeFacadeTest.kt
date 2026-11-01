@@ -1,6 +1,8 @@
 package com.newoether.agora.viewmodel
 
 import io.mockk.every
+import io.mockk.coEvery
+import io.mockk.coVerify
 import io.mockk.mockk
 import io.mockk.verify
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -65,9 +67,7 @@ class CurrentConversationRuntimeFacadeTest {
         val registry = mockk<ConversationStateRegistry>()
         val state = runtimeState(emptyList(), stopping = false)
         every { state.queueMutationMutex } returns Mutex()
-        val removed = queued("queued")
-        every { state.removeQueuedSend("queued") } returns removed
-        every { state.discardQueuedSend(any()) } returns Unit
+        coEvery { state.dismissQueuedSend("queued") } returns Unit
         every { registry.getOrCreate("conversation") } returns state
         val facade = CurrentConversationRuntimeFacade(
             currentConversationId,
@@ -80,8 +80,7 @@ class CurrentConversationRuntimeFacadeTest {
         facade.removeQueuedSend("queued")
         runCurrent()
 
-        verify(exactly = 1) { state.removeQueuedSend("queued") }
-        verify(exactly = 1) { state.discardQueuedSend(removed) }
+        coVerify(exactly = 1) { state.dismissQueuedSend("queued") }
     }
 
     private companion object {

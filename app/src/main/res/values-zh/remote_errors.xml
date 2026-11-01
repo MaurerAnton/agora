@@ -1,11 +1,11 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
     <string name="remote_failed">远程操作未完成，请查看错误详情。</string>
-    <string name="remote_unknown">尚未确认消息是否送达。再次发送前，请先在 Codex 中核对该对话。</string>
+    <string name="remote_unknown">未能确认发送成功。</string>
     <string name="remote_rejected">Codex 未接受这条消息，请查看错误详情后再尝试。</string>
     <string name="remote_storage_failed">Agora 无法访问本地远程数据，请检查剩余存储空间。</string>
     <string name="remote_network_failed">无法连接 Filo，请检查目标电脑、服务地址和网络。</string>
-    <string name="remote_auth_failed">Filo 拒绝了访问令牌，请使用目标电脑上的令牌。</string>
+    <string name="remote_auth_failed">Filo 未能完成本次请求的认证，这不一定表示访问令牌有误。若持续发生，请核对目标电脑上的令牌和系统时间。</string>
     <string name="remote_configuration_failed">请输入有效的服务 URL 和 64 位访问令牌。</string>
     <string name="remote_protocol_failed">Agora 无法验证或读取 Filo 的响应，请检查两端应用是否已更新。</string>
     <string name="remote_service_failed">Codex 未能完成请求。</string>
@@ -14,7 +14,7 @@
     <string name="remote_response_too_large">响应或附件超出了支持的大小。</string>
     <string name="remote_invalid_request">Filo 无法读取此请求，请检查输入内容。</string>
     <string name="remote_not_found">请求的内容已不可用，请刷新列表。</string>
-    <string name="remote_not_supported">当前连接的客户端不支持此操作。</string>
+    <string name="remote_not_supported">此来源不支持此操作。</string>
     <string name="remote_desktop_unavailable">Filo 无法连接 Codex Desktop，请在目标电脑上打开 Codex。</string>
     <string name="remote_session_unavailable">Codex 尚未准备好此对话，请在目标电脑上检查。</string>
     <string name="remote_helper_unavailable">Filo 无法连接用户辅助进程，请检查目标电脑上的 Filo 服务。</string>

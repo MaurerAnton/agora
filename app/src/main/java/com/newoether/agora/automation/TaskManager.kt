@@ -446,20 +446,8 @@ class TaskManager(
             requestKind = "task",
         )
         val outcome = when (result) {
-            is TaskExecutionEngine.Result.Success -> {
-                try {
-                    titleExecutionConversation(conversationId, result.text)
-                } catch (e: CancellationException) {
-                    throw e
-                } catch (e: Exception) {
-                    DebugLog.e(
-                        "TaskManager",
-                        "Task execution title update failed for conversation=$conversationId",
-                        e,
-                    )
-                }
+            is TaskExecutionEngine.Result.Success ->
                 ExecutionResult.Success(conversationId, result.text)
-            }
             is TaskExecutionEngine.Result.Busy ->
                 ExecutionResult.Deferred(conversationId, result.reason)
             is TaskExecutionEngine.Result.Failure -> {
@@ -472,6 +460,22 @@ class TaskManager(
             }
         }
         if (finishManualSchedule) finishManualRunLocked(task.id)
+        if (outcome is ExecutionResult.Success) {
+            // Title generation is post-processing, not part of the Task's running reservation.
+            scope.launch {
+                try {
+                    titleExecutionConversation(conversationId, outcome.response)
+                } catch (e: CancellationException) {
+                    throw e
+                } catch (e: Exception) {
+                    DebugLog.e(
+                        "TaskManager",
+                        "Task execution title update failed for conversation=$conversationId",
+                        e,
+                    )
+                }
+            }
+        }
         return outcome
     }
 
@@ -481,11 +485,11 @@ class TaskManager(
      * process-interrupted attempts are terminal for this occurrence.
      */
     private suspend fun recoverExistingExecution(existing: ChatEntity): ExecutionResult? {
-        val recoverySnapshot = conversationRepository.withProviderContextSnapshot {
+        val recoverySnapshot = conversationRepository.withReadSnapshot { reader ->
             val topology =
-                conversationRepository.getProviderContextTopologySnapshot(existing.id)
-                    ?: return@withProviderContextSnapshot null
-            if (topology.messages.isEmpty()) return@withProviderContextSnapshot null
+                reader.getProviderContextTopologySnapshot(existing.id)
+                    ?: return@withReadSnapshot null
+            if (topology.messages.isEmpty()) return@withReadSnapshot null
             val assistantId = topology.messages
                 .asSequence()
                 .filter {
@@ -494,7 +498,7 @@ class TaskManager(
                 .filterNot { isSyntheticToolMessageId(it.id) }
                 .maxByOrNull { it.timestamp }
                 ?.id
-            topology to assistantId?.let { conversationRepository.getMessage(it) }
+            topology to assistantId?.let { reader.getMessage(it) }
         } ?: return null
         val (topology, assistant) = recoverySnapshot
         return when (assistant?.status) {

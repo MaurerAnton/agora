@@ -42,6 +42,7 @@ class ProviderRetryRequestResolutionTest {
         every { DebugLog.e(any(), any()) } just Runs
         every { DebugLog.w(any(), any()) } just Runs
         every { ProviderRetryPolicy.delayMillis(any()) } returns 1L
+        every { ProviderRetryPolicy.delayMillis(any(), any()) } returns 1L
     }
 
     @After
@@ -247,19 +248,25 @@ class ProviderRetryRequestResolutionTest {
             listOf(IOException("The server response could not be read.")) + successReads,
         )
         assertEquals(2, retried.second)
-        assertEquals(StreamEvent.Retrying(1, 5), retried.first.filterIsInstance<StreamEvent.Retrying>().single())
+        assertEquals(StreamEvent.Retrying(1, 5, resetCurrentAttempt = true), retried.first.filterIsInstance<StreamEvent.Retrying>().single())
         assertEquals("ok", retried.first.filterIsInstance<StreamEvent.TextChunk>().joinToString("") { it.text })
         assertTrue(retried.first.none { it is StreamEvent.Error })
 
         val partial = collectWithMockedStream(
             provider,
             config,
-            partialReads + IOException("The server response could not be read."),
+            partialReads + IOException("The server response could not be read.") + successReads,
         )
-        assertEquals(1, partial.second)
-        assertEquals("partial", partial.first.filterIsInstance<StreamEvent.TextChunk>().joinToString("") { it.text })
-        assertTrue(partial.first.none { it is StreamEvent.Retrying })
-        assertTrue(partial.first.filterIsInstance<StreamEvent.Error>().single().error is GenerationError.Network)
+        assertEquals(2, partial.second)
+        assertEquals(
+            StreamEvent.Retrying(1, 5, resetCurrentAttempt = true),
+            partial.first.filterIsInstance<StreamEvent.Retrying>().single(),
+        )
+        assertEquals(listOf("partial", "ok"), partial.first.filterIsInstance<StreamEvent.TextChunk>().map { it.text })
+        assertTrue(partial.first.none { it is StreamEvent.Error })
+        val retryIndex = partial.first.indexOfFirst { it is StreamEvent.Retrying }
+        assertTrue(partial.first.take(retryIndex).any { it is StreamEvent.TextChunk && it.text == "partial" })
+        assertTrue(partial.first.drop(retryIndex + 1).any { it is StreamEvent.TextChunk && it.text == "ok" })
     }
 
     private fun assertMalformedRetry(
@@ -270,7 +277,7 @@ class ProviderRetryRequestResolutionTest {
     ) {
         val result = collectWithMockedStream(provider, config, listOf(malformedRead) + successReads)
         assertEquals(2, result.second)
-        assertEquals(StreamEvent.Retrying(1, 5), result.first.filterIsInstance<StreamEvent.Retrying>().single())
+        assertEquals(StreamEvent.Retrying(1, 5, resetCurrentAttempt = true), result.first.filterIsInstance<StreamEvent.Retrying>().single())
         assertEquals("ok", result.first.filterIsInstance<StreamEvent.TextChunk>().joinToString("") { it.text })
         assertTrue(result.first.none { it is StreamEvent.Error })
     }

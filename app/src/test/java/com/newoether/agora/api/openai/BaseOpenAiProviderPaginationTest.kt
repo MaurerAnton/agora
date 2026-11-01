@@ -3,8 +3,11 @@ package com.newoether.agora.api.openai
 import android.content.Context
 import android.content.pm.ApplicationInfo
 import com.newoether.agora.util.DebugLog
+import com.newoether.agora.util.NetworkRetryPolicy
 import io.mockk.every
 import io.mockk.mockk
+import io.mockk.mockkObject
+import io.mockk.unmockkObject
 import java.net.InetAddress
 import java.net.ServerSocket
 import java.util.Collections
@@ -99,26 +102,37 @@ class BaseOpenAiProviderPaginationTest {
     }
 
     @Test
-    fun laterPageFailureReturnsModelsFromCompletedPages() {
-        withModelServer(
-            responses = listOf(
-                TestResponse(
-                    body = """
-                        {"data":[{"id":"model-a"}],"has_more":true,"last_id":"cursor"}
-                    """.trimIndent(),
-                ),
-                TestResponse(
-                    status = "500 Internal Server Error",
-                    body = """{"error":{"message":"temporary failure"}}""",
-                ),
-            ),
-        ) { baseUrl, requests ->
-            val models = runBlocking {
-                testProvider(baseUrl).fetchModels(apiKey = "secret", baseUrl = null)
-            }
+    fun laterPageFailureRetriesFiveTimesAndReturnsModelsFromCompletedPages() {
+        mockkObject(NetworkRetryPolicy)
+        every { NetworkRetryPolicy.delayMillis(any(), any(), any(), any()) } returns 0L
+        try {
+            withModelServer(
+                responses = listOf(
+                    TestResponse(
+                        body = """
+                            {"data":[{"id":"model-a"}],"has_more":true,"last_id":"cursor"}
+                        """.trimIndent(),
+                    ),
+                ) + List(6) {
+                    TestResponse(
+                        status = "500 Internal Server Error",
+                        body = """{"error":{"message":"temporary failure"}}""",
+                    )
+                },
+            ) { baseUrl, requests ->
+                val models = runBlocking {
+                    testProvider(baseUrl).fetchModels(apiKey = "secret", baseUrl = null)
+                }
 
-            assertEquals(listOf("model-a"), models)
-            assertEquals(2, requests.size)
+                assertEquals(listOf("model-a"), models)
+                assertEquals(7, requests.size)
+                assertEquals(
+                    List(6) { "GET /v1/models?after=cursor HTTP/1.1" },
+                    requests.drop(1).map { it.first },
+                )
+            }
+        } finally {
+            unmockkObject(NetworkRetryPolicy)
         }
     }
 
@@ -176,6 +190,8 @@ class BaseOpenAiProviderPaginationTest {
                 }
             } catch (error: Throwable) {
                 if (!server.isClosed) serverFailure.set(error)
+            } finally {
+                server.close()
             }
         }
 

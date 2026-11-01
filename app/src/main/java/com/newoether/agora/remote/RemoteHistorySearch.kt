@@ -21,6 +21,7 @@ internal fun remoteHistorySearch(
     loadEarlier: suspend (String) -> Unit,
     failed: (Exception) -> Unit,
     isCached: (RemoteMessageGroup) -> Boolean = { false },
+    payloadOwner: String? = state.value.payloadOwner,
 ) = flow<List<ConversationSearchMatch>> {
     if (query.isBlank()) { emit(emptyList()); return@flow }
     data class Indexed(val revision: List<String>, val matches: List<ConversationSearchMatch>)
@@ -28,7 +29,7 @@ internal fun remoteHistorySearch(
     var failedCursor: String? = null
     var lastPublished: List<ConversationSearchMatch>? = null
     fun checkOwner() {
-        if (state.value.owner != owner || !state.value.hydrationEnabled) throw CancellationException()
+        if (state.value.owner != owner || state.value.payloadOwner != payloadOwner || !state.value.hydrationEnabled) throw CancellationException()
     }
     while (true) {
         currentCoroutineContext().ensureActive()
@@ -68,7 +69,7 @@ internal fun remoteHistorySearch(
             continue
         }
         state.first {
-            it.owner != owner || !it.hydrationEnabled ||
+            it.owner != owner || it.payloadOwner != payloadOwner || !it.hydrationEnabled ||
                 it.messageGroups != snapshot.messageGroups ||
                 it.hydrationRevision != snapshot.hydrationRevision ||
                 it.historyCursor != snapshot.historyCursor

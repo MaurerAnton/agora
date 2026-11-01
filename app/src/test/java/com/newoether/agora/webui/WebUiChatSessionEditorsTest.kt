@@ -1,6 +1,7 @@
 package com.newoether.agora.webui
 
 import com.newoether.agora.automation.ConversationExecutionCoordinator
+import com.newoether.agora.data.local.ChatEntity
 import com.newoether.agora.data.ConversationSettings
 import com.newoether.agora.data.repository.ConversationRepository
 import com.newoether.agora.data.repository.ConversationSettingsTransferCoordinator
@@ -89,7 +90,7 @@ class WebUiChatSessionEditorsTest {
         every { observeMessageTopology(any()) } returns flowOf(emptyList())
         coEvery { getConversation(any()) } returns null
         coEvery { recoverConversationRuntime(any(), any()) } returns 0
-    }
+    }.apply { stubOpenRecovery() }
     private val generation = mockk<MessageGenerationController> {
         coEvery { compactManual(any(), any()) } returns CompactResult.NotNeeded
     }
@@ -140,7 +141,26 @@ class WebUiChatSessionEditorsTest {
         replaced.await()
         assertEquals(1, receipts.size)
     }
-    @Test fun wholeTreeDeleteKeepsItsReceiptAfterTheCanonicalServerMoveToNewChat() = runBlocking {
+    @Test fun conversationDeletionUsesNewChatForRootsAndMissingParents() = runBlocking {
+        for (parent in listOf(null, "missing-parent")) {
+            ready("a", 1)
+            session.settleDeletedConversation("a", parent)
+            val destination = withTimeout(5_000) {
+                session.openTarget.first { it.conversationId == null && it.movedByServer }
+            }
+            assertEquals(1L, destination.browserSeq)
+        }
+    }
+    @Test fun conversationDeletionDoesNotReplaceANewerExplicitSelection() = runBlocking {
+        ready("a", 1)
+        ready("b", 2)
+        val before = session.openTarget.value
+        session.settleDeletedConversation("a", "parent")
+        ready("b", 3)
+        assertEquals(before.copy(browserSeq = 3L), session.openTarget.value)
+        coVerify(exactly = 0) { conversations.getConversation("parent") }
+    }
+    @Test fun wholeTreeDeleteKeepsItsReceiptAfterTheCanonicalServerMoveToParent() = runBlocking {
         ready("a", 4)
         val row = com.newoether.agora.model.ChatMessage(id = "u", text = "input",
             participant = com.newoether.agora.model.Participant.USER)
@@ -153,8 +173,9 @@ class WebUiChatSessionEditorsTest {
         val command = WebSyncCommand("delete", conversationId = "a", seq = 4, messageId = row.id, actionId = 8)
         val pending = async { session.rowCommand(command, listOf(row)) { receipts += it } }
         withTimeout(5_000) { while (completion == null) yield() }
-        session.settleDeletedConversation("a")
-        withTimeout(5_000) { session.openTarget.first { it.conversationId == null && it.movedByServer } }
+        coEvery { conversations.getConversation("parent") } returns ChatEntity("parent", "Parent")
+        session.settleDeletedConversation("a", "parent")
+        withTimeout(5_000) { session.openTarget.first { it.conversationId == "parent" && it.movedByServer } }
         completion!!(true)
         pending.await()
         assertEquals(listOf(WebSyncEvent.RowAction("a", 4, 8, emptyList(), true)), receipts)

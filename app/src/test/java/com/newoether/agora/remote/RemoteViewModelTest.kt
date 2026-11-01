@@ -12,6 +12,9 @@ import kotlinx.coroutines.CompletableDeferred
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.NonCancellable
 import kotlinx.coroutines.awaitCancellation
+import kotlinx.coroutines.launch
+import kotlinx.coroutines.test.UnconfinedTestDispatcher
+import kotlinx.coroutines.test.advanceTimeBy
 import kotlinx.coroutines.test.runCurrent
 import kotlinx.coroutines.test.runTest
 import kotlinx.coroutines.withContext
@@ -85,20 +88,130 @@ internal class RemoteViewModelTest : RemoteViewModelFixture() {
     }
 
     @Test fun uncertainSendKeepsDraftAndCannotAutomaticallyRetry() = runTest(dispatcher) {
+        val retry = CompletableDeferred<String>()
         coEvery { client.send(any(), any(), any(), any()) } throws IOException("Lost response")
-        val vm = RemoteViewModel(connections, projectionDispatcher = dispatcher) { _, _ -> client }; runCurrent()
+        val vm = RemoteViewModel(connections, projectionDispatcher = dispatcher) { _, _ -> client }
+        runCurrent()
         saveAndSelect(vm)
-        vm.selectSession(session); vm.setVisible(true); runCurrent()
-        val owner = vm.state.value.owner!!
-        vm.editDraft(owner, "hello"); vm.send(); runCurrent()
-        vm.send(); runCurrent()
-        assertEquals(RemoteDelivery.UNKNOWN, vm.state.value.attempts[owner]?.delivery)
+        vm.selectSession(session)
+        vm.setVisible(true)
+        runCurrent()
+        val owner = requireNotNull(vm.state.value.owner)
+        vm.editDraft(owner, "hello")
+        vm.send()
+        runCurrent()
+        val unknown = requireNotNull(vm.state.value.attempts[owner])
+        assertEquals(RemoteDelivery.UNKNOWN, unknown.delivery)
+        assertEquals("hello", vm.state.value.drafts[owner])
+        assertFalse(vm.state.value.canChooseModel)
+        assertFalse(vm.state.value.canEditSettings)
+        assertNull(vm.animatedScrollRequest.value)
+        vm.refresh()
+        runCurrent()
+        advanceTimeBy(6000)
+        runCurrent()
+        vm.setVisible(false)
+        advanceTimeBy(6000)
+        runCurrent()
+        vm.setVisible(true)
+        runCurrent()
+        assertEquals(unknown, vm.state.value.attempts[owner])
+        assertEquals("hello", vm.state.value.drafts[owner])
+        coVerify(exactly = 1) { client.send(any(), any(), any(), any()) }
+        coEvery { client.send(any(), any(), any(), any()) } coAnswers { retry.await() }
+        vm.send()
+        vm.send()
+        runCurrent()
+        val pending = requireNotNull(vm.state.value.attempts[owner])
+        assertEquals(RemoteDelivery.SUBMITTING, pending.delivery)
+        assertNotEquals(unknown.clientId, pending.clientId)
+        coVerify(exactly = 2) { client.send(any(), any(), any(), any()) }
+        val oldInput = RemoteMessage("old-input", "old-turn", unknown.clientId, "user", "hello", 1)
+        coEvery { client.conversation(session.id, null) } returns bodyPage(
+            listOf(oldInput), null, emptyList(), RemoteRuntime("idle", model = "model"),
+        ).copy(inputReceipts = listOf(RemoteInputReceipt(unknown.clientId, "old-turn", oldInput.id)))
+        vm.refresh()
+        runCurrent()
+        assertEquals(listOf(oldInput.id), vm.state.value.nodes.map { it.id })
+        assertEquals(pending, vm.state.value.attempts[owner])
         assertEquals("hello", vm.state.value.drafts[owner])
         assertNull(vm.animatedScrollRequest.value)
-        coVerify(exactly = 1) { client.send(any(), any(), any(), any()) }
-        vm.acknowledgeUnknown(owner)
-        assertNull(vm.state.value.attempts[owner])
+        vm.editDraft(owner, "edited while retrying")
+        retry.complete("retry-turn")
+        runCurrent()
+        val accepted = pending.copy(delivery = RemoteDelivery.ACCEPTED, turnId = "retry-turn")
+        assertEquals(accepted, vm.state.value.attempts[owner])
+        vm.send()
+        vm.refresh()
+        runCurrent()
+        assertEquals(accepted, vm.state.value.attempts[owner])
+        assertEquals("edited while retrying", vm.state.value.drafts[owner])
+        assertNull(vm.animatedScrollRequest.value)
+        coVerify(exactly = 2) { client.send(any(), any(), any(), any()) }
+        coVerify(exactly = 1) { client.send(session.id, "hello", unknown.clientId, emptyList()) }
+        coVerify(exactly = 1) { client.send(session.id, "hello", pending.clientId, emptyList()) }
+        coVerify(exactly = 0) { client.create(any(), any(), any(), any()) }
         vm.setVisible(false)
+    }
+
+    @Test fun lateSendResponseAfterNativeConfirmationCannotChangeANewerAttempt() = runTest(dispatcher) {
+        for (fails in listOf(false, true)) {
+            val originalResponse = CompletableDeferred<Result<String>>()
+            val retryResponse = CompletableDeferred<String>()
+            val events = MutableSharedFlow<RemoteConversationPage>()
+            var originalResumed = false
+            every { client.events(any()) } returns events
+            coEvery { client.send(any(), any(), any(), any()) } coAnswers {
+                val result = originalResponse.await()
+                originalResumed = true
+                result.getOrThrow()
+            }
+            val vm = RemoteViewModel(connections, projectionDispatcher = dispatcher) { _, _ -> client }
+            val notices = mutableListOf<RemoteNotice>()
+            backgroundScope.launch(UnconfinedTestDispatcher(testScheduler)) { vm.notices.collect { notices += it } }
+            runCurrent()
+            saveAndSelect(vm)
+            vm.selectSession(session)
+            vm.setVisible(true)
+            runCurrent()
+            assertTrue("Startup must not emit notices", notices.isEmpty())
+            val owner = requireNotNull(vm.state.value.owner)
+            vm.editDraft(owner, "original")
+            vm.send()
+            runCurrent()
+            val original = requireNotNull(vm.state.value.attempts[owner])
+            events.emit(bodyPage(listOf(RemoteMessage(
+                "original-input", "original-turn", original.clientId, "user", "original", 1,
+            )), null, emptyList(), RemoteRuntime("idle", model = "model")))
+            runCurrent()
+            assertEquals(RemoteDelivery.DELIVERED, vm.state.value.attempts[owner]?.delivery)
+            vm.completeAnimatedScroll(requireNotNull(vm.animatedScrollRequest.value).id)
+            coEvery { client.send(any(), any(), any(), any()) } coAnswers { retryResponse.await() }
+            vm.editDraft(owner, "next input")
+            vm.send()
+            runCurrent()
+            val pending = requireNotNull(vm.state.value.attempts[owner])
+            assertEquals(RemoteDelivery.SUBMITTING, pending.delivery)
+            assertNotEquals(original.clientId, pending.clientId)
+            vm.editDraft(owner, "newer unsent draft")
+            originalResponse.complete(if (fails) Result.failure(IOException("Late lost response"))
+                else Result.success("original-turn"))
+            runCurrent()
+            assertTrue("The older response must actually resume", originalResumed)
+            assertTrue("The older completed attempt must not emit a notice", notices.isEmpty())
+            assertEquals(pending, vm.state.value.attempts[owner])
+            assertEquals("newer unsent draft", vm.state.value.drafts[owner])
+            assertNull(vm.animatedScrollRequest.value)
+            retryResponse.complete("next-turn")
+            runCurrent()
+            assertEquals(pending.copy(delivery = RemoteDelivery.ACCEPTED, turnId = "next-turn"),
+                vm.state.value.attempts[owner])
+            assertEquals("newer unsent draft", vm.state.value.drafts[owner])
+            coVerify(exactly = 1) { client.send(session.id, "original", original.clientId, emptyList()) }
+            coVerify(exactly = 1) { client.send(session.id, "next input", pending.clientId, emptyList()) }
+            vm.setVisible(false)
+        }
+        coVerify(exactly = 4) { client.send(any(), any(), any(), any()) }
     }
 
     @Test fun unavailableRuntimeAllowsExplicitSendAndShowsNativeRejectionWithoutReplay() = runTest(dispatcher) {
@@ -149,7 +262,7 @@ internal class RemoteViewModelTest : RemoteViewModelFixture() {
         assertNull(vm.animatedScrollRequest.value)
         val clientId = vm.state.value.attempts[owner]!!.clientId
         coEvery { client.conversation(any(), any()) } returns bodyPage(
-            listOf(RemoteMessage("sent", "new-turn", clientId, "user", "hello", 2)), null, emptyList())
+            listOf(RemoteMessage("sent", "turn", clientId, "user", "hello", 2)), null, emptyList())
         vm.refresh(); vm.state.first { it.attempts[owner]?.delivery == RemoteDelivery.DELIVERED }
         assertEquals(RemoteDelivery.DELIVERED, vm.state.value.attempts[owner]?.delivery)
         assertNull(vm.state.value.drafts[owner])
@@ -168,7 +281,7 @@ internal class RemoteViewModelTest : RemoteViewModelFixture() {
         assertNull(vm.animatedScrollRequest.value)
         val nextId = vm.state.value.attempts[owner]!!.clientId
         coEvery { client.conversation(any(), any()) } returns bodyPage(
-            listOf(RemoteMessage("next", "next-turn", nextId, "user", "next", 3)), null, emptyList())
+            listOf(RemoteMessage("next", "second-turn", nextId, "user", "next", 3)), null, emptyList())
         vm.refresh(); runCurrent()
         assertNotNull(vm.animatedScrollRequest.value)
         vm.selectSession(session.copy(id = "other"))
@@ -293,7 +406,7 @@ internal class RemoteViewModelTest : RemoteViewModelFixture() {
         vm.setVisible(false)
     }
 
-    @Test fun disconnectWhileAwaitingNativeStopClearsBusyAndInvalidatesControls() = runTest(dispatcher) {
+    @Test fun disconnectWhileAwaitingNativeStopKeepsBusyUntilExactTurnEvidenceReturns() = runTest(dispatcher) {
         val disconnect = CompletableDeferred<Unit>()
         every { client.events(any()) } returns flow {
             emit(bodyPage(emptyList(), null, emptyList(), RemoteRuntime("active", "turn")))
@@ -306,8 +419,15 @@ internal class RemoteViewModelTest : RemoteViewModelFixture() {
         vm.stop(); runCurrent()
         assertTrue(vm.state.value.isStopping)
         disconnect.complete(Unit); runCurrent()
-        assertFalse(vm.state.value.isStopping)
+        assertTrue(vm.state.value.isStopping)
+        assertEquals("turn", vm.state.value.stoppingTurnId)
         assertNull(vm.state.value.runtime)
+        every { client.events(any()) } returns flow {
+            emit(bodyPage(emptyList(), null, emptyList(), RemoteRuntime("idle", completedTurnId = "turn")))
+            awaitCancellation()
+        }
+        vm.refresh(); runCurrent()
+        assertFalse(vm.state.value.isStopping)
         vm.stop(); vm.send(); runCurrent()
         coVerify(exactly = 1) { client.stop("session", "turn") }
         coVerify(exactly = 0) { client.send(any(), any(), any(), any()) }
@@ -451,17 +571,55 @@ internal class RemoteViewModelTest : RemoteViewModelFixture() {
     }
 
     @Test fun unknownCreationKeepsDraftAndNeverAutomaticallyRetries() = runTest(dispatcher) {
+        val created = CompletableDeferred<RemoteSession>()
         coEvery { client.create(any(), any(), any(), any()) } throws IOException("Lost creation receipt")
-        val vm = RemoteViewModel(connections, projectionDispatcher = dispatcher) { _, _ -> client }; runCurrent()
-        saveAndSelect(vm); vm.setVisible(true); runCurrent()
+        val vm = RemoteViewModel(connections, projectionDispatcher = dispatcher) { _, _ -> client }
+        runCurrent()
+        saveAndSelect(vm)
+        vm.setVisible(true)
+        runCurrent()
         vm.newSession()
-        val owner = vm.state.value.owner!!
-        vm.editDraft(owner, "hello"); vm.send(); runCurrent()
-        assertEquals(RemoteDelivery.UNKNOWN, vm.state.value.attempts[owner]?.delivery)
+        val owner = requireNotNull(vm.state.value.owner)
+        vm.editDraft(owner, "hello")
+        vm.send()
+        runCurrent()
+        val unknown = requireNotNull(vm.state.value.attempts[owner])
+        assertEquals(RemoteDelivery.UNKNOWN, unknown.delivery)
         assertTrue(vm.state.value.isDraft)
         assertEquals("hello", vm.state.value.drafts[owner])
-        vm.send(); vm.refresh(); vm.setVisible(false); vm.setVisible(true); runCurrent()
+        vm.refresh()
+        vm.setVisible(false)
+        advanceTimeBy(6000)
+        runCurrent()
+        vm.setVisible(true)
+        runCurrent()
+        advanceTimeBy(6000)
+        runCurrent()
+        assertEquals(unknown, vm.state.value.attempts[owner])
+        assertEquals("hello", vm.state.value.drafts[owner])
         coVerify(exactly = 1) { client.create(any(), any(), any(), any()) }
+        coEvery { client.create(any(), any(), any(), any()) } coAnswers { created.await() }
+        vm.send()
+        vm.send()
+        runCurrent()
+        val pending = requireNotNull(vm.state.value.attempts[owner])
+        assertEquals(RemoteDelivery.SUBMITTING, pending.delivery)
+        assertNotEquals(unknown.clientId, pending.clientId)
+        coVerify(exactly = 2) { client.create(any(), any(), any(), any()) }
+        vm.editDraft(owner, "edited while creating again")
+        created.complete(RemoteSession("retry-native", "New", "/host/default", 1, acceptedTurnId = "retry-turn"))
+        runCurrent()
+        assertEquals(owner, vm.state.value.owner)
+        assertEquals("retry-native", vm.state.value.session?.id)
+        assertFalse(vm.state.value.isDraft)
+        assertEquals(pending.copy(delivery = RemoteDelivery.ACCEPTED, turnId = "retry-turn"),
+            vm.state.value.attempts[owner])
+        assertEquals("edited while creating again", vm.state.value.drafts[owner])
+        vm.send()
+        runCurrent()
+        coVerify(exactly = 2) { client.create(any(), any(), any(), any()) }
+        coVerify(exactly = 1) { client.create("hello", unknown.clientId, emptyList(), RemoteSettings(model = "model")) }
+        coVerify(exactly = 1) { client.create("hello", pending.clientId, emptyList(), RemoteSettings(model = "model")) }
         coVerify(exactly = 0) { client.send(any(), any(), any(), any()) }
         vm.setVisible(false)
     }
@@ -488,7 +646,7 @@ internal class RemoteViewModelTest : RemoteViewModelFixture() {
         vm.setVisible(false)
     }
 
-    @Test fun failedModelCatalogEndsLoadingWithoutBlockingDraftSend() = runTest(dispatcher) {
+    @Test fun failedModelCatalogRequiresExplicitRetryBeforeAnyCreation() = runTest(dispatcher) {
         val catalog = CompletableDeferred<List<RemoteModel>>()
         coEvery { client.models() } coAnswers { catalog.await() }
         coEvery { client.create(any(), any(), any(), any()) } returns RemoteSession("native", "New", "/host/default", 1)
@@ -501,8 +659,14 @@ internal class RemoteViewModelTest : RemoteViewModelFixture() {
         assertNull(vm.state.value.selectedModel)
         val owner = vm.state.value.owner!!
         vm.editDraft(owner, "hello"); vm.send(); runCurrent()
-        coVerify(exactly = 1) { client.create("hello", any(), emptyList(), null) }
+        coVerify(exactly = 0) { client.create(any(), any(), any(), any()) }
         coVerify(exactly = 0) { client.send(any(), any(), any(), any()) }
+        assertTrue(vm.state.value.attempts.isEmpty())
+        assertEquals("hello", vm.state.value.drafts[owner])
+        coEvery { client.models() } returns listOf(RemoteModel("model", "Model", true))
+        vm.refreshModels(); runCurrent()
+        vm.send(); runCurrent()
+        coVerify(exactly = 1) { client.create("hello", any(), emptyList(), RemoteSettings(model = "model")) }
         assertEquals(owner, vm.state.value.owner)
         vm.setVisible(false)
     }

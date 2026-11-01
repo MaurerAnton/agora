@@ -38,7 +38,6 @@ class GenerationErrorPresentationTest {
                 R.string.generation_error_request_format,
             GenerationError.Cancelled to R.string.generation_error_cancelled,
             GenerationError.Timeout to R.string.generation_error_timeout,
-            GenerationError.Unknown(RuntimeException()) to R.string.generation_error_unexpected,
         )
 
         expected.forEach { (error, resourceId) ->
@@ -47,7 +46,23 @@ class GenerationErrorPresentationTest {
         assertNull(GenerationError.Api(null, null, "provider detail").ownedGenerationErrorStringResourceId())
         assertNull(GenerationError.LocalModel("local detail").ownedGenerationErrorStringResourceId())
         assertNull(GenerationError.Configuration("config detail").ownedGenerationErrorStringResourceId())
+        assertNull(GenerationError.Unknown(RuntimeException()).ownedGenerationErrorStringResourceId())
         assertNull(GenerationError.Unknown(RuntimeException("opaque detail")).ownedGenerationErrorStringResourceId())
+    }
+
+    @Test
+    fun `unknown exception shares canonical cause detail and localized known reasons`() {
+        val context = mockk<Context>()
+        every { context.getString(R.string.generation_error_connection_reset) } returns "Connection reset."
+        val nested = GenerationError.Unknown(RuntimeException(" ").apply {
+            initCause(IllegalStateException("connection reset"))
+        })
+        assertEquals(R.string.generation_error_connection_reset, nested.ownedGenerationErrorStringResourceId())
+        assertEquals("Connection reset.", localizedGenerationError(context, nested))
+        assertEquals("java.lang.NullPointerException", localizedGenerationError(context, GenerationError.Unknown(NullPointerException())))
+        for (detail in listOf("invalid_request_error", "{\"message\":\"bad\"}", "https://example.com/error")) {
+            assertEquals(detail, localizedGenerationError(context, GenerationError.Unknown(RuntimeException(detail))))
+        }
     }
 
     @Test

@@ -78,7 +78,8 @@ internal fun MessageSegment.isInfoSegment(): Boolean =
     (type == "thought" && content.isNotBlank()) || type == "tool" || type == "transcription"
 
 internal fun MessageSegment.isImageGenerationSegment(): Boolean =
-    type == "tool" && toolName == "generate_image"
+    type == "tool" && remoteToolSource == null &&
+        com.newoether.agora.tool.BuiltInToolNames.canonical(toolName.orEmpty()) == "image_generate"
 
 internal fun groupedInfoBlockEndExclusive(
     segments: List<MessageSegment>,

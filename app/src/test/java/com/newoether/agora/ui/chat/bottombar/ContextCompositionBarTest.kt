@@ -16,6 +16,7 @@ import androidx.compose.ui.test.junit4.createAndroidComposeRule
 import androidx.compose.ui.unit.dp
 import androidx.test.core.app.ApplicationProvider
 import com.newoether.agora.R
+import com.newoether.agora.ui.theme.withAmoledBackground
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertTrue
 import org.junit.Rule
@@ -68,6 +69,55 @@ class ContextCompositionBarTest {
         bitmap.getPixels(pixels, 0, bitmap.width, 0, 0, bitmap.width, bitmap.height)
         assertTrue("Ordinary compact warning stays red", pixels.count { it == Color.Red.toArgb() } > 0)
         bitmap.recycle()
+    }
+
+    @Test fun categorySegmentsAndLegendFollowThemeChanges() {
+        var scheme by mutableStateOf(lightColorScheme())
+        var warning by mutableStateOf(false)
+        compose.setContent {
+            MaterialTheme(colorScheme = scheme) {
+                Column(Modifier.width(240.dp)) {
+                    ContextCompositionBar(100, 150, 200, 1_000, 80, true, warning)
+                }
+            }
+        }
+        val schemes = buildList {
+            for (preset in com.newoether.agora.ui.theme.ColorSchemePreset.entries) {
+                for (style in com.newoether.agora.ui.theme.SchemeStyle.entries) {
+                    for (dark in listOf(false, true)) {
+                        val resolved = com.newoether.agora.ui.theme.colorSchemeForPreset(preset, style, dark)
+                        add(resolved)
+                        if (dark) add(resolved.withAmoledBackground(dark, true))
+                    }
+                }
+            }
+            add(androidx.compose.material3.dynamicLightColorScheme(compose.activity))
+            add(androidx.compose.material3.dynamicDarkColorScheme(compose.activity))
+        }
+        for (resolved in schemes) {
+            compose.runOnIdle { scheme = resolved; warning = false }
+            compose.waitForIdle()
+            val view = compose.activity.window.decorView
+            val bitmap = android.graphics.Bitmap.createBitmap(view.width, view.height,
+                android.graphics.Bitmap.Config.ARGB_8888)
+            try {
+                val pixels = IntArray(bitmap.width * bitmap.height)
+                compose.runOnUiThread { view.draw(android.graphics.Canvas(bitmap)) }
+                bitmap.getPixels(pixels, 0, bitmap.width, 0, 0, bitmap.width, bitmap.height)
+                for (color in listOf(resolved.primary, resolved.secondary, resolved.tertiary,
+                    resolved.surfaceVariant, resolved.outline)) {
+                    val rows = pixels.indices.filter { pixels[it] == color.toArgb() }
+                        .map { it / bitmap.width }
+                    assertTrue("Theme role ${color.toArgb().toUInt().toString(16)} must paint segment and legend", rows.isNotEmpty())
+                    assertTrue("Segment and legend must be separate", rows.max() - rows.min() > 12)
+                }
+                compose.runOnIdle { warning = true }
+                compose.waitForIdle()
+                compose.runOnUiThread { view.draw(android.graphics.Canvas(bitmap)) }
+                bitmap.getPixels(pixels, 0, bitmap.width, 0, 0, bitmap.width, bitmap.height)
+                assertTrue("Warning must use the resolved error role", pixels.any { it == resolved.error.toArgb() })
+            } finally { bitmap.recycle() }
+        }
     }
 
     @Test fun unknownTelemetryCannotOpenOrFabricateUsage() {

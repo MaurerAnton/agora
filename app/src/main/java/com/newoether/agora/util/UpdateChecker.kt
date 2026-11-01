@@ -15,7 +15,7 @@ data class UpdateInfo(
 )
 
 object UpdateChecker {
-    private val client = OkHttpClient.Builder()
+    private val client = com.newoether.agora.api.HttpClient.client.newBuilder()
         .connectTimeout(15, TimeUnit.SECONDS)
         .readTimeout(15, TimeUnit.SECONDS)
         .build()
@@ -40,14 +40,9 @@ object UpdateChecker {
                 .header("Accept", "application/vnd.github+json")
                 .build()
 
-            val response = client.newCall(request).execute()
-            if (!response.isSuccessful) {
-                response.close()
-                return@withContext null
-            }
-
-            val body = response.body.string()
-            response.close()
+            val body = client.executeWithNetworkRetry(request) { response ->
+                if (response.isSuccessful) response.body.string() else null
+            } ?: return@withContext null
 
             val release = json.decodeFromString<GitHubRelease>(body)
             val latestVersion = release.tag_name.removePrefix("v")
@@ -61,6 +56,8 @@ object UpdateChecker {
             } else {
                 null
             }
+        } catch (cancelled: kotlinx.coroutines.CancellationException) {
+            throw cancelled
         } catch (_: Exception) {
             null
         }

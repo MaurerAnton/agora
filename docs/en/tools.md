@@ -12,8 +12,12 @@ Depending on settings, build, and provider support, tools include:
 - past-conversation search
 - MCP servers
 - Tasks and Loops automation
-- remote Conch/SSH commands, durable job management, file operations, and `view_image`
+- remote Conch/SSH commands, durable job management, file operations, and `file_view_image`
 - the F-Droid Alpine sandbox
+
+## Ask User
+
+Interaction settings control whether the model can ask you a question. Blocking questions wait for your answer for five minutes by default. The Timeout slider has seven presets: 1, 2, 5, 10, 15, 30, and 60 minutes, and saves when you release it. A question set shares one timeout. When it expires, submitted answers are kept and the other questions return unanswered. Non-blocking questions remain available while the model continues working. Changes apply to new generations.
 
 ## Permissions and defaults
 

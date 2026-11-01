@@ -4,6 +4,8 @@ import com.newoether.agora.api.LlamaGenerationEvent
 import com.newoether.agora.api.LlamaGenerationStopReason
 import com.newoether.agora.api.LOCAL_CONTEXT_CAPACITY_ERROR_CODE
 import com.newoether.agora.data.LocalChatModelConfig
+import com.newoether.agora.ui.settings.LocalChatModelDraft
+import com.newoether.agora.ui.settings.LocalChatModelDraftError
 import java.io.File
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
@@ -540,19 +542,30 @@ class LocalLlamaOwnershipSourceContractTest {
     @Test
     fun `local context and settings cannot promise an impossible output`() {
         val provider = mainSource("com/newoether/agora/api/local/LocalProvider.kt")
-        val settings = mainSource("com/newoether/agora/ui/settings/SettingsProviderDetailPage.kt")
+        val settings = mainSource("com/newoether/agora/ui/settings/LocalChatModelEditor.kt")
         val onboarding = mainSource("com/newoether/agora/ui/onboarding/WelcomeScreen.kt")
         val native = mainCppSource("llama_chat_jni.cpp")
         val legacyDefaults = LocalChatModelConfig(modelId = "model", alias = "Model")
 
         assertEquals(2048, legacyDefaults.nCtx)
         assertEquals(4096, legacyDefaults.maxTokens)
-        assertTrue(settings.contains("var nCtx by remember { mutableStateOf(\"16384\") }"))
-        assertTrue(settings.contains("mutableStateOf(\"1024\")"))
+        val draft = LocalChatModelDraft(modelId = "model", modelPath = "/model.gguf")
+        assertEquals("16384", draft.nCtx)
+        assertEquals("1024", draft.maxTokens)
+        assertNull(draft.validate { false })
+        assertEquals(
+            LocalChatModelDraftError.OUTPUT_EXCEEDS_CONTEXT,
+            draft.copy(maxTokens = "16385").validate { false },
+        )
+        val legacyDraft = LocalChatModelDraft.from(legacyDefaults.copy(localFilePath = "/legacy.gguf"))
+        assertEquals("2048", legacyDraft.nCtx)
+        assertEquals("4096", legacyDraft.maxTokens)
+        assertEquals(LocalChatModelDraftError.OUTPUT_EXCEEDS_CONTEXT, legacyDraft.validate { false })
+        assertTrue(settings.contains("draft.validate { id ->"))
+        assertTrue(settings.indexOf("draft.validate { id ->") < settings.indexOf("addLocalChatModel(config)"))
+        assertTrue(settings.indexOf("draft.validate { id ->") < settings.indexOf("updateLocalChatModel("))
         assertTrue(onboarding.contains("nCtx = 16384"))
         assertTrue(onboarding.contains("maxTokens = 1024"))
-        assertEquals(2, "Max tokens must not exceed context size".toRegex()
-            .findAll(settings).count())
         assertTrue(provider.contains(
             "minOf(config.maxContextWindow, modelConfig.nCtx).coerceAtLeast(1)"
         ))

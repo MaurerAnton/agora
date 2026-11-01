@@ -6,6 +6,9 @@ import androidx.compose.animation.core.animateDpAsState
 import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.animation.core.spring
 import androidx.compose.animation.core.tween
+import androidx.compose.foundation.layout.IntrinsicSize
+import androidx.compose.foundation.layout.fillMaxHeight
+import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Row
@@ -13,6 +16,7 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.selection.selectableGroup
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
@@ -21,6 +25,10 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.semantics.Role
+import androidx.compose.ui.semantics.role
+import androidx.compose.ui.semantics.selected
+import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
@@ -40,6 +48,8 @@ private const val PillTabWeightVisibilityThreshold = 0.001f
  * @param selectedIndex currently selected tab.
  * @param onSelect invoked with the tapped tab index.
  * @param tabHeight pill height; the selected/edge corner radius is half of this.
+ * @param enabled whether the tabs accept input.
+ * @param wrapLabels whether labels wrap and share a natural row height for narrow/large-font layouts.
  * @param allowLabelOverflow whether a single-line label may paint beyond its measured bounds
  * instead of being truncated with an ellipsis.
  */
@@ -51,9 +61,12 @@ fun PillTabSwitcher(
     modifier: Modifier = Modifier,
     tabHeight: Dp = 44.dp,
     allowLabelOverflow: Boolean = false,
+    enabled: Boolean = true,
+    wrapLabels: Boolean = false,
 ) {
     Row(
-        modifier = modifier.fillMaxWidth(),
+        modifier = modifier.fillMaxWidth().selectableGroup()
+            .then(if (wrapLabels) Modifier.height(IntrinsicSize.Min) else Modifier),
         horizontalArrangement = Arrangement.spacedBy(6.dp)
     ) {
         tabs.forEachIndexed { index, label ->
@@ -98,7 +111,10 @@ fun PillTabSwitcher(
             )
             Surface(
                 onClick = { onSelect(index) },
-                modifier = Modifier.weight(widthWeight).height(tabHeight),
+                enabled = enabled,
+                modifier = Modifier.weight(widthWeight)
+                    .then(if (wrapLabels) Modifier.fillMaxHeight().heightIn(min = tabHeight) else Modifier.height(tabHeight))
+                    .semantics { selected = isSelected; role = Role.Tab },
                 shape = RoundedCornerShape(
                     topStart = safeTopStart,
                     topEnd = safeTopEnd,
@@ -109,14 +125,15 @@ fun PillTabSwitcher(
                 contentColor = contentColor
             ) {
                 Box(
-                    modifier = Modifier.fillMaxSize().padding(horizontal = 12.dp),
+                    modifier = Modifier.fillMaxSize()
+                        .padding(horizontal = 12.dp, vertical = if (wrapLabels) 8.dp else 0.dp),
                     contentAlignment = Alignment.Center
                 ) {
                     Text(
                         text = label,
-                        maxLines = 1,
-                        overflow = if (allowLabelOverflow) TextOverflow.Visible else TextOverflow.Ellipsis,
-                        softWrap = false,
+                        maxLines = if (wrapLabels) Int.MAX_VALUE else 1,
+                        overflow = if (allowLabelOverflow && !wrapLabels) TextOverflow.Visible else TextOverflow.Ellipsis,
+                        softWrap = wrapLabels,
                         textAlign = TextAlign.Center,
                         style = MaterialTheme.typography.labelLarge,
                         fontWeight = if (isSelected) FontWeight.SemiBold else FontWeight.Normal

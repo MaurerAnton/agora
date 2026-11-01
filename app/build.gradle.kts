@@ -20,7 +20,13 @@ android {
     testOptions.unitTests.isIncludeAndroidResources = true
     // Robolectric installs Conscrypt as the first security provider for the whole test JVM;
     // on JDK 17+ its TLS server needs reflective access to java.net (InetAddress.holder).
-    testOptions.unitTests.all { it.jvmArgs("--add-opens=java.base/java.net=ALL-UNNAMED") }
+    testOptions.unitTests.all {
+        it.jvmArgs("--add-opens=java.base/java.net=ALL-UNNAMED")
+        // Reuse each worker for a bounded batch instead of restarting it for every class.
+        it.forkEvery = 16
+        it.maxParallelForks = 2
+        it.maxHeapSize = "1g"
+    }
     compileSdk {
         version = release(36)
     }
@@ -31,8 +37,8 @@ android {
         applicationId = "com.newoether.agora"
         minSdk = 26
         targetSdk = 36
-        versionCode = 31
-        versionName = "2.1.0"
+        versionCode = 32
+        versionName = "2.2.0"
 
 
         ndk {
@@ -98,7 +104,7 @@ android {
             applicationIdSuffix = ".dev"
             // Dev lineage is offset +10000 so test builds always update over
             // each other; keep the offset when bumping release versionCode.
-            versionCode = 10034
+            versionCode = 10035
             versionNameSuffix = "-dev"
             resValue("string", "app_name", "Agora Dev")
         }
@@ -115,6 +121,7 @@ android {
     buildFeatures {
         compose = true
         resValues = true
+        aidl = true
     }
     // The app switches locales at runtime without Play Feature Delivery. Keep every
     // packaged translation available instead of letting App Bundles split languages.
@@ -179,6 +186,8 @@ afterEvaluate {
 }
 
 dependencies {
+    implementation("dev.rikka.shizuku:api:13.1.5")
+    implementation("dev.rikka.shizuku:provider:13.1.5")
     implementation(libs.androidx.core.ktx)
     implementation(libs.androidx.core.splashscreen)
     implementation(libs.androidx.lifecycle.runtime.ktx)

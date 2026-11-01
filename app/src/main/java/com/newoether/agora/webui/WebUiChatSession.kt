@@ -108,6 +108,7 @@ internal class WebUiChatSession(
     private val compactFailureMessage: (CompactResult.Failed) -> String,
     private val allowLocalSandbox: () -> Boolean = { false },
     sandboxHomeDir: () -> File? = { null },
+    private val onConversationOpened: (String) -> Unit = {},
 ) : ChatClient {
     /** Where this session shows; [browserSeq] is the browser's last open request it follows. */
     data class OpenTarget(
@@ -167,6 +168,7 @@ internal class WebUiChatSession(
     private val drafts = ComposerDraftController(
         persistence = draftPersistence,
         conversations = conversations,
+        hydrateAttachment = attachmentProcessor::hydrateDraftAttachment,
     )
     private val composers = ConversationComposerController(
         scope = scope,
@@ -347,6 +349,7 @@ internal class WebUiChatSession(
         target.value = OpenTarget(conversationId, seq, movedByServer = false)
         openId.value = conversationId
         retainOwnerLocked(conversationId ?: NEW_CHAT_WORKSPACE_ID)
+        conversationId?.let(onConversationOpened)
     }
 
     /** Admits identified row commands without holding the session lock across delete completion. */
@@ -363,7 +366,7 @@ internal class WebUiChatSession(
         dispatchWebUiRowCommand(this, command, path, conversationId, modelId,
             generation, conversations, registry, executionCoordinator, ownerMutex,
             isCurrent = { !closed && (target.value == opened || command.type == "delete" &&
-                target.value == OpenTarget(null, opened.browserSeq, movedByServer = true)) },
+                target.value.browserSeq == opened.browserSeq && target.value.movedByServer) },
             editorCommand = ::editorCommand, reply = reply)
     }
 
@@ -566,31 +569,31 @@ internal class WebUiChatSession(
                     if (closed || seq != target.value.browserSeq || index < 0) return@withLock null
                     val owner = retainedOwner ?: return@withLock null
                     val attachment = composers.state(owner).value.attachments.firstOrNull { it.localId == id }
-                        ?.takeIf { !it.unavailable && it.storage == com.newoether.agora.model.AttachmentStorage.APP_PRIVATE }
+                        ?.takeIf { it.storage == com.newoether.agora.model.AttachmentStorage.APP_PRIVATE }
                         ?: return@withLock null
-                    val artifact = when (kind) {
-                        "page" -> attachment.takeIf { it.type == "pdf" }?.preRenderedPaths?.getOrNull(index)?.let { it to "image/jpeg" }
-                        "frame" -> attachment.takeIf { it.type == "video" }?.processedFrames?.getOrNull(index)?.let { it to "image/jpeg" }
-                        "source" -> if (index != 0) null else attachment.localPath?.let { path ->
-                            when (attachment.type) {
-                                "image" -> if (attachment.importState == com.newoether.agora.model.AttachmentImportState.READY) path to "image/jpeg" else null
-                                "video" -> attachment.mimeType?.takeIf { VIDEO_MIME.matches(it) }?.let { path to it }
-                                else -> null
-                            }
-                        }
-                        else -> null
+                    val artifact = attachmentPreviewArtifact(attachment, kind, index)
+                    artifact?.let { selected ->
+                        AttachmentFiles.retainLivePath(previewOwner, selected.first)
+                        selected to attachment.imageArtifacts.getOrNull(index)
                     }
-                    artifact?.also { AttachmentFiles.retainLivePath(previewOwner, it.first) }
                 } ?: return@async false
                 withContext(Dispatchers.IO) {
                     val file = try {
                         val root = uploadDirectory.toPath().toRealPath()
-                        val path = File(selected.first).toPath().toRealPath()
+                        val path = File(selected.first.first).toPath().toRealPath()
                         path.takeIf { it.startsWith(root) && it != root && it.toFile().isFile }?.toFile()
                     } catch (_: java.io.IOException) {
                         null
                     } ?: return@withContext false
-                    consume(file, selected.second)
+                    val mime = if (kind == "source" && selected.first.second.startsWith("video/")) {
+                        selected.first.second
+                    } else {
+                        val measured = try { inspectWebUiImageArtifact(file, selected.second) }
+                            catch (_: java.io.IOException) { null }
+                        measured?.mimeType ?: return@withContext false
+                    }
+                    currentCoroutineContext().ensureActive()
+                    consume(file, mime)
                     true
                 }
             } finally {
@@ -775,10 +778,13 @@ internal class WebUiChatSession(
     // WebUiSync delivers identified share results directly to the browser.
     override fun showShareText(text: String) = Unit
 
-    override fun settleDeletedConversation(conversationId: String) {
+    override fun settleDeletedConversation(conversationId: String, parentConversationId: String?) {
+        val expected = target.value
         scope.launch {
             ownerMutex.withLock {
-                if (target.value.conversationId == conversationId) moveByServer(null)
+                if (closed || target.value != expected || expected.conversationId != conversationId) return@withLock
+                val destination = parentConversationId?.takeIf { conversations.getConversation(it) != null }
+                moveByServer(destination)
             }
         }
     }
@@ -790,6 +796,5 @@ internal class WebUiChatSession(
 
     private companion object {
         const val SNACKBAR_BUFFER = 8
-        val VIDEO_MIME = Regex("video/[A-Za-z0-9.+-]+")
     }
 }

@@ -117,14 +117,11 @@ class EmbeddingCacheActionStateTest {
         val start = File(requireNotNull(System.getProperty("user.dir"))).absoluteFile
         val root = generateSequence(start) { it.parentFile }
             .first { File(it, "app/src/main").isDirectory }
-        val source = File(
-            root,
-            "app/src/main/java/com/newoether/agora/ui/settings/SettingsSearchPage.kt",
-        ).readText().replace("\r\n", "\n")
+        val source = cacheSource(root)
 
         assertTrue(source.contains("cacheRow?.cachingCached?.let { shown ->"))
         assertTrue(source.contains("\"\$shown/\$total (\$percent%)\""))
-        assertTrue(source.contains("val fraction =\n                                                                    cacheRow?.cachingFraction"))
+        assertTrue(Regex("val fraction =\\s*cacheRow\\?\\.cachingFraction").containsMatchIn(source))
         assertFalse(source.contains("progress = { progress.fraction }"))
     }
 
@@ -145,27 +142,33 @@ class EmbeddingCacheActionStateTest {
         val start = File(requireNotNull(System.getProperty("user.dir"))).absoluteFile
         val root = generateSequence(start) { it.parentFile }
             .first { File(it, "app/src/main").isDirectory }
-        val source = File(
-            root,
-            "app/src/main/java/com/newoether/agora/ui/settings/SettingsSearchPage.kt",
-        ).readText().replace("\r\n", "\n")
+        val source = cacheSource(root)
 
-        assertTrue(source.contains("Modifier.size(cacheActionSize)"))
-        assertTrue(source.contains("actionLabelSizes.maxOf { it.width }"))
-        assertTrue(source.contains("actionLabelSizes.maxOf { it.height }"))
+        val extracted = source.contains("fun rememberEmbeddingCacheActionSize()")
+        val slot = if (extracted) "Modifier.size(size)" else "Modifier.size(cacheActionSize)"
+        val labels = if (extracted) "labelSizes" else "actionLabelSizes"
+        assertTrue(source.contains(slot))
+        assertTrue(source.contains("$labels.maxOf { it.width }"))
+        assertTrue(source.contains("$labels.maxOf { it.height }"))
         assertTrue(source.contains("ButtonDefaults.TextButtonContentPadding"))
         assertTrue(source.contains("coerceAtLeast(76.dp)"))
         assertTrue(source.contains("coerceAtLeast(48.dp)"))
         assertFalse(source.contains("Modifier.width(76.dp)"))
-        val sizing = source.substringAfter("val actionTextMeasurer")
-            .substringBefore("LaunchedEffect(embeddingModelIds)")
+        val sizing = if (extracted) {
+            source.substringAfter("fun rememberEmbeddingCacheActionSize()")
+                .substringBefore("internal fun embeddingCacheLabel")
+        } else {
+            source.substringAfter("val actionTextMeasurer")
+                .substringBefore("LaunchedEffect(embeddingModelIds)")
+        }
         assertFalse(sizing.contains("visualPhase"))
-        val action = source.substringAfter("modifier = Modifier.size(cacheActionSize)")
+        val action = source.substringAfter("modifier = $slot")
             .substringBefore("IconButton(onClick = { showMenuForModel")
         assertEquals(2, Regex("Modifier\\.fillMaxSize\\(\\)").findAll(action).count())
         assertTrue(action.contains("animationSpec = tween(250)"))
         val child = action.substringAfter(") { phase ->")
-        assertTrue(child.indexOf("contentAlignment = androidx.compose.ui.Alignment.Center") <
+            .replace("androidx.compose.ui.Alignment", "Alignment")
+        assertTrue(child.indexOf("contentAlignment = Alignment.Center") <
             child.indexOf("when (phase)"))
         listOf(
             "R.string.recache_action",
@@ -207,6 +210,13 @@ class EmbeddingCacheActionStateTest {
         assertFalse(failure.contains("colorScheme.onErrorContainer"))
     }
 
+    private fun cacheSource(root: File): String {
+        val cache = File(root, "app/src/main/java/com/newoether/agora/ui/settings/EmbeddingCacheRow.kt")
+        val source = cache.takeIf(File::isFile) ?: File(
+            root, "app/src/main/java/com/newoether/agora/ui/settings/SettingsSearchPage.kt",
+        )
+        return source.readText().replace("\r\n", "\n")
+    }
     private fun workSnapshot(remaining: Int, permille: Int) =
         embeddingCacheWorkSnapshotOrNull(3, "EXACT", 4, 10, remaining, permille)
 

@@ -4,6 +4,7 @@ import com.newoether.agora.automation.ConversationExecutionCoordinator
 import com.newoether.agora.data.local.MessageEntity
 import com.newoether.agora.data.local.RunEntity
 import com.newoether.agora.data.repository.ConversationRepository
+import com.newoether.agora.data.repository.consumedSubagentResults
 import com.newoether.agora.data.repository.SettingsRepository
 import com.newoether.agora.model.ChatMessage
 import com.newoether.agora.model.MessageSource
@@ -59,6 +60,15 @@ internal class QueuedGuidanceDrainExecutor(
         state: ConversationGenerationState,
         lease: GuidanceBatchLease,
     ): QueuedDrainClaim? {
+        val receipts = lease.batch.flatMap { send -> send.source?.subagentResults.orEmpty().map { it.toPair() } }
+            .toSet()
+        val activeLease = if (receipts.isEmpty()) lease else try {
+            val consumed = conversations.consumedSubagentResults(state.conversationId, receipts)
+            state.retireSubagentResults(lease, consumed) ?: return null
+        } catch (error: Exception) {
+            state.settleGuidanceClaim(lease.id, durable = false)
+            throw error
+        }
         val proposedRunId = idFactory()
         val transition = try {
             state.commands.requestSend(
@@ -78,14 +88,19 @@ internal class QueuedGuidanceDrainExecutor(
             state.settleGuidanceClaim(lease.id, durable = false)
             return null
         }
-        return QueuedDrainClaim(lease, inputEffect)
+        return QueuedDrainClaim(activeLease, inputEffect)
     }
 
-    /** One FIFO lease becomes one durable user bubble after the prior Run releases. */
+    /** One FIFO lease becomes separate durable user messages in one fresh Run. */
     suspend fun drainAfterSettlement(state: ConversationGenerationState) {
         val claim = state.queueMutationMutex.withLock {
             if (!state.consumeQueueDrainPermission()) return@withLock null
-            state.claimQueuedSends()?.let { lease -> claimUnderLock(state, lease) }
+            val originOwnerToken = state.handoffOwnerToken()
+            try {
+                state.claimQueuedSends()?.let { lease -> claimUnderLock(state, lease) }
+            } finally {
+                state.finishRunHandoff(originOwnerToken, queuedDrainOnly = true)
+            }
         } ?: return
         launchClaim(state, claim)
     }
@@ -113,12 +128,11 @@ internal class QueuedGuidanceDrainExecutor(
         state: ConversationGenerationState,
         claim: QueuedDrainClaim,
     ) {
-        val batch = claim.batch
+        var activeLease = claim.lease
         val conversationId = state.conversationId
         check(claim.inputEffect.identity.conversationId == conversationId)
         val uiToken = claim.uiToken
         val runId = claim.inputEffect.identity.runId
-        val modelId = batch.last().modelId
         state.loadingChange(uiToken, true)
         val jobBodyStarted = AtomicBoolean(false)
         val generationJob = state.launchGenerationJob(uiToken) {
@@ -136,16 +150,42 @@ internal class QueuedGuidanceDrainExecutor(
                     graphCommitted
                 }
             try {
-                val bubbles = mergeQueuedGuidance(batch)
+                if (!state.acquireGenerationAdmission(uiToken, executionCoordinator)) return@launchGenerationJob
                 val persistId = state.nextPersistId()
                 executionCoordinator.withConversationLock(conversationId) {
-                    val generationSnapshot = batch.last().generationSnapshot
+                    // A selected-owner completion may reach this lock before page recovery.
+                    // No live process execution owns this conversation while admission holds it.
+                    conversations.recoverConversationRuntime(conversationId)
+                    var activeBatch = activeLease.batch
+                    val receipts = activeBatch.flatMap { send ->
+                        send.source?.subagentResults.orEmpty().map { it.toPair() }
+                    }.toSet()
+                    if (receipts.isNotEmpty()) {
+                        val retained = state.queueMutationMutex.withLock {
+                            val consumed = conversations.consumedSubagentResults(conversationId, receipts)
+                            state.retireSubagentResults(activeLease, consumed)
+                        }
+                        if (retained == null) {
+                            state.commands.inputPersistenceFailed(claim.inputEffect.identity)
+                            return@withConversationLock
+                        }
+                        activeLease = retained
+                        activeBatch = retained.batch
+                    }
+                    val bubbles = activeBatch
+                    val selectedInput = activeBatch.last()
+                    val capturedSnapshot = selectedInput.generationSnapshot
                         ?.copy(conversationId = conversationId, runId = runId)
                         ?: requestBuilder.captureAdmissionSnapshot(
                             conversationId = conversationId,
                             runId = runId,
-                            modelId = modelId,
+                            modelId = selectedInput.modelId,
+                            automationCaller = activeBatch.any { send -> send.source?.kind in setOf(
+                                com.newoether.agora.model.MessageSource.Kind.TASK,
+                                com.newoether.agora.model.MessageSource.Kind.LOOP,
+                            ) || send.generationSnapshot?.context?.automationCaller == true },
                         )
+                    val generationSnapshot = narrowQueuedGuidancePermissions(activeBatch, capturedSnapshot)
                     val topology =
                         conversations.getProviderContextTopologySnapshot(conversationId)
                     val leaf = topology?.let { snapshot ->

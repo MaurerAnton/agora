@@ -168,7 +168,7 @@ class AnthropicStreamTerminationTest {
     }
 
     @Test
-    fun multipleNamelessOpenBlocks_reportOnlyOneTerminalError() {
+    fun multipleNamelessOpenBlocksHoldOneParseFailureForRetryWithoutReportingIt() {
         val router = AnthropicStreamEventRouter()
         router.route(
             decode("""{"type":"content_block_start","index":0,"content_block":{"type":"tool_use","id":"call_1"}}""")
@@ -177,7 +177,12 @@ class AnthropicStreamTerminationTest {
             decode("""{"type":"content_block_start","index":1,"content_block":{"type":"tool_use","id":"call_2"}}""")
         )
 
-        assertEquals(1, router.reportIncompleteBlocks().size)
+        assertTrue(router.reportIncompleteBlocks().isEmpty())
+        val error = router.streamError as GenerationError.SseParse
+        assertEquals("stream_end", error.rawLine)
+        assertFalse(router.reportedError)
+        assertTrue(router.reportIncompleteBlocks().isEmpty())
+        assertEquals(error, router.streamError)
     }
 
     @Test
@@ -201,15 +206,16 @@ class AnthropicStreamTerminationTest {
     }
 
     @Test
-    fun namelessToolBlockAtEof_reportsAnErrorInsteadOfVanishing() {
+    fun namelessToolBlockAtEofHoldsParseFailureForProviderRetry() {
         val router = AnthropicStreamEventRouter()
         router.route(
             decode("""{"type":"content_block_start","index":0,"content_block":{"type":"tool_use","id":"call_1"}}""")
         )
         val events = router.reportIncompleteBlocks()
 
-        assertTrue((events.single() as StreamEvent.Error).error is GenerationError.SseParse)
-        assertTrue(router.reportedError)
+        assertTrue(events.isEmpty())
+        assertTrue(router.streamError is GenerationError.SseParse)
+        assertFalse(router.reportedError)
         assertTrue(router.toolCallInFlight)
     }
 

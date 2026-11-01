@@ -111,6 +111,7 @@ data class OpenAiChatRequest(
     @SerialName("thinking") val thinking: OpenAiThinking? = null,
     @SerialName("enable_thinking") val enableThinking: Boolean? = null,
     @SerialName("thinking_budget") val thinkingBudget: Int? = null,
+    @SerialName("chat_template_kwargs") val chatTemplateKwargs: JsonObject? = null,
     val reasoning: OpenAiReasoning? = null,
     /** Groq: `false` returns no reasoning for a model that cannot turn reasoning off. */
     @SerialName("include_reasoning") val includeReasoning: Boolean? = null,
@@ -184,5 +185,6 @@ data class OpenAiContentPart(
 
 @Serializable
 data class OpenAiImageUrl(
-    val url: String
+    val url: String,
+    val detail: String? = null,
 )

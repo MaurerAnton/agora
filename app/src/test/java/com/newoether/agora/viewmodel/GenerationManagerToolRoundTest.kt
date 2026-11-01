@@ -18,7 +18,7 @@ class GenerationManagerToolRoundTest {
         )
 
         assertEquals(RunStatus.COMPLETED, disposition.runStatus)
-        assertEquals(RunEndReason.MODEL_COMPLETED, disposition.endReason)
+        assertEquals(RunEndReason.CONTINUATION_PENDING, disposition.endReason)
         assertFalse(disposition.markConversationUnread)
     }
 

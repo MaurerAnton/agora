@@ -17,6 +17,7 @@ import kotlinx.serialization.json.JsonPrimitive
 import kotlinx.serialization.json.booleanOrNull
 import kotlinx.serialization.json.buildJsonObject
 import kotlinx.serialization.json.contentOrNull
+import kotlinx.serialization.json.intOrNull
 import kotlinx.serialization.json.jsonObject
 import kotlinx.serialization.json.jsonPrimitive
 import okhttp3.Call
@@ -36,9 +37,12 @@ import kotlin.coroutines.resumeWithException
 private data class RemoteModels(val models: List<RemoteModel>)
 @Serializable
 private data class FiloInfo(
-    val protocolVersion: Int, val agent: String, val sessionMode: String,
-    val messageDelivery: String, val outputMode: String, val device: String,
+    val protocolVersion: Int, val agent: String = "", val sessionMode: String = "",
+    val messageDelivery: String = "", val outputMode: String = "", val device: String = "",
     val supportsLazyMessages: Boolean = false,
+    val desktop: JsonObject? = null,
+    val extensions: JsonObject? = null,
+    val adapters: List<RemoteAdapter>? = null,
 )
 @Serializable
 private data class SendInput(val text: String, val clientId: String, val attachments: List<String> = emptyList())
@@ -47,7 +51,8 @@ private data class SendResult(val turnId: String, val clientId: String)
 // createSessionResponse: the full session spread plus the first-turn receipt.
 @Serializable
 private data class CreateResult(val id: String, val title: String, val cwd: String, val updatedAt: Long,
-    val status: String? = null, val turnId: String, val clientId: String)
+    val status: String? = null, val turnId: String, val clientId: String,
+    val access: RemoteSessionAccess? = null)
 
 @Serializable
 private data class FiloError(val code: String? = null, val error: String? = null)
@@ -73,6 +78,8 @@ internal fun classifyRemoteFailure(error: Exception): RemoteFailure = when (erro
     is RemoteContentLimitException -> RemoteFailure.CONTENT_TOO_LARGE
     is RemoteStorageException -> RemoteFailure.STORAGE
     is RemoteAttachmentException -> RemoteFailure.STORAGE
+    is com.newoether.agora.util.ConchAuthenticationException -> RemoteFailure.AUTHENTICATION
+    is com.newoether.agora.util.ConchServiceException -> RemoteFailure.SERVICE
     is com.newoether.agora.util.ConchChannelException -> RemoteFailure.PROTOCOL
     is FiloConfigurationException, is FiloInputException -> RemoteFailure.CONFIGURATION
     is FiloStreamException -> RemoteFailure.SERVICE
@@ -97,7 +104,9 @@ internal class FiloClient(
         .connectionPool(okhttp3.ConnectionPool(5, 45, TimeUnit.SECONDS))
         .addInterceptor(com.newoether.agora.util.ConchEncryptedHttp(token))
         .callTimeout(30, TimeUnit.SECONDS).build(),
-    mutationTimeoutMillis: Long = 210_000,
+    private val mutationTimeoutMillis: Long = 210_000,
+    private val accessPath: RemoteAccessPath? = null,
+    private val transportIdentity: Any = Any(),
 ) {
     private val endpoint = try { address.trim().toHttpUrl().also {
         require(it.username.isEmpty() && it.password.isEmpty() && it.query == null &&
@@ -106,6 +115,12 @@ internal class FiloClient(
     } } catch (_: IllegalArgumentException) { throw FiloConfigurationException() }
     val address: String get() = endpoint.toString()
     private val json = Json { ignoreUnknownKeys = true }
+    var adapters: List<RemoteAdapter>? = null
+        private set
+    /** Scoped clients share the existing transport, but capture one immutable request route. */
+    fun scoped(path: RemoteAccessPath): FiloClient = FiloClient(address, token, calls,
+        mutationTimeoutMillis, accessPath = path, transportIdentity = transportIdentity)
+    fun sharesTransport(other: FiloClient): Boolean = transportIdentity === other.transportIdentity
     private fun decodeError(text: String): FiloError {
         val error = runCatching { json.decodeFromString<FiloError>(text) }.getOrNull() ?: return FiloError()
         return error.copy(code = error.code?.takeIf { it.matches(Regex("[a-z][a-z0-9_]{0,63}")) }, error = error.error?.replace(token, "[redacted]")
@@ -126,16 +141,44 @@ internal class FiloClient(
         ?.readTimeout(mutationTimeoutMillis, TimeUnit.MILLISECONDS)
         ?.callTimeout(mutationTimeoutMillis, TimeUnit.MILLISECONDS)?.build() ?: calls
 
-    suspend fun connect(): String {
+    suspend fun connect(): RemoteDeviceStatus {
         val info = json.decodeFromString<FiloInfo>(request("v1/info"))
-        require(info.protocolVersion == 2 && info.agent == "codex" &&
-            info.sessionMode == "existing" && info.messageDelivery == "native-steer" &&
-            info.outputMode == "live-messages" && info.supportsLazyMessages) { "Incompatible Filo service" }
-        return info.device
+        require(info.protocolVersion == 2) { "Incompatible Filo service" }
+        val extensionValue = info.extensions?.get("multiAdapter")
+        val extension = (extensionValue as? JsonPrimitive)?.intOrNull
+        require(extensionValue == null || extension != null) { "Invalid adapter extension" }
+        if (extension != null) {
+            require(extension == 1 && info.adapters != null && info.adapters.size <= 4)
+            require(info.adapters.map { it.id }.distinct().size == info.adapters.size)
+            info.adapters.forEach { adapter ->
+                RemoteAccessPath(adapter.id)
+                require(adapter.nativeScopeId.length <= 512 && adapter.nativeScopeId.none { it.isISOControl() })
+                val expected = when (adapter.id) {
+                    "codex-desktop" -> "codex" to "desktop"
+                    "codex-cli" -> "codex" to "cli"
+                    "claude-code" -> "claude" to "cli"
+                    "claude-desktop" -> "claude" to "desktop"
+                    else -> throw IllegalArgumentException("Unknown native source")
+                }
+                require(adapter.family == expected.first && adapter.origin == expected.second)
+                validateCapabilities(adapter.capabilities)
+            }
+            adapters = info.adapters
+        } else {
+            require(info.adapters == null) { "Adapter discovery needs its extension" }
+            require(info.agent == "codex" && info.sessionMode == "existing" &&
+                info.messageDelivery == "native-steer" && info.outputMode == "live-messages" &&
+                info.supportsLazyMessages) { "Incompatible Filo service" }
+            adapters = listOf(RemoteAdapter.legacy(remoteNativeStatus(
+                (info.desktop?.get("state") as? JsonPrimitive)?.contentOrNull)))
+        }
+        return adapters.orEmpty().firstOrNull { it.family == "codex" && it.origin == "desktop" }?.status
+            ?: RemoteDeviceStatus.IDLE
     }
 
     suspend fun sessions(cursor: String? = null): RemoteSessionPage = withContext(Dispatchers.Default) {
         val page = json.decodeFromString<RemoteSessionPage>(request("v1/sessions", cursor))
+        page.sessions.forEach { validateAccess(it.access) }
         page.copy(sessions = page.sessions.map { it.copy(listCursor = cursor) })
     }
 
@@ -149,7 +192,7 @@ internal class FiloClient(
         id: String, requested: RemotePayloadRequest,
         persist: (java.io.InputStream, String) -> com.newoether.agora.model.ToolImageAttachment,
     ): com.newoether.agora.model.ToolImageAttachment = suspendCancellableCoroutine { continuation ->
-        val url = endpoint.newBuilder().addPathSegments("v1/sessions/${sessionId(id)}/image")
+        val url = endpoint.newBuilder().addPathSegments(route("v1/sessions/${sessionId(id)}/image"))
             .addQueryParameter("messages", json.encodeToString(listOf(requested))).build()
         val call = readCalls.newCall(Request.Builder().url(url).header("Authorization", "Bearer $token").build())
         continuation.invokeOnCancellation { call.cancel() }
@@ -175,8 +218,24 @@ internal class FiloClient(
 
     private fun decodePage(text: String): RemoteConversationPage =
         json.decodeFromString<RemoteConversationPage>(text).also { page ->
+            validateAccess(page.access)
+            page.runtime?.settingsChange?.let { change ->
+                require(change.id.isNotBlank() && change.id.length <= 256 &&
+                    change.state in setOf("pending", "confirmed", "failed") &&
+                    (change.requested.model != null || change.requested.effort != null) &&
+                    !change.requested.updateServiceTier && change.actualModel.length <= 256 &&
+                    change.actualEffort.length <= 256 && change.turnId.length <= 1024 &&
+                    (change.state != "confirmed" || change.turnId.isNotBlank())) { "Invalid native settings evidence" }
+            }
             require(page.messages.all { it.role == "user" || it.role == "assistant" })
             require(page.messages.map { it.id }.toSet().size == page.messages.size)
+            require(page.inputReceipts.size <= 128 && page.inputReceipts.all {
+                it.clientId.isNotBlank() && it.clientId.length <= 256 && it.turnId.length <= 1024 && it.messageId.length <= 1024 &&
+                    (it.kind == "" && it.state == "" && it.turnId.isNotBlank() && it.messageId.isNotBlank() ||
+                    it.kind == "submitted_observed" && it.state in setOf("submitted", "unconfirmed", "rejected", "observed") &&
+                    (it.state != "observed" || it.turnId.isNotBlank() || it.messageId.isNotBlank()))
+            }) { "Invalid native input receipt" }
+            require(page.inputReceipts.map { it.clientId }.distinct().size == page.inputReceipts.size)
             page.messages.forEach { message -> message.activity?.let { activity ->
                 require(message.role == "assistant" && activity.type in setOf("thought", "tool"))
                 require(activity.type != "tool" || !activity.toolName.isNullOrBlank())
@@ -189,7 +248,7 @@ internal class FiloClient(
 
     private fun <T> eventStream(id: String, view: String?, decode: (String) -> T): Flow<T> = callbackFlow {
         val request = Request.Builder().url(endpoint.newBuilder()
-            .addPathSegments("v1/sessions/${sessionId(id)}/events")
+            .addPathSegments(route("v1/sessions/${sessionId(id)}/events"))
             .apply { view?.let { addQueryParameter("view", it) } }.build())
             .header("Authorization", "Bearer $token").build()
         val call = readCalls.newCall(request)
@@ -235,8 +294,8 @@ internal class FiloClient(
     // Creation always carries the first message: no session ever exists without one.
     suspend fun create(text: String, clientId: String, attachments: List<String> = emptyList(), settings: RemoteSettings? = null): RemoteSession {
         if ((text.isBlank() && attachments.isEmpty()) || attachments.size > REMOTE_ATTACHMENT_COUNT ||
-            attachments.any { !it.matches(Regex("[a-f0-9]{32}")) }) throw FiloInputException()
-        if (settings?.model.isNullOrEmpty()) throw FiloInputException()
+            attachments.any { !validRemoteUploadId(it, accessPath != null) }) throw FiloInputException()
+        if (accessPath == null && settings?.model.isNullOrEmpty()) throw FiloInputException()
         val body = JsonObject(buildJsonObject {
             put("text", JsonPrimitive(text)); put("clientId", JsonPrimitive(clientId))
             put("attachments", JsonArray(attachments.map(::JsonPrimitive)))
@@ -244,8 +303,12 @@ internal class FiloClient(
         }).toString()
         if (body.toByteArray(Charsets.UTF_8).size > 65536) throw FiloInputException()
         return json.decodeFromString<CreateResult>(request("v1/sessions", body = body))
-            .also { require(it.clientId == clientId && it.turnId.isNotBlank() && it.id.isNotBlank()) }
-            .let { RemoteSession(it.id, it.title, it.cwd, it.updatedAt, it.status) }
+            .also {
+                require(it.clientId == clientId && it.turnId.isNotBlank() && it.id.isNotBlank())
+                validateAccess(it.access)
+            }
+            .let { RemoteSession(it.id, it.title, it.cwd, it.updatedAt, it.status,
+                acceptedTurnId = it.turnId, access = it.access) }
     }
 
     // Only the three next-turn keys leave the device; a malformed body never reaches native.
@@ -272,20 +335,51 @@ internal class FiloClient(
     }
 
     suspend fun upload(item: com.newoether.agora.model.SelectedAttachment): RemoteUpload =
-        uploadRemoteAttachment(item) { path, method, payload -> request(path, uploadBody = payload, method = method) }
+        uploadRemoteAttachment(item, scoped = accessPath != null) { path, method, payload ->
+            if (path == "v1/uploads" && accessPath != null) {
+                val buffer = okio.Buffer()
+                payload.writeTo(buffer)
+                request(path, body = buffer.readUtf8(), method = method)
+            } else request(path, uploadBody = payload, method = method)
+        }
 
-    suspend fun send(id: String, text: String, clientId: String, attachments: List<String> = emptyList()): String {
-        val body = json.encodeToString(SendInput(text, clientId, attachments))
-        if ((text.isBlank() && attachments.isEmpty()) || attachments.size > REMOTE_ATTACHMENT_COUNT ||
-            attachments.any { !it.matches(Regex("[a-f0-9]{32}")) } || body.toByteArray(Charsets.UTF_8).size > 65536) throw FiloInputException()
-        return json.decodeFromString<SendResult>(
-            request("v1/sessions/${sessionId(id)}/messages", body = body),
-        ).also { require(it.clientId == clientId && it.turnId.isNotBlank()) }.turnId
+    private fun validateCapabilities(capabilities: RemoteCapabilities) {
+        require(capabilities.activeSend in setOf("unsupported", "native-steer"))
+        require(capabilities.historyMode in setOf("complete", "bounded"))
+        require(capabilities.settings.size <= 3 && capabilities.settings.distinct().size == capabilities.settings.size &&
+            capabilities.settings.all { it in setOf("model", "effort", "serviceTier") })
     }
 
+    private fun validateAccess(access: RemoteSessionAccess?) {
+        access ?: return
+        require(accessPath != null && access.nativeScopeId == accessPath.nativeScopeId &&
+            access.nativeScopeId.isNotBlank() && access.canonicalSessionRef.isNotBlank() &&
+            access.canonicalSessionRef.length <= 4096 && access.canonicalSessionRef.none { it.isISOControl() })
+        RemoteAccessPath(accessPath.adapterId, access.binding, access.nativeScopeId)
+        validateCapabilities(access.capabilities)
+    }
+
+    suspend fun sendReceipt(id: String, text: String, clientId: String, attachments: List<String> = emptyList()): RemoteSendReceipt {
+        val body = json.encodeToString(SendInput(text, clientId, attachments))
+        if ((text.isBlank() && attachments.isEmpty()) || attachments.size > REMOTE_ATTACHMENT_COUNT ||
+            attachments.any { !validRemoteUploadId(it, accessPath != null) } || body.toByteArray(Charsets.UTF_8).size > 65536) throw FiloInputException()
+        return json.decodeFromString<RemoteSendReceipt>(
+            request("v1/sessions/${sessionId(id)}/messages", body = body),
+        ).also { require(it.clientId == clientId && it.turnId.length <= 1024 && it.messageId.length <= 1024 &&
+            (it.kind == "" && it.state == "" && it.turnId.isNotBlank() ||
+                it.kind == "submitted_observed" && it.state in setOf("submitted", "observed", "unconfirmed") &&
+                (it.state != "observed" || it.turnId.isNotBlank() || it.messageId.isNotBlank()))) }
+    }
+    suspend fun send(id: String, text: String, clientId: String, attachments: List<String> = emptyList()): String =
+        sendReceipt(id, text, clientId, attachments).turnId
+
+    private fun route(path: String): String = if (path == "v1/info") path else accessPath?.route(path) ?: path
+
     private fun sessionId(id: String): String {
-        require(id.matches(Regex("[0-9a-fA-F]{8}(-[0-9a-fA-F]{4}){3}-[0-9a-fA-F]{12}")))
-        return id
+        if (accessPath == null) require(id.matches(Regex("[0-9a-fA-F]{8}(-[0-9a-fA-F]{4}){3}-[0-9a-fA-F]{12}")))
+        else require(id.isNotBlank() && id.length <= 512 && id.none { it.isISOControl() })
+        return okhttp3.HttpUrl.Builder().scheme("https").host("filo.invalid").addPathSegment(id)
+            .build().encodedPath.removePrefix("/")
     }
 
     private suspend fun request(
@@ -294,15 +388,30 @@ internal class FiloClient(
         uploadBody: okhttp3.RequestBody? = null, method: String? = null,
     ): String =
         suspendCancellableCoroutine { continuation ->
-            val url = requireNotNull(endpoint.resolve(path)).newBuilder().apply {
+            val url = requireNotNull(endpoint.resolve(route(path))).newBuilder().apply {
                 cursor?.let { addQueryParameter("cursor", it) }
                 if (includeActivity) addQueryParameter("includeActivity", "true")
                 if (includeMetadata) addQueryParameter("includeMetadata", "true")
             }.build()
             val request = Request.Builder().url(url).header("Authorization", "Bearer $token")
                 .apply {
-                    val payload = uploadBody ?: body?.toRequestBody("application/json".toMediaType())
-                    if (payload != null) method(method ?: "POST", payload)
+                    val sessionMutation = path.startsWith("v1/sessions/") && body != null
+                    val scopeMutation = accessPath != null && body != null &&
+                        (path == "v1/sessions" || path == "v1/uploads")
+                    val boundBody = if (sessionMutation && accessPath != null) {
+                        val binding = accessPath.binding ?: throw FiloInputException()
+                        JsonObject(json.parseToJsonElement(body!!).jsonObject +
+                            ("accessBinding" to JsonPrimitive(binding))).toString()
+                    } else if (scopeMutation) {
+                        require(accessPath!!.nativeScopeId.isNotBlank())
+                        JsonObject(json.parseToJsonElement(body!!).jsonObject +
+                            ("nativeScopeId" to JsonPrimitive(accessPath.nativeScopeId))).toString()
+                    } else body
+                    val payload = uploadBody ?: boundBody?.toRequestBody("application/json".toMediaType())
+                    if (payload != null) {
+                        accessPath?.binding?.let { header("X-Filo-Access-Binding", it) }
+                        method(method ?: "POST", payload)
+                    }
                 }.build()
             val call = (if (body == null && uploadBody == null) readCalls else mutationCalls).newCall(request)
             continuation.invokeOnCancellation { call.cancel() }

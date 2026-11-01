@@ -42,6 +42,33 @@ class RemoteTopologyTest {
         assertEquals(snapshot, nodes)
     }
 
+    @Test fun delayedNativeUserSplitsLiveAssistantGroupsWithUniqueStableKeys() {
+        val user = node("u", "user")
+        val before = node("a-before")
+        val after = node("a-after")
+        val delayed = node("steer", "user")
+        val initial = admitRemoteNodes(emptyList(), listOf(user, before, after))
+        val live = admitRemoteNodes(initial, listOf(user, before, delayed, after))
+        val groups = projectRemoteTopology(live, null)
+        assertEquals(listOf("u", "a-before", "steer", "a-after"), groups.map { it.stub.id })
+        assertEquals(groups.size, groups.map { it.stub.id }.distinct().size)
+        val cache = com.newoether.agora.ui.chat.MessageListTurnCache()
+        val turns = cache.update(groups.map { it.stub })
+        assertEquals(listOf("u", "steer"), turns.map { it.key })
+        val extended = admitRemoteNodes(live, listOf(user, before, delayed, after, node("a-tail")))
+        val next = projectRemoteTopology(extended, null)
+        assertEquals(groups.map { it.stub.id }, next.map { it.stub.id })
+        assertEquals(listOf("a-after", "a-tail"), next.last().nodes.map { it.id })
+        val nextTurns = cache.update(next.map { it.stub })
+        assertSame(turns.first(), nextTurns.first())
+        val prepended = admitRemoteNodes(extended, listOf(node("older", turn = "old")), older = true)
+        val olderTurns = cache.update(projectRemoteTopology(prepended, null).map { it.stub })
+        nextTurns.forEach { original -> assertSame(original, olderTurns.first { it.key == original.key }) }
+        assertEquals(extended.map { it.displayPageId }, prepended.drop(1).map { it.displayPageId })
+        assertEquals(listOf("u", "a-before", "steer", "a-after"),
+            projectRemoteTopology(admitRemoteNodes(emptyList(), listOf(user, before, delayed, after)), null).map { it.stub.id })
+    }
+
     @Test fun continuousThoughtAndToolGroupsRespectDisplayPageLimitAndPreserveSealedFragments() {
         fun tool(index: Int) = RemoteMessage("tool-$index", "turn", null, "assistant", "", 1,
             activity = RemoteActivity(if (index % 2 == 0) "thought" else "tool", state = "succeeded"))

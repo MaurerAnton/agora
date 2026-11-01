@@ -90,9 +90,34 @@ class GenerationErrorTest {
     }
 
     @Test
-    fun `Unknown error userMessage fallback for null message`() {
+    fun `Unknown error userMessage keeps exception type when all messages are absent`() {
         val ex = RuntimeException()
-        assertEquals("An unexpected error occurred.", GenerationError.Unknown(ex).userMessage())
+        assertEquals("java.lang.RuntimeException", GenerationError.Unknown(ex).userMessage())
+    }
+
+    @Test
+    fun `Unknown resolves first nonblank cause message without losing opaque detail`() {
+        for (detail in listOf("connection reset", "invalid_request_error", "{\"message\":\"bad\"}", "https://example.com/error")) {
+            val nested = IllegalStateException(detail)
+            val outer = RuntimeException(" ").apply { initCause(nested) }
+            assertEquals(detail, GenerationError.Unknown(outer).userMessage())
+            assertEquals("Outer", GenerationError.Unknown(RuntimeException("Outer", nested)).detail())
+        }
+    }
+
+    @Test
+    fun `Unknown cause traversal uses identity and terminates on cycles`() {
+        val first = RuntimeException(" ")
+        val second = IllegalStateException()
+        first.initCause(second)
+        second.initCause(first)
+        assertEquals("java.lang.RuntimeException", GenerationError.Unknown(first).detail())
+        val equalOuter = object : RuntimeException(" ") {
+            override fun equals(other: Any?) = other is Throwable
+            override fun hashCode() = 0
+        }
+        equalOuter.initCause(RuntimeException("Concrete reason"))
+        assertEquals("Concrete reason", GenerationError.Unknown(equalOuter).detail())
     }
 
     @Test

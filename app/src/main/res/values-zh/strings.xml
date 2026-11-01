@@ -119,6 +119,22 @@
     <string name="embedding_custom_model_desc">输入提供商支持的任意模型名称</string>
     <string name="embedding_batch_size">批次大小</string>
     <string name="embedding_batch_size_desc">每次请求缓存的消息数（1-100）</string>
+    <string name="embedding_add_model">添加模型</string>
+    <string name="embedding_edit_model">编辑模型</string>
+    <string name="embedding_choose_type">选择模型类型</string>
+    <string name="embedding_type_remote_desc">调用 OpenAI、Voyage AI、Ollama 等嵌入 API。</string>
+    <string name="embedding_type_local_desc">在本机运行 GGUF 嵌入模型。</string>
+    <string name="embedding_provider_custom">自定义</string>
+    <string name="embedding_connection">连接</string>
+    <string name="embedding_general">通用</string>
+    <string name="embedding_cache_status">缓存</string>
+    <string name="embedding_use_saved_key">使用已保存的 %1$s 密钥</string>
+    <string name="embedding_use_saved_key_desc">来自对话服务商设置</string>
+    <string name="embedding_model_id_hint">模型 ID，例如 text-embedding-3-small</string>
+    <string name="embedding_model_locked_desc">已缓存的向量属于此模型。要换模型请新建一个。</string>
+    <string name="embedding_model_file">模型文件</string>
+    <string name="embedding_replace_file">替换</string>
+    <string name="embedding_test_failed">连接测试失败：%1$s</string>
     <string name="local_model_ready">模型已导入。</string>
     <string name="import_model">导入模型 (.gguf)</string>
     <string name="importing_model">导入中...</string>
@@ -173,6 +189,8 @@
     <string name="conversation_read_empty">所选分支中没有消息。</string>
     <string name="conversation_read_page">页面：消息 %1$d-%2$d</string>
     <string name="conversation_read_more">使用更高的 offset 查看更多消息。</string>
+    <string name="conversation_tools_more">此消息还有更多工具调用（tool_offset：%1$d）。</string>
+    <string name="conversation_details_error">无法读取已保存的消息详情（%1$s）。</string>
 
     <string name="tool_call_failed">工具调用失败</string>
     <string name="database_incompatible">数据库不兼容</string>
@@ -208,7 +226,7 @@
     <string name="tool_state_failed">调用失败</string>
     <string name="tool_state_stopped">已停止</string>
     <string name="tool_unknown_device">未知设备</string>
-    <string name="tool_no_output">(No output)</string>
+    <string name="tool_no_output">（无输出）</string>
     <string name="tool_background_job_running">后台任务 %1$s 正在运行</string>
     <string name="tool_shell_jobs">列出 Shell 任务</string>
     <string name="tool_shell_job">获取 Shell 任务</string>
@@ -245,15 +263,15 @@
     <string name="tool_file_write">写入文件</string>
     <string name="tool_file_edit">编辑文件</string>
     <string name="tool_file_glob">查找文件</string>
-    <string name="tool_file_grep">搜索文件</string>
+    <string name="tool_file_grep">搜索内容</string>
     <!-- Tool in-progress states (doing) -->
     <string name="tool_listing_conversations">列出对话中…</string>
     <string name="tool_reading_conversation">阅读对话中…</string>
     <string name="tool_reading_file">读取 %1$s…</string>
     <string name="tool_writing_file">写入 %1$s…</string>
     <string name="tool_editing_file">编辑 %1$s…</string>
-    <string name="tool_finding_files">查找 %1$s…</string>
-    <string name="tool_searching_file">搜索 %1$s…</string>
+    <string name="tool_finding_files">查找文件 %1$s…</string>
+    <string name="tool_searching_file">搜索内容 %1$s…</string>
     <string name="tool_executing_shell">执行中: %1$s…</string>
     <string name="tool_reading_memory">读取 %1$s…</string>
     <string name="tool_saving_memory">保存 %1$s…</string>
@@ -358,11 +376,6 @@
     <string name="provider_no_local_models_desc">导入 GGUF 模型以开始使用</string>
     <string name="provider_keys_summary">%1$d 个 API 密钥</string>
     <string name="provider_connection">连接</string>
-    <string name="provider_connection_test">检查连通性</string>
-    <string name="provider_connection_test_running">正在检查连通性…</string>
-    <string name="provider_connection_test_title">连通性测试</string>
-    <string name="provider_connection_test_ok">连通性正常——所有请求均有回应。</string>
-    <string name="provider_connection_test_failed">连通性失败——请查看下方的尝试记录。</string>
     <string name="local_models_title">本地模型</string>
     <string name="local_model_idle_retention">模型空闲保留时间</string>
     <string name="local_model_idle_retention_desc">本地模型空闲后在卸载前继续驻留内存的时长</string>
@@ -607,7 +620,7 @@
     <!-- SSH host-key pinning -->
     <string name="shell_ssh_verify_host_key">验证并固定主机密钥</string>
     <string name="shell_ssh_host_key_pinned">已固定主机密钥</string>
-    <string name="shell_ssh_host_key_not_pinned">未固定主机密钥 — 易受中间人攻击</string>
+    <string name="shell_ssh_host_key_not_pinned">未固定主机密钥，易受中间人攻击</string>
     <string name="shell_ssh_verify_title">验证 SSH 主机密钥</string>
     <string name="shell_ssh_verify_message">信任前请确认此指纹与您的服务器一致。固定主机密钥可防范中间人攻击。</string>
     <string name="shell_ssh_trust">信任并固定</string>
@@ -623,7 +636,6 @@
     <string name="shell_confirm_setting_desc">在助手于远程 SSH/Conch 服务器上运行命令或写入文件前询问</string>
     <string name="shell_confirm_notification_channel">命令审批</string>
     <string name="shell_confirm_notification_desc">Agora 在后台时，请求你允许或拒绝远程命令</string>
-
     <string name="ask_user_title">助手正在提问</string>
     <string name="ask_user_send">发送</string>
     <string name="ask_user_next">下一题</string>
@@ -669,7 +681,6 @@
     <string name="thinking_segment_display_bottom_sheet">底部面板</string>
     <string name="thinking_segments_title">思考片段</string>
     <string name="context_usage_messages">约 %1$s / %2$s tokens</string>
-
     <string name="context_part_system">系统提示</string>
     <string name="context_part_tools">工具</string>
     <string name="context_part_messages">消息</string>
@@ -789,6 +800,9 @@
     <string name="tool_edit_skill">编辑技能</string>
     <string name="tool_delete_skill">删除技能</string>
     <string name="tool_read_file_truncated">已显示部分内容 · 从字节 %1$d 继续</string>
+    <string name="tool_read_file_truncated_line">已显示部分内容 · 从第 %1$d 行继续</string>
+    <string name="tool_edit_count">%1$d 处修改</string>
+    <string name="tool_edit_replace_all">全部替换</string>
     <string name="low_context_mode">低上下文模式</string>
     <string name="low_context_mode_default_desc">默认启用低上下文模式</string>
     <string name="learn_more">了解更多...</string>
@@ -813,7 +827,61 @@
     <string name="message_source_loop">循环</string>
     <string name="message_source_ask_user">询问</string>
     <string name="message_source_unanswered">未回答</string>
+    <string name="settings_todo">待办清单</string>
+    <string name="settings_todo_desc">由模型管理的对话任务清单</string>
+    <string name="todo_enable">启用待办清单</string>
+    <string name="todo_enable_desc">允许模型读取和更新对话中的待办清单。关闭后保留已有清单。</string>
+    <string name="settings_subagents">子代理</string>
+    <string name="settings_subagents_desc">将工作委派到独立对话</string>
+    <string name="subagents_enable">启用子代理</string>
+    <string name="subagents_enable_desc">允许模型将工作委派到独立对话。关闭后不会停止已有子代理。</string>
+    <string name="local_projector_title">视觉投影器</string>
+    <string name="local_projector_desc">可选：导入与聊天模型匹配的 mmproj GGUF 文件，以支持图像输入</string>
+    <string name="local_model_error_id_required">请输入模型 ID</string>
+    <string name="local_model_error_id_invalid">仅支持 a-z、0-9、点、下划线和连字符</string>
+    <string name="local_model_error_id_taken">此模型 ID 已被使用</string>
+    <string name="local_model_error_file_required">请导入 GGUF 模型文件</string>
+    <string name="local_model_error_context">上下文大小必须为正整数</string>
+    <string name="local_model_error_temperature">温度必须介于 0 和 2 之间</string>
+    <string name="local_model_error_top_p">Top P 必须介于 0 和 1 之间</string>
+    <string name="local_model_error_max_tokens">最大输出 Token 数必须为正整数</string>
+    <string name="local_model_error_output">最大输出 Token 数不能超过上下文大小</string>
+    <string name="tool_read_todo">读取待办清单</string>
+    <string name="tool_update_todo">更新待办清单</string>
+    <string name="tool_spawn_agent">启动子代理</string>
+    <string name="tool_send_agent_message">向子代理发送消息</string>
+    <string name="tool_wait_agents">等待子代理</string>
+    <string name="tool_list_agents">列出子代理</string>
+    <string name="tool_stop_agent">停止子代理</string>
+    <string name="tool_reading_todo">正在读取待办清单…</string>
+    <string name="tool_updating_todo">正在更新待办清单…</string>
+    <string name="tool_spawning_agent">正在启动子代理…</string>
+    <string name="tool_sending_agent_message">正在将消息加入子代理队列…</string>
+    <string name="tool_waiting_agents">正在等待子代理…</string>
+    <string name="tool_listing_agents">正在列出子代理…</string>
+    <string name="tool_stopping_agent">正在停止子代理…</string>
+    <string name="tool_read_todo_done">已读取待办清单</string>
+    <string name="tool_updated_todo">已更新待办清单</string>
+    <string name="tool_spawned_agent">已启动子代理</string>
+    <string name="tool_queued_agent_message">消息已加入子代理队列</string>
+    <string name="tool_waited_agents">已结束等待子代理</string>
+    <string name="tool_listed_agents">已列出子代理</string>
+    <string name="tool_stopped_agent">已停止子代理</string>
+    <string name="tool_delete_agent">删除子代理</string>
+    <string name="tool_deleting_agent">正在删除子代理…</string>
+    <string name="tool_deleted_agent">已删除子代理</string>
+    <string name="subagents_allow_delete">允许删除子代理</string>
+    <string name="subagents_allow_delete_desc">允许父对话永久删除空闲的子代理以释放名额。运行中的子代理和未交付的结果不会被删除。</string>
+    <string name="subagent_deleted_by_parent">此子代理已被其父对话删除。</string>
+    <string name="tool_todo_empty">待办清单为空</string>
+    <string name="tool_agents_empty">暂无子代理</string>
+    <string name="tool_agent_results_empty">未返回子代理结果</string>
 
+    <string name="provider_connection_test">检查连通性</string>
+    <string name="provider_connection_test_running">正在检查连通性…</string>
+    <string name="provider_connection_test_title">连通性测试</string>
+    <string name="provider_connection_test_ok">连通性正常——所有请求均有回应。</string>
+    <string name="provider_connection_test_failed">连通性失败——请查看下方的尝试记录。</string>
     <!-- Settings - Tor -->
     <string name="tor_title">Tor</string>
     <string name="tor_desc">通过 Tor 网络路由 API 请求</string>
@@ -823,7 +891,6 @@
     <string name="tor_socks_port">端口</string>
     <string name="tor_socks_port_desc">Tor SOCKS5 代理端口 (默认: 9050)</string>
     <string name="tor_info">需要运行中的 Tor 守护进程及 SOCKS5 代理。可通过 F-Droid 安装 Orbot 或在设备上运行 tor。</string>
-
     <!-- Auto-regenerate on Chinese -->
     <string name="auto_regen_cjk_title">Auto-regenerate on Chinese</string>
     <string name="auto_regen_cjk_desc">Stop and retry the answer if Chinese characters appear while it streams</string>
@@ -837,4 +904,5 @@
     <string name="memory_move_title">Move to folder: %1$s</string>
     <string name="memory_new_folder">New or existing folder (empty = root)</string>
     <string name="memory_new_folder_title">New folder</string>
+
 </resources>

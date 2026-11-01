@@ -37,6 +37,7 @@ import androidx.compose.ui.unit.sp
 import androidx.annotation.DrawableRes
 import androidx.annotation.StringRes
 import com.newoether.agora.R
+import com.newoether.agora.phone.PhoneUseIcon
 import com.newoether.agora.ui.settings.datacontrol.SettingsDataControlPage
 import com.newoether.agora.viewmodel.ChatViewModel
 
@@ -269,7 +270,10 @@ internal val baseSettingsGroups = listOf(
             R.string.mcp_desc,
             iconRes = R.drawable.ic_mcp,
         ),
+        SettingsCategory("phoneuse", R.string.phone_title, R.string.phone_description, PhoneUseIcon),
         SettingsCategory("automation", R.string.settings_automation, R.string.settings_automation_desc, Icons.Default.Repeat),
+        SettingsCategory("todo", R.string.settings_todo, R.string.settings_todo_desc, Icons.Default.Checklist),
+        SettingsCategory("subagents", R.string.settings_subagents, R.string.settings_subagents_desc, Icons.Default.AccountTree),
         SettingsCategory("interaction", R.string.settings_interaction, R.string.settings_interaction_desc, Icons.Default.QuestionAnswer),
     )),
     SettingsGroupData(titleRes = R.string.settings_group_network, items = listOf(
@@ -326,37 +330,42 @@ fun SettingsScreen(
         }
     }
     val listState = rememberLazyListState()
-    BoxWithConstraints(modifier = Modifier.fillMaxSize()) {
-        val twoPane = maxWidth >= SettingsTwoPaneMinWidth
-        BackHandler {
-            if (twoPane || selectedCategory == null) onBack() else selectedCategory = null
-        }
-        if (twoPane) {
-            SettingsTwoPaneScreen(
-                viewModel = viewModel,
-                settingsGroups = settingsGroups,
-                selectedCategory = selectedCategory ?: "provider",
-                onCategorySelected = { selectedCategory = it },
-                onBack = onBack,
-            )
-        } else {
-            GuardedAnimatedContent(
-                targetState = selectedCategory,
-                forward = selectedCategory != null,
-            ) { category ->
-                if (category != null) {
-                    SettingsDestination(
-                        category = category,
-                        viewModel = viewModel,
-                        onBack = { selectedCategory = null },
-                    )
-                } else {
-                    SettingsCategoryHome(
-                        settingsGroups = settingsGroups,
-                        listState = listState,
-                        onBack = onBack,
-                        onCategorySelected = { selectedCategory = it },
-                    )
+    val navigationListState = rememberLazyListState()
+    val scrollRetention = remember { SettingsScrollRetention() }
+    CompositionLocalProvider(LocalSettingsScrollRetention provides scrollRetention) {
+        BoxWithConstraints(modifier = Modifier.fillMaxSize()) {
+            val twoPane = maxWidth >= SettingsTwoPaneMinWidth
+            BackHandler {
+                if (twoPane || selectedCategory == null) onBack() else selectedCategory = null
+            }
+            if (twoPane) {
+                SettingsTwoPaneScreen(
+                    viewModel = viewModel,
+                    settingsGroups = settingsGroups,
+                    navigationListState = navigationListState,
+                    selectedCategory = selectedCategory ?: "provider",
+                    onCategorySelected = { selectedCategory = it },
+                    onBack = onBack,
+                )
+            } else {
+                GuardedAnimatedContent(
+                    targetState = selectedCategory,
+                    forward = selectedCategory != null,
+                ) { category ->
+                    if (category != null) {
+                        SettingsDestination(
+                            category = category,
+                            viewModel = viewModel,
+                            onBack = { selectedCategory = null },
+                        )
+                    } else {
+                        SettingsCategoryHome(
+                            settingsGroups = settingsGroups,
+                            listState = listState,
+                            onBack = onBack,
+                            onCategorySelected = { selectedCategory = it },
+                        )
+                    }
                 }
             }
         }

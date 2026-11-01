@@ -22,6 +22,7 @@ internal fun projectAutomaticMessagesForApi(messages: List<ChatMessage>): List<C
 internal fun automaticMessageApiText(source: MessageSource, text: String): String = when (source.kind) {
     MessageSource.Kind.TASK -> element("task_prompt", text)
     MessageSource.Kind.LOOP -> element("loop_prompt", text)
+    MessageSource.Kind.SUBAGENT -> element("subagent_result", text)
     MessageSource.Kind.ASK_USER -> buildString {
         append("<ask_user_answers>\n")
         source.askUser.forEach { item ->

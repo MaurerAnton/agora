@@ -1,22 +1,18 @@
 package com.newoether.agora.ui.chat.interaction
 
 import androidx.compose.animation.AnimatedContent
-import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.EnterTransition
 import androidx.compose.animation.ExitTransition
 import androidx.compose.animation.SizeTransform
-import androidx.compose.animation.core.animateFloatAsState
-import androidx.compose.animation.core.snap
+import androidx.compose.animation.core.Animatable
 import androidx.compose.animation.core.tween
-import androidx.compose.animation.fadeIn
-import androidx.compose.animation.fadeOut
-import androidx.compose.animation.scaleIn
-import androidx.compose.animation.scaleOut
 import androidx.compose.animation.slideInHorizontally
 import androidx.compose.animation.slideOutHorizontally
 import androidx.compose.animation.togetherWith
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Box
+import androidx.compose.ui.input.pointer.PointerEventPass
+import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
@@ -40,6 +36,8 @@ import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.SideEffect
+import androidx.compose.runtime.key
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateMapOf
 import androidx.compose.runtime.mutableFloatStateOf
@@ -53,9 +51,12 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.TransformOrigin
+import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.layout.onSizeChanged
+import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.platform.LocalLayoutDirection
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.semantics.clearAndSetSemantics
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.IntSize
@@ -66,6 +67,7 @@ import com.newoether.agora.ui.chat.message.ChatMarkdownCodeBlock
 import com.newoether.agora.ui.motion.LocalAgoraMotionPolicy
 import com.newoether.agora.viewmodel.AskUserController
 import com.newoether.agora.viewmodel.ShellConfirmationController
+import kotlinx.coroutines.flow.first
 
 private val ContentMaxWidth = 840.dp
 internal val ScrollableContentMaxHeight = 200.dp
@@ -128,58 +130,77 @@ internal fun UserInteractionBar(
     onPageChange: (String, String) -> Unit,
     onCardGone: (String) -> Unit,
     modifier: Modifier = Modifier,
+    inSharedRow: Boolean = false,
+    onMessageInsetChanged: (Float) -> Unit = {},
+    appearanceReady: Boolean = true,
+    animateEntry: Boolean = true,
+    onTransitionChanged: (String?, Boolean) -> Unit = { _, _ -> },
+    onExpansionChanged: (Float) -> Unit = {},
 ) {
     val motionPolicy = LocalAgoraMotionPolicy.current
-    val visible = interactions.isNotEmpty()
-    // The exit animation still needs a card to draw, so the last non-empty list stays around.
-    var shown by remember { mutableStateOf(conversationId to interactions) }
-    if (visible) shown = conversationId to interactions
-    val spec = if (motionPolicy.allowContinuousMotion) tween<Float>(AppearDurationMs) else snap()
-    // The card appears and leaves by scaling, so its measured height never shrinks on its own. The
-    // lift is that height times the same appear/leave progress, which makes it follow the card and
-    // end at exactly zero. This is the one place the lift is reported from, so no late measurement
-    // of a leaving card can leave the host lifted.
-    val liftFraction by animateFloatAsState(if (visible) 1f else 0f, spec, label = "interaction-lift")
+    val desired = (conversationId to interactions).takeIf { interactions.isNotEmpty() }
+    var shown by remember { mutableStateOf(desired) }
+    val latestDesired by rememberUpdatedState(desired)
+    val active = desired != null && shown?.first == conversationId
+    val progress = remember { Animatable(0f) }
+    val latestOnCardGone by rememberUpdatedState(onCardGone)
+    val latestAppearanceReady by rememberUpdatedState(appearanceReady)
+    val latestAnimateEntry by rememberUpdatedState(animateEntry)
+    val latestTransitionChanged by rememberUpdatedState(onTransitionChanged)
+    LaunchedEffect(Unit) {
+        snapshotFlow { shown?.first to (shown != null && progress.value > 0f) }
+            .collect { (owner, visible) -> latestTransitionChanged(owner, visible) }
+    }
+    SideEffect { if (active) shown = desired }
+    LaunchedEffect(conversationId, desired != null) {
+        if (shown != null && !active) {
+            progress.animateTo(0f, tween(AppearDurationMs))
+            shown = null
+        }
+        latestDesired?.let {
+            shown = it
+            snapshotFlow { latestAppearanceReady }.first { it }
+            if (latestAnimateEntry) progress.animateTo(1f, tween(AppearDurationMs))
+            else progress.snapTo(1f)
+        }
+    }
     var cardHeight by remember { mutableFloatStateOf(0f) }
     val latestOnHeightChanged by rememberUpdatedState(onHeightChanged)
-    LaunchedEffect(Unit) {
-        snapshotFlow { cardHeight * liftFraction }.collect { latestOnHeightChanged(it) }
+    val latestOnMessageInsetChanged by rememberUpdatedState(onMessageInsetChanged)
+    val clearance = with(LocalDensity.current) { 8.dp.toPx() }
+    LaunchedEffect(motionPolicy.allowSpatialTransitions, active, clearance) {
+        snapshotFlow {
+            val height = if (shown == null) 0f else cardHeight
+            val fraction = if (motionPolicy.allowSpatialTransitions) progress.value else if (active) 1f else 0f
+            height * fraction to if (height > 0f) (height + clearance) * fraction else 0f
+        }.collect { (height, inset) ->
+            latestOnHeightChanged(height)
+            latestOnMessageInsetChanged(inset)
+        }
     }
-    val latestOnCardGone by rememberUpdatedState(onCardGone)
-    AnimatedVisibility(
-        visible = visible,
-        enter = fadeIn(spec) + scaleIn(spec, initialScale = 0.9f, transformOrigin = BottomOrigin),
-        exit = fadeOut(spec) + scaleOut(spec, targetScale = 0.9f, transformOrigin = BottomOrigin),
-        modifier = modifier.fillMaxWidth(),
-    ) {
-        // One card per conversation. Both sides are waiting here; an empty side is the
-        // AnimatedVisibility above.
-        AnimatedContent(
-            targetState = shown,
-            contentKey = { (owner, _) -> owner },
-            transitionSpec = {
-                if (!motionPolicy.allowContinuousMotion) {
-                    EnterTransition.None togetherWith ExitTransition.None using null
-                } else {
-                    // The new card waits until the old one has gone.
-                    val enterSpec = tween<Float>(AppearDurationMs, delayMillis = AppearDurationMs)
-                    (
-                        fadeIn(enterSpec) +
-                            scaleIn(enterSpec, initialScale = 0.9f, transformOrigin = BottomOrigin)
-                        ) togetherWith (
-                        fadeOut(spec) +
-                            scaleOut(spec, targetScale = 0.9f, transformOrigin = BottomOrigin)
-                        ) using null
-                }
-            },
-            contentAlignment = Alignment.BottomCenter,
-            modifier = Modifier.fillMaxWidth(),
-            label = "interaction-card",
-        ) { (owner, waiting) ->
-            // Leaves composition only once this card has finished leaving.
-            DisposableEffect(owner) {
-                onDispose { latestOnCardGone(owner) }
-            }
+    val latestExpansionChanged by rememberUpdatedState(onExpansionChanged)
+    DisposableEffect(Unit) {
+        onDispose {
+            latestOnHeightChanged(0f)
+            latestOnMessageInsetChanged(0f)
+            latestExpansionChanged(0f)
+        }
+    }
+    val current = shown ?: run {
+        SideEffect { latestExpansionChanged(0f) }
+        return
+    }
+    val (owner, waiting) = current
+    val expansionPresence = if (motionPolicy.allowSpatialTransitions) progress.value else if (active) 1f else 0f
+    key(owner) {
+        DisposableEffect(owner) { onDispose { latestOnCardGone(owner) } }
+        Box(modifier.then(if (inSharedRow) Modifier else Modifier.fillMaxWidth()).graphicsLayer {
+            alpha = progress.value
+            val scale = if (motionPolicy.allowSpatialTransitions) 0.9f + 0.1f * progress.value else 1f
+            scaleX = scale
+            scaleY = scale
+            transformOrigin = BottomOrigin
+        }, contentAlignment = Alignment.BottomCenter) {
             InteractionDeck(
                 interactions = waiting,
                 autoWrapCodeBlocks = autoWrapCodeBlocks,
@@ -188,17 +209,20 @@ internal fun UserInteractionBar(
                 onShellDecision = onShellDecision,
                 onCardMeasured = { height -> cardHeight = height },
                 minimized = owner in minimizedIn,
-                onMinimizedChange = { folded -> onMinimizedChange(owner, folded) },
+                onMinimizedChange = { folded -> if (active) onMinimizedChange(owner, folded) },
                 drafts = drafts,
                 pageKey = pageIn[owner],
-                onPageChange = { key -> onPageChange(owner, key) },
+                onPageChange = { key -> if (active) onPageChange(owner, key) },
+                inSharedRow = inSharedRow,
+                onExpansionChanged = { latestExpansionChanged(it * expansionPresence) },
+                active = active,
             )
         }
     }
 }
 
 @Composable
-private fun InteractionDeck(
+internal fun InteractionDeck(
     interactions: List<UserInteraction>,
     autoWrapCodeBlocks: Boolean,
     onSubmitQuestions: (List<Pair<Long, AskUserController.Answer>>) -> Unit,
@@ -210,6 +234,11 @@ private fun InteractionDeck(
     drafts: QuestionDrafts,
     pageKey: String?,
     onPageChange: (String) -> Unit,
+    inSharedRow: Boolean,
+    onExpansionChanged: (Float) -> Unit,
+    active: Boolean,
+    questionTextFieldModifier: @Composable (AskUserController.Request) -> Modifier = { Modifier },
+    prepareQuestionTextInput: suspend () -> Unit = {},
 ) {
     val shell = interactions.firstNotNullOfOrNull { (it as? UserInteraction.ShellCommand)?.pending }
     val questions = interactions.filterIsInstance<UserInteraction.Question>().flatMap { it.requests }
@@ -228,24 +257,30 @@ private fun InteractionDeck(
     // The host remembers the page by key, so a request joining or leaving the card never moves the
     // user off the page they were on; a page that left falls back to the first one.
     val current = pages.firstOrNull { it.key == pageKey } ?: pages.first()
+    SideEffect {
+        if (active && pageKey != current.key) onPageChange(current.key)
+    }
     val index = keys.indexOf(current.key)
     val position = if (pages.size > 1) "${index + 1} / ${pages.size}" else null
-    val back: (() -> Unit)? = if (index > 0) ({ onPageChange(keys[index - 1]) }) else null
-    val next: (() -> Unit)? = if (index < pages.lastIndex) ({ onPageChange(keys[index + 1]) }) else null
+    val back: (() -> Unit)? = if (index > 0) ({ if (active) onPageChange(keys[index - 1]) }) else null
+    val next: (() -> Unit)? = if (index < pages.lastIndex) ({ if (active) onPageChange(keys[index + 1]) }) else null
     val motion = LocalAgoraMotionPolicy.current
     val rtl = LocalLayoutDirection.current == LayoutDirection.Rtl
 
     Column(
-        modifier = Modifier
-            .fillMaxWidth()
+        modifier = (if (inSharedRow) Modifier else Modifier.fillMaxWidth())
+            .then(if (active) Modifier else Modifier.clearAndSetSemantics {})
             .onSizeChanged { onCardMeasured(it.height.toFloat()) },
         horizontalAlignment = Alignment.CenterHorizontally,
     ) {
-        Box(modifier = Modifier.widthIn(max = ContentMaxWidth).padding(horizontal = 12.dp)) {
+        Box(modifier = Modifier.widthIn(max = ContentMaxWidth)
+            .then(if (inSharedRow) Modifier else Modifier.padding(horizontal = 12.dp))) {
             MorphingInteractionCard(
                 kind = if (current is DeckPage.Shell) InteractionKind.Approval else InteractionKind.Question,
                 minimized = minimized,
-                onMinimizedChange = onMinimizedChange,
+                onMinimizedChange = { if (active) onMinimizedChange(it) },
+                inSharedRow = inSharedRow,
+                onExpansionChanged = onExpansionChanged,
             ) {
                 // The header and the buttons stay put and simply show the current page; only the
                 // content between them slides a full width, while the card follows its height.
@@ -292,11 +327,14 @@ private fun InteractionDeck(
                                 pending = page.pending,
                                 autoWrapCodeBlocks = autoWrapCodeBlocks,
                                 alwaysAllow = alwaysAllow[page.pending.id] == true,
-                                onAlwaysAllowChange = { alwaysAllow[page.pending.id] = it },
+                                onAlwaysAllowChange = { if (active) alwaysAllow[page.pending.id] = it },
                             )
                             is DeckPage.Question -> QuestionBody(
                                 request = page.request,
                                 draft = draftOf(page.request),
+                                textFieldModifier = { questionTextFieldModifier(page.request) },
+                                prepareTextInput = prepareQuestionTextInput,
+                                enabled = active && !minimized && page.key == current.key,
                             )
                         }
                     }
@@ -306,7 +344,7 @@ private fun InteractionDeck(
                     is DeckPage.Shell -> ShellActions(
                         onNext = next,
                         onDecision = { allow ->
-                            onShellDecision(
+                            if (active) onShellDecision(
                                 current.pending.id,
                                 allow,
                                 allow && alwaysAllow[current.pending.id] == true,
@@ -318,11 +356,17 @@ private fun InteractionDeck(
                         draftOf = draftOf,
                         onBack = back,
                         onNext = next,
-                        onSubmit = onSubmitQuestions,
-                        onSkip = onSkipQuestion,
+                        onSubmit = { if (active) onSubmitQuestions(it) },
+                        onSkip = { if (active) onSkipQuestion(it) },
+                        enabled = active && !minimized,
                     )
                 }
             }
+            if (!active) Box(Modifier.matchParentSize().pointerInput(Unit) {
+                awaitPointerEventScope {
+                    while (true) awaitPointerEvent(PointerEventPass.Initial).changes.forEach { it.consume() }
+                }
+            })
         }
         Spacer(Modifier.height(8.dp))
     }

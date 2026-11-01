@@ -36,9 +36,11 @@ internal class GenerationToolRoundBuilder(
         val toolMessageId = "${Constants.TOOL_MSG_PREFIX}${newId()}"
         val toolSegments = completedSegments.ifEmpty { null }
         val allSegments = toolSegments ?: calls.map { it.toSegment(providerName) }
-        // The aggregate shares one Room column; repeatedly halve large results until the encoded
-        // representation stays under the existing CursorWindow guard.
-        val boundedSegmentsJson = MessagePersistenceGuard.encodeSegmentsBounded(allSegments)
+        // Root checkpoints reference this body after commit, so an oversized round must not
+        // degrade to a missing payload through the guard's legacy SQL NULL fallback.
+        val boundedSegmentsJson = checkNotNull(MessagePersistenceGuard.encodeSegmentsBounded(allSegments)) {
+            "Completed tool round exceeds the persistence budget"
+        }
         val resultMessages = calls.map { call ->
             val resultId = "${Constants.RESULT_MSG_PREFIX}${newId()}"
             resultId to ChatMessage(
@@ -120,6 +122,7 @@ internal class GenerationToolRoundBuilder(
         signatureProvider = providerName.takeIf { signature != null },
         toolCallId = toolCallId,
         toolDisplayName = displayName,
+        toolTarget = target,
         toolResultText = resultText,
         toolStructuredResult = structuredResult,
         toolImages = resultImages,

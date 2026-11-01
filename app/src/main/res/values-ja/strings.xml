@@ -92,8 +92,8 @@
     <string name="tool_reading_file">%1$s を読み込み中…</string>
     <string name="tool_writing_file">%1$s に書き込み中…</string>
     <string name="tool_editing_file">%1$s を編集中…</string>
-    <string name="tool_finding_files">%1$s を検索中…</string>
-    <string name="tool_searching_file">%1$s を検索中…</string>
+    <string name="tool_finding_files">ファイル %1$s を検索中…</string>
+    <string name="tool_searching_file">ファイル内で %1$s を検索中…</string>
     <string name="tool_executing_shell">実行中: %1$s…</string>
     <string name="tool_reading_memory">%1$s を読み込み中…</string>
     <string name="tool_saving_memory">%1$s を保存中…</string>
@@ -201,6 +201,22 @@
     <string name="embedding_custom_model_desc">プロバイダーがサポートする任意のモデル名を入力</string>
     <string name="embedding_batch_size">バッチサイズ</string>
     <string name="embedding_batch_size_desc">リクエストごとにキャッシュするメッセージ数（1-100）</string>
+    <string name="embedding_add_model">モデルを追加</string>
+    <string name="embedding_edit_model">モデルを編集</string>
+    <string name="embedding_choose_type">モデルの種類を選択</string>
+    <string name="embedding_type_remote_desc">OpenAI、Voyage AI、Ollama などの埋め込み API を使用します。</string>
+    <string name="embedding_type_local_desc">このデバイスで GGUF 埋め込みモデルを実行します。</string>
+    <string name="embedding_provider_custom">カスタム</string>
+    <string name="embedding_connection">接続</string>
+    <string name="embedding_general">一般</string>
+    <string name="embedding_cache_status">キャッシュ</string>
+    <string name="embedding_use_saved_key">保存済みの %1$s キーを使用</string>
+    <string name="embedding_use_saved_key_desc">チャットのプロバイダー設定から取得</string>
+    <string name="embedding_model_id_hint">モデル ID（例: text-embedding-3-small）</string>
+    <string name="embedding_model_locked_desc">キャッシュ済みの埋め込みはこのモデル専用です。切り替えるには新しいモデルを追加してください。</string>
+    <string name="embedding_model_file">モデルファイル</string>
+    <string name="embedding_replace_file">置き換え</string>
+    <string name="embedding_test_failed">接続テストに失敗しました: %1$s</string>
     <string name="local_model_ready">モデルをインポートしました。</string>
     <string name="import_model">モデルをインポート（.gguf）</string>
     <string name="importing_model">インポート中...</string>
@@ -255,6 +271,8 @@
     <string name="conversation_read_empty">選択したブランチにメッセージがありません。</string>
     <string name="conversation_read_page">ページ: メッセージ %1$d-%2$d</string>
     <string name="conversation_read_more">さらにメッセージを表示するには、より大きいオフセットを使用してください。</string>
+    <string name="conversation_tools_more">このメッセージにはさらにツール呼び出しがあります（tool_offset: %1$d）。</string>
+    <string name="conversation_details_error">保存されたメッセージの詳細を読み取れませんでした（%1$s）。</string>
 
     <!-- General -->
     <string name="back">戻る</string>
@@ -302,11 +320,6 @@
     <string name="provider_no_local_models_desc">GGUF モデルをインポートして開始してください</string>
     <string name="provider_keys_summary">%1$d 個の API キー</string>
     <string name="provider_connection">接続</string>
-    <string name="provider_connection_test">接続を確認</string>
-    <string name="provider_connection_test_running">接続を確認中…</string>
-    <string name="provider_connection_test_title">接続テスト</string>
-    <string name="provider_connection_test_ok">接続 OK — すべてのリクエストに応答がありました。</string>
-    <string name="provider_connection_test_failed">接続に失敗しました — 下記の試行を確認してください。</string>
     <string name="import_model_chat">GGUF モデルをインポート</string>
     <string name="add_local_chat_model">ローカルモデルを追加</string>
     <string name="local_ctx_size">コンテキストサイズ</string>
@@ -556,7 +569,7 @@
     <!-- SSH host-key pinning -->
     <string name="shell_ssh_verify_host_key">ホストキーを検証して固定</string>
     <string name="shell_ssh_host_key_pinned">ホストキーを固定済み</string>
-    <string name="shell_ssh_host_key_not_pinned">ホストキーが未固定 — 傍受に対して脆弱</string>
+    <string name="shell_ssh_host_key_not_pinned">ホストキーが未固定のため、傍受に対して脆弱です</string>
     <string name="shell_ssh_verify_title">SSH ホストキーを検証</string>
     <string name="shell_ssh_verify_message">信頼する前に、このフィンガープリントがサーバーと一致することを確認してください。固定することで中間者攻撃から保護されます。</string>
     <string name="shell_ssh_trust">信頼して固定</string>
@@ -794,6 +807,9 @@
     <string name="tool_edit_skill">スキルを編集</string>
     <string name="tool_delete_skill">スキルを削除</string>
     <string name="tool_read_file_truncated">一部の内容を表示 · バイト %1$d から続行</string>
+    <string name="tool_read_file_truncated_line">一部の内容を表示 · %1$d 行目から続行</string>
+    <string name="tool_edit_count">%1$d 件の変更</string>
+    <string name="tool_edit_replace_all">すべて置換</string>
     <string name="low_context_mode">低コンテキストモード</string>
     <string name="low_context_mode_default_desc">低コンテキストモードをデフォルトで有効にする</string>
     <string name="learn_more">詳細...</string>
@@ -818,7 +834,61 @@
     <string name="message_source_loop">ループ</string>
     <string name="message_source_ask_user">質問</string>
     <string name="message_source_unanswered">未回答</string>
+    <string name="settings_todo">やることリスト</string>
+    <string name="settings_todo_desc">モデルが管理する会話のチェックリスト</string>
+    <string name="todo_enable">やることリストを有効にする</string>
+    <string name="todo_enable_desc">モデルが会話のチェックリストを読み取り、更新できるようにします。オフにしても既存のリストは保持されます。</string>
+    <string name="settings_subagents">サブエージェント</string>
+    <string name="settings_subagents_desc">独立した会話に作業を委任</string>
+    <string name="subagents_enable">サブエージェントを有効にする</string>
+    <string name="subagents_enable_desc">モデルが独立した会話に作業を委任できるようにします。オフにしても既存のサブエージェントは停止しません。</string>
+    <string name="local_projector_title">視覚プロジェクター</string>
+    <string name="local_projector_desc">任意：画像入力に対応するため、チャットモデルに合った mmproj GGUF ファイルをインポート</string>
+    <string name="local_model_error_id_required">モデル ID を入力してください</string>
+    <string name="local_model_error_id_invalid">a-z、0-9、ピリオド、アンダースコア、ハイフンのみ使用できます</string>
+    <string name="local_model_error_id_taken">このモデル ID は既に使用されています</string>
+    <string name="local_model_error_file_required">GGUF モデルファイルをインポートしてください</string>
+    <string name="local_model_error_context">コンテキストサイズは正の整数にしてください</string>
+    <string name="local_model_error_temperature">温度は 0 から 2 の範囲にしてください</string>
+    <string name="local_model_error_top_p">Top P は 0 から 1 の範囲にしてください</string>
+    <string name="local_model_error_max_tokens">最大トークン数は正の整数にしてください</string>
+    <string name="local_model_error_output">最大トークン数はコンテキストサイズ以下にしてください</string>
+    <string name="tool_read_todo">やることリストを読む</string>
+    <string name="tool_update_todo">やることリストを更新</string>
+    <string name="tool_spawn_agent">サブエージェントを起動</string>
+    <string name="tool_send_agent_message">サブエージェントにメッセージを送信</string>
+    <string name="tool_wait_agents">サブエージェントを待つ</string>
+    <string name="tool_list_agents">サブエージェント一覧</string>
+    <string name="tool_stop_agent">サブエージェントを停止</string>
+    <string name="tool_reading_todo">やることリストを読み取り中…</string>
+    <string name="tool_updating_todo">やることリストを更新中…</string>
+    <string name="tool_spawning_agent">サブエージェントを起動中…</string>
+    <string name="tool_sending_agent_message">サブエージェントへのメッセージをキューに追加中…</string>
+    <string name="tool_waiting_agents">サブエージェントを待機中…</string>
+    <string name="tool_listing_agents">サブエージェント一覧を取得中…</string>
+    <string name="tool_stopping_agent">サブエージェントを停止中…</string>
+    <string name="tool_read_todo_done">やることリストを読み取りました</string>
+    <string name="tool_updated_todo">やることリストを更新しました</string>
+    <string name="tool_spawned_agent">サブエージェントを起動しました</string>
+    <string name="tool_queued_agent_message">サブエージェントへのメッセージをキューに追加しました</string>
+    <string name="tool_waited_agents">サブエージェントの待機を終了しました</string>
+    <string name="tool_listed_agents">サブエージェント一覧を取得しました</string>
+    <string name="tool_stopped_agent">サブエージェントを停止しました</string>
+    <string name="tool_delete_agent">サブエージェントを削除</string>
+    <string name="tool_deleting_agent">サブエージェントを削除中…</string>
+    <string name="tool_deleted_agent">サブエージェントを削除しました</string>
+    <string name="subagents_allow_delete">サブエージェントの削除を許可</string>
+    <string name="subagents_allow_delete_desc">親の会話がアイドル状態のサブエージェントを完全に削除して枠を空けられるようにします。実行中のサブエージェントや未配信の結果は削除されません。</string>
+    <string name="subagent_deleted_by_parent">このサブエージェントは親の会話によって削除されました。</string>
+    <string name="tool_todo_empty">やることリストは空です</string>
+    <string name="tool_agents_empty">サブエージェントはありません</string>
+    <string name="tool_agent_results_empty">サブエージェントの結果は返されませんでした</string>
 
+    <string name="provider_connection_test">接続を確認</string>
+    <string name="provider_connection_test_running">接続を確認中…</string>
+    <string name="provider_connection_test_title">接続テスト</string>
+    <string name="provider_connection_test_ok">接続 OK — すべてのリクエストに応答がありました。</string>
+    <string name="provider_connection_test_failed">接続に失敗しました — 下記の試行を確認してください。</string>
     <!-- Settings - Tor -->
     <string name="tor_title">Tor</string>
     <string name="tor_desc">Route API requests through Tor network</string>
@@ -828,7 +898,6 @@
     <string name="tor_socks_port">Port</string>
     <string name="tor_socks_port_desc">Tor SOCKS5 proxy port (default: 9050)</string>
     <string name="tor_info">Requires a running Tor daemon with SOCKS5 proxy. Install Orbot from F-Droid or run tor on your device.</string>
-
     <!-- Auto-regenerate on Chinese -->
     <string name="auto_regen_cjk_title">Auto-regenerate on Chinese</string>
     <string name="auto_regen_cjk_desc">Stop and retry the answer if Chinese characters appear while it streams</string>
@@ -842,4 +911,5 @@
     <string name="memory_move_title">Move to folder: %1$s</string>
     <string name="memory_new_folder">New or existing folder (empty = root)</string>
     <string name="memory_new_folder_title">New folder</string>
+
 </resources>

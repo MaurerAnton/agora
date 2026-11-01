@@ -26,17 +26,12 @@ data class ToolCallData(
     val responseOutputItemProvider: String? = null,
     /** Transcription description of a tool-result image; travels with the result row. */
     val transcription: String? = null,
+    /** Stable execution target retained for history without consulting a live registry. */
+    val target: String? = null,
 )
 
-@Serializable
-data class ToolImageAttachment(
-    val path: String,
-    val mimeType: String,
-    val sizeBytes: Long,
-    val width: Int? = null,
-    val height: Int? = null,
-    val sha256: String,
-)
+/** Tool images use the same measured artifact as ordinary attachments. */
+typealias ToolImageAttachment = ImageArtifact
 
 /** Disposable image presentation; an absent attachment is pending unless the read failed. */
 @Immutable
@@ -85,18 +80,23 @@ data class MessageSegment(
     @Transient
     val toolImageRequestKey: String? = null,
     /**
-     * Transcription description of a tool-result image (view_image). Persisted WITH the result
+     * Transcription description of a tool-result image (file_view_image). Persisted WITH the result
      * row so the API projection can inject it into the model context — the round-boundary path
      * rebuild does not include the model message, so a segment living there is unreachable.
      * Displayed only in the Image Transcription thinking block, never in the tool card.
      */
     val toolTranscription: String? = null,
+    /** Committed protocol row owning this tool body; root checkpoints retain only its call reference. */
+    val toolRoundId: String? = null,
     /** Raw provider protocol items needed to reconstruct a stateless tool continuation. */
     val responseOutputItems: List<JsonObject> = emptyList(),
     /** Provider identity that owns [responseOutputItems]; foreign transports must ignore them. */
     val responseOutputItemProvider: String? = null,
     /** Stable semantic cause for terminal error segments. Null keeps old rows backward-compatible. */
     val errorCode: String? = null,
+    /** Remote-only rendering hint; native tool payloads remain unchanged and never enter Room. */
+    @Transient
+    val remoteToolSource: String? = null,
     /** In-memory Provider delta boundaries for the active answer; never persisted to Room JSON. */
     @Transient
     val streamingTextDeltas: List<StreamingTextDelta> = emptyList(),
@@ -155,11 +155,10 @@ object ThinkingSegmentDisplayModes {
 object ToolCallDisplayModes {
     const val TIMELINE = "timeline"
     const val GROUPED_TIMELINE = "grouped_timeline"
-    const val COMPACT = "compact"
     const val DEFAULT = GROUPED_TIMELINE
 
     fun normalize(value: String?): String = when (value) {
-        COMPACT -> COMPACT
+        "compact" -> GROUPED_TIMELINE
         GROUPED_TIMELINE -> GROUPED_TIMELINE
         TIMELINE -> TIMELINE
         else -> DEFAULT
@@ -205,6 +204,8 @@ data class ChatMessage(
     /** Disposable off-main Markdown preparation; never persisted in Room or native history. */
     val preparedMarkdown: Map<String, com.mikepenz.markdown.model.State.Success> = emptyMap(),
     val preparedMarkdownBytes: Long = 0,
+    /** Facts keyed by the exact file paths in [images], including API-only tool image rows. */
+    val imageArtifacts: Map<String, ImageArtifact> = emptyMap(),
 
 )
 
@@ -221,6 +222,7 @@ data class ChatConversation(
     val hasUnreadGeneration: Boolean = false,
     val isPinned: Boolean = false,
     val selectedBranchesJson: String? = null,
+    val parentConversationId: String? = null,
 )
 
 fun ChatMessage.isContextCompact(): Boolean =

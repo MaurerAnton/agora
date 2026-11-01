@@ -15,6 +15,8 @@ import com.newoether.agora.api.util.asRetryableTransportError
 import com.newoether.agora.api.util.carriesModelOutput
 import com.newoether.agora.api.util.ProviderRetryPolicy
 import com.newoether.agora.model.ChatMessage
+import com.newoether.agora.model.ThinkingProviderFamily
+import com.newoether.agora.api.util.resolvedThinking
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.Dispatchers
@@ -33,6 +35,7 @@ import java.net.UnknownHostException
 abstract class BaseOpenAiProvider : LlmProvider {
 
     protected val json = Json { ignoreUnknownKeys = true; encodeDefaults = true; explicitNulls = false }
+    protected open val thinkingProviderFamily = ThinkingProviderFamily.OPENAI_COMPATIBLE
 
     // -- Override points --
 
@@ -210,13 +213,20 @@ abstract class BaseOpenAiProvider : LlmProvider {
                                     "attempt=$attempt/$maxAttempts",
                             )
                             if (termination.isRetryable && attempt < maxAttempts) {
-                                // Nothing was surfaced yet, so a replay cannot duplicate output.
+                                // Consumers roll back only this attempt before the retry begins.
                                 DebugLog.w(
                                     "AgoraAPI",
                                     "[$name] Incomplete stream on attempt $attempt/$maxAttempts, retrying",
                                 )
                                 val retryDelayMs = retryDelayMillis(attempt)
-                                emit(StreamEvent.Retrying(attempt, ProviderRetryPolicy.MAX_RETRIES))
+                                emit(
+                                    StreamEvent.Retrying(
+                                        attempt,
+                                        ProviderRetryPolicy.MAX_RETRIES,
+                                        resetCurrentAttempt = termination.producedContent ||
+                                            ProviderRetryPolicy.requiresResponseReadRetry(termination.streamError),
+                                    ),
+                                )
                                 delay(retryDelayMs)
                                 retryScheduled = true
                             } else {
@@ -226,7 +236,11 @@ abstract class BaseOpenAiProvider : LlmProvider {
                         } else {
                             val errorRaw = handle.errorBody.orEmpty()
                             val hasV1Fallback = endpointIndex + 1 < endpointUrls.size
-                            if (hasV1Fallback) {
+                            if (hasV1Fallback &&
+                                !ProviderRetryPolicy.shouldRetryHttp(handle.code, errorRaw, retryableStatusCodes) &&
+                                !ProviderRetryPolicy.isResponseReadHttpFailure(handle.code, errorRaw) &&
+                                !ProviderRetryPolicy.isPermanentHttpFailure(handle.code, errorRaw)
+                            ) {
                                 DebugLog.w(
                                     "AgoraAPI",
                                     "[$name] HTTP ${handle.code}; trying endpoint candidate " +
@@ -249,7 +263,10 @@ abstract class BaseOpenAiProvider : LlmProvider {
                                     retryableStatusCodes,
                                 ) && attempt < maxAttempts
                             ) {
-                                val retryDelayMs = retryDelayMillis(attempt)
+                                val retryDelayMs = maxOf(
+                                    retryDelayMillis(attempt),
+                                    com.newoether.agora.util.NetworkRetryPolicy.retryAfterMillis(handle.retryAfter) ?: 0L,
+                                )
                                 DebugLog.w("AgoraAPI", "[$name] Transient error ${handle.code} on attempt $attempt/$maxAttempts, retrying in ${retryDelayMs}ms...")
                                 emit(StreamEvent.Retrying(attempt, ProviderRetryPolicy.MAX_RETRIES))
                                 delay(retryDelayMs)
@@ -300,6 +317,8 @@ abstract class BaseOpenAiProvider : LlmProvider {
                 handle.readLine()
             } catch (error: SocketTimeoutException) {
                 if (!currentCoroutineContext().isActive) break
+                responseBodyReadError = error.asRetryableResponseBodyReadError()
+                if (responseBodyReadError != null) break
                 if (++consecutiveReadTimeouts >= 3) {
                     timedOut = true
                     break

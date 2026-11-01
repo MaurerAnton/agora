@@ -5,8 +5,11 @@ import com.newoether.agora.data.ShellDeviceConfig
 import com.newoether.agora.sandbox.SandboxManager
 import com.newoether.agora.util.SHELL_FILE_READ_MAX_BYTES
 import com.newoether.agora.util.ShellClient
+import com.newoether.agora.util.ShellFileEdit
 import com.newoether.agora.util.ShellFileEditResult
 import com.newoether.agora.util.ShellFileReadResult
+import com.newoether.agora.util.ShellGrepOptions
+import com.newoether.agora.util.ShellGrepResult
 import com.newoether.agora.util.SshClient
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.currentCoroutineContext
@@ -31,12 +34,13 @@ internal sealed interface Backend {
         emit(ToolExecutionEvent.Completed(executeCommand(cmd, workdir, timeoutMs)))
     }
     suspend fun fileRead(path: String, offset: Long, limit: Long): ShellFileReadResult
-    suspend fun fileWrite(path: String, content: String): String?
+    /** A non-blank [expectedSha256] must match the current file or nothing is written. */
+    suspend fun fileWrite(path: String, content: String, expectedSha256: String = ""): String?
+    /** Applies ordered edits atomically: all succeed or nothing is written. */
     suspend fun fileEdit(
         path: String,
-        oldString: String,
-        newString: String,
-        replaceAll: Boolean,
+        edits: List<ShellFileEdit>,
+        expectedSha256: String = "",
     ): ShellFileEditResult
     suspend fun fileGlob(
         pattern: String,
@@ -47,7 +51,8 @@ internal sealed interface Backend {
         pattern: String,
         basePath: String,
         fileGlob: String,
-    ): Result<Pair<List<ShellClient.GrepMatch>, Boolean>>
+        options: ShellGrepOptions,
+    ): Result<ShellGrepResult>
     fun close()
 }
 
@@ -79,32 +84,46 @@ internal class ConchBackend(override val device: ShellDeviceConfig) : Backend {
         timeoutMs: Int,
         onOutput: suspend (String) -> Unit,
     ): String {
-        if (url.isBlank()) return jsonError("execute_shell_command", "Server \"$deviceName\" has no URL configured.")
+        if (url.isBlank()) return jsonError("shell_exec", "Server \"$deviceName\" has no URL configured.")
         if (!client.fetchPublicKey() && apiKey.isNotBlank()) {
             return jsonError(
-                "execute_shell_command",
+                "shell_exec",
                 client.lastError ?: "Conch public-key exchange failed for $url",
                 server = deviceName,
             )
         }
-        val prepared = client.prepareRequest(cmd, timeoutMs, workdir)
+        lateinit var prepared: ShellClient.PreparedRequest
+        val progress = com.newoether.agora.util.NetworkRequestProgress()
         val handle = try {
-            HttpClient.streamPost(
-                "${prepared.serverUrl}/execute",
-                prepared.body,
-                prepared.headers,
-                scope = HttpClient.boundStreamScope(),
-                callClient = com.newoether.agora.util.ConchNetwork.streamCalls,
-                maxLineBytes = com.newoether.agora.util.ConchNetwork.LINE_LIMIT,
-                maxErrorBytes = com.newoether.agora.util.ConchNetwork.CONTROL_LIMIT,
-            )
+            com.newoether.agora.util.NetworkRetryPolicy.retry(
+                canRetry = { failure ->
+                    !progress.started && com.newoether.agora.util.NetworkRetryPolicy.isBeforeSendFailure(failure)
+                },
+            ) {
+                prepared = client.prepareRequest(cmd, timeoutMs, workdir)
+                progress.started = false
+                HttpClient.streamPost(
+                    "${prepared.serverUrl}/execute",
+                    prepared.body,
+                    prepared.headers,
+                    scope = HttpClient.boundStreamScope(),
+                    callClient = okhttp3.Call.Factory { request ->
+                        com.newoether.agora.util.ConchNetwork.client.newCall(
+                            request.newBuilder()
+                                .tag(com.newoether.agora.util.NetworkRequestProgress::class.java, progress).build(),
+                        )
+                    },
+                    maxLineBytes = com.newoether.agora.util.ConchNetwork.LINE_LIMIT,
+                    maxErrorBytes = com.newoether.agora.util.ConchNetwork.CONTROL_LIMIT,
+                )
+            }
         } catch (cancelled: CancellationException) {
             throw cancelled
         } catch (e: Exception) {
             return jsonError(
-                "execute_shell_command",
+                "shell_exec",
                 com.newoether.agora.util.describeConchRequestFailure(
-                    prepared.serverUrl,
+                    url,
                     "/execute request",
                     e,
                 ),
@@ -113,14 +132,15 @@ internal class ConchBackend(override val device: ShellDeviceConfig) : Backend {
             )
         }
         if (handle.code !in 200..299) {
+            val statusCode = handle.code
             val detail = handle.errorBody
                 ?.take(240)
                 ?.ifBlank { "empty response" }
                 ?: "empty response"
             handle.close()
             return jsonError(
-                "execute_shell_command",
-                "Conch at ${prepared.serverUrl} returned HTTP ${handle.code}: $detail",
+                "shell_exec",
+                "Conch at ${prepared.serverUrl} returned HTTP $statusCode: $detail",
                 server = deviceName,
                 command = cmd,
             )
@@ -133,7 +153,7 @@ internal class ConchBackend(override val device: ShellDeviceConfig) : Backend {
                 onOutput = onOutput,
             )
             buildJsonObject {
-                put("type", "execute_shell_command"); put("server", deviceName); put("command", cmd)
+                put("type", "shell_exec"); put("server", deviceName); put("command", cmd)
                 if (result.errorMessage != null) {
                     put("error", "execution_error")
                     put("message", result.errorMessage)
@@ -147,22 +167,21 @@ internal class ConchBackend(override val device: ShellDeviceConfig) : Backend {
         } catch (cancelled: CancellationException) {
             throw cancelled
         } catch (e: Exception) {
-            jsonError("execute_shell_command", e.message ?: "Unknown error", server = deviceName, command = cmd)
+            jsonError("shell_exec", e.message ?: "Unknown error", server = deviceName, command = cmd)
         } finally { handle.close() }
     }
 
     override suspend fun fileRead(path: String, offset: Long, limit: Long): ShellFileReadResult =
         client.fileRead(path, offset, limit)
 
-    override suspend fun fileWrite(path: String, content: String): String? =
-        client.fileWrite(path, content)?.let { jsonError("file_write", it, server = deviceName) }
+    override suspend fun fileWrite(path: String, content: String, expectedSha256: String): String? =
+        client.fileWrite(path, content, expectedSha256)?.let { jsonError("file_write", it, server = deviceName) }
 
     override suspend fun fileEdit(
         path: String,
-        oldString: String,
-        newString: String,
-        replaceAll: Boolean,
-    ): ShellFileEditResult = client.fileEdit(path, oldString, newString, replaceAll)
+        edits: List<ShellFileEdit>,
+        expectedSha256: String,
+    ): ShellFileEditResult = client.fileEdit(path, edits, expectedSha256)
 
     override suspend fun fileGlob(
         pattern: String,
@@ -175,15 +194,16 @@ internal class ConchBackend(override val device: ShellDeviceConfig) : Backend {
         pattern: String,
         basePath: String,
         fileGlob: String,
-    ): Result<Pair<List<ShellClient.GrepMatch>, Boolean>> =
-        client.fileGrep(pattern, basePath, fileGlob)
+        options: ShellGrepOptions,
+    ): Result<ShellGrepResult> =
+        client.fileGrep(pattern, basePath, fileGlob, options)
 
     override fun close() {}
 
-    suspend fun startJob(cmd: String, workdir: String, timeoutMs: Int): String =
-        client.startJob(cmd, timeoutMs, workdir)
+    suspend fun startJob(cmd: String, workdir: String, timeoutMs: Int, description: String = ""): String =
+        client.startJob(cmd, timeoutMs, workdir, description)
 
-    suspend fun listJobs(): String = client.listJobs()
+    suspend fun listJobs(offset: Int = 0, limit: Int = 100): String = client.listJobs(offset, limit)
 
     suspend fun getJob(jobId: String): String = client.getJob(jobId)
 
@@ -200,15 +220,12 @@ internal class ConchBackend(override val device: ShellDeviceConfig) : Backend {
 
 internal class SshBackend(override val device: ShellDeviceConfig) : Backend {
     private val host = device.sshHost
-    private val port = device.sshPort
-    private val user = device.sshUser
-    private val password = device.sshPassword
     private val deviceName = device.name
     private val hostKey = device.sshHostKey
 
     private val client: SshClient by lazy {
         SshClient(
-            host, port, user, password,
+            device = device,
             pinnedHostKey = hostKey,
             // Un-pinned devices stay usable (capture-only); once a key is pinned it is enforced.
             allowUnknownHostKey = hostKey.isBlank()
@@ -216,18 +233,18 @@ internal class SshBackend(override val device: ShellDeviceConfig) : Backend {
     }
 
     override suspend fun executeCommand(cmd: String, workdir: String, timeoutMs: Int): String {
-        if (host.isBlank()) return jsonError("execute_shell_command", "SSH device \"$deviceName\" has no host configured.")
+        if (host.isBlank()) return jsonError("shell_exec", "SSH device \"$deviceName\" has no host configured.")
         return try {
             val result = client.executeCommand(cmd, workdir, timeoutMs)
             buildJsonObject {
-                put("type", "execute_shell_command"); put("server", deviceName); put("command", cmd)
+                put("type", "shell_exec"); put("server", deviceName); put("command", cmd)
                 put("exit_code", result.exitCode)
                 put("output", (result.stdout + if (result.stderr.isNotBlank()) "\n${result.stderr}" else "").trimEnd())
             }.toString()
         } catch (cancelled: CancellationException) {
             throw cancelled
         } catch (e: Exception) {
-            jsonError("execute_shell_command", e.message ?: "Unknown error", server = deviceName, command = cmd)
+            jsonError("shell_exec", e.message ?: "Unknown error", server = deviceName, command = cmd)
         }
     }
 
@@ -240,30 +257,33 @@ internal class SshBackend(override val device: ShellDeviceConfig) : Backend {
             failedFileRead(offset, limit, "SFTP read failed: ${e.message}")
         }
 
-    override suspend fun fileWrite(path: String, content: String): String? =
-        client.fileWrite(path, content)?.let { jsonError("file_write", it, server = deviceName) }
+    override suspend fun fileWrite(path: String, content: String, expectedSha256: String): String? =
+        client.fileWrite(path, content, expectedSha256)?.let { jsonError("file_write", it, server = deviceName) }
 
     override suspend fun fileEdit(
         path: String,
-        oldString: String,
-        newString: String,
-        replaceAll: Boolean,
-    ): ShellFileEditResult = client.fileEdit(path, oldString, newString, replaceAll)
+        edits: List<ShellFileEdit>,
+        expectedSha256: String,
+    ): ShellFileEditResult = client.fileEdit(path, edits, expectedSha256)
 
     override suspend fun fileGlob(
         pattern: String,
         basePath: String,
         depth: Int?,
-    ): Result<Pair<List<String>, Boolean>> = Result.success(client.fileGlob(pattern, basePath, depth))
+    ): Result<Pair<List<String>, Boolean>> = try {
+        Result.success(client.fileGlob(pattern, basePath, depth))
+    } catch (cancelled: CancellationException) {
+        throw cancelled
+    } catch (e: Exception) {
+        Result.failure(e)
+    }
 
     override suspend fun fileGrep(
         pattern: String,
         basePath: String,
         fileGlob: String,
-    ): Result<Pair<List<ShellClient.GrepMatch>, Boolean>> =
-        client.fileGrep(pattern, basePath, fileGlob).map { (matches, truncated) ->
-            matches.map { ShellClient.GrepMatch(it.path, it.line, it.content) } to truncated
-        }
+        options: ShellGrepOptions,
+    ): Result<ShellGrepResult> = client.fileGrep(pattern, basePath, fileGlob, options)
 
     override fun close() { client.close() }
 }
@@ -273,11 +293,11 @@ internal class SandboxBackend(sandbox: SandboxManager?) : Backend {
     private val mgr = sandbox ?: throw IllegalStateException("Sandbox not available")
 
     override suspend fun executeCommand(cmd: String, workdir: String, timeoutMs: Int): String {
-        if (!mgr.isAvailable()) return jsonError("execute_shell_command", "Local Sandbox is not installed.")
+        if (!mgr.isAvailable()) return jsonError("shell_exec", "Local Sandbox is not installed.")
         return try {
             val result = mgr.executeCommand(cmd, workdir, timeoutMs)
             buildJsonObject {
-                put("type", "execute_shell_command"); put("server", "Local Sandbox"); put("command", cmd)
+                put("type", "shell_exec"); put("server", "Local Sandbox"); put("command", cmd)
                 put("exit_code", result.exitCode)
                 result.warning?.let { put("warning", it) }
                 put("output", (result.stdout + if (result.stderr.isNotBlank()) "\n${result.stderr}" else "").trimEnd())
@@ -285,7 +305,7 @@ internal class SandboxBackend(sandbox: SandboxManager?) : Backend {
         } catch (cancelled: CancellationException) {
             throw cancelled
         } catch (e: Exception) {
-            jsonError("execute_shell_command", e.message ?: "Unknown error", server = "Local Sandbox", command = cmd)
+            jsonError("shell_exec", e.message ?: "Unknown error", server = "Local Sandbox", command = cmd)
         }
     }
 
@@ -298,15 +318,14 @@ internal class SandboxBackend(sandbox: SandboxManager?) : Backend {
             failedFileRead(offset, limit, e.message ?: "Read failed")
         }
 
-    override suspend fun fileWrite(path: String, content: String): String? =
-        mgr.fileWrite(path, content)?.let { jsonError("file_write", it, server = "Local Sandbox") }
+    override suspend fun fileWrite(path: String, content: String, expectedSha256: String): String? =
+        mgr.fileWrite(path, content, expectedSha256)?.let { jsonError("file_write", it, server = "Local Sandbox") }
 
     override suspend fun fileEdit(
         path: String,
-        oldString: String,
-        newString: String,
-        replaceAll: Boolean,
-    ): ShellFileEditResult = mgr.fileEdit(path, oldString, newString, replaceAll)
+        edits: List<ShellFileEdit>,
+        expectedSha256: String,
+    ): ShellFileEditResult = mgr.fileEdit(path, edits, expectedSha256)
 
     override suspend fun fileGlob(
         pattern: String,
@@ -324,10 +343,8 @@ internal class SandboxBackend(sandbox: SandboxManager?) : Backend {
         pattern: String,
         basePath: String,
         fileGlob: String,
-    ): Result<Pair<List<ShellClient.GrepMatch>, Boolean>> =
-        mgr.fileGrep(pattern, basePath, fileGlob).map { (matches, truncated) ->
-            matches.map { ShellClient.GrepMatch(it.path, it.line, it.content) } to truncated
-        }
+        options: ShellGrepOptions,
+    ): Result<ShellGrepResult> = mgr.fileGrep(pattern, basePath, fileGlob, options)
 
     override fun close() {}
 }
@@ -346,4 +363,5 @@ private fun failedFileRead(
     limit = if (limit in 1..SHELL_FILE_READ_MAX_BYTES) limit else SHELL_FILE_READ_MAX_BYTES,
     truncated = false,
     error = error,
+    bytesRead = 0,
 )

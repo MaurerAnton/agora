@@ -1,0 +1,8 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="todo_title">待辦清單</string>
+    <string name="todo_progress">%1$d / %2$d</string>
+    <string name="todo_pending">待處理</string>
+    <string name="todo_in_progress">進行中</string>
+    <string name="todo_completed">已完成</string>
+</resources>

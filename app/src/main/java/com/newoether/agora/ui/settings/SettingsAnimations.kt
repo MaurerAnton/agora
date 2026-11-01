@@ -6,6 +6,7 @@ import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.offset
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.key
 import androidx.compose.runtime.mutableIntStateOf
@@ -55,8 +56,11 @@ internal fun settingsSpring(): SpringSpec<Float> = spring(
 internal fun <T> GuardedAnimatedContent(
     targetState: T,
     forward: Boolean,
+    contentKey: (T) -> Any? = { it },
     content: @Composable (T) -> Unit
 ) {
+    val parentScrollPath = LocalSettingsScrollPath.current
+    val retainScroll = LocalSettingsScrollRetentionActive.current
     val allowSpatialTransitions = LocalAgoraMotionPolicy.current.allowSpatialTransitions
     val pageSlots = remember {
         mutableStateListOf(
@@ -154,7 +158,12 @@ internal fun <T> GuardedAnimatedContent(
                     zIndex = if (isOutgoing) 0f else 1f,
                     consumeInput = isOutgoing
                 ) {
-                    content(slot.state)
+                    CompositionLocalProvider(
+                        LocalSettingsScrollPath provides (parentScrollPath + contentKey(slot.state)),
+                        LocalSettingsScrollRetentionActive provides (retainScroll && !isOutgoing),
+                    ) {
+                        content(slot.state)
+                    }
                 }
             }
         }

@@ -107,6 +107,9 @@ No owner may infer the other capability from a matching company name or legacy s
 
 ## 6. Failure and security behavior
 
+- Generic search and web fetch use Agora's shared five-retry budget silently for transient network
+  and HTTP failures, including body reads. Exhaustion follows their existing result/error path;
+  retries add no UI wording. Authentication, permanent client errors and cancellation do not retry.
 - API-backed generic providers fail with provider-specific missing-credential errors.
 - SearXNG validates and uses its configured URL; DuckDuckGo uses its existing public-search path.
 - Unsupported values fail closed through normalization to DuckDuckGo; they must not silently call

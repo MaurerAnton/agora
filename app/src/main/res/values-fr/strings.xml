@@ -201,6 +201,22 @@
     <string name="embedding_custom_model_desc">Saisissez n\'importe quel nom de modèle pris en charge par le fournisseur</string>
     <string name="embedding_batch_size">Taille du lot</string>
     <string name="embedding_batch_size_desc">Messages à mettre en cache par requête (1-100)</string>
+    <string name="embedding_add_model">Ajouter un modèle</string>
+    <string name="embedding_edit_model">Modifier le modèle</string>
+    <string name="embedding_choose_type">Choisir le type de modèle</string>
+    <string name="embedding_type_remote_desc">Utilise une API d\'embeddings comme OpenAI, Voyage AI ou Ollama.</string>
+    <string name="embedding_type_local_desc">Exécute un modèle d\'embeddings GGUF sur cet appareil.</string>
+    <string name="embedding_provider_custom">Personnalisé</string>
+    <string name="embedding_connection">Connexion</string>
+    <string name="embedding_general">Général</string>
+    <string name="embedding_cache_status">Cache</string>
+    <string name="embedding_use_saved_key">Utiliser la clé %1$s enregistrée</string>
+    <string name="embedding_use_saved_key_desc">Issue des réglages du fournisseur de chat</string>
+    <string name="embedding_model_id_hint">ID du modèle, p. ex. text-embedding-3-small</string>
+    <string name="embedding_model_locked_desc">Les embeddings en cache appartiennent à ce modèle. Ajoutez un nouveau modèle pour changer.</string>
+    <string name="embedding_model_file">Fichier du modèle</string>
+    <string name="embedding_replace_file">Remplacer</string>
+    <string name="embedding_test_failed">Échec du test de connexion : %1$s</string>
     <string name="local_model_ready">Modèle importé.</string>
     <string name="import_model">Importer un modèle (.gguf)</string>
     <string name="importing_model">Importation...</string>
@@ -255,6 +271,8 @@
     <string name="conversation_read_empty">Aucun message dans la branche sélectionnée.</string>
     <string name="conversation_read_page">Page : messages %1$d-%2$d</string>
     <string name="conversation_read_more">Utilisez un décalage plus élevé pour voir plus de messages.</string>
+    <string name="conversation_tools_more">D\'autres appels d\'outils sont disponibles pour ce message (tool_offset : %1$d).</string>
+    <string name="conversation_details_error">Impossible de lire les détails enregistrés du message (%1$s).</string>
 
     <!-- General -->
     <string name="back">Retour</string>
@@ -302,11 +320,6 @@
     <string name="provider_no_local_models_desc">Importez un modèle GGUF pour commencer</string>
     <string name="provider_keys_summary">%1$d clé(s) d\'API</string>
     <string name="provider_connection">Connexion</string>
-    <string name="provider_connection_test">Tester la connexion</string>
-    <string name="provider_connection_test_running">Vérification de la connexion…</string>
-    <string name="provider_connection_test_title">Test de connexion</string>
-    <string name="provider_connection_test_ok">Connexion OK — toutes les requêtes ont répondu.</string>
-    <string name="provider_connection_test_failed">Échec de la connexion — voir les tentatives ci-dessous.</string>
     <string name="import_model_chat">Importer un modèle GGUF</string>
     <string name="add_local_chat_model">Ajouter un modèle local</string>
     <string name="local_ctx_size">Taille du contexte</string>
@@ -556,7 +569,7 @@
     <!-- SSH host-key pinning -->
     <string name="shell_ssh_verify_host_key">Vérifier et épingler la clé d\'hôte</string>
     <string name="shell_ssh_host_key_pinned">Clé d\'hôte épinglée</string>
-    <string name="shell_ssh_host_key_not_pinned">Clé d\'hôte non épinglée — vulnérable à l\'interception</string>
+    <string name="shell_ssh_host_key_not_pinned">Clé d\'hôte non épinglée, vulnérable à l\'interception</string>
     <string name="shell_ssh_verify_title">Vérifier la clé d\'hôte SSH</string>
     <string name="shell_ssh_verify_message">Confirmez que cette empreinte correspond à votre serveur avant de lui faire confiance. L\'épinglage protège contre les attaques de l\'homme du milieu.</string>
     <string name="shell_ssh_trust">Faire confiance et épingler</string>
@@ -794,6 +807,9 @@
     <string name="tool_edit_skill">Modifier la compétence</string>
     <string name="tool_delete_skill">Supprimer la compétence</string>
     <string name="tool_read_file_truncated">Contenu partiel affiché · continuer à l’octet %1$d</string>
+    <string name="tool_read_file_truncated_line">Contenu partiel affiché · continuer à la ligne %1$d</string>
+    <string name="tool_edit_count">%1$d modifications</string>
+    <string name="tool_edit_replace_all">Tout remplacer</string>
     <string name="low_context_mode">Mode à faible contexte</string>
     <string name="low_context_mode_default_desc">Activer le mode à faible contexte par défaut</string>
     <string name="learn_more">En savoir plus...</string>
@@ -818,7 +834,61 @@
     <string name="message_source_loop">Boucle</string>
     <string name="message_source_ask_user">Question</string>
     <string name="message_source_unanswered">Sans réponse</string>
+    <string name="settings_todo">Liste de tâches</string>
+    <string name="settings_todo_desc">Liste de tâches de la conversation gérée par le modèle</string>
+    <string name="todo_enable">Activer la liste de tâches</string>
+    <string name="todo_enable_desc">Autoriser le modèle à lire et à mettre à jour la liste de tâches de la conversation. La désactivation conserve les listes existantes.</string>
+    <string name="settings_subagents">Sous-agents</string>
+    <string name="settings_subagents_desc">Déléguer du travail à des conversations isolées</string>
+    <string name="subagents_enable">Activer les sous-agents</string>
+    <string name="subagents_enable_desc">Autoriser le modèle à déléguer du travail à des conversations isolées. La désactivation ne met pas fin aux sous-agents existants.</string>
+    <string name="local_projector_title">Projecteur Visuel</string>
+    <string name="local_projector_desc">Facultatif : importer un fichier mmproj GGUF compatible avec le modèle de chat pour prendre en charge les images en entrée</string>
+    <string name="local_model_error_id_required">Un ID de modèle est requis</string>
+    <string name="local_model_error_id_invalid">Utilisez uniquement a-z, 0-9, points, tirets bas et tirets</string>
+    <string name="local_model_error_id_taken">Cet ID de modèle est déjà utilisé</string>
+    <string name="local_model_error_file_required">Importez un fichier de modèle GGUF</string>
+    <string name="local_model_error_context">La taille du contexte doit être un entier positif</string>
+    <string name="local_model_error_temperature">La température doit être comprise entre 0 et 2</string>
+    <string name="local_model_error_top_p">Top P doit être compris entre 0 et 1</string>
+    <string name="local_model_error_max_tokens">Le nombre maximal de tokens doit être un entier positif</string>
+    <string name="local_model_error_output">Le nombre maximal de tokens ne doit pas dépasser la taille du contexte</string>
+    <string name="tool_read_todo">Lire la liste de tâches</string>
+    <string name="tool_update_todo">Mettre à jour la liste de tâches</string>
+    <string name="tool_spawn_agent">Démarrer un sous-agent</string>
+    <string name="tool_send_agent_message">Envoyer un message au sous-agent</string>
+    <string name="tool_wait_agents">Attendre les sous-agents</string>
+    <string name="tool_list_agents">Lister les sous-agents</string>
+    <string name="tool_stop_agent">Arrêter le sous-agent</string>
+    <string name="tool_reading_todo">Lecture de la liste de tâches…</string>
+    <string name="tool_updating_todo">Mise à jour de la liste de tâches…</string>
+    <string name="tool_spawning_agent">Démarrage du sous-agent…</string>
+    <string name="tool_sending_agent_message">Mise en file du message au sous-agent…</string>
+    <string name="tool_waiting_agents">En attente des sous-agents…</string>
+    <string name="tool_listing_agents">Récupération de la liste des sous-agents…</string>
+    <string name="tool_stopping_agent">Arrêt du sous-agent…</string>
+    <string name="tool_read_todo_done">Liste de tâches lue</string>
+    <string name="tool_updated_todo">Liste de tâches mise à jour</string>
+    <string name="tool_spawned_agent">Sous-agent démarré</string>
+    <string name="tool_queued_agent_message">Message au sous-agent mis en file</string>
+    <string name="tool_waited_agents">Attente des sous-agents terminée</string>
+    <string name="tool_listed_agents">Liste des sous-agents récupérée</string>
+    <string name="tool_stopped_agent">Sous-agent arrêté</string>
+    <string name="tool_delete_agent">Supprimer le sous-agent</string>
+    <string name="tool_deleting_agent">Suppression du sous-agent…</string>
+    <string name="tool_deleted_agent">Sous-agent supprimé</string>
+    <string name="subagents_allow_delete">Autoriser la suppression des sous-agents</string>
+    <string name="subagents_allow_delete_desc">Permet à la conversation parente de supprimer définitivement ses sous-agents inactifs pour libérer des places. Les sous-agents en cours et les résultats non livrés ne sont jamais supprimés.</string>
+    <string name="subagent_deleted_by_parent">Ce sous-agent a été supprimé par sa conversation parente.</string>
+    <string name="tool_todo_empty">La liste de tâches est vide</string>
+    <string name="tool_agents_empty">Aucun sous-agent</string>
+    <string name="tool_agent_results_empty">Aucun résultat de sous-agent renvoyé</string>
 
+    <string name="provider_connection_test">Tester la connexion</string>
+    <string name="provider_connection_test_running">Vérification de la connexion…</string>
+    <string name="provider_connection_test_title">Test de connexion</string>
+    <string name="provider_connection_test_ok">Connexion OK — toutes les requêtes ont répondu.</string>
+    <string name="provider_connection_test_failed">Échec de la connexion — voir les tentatives ci-dessous.</string>
     <!-- Settings - Tor -->
     <string name="tor_title">Tor</string>
     <string name="tor_desc">Route API requests through Tor network</string>
@@ -828,7 +898,6 @@
     <string name="tor_socks_port">Port</string>
     <string name="tor_socks_port_desc">Tor SOCKS5 proxy port (default: 9050)</string>
     <string name="tor_info">Requires a running Tor daemon with SOCKS5 proxy. Install Orbot from F-Droid or run tor on your device.</string>
-
     <!-- Auto-regenerate on Chinese -->
     <string name="auto_regen_cjk_title">Auto-regenerate on Chinese</string>
     <string name="auto_regen_cjk_desc">Stop and retry the answer if Chinese characters appear while it streams</string>
@@ -842,4 +911,5 @@
     <string name="memory_move_title">Move to folder: %1$s</string>
     <string name="memory_new_folder">New or existing folder (empty = root)</string>
     <string name="memory_new_folder_title">New folder</string>
+
 </resources>

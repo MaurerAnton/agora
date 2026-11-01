@@ -2,6 +2,7 @@ package com.newoether.agora.viewmodel
 
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.async
+import kotlinx.coroutines.cancelAndJoin
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.test.advanceTimeBy
 import kotlinx.coroutines.test.runCurrent
@@ -90,7 +91,7 @@ class AskUserControllerTest {
     }
 
     @Test
-    fun `a question waits indefinitely because no timeout may answer it`() = runTest {
+    fun `the single request primitive remains unbounded without a group budget`() = runTest {
         val controller = AskUserController()
         val request = controller.open("c1", "Which one?", listOf("A", "B"), allowMultiple = false, blocking = true)
         val answer = async { controller.awaitAnswer(request) }
@@ -103,6 +104,117 @@ class AskUserControllerTest {
 
         controller.submit(request.id, listOf("A"))
         assertEquals(listOf("A"), answer.await().choices)
+    }
+
+    @Test
+    fun `one group deadline retains out of order answers without restarting for each question`() = runTest {
+        val controller = AskUserController()
+        val setId = controller.newSetId()
+        val first = controller.open("c1", "First?", listOf("A"), false, true, setId)
+        val second = controller.open("c1", "Second?", listOf("B"), false, true, setId)
+        val third = controller.open("c1", "Third?", emptyList(), false, true, setId)
+        val answer = async { controller.awaitAnswers(listOf(first, second, third), timeoutMs = 60_000L) }
+        runCurrent()
+
+        advanceTimeBy(30_000L)
+        controller.submit(third.id, emptyList(), "answered early")
+        advanceTimeBy(29_000L)
+        controller.submit(first.id, listOf("A"))
+        runCurrent()
+        assertFalse(answer.isCompleted)
+        assertEquals(listOf(second), controller.requests.value)
+
+        advanceTimeBy(999L)
+        runCurrent()
+        assertFalse(answer.isCompleted)
+        advanceTimeBy(1L)
+        runCurrent()
+
+        assertEquals(
+            listOf(
+                AskUserController.Answer(listOf("A"), answered = true),
+                AskUserController.Answer.Unanswered,
+                AskUserController.Answer(emptyList(), "answered early", answered = true),
+            ),
+            answer.await(),
+        )
+        assertEquals(60_000L, testScheduler.currentTime)
+        assertTrue(controller.requests.value.isEmpty())
+        listOf(first, second, third).forEach {
+            assertEquals(AskUserController.Answer.Unanswered, controller.awaitAnswer(it))
+        }
+    }
+
+    @Test
+    fun `an answer submitted at the deadline before expiry runs is retained`() = runTest {
+        val controller = AskUserController()
+        val first = controller.open("c1", "First?", listOf("A"), false, true)
+        val second = controller.open("c1", "Second?", listOf("B"), false, true)
+        val answer = async { controller.awaitAnswers(listOf(first, second), timeoutMs = 60_000L) }
+        runCurrent()
+        advanceTimeBy(60_000L)
+        assertFalse(answer.isCompleted)
+
+        // The scheduler has reached the deadline but has not run expiry at that instant yet.
+        controller.submit(second.id, listOf("B"))
+        runCurrent()
+
+        assertEquals(
+            listOf(AskUserController.Answer.Unanswered, AskUserController.Answer(listOf("B"), answered = true)),
+            answer.await(),
+        )
+        assertTrue(controller.requests.value.isEmpty())
+    }
+
+    @Test
+    fun `answers for an expired group cannot decide a later request`() = runTest {
+        val controller = AskUserController()
+        val expired = controller.open("c1", "Old?", listOf("A"), false, true)
+        val oldAnswer = async { controller.awaitAnswers(listOf(expired), timeoutMs = 60_000L) }
+        runCurrent()
+        advanceTimeBy(60_000L)
+        runCurrent()
+        assertEquals(listOf(AskUserController.Answer.Unanswered), oldAnswer.await())
+        assertNull(controller.requestById(expired.id))
+
+        val current = controller.open("c1", "New?", listOf("B"), false, true)
+        val currentAnswer = async { controller.awaitAnswers(listOf(current), timeoutMs = 60_000L) }
+        runCurrent()
+        controller.submit(expired.id, listOf("A"))
+        controller.dismiss(expired.id)
+        runCurrent()
+        assertFalse(currentAnswer.isCompleted)
+        assertEquals(listOf(current), controller.requests.value)
+
+        controller.submit(current.id, listOf("B"))
+        assertEquals(listOf(AskUserController.Answer(listOf("B"), answered = true)), currentAnswer.await())
+        assertTrue(controller.requests.value.isEmpty())
+    }
+
+    @Test
+    fun `cancelling a group cleans its waiters without touching another request or queuing an answer`() = runTest {
+        val controller = AskUserController()
+        val delivered = mutableListOf<AskUserController.DeferredAnswer>()
+        backgroundScope.launch { controller.deferredAnswers.collect { delivered += it } }
+        val first = controller.open("c1", "First?", listOf("A"), false, true)
+        val second = controller.open("c1", "Second?", listOf("B"), false, true)
+        val unrelated = controller.open("c2", "Later?", emptyList(), false, false)
+        val answer = async { controller.awaitAnswers(listOf(first, second), timeoutMs = 60_000L) }
+        runCurrent()
+        controller.submit(second.id, listOf("B"))
+
+        answer.cancelAndJoin()
+        runCurrent()
+
+        assertTrue(answer.isCancelled)
+        assertEquals(listOf(unrelated), controller.requests.value)
+        assertEquals(AskUserController.Answer.Unanswered, controller.awaitAnswer(first))
+        assertEquals(AskUserController.Answer.Unanswered, controller.awaitAnswer(second))
+        controller.submit(first.id, listOf("A"))
+        advanceTimeBy(60_000L)
+        runCurrent()
+        assertEquals(listOf(unrelated), controller.requests.value)
+        assertTrue(delivered.isEmpty())
     }
 
     @Test

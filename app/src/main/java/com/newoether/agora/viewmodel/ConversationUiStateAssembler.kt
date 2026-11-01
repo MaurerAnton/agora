@@ -2,7 +2,10 @@ package com.newoether.agora.viewmodel
 
 import com.newoether.agora.automation.ConversationExecutionCoordinator
 import com.newoether.agora.data.repository.ConversationRepository
+import com.newoether.agora.data.repository.recoverOpenedConversationFamily
 import com.newoether.agora.model.ChatMessage
+import com.newoether.agora.model.ConversationTodoItem
+import com.newoether.agora.ui.chat.interaction.UserInteraction
 import com.newoether.agora.util.DebugLog
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.CoroutineDispatcher
@@ -10,6 +13,7 @@ import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.coroutineScope
+import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
@@ -17,8 +21,11 @@ import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.drop
+import kotlinx.coroutines.flow.flatMapLatest
+import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.mapLatest
+import kotlinx.coroutines.flow.onStart
 import kotlinx.coroutines.flow.runningFold
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.stateIn
@@ -26,7 +33,34 @@ import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import kotlinx.serialization.json.Json
 
+/** A selection placeholder has no owner; only the actual query may confirm an empty list. */
+@OptIn(kotlinx.coroutines.ExperimentalCoroutinesApi::class)
+internal fun observeSelectedConversationTodo(
+    selectedConversationId: Flow<String?>,
+    observeTodo: (String) -> Flow<List<ConversationTodoItem>>,
+): Flow<Pair<String?, List<ConversationTodoItem>>> = selectedConversationId.flatMapLatest { id ->
+    if (id == null) flowOf(null to emptyList())
+    else observeTodo(id).map<List<ConversationTodoItem>, Pair<String?, List<ConversationTodoItem>>> { id to it }
+        .onStart { emit(null to emptyList()) }
+}
+
+/** The cover observes the same selected-owner projections that the tools row renders. */
+internal fun observeConversationContentReadiness(
+    selectedConversationId: Flow<String?>,
+    loadedMessagesConversationId: Flow<String?>,
+    todo: Flow<Pair<String?, List<ConversationTodoItem>>>,
+    family: Flow<SubagentFamilySnapshot>,
+    interactions: Flow<Pair<String?, List<UserInteraction>>>,
+): Flow<String?> = combine(
+    selectedConversationId, loadedMessagesConversationId, todo, family, interactions,
+) { selected, loaded, todos, agents, requests ->
+    selected?.takeIf {
+        loaded == it && todos.first == it && agents.forSelection(it) != null && requests.first == it
+    }
+}.distinctUntilChanged()
+
 private data class ConversationPathStructure(
+    val conversationId: String?,
     val allMessages: List<ChatMessage>,
     val selectedChildren: Map<String?, String>,
 )
@@ -55,17 +89,18 @@ internal class ConversationUiStateAssembler(
         .distinctUntilChanged()
         .stateIn(scope, SharingStarted.Eagerly, emptyList())
 
-    private val structuralMessages = renderStore.snapshot
-        .map { snapshot ->
-            ConversationPathStructure(
-                allMessages = snapshot.allMessages,
-                selectedChildren = snapshot.selectedChildren,
-            )
-        }
+    private val _loadedMessagesConversationId = MutableStateFlow<String?>(null)
+    val loadedMessagesConversationId: StateFlow<String?> =
+        _loadedMessagesConversationId.asStateFlow()
+    private val messagesConversationId = MutableStateFlow<String?>(null)
+
+    private val structuralMessages = combine(renderStore.snapshot, messagesConversationId) { snapshot, id ->
+        ConversationPathStructure(id, snapshot.allMessages, snapshot.selectedChildren)
+    }
         .distinctUntilChanged()
         .mapLatest { snapshot ->
             withContext(projectionDispatcher) {
-                ConversationUiState.resolvePath(
+                snapshot to ConversationUiState.resolvePath(
                     allMessages = snapshot.allMessages,
                     streamingMsg = null,
                     selectedChildren = snapshot.selectedChildren,
@@ -88,20 +123,28 @@ internal class ConversationUiStateAssembler(
     val messages: StateFlow<List<ChatMessage>> = combine(
         structuralMessages,
         indexedRenderSnapshots,
-    ) { structuralPath, indexedSnapshot ->
+    ) { structuralProjection, indexedSnapshot ->
+        val (structure, structuralPath) = structuralProjection
         val (snapshot, latestMessagesById) = indexedSnapshot
-        applyRenderSnapshotToResolvedPath(
+        val path = applyRenderSnapshotToResolvedPath(
             resolvedPath = structuralPath,
             snapshot = snapshot,
             latestMessagesById = latestMessagesById,
         )
+        val owner = structure.conversationId
+        if (owner != null && currentConversationId.value == owner &&
+            messagesConversationId.value == owner &&
+            snapshot.allMessages === structure.allMessages &&
+            snapshot.selectedChildren == structure.selectedChildren
+        ) {
+            // The owner tag also drives empty or structurally equal conversation replacements.
+            // Publish only after its branch walk reaches the same current render snapshot.
+            _loadedMessagesConversationId.value = owner
+        }
+        path
     }
         .distinctUntilChanged()
         .stateIn(scope, SharingStarted.Eagerly, emptyList())
-
-    private val _loadedMessagesConversationId = MutableStateFlow<String?>(null)
-    val loadedMessagesConversationId: StateFlow<String?> =
-        _loadedMessagesConversationId.asStateFlow()
 
     private val _isLoading = MutableStateFlow(false)
     val isLoading: StateFlow<Boolean> = _isLoading.asStateFlow()
@@ -131,6 +174,7 @@ internal class ConversationUiStateAssembler(
         if (collectionJob != null) return
         collectionJob = scope.launch {
             currentConversationId.collectLatest { id ->
+                messagesConversationId.value = null
                 _loadedMessagesConversationId.value = null
                 if (id != null) {
                     try {
@@ -177,6 +221,7 @@ internal class ConversationUiStateAssembler(
     }
 
     fun clearConversationGraph() {
+        messagesConversationId.value = null
         renderStore.clear()
         _loadedMessagesConversationId.value = null
     }
@@ -189,9 +234,7 @@ internal class ConversationUiStateAssembler(
     }
 
     private suspend fun collectConversation(id: String) = coroutineScope {
-        executionCoordinator.tryWithConversationLock(id) {
-            conversations.recoverConversationRuntime(id)
-        }
+        conversations.recoverOpenedConversationFamily(id, executionCoordinator)
         val state = registry.getOrCreate(id)
 
         val conversation = conversations.getConversation(id)
@@ -217,10 +260,10 @@ internal class ConversationUiStateAssembler(
                         allMessages = mapped,
                         selectedChildren = restoredChildren,
                     )
+                    messagesConversationId.value = id
                 } else {
                     renderStore.setAllMessages(mapped)
                 }
-                _loadedMessagesConversationId.value = id
                 if (!generationMirrorStarted) {
                     generationMirrorStarted = true
                     generationMirror.publishCurrent(id, state)

@@ -29,12 +29,9 @@ private fun encodeCompactSelections(selections: Map<String?, String>): String =
  * This is not a second database access object: [ChatDao] remains the sole `@Dao`. The split keeps
  * the atomic graph contract reviewable and under the repository's permanent source-size gate.
  */
-interface ChatContextCompactDao {
+interface ChatContextCompactDao : SemanticMutationDao {
     @Query("SELECT * FROM conversations WHERE id = :conversationId")
     suspend fun getConversation(conversationId: String): ChatEntity?
-
-    @Insert(onConflict = OnConflictStrategy.ABORT)
-    suspend fun insertMessage(message: MessageEntity)
 
     @Query("SELECT * FROM messages WHERE id = :messageId")
     suspend fun getMessage(messageId: String): MessageEntity?
@@ -48,11 +45,8 @@ interface ChatContextCompactDao {
     @Query("SELECT * FROM messages WHERE runId IN (:runIds) ORDER BY runSequence, timestamp, id")
     suspend fun getMessagesForRuns(runIds: List<String>): List<MessageEntity>
 
-    @Query("DELETE FROM runs WHERE id = :runId")
-    suspend fun deleteRun(runId: String): Int
-
-    @Query("DELETE FROM embeddings WHERE messageId IN (:messageIds)")
-    suspend fun deleteEmbeddingsByMessageIds(messageIds: List<String>)
+    @Query("SELECT NOT EXISTS(SELECT 1 FROM messages WHERE runId = :runId AND id != :messageId)")
+    suspend fun isOnlyMessageInRun(runId: String, messageId: String): Boolean
 
     @Query(
         """
@@ -124,9 +118,6 @@ interface ChatContextCompactDao {
     @Query("UPDATE runs SET lastCheckpointAt = :at WHERE id = :runId")
     suspend fun touchRun(runId: String, at: Long): Int
 
-    @Query("DELETE FROM messages WHERE id IN (:ids)")
-    suspend fun deleteMessagesByIds(ids: List<String>)
-
     @Query("UPDATE messages SET parentId = :replacementParentId WHERE parentId = :removedMessageId")
     suspend fun reparentMessageChildren(removedMessageId: String, replacementParentId: String?): Int
 
@@ -169,7 +160,7 @@ interface ChatContextCompactDao {
         check(oldRun.status.isTerminal && oldRun.activeSlot == null) {
             "Compact Run is not terminal"
         }
-        check(getMessagesForRuns(listOf(oldRun.id)).map(MessageEntity::id) == listOf(message.id)) {
+        check(isOnlyMessageInRun(oldRun.id, message.id)) {
             "Compact Run is not independently replaceable"
         }
         check(
@@ -241,7 +232,7 @@ interface ChatContextCompactDao {
         val conversation = getConversation(message.conversationId) ?: return false
         val compactRun = getRun(message.runId) ?: return false
         val compactOwnsDedicatedRun =
-            getMessagesForRuns(listOf(compactRun.id)).map(MessageEntity::id) == listOf(message.id)
+            isOnlyMessageInRun(compactRun.id, message.id)
         reparentMessageChildren(message.id, message.parentId)
         deleteEmbeddingsByMessageIds(listOf(message.id))
         deleteMessagesByIds(listOf(message.id))

@@ -6,6 +6,7 @@ import com.newoether.agora.data.local.RunEntity
 import com.newoether.agora.data.MessageAttachmentCloneSession
 import com.newoether.agora.data.repository.ConversationRepository
 import com.newoether.agora.data.repository.SettingsRepository
+import com.newoether.agora.data.repository.remapToolRoundReferences
 import com.newoether.agora.model.AttachmentMeta
 import com.newoether.agora.model.MessageSegment
 import com.newoether.agora.model.Participant
@@ -128,6 +129,7 @@ class ConversationForkShareService(
                     conversationId = newConversationId,
                     parentId = message.parentId?.let { checkNotNull(messageIds[it]) },
                     runId = checkNotNull(runIds[message.runId]),
+                    toolCallJson = remapToolRoundReferences(message.toolCallJson, messageIds),
                             ),
                             ownerKey = checkNotNull(messageIds[message.id]),
                         )
@@ -167,6 +169,7 @@ class ConversationForkShareService(
         val forkConversation = ChatEntity(
             id = newConversationId,
             title = source.title,
+            todoJson = source.todoJson,
             selectedBranchesJson = explicitMessageSelections.encodeSelections(),
             systemPromptId = source.systemPromptId,
             modelId = source.modelId,

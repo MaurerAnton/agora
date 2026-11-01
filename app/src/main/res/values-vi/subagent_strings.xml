@@ -1,0 +1,31 @@
+<resources>
+    <string name="message_source_subagent">Tác nhân phụ</string>
+    <string name="subagent_running">Đang chạy</string>
+    <string name="subagent_completed">Đã hoàn thành</string>
+    <string name="subagent_failed">Thất bại</string>
+    <string name="subagent_stopped">Đã dừng</string>
+    <string name="subagent_idle">Chờ</string>
+    <string name="subagents_model_list_title">Danh sách mô hình</string>
+    <string name="subagents_recommended_model_title">Mô hình đề xuất</string>
+    <string name="subagents_no_recommended_model">Không chỉ định</string>
+    <string name="subagents_no_models">Chưa thêm mô hình</string>
+    <string name="subagents_no_models_desc">Thêm mô hình để khởi chạy tác nhân phụ mới</string>
+    <string name="subagents_add_models">Thêm mô hình</string>
+    <string name="subagents_add_models_title">Thêm mô hình cho tác nhân phụ</string>
+    <string name="subagents_capsule_display_title">Hiển thị viên nang</string>
+    <string name="subagents_capsule_display_desc">Hiển thị tác nhân con riêng lẻ hoặc trong một viên nang</string>
+    <string name="subagents_capsule_display_individual">Riêng lẻ</string>
+    <string name="subagents_capsule_display_grouped">Gộp chung</string>
+    <string name="subagents_limits_title">Giới hạn</string>
+    <string name="subagents_max_total">Tổng số tác nhân con</string>
+    <string name="subagents_max_total_desc">Số tác nhân con hiện có tối đa cho mỗi cuộc trò chuyện cha, kể cả những tác nhân đã hoàn thành. Giảm giới hạn này không dừng hoặc xóa các tác nhân con hiện có.</string>
+    <string name="subagents_max_concurrent">Tác nhân con đồng thời</string>
+    <string name="subagents_max_concurrent_desc">Số tác nhân con tối đa chạy cùng lúc cho mỗi cuộc trò chuyện cha. Công việc vượt giới hạn sẽ chờ; giảm giới hạn này vẫn cho phép các tác nhân đang chạy hoàn thành.</string>
+    <string name="subagents_limit_value">%1$d</string>
+    <plurals name="subagents_running_count">
+        <item quantity="other">%d đang chạy</item>
+    </plurals>
+    <plurals name="subagents_count">
+        <item quantity="other">%d tác nhân con</item>
+    </plurals>
+</resources>

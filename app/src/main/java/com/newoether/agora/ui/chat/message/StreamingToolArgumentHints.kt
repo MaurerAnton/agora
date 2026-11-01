@@ -55,6 +55,7 @@ internal object StreamingToolArgumentHintResolver {
             ToolKind.SKILL_EDIT,
             ToolKind.SKILL_DELETE -> root.scalar("name")
             ToolKind.WEB_SEARCH,
+            ToolKind.MCP_SEARCH,
             ToolKind.CONVERSATION_SEARCH -> root.scalar("query")
             ToolKind.WEB_FETCH -> root.scalar("url")
             ToolKind.CONVERSATION_READ -> root.scalar("conversation_id")

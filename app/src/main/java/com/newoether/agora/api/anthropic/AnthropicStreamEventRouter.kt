@@ -276,23 +276,18 @@ internal class AnthropicStreamEventRouter {
     }
 
     /**
-     * Surface malformed open blocks without turning any unclosed block into an executable call.
+     * Hold malformed open-block failures for the provider's termination and retry decision.
      * A name alone does not prove that the streamed JSON arguments were complete.
      */
-    fun reportIncompleteBlocks(): List<StreamEvent> = buildList {
-        // One attempt owns one terminal diagnostic. Named open blocks are represented by
-        // toolCallInFlight in StreamTermination; report at most one additional identity error.
-        toolBlocks.toSortedMap().values.firstOrNull { !it.name.matches(safeWireToolName) }?.let {
-            reportedError = true
-            add(
-                StreamEvent.Error(
-                    GenerationError.SseParse(
-                        rawLine = "stream_end",
-                        cause = "Provider ended before the tool name was complete",
-                    )
-                )
+    fun reportIncompleteBlocks(): List<StreamEvent> {
+        // Named open blocks remain represented by toolCallInFlight in StreamTermination.
+        if (toolBlocks.values.any { !it.name.matches(safeWireToolName) }) {
+            captureParseError(
+                rawLine = "stream_end",
+                cause = "Provider ended before the tool name was complete",
             )
         }
+        return emptyList()
     }
 
     fun captureParseError(rawLine: String, cause: String) {

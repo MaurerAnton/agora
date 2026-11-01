@@ -37,6 +37,45 @@ internal class GenerationOutputAccumulator(
     var currentThoughtSignature: String? = null
     var currentThoughtSignatureProvider: String? = null
 
+    private var restoreProviderAttempt: (() -> Unit)? = null
+
+    /** One baseline per Provider request; transport retries never replace completed tool rounds. */
+    fun beginProviderRequest() {
+        tokenUsageAccumulator.beginRequest()
+        val text = totalText.toString()
+        val thoughts = totalThoughts
+        val title = totalThoughtTitle
+        val status = currentStatus
+        val answer = currentAnswerBuf.toString()
+        val deltas = currentAnswerDeltas.toList()
+        val deltaSequence = nextAnswerDeltaSequence
+        val thought = currentThoughtBuf.toString()
+        val signature = currentThoughtSignature
+        val signatureProvider = currentThoughtSignatureProvider
+        val restoreOverlay = toolOverlay.capture()
+        val restoreTiming = thoughtTiming.capture()
+        restoreProviderAttempt = {
+            totalText.clear()
+            totalText.append(text)
+            totalThoughts = thoughts
+            totalThoughtTitle = title
+            currentStatus = status
+            currentAnswerBuf = StringBuilder(answer)
+            currentAnswerDeltas = deltas.toMutableList()
+            nextAnswerDeltaSequence = deltaSequence
+            currentThoughtBuf = StringBuilder(thought)
+            currentThoughtSignature = signature
+            currentThoughtSignatureProvider = signatureProvider
+            generationErrorMessage = null
+            generationErrorCode = null
+            restoreOverlay()
+            restoreTiming()
+            tokenUsageAccumulator.resetCurrentAttempt()
+            totalTokenUsage = tokenUsageAccumulator.snapshot()
+            totalTokenCount = totalTokenUsage?.totalTokenCount ?: 0
+        }
+    }
+
     fun flushAnswerSegment() {
         if (currentAnswerBuf.isNotEmpty()) {
             toolOverlay.append(
@@ -92,14 +131,18 @@ internal class GenerationOutputAccumulator(
         completedToolCalls: Map<String, StreamEvent.ToolCallRequest>,
         uiUpdateGate: StreamingUiUpdateGate,
         publishStreamUpdate: suspend (Boolean) -> Unit,
-        publishRetrySnapshot: () -> Unit,
+        publishRetrySnapshot: suspend () -> Unit,
     ) {
         when (event) {
             is StreamEvent.TextChunk -> if (event.text.isNotEmpty()) tokenUsageAccumulator.observeGenerationContent()
             is StreamEvent.ThoughtChunk -> if (event.thought.isNotEmpty()) tokenUsageAccumulator.observeGenerationContent()
             is StreamEvent.ToolCallUpdate -> if (event.arguments.isNotEmpty()) tokenUsageAccumulator.observeGenerationContent()
             is StreamEvent.HostedToolCallUpdate -> tokenUsageAccumulator.pauseGeneration()
-            is StreamEvent.Retrying -> tokenUsageAccumulator.resetGenerationTiming()
+            is StreamEvent.Retrying -> {
+                tokenUsageAccumulator.resetCurrentAttempt()
+                totalTokenUsage = tokenUsageAccumulator.snapshot()
+                totalTokenCount = totalTokenUsage?.totalTokenCount ?: 0
+            }
             else -> Unit
         }
         when (event) {
@@ -177,6 +220,11 @@ internal class GenerationOutputAccumulator(
                 }
             }
             is StreamEvent.Retrying -> {
+                if (event.resetCurrentAttempt) {
+                    checkNotNull(restoreProviderAttempt) {
+                        "Provider attempt reset arrived without a request baseline"
+                    }.invoke()
+                }
                 retryText = context.getString(R.string.generation_retry_attempt, event.attempt, event.maxAttempts)
                 publishRetrySnapshot()
             }

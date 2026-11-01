@@ -35,6 +35,7 @@ import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
@@ -191,6 +192,7 @@ internal fun InternalCameraCaptureDialog(
                         color = if (captureReady) Color.White else Color.White.copy(alpha = 0.45f),
                         shape = CircleShape,
                     )
+                    .clip(CircleShape)
                     .clickable(enabled = captureReady) {
                         val capture = imageCapture ?: return@clickable
                         captureInProgress = true

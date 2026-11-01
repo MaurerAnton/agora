@@ -63,6 +63,55 @@ class GenerationToolRoundBuilderTest {
     }
 
     @Test
+    fun `resolved router metadata survives Room result rows and offline provider replay`() {
+        val original = ToolCallData(
+            toolName = "mcp_call_tool",
+            arguments = """{"arguments":{"path":"/tmp/a"},"tool_id":"mcp_deleted_read_ab1234"}""",
+            result = "done",
+            toolCallId = "call",
+            displayName = "filesystem/read_file",
+            target = "Deleted filesystem server",
+        )
+        val round = GenerationToolRoundBuilder().build(
+            previousMessageId = "assistant",
+            conversationId = "conversation",
+            runId = "run",
+            modelName = "model",
+            providerName = "provider",
+            calls = listOf(original),
+            completedSegments = emptyList(),
+        )
+        val replay = projectProviderMessages(round.entities, includeStoredTranscriptions = false)
+        assertEquals(2, replay.size)
+        replay.forEach { message ->
+            val call = requireNotNull(message.toolCall)
+            assertEquals(original.toolName, call.toolName)
+            assertEquals(original.arguments, call.arguments)
+            assertEquals(original.displayName, call.displayName)
+            assertEquals(original.target, call.target)
+            assertTrue(round.entities.single { it.id == message.id }.toolCallJson.orEmpty()
+                .contains("Deleted filesystem server"))
+        }
+        val legacy = Json.decodeFromString<ToolCallData>(
+            """{"toolName":"mcp_legacy_read_ab1234","arguments":"{}","result":"done"}""",
+        )
+        assertEquals(null, legacy.target)
+    }
+
+    @Test(expected = IllegalStateException::class)
+    fun `oversized committed body cannot degrade to a null reference target`() {
+        GenerationToolRoundBuilder().build(
+            previousMessageId = "root",
+            conversationId = "conversation",
+            runId = "run",
+            modelName = "model",
+            providerName = "provider",
+            calls = listOf(ToolCallData("lookup", "x".repeat(600_001), "done", toolCallId = "call")),
+            completedSegments = emptyList(),
+        )
+    }
+
+    @Test
     fun `builds matching provider path and Room graph with deterministic hierarchy`() {
         val ids = ArrayDeque(listOf("tool", "result-1", "result-2"))
         val builder = GenerationToolRoundBuilder(

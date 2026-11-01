@@ -45,8 +45,9 @@ class RemotePresentationLifecycleTest {
             val events = MutableSharedFlow<RemoteConversationPage>()
             val session = RemoteSession("session", "Session", "/workspace", 1)
             coEvery { store.load() } returns emptyList()
+            every { client.adapters } returns null
             every { client.address } returns "http://computer/"
-            coEvery { client.connect() } returns "Computer"
+            coEvery { client.connect() } returns RemoteDeviceStatus.CONNECTED
             coEvery { client.sessions(any()) } returns RemoteSessionPage(listOf(session), null)
             coEvery { client.models() } returns emptyList()
             every { client.events(any()) } returns events

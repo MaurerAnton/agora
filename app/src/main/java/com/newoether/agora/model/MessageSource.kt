@@ -19,12 +19,17 @@ data class MessageSource(
     val kind: Kind,
     /** Question/answer pairs in asking order; only used when [kind] is [Kind.ASK_USER]. */
     val askUser: List<AskUserItem> = emptyList(),
+    /** Exact outbox receipts consumed atomically with this automatic input's Run graph. */
+    val subagentResults: Map<String, String> = emptyMap(),
+    /** Snapshot for the compact completion bubble; original result text remains the API payload. */
+    val subagentResult: SubagentResult? = null,
 ) {
     @Serializable
     enum class Kind {
         @SerialName("task") TASK,
         @SerialName("loop") LOOP,
         @SerialName("ask_user") ASK_USER,
+        @SerialName("subagent") SUBAGENT,
     }
 
     /** One asked question. A null [answer] means the user left it unanswered. */
@@ -35,8 +40,20 @@ data class MessageSource(
         val answer: String? = null,
     )
 
+    /** Display-only snapshot attached to the exact completion receipt, never a status authority. */
+    @Immutable
+    @Serializable
+    data class SubagentResult(
+        val name: String,
+        val status: String,
+        val errorText: String? = null,
+        val errorCode: String? = null,
+    )
+
     init {
         require(kind == Kind.ASK_USER || askUser.isEmpty())
+        require(kind == Kind.SUBAGENT || subagentResults.isEmpty())
+        require(subagentResult == null || kind == Kind.SUBAGENT && subagentResults.size == 1)
     }
 
     /**
@@ -64,6 +81,7 @@ data class MessageSource(
         fun forAutomationRequestKind(requestKind: String): MessageSource? = when (requestKind) {
             "task" -> TASK
             "loop" -> LOOP
+            "subagent" -> MessageSource(Kind.SUBAGENT)
             else -> null
         }
 
@@ -85,4 +103,21 @@ data class MessageSource(
         fun sanitizeImported(raw: String?, participant: Participant): String? =
             if (participant == Participant.USER) encode(decode(raw)) else null
     }
+}
+
+/** Legacy completion headers are recognized only against their exact stored child receipt. */
+fun MessageSource.subagentResultDisplay(text: String): MessageSource.SubagentResult? {
+    if (kind != MessageSource.Kind.SUBAGENT || subagentResults.isEmpty()) return null
+    subagentResult?.let { return it }
+    val header = text.substringBefore('\n').removeSuffix("\r")
+    if (subagentResults.size == 1) {
+        val childId = subagentResults.keys.single()
+        for (status in listOf("completed", "failed", "stopped")) {
+            val suffix = " ($childId) [$status]"
+            if (header.endsWith(suffix)) {
+                return MessageSource.SubagentResult(header.removeSuffix(suffix), status)
+            }
+        }
+    }
+    return MessageSource.SubagentResult(name = "", status = "")
 }

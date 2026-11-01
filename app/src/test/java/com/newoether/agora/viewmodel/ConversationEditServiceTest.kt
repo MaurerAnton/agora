@@ -60,6 +60,48 @@ class ConversationEditServiceTest {
     }
 
     @Test
+    fun rejectsEveryAutomaticSourceBeforeClaimingRuntimeOrReadingRoom() = runBlocking {
+        val sources = listOf(
+            com.newoether.agora.model.MessageSource.TASK,
+            com.newoether.agora.model.MessageSource.LOOP,
+            com.newoether.agora.model.MessageSource.askUser(listOf(
+                com.newoether.agora.model.MessageSource.AskUserItem("Question", "Answer"))),
+            com.newoether.agora.model.MessageSource(com.newoether.agora.model.MessageSource.Kind.SUBAGENT),
+        )
+        for (source in sources) {
+            val fixture = Fixture()
+            val state = ConversationGenerationState("conversation", reclaimQueuedAttachments = {})
+            val request = fixture.request.copy(visiblePath = listOf(SOURCE_MESSAGE.copy(source = source)))
+            assertFalse(fixture.service.edit(request, state))
+            assertFalse(state.generating.value)
+            assertNull(fixture.transitions.request.value)
+            coVerify(exactly = 0) { fixture.conversations.getMessage(any()) }
+            coVerify(exactly = 0) { fixture.boundLauncher.launch(any(), any()) }
+            state.dispose()
+        }
+        Unit
+    }
+
+    @Test
+    fun durableAutomaticSourceRejectsAStaleUnmarkedProjectionBeforeCloning() = runBlocking {
+        val fixture = Fixture()
+        val state = ConversationGenerationState("conversation", reclaimQueuedAttachments = {})
+        coEvery { fixture.conversations.getMessage("source-input") } returns SOURCE_ENTITY.copy(
+            sourceJson = com.newoether.agora.model.MessageSource.encode(com.newoether.agora.model.MessageSource.LOOP))
+        val result = async(start = CoroutineStart.UNDISPATCHED) {
+            fixture.service.edit(fixture.request, state)
+        }
+        val transition = checkNotNull(fixture.transitions.request.value)
+        fixture.transitions.acknowledgeFade(transition.id)
+        assertFalse(withTimeout(5_000L) { result.await() })
+        coVerify(exactly = 0) { fixture.inputCloner.clone(any(), any(), any()) }
+        coVerify(exactly = 0) { fixture.conversations.createRunWithMessages(any(), any(), any(), any(), any(), any()) }
+        coVerify(exactly = 0) { fixture.boundLauncher.launch(any(), any()) }
+        state.dispose()
+        Unit
+    }
+
+    @Test
     fun commitsEditedGraphBeforeProjectionSettlementAndBoundLaunch() = runBlocking {
         val fixture = Fixture()
         val state = ConversationGenerationState("conversation", reclaimQueuedAttachments = {})

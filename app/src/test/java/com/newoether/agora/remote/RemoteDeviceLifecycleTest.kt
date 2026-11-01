@@ -18,7 +18,7 @@ import java.io.IOException
 @OptIn(ExperimentalCoroutinesApi::class)
 internal class RemoteDeviceLifecycleTest : RemoteViewModelFixture() {
     @Test fun savedNamesRenderBeforeNetworkAndSurviveOfflineReentry() = runTest(dispatcher) {
-        val network = CompletableDeferred<String>()
+        val network = CompletableDeferred<RemoteDeviceStatus>()
         coEvery { connections.load() } returns listOf(RemoteConnection("Quantum-Work", "http://computer/", "token"))
         coEvery { client.connect() } coAnswers { network.await() }
         val vm = RemoteViewModel(connections, projectionDispatcher = dispatcher) { _, _ -> client }
@@ -37,8 +37,8 @@ internal class RemoteDeviceLifecycleTest : RemoteViewModelFixture() {
         vm.setVisible(false)
     }
 
-    @Test fun configuredNameIsSavedAndHostnameNeverReplacesIt() = runTest(dispatcher) {
-        coEvery { client.connect() } returns "HOSTNAME"
+    @Test fun configuredNameIsSavedAndHealthCheckNeverReplacesIt() = runTest(dispatcher) {
+        coEvery { client.connect() } returns RemoteDeviceStatus.CONNECTED
         val vm = RemoteViewModel(connections, projectionDispatcher = dispatcher) { _, _ -> client }; runCurrent()
         vm.saveDevice("http://computer/", "token", "  My work computer  "); runCurrent()
         assertEquals("My work computer", vm.state.value.devices.single().name)
@@ -50,7 +50,7 @@ internal class RemoteDeviceLifecycleTest : RemoteViewModelFixture() {
         coVerify { connections.save(match { it.name == "Renamed" }, "http://computer/") }
     }
 
-    @Test fun legacyUrlAndUnnamedDeviceNeverDisplayNetworkHostname() = runTest(dispatcher) {
+    @Test fun legacyUrlAndUnnamedDeviceKeepTheirLocalNameAfterHealthCheck() = runTest(dispatcher) {
         coEvery { connections.load() } returns listOf(RemoteConnection("http://computer/", "http://computer/", "token"))
         val vm = RemoteViewModel(connections, projectionDispatcher = dispatcher) { _, _ -> client }
         vm.setVisible(true); runCurrent()
@@ -80,6 +80,54 @@ internal class RemoteDeviceLifecycleTest : RemoteViewModelFixture() {
         coVerify(exactly = 2) { client.sessions(any()) }
         coVerify(exactly = 0) { client.send(any(), any(), any(), any()) }
         vm.setVisible(false)
+    }
+
+    @Test fun draftReconnectPreservesOwnerAndTextAndCoalescesWithoutNativeWrites() = runTest(dispatcher) {
+        val vm = RemoteViewModel(connections, projectionDispatcher = dispatcher) { _, _ -> client }
+        runCurrent()
+        saveAndSelect(vm)
+        vm.setVisible(true)
+        runCurrent()
+        vm.newSession()
+        val owner = requireNotNull(vm.state.value.owner)
+        val draftId = vm.state.value.draftSessionId
+        vm.editDraft(owner, "Keep this draft")
+        val drafts = vm.state.value.drafts
+        val models = vm.state.value.models
+        val settings = vm.state.value.draftSettings
+        val gate = CompletableDeferred<RemoteDeviceStatus>()
+        coEvery { client.connect() } coAnswers { gate.await() }
+
+        vm.retryConnection()
+        vm.retryConnection()
+        runCurrent()
+        assertEquals(RemoteDeviceStatus.CONNECTING, vm.state.value.devices.single().status)
+        assertTrue(vm.state.value.loading)
+        coVerify(exactly = 2) { client.connect() }
+        gate.completeExceptionally(IOException("offline"))
+        runCurrent()
+        assertEquals(RemoteDeviceStatus.ERROR, vm.state.value.devices.single().status)
+        assertFalse(vm.state.value.loading)
+        val notice = vm.notices.first()
+        coEvery { client.connect() } returns RemoteDeviceStatus.CONNECTED
+        vm.retryNotice(notice)
+        runCurrent()
+
+        assertEquals(RemoteDeviceStatus.CONNECTED, vm.state.value.devices.single().status)
+        assertFalse(vm.state.value.loading)
+        assertNull(vm.state.value.failure)
+        assertEquals(owner, vm.state.value.owner)
+        assertEquals(draftId, vm.state.value.draftSessionId)
+        assertEquals(drafts, vm.state.value.drafts)
+        assertEquals(models, vm.state.value.models)
+        assertEquals(settings, vm.state.value.draftSettings)
+        coVerify(exactly = 1) { client.sessions(any()) }
+        coVerify(exactly = 0) { client.create(any(), any(), any(), any()) }
+        coVerify(exactly = 0) { client.send(any(), any(), any(), any()) }
+        vm.setVisible(false)
+        vm.retryConnection()
+        runCurrent()
+        coVerify(exactly = 3) { client.connect() }
     }
 
     @Test fun leavingAnUnsubmittedDeviceEditorDoesNotConnectOrSave() = runTest(dispatcher) {
@@ -112,7 +160,7 @@ internal class RemoteDeviceLifecycleTest : RemoteViewModelFixture() {
         assertEquals(RemoteDeviceStatus.ERROR, vm.state.value.devices.single().status)
         coVerify(exactly = 1) { connections.save(any(), null) }
         coVerify(exactly = 0) { client.sessions(any()) }
-        coEvery { client.connect() } returns "Computer"
+        coEvery { client.connect() } returns RemoteDeviceStatus.CONNECTED
         vm.selectDevice("http://computer/"); runCurrent()
         assertEquals(listOf(session), vm.state.value.sessions)
         vm.setVisible(false)
@@ -139,7 +187,7 @@ internal class RemoteDeviceLifecycleTest : RemoteViewModelFixture() {
     }
 
     @Test fun backgroundingDuringCheckKeepsSavedDeviceWithoutOpeningHistory() = runTest(dispatcher) {
-        val gate = CompletableDeferred<String>()
+        val gate = CompletableDeferred<RemoteDeviceStatus>()
         coEvery { client.connect() } coAnswers { gate.await() }
         val vm = RemoteViewModel(connections, projectionDispatcher = dispatcher) { _, _ -> client }; runCurrent()
         vm.setVisible(true)
@@ -148,7 +196,7 @@ internal class RemoteDeviceLifecycleTest : RemoteViewModelFixture() {
         vm.refresh(); runCurrent()
         coVerify(exactly = 1) { client.connect() }
         vm.setVisible(false)
-        gate.complete("Computer"); runCurrent()
+        gate.complete(RemoteDeviceStatus.CONNECTED); runCurrent()
         assertFalse(vm.state.value.addingDevice)
         assertNull(vm.state.value.deviceId)
         assertEquals(RemoteDeviceStatus.CONNECTED, vm.state.value.devices.single().status)
@@ -159,7 +207,7 @@ internal class RemoteDeviceLifecycleTest : RemoteViewModelFixture() {
     }
 
     @Test fun lateConnectionFailureDoesNotReplaceAnEditorOrDiscardTheDevice() = runTest(dispatcher) {
-        val gate = CompletableDeferred<String>()
+        val gate = CompletableDeferred<RemoteDeviceStatus>()
         coEvery { client.connect() } coAnswers { gate.await() }
         val vm = RemoteViewModel(connections, projectionDispatcher = dispatcher) { _, _ -> client }; runCurrent()
         vm.addDevice(); vm.saveDevice("http://computer/", "token"); runCurrent()
@@ -174,12 +222,13 @@ internal class RemoteDeviceLifecycleTest : RemoteViewModelFixture() {
     }
 
     @Test fun editReplacesAddressOnlyAfterCommitAndRejectsLateOldCheck() = runTest(dispatcher) {
-        val oldCheck = CompletableDeferred<String>()
+        val oldCheck = CompletableDeferred<RemoteDeviceStatus>()
         val saveGate = CompletableDeferred<Unit>()
         coEvery { client.connect() } coAnswers { withContext(NonCancellable) { oldCheck.await() } }
         val replacement = mockk<FiloClient>()
+        every { replacement.adapters } returns null
         every { replacement.address } returns "http://new/"
-        coEvery { replacement.connect() } returns "New computer"
+        coEvery { replacement.connect() } returns RemoteDeviceStatus.CONNECTED
         val vm = RemoteViewModel(connections, projectionDispatcher = dispatcher) { address, _ -> if (address == "http://new/") replacement else client }
         runCurrent()
         vm.saveDevice("http://computer/", "original"); runCurrent()
@@ -196,7 +245,7 @@ internal class RemoteDeviceLifecycleTest : RemoteViewModelFixture() {
         vm.saveDevice("http://new/", "changed"); runCurrent()
         assertEquals("http://computer/", vm.state.value.devices.single().id)
         saveGate.complete(Unit); runCurrent()
-        oldCheck.complete("Stale computer"); runCurrent()
+        oldCheck.complete(RemoteDeviceStatus.CONNECTED); runCurrent()
         assertEquals("http://new/", vm.state.value.devices.single().id)
         assertEquals("", vm.state.value.devices.single().name)
         vm.editDevice("http://new/")
@@ -204,18 +253,18 @@ internal class RemoteDeviceLifecycleTest : RemoteViewModelFixture() {
     }
 
     @Test fun removedDeviceCannotBeRevivedByLateConnectionCheck() = runTest(dispatcher) {
-        val check = CompletableDeferred<String>()
+        val check = CompletableDeferred<RemoteDeviceStatus>()
         coEvery { client.connect() } coAnswers { withContext(NonCancellable) { check.await() } }
         val vm = RemoteViewModel(connections, projectionDispatcher = dispatcher) { _, _ -> client }; runCurrent()
         vm.saveDevice("http://computer/", "token"); runCurrent()
         vm.removeDevice("http://computer/"); runCurrent()
-        check.complete("Deleted computer"); runCurrent()
+        check.complete(RemoteDeviceStatus.CONNECTED); runCurrent()
         assertTrue(vm.state.value.devices.isEmpty())
         assertNull(vm.state.value.deviceId)
     }
 
     @Test fun selectingWhileCheckingWaitsForProtocolValidationAndCoalescesRequests() = runTest(dispatcher) {
-        val gate = CompletableDeferred<String>()
+        val gate = CompletableDeferred<RemoteDeviceStatus>()
         coEvery { client.connect() } coAnswers { gate.await() }
         val vm = RemoteViewModel(connections, projectionDispatcher = dispatcher) { _, _ -> client }; runCurrent()
         vm.setVisible(true)
@@ -224,18 +273,19 @@ internal class RemoteDeviceLifecycleTest : RemoteViewModelFixture() {
         assertTrue(vm.state.value.loading)
         coVerify(exactly = 1) { client.connect() }
         coVerify(exactly = 0) { client.sessions(any()) }
-        gate.complete("Computer"); runCurrent()
+        gate.complete(RemoteDeviceStatus.CONNECTED); runCurrent()
         assertEquals(listOf(session), vm.state.value.sessions)
         coVerify(exactly = 1) { client.sessions(any()) }
         vm.setVisible(false)
     }
 
     @Test fun editingTokenAtSameAddressRejectsTheReplacedClientsLateResult() = runTest(dispatcher) {
-        val gate = CompletableDeferred<String>()
+        val gate = CompletableDeferred<RemoteDeviceStatus>()
         coEvery { client.connect() } coAnswers { withContext(NonCancellable) { gate.await() } }
         val replacement = mockk<FiloClient>()
+        every { replacement.adapters } returns null
         every { replacement.address } returns "http://computer/"
-        coEvery { replacement.connect() } returns "Current computer"
+        coEvery { replacement.connect() } returns RemoteDeviceStatus.CONNECTED
         val vm = RemoteViewModel(connections, projectionDispatcher = dispatcher) { _, token -> if (token == "changed") replacement else client }
         runCurrent()
         vm.saveDevice("http://computer/", "original"); runCurrent()

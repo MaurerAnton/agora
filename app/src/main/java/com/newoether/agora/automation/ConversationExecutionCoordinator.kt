@@ -2,11 +2,15 @@ package com.newoether.agora.automation
 
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.CompletableDeferred
+import kotlinx.coroutines.ensureActive
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.update
+import kotlinx.coroutines.flow.combine
+import kotlinx.coroutines.flow.first
 import java.util.ArrayDeque
+import java.util.concurrent.atomic.AtomicBoolean
 
 /**
  * Process-scoped serialization and priority gate for conversation mutations that include
@@ -21,7 +25,125 @@ import java.util.ArrayDeque
  * Entries are reference counted and cancellation-safe, so task-created conversation ids do not
  * accumulate forever. The coordinator is intentionally non-reentrant for a given id.
  */
-class ConversationExecutionCoordinator {
+class ConversationExecutionCoordinator(
+    private val parentConversationId: suspend (String) -> String? = { null },
+    private val subagentMaxConcurrent: StateFlow<Int> = MutableStateFlow(4),
+) {
+    private class GenerationAdmission(val parentId: String, var references: Int = 1)
+
+    private val generationAdmissions = mutableMapOf<String, GenerationAdmission>()
+    private val generationChanges = MutableStateFlow(0L)
+    private val _admittedGenerationIds = MutableStateFlow<Set<String>>(emptySet())
+    val admittedGenerationIds: StateFlow<Set<String>> = _admittedGenerationIds.asStateFlow()
+
+    /**
+     * A worker retains this reference across ordinary/Compact handoffs. Installed generation Jobs
+     * retain their own reference until the canonical slot and Job barriers have both settled.
+     * Only generation callers use this API; graph reads, recovery and deletion keep plain locks.
+     */
+    suspend fun <T> withGenerationAdmission(conversationId: String, block: suspend () -> T): T {
+        val release = acquireGenerationAdmission(conversationId)
+        return try {
+            block()
+        } finally {
+            release()
+        }
+    }
+
+    /** Demand-loads only this owner's durable parent; an ordinary parent consumes no allowance. */
+    suspend fun acquireGenerationAdmission(conversationId: String): () -> Unit {
+        require(conversationId.isNotBlank()) { "conversationId must not be blank" }
+        // A handoff may run in a separately scoped Job. Reuse the durable-parent admission already
+        // held by this child without suspending through another Room observation before retaining it.
+        val retained = synchronized(monitor) {
+            generationAdmissions[conversationId]?.also { it.references += 1 }
+        }
+        if (retained != null) return releaseGenerationAdmission(conversationId, retained)
+        val parentId = parentConversationId(conversationId) ?: return {}
+        require(parentId != conversationId && parentId.isNotBlank())
+        while (true) {
+            val revision = generationChanges.value
+            val maximum = subagentMaxConcurrent.value.coerceIn(1, 16)
+            val admission = synchronized(monitor) {
+                val existing = generationAdmissions[conversationId]
+                if (existing != null) {
+                    check(existing.parentId == parentId) { "Generation parent changed while admitted" }
+                    existing.references += 1
+                    existing
+                } else if (generationAdmissions.values.count { it.parentId == parentId } < maximum) {
+                    GenerationAdmission(parentId).also {
+                        generationAdmissions[conversationId] = it
+                        _admittedGenerationIds.value = generationAdmissions.keys.toSet()
+                    }
+                } else {
+                    null
+                }
+            }
+            if (admission != null) {
+                val release = releaseGenerationAdmission(conversationId, admission)
+                try {
+                    kotlinx.coroutines.currentCoroutineContext().ensureActive()
+                } catch (cancelled: CancellationException) {
+                    release()
+                    throw cancelled
+                }
+                return release
+            }
+            // No second queue or polling worker: release and settings changes wake this waiter.
+            combine(generationChanges, subagentMaxConcurrent) { changed, limit ->
+                changed != revision || limit.coerceIn(1, 16) != maximum
+            }.first { it }
+        }
+    }
+
+    /** Atomically reserves a tool-requested child before any creation or queue mutation. */
+    fun reserveSubagentGeneration(parentId: String, conversationId: String): () -> Unit {
+        require(parentId.isNotBlank() && conversationId.isNotBlank() && parentId != conversationId)
+        val admission = synchronized(monitor) {
+            val existing = generationAdmissions[conversationId]
+            if (existing != null) {
+                check(existing.parentId == parentId) { "Generation parent changed while admitted" }
+                existing.references += 1
+                existing
+            } else {
+                val maximum = subagentMaxConcurrent.value.coerceIn(1, 16)
+                val running = generationAdmissions.values.count { it.parentId == parentId }
+                check(running < maximum) {
+                    "Subagent concurrency limit reached ($running/$maximum running for this conversation). " +
+                        "Wait for a running subagent to finish (agent_wait) before starting another."
+                }
+                GenerationAdmission(parentId).also {
+                    generationAdmissions[conversationId] = it
+                    _admittedGenerationIds.value = generationAdmissions.keys.toSet()
+                }
+            }
+        }
+        return releaseGenerationAdmission(conversationId, admission)
+    }
+
+    private fun releaseGenerationAdmission(
+        conversationId: String,
+        admission: GenerationAdmission,
+    ): () -> Unit {
+        val released = AtomicBoolean(false)
+        return {
+            if (released.compareAndSet(false, true)) synchronized(monitor) {
+                check(generationAdmissions[conversationId] === admission)
+                check(--admission.references >= 0)
+                if (admission.references == 0) {
+                    generationAdmissions.remove(conversationId)
+                    _admittedGenerationIds.value = generationAdmissions.keys.toSet()
+                    generationChanges.update { it + 1 }
+                }
+            }
+            Unit
+        }
+    }
+
+    internal fun admittedChildCount(parentId: String): Int = synchronized(monitor) {
+        generationAdmissions.values.count { it.parentId == parentId }
+    }
+
     private class Waiter(val automation: Boolean) {
         val ready = CompletableDeferred<Unit>()
         var granted = false

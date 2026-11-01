@@ -7,7 +7,7 @@ import kotlinx.serialization.Serializable
 
 @Serializable
 internal data class RemoteMessageNode(
-    val id: String, val turnId: String, val clientId: String?, val role: String, val timestamp: Long,
+    val id: String, val turnId: String, val clientId: String?, val role: String, val timestamp: Long?,
     val revision: String, val textLength: Int,
     val groupId: String? = null, val nativeId: String? = null,
     val textOffset: Int = 0, val textContinues: Boolean = false,
@@ -31,6 +31,7 @@ internal data class RemoteMessageGroup(val stub: ChatMessage, val nodes: List<Re
 
 /** Admitted page structure stays resident. Payload loading never changes its IDs or positions. */
 internal fun projectRemoteTopology(nodes: List<RemoteMessageNode>, runtime: RemoteRuntime?): List<RemoteMessageGroup> = buildList {
+    val projectedIds = HashSet<String>()
     var index = 0
     while (index < nodes.size) {
         val first = nodes[index++]
@@ -44,12 +45,15 @@ internal fun projectRemoteTopology(nodes: List<RemoteMessageNode>, runtime: Remo
             index++
         }
         if (first.role == "assistant" && group.none { it.hasContent ?: (it.textLength > 0 || it.activity?.type == "tool") }) continue
-        val id = first.displayGroupId ?: first.groupId ?: first.nativeId ?: first.id
+        val preferredId = first.displayGroupId ?: first.groupId ?: first.nativeId ?: first.id
+        // A late native user can split an admitted assistant group. Keep the
+        // earlier fragment's key and give the later fragment its own native key.
+        val id = if (projectedIds.add(preferredId)) preferredId else first.id.also { projectedIds.add(it) }
         add(RemoteMessageGroup(ChatMessage(id = id, parentId = lastOrNull()?.stub?.takeIf {
                 it.displayPageId == first.displayPageId
             }?.id, text = "",
             participant = if (first.role == "user") Participant.USER else Participant.MODEL,
-            timestamp = first.timestamp, modelName = "Codex", runId = first.turnId,
+            timestamp = first.timestamp ?: 0L, modelName = "Codex", runId = first.turnId,
             displayPageId = first.displayPageId,
             status = if (group.any { it.error }) MessageStatus.ERROR else MessageStatus.SUCCESS), group))
     }

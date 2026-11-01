@@ -1,5 +1,9 @@
 package com.newoether.agora.ui.chat.message
 
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.AccountTree
+import androidx.compose.material.icons.filled.QuestionAnswer
+import com.newoether.agora.R
 import com.newoether.agora.model.ChatMessage
 import com.newoether.agora.model.MessageSource
 import com.newoether.agora.model.Participant
@@ -16,6 +20,12 @@ class MessageSourcePresentationTest {
             MessageSource.AskUserItem("Note", "line one\nline two"),
         ),
     )
+
+    @Test
+    fun `subagent source shares the idle capsule icon without changing ask_user`() {
+        assertEquals(Icons.Default.AccountTree, messageSourceIcon(MessageSource.Kind.SUBAGENT))
+        assertEquals(Icons.Default.QuestionAnswer, messageSourceIcon(MessageSource.Kind.ASK_USER))
+    }
 
     @Test
     fun `ask_user display text uses the localized unanswered label`() {
@@ -40,6 +50,32 @@ class MessageSourcePresentationTest {
         assertEquals("未回答", skipped.text)
         // The localized label has no stored counterpart and is never highlighted.
         assertNull(skipped.storedStart)
+    }
+
+    @Test
+    fun `subagent result statuses use existing localized resources without inventing legacy success`() {
+        assertEquals(R.string.subagent_completed, subagentResultStatusLabel("completed"))
+        assertEquals(R.string.subagent_failed, subagentResultStatusLabel("failed"))
+        assertEquals(R.string.subagent_stopped, subagentResultStatusLabel("stopped"))
+        assertNull(subagentResultStatusLabel(""))
+        assertNull(subagentResultStatusLabel("unknown"))
+    }
+
+    @Test
+    fun `subagent completions keep the original full body for existing message actions`() {
+        val raw = "Worker (child-id) [completed]\nFull result\n\nWith every original line."
+        val result = MessageSource.SubagentResult("Worker", "completed")
+        val message = ChatMessage(
+            text = raw,
+            participant = Participant.USER,
+            source = MessageSource(
+                MessageSource.Kind.SUBAGENT,
+                subagentResults = mapOf("child-id" to "completion-id"),
+                subagentResult = result,
+            ),
+        )
+        assertSame(message, message.withAskUserDisplayText("-"))
+        assertEquals(raw, message.text)
     }
 
     @Test

@@ -20,7 +20,6 @@ import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.layout.ExperimentalLayoutApi
 import androidx.compose.foundation.layout.FlowRow
 import androidx.compose.foundation.lazy.LazyColumn
-import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.foundation.text.selection.SelectionContainer
@@ -69,7 +68,7 @@ fun SettingsSandboxPage(
 ) {
     val motionPolicy = LocalAgoraMotionPolicy.current
     val scope = rememberCoroutineScope()
-    val listState = androidx.compose.foundation.lazy.rememberLazyListState()
+    val listState = rememberSettingsLazyListState()
     val ctx = androidx.compose.ui.platform.LocalContext.current
     val installFailedMessage = stringResource(R.string.sandbox_install_failed)
     var sharedStorageAccessGranted by remember {

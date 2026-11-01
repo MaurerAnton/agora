@@ -82,9 +82,10 @@ internal class ConversationRegenerationService(
             var runBound = false
             var stopFinalizationClaimed = false
             try {
-                // The fade animation plays concurrently and acknowledges on its own;
-                // the provider request must not wait for list recomposition + tween.
-                // Navigation/supersede safety stays covered by the guards below.
+                if (!state.acquireGenerationAdmission(uiToken, executionCoordinator)) return@generation
+                // The fade animation plays concurrently and acknowledges on its own; the provider
+                // request must not wait for full-list recomposition plus a 180ms tween on the way
+                // to the first token. Navigation/supersede safety stays covered by the guards below.
                 if (
                     !state.isCurrentToken(uiToken) ||
                     !transitions.isAnimating(transition.id) ||

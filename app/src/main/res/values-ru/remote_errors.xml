@@ -1,11 +1,11 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
     <string name="remote_failed">Не удалось выполнить удалённое действие. Проверьте сведения об ошибке.</string>
-    <string name="remote_unknown">Доставка не подтверждена. Перед повторной отправкой проверьте диалог в Codex.</string>
+    <string name="remote_unknown">Не удалось подтвердить отправку сообщения.</string>
     <string name="remote_rejected">Codex не принял сообщение. Перед новой попыткой проверьте сведения об ошибке.</string>
     <string name="remote_storage_failed">Agora не может открыть локальные данные Remote. Проверьте свободное место.</string>
     <string name="remote_network_failed">Не удалось подключиться к Filo. Проверьте целевой компьютер, адрес службы и сеть.</string>
-    <string name="remote_auth_failed">Filo отклонил токен доступа. Используйте токен с целевого компьютера.</string>
+    <string name="remote_auth_failed">Filo не смог аутентифицировать этот запрос. Это не обязательно означает, что токен доступа неверен. Если ошибка повторяется, проверьте токен и время на целевом компьютере.</string>
     <string name="remote_configuration_failed">Введите корректный URL службы и токен доступа из 64 символов.</string>
     <string name="remote_protocol_failed">Agora не может проверить или прочитать ответ Filo. Убедитесь, что оба приложения обновлены.</string>
     <string name="remote_service_failed">Codex не удалось выполнить запрос.</string>
@@ -14,7 +14,7 @@
     <string name="remote_response_too_large">Ответ или вложение превышает допустимый размер.</string>
     <string name="remote_invalid_request">Filo не может прочитать запрос. Проверьте введённые значения.</string>
     <string name="remote_not_found">Запрошенный элемент больше недоступен. Обновите список.</string>
-    <string name="remote_not_supported">Подключённый клиент не поддерживает эту операцию.</string>
+    <string name="remote_not_supported">Этот источник не поддерживает это действие.</string>
     <string name="remote_desktop_unavailable">Filo не может подключиться к Codex Desktop. Откройте Codex на целевом компьютере.</string>
     <string name="remote_session_unavailable">Codex ещё не подготовил этот диалог. Проверьте его на целевом компьютере.</string>
     <string name="remote_helper_unavailable">Filo не может связаться со вспомогательным процессом пользователя. Проверьте службу Filo на целевом компьютере.</string>

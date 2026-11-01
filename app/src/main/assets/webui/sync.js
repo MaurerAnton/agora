@@ -41,6 +41,9 @@ let state = {
   /** This connection's own drawer-row delete: the command in flight and the answer it got. */
   conversationDelete: null,
   conversationDeleteResult: null,
+  todo: [], subagents: [], parentConversationId: null,
+  // A real first event for each projection, including empty; reset at every selection/connection.
+  initialToolsReady: 0,
   interactions: [],
   interactionPending: 0,
   snackbar: null,
@@ -66,12 +69,15 @@ let nextAction = 0;
 let searchRevision = 0;
 let conversationSearchRevision = 0;
 let noticeId = 0;
+// The last streaming frame this connection received, the base of the next streaming_patch.
+let streamFrame = null;
 const uploads = new Set();
 
 function update(patch) {
   state = { ...state, ...patch };
   const request = state.switching;
   if (request?.phase === "loading") {
+    const initiallyReady = state.openId == null || state.initialToolsReady === 7;
     const ready = request.command.type === "open"
       ? (state.openId == null ? state.composer?.seq === openSeq : state.openStatus === "ready" && state.composer?.seq === openSeq)
       : ["fork", "conversation_delete"].includes(request.command.type)
@@ -84,7 +90,9 @@ function update(patch) {
           return row.id === target.id && row.parentId === target.parentId &&
             row.branchIndex === target.branchIndex && row.totalBranches === target.totalBranches;
         });
-    if (ready) state = { ...state, switching: { ...request, phase: "settling" } };
+    if (ready && (initiallyReady || ["failed", "deleted"].includes(state.openStatus))) {
+      state = { ...state, switching: { ...request, phase: "settling" } };
+    }
   }
   listeners.forEach((listener) => listener(state));
 }
@@ -96,14 +104,22 @@ function send(command) {
 }
 
 function select(conversationId, patch = {}) {
+  streamFrame = null;
   watched = new Set();
   kept = new Set();
   bodySizes.clear();
   const composer = state.composer ? { ...state.composer, attachments: [], queue: [], text: "",
     phase: "IDLE", generating: false, stopping: false } : null;
+  // Only the currently proven root and its known children can retain this family's presentation.
+  const family = state.parentConversationId || state.openId;
+  const sameFamily = state.connected && !!state.connectionId && !!conversationId && !!family &&
+    (conversationId === family || state.subagents.some(agent => agent.id === conversationId));
   update({ openId: conversationId, openStatus: conversationId ? "loading" : null,
     path: [], generating: false, streaming: null, bodies: new Map(), scrollRequest: null, branchReplacement: null,
-    pageAction: null, pageResult: null, shareText: null, interactions: [], interactionPending: 0, conversationSearch: null,
+    pageAction: null, pageResult: null, shareText: null, todo: [], initialToolsReady: 0,
+    subagents: sameFamily ? state.subagents : [],
+    parentConversationId: sameFamily && conversationId !== family ? family : null,
+    interactions: [], interactionPending: 0, conversationSearch: null,
     composer, context: state.context, ...patch });
 }
 
@@ -124,6 +140,38 @@ function evict(bodies) {
   }
 }
 
+function showStreaming(message) {
+  if (message &&
+      !["SUCCESS", "STOPPED", "ERROR"].includes(state.bodies.get(message.id)?.status)) {
+    update({ streaming: message });
+  } else if (!message && state.streaming &&
+      ["SUCCESS", "STOPPED", "ERROR"].includes(state.bodies.get(state.streaming.id)?.status)) {
+    update({ streaming: null });
+  } else if (!state.streaming) {
+    update({ streaming: null });
+  }
+  // Otherwise retain the last frame until the watched terminal row arrives.
+}
+
+/**
+ * Applies a WebJsonPatch.kt patch. Unchanged members keep their identity, so memoized rows and
+ * blocks the patch does not touch skip re-rendering.
+ */
+export function applyStreamingPatch(base, patch) {
+  if ("v" in patch) return patch.v;
+  if ("a" in patch) return base + patch.a;
+  if ("l" in patch) {
+    const out = base.slice(0, patch.l);
+    while (out.length < patch.l) out.push(null);
+    for (const [index, entry] of Object.entries(patch.i ?? {})) out[+index] = applyStreamingPatch(out[+index], entry);
+    return out;
+  }
+  const out = { ...base };
+  for (const key of patch.d ?? []) delete out[key];
+  for (const [key, entry] of Object.entries(patch.o ?? {})) out[key] = applyStreamingPatch(base[key], entry);
+  return out;
+}
+
 function receive(event, size) {
   switch (event.type) {
     case "conversation_search": {
@@ -141,12 +189,24 @@ function receive(event, size) {
       update({ searchLoading: event.searching, searchFailed: !!event.failed,
         ...(!event.searching ? { searchResults: event.items || [] } : {}) });
       break;
+    case "subagents":
+      if ((event.conversationId ?? null) !== state.openId || event.seq !== openSeq) return;
+      update({ subagents: event.items || [], parentConversationId: event.parentConversationId ?? null,
+        initialToolsReady: state.initialToolsReady | 1 });
+      break;
+    case "todo":
+      if ((event.conversationId ?? null) !== state.openId || event.seq !== openSeq) return;
+      update({ todo: event.items || [], initialToolsReady: state.initialToolsReady | 2 });
+      break;
     case "interactions":
       if ((event.conversationId ?? null) !== state.openId || event.seq !== openSeq) return;
-      update({ interactions: event.items, interactionPending: event.actionId >= state.interactionPending ? 0 : state.interactionPending });
+      update({ interactions: event.items, initialToolsReady: state.initialToolsReady | 4,
+        interactionPending: event.actionId >= state.interactionPending ? 0 : state.interactionPending });
       break;
     case "connection":
-      update({ connectionId: event.connectionId });
+      streamFrame = null;
+      update({ connectionId: event.connectionId,
+        ...(event.connectionId !== state.connectionId ? { subagents: [], parentConversationId: null, initialToolsReady: 0 } : {}) });
       break;
     case "branch_replacement":
       if (event.connectionId !== state.connectionId || event.seq !== openSeq || event.conversationId !== state.openId) return;
@@ -242,16 +302,14 @@ function receive(event, size) {
     }
     case "streaming":
       if (event.conversationId !== state.openId || (event.seq ?? 0) !== openSeq) return;
-      if (event.message &&
-          !["SUCCESS", "STOPPED", "ERROR"].includes(state.bodies.get(event.message.id)?.status)) {
-        update({ streaming: event.message });
-      } else if (!event.message && state.streaming &&
-          ["SUCCESS", "STOPPED", "ERROR"].includes(state.bodies.get(state.streaming.id)?.status)) {
-        update({ streaming: null });
-      } else if (!state.streaming) {
-        update({ streaming: null });
-      }
-      // Otherwise retain the last frame until the watched terminal row arrives.
+      streamFrame = event.message ?? null;
+      showStreaming(streamFrame);
+      break;
+    case "streaming_patch":
+      if (event.conversationId !== state.openId || (event.seq ?? 0) !== openSeq ||
+          streamFrame?.id !== event.messageId) return;
+      streamFrame = applyStreamingPatch(streamFrame, event.patch);
+      showStreaming(streamFrame);
       break;
     case "deleted":
       if (event.conversationId === state.openId && (event.seq ?? 0) === openSeq) update({ openStatus: "deleted",
@@ -273,7 +331,8 @@ function connect() {
     retryMs = 1_000;
     update({ connected: true, composer: null, context: null, pendingAction: 0, pageAction: null, pageResult: null, shareText: null, branchReplacement: null, connectionId: null,
       conversationDelete: null, conversationDeleteResult: null,
-      listLoading: true, listLimit: 0, interactions: [], interactionPending: 0 });
+      listLoading: true, listLimit: 0, todo: [], subagents: [], parentConversationId: null,
+      initialToolsReady: 0, interactions: [], interactionPending: 0 });
     update({ searchQuery: "", searchResults: [], searchLoading: false, searchFailed: false });
     update({ conversationSearch: null });
     send({ type: "open", conversationId: state.openId, seq: openSeq });
@@ -292,7 +351,7 @@ function connect() {
     update({ connected: false, switching: state.switching ? { ...state.switching, phase: "settling", confirmation: false } : null,
       composer: null, context: null, pendingAction: 0, pageAction: null, pageResult: null, shareText: null, branchReplacement: null, connectionId: null,
       conversationDelete: null, conversationDeleteResult: null,
-      interactions: [], interactionPending: 0,
+      todo: [], subagents: [], parentConversationId: null, initialToolsReady: 0, interactions: [], interactionPending: 0,
       conversationSearch: null,
       searchQuery: "", searchResults: [], searchLoading: false, searchFailed: false,
       snackbar: state.pendingAction ? { id: ++noticeId, message: t.sendUnconfirmed } : state.snackbar });
@@ -398,8 +457,7 @@ export const sync = {
   },
   pin(conversationId, enabled) { send({ type: "pin", conversationId, enabled }); },
   generateTitle(conversationId) {
-    if (!state.connected || state.openStatus === "loading" ||
-        state.conversations.find(item => item.id === conversationId)?.generating) return false;
+    if (!state.connected || state.openStatus === "loading") return false;
     return send({ type: "conversation_title", conversationId });
   },
   renameConversation(conversationId, title) {

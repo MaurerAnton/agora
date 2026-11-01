@@ -5,6 +5,8 @@ import com.newoether.agora.model.MessageStatus
 import com.newoether.agora.model.Participant
 import com.newoether.agora.model.isContextCompact
 import com.newoether.agora.util.DebugLog
+import kotlinx.coroutines.CompletableDeferred
+import kotlinx.coroutines.Job
 
 /**
  * Adapts a client's Stop intent for one conversation to that conversation's runtime and its
@@ -21,11 +23,32 @@ internal class GenerationStopAdapter(
     fun stop(conversationId: String?, origin: ChatClient) {
         conversationId ?: return
         val state = registry.get(conversationId) ?: return
-        state.requestStop { result ->
+        requestStop(state, origin)
+    }
+
+    /** Waits for the existing reducer-owned durable and coroutine Stop barriers. */
+    suspend fun stopAndAwait(conversationId: String, origin: ChatClient) {
+        val state = registry.get(conversationId) ?: return
+        val persisted = CompletableDeferred<Boolean>()
+        requestStop(state, origin) { persisted.complete(it) }.join()
+        check(persisted.await()) { "Failed to settle stopped conversation $conversationId" }
+        state.awaitSendAvailable()
+    }
+
+    private fun requestStop(
+        state: ConversationGenerationState,
+        origin: ChatClient,
+        onPersisted: (Boolean) -> Unit = {},
+    ): Job = state.requestStop { result ->
             val stoppedMessage = result.stoppedMessage
             val messages = stoppedMessage?.let(::listOf)
                 ?: snapshotStoppedRows(clients.renderStoresShowing(result.conversationId))
-            val effect = result.finalizationEffect ?: return@requestStop
+            val effect = result.finalizationEffect ?: run {
+                // A duplicate bound Stop owns no persistence result. Fail closed rather than
+                // waiting forever if the original finalizer fails and keeps STOPPING occupied.
+                onPersisted(result.runId == null || !state.stopping.value)
+                return@requestStop
+            }
             // The finalizer receives exactly the reducer-emitted identity and returns an identified
             // persistence result to this same runtime host. It cannot release the slot itself.
             finalizer.launchStopFinalization(
@@ -35,7 +58,10 @@ internal class GenerationStopAdapter(
                 onFinalized = { completion ->
                     val outcome = state.finishStopFinalization(completion)
                     // Delayed/duplicate/stale completions cannot change runtime or presentation.
-                    if (!outcome.accepted) return@launchStopFinalization
+                    if (!outcome.accepted) {
+                        onPersisted(false)
+                        return@launchStopFinalization
+                    }
                     if (completion.success) {
                         // Room invalidation and the runtime projection settle asynchronously. Keep
                         // the exact terminal overlay visible until the durable result is accepted.
@@ -48,10 +74,10 @@ internal class GenerationStopAdapter(
                     } else {
                         origin.showSnackbar(failureText())
                     }
+                    onPersisted(completion.success)
                 },
             )
         }
-    }
 
     /**
      * Without a streaming overlay, the stopped rows are the in-flight rows the clients render.

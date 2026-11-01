@@ -3,9 +3,7 @@ package com.newoether.agora.viewmodel
 import android.app.Application
 import com.newoether.agora.util.DebugLog
 import com.newoether.agora.api.LlmProvider
-import com.newoether.agora.api.ProviderConfig
 import com.newoether.agora.api.StreamEvent
-import com.newoether.agora.api.resolveRequest
 import com.newoether.agora.data.CustomProviderConfig
 import com.newoether.agora.data.MemoryManager
 import com.newoether.agora.data.SkillManager
@@ -22,7 +20,6 @@ import com.newoether.agora.model.ToolCallData
 import com.newoether.agora.R
 import com.newoether.agora.service.AgoraForegroundService
 import com.newoether.agora.service.AppForegroundTracker
-import com.newoether.agora.api.util.ContextTokenEstimator
 import com.newoether.agora.api.util.tokens.FixedContextComposition
 import com.newoether.agora.tool.ToolProvider
 import com.newoether.agora.util.Constants
@@ -52,6 +49,7 @@ class GenerationManager(
     private val sandboxFactory: com.newoether.agora.sandbox.SandboxManagerFactory? = null,
     additionalToolProviders: List<ToolProvider> = emptyList(),
     private val customProviders: () -> List<CustomProviderConfig> = { emptyList() },
+    generatingConversationIds: () -> Set<String> = { emptySet() },
 ) {
     var onMessagePersisted: ((messageId: String, text: String) -> Unit)? = null
 
@@ -66,16 +64,19 @@ class GenerationManager(
         skillManager = skillManager,
         sandboxFactory = sandboxFactory,
         additionalProviders = additionalToolProviders,
+        generatingConversationIds = generatingConversationIds,
         confirmShellCommand = { server, summary, conversationId ->
             onConfirmShellCommand?.invoke(server, summary, conversationId) ?: true
         },
     )
+    private val contextAccounting = GenerationContextAccounting(toolExecutor)
     private val providerPassEffects = ProviderPassEffectExecutor()
     private val toolBatchEffects = GenerationToolBatchEffectExecutor(toolExecutor)
     private val toolRoundBuilder = GenerationToolRoundBuilder()
     private val runFinalizationExecutor = GenerationRunFinalizationExecutor(conversations)
     private val apiPathBuilder = GenerationApiPathBuilder(
         conversations = conversations,
+        appContext = context,
         generationErrorFormatter = { raw ->
             normalizePersistedGenerationErrorText(context, raw)
         },
@@ -106,77 +107,19 @@ class GenerationManager(
         )
     }
 
-    internal fun fixedContextTokenCost(
-        config: GenerationConfig,
-        context: GenerationContext,
-    ): Int = ContextTokenEstimator.forModel(config.modelId).estimateFixed(
-        systemPrompt = config.effectiveSystemPrompt,
-        tools = if (config.lowContextModeEnabled) emptyList()
-        else toolExecutor.definitions(context),
-        initialUserPrompt = config.initialUserPrompt,
-        codeExecutionEnabled = config.codeExecutionEnabled,
-        googleSearchEnabled = config.googleSearchEnabled,
-        openAiWebSearchEnabled = config.openAiWebSearchEnabled,
-    )
-    /** The same cost as [fixedContextTokenCost], split for the context indicator. */
+    internal fun fixedContextTokenCost(config: GenerationConfig, context: GenerationContext): Int =
+        contextAccounting.fixedContextTokenCost(config, context)
+
     internal fun fixedContextComposition(
         config: GenerationConfig,
         context: GenerationContext,
-    ): FixedContextComposition =
-        ContextTokenEstimator.forModel(config.modelId).estimateFixedComposition(
-            systemPrompt = config.effectiveSystemPrompt,
-            tools = if (config.lowContextModeEnabled) emptyList()
-            else toolExecutor.definitions(context),
-            initialUserPrompt = config.initialUserPrompt,
-            codeExecutionEnabled = config.codeExecutionEnabled,
-            googleSearchEnabled = config.googleSearchEnabled,
-            openAiWebSearchEnabled = config.openAiWebSearchEnabled,
-        )
+    ): FixedContextComposition = contextAccounting.fixedContextComposition(config, context)
 
-    internal fun includesAssistantReasoning(
-        config: GenerationConfig,
-        context: GenerationContext,
-    ): Boolean =
-        !config.responsesApiEnabled &&
-            config.thinkingEnabled &&
-            (
-                config.providerName == Constants.PROVIDER_DEEPSEEK ||
-                    com.newoether.agora.api.openai.isDeepSeekModel(config.modelId)
-                ) &&
-            !config.lowContextModeEnabled &&
-            toolExecutor.definitions(context).isNotEmpty()
+    internal fun includesAssistantReasoning(config: GenerationConfig, context: GenerationContext): Boolean =
+        contextAccounting.includesAssistantReasoning(config, context)
 
-    internal suspend fun resolvedFixedContextTokenCost(
-        config: GenerationConfig,
-        context: GenerationContext,
-    ): Int {
-        val resolver = config.requestResolver ?: return fixedContextTokenCost(config, context)
-        val definitions = if (config.lowContextModeEnabled) emptyList()
-        else toolExecutor.definitions(context)
-        val providerConfig = ProviderConfig(
-            apiKey = config.apiKey,
-            modelId = config.modelId,
-            anthropicCacheEnabled = config.anthropicCacheEnabled,
-            anthropicCacheTtl = config.anthropicCacheTtl,
-            maxContextWindow = config.maxContextWindow,
-            codeExecutionEnabled = config.codeExecutionEnabled,
-            googleSearchEnabled = config.googleSearchEnabled,
-            openAiWebSearchEnabled = config.openAiWebSearchEnabled,
-            tools = definitions,
-            includeImages = !context.imageTranscriptionEnabled,
-            includeAssistantReasoning = includesAssistantReasoning(config, context),
-            requestResolver = resolver,
-        )
-        val resolvedRequest = providerConfig.resolveRequest(emptyList())
-        return ContextTokenEstimator.forModel(config.modelId).estimateFixed(
-            systemPrompt = resolvedRequest.systemPrompt,
-            tools = definitions,
-            initialUserPrompt = config.initialUserPrompt,
-            codeExecutionEnabled = config.codeExecutionEnabled,
-            googleSearchEnabled = config.googleSearchEnabled,
-            openAiWebSearchEnabled = config.openAiWebSearchEnabled,
-        )
-    }
+    internal suspend fun resolvedFixedContextTokenCost(config: GenerationConfig, context: GenerationContext): Int =
+        contextAccounting.resolvedFixedContextTokenCost(config, context)
 
     internal suspend fun buildApiPath(request: GenerationApiPathRequest): GenerationApiPath =
         apiPathBuilder.build(request)
@@ -377,7 +320,7 @@ class GenerationManager(
                         conversationId = conversationId,
                         authorizedToolNames = providerConfig.tools.orEmpty()
                             .mapTo(linkedSetOf()) { it.function.name },
-                        // view_image results reuse this generation's transcription flow when
+                        // file_view_image results reuse this generation's transcription flow when
                         // image transcription is enabled for the current model.
                         toolImageTranscriber =
                             if (
@@ -421,7 +364,7 @@ class GenerationManager(
                 onFirstEvent: (() -> Unit)? = null,
             ): ProviderPassOutcome {
                 val providerAnswerStart = output.totalText.length
-                output.tokenUsageAccumulator.beginRequest()
+                output.beginProviderRequest()
                 val providerRequestIndex = providerRequestOrdinal++
                 val providerRequestTrace = if (providerRequestIndex == 0) {
                     requestTrace
@@ -469,7 +412,11 @@ class GenerationManager(
                                     uiUpdateGate = uiUpdateGate,
                                     publishStreamUpdate = ::publishStreamUpdate,
                                     publishRetrySnapshot = {
-                                        onStreamUpdate(projectOutput(modelMessage()))
+                                        val projected = projectOutput(modelMessage())
+                                        onStreamUpdate(projected)
+                                        if (event is StreamEvent.Retrying && event.resetCurrentAttempt) {
+                                            checkpoints.persist(projected, force = true)
+                                        }
                                     },
                                 )
                             },
@@ -570,12 +517,13 @@ class GenerationManager(
                         expectedPass = commitIdentity.pass,
                     )
                 }
-                output.toolOverlay.releaseCommittedResponseState(
+                output.toolOverlay.markCommittedRound(
                     tcds.mapTo(linkedSetOf()) { call ->
                         checkNotNull(call.toolCallId) {
                             "Committed tool call is missing its provider call id"
                         }
                     },
+                    toolRoundId = round.entities.first().id,
                 )
                 publishStreamUpdate(forceCheckpoint = true)
                 uiUpdateGate.recordPublished(System.currentTimeMillis())
@@ -604,9 +552,8 @@ class GenerationManager(
                 if (endedForFollowUp) break
 
                 // A send queued mid-generation starts a fresh Run at this round boundary.
-                // The round's tool/result rows are already persisted above, so ending here is
-                // clean: slot release drains the complete FIFO batch into one merged USER message,
-                // and the new generation continues from those durable tool results.
+                // Its committed tool/results stay in history; the drain persists separate FIFO
+                // messages in one fresh Run that continues from those durable results.
                 if (callbacks.hasQueuedSends()) {
                     endedAtGuidanceBoundary = true
                     break
@@ -725,7 +672,8 @@ class GenerationManager(
                         val terminalDisposition = generationTerminalDisposition(
                             messageStatus = output.currentStatus,
                             hasPendingGuidance =
-                                callbacks.hasQueuedSends() || endedForFollowUp,
+                                callbacks.hasQueuedSends() || callbacks.hasPendingContinuation ||
+                                    endedAtGuidanceBoundary || endedForFollowUp,
                             conversationVisible = terminalConversationVisible,
                         )
                         val finalizationIdentity = RunEffectIdentity(
@@ -783,7 +731,7 @@ class GenerationManager(
                     foregroundLeaseAcquired = foregroundLeaseAcquired,
                     isContextCompact = modelMessageId.startsWith(Constants.COMPACT_MSG_PREFIX),
                     conversationVisible = terminalConversationVisible,
-                    hasPendingContinuation = endedForFollowUp,
+                    hasPendingContinuation = endedForFollowUp || callbacks.hasPendingContinuation,
                 ),
                 callbacks = callbacks.completionEffectsCallbacks(onMessagePersisted),
             )

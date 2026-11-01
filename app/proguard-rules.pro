@@ -7,6 +7,10 @@
 -keepclassmembers class com.newoether.agora.** { *** Companion; }
 -keepclasseswithmembers class com.newoether.agora.** { kotlinx.serialization.KSerializer serializer(...); }
 
+# Phone entry points are loaded by Shizuku/app_process by name.
+-keep class com.newoether.agora.phone.PhoneUserService { public <init>(); *; }
+-keep class com.newoether.agora.phone.PhoneRootPaste { public static void main(java.lang.String[]); }
+-keep class com.newoether.agora.phone.IPhoneUserService** { *; }
 # Room
 -keep class * extends androidx.room.RoomDatabase
 -dontwarn androidx.room.paging.**
@@ -21,6 +25,12 @@
 # JSch (SSH/SFTP)
 -keep class com.jcraft.jsch.** { *; }
 -dontwarn com.jcraft.jsch.**
+
+# JLaTeXMath creates environment macro handlers and resolves executeMacro by name.
+-keep class org.scilab.forge.jlatexmath.NewCommandMacro {
+    public <init>();
+    public java.lang.String executeMacro(org.scilab.forge.jlatexmath.TeXParser, java.lang.String[]);
+}
 
 # Compose
 -dontwarn androidx.compose.**

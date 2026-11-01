@@ -1,15 +1,10 @@
 package com.newoether.agora.ui.settings
 
 import androidx.activity.compose.BackHandler
-import androidx.compose.animation.*
-import androidx.compose.animation.core.*
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
-import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.AutoAwesome
 import androidx.compose.material.icons.filled.Cloud
 import androidx.compose.material3.*
@@ -18,15 +13,8 @@ import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
-import androidx.compose.ui.semantics.contentDescription
-import androidx.compose.ui.semantics.semantics
-import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import com.newoether.agora.R
-import com.newoether.agora.data.CustomEndpointProtocol
-import com.newoether.agora.data.CustomProviderNamePolicy
-import com.newoether.agora.ui.components.clearFocusOnTap
-import com.newoether.agora.ui.components.CustomEndpointProtocolSelector
 import com.newoether.agora.ui.components.displayName
 import com.newoether.agora.ui.components.providerIcon
 import com.newoether.agora.util.Constants
@@ -41,10 +29,10 @@ fun SettingsProviderPage(viewModel: ChatViewModel, onBack: () -> Unit) {
     val localChatModels by viewModel.settings.localChatModels.collectAsState()
 
     var selectedProvider by rememberSaveable { mutableStateOf<String?>(null) }
-    var showAddCustomDialog by remember { mutableStateOf(false) }
-    val scrollState = rememberSaveable(saver = androidx.compose.foundation.ScrollState.Saver) { androidx.compose.foundation.ScrollState(0) }
+    var showAddCustomPage by rememberSaveable { mutableStateOf(false) }
+    val scrollState = rememberSettingsScrollState()
 
-    BackHandler {
+    BackHandler(enabled = !showAddCustomPage) {
         if (selectedProvider != null) {
             selectedProvider = null
         } else {
@@ -54,10 +42,17 @@ fun SettingsProviderPage(viewModel: ChatViewModel, onBack: () -> Unit) {
 
     Box(modifier = Modifier.fillMaxSize()) {
         GuardedAnimatedContent(
-            targetState = selectedProvider,
-            forward = selectedProvider != null
-        ) { provider ->
-            if (provider != null) {
+            targetState = selectedProvider to showAddCustomPage,
+            forward = selectedProvider != null || showAddCustomPage,
+        ) { (provider, addCustomProvider) ->
+            if (addCustomProvider) {
+                SettingsSecondaryPane {
+                    AddCustomProviderPage(
+                        viewModel = viewModel,
+                        onBack = { showAddCustomPage = false },
+                    )
+                }
+            } else if (provider != null) {
                 SettingsSecondaryPane {
                     SettingsProviderDetailPage(
                         providerName = provider,
@@ -144,7 +139,7 @@ fun SettingsProviderPage(viewModel: ChatViewModel, onBack: () -> Unit) {
                                 add {
                                     SettingsAddItem(
                                         label = stringResource(R.string.custom_provider_add_title),
-                                        onClick = { showAddCustomDialog = true },
+                                        onClick = { showAddCustomPage = true },
                                     )
                                 }
                             })
@@ -161,113 +156,7 @@ fun SettingsProviderPage(viewModel: ChatViewModel, onBack: () -> Unit) {
                         }
 
                 }
-
-                // Add Custom Provider Dialog
-                if (showAddCustomDialog) {
-                    var customName by remember { mutableStateOf("") }; var customBaseUrl by remember { mutableStateOf("") }
-                    var customProtocol by remember { mutableStateOf(CustomEndpointProtocol.OPENAI) }
-                    var nameError by remember { mutableStateOf(false) }; var urlError by remember { mutableStateOf(false) }
-                    AlertDialog(
-                        modifier = Modifier.clearFocusOnTap(),
-                        containerColor = MaterialTheme.colorScheme.surfaceContainer,
-                        onDismissRequest = { showAddCustomDialog = false },
-                        title = {
-                            Text(
-                                stringResource(R.string.custom_provider_add_title),
-                                fontWeight = FontWeight.Bold,
-                            )
-                        },
-                        text = {
-                            CustomProviderDialogContent(
-                                name = customName,
-                                onNameChange = { customName = it; nameError = false },
-                                nameError = nameError,
-                                protocol = customProtocol,
-                                onProtocolChange = { customProtocol = it },
-                                baseUrl = customBaseUrl,
-                                onBaseUrlChange = { customBaseUrl = it; urlError = false },
-                                urlError = urlError,
-                            )
-                        },
-                        confirmButton = {
-                            TextButton(onClick = {
-                                val tn = customName.trim()
-                                val tu = customBaseUrl.trim()
-                                nameError = CustomProviderNamePolicy.hasConflict(
-                                    name = tn,
-                                    existingNames = customProviders.map { it.name },
-                                )
-                                urlError = tu.isBlank()
-                                if (!nameError && !urlError) {
-                                    viewModel.customModelConfiguration.addProvider(tn, tu, customProtocol)
-                                    showAddCustomDialog = false
-                                }
-                            }) {
-                                Text(stringResource(R.string.custom_provider_add))
-                            }
-                        },
-                        dismissButton = {
-                            TextButton(onClick = { showAddCustomDialog = false }) {
-                                Text(stringResource(R.string.cancel))
-                            }
-                        },
-                    )
-                }
             }
         }
-    }
-}
-
-@Composable
-private fun CustomProviderDialogContent(
-    name: String,
-    onNameChange: (String) -> Unit,
-    nameError: Boolean,
-    protocol: CustomEndpointProtocol,
-    onProtocolChange: (CustomEndpointProtocol) -> Unit,
-    baseUrl: String,
-    onBaseUrlChange: (String) -> Unit,
-    urlError: Boolean,
-) {
-    Column(
-        modifier = Modifier.fillMaxWidth().verticalScroll(rememberScrollState()),
-        verticalArrangement = Arrangement.spacedBy(12.dp),
-    ) {
-        val protocolLabel = stringResource(R.string.custom_provider_protocol_label)
-        CustomEndpointProtocolSelector(
-            selected = protocol,
-            onSelected = onProtocolChange,
-            modifier = Modifier.semantics {
-                contentDescription = protocolLabel
-            },
-        )
-        OutlinedTextField(
-            value = name,
-            onValueChange = onNameChange,
-            label = { Text(stringResource(R.string.custom_provider_name_label)) },
-            isError = nameError,
-            supportingText = if (nameError) {
-                { Text(stringResource(R.string.custom_provider_name_error)) }
-            } else {
-                null
-            },
-            shape = RoundedCornerShape(16.dp),
-            modifier = Modifier.fillMaxWidth(),
-            singleLine = true,
-        )
-        OutlinedTextField(
-            value = baseUrl,
-            onValueChange = onBaseUrlChange,
-            label = { Text(stringResource(R.string.provider_base_url)) },
-            isError = urlError,
-            supportingText = if (urlError) {
-                { Text(stringResource(R.string.custom_provider_url_error)) }
-            } else {
-                null
-            },
-            shape = RoundedCornerShape(16.dp),
-            modifier = Modifier.fillMaxWidth(),
-            singleLine = true,
-        )
     }
 }

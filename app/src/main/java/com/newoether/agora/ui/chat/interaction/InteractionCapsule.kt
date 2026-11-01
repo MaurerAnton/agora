@@ -24,6 +24,7 @@ import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.SideEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.remember
@@ -81,6 +82,8 @@ internal fun MorphingInteractionCard(
     kind: InteractionKind,
     minimized: Boolean,
     onMinimizedChange: (Boolean) -> Unit,
+    inSharedRow: Boolean = false,
+    onExpansionChanged: (Float) -> Unit = {},
     content: @Composable () -> Unit,
 ) {
     val motion = LocalAgoraMotionPolicy.current
@@ -90,6 +93,7 @@ internal fun MorphingInteractionCard(
         snap()
     }
     val progress by animateFloatAsState(if (minimized) 1f else 0f, spec, label = "capsule")
+    SideEffect { onExpansionChanged(1f - progress) }
     val density = LocalDensity.current
     val capsuleHeightPx = with(density) { CapsuleHeight.roundToPx() }
     var capsuleWidthPx by remember { mutableIntStateOf(0) }
@@ -98,7 +102,7 @@ internal fun MorphingInteractionCard(
     val capsuleAlpha = (progress * 2f - 1f).coerceIn(0f, 1f)
     val expandLabel = stringResource(R.string.interaction_expand)
 
-    Box(modifier = Modifier.fillMaxWidth(), contentAlignment = Alignment.BottomStart) {
+    Box(modifier = if (inSharedRow) Modifier else Modifier.fillMaxWidth(), contentAlignment = Alignment.BottomStart) {
         Box(
             modifier = Modifier
                 .shadow(4.dp, shape, clip = false)

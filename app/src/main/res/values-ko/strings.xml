@@ -201,6 +201,22 @@
     <string name="embedding_custom_model_desc">제공자가 지원하는 모델 이름을 입력하세요</string>
     <string name="embedding_batch_size">배치 크기</string>
     <string name="embedding_batch_size_desc">요청당 캐시할 메시지 수(1-100)</string>
+    <string name="embedding_add_model">모델 추가</string>
+    <string name="embedding_edit_model">모델 편집</string>
+    <string name="embedding_choose_type">모델 유형 선택</string>
+    <string name="embedding_type_remote_desc">OpenAI, Voyage AI, Ollama 등의 임베딩 API를 사용합니다.</string>
+    <string name="embedding_type_local_desc">이 기기에서 GGUF 임베딩 모델을 실행합니다.</string>
+    <string name="embedding_provider_custom">사용자 지정</string>
+    <string name="embedding_connection">연결</string>
+    <string name="embedding_general">일반</string>
+    <string name="embedding_cache_status">캐시</string>
+    <string name="embedding_use_saved_key">저장된 %1$s 키 사용</string>
+    <string name="embedding_use_saved_key_desc">채팅 제공자 설정에서 가져옴</string>
+    <string name="embedding_model_id_hint">모델 ID (예: text-embedding-3-small)</string>
+    <string name="embedding_model_locked_desc">캐시된 임베딩은 이 모델 전용입니다. 바꾸려면 새 모델을 추가하세요.</string>
+    <string name="embedding_model_file">모델 파일</string>
+    <string name="embedding_replace_file">교체</string>
+    <string name="embedding_test_failed">연결 테스트 실패: %1$s</string>
     <string name="local_model_ready">모델을 가져왔습니다.</string>
     <string name="import_model">모델 가져오기(.gguf)</string>
     <string name="importing_model">가져오는 중...</string>
@@ -255,6 +271,8 @@
     <string name="conversation_read_empty">선택한 분기에 메시지가 없습니다.</string>
     <string name="conversation_read_page">페이지: 메시지 %1$d-%2$d</string>
     <string name="conversation_read_more">더 많은 메시지를 보려면 더 큰 오프셋을 사용하세요.</string>
+    <string name="conversation_tools_more">이 메시지에 더 많은 도구 호출이 있습니다(tool_offset: %1$d).</string>
+    <string name="conversation_details_error">저장된 메시지 세부 정보를 읽을 수 없습니다(%1$s).</string>
 
     <!-- General -->
     <string name="back">뒤로</string>
@@ -302,11 +320,6 @@
     <string name="provider_no_local_models_desc">시작하려면 GGUF 모델을 가져오세요</string>
     <string name="provider_keys_summary">%1$d개의 API 키</string>
     <string name="provider_connection">연결</string>
-    <string name="provider_connection_test">연결 확인</string>
-    <string name="provider_connection_test_running">연결 확인 중…</string>
-    <string name="provider_connection_test_title">연결 테스트</string>
-    <string name="provider_connection_test_ok">연결 OK — 모든 요청에 응답했습니다.</string>
-    <string name="provider_connection_test_failed">연결 실패 — 아래 시도 항목을 확인하세요.</string>
     <string name="import_model_chat">GGUF 모델 가져오기</string>
     <string name="add_local_chat_model">로컬 모델 추가</string>
     <string name="local_ctx_size">컨텍스트 크기</string>
@@ -556,7 +569,7 @@
     <!-- SSH host-key pinning -->
     <string name="shell_ssh_verify_host_key">호스트 키 확인 및 고정</string>
     <string name="shell_ssh_host_key_pinned">호스트 키 고정됨</string>
-    <string name="shell_ssh_host_key_not_pinned">호스트 키가 고정되지 않음 — 가로채기에 취약</string>
+    <string name="shell_ssh_host_key_not_pinned">호스트 키가 고정되지 않아 가로채기에 취약합니다</string>
     <string name="shell_ssh_verify_title">SSH 호스트 키 확인</string>
     <string name="shell_ssh_verify_message">신뢰하기 전에 이 지문이 서버와 일치하는지 확인하세요. 고정하면 중간자 공격으로부터 보호됩니다.</string>
     <string name="shell_ssh_trust">신뢰 및 고정</string>
@@ -794,6 +807,9 @@
     <string name="tool_edit_skill">스킬 편집</string>
     <string name="tool_delete_skill">스킬 삭제</string>
     <string name="tool_read_file_truncated">일부 콘텐츠 표시됨 · %1$d바이트부터 계속</string>
+    <string name="tool_read_file_truncated_line">일부 콘텐츠 표시됨 · %1$d번째 줄부터 계속</string>
+    <string name="tool_edit_count">변경 %1$d개</string>
+    <string name="tool_edit_replace_all">모두 바꾸기</string>
     <string name="low_context_mode">낮은 컨텍스트 모드</string>
     <string name="low_context_mode_default_desc">낮은 컨텍스트 모드를 기본으로 사용</string>
     <string name="learn_more">자세히 알아보기...</string>
@@ -818,7 +834,61 @@
     <string name="message_source_loop">루프</string>
     <string name="message_source_ask_user">질문</string>
     <string name="message_source_unanswered">답변 없음</string>
+    <string name="settings_todo">할 일 목록</string>
+    <string name="settings_todo_desc">모델이 관리하는 대화 체크리스트</string>
+    <string name="todo_enable">할 일 목록 활성화</string>
+    <string name="todo_enable_desc">모델이 대화 체크리스트를 읽고 수정하도록 허용합니다. 꺼도 기존 목록은 유지됩니다.</string>
+    <string name="settings_subagents">하위 에이전트</string>
+    <string name="settings_subagents_desc">독립된 대화에 작업 위임</string>
+    <string name="subagents_enable">하위 에이전트 활성화</string>
+    <string name="subagents_enable_desc">모델이 독립된 대화에 작업을 위임하도록 허용합니다. 꺼도 기존 하위 에이전트는 중지되지 않습니다.</string>
+    <string name="local_projector_title">비전 프로젝터</string>
+    <string name="local_projector_desc">선택 사항: 이미지 입력을 지원하려면 채팅 모델과 호환되는 mmproj GGUF 파일 가져오기</string>
+    <string name="local_model_error_id_required">모델 ID를 입력하세요</string>
+    <string name="local_model_error_id_invalid">a-z, 0-9, 마침표, 밑줄 및 하이픈만 사용할 수 있습니다</string>
+    <string name="local_model_error_id_taken">이 모델 ID는 이미 사용 중입니다</string>
+    <string name="local_model_error_file_required">GGUF 모델 파일을 가져오세요</string>
+    <string name="local_model_error_context">컨텍스트 크기는 양의 정수여야 합니다</string>
+    <string name="local_model_error_temperature">온도는 0에서 2 사이여야 합니다</string>
+    <string name="local_model_error_top_p">Top P는 0에서 1 사이여야 합니다</string>
+    <string name="local_model_error_max_tokens">최대 토큰 수는 양의 정수여야 합니다</string>
+    <string name="local_model_error_output">최대 토큰 수는 컨텍스트 크기를 초과할 수 없습니다</string>
+    <string name="tool_read_todo">할 일 목록 읽기</string>
+    <string name="tool_update_todo">할 일 목록 수정</string>
+    <string name="tool_spawn_agent">하위 에이전트 시작</string>
+    <string name="tool_send_agent_message">하위 에이전트에 메시지 보내기</string>
+    <string name="tool_wait_agents">하위 에이전트 대기</string>
+    <string name="tool_list_agents">하위 에이전트 목록</string>
+    <string name="tool_stop_agent">하위 에이전트 중지</string>
+    <string name="tool_reading_todo">할 일 목록 읽는 중…</string>
+    <string name="tool_updating_todo">할 일 목록 수정 중…</string>
+    <string name="tool_spawning_agent">하위 에이전트 시작 중…</string>
+    <string name="tool_sending_agent_message">하위 에이전트 메시지를 대기열에 추가 중…</string>
+    <string name="tool_waiting_agents">하위 에이전트 대기 중…</string>
+    <string name="tool_listing_agents">하위 에이전트 목록 불러오는 중…</string>
+    <string name="tool_stopping_agent">하위 에이전트 중지 중…</string>
+    <string name="tool_read_todo_done">할 일 목록을 읽었습니다</string>
+    <string name="tool_updated_todo">할 일 목록을 수정했습니다</string>
+    <string name="tool_spawned_agent">하위 에이전트를 시작했습니다</string>
+    <string name="tool_queued_agent_message">하위 에이전트 메시지를 대기열에 추가했습니다</string>
+    <string name="tool_waited_agents">하위 에이전트 대기를 마쳤습니다</string>
+    <string name="tool_listed_agents">하위 에이전트 목록을 불러왔습니다</string>
+    <string name="tool_stopped_agent">하위 에이전트를 중지했습니다</string>
+    <string name="tool_delete_agent">하위 에이전트 삭제</string>
+    <string name="tool_deleting_agent">하위 에이전트 삭제 중…</string>
+    <string name="tool_deleted_agent">하위 에이전트를 삭제했습니다</string>
+    <string name="subagents_allow_delete">하위 에이전트 삭제 허용</string>
+    <string name="subagents_allow_delete_desc">상위 대화가 유휴 상태의 하위 에이전트를 영구 삭제하여 자리를 확보할 수 있도록 허용합니다. 실행 중인 하위 에이전트와 전달되지 않은 결과는 삭제되지 않습니다.</string>
+    <string name="subagent_deleted_by_parent">이 하위 에이전트는 상위 대화에서 삭제되었습니다.</string>
+    <string name="tool_todo_empty">할 일 목록이 비어 있습니다</string>
+    <string name="tool_agents_empty">하위 에이전트가 없습니다</string>
+    <string name="tool_agent_results_empty">반환된 하위 에이전트 결과가 없습니다</string>
 
+    <string name="provider_connection_test">연결 확인</string>
+    <string name="provider_connection_test_running">연결 확인 중…</string>
+    <string name="provider_connection_test_title">연결 테스트</string>
+    <string name="provider_connection_test_ok">연결 OK — 모든 요청에 응답했습니다.</string>
+    <string name="provider_connection_test_failed">연결 실패 — 아래 시도 항목을 확인하세요.</string>
     <!-- Settings - Tor -->
     <string name="tor_title">Tor</string>
     <string name="tor_desc">Route API requests through Tor network</string>
@@ -828,7 +898,6 @@
     <string name="tor_socks_port">Port</string>
     <string name="tor_socks_port_desc">Tor SOCKS5 proxy port (default: 9050)</string>
     <string name="tor_info">Requires a running Tor daemon with SOCKS5 proxy. Install Orbot from F-Droid or run tor on your device.</string>
-
     <!-- Auto-regenerate on Chinese -->
     <string name="auto_regen_cjk_title">Auto-regenerate on Chinese</string>
     <string name="auto_regen_cjk_desc">Stop and retry the answer if Chinese characters appear while it streams</string>
@@ -842,4 +911,5 @@
     <string name="memory_move_title">Move to folder: %1$s</string>
     <string name="memory_new_folder">New or existing folder (empty = root)</string>
     <string name="memory_new_folder_title">New folder</string>
+
 </resources>

@@ -3,6 +3,30 @@ package com.newoether.agora.data
 import com.newoether.agora.automation.LoopPolicy
 import kotlinx.serialization.Serializable
 
+/** Archive headers must describe a one-level forest before any durable graph is replaced. */
+internal suspend fun validateSubagentArchiveOwners(
+    conversations: List<com.newoether.agora.data.local.ChatEntity>,
+    availableIds: Set<String>,
+    readExisting: suspend (String) -> com.newoether.agora.data.local.ChatEntity?,
+) {
+    val imported = conversations.associateBy { it.id }
+    conversations.forEach { child ->
+        child.parentConversationId?.let { parentId ->
+            require(parentId != child.id && parentId in availableIds) { "Invalid subagent parent" }
+            val parent = imported[parentId] ?: readExisting(parentId)
+            require(parent != null && parent.parentConversationId == null) { "Nested subagent parent" }
+        }
+        val completion = com.newoether.agora.model.SubagentCompletion.decode(child.subagentResultJson)
+        require((completion == null) == (child.subagentResultId == null)) { "Incomplete subagent result" }
+        require(completion?.id == child.subagentResultId) { "Mismatched subagent result" }
+        // Validation may repair display status without changing a durable completion or receipt.
+        require(child.subagentResultStatus in setOf("completed", "failed", "stopped") ||
+            completion == null && child.subagentResultStatus == null) {
+            "Invalid subagent status"
+        }
+    }
+}
+
 @Serializable
 internal data class NativeConversationPayload(
     val conversations: List<NativeExportChatEntity>,
@@ -19,8 +43,15 @@ internal data class NativeExportChatEntity(
     val id: String,
     val title: String,
     val lastUpdated: Long,
+    val createdAt: Long? = null,
     val dataChangedAt: Long = 0L,
     val isPinned: Boolean = false,
+    val parentConversationId: String? = null,
+    val subagentResultJson: String? = null,
+    val subagentResultId: String? = null,
+    val subagentResultStatus: String? = null,
+    val subagentDeliveredResultId: String? = null,
+    val todoJson: String? = null,
     val selectedBranchesJson: String? = null,
     val systemPromptId: String? = null,
     val modelId: String? = null,

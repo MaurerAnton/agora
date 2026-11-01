@@ -9,6 +9,7 @@ import com.newoether.agora.model.ModelId
 import com.newoether.agora.model.Participant
 import com.newoether.agora.model.ThinkingProviderFamily
 import com.newoether.agora.api.util.Base64FileRegistry
+import com.newoether.agora.api.util.imageArtifactsForSend
 import com.newoether.agora.api.util.buildToolCallId
 import com.newoether.agora.api.util.adaptToolRoundsForProvider
 import com.newoether.agora.api.util.resolvedThinking
@@ -456,6 +457,8 @@ class AnthropicProvider(
                             consecutiveReadTimeouts = 0
                         } catch (e: java.net.SocketTimeoutException) {
                             if (!currentCoroutineContext().isActive) break
+                            responseBodyReadError = e.asRetryableResponseBodyReadError()
+                            if (responseBodyReadError != null) break
                             if (++consecutiveReadTimeouts >= 3) {
                                 timedOut = true
                                 break
@@ -518,11 +521,18 @@ class AnthropicProvider(
                     )
 
                     if (termination.isRetryable && attempt < maxAttempts) {
-                        // Nothing was surfaced yet, so replaying cannot duplicate visible output.
+                        // Consumers roll back only this attempt before the retry begins.
                         DebugLog.w("AgoraAPI",
                             "[$name] Incomplete stream on attempt $attempt/$maxAttempts, retrying")
                         val retryDelayMs = ProviderRetryPolicy.delayMillis(attempt)
-                        emit(StreamEvent.Retrying(attempt, ProviderRetryPolicy.MAX_RETRIES))
+                        emit(
+                            StreamEvent.Retrying(
+                                attempt,
+                                ProviderRetryPolicy.MAX_RETRIES,
+                                resetCurrentAttempt = termination.producedContent ||
+                                    ProviderRetryPolicy.requiresResponseReadRetry(termination.streamError),
+                            ),
+                        )
                         delay(retryDelayMs)
                     } else {
                         done = true
@@ -543,7 +553,7 @@ class AnthropicProvider(
                             retryableCodes,
                         ) && attempt < maxAttempts
                     ) {
-                        val retryDelayMs = ProviderRetryPolicy.delayMillis(attempt)
+                        val retryDelayMs = ProviderRetryPolicy.delayMillis(attempt, handle.retryAfter)
                         DebugLog.w("AgoraAPI", "[$name] Transient error ${handle.code} on attempt $attempt/$maxAttempts, retrying in ${retryDelayMs}ms...")
                         emit(StreamEvent.Retrying(attempt, ProviderRetryPolicy.MAX_RETRIES))
                         delay(retryDelayMs)
@@ -627,15 +637,15 @@ class AnthropicProvider(
         base64Files: Base64FileRegistry,
     ): AnthropicMessage {
         val parts = mutableListOf<AnthropicContentPart>()
-        val imagePaths = if (msg.participant == Participant.USER) msg.images else emptyList()
-        for (imagePath in imagePaths) {
-            val placeholder = base64Files.register(imagePath) ?: continue
+        val images = if (msg.participant == Participant.USER) msg.imageArtifactsForSend() else emptyList()
+        for (artifact in images) {
+            val image = base64Files.register(artifact) ?: continue
             parts.add(
                 AnthropicContentPart(
                     type = "image",
                     source = AnthropicImageSource(
-                        mediaType = com.newoether.agora.api.util.imageMimeType(imagePath),
-                        data = placeholder,
+                        mediaType = image.mimeType,
+                        data = image.placeholder,
                     ),
                 ),
             )
@@ -679,7 +689,8 @@ class AnthropicProvider(
         all
     }
 
-    private companion object {
+    // Internal so the OpenAI-compatible path can send the same default to Claude behind relays.
+    internal companion object {
         /**
          * Headroom reserved above the thinking budget for the answer AND any tool_use block.
          * Anthropic's max_tokens covers thinking + output together, so this slack is what keeps a

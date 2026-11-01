@@ -9,13 +9,14 @@ internal suspend fun ConversationTitleGenerator.generateWithNotifications(
     conversationId: String,
     settings: SettingsRepository,
     appContext: Context,
+    runtimeSnapshot: ConversationGenerationSnapshot? = null,
     onSnackbarSuspend: suspend (String) -> Unit,
 ) {
-    settings.awaitInitialLoad()
-    if (settings.titleGenerationNotificationsEnabled.value) {
-        onSnackbarSuspend(appContext.getString(R.string.snackbar_generating_title))
-    }
-    when (generateAndPersist(conversationId)) {
+    when (generateAndPersist(conversationId, runtimeSnapshot) {
+        if (settings.titleGenerationNotificationsEnabled.value) {
+            onSnackbarSuspend(appContext.getString(R.string.snackbar_generating_title))
+        }
+    }) {
         is ConversationTitleGenerator.Result.Success -> {
             if (settings.titleGenerationNotificationsEnabled.value) {
                 onSnackbarSuspend(appContext.getString(R.string.snackbar_title_generated))

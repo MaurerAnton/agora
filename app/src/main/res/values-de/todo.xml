@@ -1,0 +1,8 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="todo_title">Aufgaben</string>
+    <string name="todo_progress">%1$d / %2$d</string>
+    <string name="todo_pending">Ausstehend</string>
+    <string name="todo_in_progress">In Bearbeitung</string>
+    <string name="todo_completed">Abgeschlossen</string>
+</resources>

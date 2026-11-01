@@ -58,8 +58,8 @@ internal interface ChatClient {
     fun openConversation(conversationId: String)
     /** Hands share text produced for this client's share request to its share surface. */
     fun showShareText(text: String)
-    /** [conversationId], which this client shows, was deleted; move this client to New Chat. */
-    fun settleDeletedConversation(conversationId: String)
+    /** Settle deletion through this client's selection owner, preferring a surviving parent. */
+    fun settleDeletedConversation(conversationId: String, parentConversationId: String? = null)
     /** True while this client's composer is submitting into [conversationId]. */
     fun isSubmissionFrozen(conversationId: String): Boolean
 

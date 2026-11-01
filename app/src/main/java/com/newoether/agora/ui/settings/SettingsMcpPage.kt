@@ -11,7 +11,6 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
-import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material.icons.Icons
@@ -100,6 +99,7 @@ fun SettingsMcpPage(
     GuardedAnimatedContent(
         targetState = editorRoute,
         forward = editorRoute != null,
+        contentKey = { route -> route?.initial?.id },
     ) { route ->
         if (route != null) {
             SettingsSecondaryPane {
@@ -122,7 +122,7 @@ fun SettingsMcpPage(
                 )
             }
         } else {
-            val scrollState = rememberScrollState()
+            val scrollState = rememberSettingsScrollState()
             CollapsingSettingsScaffold(
                 title = stringResource(R.string.mcp_title),
                 onBack = onBack,
@@ -361,7 +361,7 @@ private fun McpServerEditor(
     )
     // Registered after the page-level handler, so it takes system back while the editor is shown.
     BackHandler { guardedBack() }
-    val scrollState = rememberScrollState()
+    val scrollState = rememberSettingsScrollState()
     fun save() {
         if (!canSave) return
         onSave(
@@ -661,7 +661,11 @@ internal fun McpLabeledField(
                 isError = isError,
                 supportingText = supportingText?.let { text -> { Text(text) } },
                 placeholder = placeholder?.let { text -> {
-                    Text(text)
+                    Text(
+                        text,
+                        style = MaterialTheme.typography.bodyMedium,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    )
                 } },
                 keyboardOptions = KeyboardOptions(keyboardType = keyboardType),
                 visualTransformation = if (password) secretVisualTransformation(secretVisible) else VisualTransformation.None,

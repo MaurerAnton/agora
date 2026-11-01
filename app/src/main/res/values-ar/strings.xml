@@ -201,6 +201,22 @@
     <string name="embedding_custom_model_desc">أدخل أي اسم نموذج يدعمه المزوّد</string>
     <string name="embedding_batch_size">حجم الدُفعة</string>
     <string name="embedding_batch_size_desc">الرسائل المراد تخزينها مؤقتًا لكل طلب (1-100)</string>
+    <string name="embedding_add_model">إضافة نموذج</string>
+    <string name="embedding_edit_model">تعديل النموذج</string>
+    <string name="embedding_choose_type">اختر نوع النموذج</string>
+    <string name="embedding_type_remote_desc">استخدم واجهة تضمين مثل OpenAI أو Voyage AI أو Ollama.</string>
+    <string name="embedding_type_local_desc">شغّل نموذج تضمين GGUF على هذا الجهاز.</string>
+    <string name="embedding_provider_custom">مخصص</string>
+    <string name="embedding_connection">الاتصال</string>
+    <string name="embedding_general">عام</string>
+    <string name="embedding_cache_status">ذاكرة التخزين المؤقت</string>
+    <string name="embedding_use_saved_key">استخدام مفتاح %1$s المحفوظ</string>
+    <string name="embedding_use_saved_key_desc">مأخوذ من إعدادات مزود الدردشة</string>
+    <string name="embedding_model_id_hint">معرّف النموذج، مثل text-embedding-3-small</string>
+    <string name="embedding_model_locked_desc">التضمينات المخزنة تخص هذا النموذج. أضف نموذجًا جديدًا للتبديل.</string>
+    <string name="embedding_model_file">ملف النموذج</string>
+    <string name="embedding_replace_file">استبدال</string>
+    <string name="embedding_test_failed">فشل اختبار الاتصال: %1$s</string>
     <string name="local_model_ready">تم استيراد النموذج.</string>
     <string name="import_model">استيراد نموذج (.gguf)</string>
     <string name="importing_model">جارٍ الاستيراد...</string>
@@ -255,6 +271,8 @@
     <string name="conversation_read_empty">لا توجد رسائل في الفرع المحدد.</string>
     <string name="conversation_read_page">الصفحة: الرسائل %1$d-%2$d</string>
     <string name="conversation_read_more">استخدم إزاحة أكبر لعرض المزيد من الرسائل.</string>
+    <string name="conversation_tools_more">تتوفر المزيد من استدعاءات الأدوات لهذه الرسالة (tool_offset: %1$d).</string>
+    <string name="conversation_details_error">تعذرت قراءة تفاصيل الرسالة المخزنة (%1$s).</string>
 
     <!-- General -->
     <string name="back">رجوع</string>
@@ -302,11 +320,6 @@
     <string name="provider_no_local_models_desc">استورد نموذج GGUF للبدء</string>
     <string name="provider_keys_summary">%1$d مفتاح API</string>
     <string name="provider_connection">الاتصال</string>
-    <string name="provider_connection_test">فحص الاتصال</string>
-    <string name="provider_connection_test_running">جارٍ فحص الاتصال…</string>
-    <string name="provider_connection_test_title">اختبار الاتصال</string>
-    <string name="provider_connection_test_ok">الاتصال سليم — استجابت جميع الطلبات.</string>
-    <string name="provider_connection_test_failed">فشل الاتصال — راجع المحاولات أدناه.</string>
     <string name="import_model_chat">استيراد نموذج GGUF</string>
     <string name="add_local_chat_model">إضافة نموذج محلي</string>
     <string name="local_ctx_size">حجم السياق</string>
@@ -556,7 +569,7 @@
     <!-- SSH host-key pinning -->
     <string name="shell_ssh_verify_host_key">التحقق من مفتاح المضيف وتثبيته</string>
     <string name="shell_ssh_host_key_pinned">تم تثبيت مفتاح المضيف</string>
-    <string name="shell_ssh_host_key_not_pinned">مفتاح المضيف غير مثبّت — عرضة للاعتراض</string>
+    <string name="shell_ssh_host_key_not_pinned">مفتاح المضيف غير مثبّت، مما يجعله عرضة للاعتراض</string>
     <string name="shell_ssh_verify_title">التحقق من مفتاح مضيف SSH</string>
     <string name="shell_ssh_verify_message">تأكّد من تطابق هذه البصمة مع خادمك قبل الوثوق به. يحمي التثبيت من هجمات الوسيط.</string>
     <string name="shell_ssh_trust">الوثوق والتثبيت</string>
@@ -794,6 +807,9 @@
     <string name="tool_edit_skill">تعديل المهارة</string>
     <string name="tool_delete_skill">حذف المهارة</string>
     <string name="tool_read_file_truncated">تم عرض محتوى جزئي · تابع من البايت %1$d</string>
+    <string name="tool_read_file_truncated_line">تم عرض محتوى جزئي · تابع من السطر %1$d</string>
+    <string name="tool_edit_count">%1$d تعديلات</string>
+    <string name="tool_edit_replace_all">استبدال الكل</string>
     <string name="low_context_mode">وضع السياق المنخفض</string>
     <string name="low_context_mode_default_desc">تفعيل وضع السياق المنخفض افتراضيًا</string>
     <string name="learn_more">معرفة المزيد...</string>
@@ -818,7 +834,61 @@
     <string name="message_source_loop">حلقة</string>
     <string name="message_source_ask_user">سؤال</string>
     <string name="message_source_unanswered">بلا إجابة</string>
+    <string name="settings_todo">قائمة المهام</string>
+    <string name="settings_todo_desc">قائمة مهام المحادثة يديرها النموذج</string>
+    <string name="todo_enable">تفعيل قائمة المهام</string>
+    <string name="todo_enable_desc">السماح للنموذج بقراءة قائمة مهام المحادثة وتحديثها. يحتفظ إيقاف هذا الخيار بالقوائم الحالية.</string>
+    <string name="settings_subagents">الوكلاء الفرعيون</string>
+    <string name="settings_subagents_desc">تفويض العمل إلى محادثات معزولة</string>
+    <string name="subagents_enable">تفعيل الوكلاء الفرعيين</string>
+    <string name="subagents_enable_desc">السماح للنموذج بتفويض العمل إلى محادثات معزولة. لا يؤدي إيقاف هذا الخيار إلى إيقاف الوكلاء الفرعيين الحاليين.</string>
+    <string name="local_projector_title">عارض الرؤية</string>
+    <string name="local_projector_desc">اختياري: استيراد ملف mmproj GGUF متوافق مع نموذج المحادثة لدعم إدخال الصور</string>
+    <string name="local_model_error_id_required">معرّف النموذج مطلوب</string>
+    <string name="local_model_error_id_invalid">استخدم فقط a-z و0-9 والنقاط والشرطات السفلية والواصلات</string>
+    <string name="local_model_error_id_taken">معرّف النموذج هذا مستخدم بالفعل</string>
+    <string name="local_model_error_file_required">استورد ملف نموذج GGUF</string>
+    <string name="local_model_error_context">يجب أن يكون حجم السياق عددًا صحيحًا موجبًا</string>
+    <string name="local_model_error_temperature">يجب أن تكون درجة الحرارة بين 0 و2</string>
+    <string name="local_model_error_top_p">يجب أن تكون قيمة Top P بين 0 و1</string>
+    <string name="local_model_error_max_tokens">يجب أن يكون الحد الأقصى للرموز عددًا صحيحًا موجبًا</string>
+    <string name="local_model_error_output">يجب ألا يتجاوز الحد الأقصى للرموز حجم السياق</string>
+    <string name="tool_read_todo">قراءة قائمة المهام</string>
+    <string name="tool_update_todo">تحديث قائمة المهام</string>
+    <string name="tool_spawn_agent">بدء وكيل فرعي</string>
+    <string name="tool_send_agent_message">إرسال رسالة إلى وكيل فرعي</string>
+    <string name="tool_wait_agents">انتظار الوكلاء الفرعيين</string>
+    <string name="tool_list_agents">عرض الوكلاء الفرعيين</string>
+    <string name="tool_stop_agent">إيقاف وكيل فرعي</string>
+    <string name="tool_reading_todo">جارٍ قراءة قائمة المهام…</string>
+    <string name="tool_updating_todo">جارٍ تحديث قائمة المهام…</string>
+    <string name="tool_spawning_agent">جارٍ بدء وكيل فرعي…</string>
+    <string name="tool_sending_agent_message">جارٍ إضافة رسالة الوكيل الفرعي إلى قائمة الانتظار…</string>
+    <string name="tool_waiting_agents">جارٍ انتظار الوكلاء الفرعيين…</string>
+    <string name="tool_listing_agents">جارٍ عرض الوكلاء الفرعيين…</string>
+    <string name="tool_stopping_agent">جارٍ إيقاف الوكيل الفرعي…</string>
+    <string name="tool_read_todo_done">تمت قراءة قائمة المهام</string>
+    <string name="tool_updated_todo">تم تحديث قائمة المهام</string>
+    <string name="tool_spawned_agent">تم بدء الوكيل الفرعي</string>
+    <string name="tool_queued_agent_message">تمت إضافة رسالة الوكيل الفرعي إلى قائمة الانتظار</string>
+    <string name="tool_waited_agents">انتهى انتظار الوكلاء الفرعيين</string>
+    <string name="tool_listed_agents">تم عرض الوكلاء الفرعيين</string>
+    <string name="tool_stopped_agent">تم إيقاف الوكيل الفرعي</string>
+    <string name="tool_delete_agent">حذف وكيل فرعي</string>
+    <string name="tool_deleting_agent">جارٍ حذف الوكيل الفرعي…</string>
+    <string name="tool_deleted_agent">تم حذف الوكيل الفرعي</string>
+    <string name="subagents_allow_delete">السماح بحذف الوكلاء الفرعيين</string>
+    <string name="subagents_allow_delete_desc">السماح للمحادثة الأصلية بحذف وكلائها الفرعيين الخاملين نهائيًا لتحرير أماكن. لا يُحذف أبدًا الوكلاء الفرعيون قيد التشغيل أو النتائج التي لم تُسلَّم.</string>
+    <string name="subagent_deleted_by_parent">حذفت المحادثة الأصلية هذا الوكيل الفرعي.</string>
+    <string name="tool_todo_empty">قائمة المهام فارغة</string>
+    <string name="tool_agents_empty">لا يوجد وكلاء فرعيون</string>
+    <string name="tool_agent_results_empty">لم تُرجع أي نتائج من الوكلاء الفرعيين</string>
 
+    <string name="provider_connection_test">فحص الاتصال</string>
+    <string name="provider_connection_test_running">جارٍ فحص الاتصال…</string>
+    <string name="provider_connection_test_title">اختبار الاتصال</string>
+    <string name="provider_connection_test_ok">الاتصال سليم — استجابت جميع الطلبات.</string>
+    <string name="provider_connection_test_failed">فشل الاتصال — راجع المحاولات أدناه.</string>
     <!-- Settings - Tor -->
     <string name="tor_title">Tor</string>
     <string name="tor_desc">Route API requests through Tor network</string>
@@ -828,7 +898,6 @@
     <string name="tor_socks_port">Port</string>
     <string name="tor_socks_port_desc">Tor SOCKS5 proxy port (default: 9050)</string>
     <string name="tor_info">Requires a running Tor daemon with SOCKS5 proxy. Install Orbot from F-Droid or run tor on your device.</string>
-
     <!-- Auto-regenerate on Chinese -->
     <string name="auto_regen_cjk_title">Auto-regenerate on Chinese</string>
     <string name="auto_regen_cjk_desc">Stop and retry the answer if Chinese characters appear while it streams</string>
@@ -842,4 +911,5 @@
     <string name="memory_move_title">Move to folder: %1$s</string>
     <string name="memory_new_folder">New or existing folder (empty = root)</string>
     <string name="memory_new_folder_title">New folder</string>
+
 </resources>

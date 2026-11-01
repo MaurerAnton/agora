@@ -1,0 +1,8 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="todo_title">قائمة المهام</string>
+    <string name="todo_progress">%1$d / %2$d</string>
+    <string name="todo_pending">قيد الانتظار</string>
+    <string name="todo_in_progress">قيد التنفيذ</string>
+    <string name="todo_completed">مكتملة</string>
+</resources>

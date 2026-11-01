@@ -79,8 +79,7 @@ internal fun GenerationError.ownedGenerationErrorStringResourceId(): Int? = when
     is GenerationError.RequestFormat -> R.string.generation_error_request_format
     GenerationError.Cancelled -> R.string.generation_error_cancelled
     GenerationError.Timeout -> R.string.generation_error_timeout
-    is GenerationError.Unknown ->
-        if (cause.localizedMessage.isNullOrBlank()) R.string.generation_error_unexpected else null
+    is GenerationError.Unknown -> knownGenerationErrorDetail(detail())?.stringResourceId()
     is GenerationError.Api,
     is GenerationError.LocalModel,
     is GenerationError.Configuration -> null
@@ -171,10 +170,7 @@ internal fun localizedGenerationError(
         error.provider,
         normalizeGenerationErrorDetail(error.details),
     )
-    is GenerationError.Unknown -> error.cause.localizedMessage
-        ?.takeIf(String::isNotBlank)
-        ?.let { localizedKnownOrNormalizedDetail(context, it) }
-        ?: context.getString(R.string.generation_error_unexpected)
+    is GenerationError.Unknown -> localizedKnownOrNormalizedDetail(context, error.detail())
     GenerationError.Cancelled -> context.getString(R.string.generation_error_cancelled)
     GenerationError.Timeout -> context.getString(R.string.generation_error_timeout)
 }

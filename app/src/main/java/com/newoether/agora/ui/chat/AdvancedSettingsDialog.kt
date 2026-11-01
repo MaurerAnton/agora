@@ -1,6 +1,5 @@
 package com.newoether.agora.ui.chat
 
-import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
@@ -14,6 +13,7 @@ import androidx.compose.ui.unit.dp
 import com.newoether.agora.R
 import com.newoether.agora.data.ConversationSettings
 import com.newoether.agora.model.ContextBudget
+import com.newoether.agora.ui.components.optionClickable
 import java.util.Locale
 
 @Composable
@@ -175,7 +175,7 @@ private fun AdvancedParamRow(
                     text = stringResource(R.string.gen_reset),
                     style = MaterialTheme.typography.labelSmall,
                     color = MaterialTheme.colorScheme.primary.copy(alpha = 0.7f),
-                    modifier = Modifier.clickable(onClick = onReset)
+                    modifier = Modifier.optionClickable(onClick = onReset)
                 )
             } else if (hasDefault) {
                 Text(
@@ -241,7 +241,7 @@ private fun AdvancedParamRow(
                     text = stringResource(R.string.gen_reset),
                     style = MaterialTheme.typography.labelSmall,
                     color = MaterialTheme.colorScheme.primary.copy(alpha = 0.7f),
-                    modifier = Modifier.clickable(onClick = onReset)
+                    modifier = Modifier.optionClickable(onClick = onReset)
                 )
             } else if (hasDefault) {
                 Text(

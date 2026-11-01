@@ -1,11 +1,11 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
     <string name="remote_failed">リモート操作を完了できませんでした。エラーの詳細を確認してください。</string>
-    <string name="remote_unknown">送信結果を確認できません。再送信する前に Codex で会話を確認してください。</string>
+    <string name="remote_unknown">メッセージが送信されたことを確認できませんでした。</string>
     <string name="remote_rejected">Codex がメッセージを受け付けませんでした。再試行する前にエラーの詳細を確認してください。</string>
     <string name="remote_storage_failed">Agora がリモート用のローカルデータにアクセスできません。空き容量を確認してください。</string>
     <string name="remote_network_failed">Filo に接続できません。接続先のパソコン、サービスのアドレス、ネットワークを確認してください。</string>
-    <string name="remote_auth_failed">Filo がアクセストークンを拒否しました。接続先のパソコンのトークンを使用してください。</string>
+    <string name="remote_auth_failed">Filo はこのリクエストを認証できませんでした。アクセストークンが間違っているとは限りません。繰り返し発生する場合は、接続先のパソコンのトークンと時刻を確認してください。</string>
     <string name="remote_configuration_failed">有効なサービス URL と 64 文字のアクセストークンを入力してください。</string>
     <string name="remote_protocol_failed">Agora が Filo の応答を検証または読み取りできません。両方のアプリが最新か確認してください。</string>
     <string name="remote_service_failed">Codex がリクエストを完了できませんでした。</string>
@@ -14,7 +14,7 @@
     <string name="remote_response_too_large">応答または添付ファイルが対応するサイズを超えています。</string>
     <string name="remote_invalid_request">Filo がリクエストを読み取れません。入力内容を確認してください。</string>
     <string name="remote_not_found">要求された項目は利用できません。一覧を更新してください。</string>
-    <string name="remote_not_supported">接続中のクライアントではこの操作を利用できません。</string>
+    <string name="remote_not_supported">この接続元では、この操作はサポートされていません。</string>
     <string name="remote_desktop_unavailable">Filo が Codex Desktop に接続できません。接続先のパソコンで Codex を開いてください。</string>
     <string name="remote_session_unavailable">Codex がこの会話を準備できていません。接続先のパソコンで確認してください。</string>
     <string name="remote_helper_unavailable">Filo がユーザー補助プロセスに接続できません。接続先の Filo サービスを確認してください。</string>

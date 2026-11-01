@@ -59,6 +59,8 @@ internal data class NativeConversationIndexEntry(
 internal data class ShellDeviceSecrets(
     val apiKey: String = "",
     val sshPassword: String = "",
+    val sshPrivateKey: String? = null,
+    val sshKeyPassphrase: String? = null,
 )
 
 @Serializable
@@ -75,7 +77,7 @@ internal data class NativeBackupSecrets(
 )
 
 internal fun ShellDeviceConfig.withoutSecrets(): ShellDeviceConfig =
-    copy(apiKey = "", sshPassword = "")
+    copy(apiKey = "", sshPassword = "", sshPrivateKey = "", sshKeyPassphrase = "")
 
 internal fun McpServerConfig.withoutSecrets(): McpServerConfig =
     copy(headers = emptyMap())

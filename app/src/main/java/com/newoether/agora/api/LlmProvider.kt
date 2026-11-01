@@ -10,8 +10,8 @@ import kotlinx.serialization.Serializable
 import kotlinx.serialization.json.JsonElement
 import kotlinx.serialization.json.JsonObject
 
-suspend fun ProviderConfig.resolveRequest(messages: List<ChatMessage>): ProviderRequestInput =
-    requestResolver?.resolve(messages, this)
+suspend fun ProviderConfig.resolveRequest(messages: List<ChatMessage>): ProviderRequestInput {
+    val resolved = requestResolver?.resolve(messages, this)
         ?: ProviderRequestInput(
             messages = prepareMessages(
                 messages,
@@ -23,6 +23,9 @@ suspend fun ProviderConfig.resolveRequest(messages: List<ChatMessage>): Provider
             ),
             systemPrompt = systemPrompt,
         )
+    // Custom request resolvers must obey the same wire-name compatibility boundary.
+    return resolved.copy(messages = com.newoether.agora.api.util.canonicalToolNames(resolved.messages))
+}
 
 @Serializable
 data class OpenAiResponsesRequest(
@@ -31,6 +34,9 @@ data class OpenAiResponsesRequest(
     val stream: Boolean = true,
     val tools: List<OpenAiResponseTool>? = null,
     val reasoning: OpenAiReasoning? = null,
+    @SerialName("chat_template_kwargs") val chatTemplateKwargs: JsonObject? = null,
+    @SerialName("reasoning_effort") val reasoningEffort: String? = null,
+    @SerialName("thinking_budget") val thinkingBudget: Int? = null,
     @SerialName("service_tier") val serviceTier: String? = null,
     val temperature: Float? = null,
     @SerialName("max_output_tokens") val maxOutputTokens: Int? = null,

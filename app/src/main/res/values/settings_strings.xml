@@ -97,7 +97,7 @@
     <string name="prompts_template_blank">Blank</string>
     <string name="prompts_template_blank_desc">Start with an empty editable system prompt.</string>
     <string name="prompts_template_default">Default</string>
-    <string name="prompts_template_default_desc">Use Agora\'s default prompt with runtime context, memory, web search, shell, and device-file guidance.</string>
+    <string name="prompts_template_default_desc">Use Agora\'s default response rules, tool guidance, skill catalog, and active memory.</string>
     <string name="prompts_duplicate">Duplicate</string>
     <string name="prompts_duplicate_title">%1$s Copy</string>
     <string name="prompts_empty_preview">Empty prompt</string>
@@ -209,12 +209,10 @@
     <string name="tool_call_display_mode">Thinking &amp; Tool Blocks</string>
     <string name="tool_call_display_mode_timeline">Timeline</string>
     <string name="tool_call_display_mode_grouped_timeline">Grouped</string>
-    <string name="tool_call_display_mode_compact">Compact</string>
     <string name="tool_call_display_mode_timeline_desc">Show answer, thinking, and tool blocks in chronological order</string>
     <string name="tool_call_display_mode_grouped_timeline_desc">Keep timeline order but merge consecutive thinking, tool, and image blocks</string>
     <string name="auto_expand_active_group">Auto-Expand Active Group</string>
     <string name="auto_expand_active_group_desc">Automatically expand the current thinking and tool group, then collapse it when the model moves on.</string>
-    <string name="tool_call_display_mode_compact_desc">Group thinking and tool blocks above the answer</string>
 
     <!-- Settings - Web Search Page -->
     <string name="web_search_title">Web Search</string>
@@ -285,6 +283,15 @@
     <string name="shell_device_port">Port</string>
     <string name="shell_device_user">Username</string>
     <string name="shell_device_password">Password</string>
+    <string name="shell_ssh_auth_method">Authentication method</string>
+    <string name="shell_ssh_auth_private_key">Private Key</string>
+    <string name="shell_ssh_import_private_key">Import Private Key</string>
+    <string name="shell_ssh_private_key_desc">Import an SSH private key up to 256 KiB.</string>
+    <string name="shell_ssh_private_key_passphrase">Key passphrase</string>
+    <string name="shell_ssh_private_key_invalid">Invalid or unsupported SSH private key</string>
+    <string name="shell_ssh_private_key_too_large">Private key exceeds 256 KiB</string>
+    <string name="shell_ssh_private_key_read_failed">Could not read private key</string>
+    <string name="shell_ssh_private_key_passphrase_invalid">Incorrect key passphrase</string>
 
     <!-- Settings - Sandbox Management -->
     <string name="sandbox_mgmt_title">Sandbox Management</string>
@@ -503,9 +510,51 @@
     <string name="settings_interaction">Interaction</string>
     <string name="settings_interaction_desc">Questions the assistant asks you</string>
     <string name="ask_user_enable">Let the assistant ask me</string>
+    <string name="ask_user_timeout">Timeout</string>
+    <string name="ask_user_timeout_desc">How long to wait for a blocking question set. Unanswered questions are skipped when time runs out.</string>
+    <string name="ask_user_timeout_minutes">%1$d min</string>
     <string name="ask_user_enable_desc">Gives the model a tool to ask you a question and wait for your choice</string>
     <string name="unsaved_changes_title">Unsaved changes</string>
     <string name="unsaved_changes_message">You have unsaved changes. Discard them?</string>
     <string name="unsaved_changes_discard">Discard</string>
     <string name="unsaved_changes_keep_editing">Keep editing</string>
+    <string name="shell_authentication">Authentication</string>
+    <string name="shell_ssh_host_key">Host Key</string>
+    <!-- Installation guides -->
+    <string name="install_guide_purpose">Introduction</string>
+    <string name="install_guide_project_address">Project Address</string>
+    <string name="install_guide_install">Installation</string>
+    <string name="install_guide_connect">Connect in Agora</string>
+    <string name="install_guide_platform">Target System</string>
+    <string name="install_guide_copy_command">Copy Command</string>
+    <string name="install_guide_run_on_target">Copy the command and run it on the target computer, or in Termux on the target Android device.</string>
+    <string name="install_guide_source">View Source</string>
+    <string name="install_guide_name_mapping">Choose a unique name for this device, then save it in Add Device.</string>
+    <string name="install_guide_windows">Windows</string>
+    <string name="install_guide_linux">Linux</string>
+    <string name="install_guide_termux">Termux</string>
+    <string name="conch_guide_title">What Is Conch?</string>
+    <string name="conch_guide_description">Conch lets Agora run shell commands and work with files on your devices.</string>
+    <string name="conch_guide_windows_terminal">Open an ordinary PowerShell window on the target Windows computer.</string>
+    <string name="conch_guide_linux_terminal">Open a terminal as your normal Linux user. Default user mode does not need sudo.</string>
+    <string name="conch_guide_termux_terminal">Open Termux on the target Android device. Installation uses the Termux user without root.</string>
+    <string name="conch_guide_system_mode">System Mode</string>
+    <string name="conch_guide_system_mode_desc">Optional system-wide installation. Requires administrator PowerShell on Windows or root access on Linux.</string>
+    <string name="conch_guide_user_mode">New installations use user mode by default. Choose System Mode only when you need a system-wide service.</string>
+    <string name="conch_guide_linger">On Linux, running before login requires an explicit linger choice. Enable it only if you want that behavior.</string>
+    <string name="conch_guide_mode_preserved">For an existing installation, keep its current mode unless you explicitly intend to change it.</string>
+    <string name="conch_guide_address_mapping">Enter the reachable service address shown by the installer as Server URL.</string>
+    <string name="conch_guide_key_mapping">Copy the installer’s API key into API Key. Keep the key private.</string>
+    <string name="filo_guide_title">What Is Filo?</string>
+    <string name="filo_guide_description">Filo connects Agora to supported native coding sessions on your computer.</string>
+    <string name="filo_guide_windows_terminal">On the target Windows x64 computer, open PowerShell as administrator.</string>
+    <string name="filo_guide_selected_user">Select the Windows account that runs the native client. Codex Desktop access requires it to be installed and initialized for that account.</string>
+    <string name="filo_guide_address_mapping">Enter the target’s reachable tailnet IPv4 service URL. localhost works only on the target computer.</string>
+    <string name="filo_guide_token_mapping">Copy the installer’s access token into Access token. Keep the token private.</string>
+    <string name="filo_guide_scope">The installer detects Codex Desktop, Codex CLI, Claude Code, and Claude Desktop. Choose the sources to integrate; required components, including the Claude Mod, are installed automatically. Installed sources remain visible while offline. Claude Desktop supports Code only; Chat and Cowork are not supported.</string>
+    <string name="install_guide_help">Help</string>
+    <string name="install_guide_open_terminal">Open the Terminal</string>
+    <string name="install_guide_run_command">Copy and Run the Command</string>
+    <string name="conch_guide_finish">Add the device with the service address and API key shown by the installer.</string>
+    <string name="filo_guide_finish">Choose the Windows account and sources when prompted. Then add the device with the service URL and access token shown by the installer.</string>
 </resources>

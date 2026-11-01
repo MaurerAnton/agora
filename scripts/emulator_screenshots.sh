@@ -108,26 +108,68 @@ clean_ui() {
 
 clean_ui
 
+# Machine-readable companion to a frame: Compose publishes its semantics to uiautomator, so a
+# dump records whether a control exists and whether it is enabled - reachable without eyeballing
+# pixels. Skip's alpha and its enabled flag share one condition, so disabled == invisible.
+dump_ui() {
+  adb shell uiautomator dump /sdcard/agora_ui.xml >/dev/null 2>&1 || true
+  adb pull /sdcard/agora_ui.xml "$out/$1.xml" >/dev/null 2>&1 || true
+}
+
 if [ "${FLOW:-main}" = "onboarding" ]; then
-  # Diagnostic flow: page through every onboarding screen instead of skipping it, one frame
-  # per page plus a short slide-back pass - the frames show exactly where the Skip control
-  # vanishes, if anywhere. Every step waits past the intro gate (showContent keys the fade)
-  # and the 500ms pager animation.
-  echo "flow=onboarding: paging all 8 pages, one frame each"
+  # Diagnostic flow: page through every onboarding screen instead of skipping it. Every step
+  # writes a frame AND a uiautomator dump - the dump says whether the Skip control exists and
+  # whether it is enabled on that page. Steps wait past the intro gate (showContent keys the
+  # fade) and the 500ms pager animation.
+  echo "flow=onboarding: paging all 8 pages, frame + UI dump each"
   for i in 0 1 2 3 4 5 6 7; do
     if [ "$i" -gt 0 ]; then
       adb shell input swipe 900 1300 150 1300 350
       sleep 2.4
     fi
     shot "page_${i}"
+    dump_ui "page_${i}"
   done
   # Slide two pages back: the report is about a vanishing control, so returns matter too.
   adb shell input swipe 150 1300 900 1300 350
   sleep 2.4
   shot "page_back_6"
+  dump_ui "page_back_6"
   adb shell input swipe 150 1300 900 1300 350
   sleep 2.4
   shot "page_back_5"
+  dump_ui "page_back_5"
+
+  # Fast burst: three swipes back to back with no settle pause. If recomposition is still
+  # restarting the intro-gate effect, the content alpha never reaches 1 and every control -
+  # Skip included - stays invisible right after each swipe.
+  echo "flow=onboarding: fast burst, no settle pause"
+  for i in 1 2 3; do
+    adb shell input swipe 900 1300 150 1300 300
+    sleep 0.45
+    shot "burst_${i}"
+    dump_ui "burst_${i}"
+  done
+  sleep 2.5
+  shot "burst_after_pause"
+  dump_ui "burst_after_pause"
+
+  # Rotation recreates the activity. showContent is a plain remember (not rememberSaveable), so
+  # a recreation should blank every control for ~2s - the "Skip disappeared" case a real device
+  # hits on rotate, locale switch or after the app was backgrounded and its process recycled.
+  echo "flow=onboarding: rotate to force activity recreation"
+  adb shell settings put system accelerometer_rotation 0 >/dev/null 2>&1 || true
+  adb shell content insert --uri content://settings/system --bind name:s:user_rotation --bind value:i:1 >/dev/null 2>&1 || true
+  sleep 0.7
+  shot "rot_immediate"
+  dump_ui "rot_immediate"
+  sleep 3.5
+  shot "rot_after_3s"
+  dump_ui "rot_after_3s"
+  adb shell content insert --uri content://settings/system --bind name:s:user_rotation --bind value:i:0 >/dev/null 2>&1 || true
+  sleep 2
+  shot "rot_back"
+  dump_ui "rot_back"
 else
 # Onboarding: fresh install lands on Welcome; tap the first Skip/Start control we
 # can find so the second shot shows the actual chat surface. Bilingual patterns

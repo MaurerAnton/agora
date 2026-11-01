@@ -19,6 +19,9 @@ import org.junit.Assert.assertFalse
 import org.junit.Assert.assertThrows
 import org.junit.Assert.assertTrue
 import org.junit.Test
+import org.junit.runners.model.FrameworkMethod
+import org.robolectric.RobolectricTestRunner
+import org.robolectric.internal.bytecode.InstrumentationConfiguration
 import java.io.File
 import java.io.IOException
 import java.nio.file.Files
@@ -26,6 +29,19 @@ import java.util.Base64
 import java.util.concurrent.Callable
 import java.util.concurrent.Executors
 import java.util.concurrent.TimeUnit
+
+/**
+ * Robolectric would instrument these packages and break them under the sandbox, so image-wire
+ * tests keep java2d, ImageIO and the JDK HTTP server on the plain JVM.
+ */
+class ImageWireTestRunner(testClass: Class<*>) : RobolectricTestRunner(testClass) {
+    override fun createClassLoaderConfig(method: FrameworkMethod): InstrumentationConfiguration =
+        InstrumentationConfiguration.Builder(super.createClassLoaderConfig(method))
+            .doNotAcquirePackage("javax.imageio.")
+            .doNotAcquirePackage("com.sun.net.httpserver.")
+            .doNotAcquirePackage("sun.net.httpserver.")
+            .build()
+}
 
 class StreamingJsonRequestBodyTest {
     @Test

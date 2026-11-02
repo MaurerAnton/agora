@@ -641,6 +641,7 @@
     <string name="interaction_expand">Expand</string>
     <string name="ask_user_custom_answer">Answer in your own words</string>
     <string name="ask_user_skip">Skip</string>
+    <string name="ask_user_expired_hint">Time ran out. Your draft is kept — send it when ready.</string>
     <string name="ask_user_notification_channel">Question from Agora</string>
     <string name="ask_user_notification_desc">Asks you to answer a question from the assistant while the chat screen is not open</string>
 

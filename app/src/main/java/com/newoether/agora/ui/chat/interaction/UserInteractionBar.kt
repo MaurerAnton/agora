@@ -136,6 +136,7 @@ internal fun UserInteractionBar(
     animateEntry: Boolean = true,
     onTransitionChanged: (String?, Boolean) -> Unit = { _, _ -> },
     onExpansionChanged: (Float) -> Unit = {},
+    onQuestionTyped: (Long) -> Unit = { _ -> },
 ) {
     val motionPolicy = LocalAgoraMotionPolicy.current
     val desired = (conversationId to interactions).takeIf { interactions.isNotEmpty() }
@@ -206,6 +207,7 @@ internal fun UserInteractionBar(
                 autoWrapCodeBlocks = autoWrapCodeBlocks,
                 onSubmitQuestions = onSubmitQuestions,
                 onSkipQuestion = onSkipQuestion,
+                onQuestionTyped = onQuestionTyped,
                 onShellDecision = onShellDecision,
                 onCardMeasured = { height -> cardHeight = height },
                 minimized = owner in minimizedIn,
@@ -227,6 +229,7 @@ internal fun InteractionDeck(
     autoWrapCodeBlocks: Boolean,
     onSubmitQuestions: (List<Pair<Long, AskUserController.Answer>>) -> Unit,
     onSkipQuestion: (Long) -> Unit,
+    onQuestionTyped: (Long) -> Unit = { _ -> },
     onShellDecision: (Long, Boolean, Boolean) -> Unit,
     onCardMeasured: (Float) -> Unit,
     minimized: Boolean,
@@ -335,6 +338,7 @@ internal fun InteractionDeck(
                                 textFieldModifier = { questionTextFieldModifier(page.request) },
                                 prepareTextInput = prepareQuestionTextInput,
                                 enabled = active && !minimized && page.key == current.key,
+                                onTyped = { onQuestionTyped(page.request.id) },
                             )
                         }
                     }

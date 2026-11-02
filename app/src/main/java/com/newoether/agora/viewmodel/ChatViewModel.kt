@@ -711,6 +711,10 @@ class ChatViewModel(
         val key = "$conversationId:${boundary.lastAssistant?.parentId ?: "?"}"
         val used = cjkRetryChains.getOrDefault(key, 0)
         if (used >= max) return denyAutoRetry("cap $used/$max")
+        // Hold the drain the aborting run is about to settle with (issue #116 B1): the queued send
+        // inside it would take the slot and the retry would be declined while the original message
+        // stayed truncated. One-shot — the settlement below consumes it, retry or no retry.
+        generationRegistry.get(conversationId)?.deferQueueDrain()
         emitSnackbar(
             appContext.getString(
                 R.string.auto_regen_cjk_retrying,
@@ -735,9 +739,19 @@ class ChatViewModel(
             } else {
                 DebugLog.d("AgoraCJK", "regenerate declined for $abortedMessageId")
                 emitSnackbar(appContext.getString(R.string.auto_regen_cjk_denied, "not admitted"))
+                // The held drain never got its retry: hand the queue back so the waiting sends are
+                // not stranded behind a retry that will never run.
+                requestQueueDrainNow(conversationId)
             }
         }
         return true
+    }
+
+    /** Fires the pending queue drain for [conversationId] when nothing is generating there. */
+    private fun requestQueueDrainNow(conversationId: String) {
+        val state = generationRegistry.get(conversationId) ?: return
+        if (state.generating.value || state.queuedSends.value.isEmpty()) return
+        state.onQueueDrainRequested?.invoke(state)
     }
 
     private fun denyAutoRetry(reason: String): Boolean {

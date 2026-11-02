@@ -157,9 +157,10 @@ internal fun QuestionBody(
     textFieldModifier: @Composable () -> Modifier = { Modifier },
     prepareTextInput: suspend () -> Unit = {},
     enabled: Boolean = true,
+    onTyped: () -> Unit = {},
 ) {
     QuestionPage(request = request, draft = draft, textFieldModifier = textFieldModifier,
-        prepareTextInput = prepareTextInput, enabled = enabled)
+        prepareTextInput = prepareTextInput, enabled = enabled, onTyped = onTyped)
 }
 
 /**
@@ -211,6 +212,7 @@ private fun QuestionPage(
     textFieldModifier: @Composable () -> Modifier,
     prepareTextInput: suspend () -> Unit,
     enabled: Boolean,
+    onTyped: () -> Unit = {},
 ) {
     val hasOptions = request.options.isNotEmpty()
     val motion = LocalAgoraMotionPolicy.current
@@ -316,7 +318,13 @@ private fun QuestionPage(
                 Spacer(Modifier.height(10.dp))
                 OutlinedTextField(
                     value = draft.typed,
-                    onValueChange = { if (enabled) draft.typed = it },
+                    onValueChange = {
+                        if (enabled) {
+                            draft.typed = it
+                            // Every keystroke restarts the group deadline (issue #116 A).
+                            onTyped()
+                        }
+                    },
                     enabled = enabled,
                     modifier = Modifier
                         .fillMaxWidth()
@@ -332,6 +340,14 @@ private fun QuestionPage(
                     shape = RoundedCornerShape(16.dp),
                     maxLines = 4,
                 )
+                if (request.expired) {
+                    Spacer(Modifier.height(6.dp))
+                    Text(
+                        stringResource(R.string.ask_user_expired_hint),
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    )
+                }
             }
         }
     }

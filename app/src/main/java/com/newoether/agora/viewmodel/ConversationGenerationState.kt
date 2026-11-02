@@ -413,6 +413,16 @@ class ConversationGenerationState(
         resources.consumeQueueDrainPermission()
     }
 
+    /**
+     * Counts the settlement drain about to fire as suppressed (issue #116 B1). A CJK auto-retry
+     * claims the queue this way from inside the aborting run: the drained turn would otherwise take
+     * the slot before the retry is admitted. The deferral is one-shot and is eaten by that very
+     * settlement, so nothing leaks when the retry never launches.
+     */
+    fun deferQueueDrain() = synchronized(genLock) {
+        resources.deferNextQueueDrain()
+    }
+
     // ── Token-gated UI mutators ───────────────────────────────────────────
     fun streamUpdate(uiToken: Long, msg: ChatMessage) {
         synchronized(genLock) {

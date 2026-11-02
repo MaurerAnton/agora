@@ -62,6 +62,25 @@ class QueuedGuidanceDrainExecutorTest {
     }
 
     @Test
+    fun `a deferred settlement drain keeps the queue for the cjk retry`() = runBlocking<Unit> {
+        val fixture = Fixture()
+        val state = ConversationGenerationState("conversation", reclaimQueuedAttachments = {})
+        QUEUED.forEach(state::enqueueSend)
+
+        // The CJK abort holds the drain from inside the dying run (issue #116 B1).
+        state.deferQueueDrain()
+        fixture.executor.drainAfterSettlement(state)
+
+        // The settlement consumed exactly that one deferral and left the queue untouched, so the
+        // retry finds an idle conversation with the queued turn still waiting.
+        assertEquals(QUEUED, state.queuedSends.value)
+        assertTrue(state.consumeQueueDrainPermission())
+
+        state.dispose()
+        Unit
+    }
+
+    @Test
     fun launchCommitsWholeFifoAsSeparateMessagesWithOneRunAndLatestSnapshot() = runBlocking<Unit> {
         val fixture = Fixture()
         val state = ConversationGenerationState("conversation", reclaimQueuedAttachments = {})

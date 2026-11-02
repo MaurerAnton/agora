@@ -264,6 +264,7 @@ internal fun PhoneAskInteraction(
                 controller.dismiss(id)
             }
         },
+        onQuestionTyped = { id -> controller.touch(id) },
         onShellDecision = { _, _, _ -> },
         onCardMeasured = {},
         minimized = minimized,

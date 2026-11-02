@@ -97,6 +97,7 @@ internal fun ChatUserInteractionBarHost(
             },
             onSubmitQuestions = { answers -> viewModel.askUser.submitAll(answers) },
             onSkipQuestion = { id -> viewModel.askUser.dismiss(id) },
+            onQuestionTyped = { id -> viewModel.askUser.touch(id) },
             onShellDecision = { id, allow, alwaysAllowServer ->
                 viewModel.shellConfirmation.resolve(id, allow, alwaysAllowServer)
             },

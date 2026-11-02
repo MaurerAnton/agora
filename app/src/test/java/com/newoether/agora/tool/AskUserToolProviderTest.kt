@@ -88,7 +88,9 @@ class AskUserToolProviderTest {
             assertNull(answer["text"])
             assertNull(answer["answers"])
             assertEquals(timeoutMs, testScheduler.currentTime - startedAt)
-            assertTrue(controller.requests.value.isEmpty())
+            // The unanswered card stays on screen as expired so the draft is never discarded
+            // with the wait (issue #116 A).
+            assertEquals(listOf(request.copy(expired = true)), controller.requests.value)
         }
     }
 
@@ -123,7 +125,8 @@ class AskUserToolProviderTest {
         assertEquals("typed answer", answers[1]["text"]!!.jsonPrimitive.content)
         assertEquals(listOf("C"), choicesOf(answers[2]))
         assertEquals(60_000L, testScheduler.currentTime)
-        assertTrue(controller.requests.value.isEmpty())
+        // Only the unanswered question survives the deadline, marked expired for its draft.
+        assertEquals(listOf(waiting[0].copy(expired = true)), controller.requests.value)
     }
 
     @Test

@@ -139,7 +139,9 @@ class AskUserControllerTest {
             answer.await(),
         )
         assertEquals(60_000L, testScheduler.currentTime)
-        assertTrue(controller.requests.value.isEmpty())
+        // The unanswered question does not vanish with the deadline: it stays marked expired so
+        // the draft store keeps whatever the user typed (issue #116 A).
+        assertEquals(listOf(second.copy(expired = true)), controller.requests.value)
         listOf(first, second, third).forEach {
             assertEquals(AskUserController.Answer.Unanswered, controller.awaitAnswer(it))
         }
@@ -163,7 +165,61 @@ class AskUserControllerTest {
             listOf(AskUserController.Answer.Unanswered, AskUserController.Answer(listOf("B"), answered = true)),
             answer.await(),
         )
+        // Only the answered page left; the unanswered one is kept as an expired card.
+        assertEquals(listOf(first.copy(expired = true)), controller.requests.value)
+    }
+
+    @Test
+    fun `a keystroke gives the group deadline a fresh window`() = runTest {
+        val controller = AskUserController()
+        val request = controller.open("c1", "Long answer?", emptyList(), false, true)
+        val answer = async { controller.awaitAnswers(listOf(request), timeoutMs = 60_000L) }
+        runCurrent()
+
+        advanceTimeBy(59_000L)
+        runCurrent()
+        controller.touch(request.id)  // a keystroke one second before the deadline
+        runCurrent()
+
+        advanceTimeBy(59_000L)
+        runCurrent()
+        assertFalse(answer.isCompleted)
+        assertEquals(listOf(request), controller.requests.value)
+
+        advanceTimeBy(2_000L)
+        runCurrent()
+        assertEquals(listOf(AskUserController.Answer.Unanswered), answer.await())
+        assertEquals(listOf(request.copy(expired = true)), controller.requests.value)
+    }
+
+    @Test
+    fun `expiry keeps the card and a later submit travels as a queued message`() = runTest {
+        val controller = AskUserController()
+        val delivered = mutableListOf<AskUserController.DeferredAnswer>()
+        val collector = async { controller.deferredAnswers.collect { delivered += it } }
+        runCurrent()
+        val request = controller.open("c1", "Which one?", emptyList(), false, true)
+        val answer = async { controller.awaitAnswers(listOf(request), timeoutMs = 60_000L) }
+        runCurrent()
+
+        advanceTimeBy(60_000L)
+        runCurrent()
+        assertEquals(listOf(AskUserController.Answer.Unanswered), answer.await())
+
+        // The provider's cleanup must not wipe the card the draft lives on (issue #116 A).
+        controller.abandon(request.id)
+        runCurrent()
+        assertEquals(listOf(request.copy(expired = true)), controller.requests.value)
+        assertNull(controller.requestById(request.id))
+
+        // The answer the user kept typing arrives as one queued message instead of a resume.
+        controller.submit(request.id, emptyList(), "typed after the deadline")
+        runCurrent()
         assertTrue(controller.requests.value.isEmpty())
+        assertEquals(1, delivered.size)
+        assertEquals("c1", delivered.single().conversationId)
+        assertEquals("Which one?\ntyped after the deadline", delivered.single().text)
+        collector.cancel()
     }
 
     @Test

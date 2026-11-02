@@ -2,17 +2,24 @@ package com.newoether.agora.viewmodel
 
 import com.newoether.agora.model.MessageSource
 import kotlinx.coroutines.CompletableDeferred
+import kotlinx.coroutines.ExperimentalCoroutinesApi
+import kotlinx.coroutines.async
+import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharedFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asSharedFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.update
-import kotlinx.coroutines.ExperimentalCoroutinesApi
+import kotlinx.coroutines.selects.select
 import kotlinx.coroutines.withTimeoutOrNull
 import java.util.concurrent.ConcurrentHashMap
 import java.util.concurrent.atomic.AtomicLong
+
+/** Select marker: the group budget of an [AskUserController.awaitAnswers] wait ran out. */
+private val EXPIRED = Any()
 
 /**
  * Coordinates `ask_user` requests between the tool loop, which asks, and the interaction bar,
@@ -45,6 +52,12 @@ class AskUserController {
          */
         val setId: Long? = null,
         val runId: String? = null,
+        /**
+         * The group deadline passed while this request was still on screen. The tool call behind it
+         * already resumed with an unanswered result, but the card and its draft stay so the typed
+         * answer can still be submitted later (issue #116 A).
+         */
+        val expired: Boolean = false,
     )
 
     /**
@@ -87,6 +100,9 @@ class AskUserController {
     private val waiters = ConcurrentHashMap<Long, CompletableDeferred<Answer>>()
     private val nextRequestId = AtomicLong(1)
 
+    /** Keystroke/focus signals per request id; the wait owning the group deadline listens. */
+    private val touches = MutableSharedFlow<Long>(extraBufferCapacity = 64)
+
     /**
      * Identifies this process's request numbering. Notification actions carry it so an action built
      * by an earlier process can never answer a request created after a restart.
@@ -97,7 +113,18 @@ class AskUserController {
     fun newSetId(): Long = nextRequestId.getAndIncrement()
 
     /** Looks up a request that is still waiting, for callers that only kept its id. */
-    fun requestById(id: Long): Request? = _requests.value.firstOrNull { it.id == id }
+    fun requestById(id: Long): Request? =
+        _requests.value.firstOrNull { it.id == id }?.takeIf { !it.expired }
+
+    /**
+     * Records activity on [id]: the question gained focus or a keystroke landed. Every touch gives
+     * the group deadline a fresh full window (issue #116 A), so a user composing a long answer
+     * slowly can never have the form expire mid-draft. A touch with no active wait is harmless
+     * noise: a wait that starts later simply runs its own window from the top.
+     */
+    fun touch(id: Long) {
+        touches.tryEmit(id)
+    }
 
     fun open(
         conversationId: String?,
@@ -142,37 +169,81 @@ class AskUserController {
     /**
      * Waits once for the whole call. Keep waiter references until expiry so an answer submitted out
      * of order survives even when an earlier question remains unanswered. Cancellation propagates.
+     *
+     * The group deadline is restartable (issue #116 A): every [touch] on a request of this wait
+     * opens a fresh [timeoutMs] window, so a user composing a long answer slowly can never have the
+     * form expire mid-draft. When the budget genuinely runs out the callers resume unanswered and
+     * the waiters close, but the requests stay on screen marked [Request.expired]: the card and its
+     * draft are kept for a later submit instead of being discarded with the wait.
      */
     @OptIn(ExperimentalCoroutinesApi::class)
     suspend fun awaitAnswers(requests: List<Request>, timeoutMs: Long): List<Answer> {
         val pending = synchronized(waiters) { requests.map { waiters[it.id] } }
+        val mine = requests.mapTo(HashSet()) { it.id }
+        var expired = false
         return try {
-            withTimeoutOrNull(timeoutMs) {
-                pending.map { it?.await() ?: Answer.Unanswered }
-            } ?: synchronized(waiters) {
-                // Snapshot and close admission together with submitAll's claim/completion.
-                pending.map { waiter ->
-                    if (waiter?.isCompleted == true) waiter.getCompleted() else Answer.Unanswered
-                }.also { requests.forEach { forget(it.id) } }
+            coroutineScope {
+                val answers = async { pending.map { it?.await() ?: Answer.Unanswered } }
+                val deadline = async {
+                    // A touch restarts the window; the flow returning null means the budget ran
+                    // out without further activity.
+                    while (true) {
+                        withTimeoutOrNull(timeoutMs) { touches.first { it in mine } } ?: break
+                    }
+                }
+                val outcome: Any = select {
+                    answers.onAwait { it }
+                    deadline.onAwait { EXPIRED }
+                }
+                if (outcome === EXPIRED) {
+                    answers.cancel()
+                    expired = true
+                    // Snapshot and close admission together with submitAll's claim/completion.
+                    synchronized(waiters) {
+                        pending.map { waiter ->
+                            if (waiter?.isCompleted == true) waiter.getCompleted() else Answer.Unanswered
+                        }.also {
+                            requests.forEach { request ->
+                                waiters.remove(request.id)
+                                _requests.update { list ->
+                                    list.map { current ->
+                                        if (current.id == request.id) current.copy(expired = true) else current
+                                    }
+                                }
+                            }
+                        }
+                    }
+                } else {
+                    deadline.cancel()
+                    @Suppress("UNCHECKED_CAST")
+                    outcome as List<Answer>
+                }
             }
         } finally {
-            synchronized(waiters) { requests.forEach { forget(it.id) } }
+            if (!expired) {
+                synchronized(waiters) { requests.forEach { forget(it.id) } }
+            }
         }
     }
 
     /**
      * Gives up on [id]: its card leaves the bar and its answer, if any, is dropped. Callers use this
      * when their wait ends for their own reasons, such as the generation being stopped, so nothing
-     * is left on screen that no longer has anyone to return to. It is idempotent.
+     * is left on screen that no longer has anyone to return to. It is idempotent. An [Request.expired]
+     * card is the deliberate exception (issue #116 A): nobody can return to its wait anymore, but its
+     * draft stays on screen for the user's later submit instead of vanishing with the call.
      */
     fun abandon(id: Long) = synchronized(waiters) {
-        forget(id)
+        val request = _requests.value.firstOrNull { it.id == id }
+        if (request?.expired == true) waiters.remove(id) else forget(id)
     }
 
     /**
      * Answers a request with the options [choices] and the typed [text], either of which may be
      * empty. An id that is no longer waiting is ignored, so one request cannot be answered twice and
-     * a stale answer cannot decide a newer request.
+     * a stale answer cannot decide a newer request. An [Request.expired] id is the exception: its
+     * deadline passed while the draft stayed on screen, so a late submit reaches the model as a
+     * queued user message instead of being dropped (issue #116 A).
      */
     fun submit(id: Long, choices: List<String>, text: String? = null) {
         submitAll(listOf(id to Answer(choices, text, answered = true)))
@@ -202,12 +273,14 @@ class AskUserController {
         for ((request, given) in answered) {
             val id = request.id
             val answer = given.copy(text = given.text?.takeIf { it.isNotBlank() })
-            if (request.blocking) {
+            if (request.blocking && !request.expired) {
                 waiters[id]?.complete(if (answer.answered) answer else Answer.Unanswered)
                 continue
             }
-            // A non-blocking request without a conversation has nowhere to deliver the answer; the
-            // tool refuses that combination, so this is only a guard.
+            // A non-blocking answer, or the late submit of an expired card whose caller already
+            // resumed unanswered (issue #116 A), travels as one queued user message instead of a
+            // resume. A request without a conversation has nowhere to deliver the answer; the tool
+            // refuses that combination, so this is only a guard.
             val conversationId = request.conversationId ?: continue
             deferred.getOrPut(conversationId) { mutableListOf() } += request to answer
         }

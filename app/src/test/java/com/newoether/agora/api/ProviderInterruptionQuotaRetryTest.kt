@@ -185,6 +185,8 @@ class ProviderInterruptionQuotaRetryTest {
                 val error = result.first.filterIsInstance<StreamEvent.Error>().single().error as GenerationError.Api
                 assertEquals(case.name, "insufficient_quota", error.code)
                 assertEquals(case.name, "rate_limit_error", error.type)
+                // Fork-only provider-debug line: the message also says which endpoint failed.
+                assertTrue(case.name, error.message.contains("\nEndpoint: "))
             }
         }
     }
@@ -430,7 +432,7 @@ class ProviderInterruptionQuotaRetryTest {
                 assertEquals(case.name, 1, urls.distinct().size)
                 assertTrue(case.name, result.first.filterIsInstance<StreamEvent.Retrying>().isEmpty())
                 val error = result.first.filterIsInstance<StreamEvent.Error>().single().error as GenerationError.Api
-                assertEquals(case.name, "The server response could not be read.", error.message)
+                assertEquals(case.name, "The server response could not be read.", baseApiMessage(error.message))
                 assertEquals(case.name, "insufficient_quota", error.code)
                 assertEquals(case.name, type, error.type)
             }
@@ -453,7 +455,7 @@ class ProviderInterruptionQuotaRetryTest {
                 assertEquals(case.name, 1, urls.distinct().size)
                 assertTrue(case.name, result.first.filterIsInstance<StreamEvent.Retrying>().isEmpty())
                 val error = result.first.filterIsInstance<StreamEvent.Error>().single().error as GenerationError.Api
-                assertEquals(case.name, "The server response could not be read.", error.message)
+                assertEquals(case.name, "The server response could not be read.", baseApiMessage(error.message))
                 assertEquals(case.name, "invalid_request_error", error.type)
                 assertTrue(case.name, result.first.last() is StreamEvent.Error)
             }
@@ -541,12 +543,19 @@ class ProviderInterruptionQuotaRetryTest {
         assertTrue(case.name, result.first.none { it is StreamEvent.Error })
     }
 
+    /**
+     * The fork appends its provider-debug line (`Endpoint: <url>`) to every message built from an
+     * HTTP status, so the classification text upstream pins is compared before that suffix; the
+     * suffix itself is asserted where the status path is exercised.
+     */
+    private fun baseApiMessage(message: String): String = message.substringBefore("\nEndpoint: ")
+
     private fun assertTerminalApi(case: Case, result: Pair<List<StreamEvent>, Int>, message: String) {
         assertEquals(case.name, 1, result.second)
         assertFalse(case.name, result.first.any { it is StreamEvent.Retrying })
         assertTrue(case.name, answer(result.first).isBlank())
         val error = result.first.filterIsInstance<StreamEvent.Error>().single().error as GenerationError.Api
-        assertEquals(case.name, message, error.message)
+        assertEquals(case.name, message, baseApiMessage(error.message))
     }
 
     private fun answer(events: List<StreamEvent>): String =

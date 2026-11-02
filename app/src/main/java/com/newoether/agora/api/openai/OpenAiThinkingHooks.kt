@@ -5,12 +5,28 @@ import com.newoether.agora.api.OpenAiPlugin
 import com.newoether.agora.api.OpenAiReasoning
 import com.newoether.agora.api.OpenAiThinking
 import com.newoether.agora.model.ResolvedThinking
+import com.newoether.agora.model.ThinkingProviderFamily
+import com.newoether.agora.model.isQwen38ModelId
+import kotlinx.serialization.json.JsonObject
+import kotlinx.serialization.json.buildJsonObject
+import kotlinx.serialization.json.put
 
 /**
  * The provider-specific `customizeRequest` bodies. They live outside the provider classes so the
  * golden harness under `core/tools/golden/openai-request` can pin them without pulling in the HTTP
  * runtime; every provider method delegates here, and the C++ port owns the same shapes.
  */
+
+/** Qwen's official template controls: https://huggingface.co/Qwen/Qwen3.8-27B */
+internal fun ResolvedThinking.qwenTemplateKwargs(
+    modelId: String,
+    family: ThinkingProviderFamily,
+): JsonObject? = if (family == ThinkingProviderFamily.OPENAI_COMPATIBLE && isQwen38ModelId(modelId)) {
+    buildJsonObject {
+        put("enable_thinking", enabled)
+        if (enabled) effort?.let { put("reasoning_effort", it) }
+    }
+} else null
 
 /**
  * OpenAI: Chat Completions `reasoning_effort` accepts none/minimal/low/medium/high/xhigh/max.
@@ -114,6 +130,7 @@ internal fun OpenAiChatRequest.withOpenRouterReasoning(
 internal fun OpenAiChatRequest.withCustomOpenAiThinking(
     resolved: ResolvedThinking,
     defaultBaseUrl: String,
+    modelId: String,
 ): OpenAiChatRequest {
     if (isCheapestInferenceEndpoint(defaultBaseUrl)) {
         return copy(
@@ -132,11 +149,31 @@ internal fun OpenAiChatRequest.withCustomOpenAiThinking(
     return copy(
         reasoningEffort = effort,
         thinkingBudget = resolved.budgetTokens,
+        // Qwen3.8 relays read the effort from their template controls; upstream 2.2.0 sends the
+        // pair on the OpenAI-compatible transport exactly as it does for the native providers.
+        chatTemplateKwargs = resolved.qwenTemplateKwargs(modelId, ThinkingProviderFamily.OPENAI_COMPATIBLE),
     )
 }
 
 internal fun isCheapestInferenceEndpoint(defaultBaseUrl: String): Boolean =
     defaultBaseUrl.contains("cheapestinference.com", ignoreCase = true)
+
+/**
+ * Upstream 2.2.0's base step after the provider hook: a capability that documents no sampling
+ * parameters loses temperature / top_p / penalties on the wire even when the transport itself is
+ * OpenAI-compatible (a relayed Claude, for example, rejects them).
+ */
+internal fun OpenAiChatRequest.withoutIncompatibleSampling(resolved: ResolvedThinking): OpenAiChatRequest =
+    if (resolved.capability.supportsSamplingParams) {
+        this
+    } else {
+        copy(
+            temperature = null,
+            topP = null,
+            frequencyPenalty = null,
+            presencePenalty = null,
+        )
+    }
 
 internal fun cheapestInferenceEffort(disabled: Boolean, effort: String?): String {
     if (disabled) return "none"

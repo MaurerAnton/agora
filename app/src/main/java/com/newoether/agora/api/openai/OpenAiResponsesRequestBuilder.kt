@@ -6,23 +6,7 @@ import com.newoether.agora.api.OpenAiResponseTool
 import com.newoether.agora.api.OpenAiResponsesRequest
 import com.newoether.agora.api.ProviderConfig
 import com.newoether.agora.api.util.resolvedThinking
-import com.newoether.agora.model.ResolvedThinking
 import com.newoether.agora.model.ThinkingProviderFamily
-import com.newoether.agora.model.isQwen38ModelId
-import kotlinx.serialization.json.JsonObject
-import kotlinx.serialization.json.buildJsonObject
-import kotlinx.serialization.json.put
-
-/** Qwen's official template controls: https://huggingface.co/Qwen/Qwen3.8-27B */
-internal fun ResolvedThinking.qwenTemplateKwargs(
-    modelId: String,
-    family: ThinkingProviderFamily,
-): JsonObject? = if (family == ThinkingProviderFamily.OPENAI_COMPATIBLE && isQwen38ModelId(modelId)) {
-    buildJsonObject {
-        put("enable_thinking", enabled)
-        if (enabled) effort?.let { put("reasoning_effort", it) }
-    }
-} else null
 
 /** Responses uses the same resolved capability as Chat, including mandatory thinking and effort. */
 internal fun buildOpenAiResponsesRequest(

@@ -417,7 +417,18 @@ abstract class BaseOpenAiProvider : LlmProvider {
                     if (!currentCoroutineContext().isActive) break
                     // A semantic terminal event already completed the model response. This timeout
                     // only closes its optional usage/[DONE] grace tail and is therefore success.
-                    if (!consumer.onReadTimeout(terminalDeadlineNanos != null)) break
+                    val graceActive = terminalDeadlineNanos != null
+                    if (!graceActive) {
+                        // Before any terminal marker one transient timeout invalidates trust in
+                        // the socket: map it, stop reading, and let the retry loop replay this
+                        // attempt (partial output rolls back), matching the responses transport.
+                        val mapped = e.asRetryableResponseBodyReadError()
+                        if (mapped != null) {
+                            consumer.onReadError(mapped)
+                            break
+                        }
+                    }
+                    if (!consumer.onReadTimeout(graceActive)) break
                     continue
                 } catch (e: Exception) {
                     if (!currentCoroutineContext().isActive) break
@@ -455,7 +466,10 @@ abstract class BaseOpenAiProvider : LlmProvider {
         OpenAiChatRequestFactory(
             providerName = name,
             json = json,
-            customizeRequest = { request, config -> customizeRequest(request, config) },
+            customizeRequest = { request, config ->
+                customizeRequest(request, config)
+                    .withoutIncompatibleSampling(config.resolvedThinking(thinkingProviderFamily))
+            },
             transformSystemPrompt = { transformSystemPrompt(it) },
             forwardsAssistantReasoning = { forwardsAssistantReasoningContent(it) },
         )
@@ -477,30 +491,11 @@ abstract class BaseOpenAiProvider : LlmProvider {
             base64Files = base64Files,
             forwardAssistantReasoning = forwardsAssistantReasoningContent(config),
         )
-        val request = OpenAiResponsesRequest(
-            model = config.modelId,
-            input = apiMessages.toResponsesInput(
-                providerName = name,
-                targetModel = config.modelId,
-            ),
-            tools = buildList {
-                addAll(config.tools.orEmpty().toResponsesTools())
-                if (config.openAiWebSearchEnabled) {
-                    add(OpenAiResponseTool(type = "web_search"))
-                }
-            }.ifEmpty { null },
-            reasoning = config.thinkingLevel.takeIf { config.thinkingEnabled }
-                ?.let {
-                    OpenAiReasoning(
-                        effort = it,
-                        summary = "auto",
-                    )
-                },
-            serviceTier = config.openAiServiceTier,
-            temperature = config.temperature,
-            maxOutputTokens = config.maxTokens,
-            topP = config.topP,
-            promptCacheKey = config.promptCacheKey,
+        val request = buildOpenAiResponsesRequest(
+            config = config,
+            messages = apiMessages,
+            providerName = name,
+            family = thinkingProviderFamily,
         )
         request.requireValidWireFormat(name)
         val bodyJson = json.encodeToString(OpenAiResponsesRequest.serializer(), request)

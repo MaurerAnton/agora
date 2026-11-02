@@ -3,6 +3,7 @@ package com.newoether.agora.api.util
 import com.newoether.agora.model.ImageArtifact
 import okhttp3.RequestBody
 import java.io.File
+import java.io.IOException
 import java.security.MessageDigest
 import java.util.UUID
 
@@ -17,7 +18,11 @@ internal class Base64FilePart(
     val byteCount: Long,
     val lastModified: Long,
     val sha256: ByteArray,
-    /** Declared by the artifact that was projected; empty when only a path was registered. */
+    /**
+     * What the envelope labels the payload with: the mime sniffed from the file's current bytes,
+     * or the artifact's declaration when the signature is unrecognized; empty when only a path was
+     * registered.
+     */
     val mimeType: String = "",
 ) {
     val diagnosticMarker: String
@@ -58,11 +63,46 @@ internal class Base64FileRegistry {
     fun register(path: String): String? = registerPart(path, "")?.placeholder
 
     /**
-     * Projects an artifact and keeps its declared mime type, which the wire envelope needs next to
-     * the base64 placeholder.
+     * Projects an artifact onto the wire. What the envelope declares is the mime of the bytes that
+     * are really on disk, sniffed from their signature: a declaration measured earlier goes stale
+     * the moment the file is rewritten and would mislabel the payload the endpoint decodes.
+     * Sniffing stays deliberately shallow and returns null for anything it cannot name with
+     * confidence, so payloads without a known signature (including the minimal byte-parity
+     * fixtures) keep the artifact's own declaration.
      */
     fun register(artifact: ImageArtifact): Base64FilePart? =
-        registerPart(artifact.path, artifact.mimeType)
+        registerPart(artifact.path, measuredImageMimeType(artifact.path) ?: artifact.mimeType)
+
+    private fun measuredImageMimeType(path: String): String? = try {
+        File(path).inputStream().use { input ->
+            val head = ByteArray(12)
+            var read = 0
+            while (read < head.size) {
+                val count = input.read(head, read, head.size - read)
+                if (count < 0) break
+                read += count
+            }
+            sniffImageMimeType(head, read)
+        }
+    } catch (_: IOException) {
+        null
+    }
+
+    private fun sniffImageMimeType(head: ByteArray, length: Int): String? {
+        fun matches(vararg expected: Int): Boolean =
+            length >= expected.size && expected.withIndex().all { (index, byte) ->
+                head[index] == byte.toByte()
+            }
+        return when {
+            matches(0x89, 0x50, 0x4E, 0x47, 0x0D, 0x0A, 0x1A, 0x0A) -> "image/png"
+            matches(0xFF, 0xD8, 0xFF) -> "image/jpeg"
+            matches(0x52, 0x49, 0x46, 0x46) && length >= 12 &&
+                head.copyOfRange(8, 12).contentEquals("WEBP".toByteArray()) -> "image/webp"
+            matches(0x47, 0x49, 0x46, 0x38) -> "image/gif"
+            matches(0x42, 0x4D) -> "image/bmp"
+            else -> null
+        }
+    }
 
     private fun registerPart(path: String, mimeType: String): Base64FilePart? {
         val part = runCatching {

@@ -252,40 +252,62 @@ class ProviderStreamingImageRequestTest {
     }
 
     @Test
-    fun missingUnavailableEmptyAndCorruptImagesAreOmittedBeforeEveryRemoteRequest() = withImage { image, _ ->
-        val valid = measuredArtifact(image)
-        val corrupt = File.createTempFile("agora-wire-corrupt-", ".png")
-        val empty = File.createTempFile("agora-wire-empty-", ".png")
-        try {
-            corrupt.writeBytes(image.readBytes().copyOf(33))
-            val missing = valid.copy(path = File(image.parentFile, "missing-${image.name}").absolutePath)
-            val archived = valid.copy(path = "", unavailable = true)
-            val invalid = listOf(
-                imageMessage(valid.path, valid).copy(imageArtifacts = emptyMap()),
-                imageMessage(missing.path, missing),
-                imageMessage(valid.path, valid.copy(unavailable = true)),
-                imageMessage(corrupt.absolutePath, valid.copy(path = corrupt.absolutePath)),
-                imageMessage(empty.absolutePath, valid.copy(path = empty.absolutePath)),
-                imageMessage("", valid.copy(path = "")), imageMessage("", valid), imageMessage(" ", valid),
-                imageMessage("", archived),
-            ).map { listOf(it) }
-            val sources = ImageSource.entries.flatMap { source ->
-                listOf(sourceMessages(source, missing), sourceMessages(source, archived))
-            }
-            for (wire in RemoteWire.entries) withServer(wire.response(), wire.contentType) { server ->
-                for (messages in invalid + sources) {
-                    collect(wire.provider(), wire.config(server), messages)
-                    val request = server.takeRequest()
-                    assertCapturedImages(wire, request, emptyList(), emptyList())
-                    assertTrue(request.bytes.decodeToString().contains("inspect"))
-                    assertFalse(request.bytes.decodeToString().contains("Attachment unavailable"))
+    fun missingUnavailableAndBlankReferencesAreOmittedWhileRawFileBytesStayRegistered() =
+        withImage { image, _ ->
+            val valid = measuredArtifact(image)
+            val corrupt = File.createTempFile("agora-wire-corrupt-", ".png")
+            val empty = File.createTempFile("agora-wire-empty-", ".png")
+            try {
+                corrupt.writeBytes(image.readBytes().copyOf(33))
+                val missing = valid.copy(path = File(image.parentFile, "missing-${image.name}").absolutePath)
+                val archived = valid.copy(path = "", unavailable = true)
+                val invalid = listOf(
+                    imageMessage(valid.path, valid).copy(imageArtifacts = emptyMap()),
+                    imageMessage(missing.path, missing),
+                    imageMessage(valid.path, valid.copy(unavailable = true)),
+                    imageMessage("", valid.copy(path = "")), imageMessage("", valid), imageMessage(" ", valid),
+                    imageMessage("", archived),
+                ).map { listOf(it) }
+                // The fork's byte-parity fixtures (core/tools/golden/openai-request/files) pin
+                // that a registered file crosses the wire as-is, 0-byte and header-only files
+                // included: image validity is decided when the attachment is produced, not in
+                // the streaming body, so corrupt and empty files stay registered and only their
+                // label comes from the bytes themselves.
+                val stillRegistered = listOf(
+                    Triple(
+                        imageMessage(corrupt.absolutePath, valid.copy(path = corrupt.absolutePath)),
+                        valid.copy(path = corrupt.absolutePath),
+                        corrupt.readBytes(),
+                    ),
+                    Triple(
+                        imageMessage(empty.absolutePath, valid.copy(path = empty.absolutePath)),
+                        valid.copy(path = empty.absolutePath),
+                        empty.readBytes(),
+                    ),
+                )
+                val sources = ImageSource.entries.flatMap { source ->
+                    listOf(sourceMessages(source, missing), sourceMessages(source, archived))
                 }
+                for (wire in RemoteWire.entries) withServer(wire.response(), wire.contentType) { server ->
+                    for (messages in invalid + sources) {
+                        collect(wire.provider(), wire.config(server), messages)
+                        val request = server.takeRequest()
+                        assertCapturedImages(wire, request, emptyList(), emptyList())
+                        assertTrue(request.bytes.decodeToString().contains("inspect"))
+                        assertFalse(request.bytes.decodeToString().contains("Attachment unavailable"))
+                    }
+                    for ((messages, artifact, bytes) in stillRegistered) {
+                        collect(wire.provider(), wire.config(server), listOf(messages))
+                        val request = server.takeRequest()
+                        assertCapturedImages(wire, request, listOf(artifact), listOf(bytes))
+                        assertTrue(request.bytes.decodeToString().contains("inspect"))
+                    }
+                }
+            } finally {
+                corrupt.delete()
+                empty.delete()
             }
-        } finally {
-            corrupt.delete()
-            empty.delete()
         }
-    }
 
     @Test
     fun mixedImagesKeepReadableOccurrencesTextAndValidJsonForEveryRemoteWire() = withImage { image, _ ->

@@ -247,21 +247,23 @@ class OpenAiCompatibleGenerationParameterForwardingTest {
         }
     }
     @Test
-    fun unsetMaxTokensGetsTheClaudeDefaultForKnownModelsOnly() = withServer { deepSeekServer ->
-        // DeepSeek's own default is small enough to cut off compacts, which run without thinking.
+    fun unsetMaxTokensIsLeftToTheEndpointOnTheChatTransport() = withServer { deepSeekServer ->
+        // Upstream 2.2.0 fills a documented default cap for known models on this transport; the
+        // fork keeps the chat body honest to the user's setting (unset = the endpoint picks its
+        // own cap) because the byte-parity golden traces pin exactly that shape. The Responses
+        // transport still applies the documented defaults through buildOpenAiResponsesRequest.
         val deepSeek = deepSeekServer.capture(
             DeepSeekProvider(),
             config(deepSeekServer, "deepseek-flash").copy(maxTokens = null, thinkingEnabled = false),
         )
-        assertEquals(32768, deepSeek["max_tokens"]!!.jsonPrimitive.int)
+        assertFalse(deepSeek.containsKey("max_tokens"))
 
         withServer { claudeServer ->
             val relayClaude = claudeServer.capture(
                 CustomOpenAiProvider("Relay", claudeServer.baseUrl),
                 config(claudeServer, "anthropic/claude-3-opus").copy(maxTokens = null),
             )
-            // Lowered to the documented ceiling, as on the native Anthropic path.
-            assertEquals(4096, relayClaude["max_tokens"]!!.jsonPrimitive.int)
+            assertFalse(relayClaude.containsKey("max_tokens"))
         }
         withServer { budgetServer ->
             val budgeted = budgetServer.capture(
@@ -272,7 +274,7 @@ class OpenAiCompatibleGenerationParameterForwardingTest {
                     thinkingBudgetTokens = 40000,
                 ),
             )
-            assertEquals(48192, budgeted["max_tokens"]!!.jsonPrimitive.int)
+            assertFalse(budgeted.containsKey("max_tokens"))
         }
         withServer { unknownServer ->
             val unknown = unknownServer.capture(

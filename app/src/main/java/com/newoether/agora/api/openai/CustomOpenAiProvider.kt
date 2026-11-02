@@ -15,10 +15,10 @@ class CustomOpenAiProvider(
     override val retryMissingV1BaseUrl: Boolean = true
 
     /**
-     * A relay has no published parameter documentation, so no model id may decide the request
-     * shape here. Thinking settings are forwarded exactly as the user configured them through the
-     * permissive default capability, which the user can narrow per model when a relay rejects a
-     * field; the shape itself lives in [withCustomOpenAiThinking].
+     * A relay publishes no parameter documentation of its own, so the request shape comes from
+     * the shared capability resolution (documented tables, nearest accepted effort) plus what
+     * [withCustomOpenAiThinking] adds: the Qwen3.8 template controls a model genuinely needs and
+     * the CheapestInference narrowing of fields that endpoint rejects.
      */
     override fun customizeRequest(
         request: OpenAiChatRequest,
@@ -26,6 +26,7 @@ class CustomOpenAiProvider(
     ): OpenAiChatRequest = request.withCustomOpenAiThinking(
         config.resolvedThinking(ThinkingProviderFamily.OPENAI_COMPATIBLE),
         defaultBaseUrl,
+        config.modelId,
     )
 
     /** Same rule as the built-in provider: a relayed DeepSeek model replays chain of thought. */

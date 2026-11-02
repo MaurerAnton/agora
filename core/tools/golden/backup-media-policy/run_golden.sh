@@ -55,6 +55,7 @@ echo "Extracting MessageSegment / ToolImageAttachment / StreamingTextDelta verba
 
 echo "Compiling the Kotlin reference sources..."
 "$kotlinc_bin" -Xplugin="$plugin" -cp "$classpath" -d "$classes" \
+    "$app/model/ImageArtifact.kt" \
     "$here/build/MessageSegment.kt" \
     "$here/PlatformStubs.kt" \
     "$app/model/AttachmentMeta.kt" \

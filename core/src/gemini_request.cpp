@@ -1281,7 +1281,7 @@ BuiltGeminiRequest build_gemini_request(const std::string& provider_name,
         }
         if (parts.empty()) {
             ApiRequestPart part;
-            part.text = "[Attachment unavailable]";
+            part.text = "Continue";
             parts.push_back(std::move(part));
         }
         contents.push_back(ApiRequestContent{

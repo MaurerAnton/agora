@@ -168,6 +168,9 @@ sources=(
     "$here/DataImporterSettingsSnapshot.kt"
     "$here/DataImporterSettingsView.kt"
     "$here/DataImporterTableDump.kt"
+    "$app/model/ImageArtifact.kt"
+    "$app/data/local/SemanticMutationDao.kt"
+    "$app/data/local/SemanticMetadataDao.kt"
 )
 for source in "${sources[@]}"; do
     [[ -f "$source" ]] || { echo "error: missing source $source" >&2; exit 2; }

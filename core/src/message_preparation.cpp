@@ -34,7 +34,7 @@ constexpr std::string_view kContextSummaryCloseTag = "</context_summary>";
 constexpr std::string_view kImageContextPrefix = "image_context_";
 constexpr std::string_view kProtocolNoticePrefix = "protocol_notice_";
 constexpr std::string_view kImageTranscriptionBlock =
-    "\n\n--- Image Transcription: view_image ---\n";
+    "\n\n--- Image Transcription: file_view_image ---\n";
 
 bool starts_with(std::string_view value, std::string_view prefix) {
     return value.size() >= prefix.size() && value.substr(0, prefix.size()) == prefix;
@@ -114,7 +114,9 @@ std::vector<ChatMessage> merge_consecutive_same_role(const std::vector<ChatMessa
     std::size_t index = 0;
     while (index < messages.size()) {
         const ChatMessage& current = messages[index];
-        if (current.is_tool_protocol_message()) {
+        // Upstream keeps every ordinary USER row as its own turn: only legacy MODEL
+        // fragments combine; tool_/result_ rows pass through for validation.
+        if (current.is_tool_protocol_message() || current.participant == Participant::User) {
             result.push_back(current);
             ++index;
             continue;
@@ -1035,6 +1037,28 @@ std::string generation_status_event_text(bool is_error, const std::optional<std:
 
 }  // namespace
 
+/**
+ * withProjectedImages: ordered image descriptors rebuild their image/pdf/video rows and keep every
+ * other type (the local-sandbox retention flag is a Room-only detail the stand never records).
+ */
+void apply_projected_images(ChatMessage& message, std::vector<std::string> paths) {
+    const AttachmentMeta metadata = message.attachment_meta.value_or(AttachmentMeta{});
+    std::vector<AttachmentItem> items;
+    for (const AttachmentItem& item : metadata.items) {
+        if (item.type != "image" && item.type != "pdf" && item.type != "video") items.push_back(item);
+    }
+    for (std::size_t index = 0; index < paths.size(); ++index) {
+        AttachmentItem projected;
+        projected.type = "image";
+        projected.image_index = static_cast<std::int32_t>(index);
+        items.push_back(std::move(projected));
+    }
+    AttachmentMeta rebuilt;
+    rebuilt.items = std::move(items);
+    message.images = std::move(paths);
+    message.attachment_meta = std::move(rebuilt);
+}
+
 std::vector<ChatMessage> project_assistant_images_to_latest_user_message(
     const std::vector<ChatMessage>& messages, bool include_images) {
     if (messages.empty()) return messages;
@@ -1066,7 +1090,7 @@ std::vector<ChatMessage> project_assistant_images_to_latest_user_message(
     for (std::size_t index = 0; index < messages.size(); ++index) {
         ChatMessage next = messages[index];
         if (is_normal_assistant_message(next) && !next.images.empty()) {
-            next.images.clear();
+            apply_projected_images(next, {});
             changed = true;
         }
         if (index == latest_user_index && !generated_images.empty()) {
@@ -1077,7 +1101,7 @@ std::vector<ChatMessage> project_assistant_images_to_latest_user_message(
                     merged.push_back(image);
                 }
             }
-            next.images = std::move(merged);
+            apply_projected_images(next, std::move(merged));
             changed = true;
         }
         projected.push_back(std::move(next));
@@ -1138,7 +1162,7 @@ std::vector<ChatMessage> project_tool_result_images_to_user_message(
                     text += description_block;
                 }
                 context_row.text = text;
-                context_row.images = images;
+                apply_projected_images(context_row, images);
             } else if (!json::is_blank(description_block)) {
                 context_row.text =
                     "[Tool visual result: the image description follows.]" +

@@ -378,7 +378,7 @@ private fun buildApiContents(
                 )
             }
         }
-        if (parts.isEmpty()) parts.add(ApiRequestPart(text = "[Attachment unavailable]"))
+        if (parts.isEmpty()) parts.add(ApiRequestPart(text = "Continue"))
         entries.add(ApiRequestContent(
             role = if (msg.participant == Participant.USER) "user" else "model",
             parts = parts

@@ -177,6 +177,23 @@ ModelThinkingCapability make_ollama() {
     return capability;
 }
 
+/** gpt6Astra: OpenAI reasoning without the off switch and without minimal. */
+ModelThinkingCapability make_gpt6_astra() {
+    return derive(make_open_ai(), CapabilitySpec{
+                                      .can_disable_thinking = false,
+                                      .supported_efforts =
+                                          std::vector<std::string>{"low", "medium", "high", "xhigh", "max"},
+                                  });
+}
+
+/** On-device inference exposes no reasoning parameters (ModelThinkingCapabilityDefaults.local). */
+ModelThinkingCapability make_local() {
+    ModelThinkingCapability capability;
+    capability.supported_efforts.clear();
+    capability.supports_thinking_budget = false;
+    return capability;
+}
+
 const std::vector<std::string>& qwen_thinking_only_models() {
     static const std::vector<std::string> kModels = {
         "qwen3.7-max-preview", "qwen3.7-max-2026-05-17", "qwen3-next-80b-a3b-thinking",
@@ -536,9 +553,115 @@ const ModelThinkingCapability& family_default(ThinkingProviderFamily family) {
     return ModelThinkingCapability::permissive();
 }
 
+/** normalizeThinkingModelId: trim/lowercase, last path segment, drop tag, dots to dashes. */
+std::string normalize_thinking_model_id(std::string model) {
+    model = lower_ascii(json::trim(model));
+    const std::size_t slash = model.rfind('/');
+    if (slash != std::string::npos) model = model.substr(slash + 1);
+    const std::size_t colon = model.find(':');
+    if (colon != std::string::npos) model = model.substr(0, colon);
+    for (char& c : model) {
+        if (c == '.') c = '-';
+    }
+    return model;
+}
+
+/** matchesSnapshot: exact id or base + a pure 4..8 digit run or a yyyy-mm-dd snapshot. */
+bool matches_snapshot(const std::string& model, std::string_view base) {
+    if (model == base) return true;
+    const std::string prefix(base);
+    if (!starts_with(model, prefix + "-")) return false;
+    const std::string_view suffix(model.data() + prefix.size() + 1, model.size() - prefix.size() - 1);
+    const auto all_digits = [](std::string_view text) {
+        return !text.empty() && text.find_first_not_of("0123456789") == std::string_view::npos;
+    };
+    if (suffix.size() == 10 && suffix[4] == '-' && suffix[7] == '-') {
+        return all_digits(std::string_view(suffix.data(), 4)) &&
+               all_digits(std::string_view(suffix.data() + 5, 2)) &&
+               all_digits(std::string_view(suffix.data() + 8, 2));
+    }
+    return suffix.size() >= 4 && suffix.size() <= 8 && all_digits(suffix);
+}
+
+/**
+ * intrinsicCapability: documented model ids recognized across compatible transports, checked
+ * before the family default exactly like ModelThinkingCapabilityDefaults.intrinsicCapability.
+ */
+std::optional<ModelThinkingCapability> intrinsic_capability(const std::string& model) {
+    const auto snap = [&](std::string_view base) { return matches_snapshot(model, base); };
+    if (snap("glm-5-3") || snap("glm-5-3-flash") || snap("glm-5-3-flashx")) {
+        return derive(make_deep_seek(), CapabilitySpec{.can_disable_thinking = false});
+    }
+    if (snap("glm-5-2")) {
+        return derive(make_deep_seek(),
+                      CapabilitySpec{.supported_efforts = std::vector<std::string>{"high", "max"}});
+    }
+    if (snap("qwen3-8-2-4t-a95b")) {
+        return derive(make_qwen38_effort(), CapabilitySpec{.can_disable_thinking = false});
+    }
+    if (snap("qwen3-8-27b") || snap("qwen3-8-flash-next") || snap("qwen3-8-flash") ||
+        snap("qwen3-8-omni-flash") || starts_with(model, "qwen3-8-max")) {
+        return make_qwen38_effort();
+    }
+    // DeepSeek's thinking reference specifies low/high/max; this also covers v4.1 snapshots.
+    if (starts_with(model, "deepseek-v4")) return make_deep_seek();
+    if (snap("kimi-k3") || snap("kimi-k3-1-pro")) {
+        return derive(make_deep_seek(), CapabilitySpec{.can_disable_thinking = false});
+    }
+    if (starts_with(model, "doubao-seed-2-1") || snap("doubao-seed-evolving")) {
+        return derive(make_deep_seek(),
+                      CapabilitySpec{.supported_efforts = std::vector<std::string>{"low", "medium", "high"}});
+    }
+    if (snap("minimax-m3-1-flash")) return make_gpt6_astra();
+    if (snap("minimax-m3")) return make_local();
+    if (snap("gpt-6-1-sol")) return make_gpt6_astra();
+    if (snap("claude-opus-5-5") || snap("claude-sonnet-5-5") || snap("claude-fable-5-1")) {
+        return derive(make_anthropic(), CapabilitySpec{
+                                            .can_disable_thinking = false,
+                                            .supports_thinking_budget = false,
+                                        });
+    }
+    if (snap("claude-haiku-5-5")) {
+        return derive(make_anthropic(), CapabilitySpec{.supports_thinking_budget = false});
+    }
+    if (snap("gemini-4-argon") || snap("gemini-3-8-flash")) {
+        return derive(make_gemini(), CapabilitySpec{
+                                         .can_disable_thinking = false,
+                                         .supported_efforts = std::vector<std::string>{"low", "medium", "high"},
+                                         .supports_thinking_budget = false,
+                                     });
+    }
+    if (snap("gemini-3-6-flash") || snap("gemini-3-5-flash") || snap("gemini-3-5-flash-lite")) {
+        return derive(make_gemini(), CapabilitySpec{
+                                         .can_disable_thinking = false,
+                                         .supports_thinking_budget = false,
+                                     });
+    }
+    if (snap("grok-4-7") || snap("grok-4-6")) {
+        return derive(make_gpt6_astra(),
+                      CapabilitySpec{.supported_efforts =
+                                         std::vector<std::string>{"low", "medium", "high", "xhigh"}});
+    }
+    if (snap("grok-4-5")) {
+        return derive(make_gpt6_astra(),
+                      CapabilitySpec{.supported_efforts = std::vector<std::string>{"low", "medium", "high"}});
+    }
+    if (snap("step-5-preview") || snap("step-3-7-flash")) return make_groq();
+    return std::nullopt;
+}
+
 ModelThinkingCapability capability_for_model(ThinkingProviderFamily family,
                                              const std::string& model_id) {
     const std::string model = lower_ascii(json::trim(model_id));
+    // forModel: recognized ids apply to compatible transports; QWEN keeps endpoint semantics.
+    if (family == ThinkingProviderFamily::Anthropic || family == ThinkingProviderFamily::OpenAi ||
+        family == ThinkingProviderFamily::OpenAiCompatible ||
+        family == ThinkingProviderFamily::OpenRouter || family == ThinkingProviderFamily::Gemini) {
+        if (const std::optional<ModelThinkingCapability> intrinsic =
+                intrinsic_capability(normalize_thinking_model_id(model))) {
+            return *intrinsic;
+        }
+    }
     switch (family) {
         case ThinkingProviderFamily::Anthropic:
             return anthropic_capability(model);
@@ -996,12 +1119,12 @@ std::vector<OpenAiMessage> convert_to_open_ai_messages(
                 const std::string url =
                     "data:" + image_mime_type(image_path) + ";base64," + *placeholder;
                 parts.push_back(OpenAiContentPart{
-                    "image_url", std::nullopt, OpenAiImageUrl{url}});
+                    "image_url", std::nullopt, OpenAiImageUrl{url, std::string{"auto"}}});
             }
         }
 
         if (parts.empty()) {
-            parts.push_back(OpenAiContentPart{"text", "[Attachment unavailable]", std::nullopt});
+            parts.push_back(OpenAiContentPart{"text", "Continue", std::nullopt});
         }
 
         OpenAiMessage message;

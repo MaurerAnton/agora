@@ -37,6 +37,8 @@ struct ProviderRequestError {
 
 struct OpenAiImageUrl {
     std::string url;
+    /** OpenAI's image detail hint; the chat converter always sends "auto" (mirrors MessageConverter). */
+    std::optional<std::string> detail;
 };
 
 struct OpenAiContentPart {

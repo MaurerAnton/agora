@@ -43,6 +43,7 @@ echo "Extracting the model declarations from ChatMessage.kt verbatim..."
 
 echo "Compiling the Kotlin reference sources..."
 "$kotlinc_bin" -Xplugin="$plugin" -cp "$jars" -d "$classes" \
+    "$app/model/ImageArtifact.kt" \
     "$here/build/RunRecoveryModel.kt" \
     "$here/stubs/androidx/compose/runtime/Immutable.kt" \
     "$app/model/RunRecoveryPolicy.kt" \

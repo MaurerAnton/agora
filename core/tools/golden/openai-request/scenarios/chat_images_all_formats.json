@@ -23,7 +23,54 @@
           "files/empty.png",
           "files/f.bin",
           "files/g.bin"
-        ]
+        ],
+        "imageArtifacts": {
+          "files/a.png": {
+            "path": "files/a.png",
+            "mimeType": "image/png",
+            "sizeBytes": 4
+          },
+          "files/b.jpg": {
+            "path": "files/b.jpg",
+            "mimeType": "image/jpeg",
+            "sizeBytes": 3
+          },
+          "files/UPPER.PNG": {
+            "path": "files/UPPER.PNG",
+            "mimeType": "image/png",
+            "sizeBytes": 1
+          },
+          "files/c.webp": {
+            "path": "files/c.webp",
+            "mimeType": "image/webp",
+            "sizeBytes": 1
+          },
+          "files/d.gif": {
+            "path": "files/d.gif",
+            "mimeType": "image/gif",
+            "sizeBytes": 2
+          },
+          "files/e.odd": {
+            "path": "files/e.odd",
+            "mimeType": "image/jpeg",
+            "sizeBytes": 17
+          },
+          "files/empty.png": {
+            "path": "files/empty.png",
+            "mimeType": "image/png",
+            "sizeBytes": 0
+          },
+          "files/f.bin": {
+            "path": "files/f.bin",
+            "mimeType": "image/jpeg",
+            "sizeBytes": 300
+          },
+          "files/g.bin": {
+            "path": "files/g.bin",
+            "mimeType": "image/jpeg",
+            "sizeBytes": 301
+          }
+        }
       }
     ]
   }

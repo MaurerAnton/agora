@@ -58,6 +58,7 @@ sources=(
     "$wait_job"
     "$app/tool/ShellToolDefinitions.kt"
     "$here/ShellDefinitionsTraceDump.kt"
+    "$app/model/ImageArtifact.kt"
 )
 for source in "${sources[@]}"; do
     [[ -f "$source" ]] || { echo "error: missing source $source" >&2; exit 2; }

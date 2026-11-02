@@ -156,12 +156,15 @@ struct ContextCostModel {
     EnvelopeCost envelope;
     SafetyMargin safety_margin;
 
-    /** Model-independent default: character heuristic, byte-proportional images, shared framing. */
+    /** Model-independent default: character heuristic, dimension-based image proxy, shared framing. */
     static ContextCostModel default_model();
 };
 
 /** HeuristicTextTokenCounter: ASCII word-like runs at 4 chars per token, other code points 1 each. */
 std::int64_t heuristic_count(std::string_view text);
+
+/** HeuristicPixelImageCost: dimension-only 32 px proxy, 1024 reserved when dimensions are unknown. */
+std::int64_t heuristic_pixel_image_tokens(const ImageDescriptor& image);
 
 /** ByteProportionalImageCost. */
 std::int64_t byte_proportional_image_tokens(const ImageDescriptor& image);

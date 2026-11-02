@@ -75,6 +75,17 @@ sources=(
     "$here/stubs/com/newoether/agora/api/LocalModelRuntime.kt"
     "$here/stubs/com/newoether/agora/api/util/tokens/bpe/O200kBase.kt"
     "$here/MessagePreparationTraceDump.kt"
+    "$app/model/ImageArtifact.kt"
+    "$app/api/util/StreamingJsonRequestBody.kt"
+    "$app/api/util/ImageArtifactProjection.kt"
+    "$app/util/AttachmentFiles.kt"
+    "$root/core/tools/golden/openai-request/stubs/android/graphics/BitmapFactory.kt"
+    "$root/core/tools/golden/openai-request/stubs/com/newoether/agora/api/HttpClient.kt"
+    "$root/core/tools/golden/openai-request/stubs/com/newoether/agora/util/ImageArtifactProcessor.kt"
+    "$app/api/util/ToolImageProjection.kt"
+    "$app/api/util/CanonicalToolNames.kt"
+    "$app/api/util/tokens/DeepSeekImageCost.kt"
+    "$app/tool/BuiltInToolNames.kt"
 )
 for source in "${sources[@]}"; do
     [[ -f "$source" ]] || { echo "error: missing source $source" >&2; exit 2; }

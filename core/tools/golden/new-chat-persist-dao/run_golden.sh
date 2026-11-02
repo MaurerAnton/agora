@@ -52,6 +52,7 @@ sources=(
     "$here/platform/RoomDatabase.kt"
     "$here/platform/MiniRoom.kt"
     "$here/NewChatPersistTraceDump.kt"
+    "$app/model/ImageArtifact.kt"
 )
 for source in "${sources[@]}"; do
     [[ -f "$source" ]] || { echo "error: missing source $source" >&2; exit 2; }

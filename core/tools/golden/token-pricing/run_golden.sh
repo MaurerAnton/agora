@@ -40,6 +40,7 @@ echo "Compiling the Kotlin reference sources..."
     "$tokens/TextTokenCounter.kt" \
     "$tokens/LocalModelTextCounter.kt" \
     "$tokens/ContextCostModel.kt" \
+    "$here/ByteProportionalImageCost.kt" \
     "$here/TokenPricingTraceDump.kt" 2>&1 | grep -v "^warning:" || true
 [[ -f "$classes/tokens/pricing/golden/TokenPricingTraceDumpKt.class" ]] || {
     echo "error: harness classes missing" >&2

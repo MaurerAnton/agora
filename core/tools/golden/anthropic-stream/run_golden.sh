@@ -63,6 +63,12 @@ sources=(
     "$here/stubs/androidx/compose/runtime/Immutable.kt"
     "$here/stubs/com/mikepenz/markdown/model/State.kt"
     "$here/AnthropicStreamTraceDump.kt"
+    "$app/model/ImageArtifact.kt"
+    "$app/api/ProviderHttpError.kt"
+    "$app/util/NetworkRetryPolicy.kt"
+    "$app/util/NetworkHttpRetry.kt"
+    "$app/viewmodel/StreamScope.kt"
+    "$root/core/tools/golden/openai-request/stubs/com/newoether/agora/util/ConchExceptions.kt"
 )
 for source in "${sources[@]}"; do
     [[ -f "$source" ]] || { echo "error: missing source $source" >&2; exit 2; }

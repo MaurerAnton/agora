@@ -55,6 +55,14 @@ app_sources=(
     "$app/util/Constants.kt"
     "$app/api/anthropic/AnthropicOutputLimits.kt"
     "$app/api/anthropic/AnthropicRequestValidator.kt"
+    "$app/model/ImageArtifact.kt"
+    "$app/api/util/StreamingJsonRequestBody.kt"
+    "$app/api/util/ImageArtifactProjection.kt"
+    "$app/util/AttachmentFiles.kt"
+    "$root/core/tools/golden/openai-request/stubs/android/graphics/BitmapFactory.kt"
+    "$root/core/tools/golden/openai-request/stubs/com/newoether/agora/api/HttpClient.kt"
+    "$root/core/tools/golden/openai-request/stubs/com/newoether/agora/util/ImageArtifactProcessor.kt"
+    "$app/api/util/ToolImageProjection.kt"
 )
 
 # Sources that live in the stand directory (checked after generation)

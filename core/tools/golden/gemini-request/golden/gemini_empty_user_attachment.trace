@@ -1,4 +1,4 @@
 name|gemini_empty_user_attachment
 mode|factory
-contents|[{"role":"user","parts":[{"text":"[Attachment unavailable]"}]}]
-body|{"contents":[{"role":"user","parts":[{"text":"[Attachment unavailable]"}]}],"generationConfig":{"thinkingConfig":{"includeThoughts":true,"thinkingLevel":"MEDIUM"}}}
+contents|[{"role":"user","parts":[{"text":"Continue"}]}]
+body|{"contents":[{"role":"user","parts":[{"text":"Continue"}]}],"generationConfig":{"thinkingConfig":{"includeThoughts":true,"thinkingLevel":"MEDIUM"}}}

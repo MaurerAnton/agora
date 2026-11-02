@@ -172,6 +172,10 @@ void write_content_parts(std::string& out, const std::vector<OpenAiContentPart>&
             MemberList image;
             image.begin_member("url");
             append_quoted(image.out, part.image_url->url);
+            if (part.image_url->detail) {
+                image.begin_member("detail");
+                append_quoted(image.out, *part.image_url->detail);
+            }
             image.out.push_back('}');
             member.out += image.out;
         }
@@ -303,7 +307,12 @@ OpenAiContentPart decode_content_part(const json::Value& value) {
         if (image_url->kind != json::Kind::Object) throw_decode("image_url must be an object");
         const json::Value* url = member(*image_url, "url");
         if (url == nullptr) throw_decode("image_url requires url");
-        part.image_url = OpenAiImageUrl{decode_string(*url)};
+        const json::Value* detail = member(*image_url, "detail");
+        part.image_url = OpenAiImageUrl{
+            decode_string(*url),
+            detail != nullptr && detail->kind == json::Kind::String
+                ? std::optional<std::string>{decode_string(*detail)}
+                : std::nullopt};
     }
     return part;
 }

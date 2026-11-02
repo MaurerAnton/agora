@@ -55,6 +55,7 @@ sources=(
     "$app/util/Constants.kt"
     "$pieces"
     "$here/McpProtocolTraceDump.kt"
+    "$app/model/ImageArtifact.kt"
 )
 for source in "${sources[@]}"; do
     [[ -f "$source" ]] || { echo "error: missing source $source" >&2; exit 2; }

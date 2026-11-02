@@ -32,6 +32,7 @@ import com.newoether.agora.api.util.buildToolCallId
 import com.newoether.agora.api.util.requireValidSerializedRequest
 import com.newoether.agora.api.util.resolvedThinking
 import com.newoether.agora.model.ChatMessage
+import com.newoether.agora.model.ImageArtifact
 import com.newoether.agora.model.MessageSegment
 import com.newoether.agora.model.Participant
 import com.newoether.agora.model.ThinkingProviderFamily
@@ -198,6 +199,21 @@ private data class ScenarioMessage(
     val modelName: String? = null,
     val segments: List<ScenarioSegment>? = null,
     val toolCall: ScenarioToolCall? = null,
+    /**
+     * Measured artifacts keyed by the same reference as `images` (issue #116-era upstream
+     * MessageConverter is artifact-based: an occurrence without its artifact never reaches the
+     * wire). Paths resolve like `images`, so the key must equal the resolved image path.
+     */
+    val imageArtifacts: Map<String, ScenarioArtifact> = emptyMap(),
+)
+
+@Serializable
+private data class ScenarioArtifact(
+    val path: String,
+    val mimeType: String,
+    val sizeBytes: Long = 0,
+    val width: Int? = null,
+    val height: Int? = null,
 )
 
 @Serializable
@@ -233,6 +249,16 @@ private fun buildMessage(filesRoot: File, message: ScenarioMessage): ChatMessage
         else -> error("unknown participant: ${message.participant}")
     },
     modelName = message.modelName,
+    imageArtifacts = message.imageArtifacts.map { (reference, artifact) ->
+        val resolved = resolveMedia(filesRoot, reference).absolutePath
+        resolved to ImageArtifact(
+            path = resolved,
+            mimeType = artifact.mimeType,
+            sizeBytes = artifact.sizeBytes,
+            width = artifact.width,
+            height = artifact.height,
+        )
+    }.toMap(),
     segments = message.segments?.map { segment ->
         MessageSegment(
             type = segment.type,

@@ -384,13 +384,51 @@ std::optional<DeclMatch> find_declaration(const std::string& text, const std::st
     return std::nullopt;
 }
 
+// A `typealias NAME = TARGET` declaration is lifted verbatim as a one-line block. The merge
+// turned model.ToolImageAttachment into an alias of ImageArtifact, so the class-shaped extractor
+// above no longer finds it; aliases carry no annotation block, hence the dedicated path.
+std::optional<std::string> find_typealias_block(const std::string& text, const std::string& name) {
+    const std::string needle = "typealias " + name;
+    std::size_t line_start = 0;
+    while (line_start < text.size()) {
+        const std::size_t newline = text.find('\n', line_start);
+        const std::size_t line_end = newline == std::string::npos ? text.size() : newline;
+        const std::string_view line(text.data() + line_start, line_end - line_start);
+        std::size_t at = line.find_first_not_of(" \t");
+        if (at == std::string_view::npos) at = 0;
+        std::string_view trimmed = line.substr(at);
+        for (const char* modifier : {"internal ", "public "}) {
+            const std::string_view prefix(modifier);
+            if (trimmed.substr(0, prefix.size()) == prefix) {
+                trimmed = trimmed.substr(prefix.size());
+                break;
+            }
+        }
+        if (trimmed.substr(0, needle.size()) == needle &&
+            (trimmed.size() == needle.size() ||
+             trimmed[needle.size()] == ' ' || trimmed[needle.size()] == '=')) {
+            std::string block(trimmed);
+            while (!block.empty() && (block.back() == ' ' || block.back() == '\t')) block.pop_back();
+            return block + "\n";
+        }
+        if (newline == std::string::npos) break;
+        line_start = newline + 1;
+    }
+    return std::nullopt;
+}
+
 std::string extract_declaration(const std::string& text, const std::string& name,
                                 const std::vector<std::string>& prefixes,
                                 bool require_annotation, bool style_brace_follows,
                                 const std::string& not_found, const std::string& no_annotation,
                                 const std::string& unterminated) {
     const std::optional<DeclMatch> match = find_declaration(text, name, prefixes);
-    if (!match) fail(not_found);
+    if (!match) {
+        if (const std::optional<std::string> alias = find_typealias_block(text, name)) {
+            return *alias;
+        }
+        fail(not_found);
+    }
 
     // lines = text[:match.start].split("\n"); a trailing "" (the newline that terminates the
     // preceding line) is dropped, so lines[-1] is the line directly above the declaration.

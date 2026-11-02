@@ -52,6 +52,7 @@ sources=(
     "$citations_stand/stubs/androidx/compose/runtime/Immutable.kt"
     "$citations_stand/stubs/com/mikepenz/markdown/model/State.kt"
     "$here/OpenAiResponsesRequestTraceDump.kt"
+    "$app/model/ImageArtifact.kt"
 )
 for source in "${sources[@]}"; do
     [[ -f "$source" ]] || { echo "error: missing source $source" >&2; exit 2; }

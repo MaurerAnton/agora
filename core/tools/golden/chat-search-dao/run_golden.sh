@@ -52,6 +52,8 @@ sources=(
     "$here/platform/RoomDatabase.kt"
     "$here/platform/MiniRoom.kt"
     "$here/ChatSearchTraceDump.kt"
+    "$app/model/ImageArtifact.kt"
+    "$app/data/local/SemanticMetadataDao.kt"
 )
 for source in "${sources[@]}"; do
     [[ -f "$source" ]] || { echo "error: missing source $source" >&2; exit 2; }

@@ -63,6 +63,19 @@ app_sources=(
     "$app/model/TokenUsage.kt"
     "$app/model/ModelId.kt"
     "$app/util/Constants.kt"
+    "$app/model/ImageArtifact.kt"
+    "$app/api/util/StreamingJsonRequestBody.kt"
+    "$app/api/util/ImageArtifactProjection.kt"
+    "$app/util/AttachmentFiles.kt"
+    "$root/core/tools/golden/openai-request/stubs/android/graphics/BitmapFactory.kt"
+    "$root/core/tools/golden/openai-request/stubs/com/newoether/agora/api/HttpClient.kt"
+    "$root/core/tools/golden/openai-request/stubs/com/newoether/agora/util/ImageArtifactProcessor.kt"
+    "$app/api/util/ToolImageProjection.kt"
+    "$app/api/ProviderHttpError.kt"
+    "$app/util/NetworkRetryPolicy.kt"
+    "$app/util/NetworkHttpRetry.kt"
+    "$app/viewmodel/StreamScope.kt"
+    "$root/core/tools/golden/openai-request/stubs/com/newoether/agora/util/ConchExceptions.kt"
 )
 
 # Sources that live in the stand directory (checked after generation)

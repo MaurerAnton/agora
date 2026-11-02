@@ -46,6 +46,7 @@ sources=(
     "$root/core/tools/golden/citations/stubs/com/mikepenz/markdown/model/State.kt"
     "$here/build/MalformedToolCall.kt"
     "$here/MalformedToolCallTraceDump.kt"
+    "$app/model/ImageArtifact.kt"
 )
 for source in "${sources[@]}"; do
     [[ -f "$source" ]] || { echo "error: missing source $source" >&2; exit 2; }

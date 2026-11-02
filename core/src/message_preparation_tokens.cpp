@@ -160,30 +160,47 @@ std::int64_t openai_image_tokens_for_model(const ImageDescriptor& image,
                                            const std::string& model_name) {
     const std::size_t slash = model_name.rfind('/');
     const std::string name = lower_ascii(
-        slash == std::string::npos ? model_name : model_name.substr(slash + 1));
+        json::trim(slash == std::string::npos ? model_name : model_name.substr(slash + 1)));
     if (!image.pixel_width || !image.pixel_height || *image.pixel_width <= 0 || *image.pixel_height <= 0) {
-        return byte_proportional_image_tokens(image);
+        return heuristic_pixel_image_tokens(image);
     }
     const std::int32_t width = *image.pixel_width;
     const std::int32_t height = *image.pixel_height;
-    if (starts_with(name, "gpt-4o-mini")) return openai_tile_image_tokens(width, height, 2833, 5667);
-    if (starts_with(name, "gpt-4o")) return openai_tile_image_tokens(width, height, 85, 170);
-    if (starts_with(name, "gpt-4.1-mini")) return openai_patch_image_tokens(width, height, 2048, 6144, 1.62);
-    if (starts_with(name, "gpt-4.1-nano")) return openai_patch_image_tokens(width, height, 2048, 6144, 2.46);
-    if (starts_with(name, "gpt-4.1")) return openai_tile_image_tokens(width, height, 85, 170);
-    if (starts_with(name, "gpt-5.1")) return openai_tile_image_tokens(width, height, 70, 140);
-    if (starts_with(name, "gpt-5.2")) return openai_patch_image_tokens(width, height, 2048, 6144, 1.2);
-    if (starts_with(name, "gpt-5.4")) return openai_patch_image_tokens(width, height, 2048, 2500, 1.2);
-    if (starts_with(name, "gpt-5.5")) return openai_patch_image_tokens(width, height, 6000, 10000, 1.2);
-    if (starts_with(name, "gpt-5-nano")) return openai_patch_image_tokens(width, height, 2048, 2500, 1.5);
-    if (starts_with(name, "gpt-5-mini")) return openai_patch_image_tokens(width, height, 2048, 2500, 1.2);
-    if (starts_with(name, "gpt-5")) return openai_tile_image_tokens(width, height, 70, 140);
-    if (starts_with(name, "o4-mini")) return openai_patch_image_tokens(width, height, 2048, 2500, 1.72);
-    if (starts_with(name, "o1") || starts_with(name, "o3")) {
+
+    // OpenAiImageCosts.isModel: the exact id or base + a dated snapshot suffix.
+    const auto is_model = [&](std::string_view base) {
+        if (name == base) return true;
+        const std::string prefix(base);
+        if (!starts_with(name, prefix + "-")) return false;
+        const std::string_view suffix(name.data() + prefix.size() + 1, name.size() - prefix.size() - 1);
+        return suffix.size() == 10 && suffix[4] == '-' && suffix[7] == '-' &&
+               suffix.find_first_not_of("0123456789", 0, 4) == std::string_view::npos &&
+               suffix.find_first_not_of("0123456789", 5, 2) == std::string_view::npos &&
+               suffix.find_first_not_of("0123456789", 8, 2) == std::string_view::npos;
+    };
+    const auto patch = [&](std::int32_t edge, std::optional<std::int32_t> budget,
+                           double multiplier) {
+        return openai_patch_image_tokens(width, height, edge, budget, multiplier);
+    };
+
+    // Auto detail rules read 2026-10-27; ids outside the table price the heuristic pixel proxy.
+    if (is_model("gpt-6-astra") || is_model("gpt-5.6-sol") || is_model("gpt-5.6-terra") ||
+        is_model("gpt-5.6-luna")) {
+        return patch(65535, std::nullopt, 1.2);
+    }
+    if (is_model("gpt-5.5")) return patch(6000, 10000, 1.2);
+    if (is_model("gpt-5.4") || is_model("gpt-5.4-mini") || is_model("gpt-5.4-nano")) {
+        return patch(2048, 2500, 1.2);
+    }
+    if (is_model("gpt-5.2")) return patch(2048, 6144, 1.2);
+    if (is_model("gpt-4.1-mini")) return patch(2048, 6144, 1.62);
+    if (is_model("gpt-4o-mini")) return openai_tile_image_tokens(width, height, 2833, 5667);
+    if (is_model("gpt-4o") || is_model("gpt-4.1")) return openai_tile_image_tokens(width, height, 85, 170);
+    if (is_model("gpt-5.1") || is_model("gpt-5")) return openai_tile_image_tokens(width, height, 70, 140);
+    if (is_model("o1") || is_model("o1-pro") || is_model("o3")) {
         return openai_tile_image_tokens(width, height, 75, 150);
     }
-    // PATCH_DEFAULT: no shrink budget, the shared 1.2 multiplier.
-    return openai_patch_image_tokens(width, height, 65535, std::nullopt, 1.2);
+    return heuristic_pixel_image_tokens(image);
 }
 
 // -- EnvelopeCost / SafetyMargin / ContextCostModel -------------------------------------------------
@@ -205,7 +222,7 @@ int SafetyMargin::apply(std::int64_t raw) const {
 ContextCostModel ContextCostModel::default_model() {
     ContextCostModel model;
     model.text = [](std::string_view text) { return heuristic_count(text); };
-    model.image = [](const ImageDescriptor& image) { return byte_proportional_image_tokens(image); };
+    model.image = [](const ImageDescriptor& image) { return heuristic_pixel_image_tokens(image); };
     model.envelope = EnvelopeCost::default_cost();
     model.safety_margin = SafetyMargin{};
     return model;
@@ -238,6 +255,15 @@ std::int64_t heuristic_count(std::string_view text) {
     }
     flush();
     return tokens;
+}
+
+/** HeuristicPixelImageCost: the dimension-only proxy with its missing-dimensions reservation. */
+std::int64_t heuristic_pixel_image_tokens(const ImageDescriptor& image) {
+    static constexpr std::int64_t kMissingDimensionsReservation = 1024;
+    const bool has_width = image.pixel_width && *image.pixel_width > 0;
+    const bool has_height = image.pixel_height && *image.pixel_height > 0;
+    if (!has_width || !has_height) return kMissingDimensionsReservation;
+    return blocks_covering(*image.pixel_width, 32) * blocks_covering(*image.pixel_height, 32);
 }
 
 std::int64_t byte_proportional_image_tokens(const ImageDescriptor& image) {
@@ -320,7 +346,7 @@ std::int64_t anthropic_image_tokens(const ImageDescriptor& image, bool high_reso
     const std::int64_t max_visual_tokens = high_resolution ? 4784 : 1568;
     static constexpr std::int32_t kPatchPx = 28;
     if (!image.pixel_width || !image.pixel_height || *image.pixel_width <= 0 || *image.pixel_height <= 0) {
-        return byte_proportional_image_tokens(image);
+        return heuristic_pixel_image_tokens(image);
     }
     const std::int32_t width = *image.pixel_width;
     const std::int32_t height = *image.pixel_height;
@@ -351,7 +377,7 @@ std::int64_t gemini_image_tokens(const ImageDescriptor& image) {
     static constexpr std::int64_t kTokensPerTile = 258;
     static constexpr std::int32_t kSingleTileMaxEdgePx = 384;
     if (!image.pixel_width || !image.pixel_height || *image.pixel_width <= 0 || *image.pixel_height <= 0) {
-        return byte_proportional_image_tokens(image);
+        return heuristic_pixel_image_tokens(image);
     }
     const std::int32_t width = *image.pixel_width;
     const std::int32_t height = *image.pixel_height;
@@ -458,7 +484,7 @@ ContextCostModel cost_model_for(const std::optional<PrefixedModelId>& model_id,
         case ContextCostFamily::Local:
         case ContextCostFamily::Generic:
             model.image = [](const ImageDescriptor& image) {
-                return byte_proportional_image_tokens(image);
+                return heuristic_pixel_image_tokens(image);
             };
             break;
     }
@@ -508,40 +534,13 @@ int CostModelContextEstimator::estimate(const std::vector<ChatMessage>& messages
         if (!is_tool_protocol) cost += text_raw(costs_, message.text);
         if (!is_tool_protocol && message.participant == Participant::User) {
             // Only user-role images reach a provider; tool-result images stay display-only.
-            for (std::size_t index = 0; index < message.images.size(); ++index) {
-                ImageDescriptor descriptor;
-                if (message.attachment_meta) {
-                    // imageDescriptors: one item covers a contiguous image range.
-                    for (const AttachmentItem& item : message.attachment_meta->items) {
-                        if (item.type != "image" && item.type != "pdf" && item.type != "video") continue;
-                        if (!item.image_index) continue;
-                        const std::int32_t start = *item.image_index;
-                        if (start < 0 || static_cast<std::size_t>(start) >= message.images.size()) continue;
-                        const std::int32_t pages = std::max(item.page_count.value_or(1), 1);
-                        const std::optional<std::int64_t> bytes_per_page =
-                            item.file_size && *item.file_size > 0
-                                ? std::optional<std::int64_t>(*item.file_size / pages)
-                                : std::nullopt;
-                        const std::optional<std::int32_t> width =
-                            item.pixel_width && *item.pixel_width > 0
-                                ? std::optional<std::int32_t>(*item.pixel_width)
-                                : std::nullopt;
-                        const std::optional<std::int32_t> height =
-                            item.pixel_height && *item.pixel_height > 0
-                                ? std::optional<std::int32_t>(*item.pixel_height)
-                                : std::nullopt;
-                        if (!bytes_per_page && (!width || !height)) continue;
-                        if (static_cast<std::size_t>(start) <= index &&
-                            index < static_cast<std::size_t>(start) +
-                                        std::min<std::int32_t>(pages,
-                                                               static_cast<std::int32_t>(message.images.size()) - start)) {
-                            descriptor.byte_size = bytes_per_page;
-                            descriptor.pixel_width = width;
-                            descriptor.pixel_height = height;
-                        }
-                    }
-                }
-                cost += costs_.image(descriptor);
+            // imageEstimates prices one ImageDescriptor per occurrence resolved by
+            // imageArtifactOccurrences(): encoded length is never priced and measured
+            // dimensions live on artifacts, so an occurrence without an artifact prices
+            // the dimension-less descriptor (the family fallback reservation).
+            for (const std::string& image_path : message.images) {
+                if (image_path.find_first_not_of(" \t\n\r\f\v") == std::string::npos) continue;
+                cost += costs_.image(ImageDescriptor{});
             }
         }
         if (!is_tool_protocol && include_assistant_reasoning &&

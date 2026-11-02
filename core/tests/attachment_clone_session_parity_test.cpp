@@ -224,13 +224,20 @@ std::string run_scenario(const std::filesystem::path& path) {
     }
     trace += "],\"sourceFiles\":[";
     bool first_source = true;
+    std::vector<std::filesystem::path> sources;
     for (const auto& entry : std::filesystem::directory_iterator(workspace / "sources", code)) {
+        sources.push_back(entry.path());
+    }
+    // The Kotlin recorder emits sortedBy { it.name }; raw directory order is filesystem-
+    // dependent and made this parity check machine-sensitive.
+    std::sort(sources.begin(), sources.end());
+    for (const auto& source : sources) {
         if (!first_source) trace.push_back(',');
         first_source = false;
         trace += "{\"name\":";
-        append_quoted(trace, entry.path().filename().string());
+        append_quoted(trace, source.filename().string());
         trace += ",\"content\":";
-        append_quoted(trace, read_file(entry.path()));
+        append_quoted(trace, read_file(source));
         trace.push_back('}');
     }
     trace += "]}";

@@ -25,6 +25,7 @@ import com.newoether.agora.api.openai.withGroqThinking
 import com.newoether.agora.api.openai.withOpenAiThinking
 import com.newoether.agora.api.openai.withOpenRouterReasoning
 import com.newoether.agora.api.openai.withQwenThinking
+import com.newoether.agora.api.openai.withoutIncompatibleSampling
 import com.newoether.agora.api.util.RequestFormatException
 import com.newoether.agora.api.util.StreamingJsonBody
 import com.newoether.agora.api.util.buildToolCallId
@@ -91,6 +92,15 @@ private fun resolvedBodyText(body: StreamingJsonBody): String {
     return out.toString(Charsets.UTF_8.name())
 }
 
+private fun familyFor(kind: String): ThinkingProviderFamily = when (kind) {
+    "openai" -> ThinkingProviderFamily.OPENAI
+    "deepseek" -> ThinkingProviderFamily.DEEPSEEK
+    "groq" -> ThinkingProviderFamily.GROQ
+    "qwen" -> ThinkingProviderFamily.QWEN
+    "openrouter" -> ThinkingProviderFamily.OPENROUTER
+    else -> ThinkingProviderFamily.OPENAI_COMPATIBLE
+}
+
 private fun customizerFor(
     kind: String,
     defaultBaseUrl: String,
@@ -120,6 +130,7 @@ private fun customizerFor(
         request.withCustomOpenAiThinking(
             config.resolvedThinking(ThinkingProviderFamily.OPENAI_COMPATIBLE),
             defaultBaseUrl,
+            config.modelId,
         )
     }
     else -> error("unknown provider kind: $kind")
@@ -362,13 +373,18 @@ fun main(args: Array<String>) {
                     .map { buildMessage(filesRoot, it) },
                 systemPrompt = scenario.requestInput?.systemPrompt,
             )
+            val customizer = customizerFor(
+                scenario.kind,
+                scenario.providerBaseUrl ?: "https://relay.example/v1",
+            )
+            val family = familyFor(scenario.kind)
             val factory = OpenAiChatRequestFactory(
                 providerName = scenario.providerName,
                 json = traceJson,
-                customizeRequest = customizerFor(
-                    scenario.kind,
-                    scenario.providerBaseUrl ?: "https://relay.example/v1",
-                ),
+                customizeRequest = { request, config ->
+                    customizer(request, config)
+                        .withoutIncompatibleSampling(config.resolvedThinking(family))
+                },
                 transformSystemPrompt = { it },
                 forwardsAssistantReasoning = { forwardsReasoning(scenario.kind, it) },
             )

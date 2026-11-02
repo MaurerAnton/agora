@@ -584,7 +584,8 @@
     <string name="shell_confirm_setting">Подтверждать действия удалённой оболочки</string>
     <string name="shell_confirm_setting_desc">Спрашивать перед тем, как ассистент выполнит команды или запишет файлы на удалённых серверах SSH/Conch</string>
     <string name="shell_confirm_notification_channel">Подтверждение команд</string>
-    <string name="shell_confirm_notification_desc">Запрашивает разрешение или запрет удалённой команды, пока Agora в фоновом режиме</string>
+    <string name="shell_confirm_notification_desc">Запрашивает разрешение или запрет удалённой команды, пока Agora в фоновом режиме</string>
+
     <string name="ask_user_title">Ассистент спрашивает</string>
     <string name="ask_user_send">Отправить</string>
     <string name="ask_user_next">Далее</string>
@@ -594,6 +595,7 @@
     <string name="interaction_expand">Развернуть</string>
     <string name="ask_user_custom_answer">Ответьте своими словами</string>
     <string name="ask_user_skip">Пропустить</string>
+    <string name="ask_user_expired_hint">Время вышло. Черновик сохранён — отправьте, когда будете готовы.</string>
     <string name="ask_user_notification_channel">Вопрос от Agora</string>
     <string name="ask_user_notification_desc">Просит ответить на вопрос ассистента, когда экран чата закрыт</string>
 
@@ -687,7 +689,8 @@
     <string name="thinking_segment_display_card">Карточка</string>
     <string name="thinking_segment_display_bottom_sheet">Нижняя панель</string>
     <string name="thinking_segments_title">Сегменты рассуждений</string>
-    <string name="context_usage_messages">~%1$s / %2$s токенов</string>
+    <string name="context_usage_messages">~%1$s / %2$s токенов</string>
+
     <string name="context_part_system">Системный промпт</string>
     <string name="context_part_tools">Инструменты</string>
     <string name="context_part_messages">Сообщения</string>

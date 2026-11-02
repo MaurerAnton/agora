@@ -593,7 +593,8 @@
     <string name="shell_confirm_setting">Xác nhận các hành động shell từ xa</string>
     <string name="shell_confirm_setting_desc">Hỏi trước khi trợ lý chạy các lệnh hoặc ghi tệp trên các máy chủ SSH/Conch từ xa</string>
     <string name="shell_confirm_notification_channel">Phê duyệt lệnh</string>
-    <string name="shell_confirm_notification_desc">Yêu cầu cho phép hoặc từ chối lệnh từ xa khi Agora chạy ngầm</string>
+    <string name="shell_confirm_notification_desc">Yêu cầu cho phép hoặc từ chối lệnh từ xa khi Agora chạy ngầm</string>
+
     <string name="ask_user_title">Trợ lý đang hỏi</string>
     <string name="ask_user_send">Gửi</string>
     <string name="ask_user_next">Tiếp</string>
@@ -603,6 +604,7 @@
     <string name="interaction_expand">Mở rộng</string>
     <string name="ask_user_custom_answer">Trả lời bằng lời của bạn</string>
     <string name="ask_user_skip">Bỏ qua</string>
+    <string name="ask_user_expired_hint">Hết giờ. Bản nháp của bạn vẫn được giữ — gửi khi nào sẵn sàng.</string>
     <string name="ask_user_notification_channel">Câu hỏi từ Agora</string>
     <string name="ask_user_notification_desc">Yêu cầu bạn trả lời câu hỏi của trợ lý khi màn hình trò chuyện không mở</string>
 
@@ -693,7 +695,8 @@
     <string name="thinking_segment_display_card">Thẻ</string>
     <string name="thinking_segment_display_bottom_sheet">Bảng dưới</string>
     <string name="thinking_segments_title">Phân đoạn suy luận</string>
-    <string name="context_usage_messages">~%1$s / %2$s token</string>
+    <string name="context_usage_messages">~%1$s / %2$s token</string>
+
     <string name="context_part_system">Lời nhắc hệ thống</string>
     <string name="context_part_tools">Công cụ</string>
     <string name="context_part_messages">Tin nhắn</string>

@@ -584,7 +584,8 @@
     <string name="shell_confirm_setting">원격 셸 작업 확인</string>
     <string name="shell_confirm_setting_desc">어시스턴트가 원격 SSH/Conch 서버에서 명령을 실행하거나 파일을 쓰기 전에 확인</string>
     <string name="shell_confirm_notification_channel">명령 승인</string>
-    <string name="shell_confirm_notification_desc">Agora가 백그라운드에 있을 때 원격 명령을 허용하거나 거부하도록 묻습니다</string>
+    <string name="shell_confirm_notification_desc">Agora가 백그라운드에 있을 때 원격 명령을 허용하거나 거부하도록 묻습니다</string>
+
     <string name="ask_user_title">어시스턴트의 질문</string>
     <string name="ask_user_send">보내기</string>
     <string name="ask_user_next">다음</string>
@@ -594,6 +595,7 @@
     <string name="interaction_expand">펼치기</string>
     <string name="ask_user_custom_answer">직접 답변 입력</string>
     <string name="ask_user_skip">건너뛰기</string>
+    <string name="ask_user_expired_hint">시간이 초과되었습니다. 초안이 보관되어 있습니다 — 준비되면 보내 주세요.</string>
     <string name="ask_user_notification_channel">Agora의 질문</string>
     <string name="ask_user_notification_desc">채팅 화면이 열려 있지 않을 때 어시스턴트의 질문에 답하도록 요청합니다</string>
 
@@ -687,7 +689,8 @@
     <string name="thinking_segment_display_card">카드</string>
     <string name="thinking_segment_display_bottom_sheet">하단 시트</string>
     <string name="thinking_segments_title">사고 세그먼트</string>
-    <string name="context_usage_messages">약 %1$s / %2$s tokens</string>
+    <string name="context_usage_messages">약 %1$s / %2$s tokens</string>
+
     <string name="context_part_system">시스템 프롬프트</string>
     <string name="context_part_tools">도구</string>
     <string name="context_part_messages">메시지</string>

@@ -57,7 +57,7 @@ class DrawerInteractionsTest {
         confirmVerified(dao)
     }
 
-    @Test fun unownedRequestsNeedNoOwnerQueryAndExpiryAndCancellationRemoveStatus() = runTest {
+    @Test fun unownedRequestsNeedNoOwnerQueryAndCancellationAndDismissalRemoveStatus() = runTest {
         val dao = mockk<ChatDao>()
         val repository = ConversationRepository(dao, null, scheduleMaintenance = {})
         val questions = AskUserController()
@@ -75,7 +75,13 @@ class DrawerInteractionsTest {
         approval.cancel()
         runCurrent()
         assertEquals(InteractionKind.Question, latest.drawerInteraction("any"))
+        // The deadline keeps the expired card on screen (issue #116 A), so the drawer keeps
+        // pointing at the conversation that still holds the draft.
         questions.awaitAnswers(listOf(question), 1)
+        runCurrent()
+        assertEquals(InteractionKind.Question, latest.drawerInteraction("any"))
+        // Only an explicit removal takes the status away.
+        questions.dismiss(question.id)
         runCurrent()
         assertTrue(latest.isEmpty())
         confirmVerified(dao)

@@ -584,7 +584,8 @@
     <string name="shell_confirm_setting">تأكيد إجراءات الصدفة البعيدة</string>
     <string name="shell_confirm_setting_desc">الطلب قبل أن يشغّل المساعد أوامر أو يكتب ملفات على خوادم SSH/Conch البعيدة</string>
     <string name="shell_confirm_notification_channel">الموافقة على الأوامر</string>
-    <string name="shell_confirm_notification_desc">يطلب السماح بأمر عن بُعد أو رفضه عندما يكون Agora في الخلفية</string>
+    <string name="shell_confirm_notification_desc">يطلب السماح بأمر عن بُعد أو رفضه عندما يكون Agora في الخلفية</string>
+
     <string name="ask_user_title">المساعد يسأل</string>
     <string name="ask_user_send">إرسال</string>
     <string name="ask_user_next">التالي</string>
@@ -594,6 +595,7 @@
     <string name="interaction_expand">توسيع</string>
     <string name="ask_user_custom_answer">أجب بكلماتك</string>
     <string name="ask_user_skip">تخطي</string>
+    <string name="ask_user_expired_hint">انتهى الوقت. بقيت مسودتك محفوظة — أرسلها عندما تجهز.</string>
     <string name="ask_user_notification_channel">سؤال من Agora</string>
     <string name="ask_user_notification_desc">يطلب منك الإجابة على سؤال المساعد عندما لا تكون شاشة المحادثة مفتوحة</string>
 
@@ -687,7 +689,8 @@
     <string name="thinking_segment_display_card">بطاقة</string>
     <string name="thinking_segment_display_bottom_sheet">لوحة سفلية</string>
     <string name="thinking_segments_title">مقاطع التفكير</string>
-    <string name="context_usage_messages">~%1$s / %2$s tokens</string>
+    <string name="context_usage_messages">~%1$s / %2$s tokens</string>
+
     <string name="context_part_system">مطالبة النظام</string>
     <string name="context_part_tools">الأدوات</string>
     <string name="context_part_messages">الرسائل</string>

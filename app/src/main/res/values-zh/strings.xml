@@ -645,6 +645,7 @@
     <string name="interaction_expand">展开</string>
     <string name="ask_user_custom_answer">用自己的话回答</string>
     <string name="ask_user_skip">跳过</string>
+    <string name="ask_user_expired_hint">时间已到。草稿已保留 — 准备好后即可发送。</string>
     <string name="ask_user_notification_channel">Agora 的提问</string>
     <string name="ask_user_notification_desc">在聊天界面未打开时请你回答助手的问题</string>
 

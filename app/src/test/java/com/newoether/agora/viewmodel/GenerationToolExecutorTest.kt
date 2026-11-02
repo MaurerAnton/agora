@@ -248,7 +248,9 @@ class GenerationToolExecutorTest {
         assertFalse(answer["answered"]!!.jsonPrimitive.boolean)
         assertNull(answer["choices"])
         assertEquals(1, events.count { it is ToolExecutionEvent.Completed })
-        assertTrue(controller.requests.value.isEmpty())
+        // The deadline keeps the unanswered card as expired so its draft survives (issue #116 A).
+        assertEquals(1, controller.requests.value.size)
+        assertTrue(controller.requests.value.single().expired)
         assertEquals(60_000L, testScheduler.currentTime)
     }
 

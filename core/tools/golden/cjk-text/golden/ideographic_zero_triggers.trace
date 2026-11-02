@@ -1,5 +1,5 @@
-name|katakana_is_excluded
+name|ideographic_zero_triggers
 op|containsCjk
 constants|Important: do not use any Chinese (CJK) characters anywhere in your answer.
-args|ア
-out|bool|false
+args|〇
+out|bool|true

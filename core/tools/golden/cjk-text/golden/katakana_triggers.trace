@@ -1,5 +1,5 @@
-name|hiragana_is_excluded
+name|katakana_triggers
 op|containsCjk
 constants|Important: do not use any Chinese (CJK) characters anywhere in your answer.
-args|あ
-out|bool|false
+args|ア
+out|bool|true

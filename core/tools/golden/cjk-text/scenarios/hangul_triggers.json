@@ -1,0 +1,5 @@
+{
+  "name": "hangul_triggers",
+  "op": "containsCjk",
+  "text": "한"
+}

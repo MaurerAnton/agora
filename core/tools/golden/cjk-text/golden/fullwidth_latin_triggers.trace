@@ -1,5 +1,5 @@
-name|supplementary_ext_b_is_ignored
+name|fullwidth_latin_triggers
 op|containsCjk
 constants|Important: do not use any Chinese (CJK) characters anywhere in your answer.
-args|𠀀
-out|bool|false
+args|ＡＢＣ
+out|bool|true

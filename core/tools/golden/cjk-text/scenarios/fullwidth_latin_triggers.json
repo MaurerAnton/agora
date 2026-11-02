@@ -1,0 +1,5 @@
+{
+  "name": "fullwidth_latin_triggers",
+  "op": "containsCjk",
+  "text": "ＡＢＣ"
+}

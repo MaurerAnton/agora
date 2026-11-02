@@ -1,0 +1,5 @@
+{
+  "name": "arabic_stays_quiet",
+  "op": "containsCjk",
+  "text": "مَرْحَبًا"
+}

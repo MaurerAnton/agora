@@ -1,0 +1,5 @@
+{
+  "name": "kanji_iteration_mark_triggers",
+  "op": "containsCjk",
+  "text": "々"
+}

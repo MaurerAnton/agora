@@ -1,5 +1,5 @@
-name|supplementary_not_adjacent_to_range
+name|devanagari_triggers
 op|containsCjk
 constants|Important: do not use any Chinese (CJK) characters anywhere in your answer.
-args|𪛖
-out|bool|false
+args|हिन्दी
+out|bool|true

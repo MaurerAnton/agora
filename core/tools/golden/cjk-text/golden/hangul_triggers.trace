@@ -1,5 +1,5 @@
-name|fullwidth_latin_is_excluded
+name|hangul_triggers
 op|containsCjk
 constants|Important: do not use any Chinese (CJK) characters anywhere in your answer.
-args|ＡＢＣ
-out|bool|false
+args|한
+out|bool|true

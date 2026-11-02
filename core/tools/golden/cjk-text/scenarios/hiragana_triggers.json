@@ -1,0 +1,5 @@
+{
+  "name": "hiragana_triggers",
+  "op": "containsCjk",
+  "text": "あ"
+}

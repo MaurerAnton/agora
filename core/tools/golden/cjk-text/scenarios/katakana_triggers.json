@@ -1,0 +1,5 @@
+{
+  "name": "katakana_triggers",
+  "op": "containsCjk",
+  "text": "ア"
+}

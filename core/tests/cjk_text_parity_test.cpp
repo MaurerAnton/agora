@@ -5,9 +5,12 @@
 // byte. The trace format mirrors the reference driver
 // (core/tools/golden/cjk-text/CjkTextTraceDump.kt).
 //
-// The pins that matter are the range edges (U+33FF/U+3400, U+4DBF/U+4DC0, U+4E00/U+9FFF/U+A000,
-// U+F8FF/U+F900/U+FAFF/U+FB00), the deliberate exclusion of Hiragana, Katakana, Hangul, CJK
-// punctuation and U+3007, and the fact that supplementary-plane Han characters do not trigger.
+// The pins that matter are the allowed-set edges (ASCII, Latin ligatures, Latin Ext-B/C/D,
+// combining marks, basic Cyrillic, Arabic blocks and presentation forms, General Punctuation,
+// arrows, math, dingbats, emoji) and the triggers outside them (Han in all three BMP blocks,
+// kana, hangul, CJK punctuation, fullwidth Latin, Devanagari, archaic vyaz Cyrillic, Greek,
+// private-use below the compatibility block, and supplementary-plane ideographs — the
+// surrogate-pair case the char loop used to miss).
 #include <algorithm>
 #include <cstddef>
 #include <filesystem>

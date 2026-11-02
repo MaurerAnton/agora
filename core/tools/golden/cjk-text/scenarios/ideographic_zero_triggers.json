@@ -1,0 +1,5 @@
+{
+  "name": "ideographic_zero_triggers",
+  "op": "containsCjk",
+  "text": "〇"
+}

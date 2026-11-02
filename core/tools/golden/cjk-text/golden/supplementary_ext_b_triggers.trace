@@ -1,5 +1,5 @@
-name|cjk_punctuation_is_excluded
+name|supplementary_ext_b_triggers
 op|containsCjk
 constants|Important: do not use any Chinese (CJK) characters anywhere in your answer.
-args|。、「」
-out|bool|false
+args|𠀀
+out|bool|true

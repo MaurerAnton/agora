@@ -1,0 +1,5 @@
+{
+  "name": "punctuation_and_arrows_stay_quiet",
+  "op": "containsCjk",
+  "text": "Em dash — arrow → ≤ ≥ … ✔"
+}

@@ -1,0 +1,5 @@
+{
+  "name": "devanagari_triggers",
+  "op": "containsCjk",
+  "text": "हिन्दी"
+}

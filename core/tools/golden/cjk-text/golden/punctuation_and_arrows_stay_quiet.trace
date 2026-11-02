@@ -1,0 +1,5 @@
+name|punctuation_and_arrows_stay_quiet
+op|containsCjk
+constants|Important: do not use any Chinese (CJK) characters anywhere in your answer.
+args|Em dash — arrow → ≤ ≥ … ✔
+out|bool|false

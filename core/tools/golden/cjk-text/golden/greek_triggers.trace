@@ -1,5 +1,5 @@
-name|kanji_iteration_mark_is_excluded
+name|greek_triggers
 op|containsCjk
 constants|Important: do not use any Chinese (CJK) characters anywhere in your answer.
-args|々
-out|bool|false
+args|Ἑλληνικά
+out|bool|true

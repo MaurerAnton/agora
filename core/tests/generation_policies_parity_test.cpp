@@ -193,6 +193,7 @@ std::string run_end_reason_name(runtime::RunEndReason reason) {
         case runtime::RunEndReason::UserStopped: return "USER_STOPPED";
         case runtime::RunEndReason::ProcessRecovered: return "PROCESS_RECOVERED";
         case runtime::RunEndReason::ProviderError: return "PROVIDER_ERROR";
+        case runtime::RunEndReason::ContinuationPending: return "CONTINUATION_PENDING";
     }
     return "MODEL_COMPLETED";
 }

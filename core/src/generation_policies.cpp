@@ -172,7 +172,7 @@ bool should_post_generation_terminal_notification(prep::MessageStatus message_st
                                                  const std::optional<bool>& conversation_visible) {
     if (!conversation_visible.has_value()) {
         return !app_in_foreground && message_status == prep::MessageStatus::Success &&
-               !has_pending_guidance;
+               !has_pending_guidance && !is_context_compact;
     }
     const bool terminal_needs_attention =
         message_status == prep::MessageStatus::Error ||
@@ -199,7 +199,9 @@ TerminalDisposition generation_terminal_disposition(prep::MessageStatus message_
         return disposition;
     }
     disposition.run_status = runtime::RunStatus::Completed;
-    disposition.end_reason = runtime::RunEndReason::ModelCompleted;
+    disposition.end_reason = has_pending_guidance
+                                 ? runtime::RunEndReason::ContinuationPending
+                                 : runtime::RunEndReason::ModelCompleted;
     disposition.mark_conversation_unread =
         !has_pending_guidance && (!conversation_visible.has_value() || !*conversation_visible);
     return disposition;

@@ -759,6 +759,7 @@ std::string describe(RunEndReason reason) {
         case RunEndReason::UserStopped: return "USER_STOPPED";
         case RunEndReason::ProcessRecovered: return "PROCESS_RECOVERED";
         case RunEndReason::ProviderError: return "PROVIDER_ERROR";
+        case RunEndReason::ContinuationPending: return "CONTINUATION_PENDING";
     }
     return "MODEL_COMPLETED";
 }

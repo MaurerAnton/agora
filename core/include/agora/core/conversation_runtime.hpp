@@ -26,7 +26,8 @@ inline bool is_terminal(RunStatus status) {
            status == RunStatus::Failed;
 }
 
-enum class RunEndReason { ModelCompleted, UserStopped, ProcessRecovered, ProviderError };
+enum class RunEndReason { ModelCompleted, UserStopped, ProcessRecovered, ProviderError,
+                          ContinuationPending };
 
 enum class ProviderPassResult {
     CompletedText,

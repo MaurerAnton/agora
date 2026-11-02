@@ -103,6 +103,7 @@ std::string run_end_reason_to_wire(runtime::RunEndReason reason) {
         case runtime::RunEndReason::UserStopped: return "USER_STOPPED";
         case runtime::RunEndReason::ProcessRecovered: return "PROCESS_RECOVERED";
         case runtime::RunEndReason::ProviderError: return "PROVIDER_ERROR";
+        case runtime::RunEndReason::ContinuationPending: return "CONTINUATION_PENDING";
     }
     throw KotlinError("IllegalArgumentException", "Unknown RunEndReason");
 }
@@ -112,6 +113,7 @@ runtime::RunEndReason run_end_reason_from_wire(const std::string& wire) {
     if (wire == "USER_STOPPED") return runtime::RunEndReason::UserStopped;
     if (wire == "PROCESS_RECOVERED") return runtime::RunEndReason::ProcessRecovered;
     if (wire == "PROVIDER_ERROR") return runtime::RunEndReason::ProviderError;
+    if (wire == "CONTINUATION_PENDING") return runtime::RunEndReason::ContinuationPending;
     throw KotlinError("IllegalArgumentException", "Unknown RunEndReason " + wire);
 }
 

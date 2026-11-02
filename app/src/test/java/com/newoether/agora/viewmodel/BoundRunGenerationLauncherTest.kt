@@ -238,7 +238,59 @@ class BoundRunGenerationLauncherTest {
         Unit
     }
 
-    private class Fixture {
+    @Test
+    fun cjkAbortIsSwallowedOnlyWhenTheAutoRetryHandlerClaimsIt() = runBlocking {
+        // The handler claims the retry (the run re-issued its pass, or a sibling regenerate was
+        // scheduled): the aborted run must end quietly, with no failure finalization (the very
+        // contract the queue hold of issue #116 B1 depends on).
+        val claimed = Fixture(onCjkAutoRetry = { _, _ -> true })
+        coEvery {
+            claimed.manager.generate(any(), any(), any(), any(), any(), any(), any(),
+                any(), any(), any(), any(), any(), any(), any())
+        } throws CjkAutoRetryAbort()
+        mockDebugLog()
+        try {
+            claimed.launcher.launch(claimed.request, claimed.state)
+        } finally {
+            unmockkObject(DebugLog)
+        }
+        coVerify(exactly = 0) {
+            claimed.terminalSettlement.finalizeBoundFailure(
+                any(), any(), any(), any(), any(), any(), any(),
+            )
+        }
+        claimed.state.dispose()
+
+        // A declined handler must let the abort propagate: the run keeps its STOPPED contract
+        // and the caller decides what happens next.
+        val declined = Fixture(onCjkAutoRetry = { _, _ -> false })
+        coEvery {
+            declined.manager.generate(any(), any(), any(), any(), any(), any(), any(),
+                any(), any(), any(), any(), any(), any(), any())
+        } throws CjkAutoRetryAbort()
+        mockDebugLog()
+        try {
+            try {
+                declined.launcher.launch(declined.request, declined.state)
+                fail("a declined CJK abort must propagate")
+            } catch (_: CjkAutoRetryAbort) {
+                Unit
+            }
+        } finally {
+            unmockkObject(DebugLog)
+        }
+        coVerify(exactly = 0) {
+            declined.terminalSettlement.finalizeBoundFailure(
+                any(), any(), any(), any(), any(), any(), any(),
+            )
+        }
+        declined.state.dispose()
+        Unit
+    }
+
+    private class Fixture(
+        onCjkAutoRetry: (conversationId: String, modelMessageId: String) -> Boolean = { _, _ -> false },
+    ) {
         val conversations = mockk<ConversationRepository>()
         val manager = mockk<GenerationManager>()
         val compactController = mockk<ConversationCompactController>()
@@ -279,6 +331,7 @@ class BoundRunGenerationLauncherTest {
                 automaticCompactNeeded = compactController::automaticNeeded,
                 terminalSettlement = terminalSettlement,
                 toUiMessage = ::toUiMessage,
+                onCjkAutoRetry = onCjkAutoRetry,
                 onAutomaticCompactContinuation = { request, state ->
                     continuationRequests += request
                     continuationStates += state

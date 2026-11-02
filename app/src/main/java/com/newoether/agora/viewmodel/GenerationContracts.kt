@@ -42,8 +42,14 @@ data class GenerationConfig(
     val googleSearchEnabled: Boolean,
     val thinkingEnabled: Boolean,
     val thinkingLevel: String = "medium",
-    /** Abort a streaming answer the moment CJK text arrives; the launcher retries it. */
+    /** Abort a streaming answer the moment CJK text arrives; the run re-issues the text pass. */
     val autoRegenOnCjk: Boolean = false,
+    /**
+     * How often the run itself re-issues the interrupted text pass with the no-CJK guard before
+     * falling back to a sibling regenerate (issue #116 B3). Each in-run retry keeps every
+     * committed tool round, its side effects and all thinking produced so far.
+     */
+    val maxCjkRetries: Int = 0,
     val thinkingBudgetEnabled: Boolean = false,
     val thinkingBudgetTokens: Int = 4096,
     val openAiServiceTier: String? = null,

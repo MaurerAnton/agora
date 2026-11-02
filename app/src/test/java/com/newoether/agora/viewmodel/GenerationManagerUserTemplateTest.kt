@@ -3,6 +3,7 @@ package com.newoether.agora.viewmodel
 import com.newoether.agora.data.PredefinedVariables
 import com.newoether.agora.data.PromptItemType
 import com.newoether.agora.data.PromptTemplateItem
+import com.newoether.agora.model.CJK_RETRY_GUARD_PROMPT
 import com.newoether.agora.model.ChatMessage
 import com.newoether.agora.model.Participant
 import com.newoether.agora.util.Constants
@@ -242,5 +243,45 @@ class GenerationManagerUserTemplateTest {
         assertEquals(Participant.USER, projected.last().participant)
         assertEquals("Create the compact context summary now.", projected.last().text)
         assertEquals("assistant", projected.last().parentId)
+    }
+
+    @Test
+    fun cjkRetryProjectsTheStreamedTailThenTheNoCjkGuard() {
+        val durableMessages = listOf(
+            ChatMessage(id = "user", text = "question", participant = Participant.USER),
+        )
+
+        val projected = projectGenerationInputMessages(
+            messages = durableMessages,
+            includeImages = false,
+            userPrepend = null,
+            userPostpend = null,
+            assistantPrefix = "The answer so far:",
+            initialUserPrompt = CJK_RETRY_GUARD_PROMPT,
+        )
+
+        assertEquals(3, projected.size)
+        assertEquals(Participant.MODEL, projected[1].participant)
+        assertEquals("The answer so far:", projected[1].text)
+        assertEquals("api_partial_assistant_user", projected[1].id)
+        assertEquals("user", projected[1].parentId)
+        assertEquals(Participant.USER, projected[2].participant)
+        assertEquals(CJK_RETRY_GUARD_PROMPT, projected[2].text)
+        assertEquals("api_partial_assistant_user", projected[2].parentId)
+
+        // A blank tail (CJK in the very first chunk) keeps the guard as the trailing turn, the
+        // same shape a first-pass retry without any streamed prefix projects.
+        val withoutTail = projectGenerationInputMessages(
+            messages = durableMessages,
+            includeImages = false,
+            userPrepend = null,
+            userPostpend = null,
+            assistantPrefix = " ",
+            initialUserPrompt = CJK_RETRY_GUARD_PROMPT,
+        )
+
+        assertEquals(2, withoutTail.size)
+        assertEquals(CJK_RETRY_GUARD_PROMPT, withoutTail.last().text)
+        assertEquals("user", withoutTail.last().parentId)
     }
 }

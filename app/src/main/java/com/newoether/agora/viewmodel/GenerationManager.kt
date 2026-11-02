@@ -10,6 +10,7 @@ import com.newoether.agora.data.SkillManager
 import com.newoether.agora.data.replaceCustomProviderIdsForDisplay
 
 import com.newoether.agora.data.local.MessageEntity
+import com.newoether.agora.model.CJK_RETRY_GUARD_PROMPT
 import com.newoether.agora.model.ChatMessage
 import com.newoether.agora.model.containsCjk
 import com.newoether.agora.model.MessageSegment
@@ -266,6 +267,8 @@ class GenerationManager(
             val completedToolCalls = linkedMapOf<String, StreamEvent.ToolCallRequest>()
             var toolRoundSegmentCursor = 0
             var providerRequestOrdinal = 0
+            // In-run CJK retries for the WHOLE run (issue #116 B3); one budget across passes.
+            var cjkInRunRetries = 0
             val toolRoundEffects = ToolRoundEffectCoordinator(callbacks)
 
             val uiUpdateGate = StreamingUiUpdateGate()
@@ -359,10 +362,35 @@ class GenerationManager(
                 uiUpdateGate.recordPublished(System.currentTimeMillis())
             }
 
+            /**
+             * What an in-run CJK retry re-issues (issue #116 B3): the base path of this pass plus
+             * the streamed answer as a synthetic assistant turn and the no-CJK guard as the
+             * trailing user turn, so only the tail after the truncation point is regenerated.
+             */
+            fun retryProjectionFor(base: List<ChatMessage>): (String) -> List<ChatMessage> = { prefix ->
+                if (providerConfig.requestResolver != null) {
+                    base
+                } else {
+                    projectGenerationInputMessages(
+                        messages = base,
+                        includeImages = providerConfig.includeImages,
+                        userPrepend = config.userPrepend,
+                        userPostpend = config.userPostpend,
+                        assistantPrepend = config.assistantPrepend,
+                        assistantPostpend = config.assistantPostpend,
+                        assistantPrefix = prefix,
+                        initialUserPrompt = config.initialUserPrompt ?: CJK_RETRY_GUARD_PROMPT,
+                    )
+                }
+            }
+
             suspend fun collectProviderRequest(
                 messages: List<ChatMessage>,
+                retryProjection: (String) -> List<ChatMessage>,
                 onFirstEvent: (() -> Unit)? = null,
             ): ProviderPassOutcome {
+                var attemptMessages = messages
+                while (true) {
                 val providerAnswerStart = output.totalText.length
                 output.beginProviderRequest()
                 val providerRequestIndex = providerRequestOrdinal++
@@ -386,7 +414,7 @@ class GenerationManager(
                         request = ProviderPassExecutionRequest(
                             proposedIdentity = proposedIdentity,
                             provider = provider,
-                            messages = messages,
+                            messages = attemptMessages,
                             config = providerConfig,
                             requestTrace = providerRequestTrace,
                         ),
@@ -422,10 +450,24 @@ class GenerationManager(
                             },
                         ),
                     )
+                } catch (retry: CjkAutoRetryAbort) {
+                    // Issue #116 B3: re-issue only this text attempt - committed tool rounds,
+                    // their side effects and every thinking segment stay untouched. Once the
+                    // budget or eligibility is gone the abort reaches the launcher, whose
+                    // sibling regenerate (queue held, chains capped) remains the fallback.
+                    if (providerConfig.requestResolver != null ||
+                        !config.autoRegenOnCjk ||
+                        cjkInRunRetries >= config.maxCjkRetries
+                    ) {
+                        throw retry
+                    }
+                    cjkInRunRetries++
+                    attemptMessages = retryProjection(output.totalText.toString())
                 } finally {
                     output.tokenUsageAccumulator.finishRequest()
                     output.totalTokenUsage = output.tokenUsageAccumulator.snapshot()
                     output.totalTokenCount = output.totalTokenUsage?.totalTokenCount ?: output.totalTokenCount
+                }
                 }
             }
 
@@ -472,9 +514,14 @@ class GenerationManager(
                 )
             }
             requestTrace?.mark("provider_dispatch")
-            acceptProviderPass(collectProviderRequest(apiPath) {
-                requestTrace?.mark("first_semantic_event")
-            })
+            acceptProviderPass(
+                collectProviderRequest(
+                    messages = apiPath,
+                    retryProjection = retryProjectionFor(currentPath),
+                ) {
+                    requestTrace?.mark("first_semantic_event")
+                }
+            )
             output.thoughtTiming.finishCurrent()
             output.currentStatus = statusAfterThoughtPhaseFinished(output.currentStatus)
             if (output.currentStatus != MessageStatus.ERROR) executeAcceptedToolBatch()
@@ -573,7 +620,14 @@ class GenerationManager(
                         assistantPostpend = config.assistantPostpend,
                     )
                 }
-                acceptProviderPass(collectProviderRequest(apiToolPath))
+                // A mid-run retry still carries the guard: CJK can reappear in any later pass.
+                val retryToolPath = toolPath
+                acceptProviderPass(
+                    collectProviderRequest(
+                        messages = apiToolPath,
+                        retryProjection = retryProjectionFor(retryToolPath),
+                    )
+                )
                 output.thoughtTiming.finishCurrent()
                 output.currentStatus = statusAfterThoughtPhaseFinished(output.currentStatus)
                 if (output.currentStatus != MessageStatus.ERROR) executeAcceptedToolBatch()

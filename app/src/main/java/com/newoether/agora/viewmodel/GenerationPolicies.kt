@@ -252,6 +252,12 @@ internal fun projectGenerationInputMessages(
     assistantPrepend: String? = null,
     assistantPostpend: String? = null,
     initialUserPrompt: String? = null,
+    /**
+     * The answer streamed so far that the model has to continue from (issue #116 B3): appended as
+     * one synthetic assistant turn ahead of [initialUserPrompt], so the guard reads as "keep going,
+     * in the allowed script" instead of a fresh question. Projection input only, never persisted.
+     */
+    assistantPrefix: String? = null,
 ): List<ChatMessage> {
     val projected = applyMessageTemplatesToMessages(
         messages = projectToolResultImagesToUserMessage(
@@ -274,9 +280,21 @@ internal fun projectGenerationInputMessages(
             }
         }
     }
-    val prompt = initialUserPrompt?.takeIf(String::isNotBlank) ?: return projected
-    val parent = projected.lastOrNull()
-    return projected + ChatMessage(
+    var withPrefix = projected
+    val prefix = assistantPrefix?.takeIf(String::isNotBlank)
+    if (prefix != null) {
+        val tail = withPrefix.lastOrNull()
+        withPrefix = withPrefix + ChatMessage(
+            id = "api_partial_assistant_${tail?.id.orEmpty()}",
+            parentId = tail?.id,
+            text = prefix,
+            participant = Participant.MODEL,
+            timestamp = tail?.timestamp?.let { if (it == Long.MAX_VALUE) it else it + 1L } ?: 0L,
+        )
+    }
+    val prompt = initialUserPrompt?.takeIf(String::isNotBlank) ?: return withPrefix
+    val parent = withPrefix.lastOrNull()
+    return withPrefix + ChatMessage(
         id = "api_initial_user_${parent?.id.orEmpty()}",
         parentId = parent?.id,
         text = prompt,

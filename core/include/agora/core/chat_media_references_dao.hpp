@@ -16,59 +16,38 @@ struct MessageAttachmentReference {
     std::optional<std::string> attachment_meta;
 };
 
-/** MessageToolMediaReference (data/local/ChatEntities.kt): the tool payload only. */
-struct MessageToolMediaReference {
-    std::string id;
-    std::string tool_call_json;
-};
-
-/** ConversationDraftAttachmentReference: a conversation draft column projection. */
+/** ConversationDraftAttachmentReference: a conversation draft column projection (nullable). */
 struct ConversationDraftAttachmentReference {
     std::string id;
-    std::string draft_attachments;
-};
-
-/** NewChatDraftAttachmentReference: the singleton new-chat draft projection. */
-struct NewChatDraftAttachmentReference {
-    std::string draft_attachments;
+    std::optional<std::string> draft_attachments;
 };
 
 /**
  * Port of data/local/ChatMediaReferencesDao.kt: the bounded media-reference reads inherited by
- * the sole ChatDao. All five members are read-only @Query projections; the SQL text is
- * transcribed verbatim and Room is replaced by the SqlExecutor boundary.
- *
- * `pathToken` is a raw, case-sensitive `instr` substring over the stored JSON text (never a LIKE
- * pattern), and the eligibility predicate looks at the raw column values: an image list counts
- * only when it is neither '' nor '[]', while an attachment meta counts only when it is non-null
- * and non-empty.
+ * the sole ChatDao. The four members are read-only projections; the SQL text is transcribed
+ * verbatim and Room is replaced by the SqlExecutor boundary. The combined page method mirrors the
+ * Kotlin interface default: a null cursor seeks the first page, a present cursor the next one.
  */
 class ChatMediaReferencesDao {
 public:
     explicit ChatMediaReferencesDao(SqlExecutor& sql) : sql_(sql) {}
 
-    std::vector<MessageAttachmentReference> get_message_attachment_references_page(
-        const std::optional<std::string>& after_id,
-        int limit,
-        const std::optional<std::string>& path_token = std::nullopt);
+    std::optional<ConversationDraftAttachmentReference> get_conversation_draft_attachment_reference(
+        std::string_view id);
+
+    std::vector<MessageAttachmentReference> get_conversation_attachment_first_page(
+        std::string_view conversation_id,
+        int limit);
+
+    std::vector<MessageAttachmentReference> get_conversation_attachment_next_page(
+        std::string_view conversation_id,
+        const std::string& after_id,
+        int limit);
 
     std::vector<MessageAttachmentReference> get_conversation_message_attachment_references_page(
         std::string_view conversation_id,
         const std::optional<std::string>& after_id,
         int limit);
-
-    std::vector<MessageToolMediaReference> get_message_tool_media_references_page(
-        const std::optional<std::string>& after_id,
-        int limit);
-
-    std::vector<ConversationDraftAttachmentReference>
-    get_conversation_draft_attachment_references_page(
-        const std::optional<std::string>& after_id,
-        int limit,
-        const std::optional<std::string>& path_token = std::nullopt);
-
-    std::optional<NewChatDraftAttachmentReference> get_new_chat_draft_attachment_reference(
-        const std::optional<std::string>& path_token = std::nullopt);
 
 private:
     SqlExecutor& sql_;

@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 # Generates or verifies the golden traces for data/local/ChatMediaReferencesDao.kt.
 #
-# ChatMediaReferencesDao.kt and ChatEntities.kt (every entity, the four reference projections and
+# ChatMediaReferencesDao.kt and ChatEntities.kt (every entity, the reference projections and
 # the type converters) compile VERBATIM from the app tree — the DAO only needs the model cluster
 # for the converter declarations. The platform boundary is Room: platform/MiniRoom.kt executes the
 # declared @Query SQL on a real SQLite database over platform/schema.sql.

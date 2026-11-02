@@ -1,15 +1,15 @@
 # chat-media-references-dao golden stand
 
-Parity pin for `data/local/ChatMediaReferencesDao.kt`: the five bounded media-reference reads
-inherited by the sole `ChatDao` — the attachment sweep over message columns, the tool-payload
-scan, the conversation draft sweep, and the singleton New Chat draft read.
+Parity pin for `data/local/ChatMediaReferencesDao.kt`: the four bounded media-reference reads
+inherited by the sole `ChatDao` — the per-conversation attachment pages, the combined keyset page
+that dispatches to them, and the keyed conversation draft reference.
 
 ## Sources that compile verbatim
 
 | Source | Why |
 | --- | --- |
 | `data/local/ChatMediaReferencesDao.kt` | the module under test — a plain interface with public members, so **no extraction is needed** |
-| `data/local/ChatEntities.kt` | every entity, the four reference projections, `MessageConverters` and `NewChatPersistEntity`; compiles whole, no lifting |
+| `data/local/ChatEntities.kt` | every entity, the reference projections, `MessageConverters` and `NewChatPersistEntity`; compiles whole, no lifting |
 | `data/local/RunEntity.kt`, `model/RuntimeIdentity.kt` | the run row the `messages.runId` foreign key references |
 | `model/ChatMessage.kt` and its model dependencies | the enum types behind the converters |
 
@@ -23,29 +23,18 @@ scan, the conversation draft sweep, and the singleton New Chat draft read.
 
 ## What is pinned
 
-All five members are operations, so no query text goes unpinned.
+All four members are operations, so no query text goes unpinned.
 
-* **`getMessageAttachmentReferencesPage`** — the two-column eligibility predicate: `images` counts
-  only when it is neither `''` nor `'[]'`, `attachmentMeta` only when it is non-null and
-  non-empty. The seed covers `images=[]` with a matching meta, `images=''`, `images='[]'`, a
-  non-empty meta on an empty image list, and the legacy `\|\|\|` image encoding (which surfaces as
-  a two-element list through the app's converter).
-* **The optional `pathToken`** — a raw `instr` substring over the stored JSON text, not a LIKE
-  pattern: `c` matches `c.png`, `A.PNG` does not match `a.png` (case-sensitive), `[` matches every
-  JSON image array, `  ` matches the whitespace meta, and a token found only on an ineligible row
-  does not surface it.
-* **Keyset pages** — NULL vs empty-string `afterId`, an id before/at/past the last eligible row,
-  `LIMIT 0`, and ascending `id` order.
-* **`getConversationMessageAttachmentReferencesPage`** — conversation scoping comes first: the
-  same predicate yields different pages for `c-1` and `c-2`, an unknown conversation is empty, and
-  the conversation id is bound before the two keyset parameters.
-* **`getMessageToolMediaReferencesPage`** — `toolCallJson` must be non-null and non-empty (an
-  empty string is excluded, whitespace is included), keyset and `LIMIT` same as above.
-* **`getConversationDraftAttachmentReferencesPage`** — non-null/non-empty drafts, `instr`
-  case sensitivity (`A.png` vs `a.png`), keyset, limit and `LIMIT 0`.
-* **`getNewChatDraftAttachmentReference`** — the `id = 0` singleton with a draft, an empty draft,
-  a NULL draft and an absent row; a NULL token returns the row, an empty-string token matches every
-  non-empty draft, and an unknown token returns null.
+* **`getConversationDraftAttachmentReference`** — a keyed read, not a sweep: a JSON draft, a NULL
+  draft (the row comes back with a null column), an empty-string draft, an object draft and the
+  legacy `\|\|\|` format; an unknown id returns `null`.
+* **`getConversationAttachmentFirstPage` / `getConversationAttachmentNextPage`** — identity pages
+  over `messages` with no eligibility predicate: every row of the conversation comes back, empty
+  image lists and missing metas included, ordered by `id` with the caller's `LIMIT`; the legacy
+  `\|\|\|` image encoding surfaces as a two-element list through the app's converter.
+* **`getConversationMessageAttachmentReferencesPage`** — the Kotlin interface default: a null
+  cursor seeks the first page, a present cursor (including the empty string, which matches every
+  id) seeks the next one; conversation scoping comes first (`c-1` vs `c-2` vs an unknown id).
 * **Read-only**: the trailing table dump re-renders `conversations(id, draftAttachments)`,
   `messages(id, conversationId, images, attachmentMeta, toolCallJson)` and the full
   `new_chat_persist` row for every trace.
@@ -58,12 +47,12 @@ All five members are operations, so no query text goes unpinned.
           "messages": [{"id": "m-01", "conversationId": "c-1", "runId": "run-c-1",
                         "images": ["a.png"]}],
           "newChatPersist": []},
- "steps": [{"op": "getMessageAttachmentReferencesPage", "afterId": null, "limit": 100}]}
+ "steps": [{"op": "getConversationAttachmentFirstPage", "conversationId": "c-1", "limit": 100}]}
 ```
 
 Message fields default like the stand driver: `text=''`, `images='[]'`, `participant=MODEL`,
 `status=SUCCESS`, `timestamp=0`, `runSequence=-1`. `agora_scenarios chat-media-references-dao`
-writes eight scenarios over purpose-built seeds.
+writes four scenarios over purpose-built seeds.
 
 ## Trace format (`golden/*.trace`)
 

@@ -1,11 +1,11 @@
 // Golden trace driver for data/local/ChatMediaReferencesDao.kt.
 //
-// The DAO interface and ChatEntities.kt (the four reference projections, the entities and the
+// The DAO interface and ChatEntities.kt (the reference projections, the entities and the
 // type converters) compile VERBATIM from the app tree. Room's generated DAO is replaced by the
 // stand-local MiniRoom, which executes the declared @Query SQL on a real SQLite database over
 // platform/schema.sql.
 //
-// All five members are read-only bounded reads; the trailing table dump proves the queries never
+// All four members are read-only bounded reads; the trailing table dump proves the queries never
 // mutate the store.
 package chat.media.references.golden
 
@@ -13,8 +13,6 @@ import androidx.room.RoomDatabase
 import com.newoether.agora.data.local.ChatMediaReferencesDao
 import com.newoether.agora.data.local.ConversationDraftAttachmentReference
 import com.newoether.agora.data.local.MessageAttachmentReference
-import com.newoether.agora.data.local.MessageToolMediaReference
-import com.newoether.agora.data.local.NewChatDraftAttachmentReference
 import java.io.File
 import java.sql.Connection
 import java.sql.DriverManager
@@ -108,11 +106,20 @@ private suspend fun executeOperation(
     step: JsonObject,
     dao: ChatMediaReferencesDao,
 ): JsonElement = when (op) {
-    "getMessageAttachmentReferencesPage" -> JsonArray(
-        dao.getMessageAttachmentReferencesPage(
-            afterId = step.optionalString("afterId"),
+    "getConversationDraftAttachmentReference" ->
+        dao.getConversationDraftAttachmentReference(step.string("id"))
+            ?.let(::conversationDraftAttachmentReferenceJson) ?: JsonNull
+    "getConversationAttachmentFirstPage" -> JsonArray(
+        dao.getConversationAttachmentFirstPage(
+            conversationId = step.string("conversationId"),
             limit = step.int("limit"),
-            pathToken = step.optionalString("pathToken"),
+        ).map(::messageAttachmentReferenceJson),
+    )
+    "getConversationAttachmentNextPage" -> JsonArray(
+        dao.getConversationAttachmentNextPage(
+            conversationId = step.string("conversationId"),
+            afterId = step.string("afterId"),
+            limit = step.int("limit"),
         ).map(::messageAttachmentReferenceJson),
     )
     "getConversationMessageAttachmentReferencesPage" -> JsonArray(
@@ -122,22 +129,6 @@ private suspend fun executeOperation(
             limit = step.int("limit"),
         ).map(::messageAttachmentReferenceJson),
     )
-    "getMessageToolMediaReferencesPage" -> JsonArray(
-        dao.getMessageToolMediaReferencesPage(
-            afterId = step.optionalString("afterId"),
-            limit = step.int("limit"),
-        ).map(::messageToolMediaReferenceJson),
-    )
-    "getConversationDraftAttachmentReferencesPage" -> JsonArray(
-        dao.getConversationDraftAttachmentReferencesPage(
-            afterId = step.optionalString("afterId"),
-            limit = step.int("limit"),
-            pathToken = step.optionalString("pathToken"),
-        ).map(::conversationDraftAttachmentReferenceJson),
-    )
-    "getNewChatDraftAttachmentReference" ->
-        dao.getNewChatDraftAttachmentReference(step.optionalString("pathToken"))
-            ?.let(::newChatDraftAttachmentReferenceJson) ?: JsonNull
     else -> error("unknown operation $op")
 }
 
@@ -266,22 +257,10 @@ private fun messageAttachmentReferenceJson(
     put("attachmentMeta", entity.attachmentMeta)
 }
 
-private fun messageToolMediaReferenceJson(entity: MessageToolMediaReference): JsonElement =
-    buildJsonObject {
-        put("id", entity.id)
-        put("toolCallJson", entity.toolCallJson)
-    }
-
 private fun conversationDraftAttachmentReferenceJson(
     entity: ConversationDraftAttachmentReference,
 ): JsonElement = buildJsonObject {
     put("id", entity.id)
-    put("draftAttachments", entity.draftAttachments)
-}
-
-private fun newChatDraftAttachmentReferenceJson(
-    entity: NewChatDraftAttachmentReference,
-): JsonElement = buildJsonObject {
     put("draftAttachments", entity.draftAttachments)
 }
 

@@ -10260,14 +10260,18 @@ void profile_chat_media_references_dao(const fs::path& scenarios) {
         for (auto& arg : arguments) members.push_back(std::move(arg));
         return object(std::move(members));
     };
-    auto attachments = [&](std::optional<std::string> after_id, int limit,
-                           std::optional<std::string> path_token = std::nullopt) {
-        std::vector<std::pair<std::string, json::Value>> arguments = {
-            {"afterId", after_id ? str(*after_id) : null_value()},
+    auto first_page = [&](const char* conversation_id, int limit) {
+        return op("getConversationAttachmentFirstPage", {
+            {"conversationId", str(conversation_id)},
             {"limit", number(limit)},
-        };
-        if (path_token) arguments.emplace_back("pathToken", str(*path_token));
-        return op("getMessageAttachmentReferencesPage", std::move(arguments));
+        });
+    };
+    auto next_page = [&](const char* conversation_id, const std::string& after_id, int limit) {
+        return op("getConversationAttachmentNextPage", {
+            {"conversationId", str(conversation_id)},
+            {"afterId", str(after_id)},
+            {"limit", number(limit)},
+        });
     };
     auto conversation_attachments = [&](const char* conversation_id,
                                         std::optional<std::string> after_id, int limit) {
@@ -10277,26 +10281,8 @@ void profile_chat_media_references_dao(const fs::path& scenarios) {
             {"limit", number(limit)},
         });
     };
-    auto tool_media = [&](std::optional<std::string> after_id, int limit) {
-        return op("getMessageToolMediaReferencesPage", {
-            {"afterId", after_id ? str(*after_id) : null_value()},
-            {"limit", number(limit)},
-        });
-    };
-    auto draft_attachments = [&](std::optional<std::string> after_id, int limit,
-                                 std::optional<std::string> path_token = std::nullopt) {
-        std::vector<std::pair<std::string, json::Value>> arguments = {
-            {"afterId", after_id ? str(*after_id) : null_value()},
-            {"limit", number(limit)},
-        };
-        if (path_token) arguments.emplace_back("pathToken", str(*path_token));
-        return op("getConversationDraftAttachmentReferencesPage", std::move(arguments));
-    };
-    auto new_chat = [&](std::optional<std::string> path_token = std::nullopt) {
-        if (!path_token) {
-            return op("getNewChatDraftAttachmentReference", {});
-        }
-        return op("getNewChatDraftAttachmentReference", {{"pathToken", str(*path_token)}});
+    auto draft_reference = [&](const char* id) {
+        return op("getConversationDraftAttachmentReference", {{"id", str(id)}});
     };
     auto write = [&](const char* name, json::Value seed_val, std::vector<json::Value> steps) {
         entries.emplace_back(name, object({
@@ -10321,20 +10307,13 @@ void profile_chat_media_references_dao(const fs::path& scenarios) {
             msg("m-10", "c-1", {.images = array({str("f.png")})}),
         }, {}),
         {
-            attachments(std::nullopt, 100),
-            attachments(std::nullopt, 3),
-            attachments(std::string("m-02"), 100),
-            attachments(std::string("m-10"), 100),
-            attachments(std::string(""), 100),
-            attachments(std::nullopt, 0),
-            attachments(std::nullopt, 100, std::string("c.png")),
-            attachments(std::nullopt, 100, std::string("b.png")),
-            attachments(std::nullopt, 100, std::string("legacy2")),
-            attachments(std::nullopt, 100, std::string("missing")),
-            attachments(std::nullopt, 100, std::string("c")),
-            attachments(std::nullopt, 100, std::string("A.PNG")),
-            attachments(std::nullopt, 100, std::string("  ")),
-            attachments(std::nullopt, 100, std::string("[")),
+            first_page("c-1", 100),
+            first_page("c-1", 3),
+            next_page("c-1", "m-02", 100),
+            next_page("c-1", "m-10", 100),
+            next_page("c-1", "", 100),
+            first_page("c-1", 0),
+            next_page("c-1", "m-02", 0),
         });
 
     // 02-conversation-attachment-pages
@@ -10369,12 +10348,12 @@ void profile_chat_media_references_dao(const fs::path& scenarios) {
             msg("m-05", "c-1", {.tool_call_json = std::string("   ")}),
         }, {}),
         {
-            tool_media(std::nullopt, 100),
-            tool_media(std::string("m-01"), 100),
-            tool_media(std::nullopt, 1),
-            tool_media(std::string("m-05"), 100),
-            tool_media(std::nullopt, 0),
-            tool_media(std::string(""), 100),
+            first_page("c-1", 100),
+            next_page("c-1", "m-01", 100),
+            first_page("c-1", 1),
+            next_page("c-1", "m-05", 100),
+            first_page("c-1", 0),
+            next_page("c-1", "", 100),
         });
 
     // 04-conversation-draft-pages
@@ -10386,59 +10365,12 @@ void profile_chat_media_references_dao(const fs::path& scenarios) {
          conversation("c-05", "legacy|||format")},
         {}, {}),
         {
-            draft_attachments(std::nullopt, 100),
-            draft_attachments(std::nullopt, 100, std::string("a.png")),
-            draft_attachments(std::nullopt, 100, std::string("b.png")),
-            draft_attachments(std::nullopt, 100, std::string("legacy")),
-            draft_attachments(std::nullopt, 100, std::string("A.png")),
-            draft_attachments(std::string("c-01"), 100),
-            draft_attachments(std::nullopt, 2),
-            draft_attachments(std::nullopt, 0),
-            draft_attachments(std::string(""), 100),
-        });
-
-    // 05-new-chat-draft
-    write("05-new-chat-draft", seed(
-        {conversation("c-1")}, {},
-        {object({
-            {"id", number(0)},
-            {"draftAttachments", str("[\"new.png\"]")},
-            {"modelId", str("mdl-1")},
-            {"systemPromptId", str("sp-1")},
-            {"conversationSettingsJson", str("{\"temperature\":0.2}")},
-            {"draftText", str("hello")},
-        })}),
-        {
-            new_chat(),
-            new_chat(std::string("new.png")),
-            new_chat(std::string("NEW.PNG")),
-            new_chat(std::string("missing")),
-            new_chat(std::string("")),
-        });
-
-    // 06-new-chat-draft-empty
-    write("06-new-chat-draft-empty", seed(
-        {conversation("c-1")}, {},
-        {object({{"id", number(0)}, {"draftAttachments", str("")}})}),
-        {
-            new_chat(),
-            new_chat(std::string("x")),
-        });
-
-    // 07-new-chat-draft-null
-    write("07-new-chat-draft-null", seed(
-        {conversation("c-1")}, {},
-        {object({{"id", number(0)}, {"draftAttachments", null_value()}})}),
-        {
-            new_chat(),
-        });
-
-    // 08-new-chat-draft-absent
-    write("08-new-chat-draft-absent", seed(
-        {conversation("c-1")}, {}, {}),
-        {
-            new_chat(),
-            new_chat(std::string("x")),
+            draft_reference("c-01"),
+            draft_reference("c-02"),
+            draft_reference("c-03"),
+            draft_reference("c-04"),
+            draft_reference("c-05"),
+            draft_reference("c-missing"),
         });
 
     remove_stale(scenarios);

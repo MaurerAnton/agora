@@ -142,7 +142,7 @@ std::vector<std::string> decode_string_array(const Value* value) {
 }
 
 // EmbeddingModelConfig semantics comparison
-bool embedding_model_semantics_changed(const native_backup::EmbeddingModelConfig& before,
+[[maybe_unused]] bool embedding_model_semantics_changed(const native_backup::EmbeddingModelConfig& before,
                                        const native_backup::EmbeddingModelConfig& after) {
     if (before.type != after.type) return true;
     switch (after.type) {
@@ -156,7 +156,7 @@ bool embedding_model_semantics_changed(const native_backup::EmbeddingModelConfig
 }
 
 // SystemPromptEntry equality
-bool system_prompt_equal(const data_export::SystemPromptEntry& a,
+[[maybe_unused]] bool system_prompt_equal(const data_export::SystemPromptEntry& a,
                          const data_export::SystemPromptEntry& b) {
     if (a.id != b.id || a.title != b.title || a.content != b.content) return false;
     if (a.system_items.size() != b.system_items.size()) return false;
@@ -495,12 +495,12 @@ ImportResult DataImporter::import(
     }
     int total_steps = static_cast<int>(active_categories.size());
     int completed = 0;
-    auto step = [&]() {
+    [[maybe_unused]] auto step = [&]() {
         completed++;
         if (on_progress) on_progress(static_cast<float>(completed) / std::max(1, total_steps));
     };
 
-    bool allow_legacy_secrets = manifest.version < native_backup::kSeparateSecretsSinceVersion &&
+    [[maybe_unused]] bool allow_legacy_secrets = manifest.version < native_backup::kSeparateSecretsSinceVersion &&
                                decisions.count(data_export::ExportCategory::ApiKeys) &&
                                decisions.at(data_export::ExportCategory::ApiKeys) != ImportStrategy::Skip;
 

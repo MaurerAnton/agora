@@ -1,9 +1,8 @@
 // Port of data/local/ChatMediaReferencesDao.kt.
 //
-// Five read-only projections over messages/conversations/new_chat_persist. The SQL text below is
-// the annotation text unchanged; `pathToken` binds three times in the message page (IS NULL plus
-// both instr calls) exactly like Room's generated adapter binds the named parameter once per
-// occurrence.
+// Four read-only projections over messages/conversations; the SQL text below is the annotation
+// text unchanged. The combined page method is the Kotlin interface default: a null cursor seeks
+// the first page, a present cursor seeks the next one.
 #include "agora/core/chat_media_references_dao.hpp"
 
 #include <optional>
@@ -49,10 +48,6 @@ std::vector<std::string> decode_string_list(const std::string& raw) {
     return parts;
 }
 
-SqlValue optional_text(const std::optional<std::string>& value) {
-    return value.has_value() ? SqlValue::text_value(*value) : SqlValue::null();
-}
-
 std::vector<MessageAttachmentReference> attachment_rows(const std::vector<SqlRow>& rows) {
     std::vector<MessageAttachmentReference> out;
     out.reserve(rows.size());
@@ -69,20 +64,40 @@ std::vector<MessageAttachmentReference> attachment_rows(const std::vector<SqlRow
 
 }  // namespace
 
-std::vector<MessageAttachmentReference>
-ChatMediaReferencesDao::get_message_attachment_references_page(
-    const std::optional<std::string>& after_id,
-    int limit,
-    const std::optional<std::string>& path_token) {
+std::optional<ConversationDraftAttachmentReference>
+ChatMediaReferencesDao::get_conversation_draft_attachment_reference(std::string_view id) {
+    const std::string sql = "SELECT id, draftAttachments FROM conversations WHERE id = ?";
+    const std::vector<SqlRow> rows = sql_.query(sql, {SqlValue::text_value(std::string(id))});
+    if (rows.empty()) return std::nullopt;
+    kotlin_check(rows.front().size() == 2, "ConversationDraftAttachmentReference: row shape mismatch");
+    ConversationDraftAttachmentReference reference;
+    reference.id = rows.front()[0].as_text();
+    reference.draft_attachments = rows.front()[1].text_or_null();
+    return reference;
+}
+
+std::vector<MessageAttachmentReference> ChatMediaReferencesDao::get_conversation_attachment_first_page(
+    std::string_view conversation_id,
+    int limit) {
     const std::string sql =
-        "SELECT id, images, attachmentMeta FROM messages WHERE (? IS NULL OR id > ?) AND (? IS "
-        "NULL OR instr(images, ?) > 0 OR instr(attachmentMeta, ?) > 0) AND ((images != '' AND "
-        "images != '[]') OR (attachmentMeta IS NOT NULL AND attachmentMeta != '')) ORDER BY id "
+        "SELECT id, images, attachmentMeta FROM messages WHERE conversationId = ? ORDER BY id "
         "LIMIT ?";
-    const SqlValue after = optional_text(after_id);
-    const SqlValue path = optional_text(path_token);
     const std::vector<SqlRow> rows =
-        sql_.query(sql, {after, after, path, path, path, SqlValue::integer_value(limit)});
+        sql_.query(sql, {SqlValue::text_value(std::string(conversation_id)),
+                         SqlValue::integer_value(limit)});
+    return attachment_rows(rows);
+}
+
+std::vector<MessageAttachmentReference> ChatMediaReferencesDao::get_conversation_attachment_next_page(
+    std::string_view conversation_id,
+    const std::string& after_id,
+    int limit) {
+    const std::string sql =
+        "SELECT id, images, attachmentMeta FROM messages WHERE conversationId = ? AND id > ? "
+        "ORDER BY id LIMIT ?";
+    const std::vector<SqlRow> rows =
+        sql_.query(sql, {SqlValue::text_value(std::string(conversation_id)),
+                         SqlValue::text_value(after_id), SqlValue::integer_value(limit)});
     return attachment_rows(rows);
 }
 
@@ -91,78 +106,11 @@ ChatMediaReferencesDao::get_conversation_message_attachment_references_page(
     std::string_view conversation_id,
     const std::optional<std::string>& after_id,
     int limit) {
-    const std::string sql =
-        "SELECT id, images, attachmentMeta FROM messages WHERE conversationId = ? AND (? IS NULL "
-        "OR id > ?) AND ((images != '' AND images != '[]') OR (attachmentMeta IS NOT NULL AND "
-        "attachmentMeta != '')) ORDER BY id LIMIT ?";
-    const SqlValue after = optional_text(after_id);
-    const std::vector<SqlRow> rows =
-        sql_.query(sql, {SqlValue::text_value(std::string(conversation_id)), after, after,
-                         SqlValue::integer_value(limit)});
-    return attachment_rows(rows);
-}
-
-std::vector<MessageToolMediaReference>
-ChatMediaReferencesDao::get_message_tool_media_references_page(
-    const std::optional<std::string>& after_id,
-    int limit) {
-    const std::string sql =
-        "SELECT id, toolCallJson FROM messages WHERE (? IS NULL OR id > ?) AND toolCallJson IS "
-        "NOT NULL AND toolCallJson != '' ORDER BY id LIMIT ?";
-    const SqlValue after = optional_text(after_id);
-    const std::vector<SqlRow> rows =
-        sql_.query(sql, {after, after, SqlValue::integer_value(limit)});
-    std::vector<MessageToolMediaReference> out;
-    out.reserve(rows.size());
-    for (const SqlRow& row : rows) {
-        kotlin_check(row.size() == 2, "MessageToolMediaReference: row shape mismatch");
-        MessageToolMediaReference reference;
-        reference.id = row[0].as_text();
-        reference.tool_call_json = row[1].as_text();
-        out.push_back(std::move(reference));
+    // Kotlin interface default body: if (afterId == null) first page else next page.
+    if (after_id.has_value()) {
+        return get_conversation_attachment_next_page(conversation_id, *after_id, limit);
     }
-    return out;
-}
-
-std::vector<ConversationDraftAttachmentReference>
-ChatMediaReferencesDao::get_conversation_draft_attachment_references_page(
-    const std::optional<std::string>& after_id,
-    int limit,
-    const std::optional<std::string>& path_token) {
-    const std::string sql =
-        "SELECT id, draftAttachments FROM conversations WHERE (? IS NULL OR id > ?) AND (? IS "
-        "NULL OR instr(draftAttachments, ?) > 0) AND draftAttachments IS NOT NULL AND "
-        "draftAttachments != '' ORDER BY id LIMIT ?";
-    const SqlValue after = optional_text(after_id);
-    const SqlValue path = optional_text(path_token);
-    const std::vector<SqlRow> rows =
-        sql_.query(sql, {after, after, path, path, SqlValue::integer_value(limit)});
-    std::vector<ConversationDraftAttachmentReference> out;
-    out.reserve(rows.size());
-    for (const SqlRow& row : rows) {
-        kotlin_check(row.size() == 2, "ConversationDraftAttachmentReference: row shape mismatch");
-        ConversationDraftAttachmentReference reference;
-        reference.id = row[0].as_text();
-        reference.draft_attachments = row[1].as_text();
-        out.push_back(std::move(reference));
-    }
-    return out;
-}
-
-std::optional<NewChatDraftAttachmentReference>
-ChatMediaReferencesDao::get_new_chat_draft_attachment_reference(
-    const std::optional<std::string>& path_token) {
-    const std::string sql =
-        "SELECT draftAttachments FROM new_chat_persist WHERE id = 0 AND (? IS NULL OR "
-        "instr(draftAttachments, ?) > 0) AND draftAttachments IS NOT NULL AND draftAttachments "
-        "!= ''";
-    const SqlValue path = optional_text(path_token);
-    const std::vector<SqlRow> rows = sql_.query(sql, {path, path});
-    if (rows.empty()) return std::nullopt;
-    kotlin_check(rows.front().size() == 1, "NewChatDraftAttachmentReference: row shape mismatch");
-    NewChatDraftAttachmentReference reference;
-    reference.draft_attachments = rows.front().front().as_text();
-    return reference;
+    return get_conversation_attachment_first_page(conversation_id, limit);
 }
 
 }  // namespace agora::core::media_references

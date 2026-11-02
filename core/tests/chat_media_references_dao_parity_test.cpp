@@ -36,8 +36,6 @@ using agora::core::SqlValue;
 using media::ChatMediaReferencesDao;
 using media::ConversationDraftAttachmentReference;
 using media::MessageAttachmentReference;
-using media::MessageToolMediaReference;
-using media::NewChatDraftAttachmentReference;
 
 std::string read_file(const std::filesystem::path& path) {
     std::ifstream stream(path, std::ios::binary);
@@ -457,30 +455,36 @@ json::Value message_attachment_reference_json(const MessageAttachmentReference& 
                         {"attachmentMeta", optional_json_string(entity.attachment_meta)}});
 }
 
-json::Value message_tool_media_reference_json(const MessageToolMediaReference& entity) {
-    return json_object({{"id", json_string(entity.id)},
-                        {"toolCallJson", json_string(entity.tool_call_json)}});
-}
-
 json::Value conversation_draft_attachment_reference_json(
     const ConversationDraftAttachmentReference& entity) {
     return json_object({{"id", json_string(entity.id)},
-                        {"draftAttachments", json_string(entity.draft_attachments)}});
-}
-
-json::Value new_chat_draft_attachment_reference_json(
-    const NewChatDraftAttachmentReference& entity) {
-    return json_object({{"draftAttachments", json_string(entity.draft_attachments)}});
+                        {"draftAttachments", optional_json_string(entity.draft_attachments)}});
 }
 
 // ---- driver --------------------------------------------------------------------------------
 
 json::Value dispatch(const std::string& op, const json::Value& step, ChatMediaReferencesDao& dao) {
-    if (op == "getMessageAttachmentReferencesPage") {
+    if (op == "getConversationDraftAttachmentReference") {
+        const std::optional<ConversationDraftAttachmentReference> row =
+            dao.get_conversation_draft_attachment_reference(required_string(step, "id"));
+        if (!row.has_value()) return json_null();
+        return conversation_draft_attachment_reference_json(*row);
+    }
+    if (op == "getConversationAttachmentFirstPage") {
         const std::vector<MessageAttachmentReference> rows =
-            dao.get_message_attachment_references_page(optional_string(step, "afterId"),
-                                                       required_int(step, "limit"),
-                                                       optional_string(step, "pathToken"));
+            dao.get_conversation_attachment_first_page(required_string(step, "conversationId"),
+                                                       required_int(step, "limit"));
+        std::vector<json::Value> out;
+        for (const MessageAttachmentReference& row : rows) {
+            out.push_back(message_attachment_reference_json(row));
+        }
+        return json_array(std::move(out));
+    }
+    if (op == "getConversationAttachmentNextPage") {
+        const std::vector<MessageAttachmentReference> rows =
+            dao.get_conversation_attachment_next_page(required_string(step, "conversationId"),
+                                                      required_string(step, "afterId"),
+                                                      required_int(step, "limit"));
         std::vector<json::Value> out;
         for (const MessageAttachmentReference& row : rows) {
             out.push_back(message_attachment_reference_json(row));
@@ -497,33 +501,6 @@ json::Value dispatch(const std::string& op, const json::Value& step, ChatMediaRe
             out.push_back(message_attachment_reference_json(row));
         }
         return json_array(std::move(out));
-    }
-    if (op == "getMessageToolMediaReferencesPage") {
-        const std::vector<MessageToolMediaReference> rows =
-            dao.get_message_tool_media_references_page(optional_string(step, "afterId"),
-                                                       required_int(step, "limit"));
-        std::vector<json::Value> out;
-        for (const MessageToolMediaReference& row : rows) {
-            out.push_back(message_tool_media_reference_json(row));
-        }
-        return json_array(std::move(out));
-    }
-    if (op == "getConversationDraftAttachmentReferencesPage") {
-        const std::vector<ConversationDraftAttachmentReference> rows =
-            dao.get_conversation_draft_attachment_references_page(
-                optional_string(step, "afterId"), required_int(step, "limit"),
-                optional_string(step, "pathToken"));
-        std::vector<json::Value> out;
-        for (const ConversationDraftAttachmentReference& row : rows) {
-            out.push_back(conversation_draft_attachment_reference_json(row));
-        }
-        return json_array(std::move(out));
-    }
-    if (op == "getNewChatDraftAttachmentReference") {
-        const std::optional<NewChatDraftAttachmentReference> row =
-            dao.get_new_chat_draft_attachment_reference(optional_string(step, "pathToken"));
-        if (!row.has_value()) return json_null();
-        return new_chat_draft_attachment_reference_json(*row);
     }
     throw KotlinError("IllegalStateException", "unknown operation " + op);
 }

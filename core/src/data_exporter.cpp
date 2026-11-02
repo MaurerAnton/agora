@@ -597,7 +597,7 @@ std::optional<std::string> rewrite_draft_attachments(
 }
 
 /** Rewrites attachmentMeta JSON for export. */
-std::optional<std::string> rewrite_attachment_meta(
+[[maybe_unused]] std::optional<std::string> rewrite_attachment_meta(
     const std::optional<std::string>& raw,
     const std::vector<std::string>& original_image_sources,
     const std::map<int, int>& old_to_new_image_index,
@@ -610,7 +610,7 @@ std::optional<std::string> rewrite_attachment_meta(
 }
 
 /** Extracts tool image paths from toolCallJson. */
-std::vector<std::string> extract_tool_image_paths(const std::optional<std::string>& raw) {
+[[maybe_unused]] std::vector<std::string> extract_tool_image_paths(const std::optional<std::string>& raw) {
     if (!raw) return {};
     auto paths = backup::NativeBackupMediaPolicy::tool_image_paths(*raw);
     return paths;

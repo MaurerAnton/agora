@@ -507,7 +507,7 @@ LoopEntity decode_export_loop(const Value& value) {
     out.cycle_count = optional_int(value, "cycleCount").value_or(0);
     // Nullable with default: absent -> the default 10, explicit null -> null (sanitize maps
     // both to 10, but keep the distinction exactly as kotlinx decodes it).
-    if (const Value* max_cycles = member_of(value, "maxCycles")) {
+    if (member_of(value, "maxCycles") != nullptr) {
         out.max_cycles = optional_int(value, "maxCycles");
     } else {
         out.max_cycles = loop_policy::kDefaultMaxCycles;

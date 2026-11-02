@@ -99,82 +99,43 @@
   },
   "steps": [
     {
-      "op": "getMessageAttachmentReferencesPage",
-      "afterId": null,
+      "op": "getConversationAttachmentFirstPage",
+      "conversationId": "c-1",
       "limit": 100
     },
     {
-      "op": "getMessageAttachmentReferencesPage",
-      "afterId": null,
+      "op": "getConversationAttachmentFirstPage",
+      "conversationId": "c-1",
       "limit": 3
     },
     {
-      "op": "getMessageAttachmentReferencesPage",
+      "op": "getConversationAttachmentNextPage",
+      "conversationId": "c-1",
       "afterId": "m-02",
       "limit": 100
     },
     {
-      "op": "getMessageAttachmentReferencesPage",
+      "op": "getConversationAttachmentNextPage",
+      "conversationId": "c-1",
       "afterId": "m-10",
       "limit": 100
     },
     {
-      "op": "getMessageAttachmentReferencesPage",
+      "op": "getConversationAttachmentNextPage",
+      "conversationId": "c-1",
       "afterId": "",
       "limit": 100
     },
     {
-      "op": "getMessageAttachmentReferencesPage",
-      "afterId": null,
+      "op": "getConversationAttachmentFirstPage",
+      "conversationId": "c-1",
       "limit": 0
     },
     {
-      "op": "getMessageAttachmentReferencesPage",
-      "afterId": null,
-      "limit": 100,
-      "pathToken": "c.png"
-    },
-    {
-      "op": "getMessageAttachmentReferencesPage",
-      "afterId": null,
-      "limit": 100,
-      "pathToken": "b.png"
-    },
-    {
-      "op": "getMessageAttachmentReferencesPage",
-      "afterId": null,
-      "limit": 100,
-      "pathToken": "legacy2"
-    },
-    {
-      "op": "getMessageAttachmentReferencesPage",
-      "afterId": null,
-      "limit": 100,
-      "pathToken": "missing"
-    },
-    {
-      "op": "getMessageAttachmentReferencesPage",
-      "afterId": null,
-      "limit": 100,
-      "pathToken": "c"
-    },
-    {
-      "op": "getMessageAttachmentReferencesPage",
-      "afterId": null,
-      "limit": 100,
-      "pathToken": "A.PNG"
-    },
-    {
-      "op": "getMessageAttachmentReferencesPage",
-      "afterId": null,
-      "limit": 100,
-      "pathToken": "  "
-    },
-    {
-      "op": "getMessageAttachmentReferencesPage",
-      "afterId": null,
-      "limit": 100,
-      "pathToken": "["
+      "op": "getConversationAttachmentNextPage",
+      "conversationId": "c-1",
+      "afterId": "m-02",
+      "limit": 0
     }
   ]
 }

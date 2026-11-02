@@ -59,32 +59,35 @@
   },
   "steps": [
     {
-      "op": "getMessageToolMediaReferencesPage",
-      "afterId": null,
+      "op": "getConversationAttachmentFirstPage",
+      "conversationId": "c-1",
       "limit": 100
     },
     {
-      "op": "getMessageToolMediaReferencesPage",
+      "op": "getConversationAttachmentNextPage",
+      "conversationId": "c-1",
       "afterId": "m-01",
       "limit": 100
     },
     {
-      "op": "getMessageToolMediaReferencesPage",
-      "afterId": null,
+      "op": "getConversationAttachmentFirstPage",
+      "conversationId": "c-1",
       "limit": 1
     },
     {
-      "op": "getMessageToolMediaReferencesPage",
+      "op": "getConversationAttachmentNextPage",
+      "conversationId": "c-1",
       "afterId": "m-05",
       "limit": 100
     },
     {
-      "op": "getMessageToolMediaReferencesPage",
-      "afterId": null,
+      "op": "getConversationAttachmentFirstPage",
+      "conversationId": "c-1",
       "limit": 0
     },
     {
-      "op": "getMessageToolMediaReferencesPage",
+      "op": "getConversationAttachmentNextPage",
+      "conversationId": "c-1",
       "afterId": "",
       "limit": 100
     }

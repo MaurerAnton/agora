@@ -84,53 +84,28 @@
   },
   "steps": [
     {
-      "op": "getConversationDraftAttachmentReferencesPage",
-      "afterId": null,
-      "limit": 100
+      "op": "getConversationDraftAttachmentReference",
+      "id": "c-01"
     },
     {
-      "op": "getConversationDraftAttachmentReferencesPage",
-      "afterId": null,
-      "limit": 100,
-      "pathToken": "a.png"
+      "op": "getConversationDraftAttachmentReference",
+      "id": "c-02"
     },
     {
-      "op": "getConversationDraftAttachmentReferencesPage",
-      "afterId": null,
-      "limit": 100,
-      "pathToken": "b.png"
+      "op": "getConversationDraftAttachmentReference",
+      "id": "c-03"
     },
     {
-      "op": "getConversationDraftAttachmentReferencesPage",
-      "afterId": null,
-      "limit": 100,
-      "pathToken": "legacy"
+      "op": "getConversationDraftAttachmentReference",
+      "id": "c-04"
     },
     {
-      "op": "getConversationDraftAttachmentReferencesPage",
-      "afterId": null,
-      "limit": 100,
-      "pathToken": "A.png"
+      "op": "getConversationDraftAttachmentReference",
+      "id": "c-05"
     },
     {
-      "op": "getConversationDraftAttachmentReferencesPage",
-      "afterId": "c-01",
-      "limit": 100
-    },
-    {
-      "op": "getConversationDraftAttachmentReferencesPage",
-      "afterId": null,
-      "limit": 2
-    },
-    {
-      "op": "getConversationDraftAttachmentReferencesPage",
-      "afterId": null,
-      "limit": 0
-    },
-    {
-      "op": "getConversationDraftAttachmentReferencesPage",
-      "afterId": "",
-      "limit": 100
+      "op": "getConversationDraftAttachmentReference",
+      "id": "c-missing"
     }
   ]
 }

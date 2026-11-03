@@ -13,7 +13,7 @@ public:
     explicit SqliteError(const std::string& message) : std::runtime_error(message) {}
 };
 
-void check_sqlite(int rc, sqlite3* db, const char* context) {
+[[maybe_unused]] void check_sqlite(int rc, sqlite3* db, const char* context) {
     if (rc != SQLITE_OK && rc != SQLITE_DONE && rc != SQLITE_ROW) {
         throw SqliteError(std::string(context) + ": " + sqlite3_errmsg(db));
     }

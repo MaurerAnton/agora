@@ -90,7 +90,7 @@ std::string decode_mac_roman(const std::vector<std::uint8_t>& bytes) {
 std::unordered_map<int, std::string> parse_ttf_name_table(std::istream& in) {
     std::unordered_map<int, std::pair<int, std::string>> results;  // nameId -> (platformId, value)
 
-    std::uint32_t sf_version = read_u32(in);
+    [[maybe_unused]] const std::uint32_t sf_version = read_u32(in);
     std::uint16_t num_tables = read_u16(in);
     in.seekg(6, std::ios::cur);  // searchRange, entrySelector, rangeShift
 
@@ -115,7 +115,7 @@ std::unordered_map<int, std::string> parse_ttf_name_table(std::istream& in) {
 
     // Parse the 'name' table
     in.seekg(static_cast<std::streamoff>(name_offset));
-    std::uint16_t format = read_u16(in);
+    [[maybe_unused]] const std::uint16_t format = read_u16(in);
     std::uint16_t count = read_u16(in);
     std::uint16_t string_offset = read_u16(in);
     std::uint32_t absolute_string_offset = name_offset + string_offset;

@@ -38,7 +38,7 @@ json::Value json_string(std::string text) {
     return value;
 }
 
-json::Value json_literal(std::string text) {
+[[maybe_unused]] json::Value json_literal(std::string text) {
     json::Value value;
     value.kind = json::Kind::Literal;
     value.text = std::move(text);

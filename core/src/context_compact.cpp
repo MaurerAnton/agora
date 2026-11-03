@@ -63,6 +63,9 @@ std::optional<conversation::RunEndReason> run_end_reason_from_wire(
     if (*wire == "USER_STOPPED") return conversation::RunEndReason::UserStopped;
     if (*wire == "PROCESS_RECOVERED") return conversation::RunEndReason::ProcessRecovered;
     if (*wire == "PROVIDER_ERROR") return conversation::RunEndReason::ProviderError;
+    if (*wire == "CONTINUATION_PENDING") {
+        return conversation::RunEndReason::ContinuationPending;
+    }
     throw KotlinError("IllegalArgumentException",
                       "No enum constant com.newoether.agora.model.RunEndReason." + *wire);
 }
@@ -77,6 +80,8 @@ std::string run_end_reason_to_wire(conversation::RunEndReason reason) {
             return "PROCESS_RECOVERED";
         case conversation::RunEndReason::ProviderError:
             return "PROVIDER_ERROR";
+        case conversation::RunEndReason::ContinuationPending:
+            return "CONTINUATION_PENDING";
     }
     throw KotlinError("IllegalArgumentException", "unmapped RunEndReason");
 }

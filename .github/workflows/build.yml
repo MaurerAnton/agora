@@ -44,7 +44,9 @@ jobs:
           ./gradlew :app:testFdroidDebugUnitTest verifyKotlinFileSize --no-daemon --max-workers=2 -Pkotlin.compiler.execution.strategy=in-process --stacktrace
 
       - name: Check Play flavor behavior
-        timeout-minutes: 5
+        # The Play unit-test compile alone now runs past five minutes on the hosted runner;
+        # the Fdroid unit-test step above gets 35 for the same reason.
+        timeout-minutes: 15
         run: |
           ./gradlew :app:testPlayDebugUnitTest --tests 'com.newoether.agora.sandbox.PlaySandboxFlavorTest' --no-daemon --max-workers=2 -Pkotlin.compiler.execution.strategy=in-process --stacktrace
 

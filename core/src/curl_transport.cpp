@@ -49,7 +49,7 @@ Deadline deadline_from_ms(std::int64_t timeout_ms) {
            std::chrono::milliseconds(std::max<std::int64_t>(timeout_ms, 1));
 }
 
-bool deadline_reached(const Deadline deadline) {
+[[maybe_unused]] bool deadline_reached(const Deadline deadline) {
     return std::chrono::steady_clock::now() >= deadline;
 }
 
@@ -75,7 +75,8 @@ CurlEasyPtr make_easy() {
     return CurlEasyPtr(raw);
 }
 
-curl_slist* append_headers(curl_slist* list, const std::vector<conch::Header>& headers) {
+[[maybe_unused]] curl_slist* append_headers(curl_slist* list,
+                                            const std::vector<conch::Header>& headers) {
     for (const auto& h : headers) {
         if (h.name.empty() || h.value.empty()) continue;
         std::string line = h.name + ": " + h.value;
@@ -238,10 +239,10 @@ private:
 
 struct CurlTransport::StreamHandle final : shell_backends::HttpStreamHandle {
     StreamHandle(CURLM* multi, const shell_backends::StreamCall& call,
-                 const std::vector<conch::Header>& headers,
+                 const std::vector<conch::Header>&,
                  const Deadline deadline,
-                 const std::optional<http_policy::ProxyConfig>& proxy_config)
-        : multi_(multi), call_(call), deadline_(deadline) {
+                 const std::optional<http_policy::ProxyConfig>&)
+        : multi_(multi), deadline_(deadline), call_(call) {
         easy_ = make_easy();
         curl_easy_setopt(easy_.get(), CURLOPT_URL, call.url.c_str());
         curl_easy_setopt(easy_.get(), CURLOPT_POST, 1L);

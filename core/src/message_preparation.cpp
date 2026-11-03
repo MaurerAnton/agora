@@ -191,8 +191,9 @@ std::optional<NormalizedToolCalls> normalize_tool_calls(
     if (source_segments.empty() && tool_message.tool_call) {
         const ToolCallData& call = *tool_message.tool_call;
         source_segments.push_back(MessageSegment{
-            "tool", "", call.tool_name, call.arguments, call.result, call.tool_call_id, call.signature,
-            std::nullopt, std::nullopt, std::nullopt, {}, std::nullopt});
+            "tool", "", call.tool_name, call.arguments, call.result, call.tool_call_id,
+            call.signature, std::nullopt, std::nullopt, std::nullopt, {}, std::nullopt,
+            std::nullopt, {}});
     }
     if (source_segments.empty()) return std::nullopt;
 
@@ -425,7 +426,8 @@ ChatMessage tool_round_as_plain_context(const ChatMessage* tool_message,
             const ToolCallData& call = *tool_message->tool_call;
             calls.push_back(MessageSegment{
                 "tool", "", call.tool_name, call.arguments, call.result, call.tool_call_id,
-                call.signature, std::nullopt, std::nullopt, std::nullopt, {}, std::nullopt});
+                call.signature, std::nullopt, std::nullopt, std::nullopt, {}, std::nullopt,
+                std::nullopt, {}});
         }
     }
     std::vector<MessageSegment> results;

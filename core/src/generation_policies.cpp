@@ -34,7 +34,7 @@ bool starts_with(const std::string& text, std::string_view prefix) {
     return text.size() >= prefix.size() && text.compare(0, prefix.size(), prefix) == 0;
 }
 
-std::string trim(const std::string& text) {
+[[maybe_unused]] std::string trim(const std::string& text) {
     std::size_t begin = 0;
     std::size_t end = text.size();
     while (begin < end && std::isspace(static_cast<unsigned char>(text[begin]))) ++begin;
@@ -45,7 +45,8 @@ std::string trim(const std::string& text) {
 // ------------------------------------------------------------------ civil time (UTC)
 
 /** Days from 1970-01-01 for a proleptic Gregorian date (Howard Hinnant's algorithm). */
-std::int64_t days_from_civil(std::int64_t year, unsigned month, unsigned day) {
+[[maybe_unused]] std::int64_t days_from_civil(std::int64_t year, unsigned month,
+                                              unsigned day) {
     year -= month <= 2;
     const std::int64_t era = (year >= 0 ? year : year - 399) / 400;
     const unsigned yoe = static_cast<unsigned>(year - era * 400);

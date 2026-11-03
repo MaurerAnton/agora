@@ -1,4 +1,0 @@
-name|byte_huge
-op|byteImage
-args|999999999|-|-
-result|1536

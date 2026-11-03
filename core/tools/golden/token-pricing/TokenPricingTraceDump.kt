@@ -1,6 +1,6 @@
 // Golden trace driver for the token-pricing cluster:
 //
-//   api/util/tokens/ImageTokenCost.kt          ImageDescriptor, ByteProportionalImageCost
+//   api/util/tokens/ImageTokenCost.kt          ImageDescriptor
 //   api/util/tokens/PixelImageTokenCost.kt     pixel fallback, blocksCovering, proportionalEdge
 //   api/util/tokens/AnthropicModelId.kt        id parsing and version comparison
 //   api/util/tokens/AnthropicImageCost.kt      28x28 patch pricing with tier limits
@@ -23,7 +23,6 @@ package tokens.pricing.golden
 import com.newoether.agora.api.util.tokens.AnthropicEnvelopeCosts
 import com.newoether.agora.api.util.tokens.AnthropicImageCost
 import com.newoether.agora.api.util.tokens.AnthropicModelId
-import com.newoether.agora.api.util.tokens.ByteProportionalImageCost
 import com.newoether.agora.api.util.tokens.ContextCostModel
 import com.newoether.agora.api.util.tokens.EnvelopeCost
 import com.newoether.agora.api.util.tokens.GeminiImageCost
@@ -103,12 +102,6 @@ fun main(args: Array<String>) {
                 if (throws) error("exact count unavailable") else exact
             })
             out.append("result|").append(counter.count(text)).append('\n')
-        }
-        "byteImage" -> {
-            out.append("args|").append(opt(image?.byteSize)).append('|')
-                .append(opt(image?.pixelWidth)).append('|').append(opt(image?.pixelHeight))
-                .append('\n')
-            out.append("result|").append(ByteProportionalImageCost.tokens(image!!)).append('\n')
         }
         "anthropicTier" -> {
             val model = root.requiredText("model")

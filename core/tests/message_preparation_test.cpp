@@ -66,12 +66,6 @@ TEST(prep_safety_margin_rounds_up) {
 
 TEST(prep_image_rules_by_pixels) {
     const prep::ImageDescriptor pixels{std::nullopt, 1024, 768};
-    const prep::ImageDescriptor bytes{768000, std::nullopt, std::nullopt};
-    const prep::ImageDescriptor unknown;
-
-    // Byte proportional: 768 KiB -> 1000 tokens inside the [256, 1536] window; unknown -> 1024.
-    CHECK_EQ(std::int64_t{1000}, prep::byte_proportional_image_tokens(bytes));
-    CHECK_EQ(std::int64_t{1024}, prep::byte_proportional_image_tokens(unknown));
 
     // OpenAI tile rule (gpt-4.1 family): short side scaled to 768, 512px tiles, +85 base.
     CHECK_EQ(std::int64_t{85 + 2 * 2 * 170}, prep::openai_tile_image_tokens(1024, 768, 85, 170));

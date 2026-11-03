@@ -210,11 +210,6 @@ std::string run_scenario(const std::filesystem::path& path) {
         trace += "args|" + esc(text) + "|" + opt(exact) + "|" + bool_text(throws) + "\n";
         trace += "result|" + std::to_string(tp::local_model_text_tokens(text, exact, throws)) +
                  "\n";
-    } else if (op == "byteImage") {
-        const prep::ImageDescriptor image = read_image(root);
-        trace += "args|" + opt(image.byte_size) + "|" + opt(image.pixel_width) + "|" +
-                 opt(image.pixel_height) + "\n";
-        trace += "result|" + std::to_string(prep::byte_proportional_image_tokens(image)) + "\n";
     } else if (op == "anthropicTier") {
         const std::string model = required_text(root, "model");
         trace += "args|" + esc(model) + "\n";

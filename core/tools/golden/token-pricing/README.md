@@ -16,7 +16,6 @@ the message-preparation stand's own subset) plus the one piece that was genuinel
 | --- | --- |
 | `HeuristicTextTokenCounter` | `prep::heuristic_count` |
 | `LocalModelTextCounter` | `agora::core::token_pricing::local_model_text_tokens` (ported by this module) |
-| `ByteProportionalImageCost` | `prep::byte_proportional_image_tokens` |
 | `PixelImageTokenCost` fallback | inside each `prep::*_image_tokens` |
 | `AnthropicModelId` | `prep::AnthropicModelId`, `prep::parse_anthropic_model_id`, `prep::anthropic_version_at_least` |
 | `AnthropicImageCost` | `prep::anthropic_image_tokens` + `prep::anthropic_high_resolution_for_model` |
@@ -36,7 +35,7 @@ message-preparation golden stays green.
 
 | File | Role |
 | --- | --- |
-| `api/util/tokens/ImageTokenCost.kt` | `ImageDescriptor`, `ByteProportionalImageCost` |
+| `api/util/tokens/ImageTokenCost.kt` | `ImageDescriptor` |
 | `api/util/tokens/PixelImageTokenCost.kt` | pixel fallback, `blocksCovering`, `proportionalEdge` |
 | `api/util/tokens/AnthropicModelId.kt` | id parsing and `versionAtLeast` |
 | `api/util/tokens/AnthropicImageCost.kt` | 28x28 visual tokens with tier caps |
@@ -124,7 +123,6 @@ One operation per file; `op` selects it:
 | --- | --- | --- |
 | `heuristic` | `text` | tokens |
 | `local` | `text`, `exact` (nullable), `throws` | tokens |
-| `byteImage` | `image` | tokens |
 | `anthropicTier` | `model` | `STANDARD` / `HIGH_RESOLUTION` |
 | `anthropicImage` | `model`, `image` | tokens |
 | `geminiImage` | `image` | tokens |

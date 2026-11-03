@@ -38,6 +38,10 @@ As a consequence, Agora is relicensed. **v2.2.0 and later are released under GPL
 
 Agora is an open-source Android client for using your own model accounts and endpoints. It stores conversations locally, sends model requests directly to the selected provider, supports non-linear message branches and Context Compact, and can extend agent runs with MCP, automation, search, memory, local models, and remote shell tools.
 
+> **This repository is a fork.** It tracks [newo-ether/Agora](https://github.com/newo-ether/Agora)
+> and adds a C++ implementation of the app core plus a short list of user-visible improvements.
+> See **[FORK.md](FORK.md)** for exactly what differs from upstream.
+
 ## Screenshots
 
 <table>

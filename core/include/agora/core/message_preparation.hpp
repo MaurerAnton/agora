@@ -166,9 +166,6 @@ std::int64_t heuristic_count(std::string_view text);
 /** HeuristicPixelImageCost: dimension-only 32 px proxy, 1024 reserved when dimensions are unknown. */
 std::int64_t heuristic_pixel_image_tokens(const ImageDescriptor& image);
 
-/** ByteProportionalImageCost. */
-std::int64_t byte_proportional_image_tokens(const ImageDescriptor& image);
-
 /** OpenAiTileImageCost / OpenAiPatchImageCost (the two published OpenAI image rules). */
 std::int64_t openai_tile_image_tokens(std::int32_t width, std::int32_t height, std::int32_t base_tokens,
                                       std::int32_t tile_tokens);

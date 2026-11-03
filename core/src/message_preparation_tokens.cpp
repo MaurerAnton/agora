@@ -266,14 +266,6 @@ std::int64_t heuristic_pixel_image_tokens(const ImageDescriptor& image) {
     return blocks_covering(*image.pixel_width, 32) * blocks_covering(*image.pixel_height, 32);
 }
 
-std::int64_t byte_proportional_image_tokens(const ImageDescriptor& image) {
-    static constexpr std::int64_t kBytesPerToken = 768;
-    static constexpr std::int64_t kMinTokens = 256;
-    static constexpr std::int64_t kMaxTokens = 1536;
-    static constexpr std::int64_t kUnknownTokens = 1024;
-    if (!image.byte_size || *image.byte_size <= 0) return kUnknownTokens;
-    return std::clamp(*image.byte_size / kBytesPerToken, kMinTokens, kMaxTokens);
-}
 
 std::int64_t openai_tile_image_tokens(std::int32_t width, std::int32_t height,
                                       std::int32_t base_tokens, std::int32_t tile_tokens) {

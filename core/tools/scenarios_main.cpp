@@ -12951,24 +12951,6 @@ void profile_token_pricing(const fs::path& scenarios) {
     local("local_empty_negative", "", -3);
     local("local_long_run", "abcdefghij");
 
-    // ---- ByteProportionalImageCost ----
-    auto byte_image = [&](const char* name, json::Value desc) {
-        auto fields = op_fields("byteImage");
-        fields.emplace_back("image", std::move(desc));
-        add(name, std::move(fields));
-    };
-    byte_image("byte_unknown", image());
-    byte_image("byte_zero", image(0));
-    byte_image("byte_negative", image(-5));
-    byte_image("byte_one_block", image(768));
-    byte_image("byte_500", image(384000));
-    byte_image("byte_1024", image(786432));
-    byte_image("byte_1536", image(1179648));
-    byte_image("byte_huge", image(999999999));
-    byte_image("byte_just_below", image(767));
-    byte_image("byte_255", image(195840));
-    byte_image("byte_257", image(197376));
-
     // ---- AnthropicImageCost.tierForModelName ----
     auto anthropic_tier = [&](const char* name, const char* model) {
         auto fields = op_fields("anthropicTier");

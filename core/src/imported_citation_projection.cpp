@@ -175,7 +175,7 @@ U16 trim_units(const U16& text) {
 std::string to_utf8(const U16& text) { return utf16::to_utf8(text); }
 U16 from_utf8(std::string_view text) { return utf16::from_utf8(text); }
 
-std::size_t utf16_index_of(const U16& haystack, const U16& needle, std::size_t from) {
+[[maybe_unused]] std::size_t utf16_index_of(const U16& haystack, const U16& needle, std::size_t from) {
     if (needle.empty() || needle.size() > haystack.size()) return kNpos;
     for (std::size_t i = from; i + needle.size() <= haystack.size(); ++i) {
         if (haystack.compare(i, needle.size(), needle) == 0) return i;

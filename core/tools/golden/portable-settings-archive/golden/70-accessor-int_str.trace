@@ -1,1 +1,1 @@
-{"calls":[{"name":"saveWebSearchNumResults","value":{"int":7}},{"name":"invalidatePortableModelCaches","value":{"none":true}}],"warnings":[]}
+{"calls":[{"name":"saveWebSearchNumResults","value":{"int":7}},{"name":"imageQuality.update","value":{"mode":null,"customMaxLongEdge":null,"customJpegQuality":null}},{"name":"invalidatePortableModelCaches","value":{"none":true}}],"warnings":[]}

@@ -1,4 +1,6 @@
 name|meta_export_items_without_an_index_claim_nothing
 fn|rewriteAttachmentMetaForExport
-result|string|{"items":[{"type":"image","file_name":"two.png","unavailable":true},{"type":"image","file_name":"one.png","image_index":0},{"type":"image","file_name":"two.png","image_index":1}]}
-missing|1
+call|archiveEntryForSource|/orig/one.png|-
+call|archiveEntryForSource|/orig/two.png|-
+result|string|{"items":[{"type":"image","file_name":"two.png","unavailable":true},{"type":"image","file_name":"one.png","image_index":0,"unavailable":true,"imageArtifacts":[{"path":"","mimeType":"application/octet-stream","sizeBytes":0,"unavailable":true}]},{"type":"image","file_name":"two.png","image_index":1,"unavailable":true,"imageArtifacts":[{"path":"","mimeType":"application/octet-stream","sizeBytes":0,"unavailable":true}]}]}
+missing|3

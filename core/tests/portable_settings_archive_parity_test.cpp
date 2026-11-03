@@ -432,6 +432,11 @@ archive::SettingsSnapshot read_snapshot(const Value& root) {
     snapshot.web_search_provider = read_string(s, "webSearchProvider");
     snapshot.web_search_num_results = read_int(s, "webSearchNumResults");
     snapshot.web_search_base_url = read_string(s, "webSearchBaseUrl");
+    if (const Value* image_quality = field(s, "imageQuality"); image_quality != nullptr) {
+        snapshot.image_quality_mode = read_string(*image_quality, "mode");
+        snapshot.image_quality_max_long_edge = read_int(*image_quality, "customMaxLongEdge");
+        snapshot.image_quality_jpeg_quality = read_int(*image_quality, "customJpegQuality");
+    }
     snapshot.image_gen_enabled = read_bool(s, "imageGenEnabled");
     snapshot.image_gen_model = read_nullable_string(s, "imageGenModel");
     snapshot.image_gen_size = read_string(s, "imageGenSize");
@@ -450,6 +455,20 @@ archive::SettingsSnapshot read_snapshot(const Value& root) {
     snapshot.shell_enabled = read_bool(s, "shellEnabled");
     snapshot.shell_confirm_enabled = read_bool(s, "shellConfirmEnabled");
     snapshot.ask_user_enabled = read_bool(s, "askUserEnabled");
+    snapshot.ask_user_timeout_minutes = read_int(s, "askUserTimeoutMinutes");
+    snapshot.todo_enabled = read_bool(s, "todoEnabled");
+    snapshot.subagent_tools_enabled = read_bool(s, "subagentToolsEnabled");
+    snapshot.subagent_delete_enabled = read_bool(s, "subagentDeleteEnabled");
+    snapshot.subagent_max_total = read_int(s, "subagentMaxTotal");
+    snapshot.subagent_max_concurrent = read_int(s, "subagentMaxConcurrent");
+    snapshot.subagent_capsule_display_mode = read_string(s, "subagentCapsuleDisplayMode");
+    if (const Value* value = field(s, "subagentEnabledModels");
+        value == nullptr || (value->kind == Kind::Literal && value->text == "null")) {
+        snapshot.subagent_enabled_models = std::nullopt;
+    } else {
+        snapshot.subagent_enabled_models = read_string_set(s, "subagentEnabledModels");
+    }
+    snapshot.subagent_recommended_model = read_nullable_string(s, "subagentRecommendedModel");
     snapshot.shell_devices = read_shell_list(s, "shellDevices");
     snapshot.automation_tools_enabled = read_bool(s, "automationToolsEnabled");
     snapshot.exact_execution_enabled = read_bool(s, "exactExecutionEnabled");
@@ -810,6 +829,21 @@ public:
     }
     void save_web_search_base_url(const std::string& url) override {
         append("saveWebSearchBaseUrl", string_value(std::optional<std::string>(url)));
+    }
+    void update_image_quality(const std::optional<std::string>& mode,
+                              const std::optional<int>& custom_max_long_edge,
+                              const std::optional<int>& custom_jpeg_quality) override {
+        std::string value = "{\"mode\":";
+        if (mode.has_value()) append_quoted(value, *mode);
+        else value += "null";
+        value += ",\"customMaxLongEdge\":";
+        if (custom_max_long_edge.has_value()) value += std::to_string(*custom_max_long_edge);
+        else value += "null";
+        value += ",\"customJpegQuality\":";
+        if (custom_jpeg_quality.has_value()) value += std::to_string(*custom_jpeg_quality);
+        else value += "null";
+        value.push_back('}');
+        append("imageQuality.update", value);
     }
     void save_image_gen_enabled(bool enabled) override {
         append("saveImageGenEnabled", boolean_value(enabled));

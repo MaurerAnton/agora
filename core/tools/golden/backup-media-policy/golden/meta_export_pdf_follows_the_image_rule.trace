@@ -1,4 +1,4 @@
 name|meta_export_pdf_follows_the_image_rule
 fn|rewriteAttachmentMetaForExport
-result|string|{"items":[{"type":"pdf","unavailable":true},{"type":"pdf","image_index":1}]}
-missing|1
+result|string|{"items":[{"type":"pdf","unavailable":true,"imageArtifacts":[{"path":"","mimeType":"application/octet-stream","sizeBytes":0,"unavailable":true}]},{"type":"pdf","image_index":1,"unavailable":true,"imageArtifacts":[{"path":"","mimeType":"application/octet-stream","sizeBytes":0,"unavailable":true}]}]}
+missing|2

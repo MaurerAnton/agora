@@ -22,6 +22,10 @@ class ChatDatabase private constructor(
 
     fun chatDao(): ChatDao = miniRoom.create(ChatDao::class.java)
 
+    fun semanticIndexDao(): SemanticIndexDao = miniRoom.create(SemanticIndexDao::class.java)
+
+    fun maintenanceDebtDao(): MaintenanceDebtDao = miniRoom.create(MaintenanceDebtDao::class.java)
+
     fun close() {
         connection.close()
     }

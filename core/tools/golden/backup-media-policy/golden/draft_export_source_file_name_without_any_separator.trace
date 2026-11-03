@@ -1,5 +1,5 @@
 name|draft_export_source_file_name_without_any_separator
 fn|rewriteDraftAttachmentsForExport
 call|archiveEntryForSource|report.pdf|media/report.pdf
-result|attachments|[{"localId":"a1","uri":"media/report.pdf","type":"image","fileName":"report.pdf","localPath":"media/report.pdf"}]
+result|attachments|[{"localId":"a1","uri":"media/report.pdf","type":"image","fileName":"report.pdf","localPath":"media/report.pdf","imageArtifacts":[{"path":"media/report.pdf","mimeType":"application/octet-stream","sizeBytes":0}]}]
 missing|0

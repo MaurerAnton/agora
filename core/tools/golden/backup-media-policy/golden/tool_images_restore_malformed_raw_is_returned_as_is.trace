@@ -1,4 +1,4 @@
-name|tool_images_restore_malformed_raw_is_returned_as_is
+name|tool_images_restore_malformed_raw_fails_the_decode
 fn|restoreToolImagePaths
-result|string|[{"type": "answer"
+error|JsonDecodingException
 missing|0

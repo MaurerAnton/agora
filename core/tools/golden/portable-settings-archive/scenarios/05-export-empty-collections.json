@@ -97,7 +97,24 @@
     "embeddingModels": [],
     "shellDevices": [],
     "mcpServers": [],
-    "customProviders": []
+    "customProviders": [],
+    "askUserTimeoutMinutes": 5,
+    "todoEnabled": true,
+    "subagentCapsuleDisplayMode": "compact",
+    "subagentDeleteEnabled": true,
+    "subagentEnabledModels": null,
+    "subagentMaxConcurrent": 2,
+    "subagentMaxTotal": 4,
+    "subagentModelIds": [
+      "m1"
+    ],
+    "subagentRecommendedModel": null,
+    "subagentToolsEnabled": true,
+    "imageQuality": {
+      "mode": "BALANCED",
+      "customMaxLongEdge": 2048,
+      "customJpegQuality": 85
+    }
   },
   "customFontIncluded": false
 }

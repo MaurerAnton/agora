@@ -27,6 +27,7 @@ add_library(agora_core_lib STATIC
     src/backup_media_policy.cpp
     src/attachment_clone_session.cpp
     src/semantic_index_ledger.cpp
+    src/semantic_metadata.cpp
     src/maintenance_debt.cpp
     src/runtime_recovery.cpp
     src/context_compact.cpp

@@ -341,6 +341,9 @@ std::string encode_native_backup_secrets(const native_backup::NativeBackupSecret
                 // sshPassword comes after apiKey; item_first tracks the inner object only.
                 write_string_member(out, "sshPassword", device_secrets.ssh_password, item_first);
             }
+                // The merged secrets model always ships the key-material fields (empty when absent).
+                write_string_member(out, "sshPrivateKey", device_secrets.ssh_private_key, item_first);
+                write_string_member(out, "sshKeyPassphrase", device_secrets.ssh_key_passphrase, item_first);
             out += '}';
         }
         out += '}';
@@ -631,6 +634,9 @@ std::string encode_export_chat_entity(
     write_string_member(out, "id", conv.id, first);
     write_string_member(out, "title", conv.title, first);
     write_optional_int_member(out, "lastUpdated", std::make_optional(conv.last_updated), first);
+    // createdAt is a nullable Kotlin property; the entity always carries a value, so it
+    // is always encoded (0 for fixtures that predate the column).
+    write_optional_int_member(out, "createdAt", std::make_optional(conv.created_at), first);
     // dataChangedAt defaults to 0 and is omitted there (encodeDefaults = false).
     if (conv.data_changed_at != 0) {
         write_optional_int_member(out, "dataChangedAt", std::make_optional(conv.data_changed_at),
@@ -871,7 +877,7 @@ static json::Value make_string_array_value(const std::vector<std::string>& items
 /** ExportChatEntity's Kotlin declaration order (for member insertion). */
 static const std::vector<std::string>& chat_entity_key_order() {
     static const std::vector<std::string> order = {
-        "id", "title", "lastUpdated", "dataChangedAt", "isPinned", "selectedBranchesJson",
+        "id", "title", "lastUpdated", "createdAt", "dataChangedAt", "isPinned", "selectedBranchesJson",
         "systemPromptId", "modelId", "taskId", "origin", "graduated",
         "selectedRunBranchesJson", "draftText", "draftAttachments", "conversationSettings",
     };
@@ -1027,14 +1033,14 @@ static ConversationArchiveResult write_conversation_archive(
             std::map<int, int> old_to_new_image_index;
             std::vector<std::string> archived;
             for (size_t i = 0; i < images.size(); ++i) {
+                // Kotlin keeps one slot per original image: blank and unresolvable sources stay
+                // "" so the archived list preserves the source positions, and the index map is
+                // the identity (rewriteAttachmentMetaForExport remaps by source itself).
+                old_to_new_image_index[static_cast<int>(i)] = static_cast<int>(i);
                 auto entry = ctx.copy_source(images[i], native_backup::kImageMediaPrefix,
                                              &referenced_media);
-                if (entry) {
-                    old_to_new_image_index[static_cast<int>(i)] =
-                        static_cast<int>(archived.size());
-                    archived.push_back(*entry);
-                    ++ctx.images_exported;
-                }
+                if (entry) ++ctx.images_exported;
+                archived.push_back(entry.value_or(std::string{}));
             }
             archived_images_by_message[*message_id] = archived;
             attachment_meta_by_message[*message_id] =
@@ -1099,8 +1105,9 @@ static ConversationArchiveResult write_conversation_archive(
         }
 
         if (get_string_member(obj, "toolCallJson").has_value()) {
-            // Kotlin: rewriteToolImagePathsForExport(raw, trackedLookup) — unchanged when the
-            // raw is blank or undecodable, replaced otherwise; null raw stays absent.
+            // Kotlin: rewriteToolImagePathsForExport(raw, trackedLookup, missingResourceCount)
+            // — unchanged when the raw is blank; otherwise strict: undecodable raw throws, each
+            // unresolvable image counts a missing resource; null raw stays absent.
             std::optional<std::string> raw_tool = get_string_member(obj, "toolCallJson");
             std::optional<std::string> rewritten;
             if (raw_tool.has_value()) {
@@ -1108,7 +1115,8 @@ static ConversationArchiveResult write_conversation_archive(
                     rewritten = *raw_tool;
                 } else {
                     auto new_value = backup::NativeBackupMediaPolicy::rewrite_tool_image_paths_for_export(
-                        raw_tool, ctx.tracked_lookup(referenced_media));
+                        raw_tool, ctx.tracked_lookup(referenced_media),
+                        [&ctx]() { ++ctx.missing_resource_count; });
                     rewritten = new_value;
                 }
             }

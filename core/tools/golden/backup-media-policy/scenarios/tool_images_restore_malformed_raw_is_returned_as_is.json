@@ -1,6 +1,6 @@
 {
   "archiveVersion": 4,
   "fn": "restoreToolImagePaths",
-  "name": "tool_images_restore_malformed_raw_is_returned_as_is",
+  "name": "tool_images_restore_malformed_raw_fails_the_decode",
   "raw": "[{\"type\": \"answer\""
 }

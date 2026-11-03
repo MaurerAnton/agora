@@ -53,6 +53,8 @@ sources=(
     "$app/data/SettingsPreferenceSchema.kt"
     "$app/data/SettingsDefaults.kt"
     "$app/data/DefaultSystemPrompt.kt"
+    "$app/tool/BuiltInToolNames.kt"
+    "$app/data/HtmlPreviewGuidance.kt"
     "$app/data/SettingsContracts.kt"
     "$app/data/NativeBackupFormat.kt"
     "$app/data/CustomProviderConfig.kt"
@@ -64,6 +66,11 @@ sources=(
     "$here/platform/DebugLog.kt"
     "$here/platform/SettingsManager.kt"
     "$here/PortableSettingsArchiveTraceDump.kt"
+    "$app/data/SubagentLimits.kt"
+    "$app/data/ImageQualitySettings.kt"
+    "$here/platform/ToolCallDisplayModes.kt"
+    "$here/stubs/androidx/datastore/core/DataStore.kt"
+    "$here/stubs/androidx/datastore/preferences/core/DatastoreEdit.kt"
 )
 for source in "${sources[@]}"; do
     [[ -f "$source" ]] || { echo "error: missing source $source" >&2; exit 2; }

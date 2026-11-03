@@ -6,5 +6,5 @@ call|archiveEntryForSource|/frames/f1.jpg|-
 call|archiveEntryForSource|/frames/f2.jpg|media/f2.jpg
 call|archiveEntryForSource|/pre/p0.jpg|media/p0.jpg
 call|archiveEntryForSource|/pre/gone.jpg|-
-result|attachments|[{"localId":"a1","uri":"media/live.png","type":"image","fileName":"live.png","processedFrames":["media/f0.jpg","media/f2.jpg"],"preRenderedPaths":["media/p0.jpg"],"localPath":"media/live.png"}]
-missing|0
+result|attachments|[{"localId":"a1","uri":"media/live.png","type":"image","fileName":"live.png","processedFrames":["media/f0.jpg","","media/f2.jpg"],"preRenderedPaths":["media/p0.jpg",""],"localPath":"media/live.png","imageArtifacts":[{"path":"media/live.png","mimeType":"application/octet-stream","sizeBytes":0}]}]
+missing|2

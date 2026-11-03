@@ -101,6 +101,9 @@ struct SettingsSnapshot {
     std::string web_search_provider;
     int web_search_num_results = 0;
     std::string web_search_base_url;
+    std::string image_quality_mode = "BALANCED";
+    int image_quality_max_long_edge = 2048;
+    int image_quality_jpeg_quality = 85;
     bool image_gen_enabled = false;
     std::optional<std::string> image_gen_model;
     std::string image_gen_size;
@@ -118,6 +121,15 @@ struct SettingsSnapshot {
     bool shell_enabled = false;
     bool shell_confirm_enabled = false;
     bool ask_user_enabled = false;
+    int ask_user_timeout_minutes = 5;
+    bool todo_enabled = false;
+    bool subagent_tools_enabled = false;
+    bool subagent_delete_enabled = false;
+    int subagent_max_total = 16;
+    int subagent_max_concurrent = 4;
+    std::string subagent_capsule_display_mode;
+    std::optional<std::vector<std::string>> subagent_enabled_models;
+    std::optional<std::string> subagent_recommended_model;
     std::vector<ShellDeviceConfig> shell_devices;
     bool automation_tools_enabled = false;
     bool exact_execution_enabled = false;
@@ -205,6 +217,11 @@ public:
     virtual void save_web_search_provider(const std::string& provider) = 0;
     virtual void save_web_search_num_results(int count) = 0;
     virtual void save_web_search_base_url(const std::string& url) = 0;
+
+    /** Port of SettingsManager.imageQuality.update — the restore path always calls it. */
+    virtual void update_image_quality(const std::optional<std::string>& mode,
+                                      const std::optional<int>& custom_max_long_edge,
+                                      const std::optional<int>& custom_jpeg_quality) = 0;
     virtual void save_image_gen_enabled(bool enabled) = 0;
     virtual void save_image_gen_model(const std::optional<std::string>& model) = 0;
     virtual void save_image_gen_size(const std::string& size) = 0;

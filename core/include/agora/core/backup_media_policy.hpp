@@ -22,6 +22,17 @@ inline bool is_local_sandbox(AttachmentStorage storage) {
 /** Port of model/AttachmentMeta.kt's AttachmentImportState. */
 enum class AttachmentImportState { processing, ready, failed };
 
+/** Port of model/ChatMessage.kt's ToolImageAttachment (a typealias for ImageArtifact). */
+struct ToolImageAttachment {
+    std::string path;
+    std::string mime_type;
+    std::int64_t size_bytes = 0;
+    std::optional<int> width;
+    std::optional<int> height;
+    int policy_version = 0;
+    bool unavailable = false;
+};
+
 /** Port of model/AttachmentMeta.kt's AttachmentItem. Field order matches the Kotlin declaration. */
 struct AttachmentItem {
     std::optional<std::string> original_uri;
@@ -39,6 +50,7 @@ struct AttachmentItem {
     std::optional<std::string> sandbox_path;
     std::optional<std::int64_t> file_size;
     bool unavailable = false;
+    std::vector<ToolImageAttachment> image_artifacts;
 };
 
 /** Port of model/AttachmentMeta.kt's AttachmentMeta. */
@@ -69,16 +81,7 @@ struct SelectedAttachment {
     AttachmentImportState import_state = AttachmentImportState::ready;
     std::optional<std::string> prepared_text;
     bool unavailable = false;
-};
-
-/** Port of model/ChatMessage.kt's ToolImageAttachment. */
-struct ToolImageAttachment {
-    std::string path;
-    std::string mime_type;
-    std::int64_t size_bytes = 0;
-    std::optional<int> width;
-    std::optional<int> height;
-    std::string sha256;
+    std::vector<ToolImageAttachment> image_artifacts;
 };
 
 /**
@@ -180,12 +183,18 @@ class NativeBackupMediaPolicy {
         const MissingResource& on_missing);
 
     static std::optional<std::string> rewrite_tool_image_paths_for_export(
-        const std::optional<std::string>& raw, const SourceLookup& archive_entry);
+        const std::optional<std::string>& raw, const SourceLookup& archive_entry,
+        const MissingResource& on_missing = []( ) {});
 
     static std::optional<std::string> restore_attachment_meta(
         const std::optional<std::string>& raw, int archive_version,
         const std::map<int, int>& old_to_new_image_index,
-        const std::map<int, std::string>& legacy_video_uris, const PathLookup& restored_uri);
+        const std::map<int, std::string>& legacy_video_uris, const PathLookup& restored_uri,
+        const PathLookup& restored_path = [](std::string_view) {
+            return std::optional<std::string>{};
+        },
+        const std::vector<std::string>& original_image_sources = {},
+        const std::map<int, std::string>& legacy_image_paths = {});
 
     static std::optional<std::string> restore_tool_image_paths(
         const std::optional<std::string>& raw, int archive_version, const PathLookup& restored_path);

@@ -232,11 +232,14 @@ MessageEntity message_from_row(const SqlRow& row) {
 }
 
 ChatEntity chat_from_row(const SqlRow& row) {
-    kotlin_check(row.size() == 15, "ChatEntity: row shape mismatch");
+    // The merged schema appends todoJson/parentConversationId/createdAt/subagent* to SELECT *;
+    // older fixtures stay at fifteen columns, where createdAt simply defaults to zero.
+    kotlin_check(row.size() >= 15, "ChatEntity: row shape mismatch");
     ChatEntity chat;
     chat.id = row[0].as_text();
     chat.title = row[1].as_text();
     chat.last_updated = row[2].as_integer();
+    chat.created_at = row.size() > 17 ? row[17].as_integer() : 0;
     chat.data_changed_at = row[3].as_integer();
     chat.selected_branches_json = row[4].text_or_null();
     chat.system_prompt_id = row[5].text_or_null();

@@ -2877,13 +2877,14 @@ void profile_provider_identity(const fs::path& source, const fs::path& out) {
         "import java.util.UUID\n"
         "import java.nio.charset.StandardCharsets\n"
         "\n";
-    static constexpr std::array<const char*, 10> kMembers = {
+    static constexpr std::array<const char*, 11> kMembers = {
         "    private const val PREFIX =",
         "    private const val STABLE_ID_PATTERN =",
         "    private val stableIdPattern = Regex(",
         "    private val stableIdInTextPattern = Regex(",
         "    fun legacyId(name: String): String =",
         "    fun isStableId(value: String): Boolean = stableIdPattern.matches(value.trim())",
+        "    fun mayContainStableId(",
         "    fun replaceStableIdsForDisplay(",
         "    fun normalize(",
         "    private fun generateUniqueId(",

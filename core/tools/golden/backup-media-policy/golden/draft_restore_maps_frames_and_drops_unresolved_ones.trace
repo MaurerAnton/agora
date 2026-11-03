@@ -5,5 +5,5 @@ call|restoredPathForArchiveEntry|/archive/f0.jpg|/data/f0.jpg
 call|restoredPathForArchiveEntry|/archive/f1.jpg|-
 call|restoredPathForArchiveEntry|/archive/p0.jpg|/data/p0.jpg
 call|restoredPathForArchiveEntry|/archive/gone.jpg|-
-result|attachments|[{"localId":"a1","uri":"file:///data/x.png","type":"image","processedFrames":["/data/f0.jpg"],"preRenderedPaths":["/data/p0.jpg"],"localPath":"/data/x.png"}]
+result|attachments|[{"localId":"a1","uri":"file:///data/x.png","type":"image","fileName":"x.png","processedFrames":["/data/f0.jpg",""],"preRenderedPaths":["/data/p0.jpg",""],"localPath":"/data/x.png","imageArtifacts":[{"path":"/data/x.png","mimeType":"application/octet-stream","sizeBytes":0}]}]
 missing|0

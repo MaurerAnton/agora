@@ -42,6 +42,7 @@ echo "Compiling the Kotlin reference sources..."
 "$kotlinc_bin" -Xplugin="$plugin" -cp "$jars" -d "$classes" \
     "$here/build/MessageSegment.kt" \
     "$here/../backup-media-policy/PlatformStubs.kt" \
+    "$app/model/ImageArtifact.kt" \
     "$app/util/Constants.kt" \
     "$app/model/MessagePersistenceGuard.kt" \
     "$here/MessagePersistenceTraceDump.kt" 2>&1 | grep -v "^warning:" || true

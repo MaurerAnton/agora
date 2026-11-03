@@ -1,5 +1,5 @@
 name|draft_export_source_file_name_strips_query_and_fragment
 fn|rewriteDraftAttachmentsForExport
 call|archiveEntryForSource|/cache/pic.png?v=2#frag|media/pic.png
-result|attachments|[{"localId":"a1","uri":"media/pic.png","type":"image","fileName":"pic.png","localPath":"media/pic.png"}]
+result|attachments|[{"localId":"a1","uri":"media/pic.png","type":"image","fileName":"pic.png","localPath":"media/pic.png","imageArtifacts":[{"path":"media/pic.png","mimeType":"application/octet-stream","sizeBytes":0}]}]
 missing|0

@@ -50,6 +50,7 @@ struct ChatEntity {
     std::string id;
     std::string title;
     std::int64_t last_updated = 0;
+    std::int64_t created_at = 0;
     std::int64_t data_changed_at = 0;
     std::optional<std::string> selected_branches_json;
     std::optional<std::string> system_prompt_id;

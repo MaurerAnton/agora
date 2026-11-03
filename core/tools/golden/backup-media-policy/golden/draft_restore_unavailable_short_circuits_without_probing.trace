@@ -1,4 +1,5 @@
 name|draft_restore_unavailable_short_circuits_without_probing
 fn|restoreDraftAttachments
-result|attachments|[{"localId":"a1","uri":"","type":"image","fileName":"x.png","unavailable":true}]
+call|restoredPrimaryForArchiveEntry|/archive/x.png|/data/x.png\pfile:///data/x.png
+result|attachments|[{"localId":"a1","uri":"file:///data/x.png","type":"image","fileName":"x.png","localPath":"/data/x.png","unavailable":true,"imageArtifacts":[{"path":"/data/x.png","mimeType":"application/octet-stream","sizeBytes":0}]}]
 missing|0

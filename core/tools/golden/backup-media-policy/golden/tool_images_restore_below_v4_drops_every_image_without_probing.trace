@@ -1,4 +1,4 @@
 name|tool_images_restore_below_v4_drops_every_image_without_probing
 fn|restoreToolImagePaths
-result|string|[{"type":"answer"}]
+result|string|[{"type":"answer","toolImages":[{"path":"","mimeType":"image/png","sizeBytes":0,"unavailable":true}]}]
 missing|0

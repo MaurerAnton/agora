@@ -3,6 +3,7 @@ package backup.policy.golden
 import com.newoether.agora.data.NativeBackupMediaPolicy
 import com.newoether.agora.model.AttachmentImportState
 import com.newoether.agora.model.AttachmentStorage
+import com.newoether.agora.model.ImageArtifact
 import com.newoether.agora.model.SelectedAttachment
 import kotlinx.serialization.builtins.ListSerializer
 import kotlinx.serialization.builtins.serializer
@@ -122,6 +123,19 @@ private fun JsonObject.attachment(): SelectedAttachment = SelectedAttachment(
     importState = importStateOf(str("importState")),
     preparedText = str("preparedText"),
     unavailable = bool("unavailable", false),
+    imageArtifacts = (this["imageArtifacts"] as? JsonArray)?.map { element ->
+        val artifact = element.jsonObject
+        ImageArtifact(
+            path = artifact.requiredStr("path"),
+            mimeType = artifact.requiredStr("mimeType"),
+            sizeBytes = artifact.long("sizeBytes")
+                ?: error("imageArtifacts sizeBytes is required"),
+            width = artifact.int("width"),
+            height = artifact.int("height"),
+            policyVersion = artifact.int("policyVersion") ?: 0,
+            unavailable = artifact.bool("unavailable", false),
+        )
+    } ?: emptyList(),
 )
 
 private fun JsonObject.attachments(): List<SelectedAttachment> =
@@ -207,6 +221,10 @@ private class Trace {
         lines += "result|string|${opt(value)}"
     }
 
+    fun error(failure: Throwable) {
+        lines += "error|${failure::class.simpleName ?: failure::class.java.name}"
+    }
+
     fun render(): String = lines.joinToString("\n") + "\nmissing|$missing\n"
 }
 
@@ -268,6 +286,7 @@ private fun run(root: JsonObject, trace: Trace) {
         "rewriteToolImagePathsForExport" -> trace.string(
             NativeBackupMediaPolicy.rewriteToolImagePathsForExport(
                 raw = root.raw(),
+                onMissingResource = { trace.missingResource() },
                 archiveEntryForSource = { source ->
                     val entry = archiveEntry[source]
                     trace.call("archiveEntryForSource", source, entry)
@@ -311,6 +330,12 @@ fun main(args: Array<String>) {
     val root = Json.parseToJsonElement(scenario.readText()).jsonObject
     val trace = Trace()
     trace.head(root.str("name") ?: scenario.nameWithoutExtension, root.requiredStr("fn"))
-    run(root, trace)
+    // The merged policy lets kotlinx decode failures escape the strict readers; the trace pins
+    // the exception class the same way the message-persistence-guard dump does.
+    try {
+        run(root, trace)
+    } catch (failure: Exception) {
+        trace.error(failure)
+    }
     print(trace.render())
 }

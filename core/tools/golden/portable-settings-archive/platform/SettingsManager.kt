@@ -18,6 +18,12 @@ import kotlinx.serialization.json.buildJsonArray
 import kotlinx.serialization.json.buildJsonObject
 import kotlinx.serialization.json.put
 
+/** The archive touches imageQuality only through this store surface. */
+interface ImageQualityStore {
+    val settings: Flow<ImageQualitySettings>
+    suspend fun update(mode: String? = null, customMaxLongEdge: Int? = null, customJpegQuality: Int? = null)
+}
+
 class SettingsManager(
     strings: Map<String, String> = emptyMap(),
     nullableStrings: Map<String, String?> = emptyMap(),
@@ -33,6 +39,8 @@ class SettingsManager(
     shellDevices: List<ShellDeviceConfig> = emptyList(),
     mcpServers: List<McpServerConfig> = emptyList(),
     customProviders: List<CustomProviderConfig> = emptyList(),
+    nullableStringSets: Map<String, Set<String>?> = emptyMap(),
+    imageQualitySettings: ImageQualitySettings = ImageQualitySettings(),
 ) {
     private val stringValues = strings
     private val nullableStringValues = nullableStrings
@@ -48,6 +56,8 @@ class SettingsManager(
     private val shellDeviceValues = shellDevices
     private val mcpServerValues = mcpServers
     private val customProviderValues = customProviders
+    private val nullableStringSetValues = nullableStringSets
+    private val imageQualitySettingsValue = imageQualitySettings
 
     val calls = mutableListOf<JsonObject>()
 
@@ -61,6 +71,7 @@ class SettingsManager(
     private fun float(key: String): Flow<Float> = flowOf(floatValues.getValue(key))
     private fun nullableFloat(key: String): Flow<Float?> = flowOf(nullableFloatValues.getValue(key))
     private fun stringSet(key: String): Flow<Set<String>> = flowOf(stringSetValues.getValue(key))
+    private fun nullableStringSet(key: String): Flow<Set<String>?> = flowOf(nullableStringSetValues.getValue(key))
     private fun stringMap(key: String): Flow<Map<String, String>> = flowOf(stringMapValues.getValue(key))
     private fun boolMap(key: String): Flow<Map<String, Boolean>> = flowOf(boolMapValues.getValue(key))
 
@@ -127,6 +138,31 @@ class SettingsManager(
     val shellEnabled: Flow<Boolean> get() = bool("shellEnabled")
     val shellConfirmEnabled: Flow<Boolean> get() = bool("shellConfirmEnabled")
     val askUserEnabled: Flow<Boolean> get() = bool("askUserEnabled")
+    val askUserTimeoutMinutes: Flow<Int> get() = int("askUserTimeoutMinutes")
+    val imageQuality: ImageQualityStore = object : ImageQualityStore {
+        override val settings: Flow<ImageQualitySettings> = flowOf(imageQualitySettingsValue)
+
+        override suspend fun update(
+            mode: String?,
+            customMaxLongEdge: Int?,
+            customJpegQuality: Int?,
+        ) {
+            record("imageQuality.update", buildJsonObject {
+                put("mode", mode)
+                put("customMaxLongEdge", customMaxLongEdge)
+                put("customJpegQuality", customJpegQuality)
+            })
+        }
+    }
+    val subagentCapsuleDisplayMode: Flow<String> get() = string("subagentCapsuleDisplayMode")
+    val subagentDeleteEnabled: Flow<Boolean> get() = bool("subagentDeleteEnabled")
+    val subagentEnabledModels: Flow<Set<String>?> get() = nullableStringSet("subagentEnabledModels")
+    val subagentMaxConcurrent: Flow<Int> get() = int("subagentMaxConcurrent")
+    val subagentMaxTotal: Flow<Int> get() = int("subagentMaxTotal")
+    val subagentModelIds: Flow<Set<String>> get() = stringSet("subagentModelIds")
+    val subagentRecommendedModel: Flow<String?> get() = nullableString("subagentRecommendedModel")
+    val subagentToolsEnabled: Flow<Boolean> get() = bool("subagentToolsEnabled")
+    val todoEnabled: Flow<Boolean> get() = bool("todoEnabled")
     val shellDevices: Flow<List<ShellDeviceConfig>> get() = flowOf(shellDeviceValues)
     val automationToolsEnabled: Flow<Boolean> get() = bool("automationToolsEnabled")
     val exactExecutionEnabled: Flow<Boolean> get() = bool("exactExecutionEnabled")
@@ -343,6 +379,27 @@ class SettingsManager(
     suspend fun saveShellConfirmEnabled(enabled: Boolean) =
         record("saveShellConfirmEnabled", boolValue(enabled))
     suspend fun saveAskUserEnabled(enabled: Boolean) = record("saveAskUserEnabled", boolValue(enabled))
+    suspend fun saveAskUserTimeoutMinutes(minutes: Int) =
+        record("saveAskUserTimeoutMinutes", intValue(minutes))
+    suspend fun saveSubagentCapsuleDisplayMode(mode: String) =
+        record("saveSubagentCapsuleDisplayMode", stringValue(mode))
+    suspend fun saveSubagentDeleteEnabled(enabled: Boolean) =
+        record("saveSubagentDeleteEnabled", boolValue(enabled))
+    suspend fun saveSubagentEnabledModels(models: Set<String>?, merge: Boolean = false) =
+        record("saveSubagentEnabledModels", buildJsonObject {
+            put("models", models?.let { values -> buildJsonArray { values.forEach { add(it) } } } ?: JsonNull)
+            put("merge", merge)
+        })
+    suspend fun saveSubagentLimits(maxTotal: Int? = null, maxConcurrent: Int? = null) =
+        record("saveSubagentLimits", buildJsonObject {
+            put("maxTotal", maxTotal)
+            put("maxConcurrent", maxConcurrent)
+        })
+    suspend fun saveSubagentRecommendedModel(model: String?) =
+        record("saveSubagentRecommendedModel", stringValue(model))
+    suspend fun saveSubagentToolsEnabled(enabled: Boolean) =
+        record("saveSubagentToolsEnabled", boolValue(enabled))
+    suspend fun saveTodoEnabled(enabled: Boolean) = record("saveTodoEnabled", boolValue(enabled))
     suspend fun saveShellDevices(devices: List<ShellDeviceConfig>) =
         record("saveShellDevices", buildJsonObject {
             put("shellDevices", buildJsonArray { devices.forEach { add(it.toJson()) } })

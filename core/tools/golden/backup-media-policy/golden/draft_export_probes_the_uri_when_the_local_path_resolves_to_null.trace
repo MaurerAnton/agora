@@ -2,5 +2,5 @@ name|draft_export_probes_the_uri_when_the_local_path_resolves_to_null
 fn|rewriteDraftAttachmentsForExport
 call|archiveEntryForSource|/gone.png|-
 call|archiveEntryForSource|file:///tmp/thing.png|media/thing.png
-result|attachments|[{"localId":"a1","uri":"media/thing.png","type":"image","fileName":"gone.png","localPath":"media/thing.png"}]
+result|attachments|[{"localId":"a1","uri":"media/thing.png","type":"image","fileName":"gone.png","localPath":"media/thing.png","imageArtifacts":[{"path":"media/thing.png","mimeType":"application/octet-stream","sizeBytes":0}]}]
 missing|0

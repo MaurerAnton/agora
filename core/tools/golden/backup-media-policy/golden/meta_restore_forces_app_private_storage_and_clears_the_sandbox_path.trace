@@ -1,4 +1,4 @@
 name|meta_restore_forces_app_private_storage_and_clears_the_sandbox_path
 fn|restoreAttachmentMeta
-result|string|{"items":[{"type":"image","image_index":0}]}
+result|string|{"items":[{"type":"image","image_index":0,"unavailable":true,"imageArtifacts":[{"path":"","mimeType":"application/octet-stream","sizeBytes":0,"unavailable":true}]}]}
 missing|0

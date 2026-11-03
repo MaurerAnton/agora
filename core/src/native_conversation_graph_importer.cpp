@@ -15,6 +15,7 @@
 #include "agora/core/openai_request.hpp"
 #include "agora/core/native_run_archive.hpp"
 #include "agora/core/regeneration_tree_repair.hpp"
+#include "agora/core/semantic_metadata.hpp"
 
 namespace agora::core::native_graph_import {
 
@@ -34,7 +35,7 @@ namespace {
 // ---------------------------------------------------------------------------------------------
 
 const char* const kImporterSerialPrefix =
-    "com.newoether.agora.data.NativeConversationGraphImporter.";
+    "com.newoether.agora.data.";
 
 [[noreturn]] void missing_field(std::string_view entity, std::string_view field) {
     throw Exception("MissingFieldException",
@@ -404,9 +405,9 @@ ExportChat decode_export_chat(const Value& value) {
         throw Exception("SerializationException", "Expected JSON object");
     }
     ExportChat out;
-    out.id = require_string(value, "id", "ExportChatEntity");
-    out.title = require_string(value, "title", "ExportChatEntity");
-    out.last_updated = require_long(value, "lastUpdated", "ExportChatEntity");
+    out.id = require_string(value, "id", "NativeExportChatEntity");
+    out.title = require_string(value, "title", "NativeExportChatEntity");
+    out.last_updated = require_long(value, "lastUpdated", "NativeExportChatEntity");
     out.is_pinned = optional_bool(value, "isPinned", false);
     out.selected_branches_json = optional_string(value, "selectedBranchesJson");
     out.system_prompt_id = optional_string(value, "systemPromptId");
@@ -445,12 +446,12 @@ ExportRun decode_export_run(const Value& value) {
         throw Exception("SerializationException", "Expected JSON object");
     }
     ExportRun out;
-    out.id = require_string(value, "id", "ExportRunEntity");
-    out.conversation_id = require_string(value, "conversationId", "ExportRunEntity");
+    out.id = require_string(value, "id", "NativeExportRunEntity");
+    out.conversation_id = require_string(value, "conversationId", "NativeExportRunEntity");
     out.parent_run_id = optional_string(value, "parentRunId");
     out.status = optional_string(value, "status").value_or("COMPLETED");
-    out.started_at = require_long(value, "startedAt", "ExportRunEntity");
-    out.last_checkpoint_at = require_long(value, "lastCheckpointAt", "ExportRunEntity");
+    out.started_at = require_long(value, "startedAt", "NativeExportRunEntity");
+    out.last_checkpoint_at = require_long(value, "lastCheckpointAt", "NativeExportRunEntity");
     out.stop_requested_at = optional_long(value, "stopRequestedAt");
     out.ended_at = optional_long(value, "endedAt");
     out.end_reason = optional_string(value, "endReason");
@@ -480,17 +481,17 @@ TaskEntity decode_export_task(const Value& value) {
         throw Exception("SerializationException", "Expected JSON object");
     }
     TaskEntity out;
-    out.id = require_string(value, "id", "ExportTaskEntity");
-    out.name = require_string(value, "name", "ExportTaskEntity");
-    out.prompt = require_string(value, "prompt", "ExportTaskEntity");
+    out.id = require_string(value, "id", "NativeExportTaskEntity");
+    out.name = require_string(value, "name", "NativeExportTaskEntity");
+    out.prompt = require_string(value, "prompt", "NativeExportTaskEntity");
     out.system_prompt = optional_string(value, "systemPrompt");
     out.system_prompt_id = optional_string(value, "systemPromptId");
     out.model_id = optional_string(value, "modelId");
-    out.cron_expr = require_string(value, "cronExpr", "ExportTaskEntity");
+    out.cron_expr = require_string(value, "cronExpr", "NativeExportTaskEntity");
     out.run_at = optional_long(value, "runAt");
     out.next_run_at = optional_long(value, "nextRunAt").value_or(0);
     out.enabled = optional_bool(value, "enabled", true);
-    out.created_at = require_long(value, "createdAt", "ExportTaskEntity");
+    out.created_at = require_long(value, "createdAt", "NativeExportTaskEntity");
     out.last_run_at = optional_long(value, "lastRunAt");
     return out;
 }
@@ -500,8 +501,8 @@ LoopEntity decode_export_loop(const Value& value) {
         throw Exception("SerializationException", "Expected JSON object");
     }
     LoopEntity out;
-    out.conversation_id = require_string(value, "conversationId", "ExportLoopEntity");
-    out.interval_ms = require_long(value, "intervalMs", "ExportLoopEntity");
+    out.conversation_id = require_string(value, "conversationId", "NativeExportLoopEntity");
+    out.interval_ms = require_long(value, "intervalMs", "NativeExportLoopEntity");
     out.prompt = optional_string(value, "prompt");
     out.next_fire_at = optional_long(value, "nextFireAt").value_or(0);
     out.cycle_count = optional_int(value, "cycleCount").value_or(0);
@@ -551,10 +552,10 @@ ExportMessage decode_export_message(const Value& value) {
         throw Exception("SerializationException", "Expected JSON object");
     }
     ExportMessage out;
-    out.id = require_string(value, "id", "ExportMessageEntity");
-    out.conversation_id = require_string(value, "conversationId", "ExportMessageEntity");
+    out.id = require_string(value, "id", "NativeExportMessageEntity");
+    out.conversation_id = require_string(value, "conversationId", "NativeExportMessageEntity");
     out.parent_id = optional_string(value, "parentId");
-    out.text = require_string(value, "text", "ExportMessageEntity");
+    out.text = require_string(value, "text", "NativeExportMessageEntity");
     out.images = optional_string_array(value, "images");
     out.thoughts = optional_string(value, "thoughts");
     out.thought_title = optional_string(value, "thoughtTitle");
@@ -568,7 +569,7 @@ ExportMessage decode_export_message(const Value& value) {
     out.generation_duration_ms = optional_long(value, "generationDurationMs");
     out.status = optional_string(value, "status").value_or("SUCCESS");
     out.participant = optional_string(value, "participant").value_or("MODEL");
-    out.timestamp = require_long(value, "timestamp", "ExportMessageEntity");
+    out.timestamp = require_long(value, "timestamp", "NativeExportMessageEntity");
     out.thought_time_ms = optional_long(value, "thoughtTimeMs");
     out.model_name = optional_string(value, "modelName");
     out.tool_call_json = optional_string(value, "toolCallJson");
@@ -1280,24 +1281,29 @@ namespace agora::core::native_graph_import {
     const run_recovery::Participant participant = parse_participant(exported.participant);
     run_recovery::MessageStatus status = parse_message_status(exported.status);
 
+    // Kotlin: one restored slot per original entry. Below v4 the legacy path map supplies both
+    // the values and the sequential old->new remap; from v4 the map is the identity and the value
+    // is the extracted absolute path ("" when the entry did not survive).
     std::map<int, int> old_to_new_image_index;
     std::vector<std::string> restored_images;
+    std::map<int, std::string> legacy_image_paths;
     if (archive_version >= 4) {
         for (std::size_t i = 0; i < exported.images.size(); ++i) {
+            const int index = static_cast<int>(i);
+            old_to_new_image_index[index] = index;
             const auto it = restored.archive_files.find(exported.images[i]);
-            if (it != restored.archive_files.end()) {
-                old_to_new_image_index[static_cast<int>(i)] =
-                    static_cast<int>(restored_images.size());
-                restored_images.push_back(it->second.uri);
-            }
+            restored_images.push_back(it == restored.archive_files.end()
+                                          ? std::string{}
+                                          : it->second.absolute_path);
         }
     } else {
         const auto images_it = restored.legacy_images_by_message.find(exported.id);
         if (images_it != restored.legacy_images_by_message.end()) {
             // Kotlin: toSortedMap() — ordered by the numeric index.
-            for (const auto& [old_index, uri] : images_it->second) {
+            legacy_image_paths = images_it->second;
+            for (const auto& [old_index, path] : legacy_image_paths) {
                 old_to_new_image_index[old_index] = static_cast<int>(restored_images.size());
-                restored_images.push_back(uri);
+                restored_images.push_back(path);
             }
         }
     }
@@ -1356,7 +1362,13 @@ namespace agora::core::native_graph_import {
             const auto it = restored.archive_files.find(std::string(entry));
             if (it == restored.archive_files.end()) return std::nullopt;
             return it->second.uri;
-        });
+        },
+        [&](std::string_view entry) -> std::optional<std::string> {
+            const auto it = restored.archive_files.find(std::string(entry));
+            if (it == restored.archive_files.end()) return std::nullopt;
+            return it->second.absolute_path;
+        },
+        exported.images, legacy_image_paths);
     message.run_id = assignment.run_id;
     message.run_sequence = assignment.run_sequence;
     message.consumed_at_pass = assignment.consumed_at_pass;
@@ -1465,13 +1477,16 @@ std::string NativeConversationGraphImporter::import_graph(
     const std::string transfer_id = callbacks_.new_uuid();
     const std::int64_t at = callbacks_.now_millis();
 
-    // withSemanticGraphMutation: one RoomDatabase transaction level; the block runs first and
-    // the semantic deletions/reconcile follow, exactly like the verbatim extension.
+    // withSemanticGraphMutation: one RoomDatabase transaction level. The snapshot's ledger rows
+    // are admitted first; then only the block runs — Kotlin ignores clearMessageIds and
+    // clearAllEmbeddings here because every public graph write maintains its own metadata.
     sql_.begin();
     try {
+        semantic_metadata::SemanticMetadataDao meta(sql_);
+        semantic_metadata::insert_snapshot_ledger(semantic_, snapshot, at);
         if (strategy == ImportStrategy::Replace) {
             dao_.delete_all_loops();
-            dao_.delete_all_conversations();
+            semantic_metadata::delete_all_conversations(dao_, semantic_, meta, at);
             dao_.delete_all_tasks();
         }
         for (const TaskEntity& task : headers.tasks) dao_.upsert_task(task);
@@ -1486,7 +1501,7 @@ std::string NativeConversationGraphImporter::import_graph(
                 it != planned.legacy_run_selections.end()) {
                 written.selected_run_branches_json = encode_stored_selections(it->second);
             }
-            dao_.upsert_conversation(written);
+            semantic_metadata::upsert_conversation(dao_, meta, written, at);
         }
 
         for (const auto& run : planned.runs) {
@@ -1515,7 +1530,9 @@ std::string NativeConversationGraphImporter::import_graph(
                 }
                 for (const auto& message : batch) {
                     const bool known = existing.find(message.id) != existing.end();
-                    if (!known || !message.images.empty()) dao_.upsert_message(message);
+                    if (!known || !message.images.empty()) {
+                        semantic_metadata::upsert_message(dao_, meta, message, at);
+                    }
                 }
                 batch.clear();
             };
@@ -1556,20 +1573,9 @@ std::string NativeConversationGraphImporter::import_graph(
             ::agora::core::chat_dao::ConversationSettingsImportTransferEntity{
                 0, transfer_id, settings_json, mode});
 
-        // Semantic mutation tail: block already ran; now clear and request the reconcile.
-        if (strategy == ImportStrategy::Replace) {
-            semantic_.delete_all_embeddings();
-        } else {
-            std::vector<std::string> clear_ids;
-            clear_ids.reserve(planned.assignments.size());
-            for (const auto& assignment : planned.assignments) {
-                if (!assignment.message_id.empty()) clear_ids.push_back(assignment.message_id);
-            }
-            if (!clear_ids.empty()) semantic_.delete_embeddings_for_messages(clear_ids);
-        }
-        semantic_index::request_semantic_reconcile(semantic_, snapshot, at);
-
-        // The maintenance enqueues ride the same transaction (Kotlin order).
+        // The maintenance enqueues ride the same transaction (Kotlin order). The old clear and
+        // reconcile tail is gone: withSemanticGraphMutation ends with the block, and the per-write
+        // maintenance above already dropped stale vectors and dirtied the ledger.
         for (const std::string_view kind : kReconcileKinds) {
             debt_.enqueue(kind, kReconcileIdentity, at);
         }

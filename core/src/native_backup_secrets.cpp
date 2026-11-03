@@ -54,9 +54,11 @@ NativeBackupSecrets capture(const SettingsStore& settings) {
     NativeBackupSecrets secrets;
 
     for (const ShellDeviceConfig& device : settings.shell_devices()) {
-        if (not_blank(device.api_key) || not_blank(device.ssh_password)) {
+        if (not_blank(device.api_key) || not_blank(device.ssh_password) ||
+            not_blank(device.ssh_private_key) || not_blank(device.ssh_key_passphrase)) {
             put(secrets.shell_devices, device.id,
-                ShellDeviceSecrets{device.api_key, device.ssh_password});
+                ShellDeviceSecrets{device.api_key, device.ssh_password, device.ssh_private_key,
+                                   device.ssh_key_passphrase});
         }
     }
 

@@ -1,4 +1,4 @@
 name|meta_export_image_without_surviving_indices_is_unavailable
 fn|rewriteAttachmentMetaForExport
-result|string|{"items":[{"type":"image","image_index":7,"page_count":1}]}
-missing|0
+result|string|{"items":[{"type":"image","page_count":3,"unavailable":true,"imageArtifacts":[{"path":"","mimeType":"application/octet-stream","sizeBytes":0,"unavailable":true},{"path":"","mimeType":"application/octet-stream","sizeBytes":0,"unavailable":true},{"path":"","mimeType":"application/octet-stream","sizeBytes":0,"unavailable":true}]}]}
+missing|1

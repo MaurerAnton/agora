@@ -1,5 +1,5 @@
 name|draft_export_name_with_separators_stops_at_the_last_backslash
 fn|rewriteDraftAttachmentsForExport
 call|archiveEntryForSource|content://media/a\pb\sc\\d.png|media/a-b-c-d.png
-result|attachments|[{"localId":"a1","uri":"media/a-b-c-d.png","type":"image","fileName":"d.png","localPath":"media/a-b-c-d.png"}]
+result|attachments|[{"localId":"a1","uri":"media/a-b-c-d.png","type":"image","fileName":"d.png","localPath":"media/a-b-c-d.png","imageArtifacts":[{"path":"media/a-b-c-d.png","mimeType":"application/octet-stream","sizeBytes":0}]}]
 missing|0

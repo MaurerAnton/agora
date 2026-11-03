@@ -1,5 +1,5 @@
 name|draft_restore_ignores_a_blank_local_path
 fn|restoreDraftAttachments
 call|restoredPrimaryForArchiveEntry|file:///other.png|/data/other.png\pfile:///data/other.png
-result|attachments|[{"localId":"a1","uri":"file:///data/other.png","type":"image","localPath":"/data/other.png"}]
+result|attachments|[{"localId":"a1","uri":"file:///data/other.png","type":"image","fileName":"other.png","localPath":"/data/other.png","imageArtifacts":[{"path":"/data/other.png","mimeType":"application/octet-stream","sizeBytes":0}]}]
 missing|0

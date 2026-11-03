@@ -1,4 +1,4 @@
 name|tool_image_paths_malformed_image_entry_yields_nothing
 fn|toolImagePaths
-result|strings|[]
+result|strings|["/data/a.png"]
 missing|0

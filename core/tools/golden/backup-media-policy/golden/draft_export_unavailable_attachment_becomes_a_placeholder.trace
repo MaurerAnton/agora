@@ -1,4 +1,5 @@
 name|draft_export_unavailable_attachment_becomes_a_placeholder
 fn|rewriteDraftAttachmentsForExport
-result|attachments|[{"localId":"a1","uri":"","type":"image","fileName":"live.png","unavailable":true}]
-missing|1
+call|archiveEntryForSource|/tmp/live.png|media/live.png
+result|attachments|[{"localId":"a1","uri":"media/live.png","type":"image","fileName":"live.png","localPath":"media/live.png","unavailable":true,"imageArtifacts":[{"path":"media/live.png","mimeType":"application/octet-stream","sizeBytes":0}]}]
+missing|0

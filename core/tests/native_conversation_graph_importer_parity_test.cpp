@@ -163,7 +163,7 @@ bool json_equal(const json::Value& left, const json::Value& right) {
     return true;
 }
 
-std::string excerpt(const json::Value& value, std::size_t limit = 500) {
+std::string excerpt(const json::Value& value, std::size_t limit = 100000) {
     std::string text = json::to_kotlin_string(value);
     if (text.size() > limit) return text.substr(0, limit) + "...";
     return text;

@@ -23,6 +23,7 @@ import com.newoether.agora.data.CustomProviderConfig
 import com.newoether.agora.data.DataExporter
 import com.newoether.agora.data.EmbeddingModelConfig
 import com.newoether.agora.data.McpServerConfig
+import com.newoether.agora.data.ImageQualitySettings
 import com.newoether.agora.data.SettingsManager
 import com.newoether.agora.data.ShellDeviceConfig
 import com.newoether.agora.data.SystemPromptEntry
@@ -72,6 +73,20 @@ private inline fun <reified T> nullableValue(root: JsonObject, key: String): T? 
     return json.decodeFromJsonElement<T>(element)
 }
 
+/** ImageQualitySettings is a plain data class (not @Serializable), so the snapshot is read field by field. */
+private fun imageQualitySettings(root: JsonObject): ImageQualitySettings {
+    val element = root["imageQuality"] as? JsonObject
+        ?: error("settings snapshot is missing `imageQuality`")
+    fun intOf(key: String): Int = (element[key] as? JsonPrimitive)?.intOrNull
+        ?: error("imageQuality.$key is required")
+    return ImageQualitySettings(
+        mode = (element["mode"] as? JsonPrimitive)?.content
+            ?: error("imageQuality.mode is required"),
+        customMaxLongEdge = intOf("customMaxLongEdge"),
+        customJpegQuality = intOf("customJpegQuality"),
+    )
+}
+
 private fun buildSettings(
     root: JsonObject,
     conversationSettings: Map<String, ConversationSettings>,
@@ -109,6 +124,7 @@ private fun buildSettings(
         "activeEmbeddingModelId" to value<String>(root, "activeEmbeddingModelId"),
         "customFontName" to value<String>(root, "customFontName"),
         "customFontPath" to value<String>(root, "customFontPath"),
+        "subagentCapsuleDisplayMode" to value<String>(root, "subagentCapsuleDisplayMode"),
     ),
     nullableStrings = mapOf(
         "contextCompactModel" to nullableValue<String>(root, "contextCompactModel"),
@@ -116,6 +132,7 @@ private fun buildSettings(
         "imageGenModel" to nullableValue<String>(root, "imageGenModel"),
         "imageTranscriptionModel" to nullableValue<String>(root, "imageTranscriptionModel"),
         "activeSystemPromptId" to nullableValue<String>(root, "activeSystemPromptId"),
+        "subagentRecommendedModel" to nullableValue<String>(root, "subagentRecommendedModel"),
     ),
     booleans = mapOf(
         "accessActiveMemory" to value<Boolean>(root, "accessActiveMemory"),
@@ -159,6 +176,9 @@ private fun buildSettings(
         "titleGenerationNotificationsEnabled" to value<Boolean>(root, "titleGenerationNotificationsEnabled"),
         "visualizeContextRollout" to value<Boolean>(root, "visualizeContextRollout"),
         "webSearchEnabled" to value<Boolean>(root, "webSearchEnabled"),
+        "subagentDeleteEnabled" to value<Boolean>(root, "subagentDeleteEnabled"),
+        "subagentToolsEnabled" to value<Boolean>(root, "subagentToolsEnabled"),
+        "todoEnabled" to value<Boolean>(root, "todoEnabled"),
     ),
     ints = mapOf(
         "contextCompactRetainCount" to value<Int>(root, "contextCompactRetainCount"),
@@ -169,6 +189,9 @@ private fun buildSettings(
         "searchMatchLimit" to value<Int>(root, "searchMatchLimit"),
         "thinkingBudgetTokens" to value<Int>(root, "thinkingBudgetTokens"),
         "webSearchNumResults" to value<Int>(root, "webSearchNumResults"),
+        "askUserTimeoutMinutes" to value<Int>(root, "askUserTimeoutMinutes"),
+        "subagentMaxConcurrent" to value<Int>(root, "subagentMaxConcurrent"),
+        "subagentMaxTotal" to value<Int>(root, "subagentMaxTotal"),
     ),
     nullableInts = mapOf(
         "defaultMaxTokens" to nullableValue<Int>(root, "defaultMaxTokens"),
@@ -186,6 +209,10 @@ private fun buildSettings(
         "customModels" to value(root, "customModels"),
         "enabledModels" to value(root, "enabledModels"),
         "imageTranscriptionEnabledModels" to value(root, "imageTranscriptionEnabledModels"),
+        "subagentModelIds" to value(root, "subagentModelIds"),
+    ),
+    nullableStringSets = mapOf(
+        "subagentEnabledModels" to nullableValue(root, "subagentEnabledModels"),
     ),
     stringMaps = mapOf(
         "modelAliases" to value(root, "modelAliases"),
@@ -204,6 +231,7 @@ private fun buildSettings(
     activeApiKeyIds = activeApiKeyIds,
     webSearchApiKeys = webSearchApiKeys,
     proxyPassword = proxyPassword,
+    imageQualitySettings = imageQualitySettings(root),
 )
 
 fun main(args: Array<String>) {
@@ -372,15 +400,23 @@ private fun render(scenarioFile: File): String = runBlocking {
                     put("missingResourceCount", exported.missingResourceCount)
                 }
             } catch (failure: Throwable) {
+            // A strict decode inside the export surfaces through the Room reader proxy as an
+            // UndeclaredThrowableException; the cause is the contract the core throws directly.
+            val effective = if (failure is java.lang.reflect.UndeclaredThrowableException) {
+                failure.cause ?: failure
+            } else failure
                 buildJsonObject {
                     put("error", buildJsonObject {
-                        put("type", failure::class.simpleName ?: failure::class.java.name)
-                        put("message", failure.message ?: "")
+                        put("type", effective::class.simpleName ?: effective::class.java.name)
+                        put("message", effective.message ?: "")
                     })
                 }
             }
 
-            val archive = if (outputFile?.isFile == true) archiveEntries(outputFile) else JsonArray(emptyList())
+            // A failed export leaves the destination empty; there is nothing to enumerate then.
+            val archive = if (outputFile != null && outputFile.isFile && outputFile.length() > 0L) {
+                archiveEntries(outputFile)
+            } else JsonArray(emptyList())
             steps.add(buildJsonObject {
                 put("op", "export")
                 put("progress", buildJsonArray { progress.forEach { add(it) } })

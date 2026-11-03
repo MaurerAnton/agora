@@ -1011,6 +1011,9 @@ json::Value to_json_object(const SettingsSnapshot& s, bool custom_font_included)
     put_member(out, "webSearchProvider", string_value(s.web_search_provider));
     put_member(out, "webSearchNumResults", int_value(s.web_search_num_results));
     put_member(out, "webSearchBaseUrl", string_value(s.web_search_base_url));
+    put_member(out, "imageQualityMode", string_value(s.image_quality_mode));
+    put_member(out, "imageQualityMaxLongEdge", int_value(s.image_quality_max_long_edge));
+    put_member(out, "imageQualityJpegQuality", int_value(s.image_quality_jpeg_quality));
     put_member(out, "imageGenEnabled", bool_value(s.image_gen_enabled));
     put_nullable_string(out, "imageGenModel", s.image_gen_model);
     put_member(out, "imageGenSize", string_value(s.image_gen_size));
@@ -1031,6 +1034,19 @@ json::Value to_json_object(const SettingsSnapshot& s, bool custom_font_included)
     put_member(out, "shellEnabled", bool_value(s.shell_enabled));
     put_member(out, "shellConfirmEnabled", bool_value(s.shell_confirm_enabled));
     put_member(out, "askUserEnabled", bool_value(s.ask_user_enabled));
+    put_member(out, "askUserTimeoutMinutes", int_value(s.ask_user_timeout_minutes));
+    put_member(out, "todoEnabled", bool_value(s.todo_enabled));
+    put_member(out, "subagentToolsEnabled", bool_value(s.subagent_tools_enabled));
+    put_member(out, "subagentDeleteEnabled", bool_value(s.subagent_delete_enabled));
+    put_member(out, "subagentMaxTotal", int_value(s.subagent_max_total));
+    put_member(out, "subagentMaxConcurrent", int_value(s.subagent_max_concurrent));
+    put_member(out, "subagentCapsuleDisplayMode", string_value(s.subagent_capsule_display_mode));
+    if (s.subagent_enabled_models.has_value()) {
+        put_string_array(out, "subagentEnabledModels", *s.subagent_enabled_models);
+    } else {
+        put_member(out, "subagentEnabledModels", null_value());
+    }
+    put_nullable_string(out, "subagentRecommendedModel", s.subagent_recommended_model);
     std::vector<ShellDeviceConfig> shell_without_secrets;
     for (const ShellDeviceConfig& device : s.shell_devices) {
         shell_without_secrets.push_back(native_backup::without_secrets(device));
@@ -1121,6 +1137,22 @@ RestoreResult restore_from_json_object(const json::Value& obj, const SettingsSna
             // require(value is JsonPrimitive && !value.isString && value.booleanOrNull != null)
             if (!(flag->kind == Kind::Literal && json_boolean(flag).has_value())) {
                 throw IllegalArgumentException("Invalid Anthropic cache switch");
+            }
+        }
+    }
+
+    if (const Value* mode = field(obj, "imageQualityMode"); mode != nullptr) {
+        // require(value is JsonPrimitive && value.isString)
+        if (!(is_primitive(*mode) && mode->kind == Kind::String)) {
+            throw IllegalArgumentException("Invalid image quality mode");
+        }
+    }
+    for (const char* key : {"imageQualityMaxLongEdge", "imageQualityJpegQuality"}) {
+        if (const Value* value = field(obj, key); value != nullptr) {
+            // require(value is JsonPrimitive && !value.isString && value.intOrNull != null)
+            if (!(is_primitive(*value) && value->kind != Kind::String &&
+                  parse_int_literal(value->text).has_value())) {
+                throw IllegalArgumentException("Invalid image quality integer");
             }
         }
     }
@@ -1330,7 +1362,10 @@ RestoreResult restore_from_json_object(const json::Value& obj, const SettingsSna
     // ---- remote embedding models -------------------------------------------------------
     const Value* remote_element = field(obj, "remoteEmbeddingModels");
     if (remote_element == nullptr) remote_element = field(obj, "embeddingModels");
-    if (remote_element != nullptr || options.replace) {
+    // Kotlin: if (remoteModelsElement != null || replace || hasActiveReference)
+    const bool has_active_reference = has_field(obj, "activeRemoteEmbeddingModelId") ||
+                                      has_field(obj, "activeEmbeddingModelId");
+    if (remote_element != nullptr || options.replace || has_active_reference) {
         std::vector<EmbeddingModelConfig> decoded;
         if (remote_element != nullptr) {
             const auto parsed = decode_embedding_list(remote_element);
@@ -1401,15 +1436,23 @@ RestoreResult restore_from_json_object(const json::Value& obj, const SettingsSna
         }
         std::optional<std::string> active;
         if (requested.has_value()) {
-            for (const EmbeddingModelConfig& model : final_models) {
-                if (model.id == *requested) active = *requested;
+            // requestedActive?.takeIf { requested -> finalRemote.any { it.id == requested } }
+            for (const EmbeddingModelConfig& model : final_remote) {
+                if (model.id == *requested) {
+                    active = *requested;
+                    break;
+                }
             }
         }
         if (!active.has_value()) {
+            // previousActive.takeIf { previous -> finalModels.any { it.id == previous &&
+            //     (it.type == LOCAL || (!replace && !hasActiveReference)) } }
             for (const EmbeddingModelConfig& model : final_models) {
                 if (model.id == current.active_embedding_model_id &&
-                    model.type == EmbeddingModelType::Local) {
+                    (model.type == EmbeddingModelType::Local ||
+                     (!options.replace && !has_active_reference))) {
                     active = current.active_embedding_model_id;
+                    break;
                 }
             }
         }
@@ -1431,6 +1474,10 @@ RestoreResult restore_from_json_object(const json::Value& obj, const SettingsSna
     if (const std::optional<std::string> value = string_field(obj, "webSearchBaseUrl")) {
         sink.save_web_search_base_url(*value);
     }
+    // Kotlin calls sm.imageQuality.update unconditionally; absent archive keys restore as null.
+    sink.update_image_quality(string_field(obj, "imageQualityMode"),
+                              int_field(obj, "imageQualityMaxLongEdge"),
+                              int_field(obj, "imageQualityJpegQuality"));
     if (const std::optional<bool> flag = boolean_field(obj, "imageGenEnabled")) {
         sink.save_image_gen_enabled(*flag);
     }

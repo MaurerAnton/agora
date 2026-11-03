@@ -1,4 +1,4 @@
-name|tool_images_export_malformed_raw_is_returned_as_is
+name|tool_images_export_malformed_raw_fails_the_decode
 fn|rewriteToolImagePathsForExport
-result|string|[{"type":
+error|JsonDecodingException
 missing|0

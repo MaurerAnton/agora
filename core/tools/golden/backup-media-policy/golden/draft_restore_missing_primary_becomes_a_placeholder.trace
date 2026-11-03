@@ -1,5 +1,5 @@
 name|draft_restore_missing_primary_becomes_a_placeholder
 fn|restoreDraftAttachments
 call|restoredPrimaryForArchiveEntry|/archive/missing.png|-
-result|attachments|[{"localId":"a1","uri":"","type":"image","fileName":"missing.png","unavailable":true}]
+result|attachments|[{"localId":"a1","uri":"","type":"image","fileName":"missing.png","unavailable":true,"imageArtifacts":[{"path":"","mimeType":"application/octet-stream","sizeBytes":0,"unavailable":true}]}]
 missing|0

@@ -29,6 +29,8 @@ struct ShellDeviceConfig {
     std::string ssh_user = "root";
     std::string ssh_password;
     std::string ssh_host_key;
+    std::string ssh_private_key;
+    std::string ssh_key_passphrase;
 };
 
 enum class EmbeddingModelType { Remote, Local };
@@ -59,6 +61,8 @@ struct McpServerConfig {
 struct ShellDeviceSecrets {
     std::string api_key;
     std::string ssh_password;
+    std::string ssh_private_key;
+    std::string ssh_key_passphrase;
 };
 
 /** data/NativeBackupFormat.kt: NativeBackupSecrets. Maps keep insertion order like LinkedHashMap. */

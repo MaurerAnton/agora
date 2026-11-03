@@ -2,6 +2,8 @@ name|draft_export_reports_one_missing_resource_per_unavailable_attachment
 fn|rewriteDraftAttachmentsForExport
 call|archiveEntryForSource|/gone-a.png|-
 call|archiveEntryForSource|file:///a|-
+call|archiveEntryForSource|/gone-b.png|-
+call|archiveEntryForSource|file:///b|-
 call|archiveEntryForSource|/live-c.png|media/c.png
-result|attachments|[{"localId":"a1","uri":"","type":"image","fileName":"gone-a.png","unavailable":true},{"localId":"a2","uri":"","type":"image","fileName":"gone-b.png","unavailable":true},{"localId":"a3","uri":"media/c.png","type":"image","fileName":"live-c.png","localPath":"media/c.png"}]
+result|attachments|[{"localId":"a1","uri":"","type":"image","fileName":"gone-a.png","unavailable":true,"imageArtifacts":[{"path":"","mimeType":"application/octet-stream","sizeBytes":0,"unavailable":true}]},{"localId":"a2","uri":"","type":"image","fileName":"gone-b.png","unavailable":true,"imageArtifacts":[{"path":"","mimeType":"application/octet-stream","sizeBytes":0,"unavailable":true}]},{"localId":"a3","uri":"media/c.png","type":"image","fileName":"live-c.png","localPath":"media/c.png","imageArtifacts":[{"path":"media/c.png","mimeType":"application/octet-stream","sizeBytes":0}]}]
 missing|2

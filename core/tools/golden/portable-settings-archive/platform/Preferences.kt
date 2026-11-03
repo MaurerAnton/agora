@@ -6,6 +6,8 @@ package androidx.datastore.preferences.core
 interface Preferences {
     operator fun <T> get(key: Key<T>): T?
 
+    fun toMutablePreferences(): MutablePreferences
+
     data class Key<T>(val name: String)
 }
 

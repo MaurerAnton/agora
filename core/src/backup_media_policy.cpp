@@ -6,6 +6,7 @@
 #include <string>
 
 #include "agora/core/json.hpp"
+#include "agora/core/sql_boundary.hpp"
 
 namespace agora::core::backup {
 namespace {
@@ -288,46 +289,6 @@ AttachmentStorage read_storage(const json::Value& object, std::string_view name)
     decode_fail();
 }
 
-AttachmentImportState read_import_state(const json::Value& object, std::string_view name) {
-    const json::Value* value = lookup(object, name);
-    if (value == nullptr) return AttachmentImportState::ready;
-    if (is_json_null(*value) || value->kind != Kind::String) decode_fail();
-    if (value->text == "processing") return AttachmentImportState::processing;
-    if (value->text == "ready") return AttachmentImportState::ready;
-    if (value->text == "failed") return AttachmentImportState::failed;
-    decode_fail();
-}
-
-std::optional<std::vector<std::string>> read_string_list(const json::Value& object,
-                                                         std::string_view name) {
-    const json::Value* value = lookup(object, name);
-    if (value == nullptr || is_json_null(*value)) return std::nullopt;
-    if (value->kind != Kind::Array) decode_fail();
-    std::vector<std::string> out;
-    for (const json::Value& element : value->elements) {
-        if (element.kind != Kind::String) decode_fail();
-        out.push_back(element.text);
-    }
-    return out;
-}
-
-std::optional<std::vector<int>> read_int_set(const json::Value& object, std::string_view name) {
-    const json::Value* value = lookup(object, name);
-    if (value == nullptr || is_json_null(*value)) return std::nullopt;
-    if (value->kind != Kind::Array) decode_fail();
-    std::vector<int> out;
-    for (const json::Value& element : value->elements) {
-        if (element.kind != Kind::Literal) decode_fail();
-        std::int64_t parsed = 0;
-        if (!parse_int_literal(element.text, parsed) || parsed < -2147483648ll ||
-            parsed > 2147483647ll) {
-            decode_fail();
-        }
-        out.push_back(static_cast<int>(parsed));
-    }
-    return out;
-}
-
 /** A non-nullable list property: absent takes the default, null fails the decode. */
 std::vector<json::Value> read_array(const json::Value& object, std::string_view name) {
     const json::Value* value = lookup(object, name);
@@ -339,6 +300,8 @@ std::vector<json::Value> read_array(const json::Value& object, std::string_view 
 // ---------------------------------------------------------------------------------------------
 // Model codecs
 // ---------------------------------------------------------------------------------------------
+
+ToolImageAttachment decode_tool_image(const json::Value& value);
 
 AttachmentItem decode_attachment_item(const json::Value& value) {
     if (value.kind != Kind::Object) decode_fail();
@@ -358,6 +321,9 @@ AttachmentItem decode_attachment_item(const json::Value& value) {
     item.sandbox_path = read_string(value, "sandbox_path");
     item.file_size = read_long(value, "file_size");
     item.unavailable = read_bool(value, "unavailable", false);
+    for (const json::Value& element : read_array(value, "imageArtifacts")) {
+        item.image_artifacts.push_back(decode_tool_image(element));
+    }
     return item;
 }
 
@@ -371,7 +337,8 @@ ToolImageAttachment decode_tool_image(const json::Value& value) {
     image.size_bytes = *size;
     image.width = read_int(value, "width");
     image.height = read_int(value, "height");
-    image.sha256 = read_required_string(value, "sha256");
+    image.policy_version = read_int(value, "policyVersion").value_or(0);
+    image.unavailable = read_bool(value, "unavailable", false);
     return image;
 }
 
@@ -447,83 +414,260 @@ std::optional<std::string> source_file_name(std::string_view source) {
     return not_blank(name) ? std::optional<std::string>(name) : std::nullopt;
 }
 
-/**
- * The candidate list behind listOfNotNull(localPath, uri.takeIf(::isNotBlank)):
- * a present-but-blank localPath is still a candidate, which the golden call log pins.
- */
-std::vector<std::string> candidate_sources(const SelectedAttachment& attachment) {
+/** listOfNotNull(localPath, uri.takeIf(String::isNotBlank)) for the file-name candidates. */
+std::vector<std::string> file_name_candidates(const SelectedAttachment& attachment) {
     std::vector<std::string> sources;
     if (attachment.local_path.has_value()) sources.push_back(*attachment.local_path);
     if (!null_or_blank(attachment.uri)) sources.push_back(attachment.uri);
     return sources;
 }
 
-/** firstNotNullOfOrNull(::sourceFileName) over the candidate list. */
-std::optional<std::string> derived_file_name(const SelectedAttachment& attachment) {
-    for (const std::string& source : candidate_sources(attachment)) {
-        const std::optional<std::string> name = source_file_name(source);
-        if (name.has_value()) return name;
-    }
-    return std::nullopt;
+/** listOfNotNull(localPath?.takeIf(String::isNotBlank), uri.takeIf(String::isNotBlank)). */
+std::vector<std::string> primary_candidates(const SelectedAttachment& attachment) {
+    std::vector<std::string> sources;
+    if (!null_or_blank(attachment.local_path)) sources.push_back(*attachment.local_path);
+    if (!null_or_blank(attachment.uri)) sources.push_back(attachment.uri);
+    return sources;
 }
 
-std::optional<int> first_or_null(const std::vector<int>& values) {
-    return values.empty() ? std::nullopt : std::optional<int>(values.front());
-}
-
-/** firstNotNullOfOrNull(archiveEntryForSource) over the candidate list. */
-std::optional<std::string> first_archived(const std::vector<std::string>& sources,
-                                          const SourceLookup& lookup_fn) {
-    for (const std::string& source : sources) {
-        const std::optional<std::string> entry = lookup_fn(source);
-        if (entry.has_value()) return entry;
-    }
-    return std::nullopt;
-}
-
-/** ?.mapNotNull(f)?.takeIf(List::isNotEmpty) */
-template <class Resolve>
-std::optional<std::vector<std::string>> map_not_null_take_if(
-    const std::optional<std::vector<std::string>>& values, Resolve resolve) {
-    if (!values.has_value()) return std::nullopt;
-    std::vector<std::string> kept;
-    for (const std::string& value : *values) {
-        const std::optional<std::string> resolved = resolve(value);
-        if (resolved.has_value()) kept.push_back(*resolved);
-    }
-    return kept.empty() ? std::nullopt : std::optional<std::vector<std::string>>(kept);
-}
-
+/** Int.coerceAtLeast(1) over the nullable page count. */
 int coerced_count(const std::optional<int>& page_count) {
     if (!page_count.has_value()) return 1;
     return std::max(1, *page_count);
 }
 
-/** (start until start + count).mapNotNull(oldToNewImageIndex::get) */
-std::vector<int> surviving_indices(const std::optional<int>& image_index, int count,
-                                   const std::map<int, int>& remap) {
-    std::vector<int> surviving;
-    if (!image_index.has_value()) return surviving;
-    for (int offset = 0; offset < count; ++offset) {
-        const auto found = remap.find(*image_index + offset);
-        if (found != remap.end()) surviving.push_back(found->second);
-    }
-    return surviving;
-}
-
-SelectedAttachment as_unavailable_placeholder(const SelectedAttachment& attachment,
-                                               const std::optional<std::string>& retained_name) {
-    SelectedAttachment out = attachment;
-    out.uri.clear();
-    out.file_name = retained_name;
-    out.processed_frames.reset();
-    out.selected_pages.reset();
-    out.pre_rendered_paths.reset();
-    out.local_path.reset();
-    out.storage = AttachmentStorage::app_private;
-    out.sandbox_path.reset();
+/** ImageArtifact.asUnavailablePlaceholder: keeps the occurrence and any known bounds. */
+ToolImageAttachment as_unavailable_placeholder(const ToolImageAttachment& artifact) {
+    ToolImageAttachment out = artifact;
+    out.path.clear();
+    out.size_bytes = 0;
     out.unavailable = true;
     return out;
+}
+
+/** unmeasuredArtifact: a slot without measured facts; the MIME type must be an image one. */
+ToolImageAttachment unmeasured_artifact(const std::optional<std::string>& mime_type,
+                                        const std::optional<int>& width,
+                                        const std::optional<int>& height) {
+    ToolImageAttachment artifact;
+    const bool image_mime = mime_type.has_value() && mime_type->rfind("image/", 0) == 0;
+    artifact.mime_type = image_mime ? *mime_type : std::string("application/octet-stream");
+    artifact.width = width;
+    artifact.height = height;
+    return artifact;
+}
+
+/** attachmentItems(): the decoded meta plus legacy source rows it does not claim. */
+std::vector<AttachmentItem> attachment_items(const std::optional<std::string>& raw,
+                                             const std::map<int, std::string>& indexed_sources) {
+    std::optional<AttachmentMeta> decoded;
+    if (raw.has_value()) decoded = decode_attachment_meta(*raw);
+
+    std::set<int> claimed;
+    if (decoded.has_value()) {
+        for (const AttachmentItem& item : decoded->items) {
+            if (!item.image_index.has_value()) continue;
+            const int count = coerced_count(item.page_count);
+            for (int offset = 0; offset < count; ++offset) claimed.insert(*item.image_index + offset);
+        }
+    }
+
+    std::vector<AttachmentItem> items;
+    if (decoded.has_value()) items = decoded->items;
+    for (const auto& [index, source] : indexed_sources) {
+        if (claimed.count(index) != 0) continue;
+        AttachmentItem legacy;
+        legacy.original_uri = source;
+        legacy.type = "image";
+        legacy.file_name = source_file_name(source);
+        legacy.image_index = index;
+        items.push_back(std::move(legacy));
+    }
+    return items;
+}
+
+/** rewriteMessageArtifacts: one artifact per page/frame slot, missing slots included. */
+std::vector<ToolImageAttachment> rewrite_message_artifacts(
+    const AttachmentItem& item, const std::map<int, int>& old_to_new_image_index,
+    const std::map<int, std::string>& source_table, const PathLookup& rewrite_path,
+    bool legacy_mapped_paths) {
+    const std::size_t page_slots =
+        item.image_index.has_value() ? static_cast<std::size_t>(coerced_count(item.page_count)) : 0;
+    const std::size_t count = std::max(item.image_artifacts.size(), page_slots);
+
+    std::vector<ToolImageAttachment> artifacts;
+    for (std::size_t offset = 0; offset < count; ++offset) {
+        const ToolImageAttachment recorded =
+            offset < item.image_artifacts.size()
+                ? item.image_artifacts[offset]
+                : unmeasured_artifact(item.mime_type,
+                                      count == 1 ? item.pixel_width : std::nullopt,
+                                      count == 1 ? item.pixel_height : std::nullopt);
+        std::optional<int> index;
+        if (item.image_index.has_value()) index = *item.image_index + static_cast<int>(offset);
+        std::string source = recorded.path;
+        if (index.has_value()) {
+            const auto found = source_table.find(*index);
+            if (found != source_table.end()) source = found->second;
+        }
+        std::optional<std::string> target;
+        if (index.has_value() && old_to_new_image_index.find(*index) == old_to_new_image_index.end()) {
+            target = std::nullopt;
+        } else if (legacy_mapped_paths) {
+            if (index.has_value()) {
+                const auto found = source_table.find(*index);
+                if (found != source_table.end() && not_blank(found->second)) target = found->second;
+            }
+        } else if (not_blank(source)) {
+            target = rewrite_path(source);
+        }
+        if (recorded.unavailable || !target.has_value() || json::is_blank(*target)) {
+            artifacts.push_back(as_unavailable_placeholder(recorded));
+        } else {
+            ToolImageAttachment rewritten = recorded;
+            rewritten.path = *target;
+            artifacts.push_back(std::move(rewritten));
+        }
+    }
+    return artifacts;
+}
+
+/** rewriteDraftMedia: remaps a draft payload for the archive in either direction. */
+SelectedAttachment rewrite_draft_media(const SelectedAttachment& attachment,
+                                       const std::optional<std::pair<std::string, std::string>>& primary,
+                                       const PathLookup& rewrite_path,
+                                       const MissingResource& on_missing) {
+    const auto rewrite = [&](const std::optional<std::vector<std::string>>& paths)
+        -> std::optional<std::vector<std::string>> {
+        if (!paths.has_value()) return std::nullopt;
+        std::vector<std::string> out;
+        for (std::size_t at = 0; at < paths->size(); ++at) {
+            const std::string& source = (*paths)[at];
+            const bool blocked = at < attachment.image_artifacts.size() &&
+                                 attachment.image_artifacts[at].unavailable;
+            std::optional<std::string> resolved;
+            if (not_blank(source) && !blocked) resolved = rewrite_path(source);
+            out.push_back(resolved.value_or(""));
+            if (json::is_blank(out.back())) on_missing();
+        }
+        return out;
+    };
+
+    const std::optional<std::vector<std::string>> frames = rewrite(attachment.processed_frames);
+    const std::optional<std::vector<std::string>> pages = rewrite(attachment.pre_rendered_paths);
+
+    std::vector<std::string> targets;
+    if (attachment.type == "image") {
+        targets.push_back(primary.has_value() ? primary->first : std::string());
+    } else if (attachment.type == "video") {
+        targets = frames.value_or(std::vector<std::string>{});
+    } else if (attachment.type == "pdf") {
+        targets = pages.value_or(std::vector<std::string>{});
+    }
+
+    const std::size_t count = std::max(targets.size(), attachment.image_artifacts.size());
+    std::vector<ToolImageAttachment> artifacts;
+    for (std::size_t at = 0; at < count; ++at) {
+        const ToolImageAttachment recorded =
+            at < attachment.image_artifacts.size()
+                ? attachment.image_artifacts[at]
+                : unmeasured_artifact(attachment.mime_type,
+                                      targets.size() == 1 ? attachment.pixel_width : std::nullopt,
+                                      targets.size() == 1 ? attachment.pixel_height : std::nullopt);
+        const std::optional<std::string> target =
+            at < targets.size() ? std::optional<std::string>(targets[at]) : std::nullopt;
+        if (recorded.unavailable || !target.has_value() || json::is_blank(*target)) {
+            artifacts.push_back(as_unavailable_placeholder(recorded));
+        } else {
+            ToolImageAttachment rewritten = recorded;
+            rewritten.path = *target;
+            artifacts.push_back(std::move(rewritten));
+        }
+    }
+
+    const bool media_type =
+        attachment.type == "image" || attachment.type == "pdf" || attachment.type == "video";
+    bool any_unavailable = false;
+    for (const ToolImageAttachment& artifact : artifacts) {
+        any_unavailable = any_unavailable || artifact.unavailable;
+    }
+
+    SelectedAttachment out = attachment;
+    out.uri = primary.has_value() ? primary->second : std::string();
+    out.local_path = primary.has_value() ? std::optional<std::string>(primary->first) : std::nullopt;
+    out.processed_frames = frames;
+    out.pre_rendered_paths = pages;
+    out.image_artifacts = std::move(artifacts);
+    out.storage = AttachmentStorage::app_private;
+    out.sandbox_path.reset();
+    out.unavailable = attachment.unavailable || !primary.has_value() ||
+                      (media_type && any_unavailable);
+    return out;
+}
+
+/** Strict kotlinx decode: a malformed column throws JsonDecodingException instead of falling back. */
+/**
+ * kotlinx decodeFromString<List<MessageSegment>> reports the first offending element like its
+ * lexer does: `Unexpected JSON token at offset N: Expected start of the object '{', but had 'c'
+ * instead at path: $[k]\nJSON input: <raw>`. Only that shape (and the raw input itself) is
+ * observable in the pinned scenarios, so the message is built for it directly.
+ */
+[[noreturn]] void throw_segments_decode_error(const std::string& raw, const std::string& fallback) {
+    const std::size_t start = raw.find_first_not_of(" \t\r\n");
+    if (start != std::string::npos && raw[start] == '[') {
+        std::size_t at = start + 1;
+        std::size_t element = 0;
+        while (at < raw.size()) {
+            while (at < raw.size() && (raw[at] == ' ' || raw[at] == '\t' || raw[at] == '\r' ||
+                                       raw[at] == '\n' || raw[at] == ',')) {
+                if (raw[at] == ',') element += 1;
+                ++at;
+            }
+            if (at >= raw.size()) break;
+            if (raw[at] != '{') {
+                throw KotlinError(
+                    "JsonDecodingException",
+                    "Unexpected JSON token at offset " + std::to_string(at) +
+                        ": Expected start of the object '{', but had '" +
+                        std::string(1, raw[at]) + "' instead at path: $[" +
+                        std::to_string(element) + "]\nJSON input: " + raw);
+            }
+            // A well-formed element is skipped to reach the next failing one.
+            std::size_t depth = 0;
+            bool in_string = false;
+            for (; at < raw.size(); ++at) {
+                const char c = raw[at];
+                if (in_string) {
+                    if (c == '\\') ++at;
+                    else if (c == '"') in_string = false;
+                    continue;
+                }
+                if (c == '"') in_string = true;
+                else if (c == '{') depth += 1;
+                else if (c == '}') {
+                    depth -= 1;
+                    if (depth == 0) { ++at; break; }
+                }
+            }
+        }
+    }
+    throw KotlinError("JsonDecodingException", fallback);
+}
+
+std::vector<MessageSegment> strict_message_segments(const std::string& raw) {
+    const json::ParseResult parsed = json::parse(raw);
+    if (!parsed.value || parsed.value->kind != Kind::Array) {
+        throw_segments_decode_error(raw, "message segments are not a JSON array");
+    }
+    try {
+        std::vector<MessageSegment> segments;
+        for (const json::Value& element : parsed.value->elements) {
+            segments.push_back(decode_message_segment(element));
+        }
+        return segments;
+    } catch (const DecodeError&) {
+        throw_segments_decode_error(raw, "a message segment failed to decode");
+    }
 }
 
 }  // namespace
@@ -550,6 +694,14 @@ std::string encode_attachment_item(const AttachmentItem& item) {
     put_string(out, "sandbox_path", item.sandbox_path);
     put_long(out, "file_size", item.file_size);
     out.bool_field("unavailable", item.unavailable, false);
+    if (!item.image_artifacts.empty()) {
+        out.key("imageArtifacts");
+        out.open_array();
+        for (const ToolImageAttachment& artifact : item.image_artifacts) {
+            out.raw_value(encode_tool_image(artifact));
+        }
+        out.close_array();
+    }
     out.close_object();
     return out.take();
 }
@@ -575,7 +727,8 @@ std::string encode_tool_image(const ToolImageAttachment& image) {
     out.number_field("sizeBytes", image.size_bytes);
     put_int(out, "width", image.width);
     put_int(out, "height", image.height);
-    out.string_field("sha256", image.sha256);
+    if (image.policy_version != 0) out.number_field("policyVersion", image.policy_version);
+    out.bool_field("unavailable", image.unavailable, false);
     out.close_object();
     return out.take();
 }
@@ -609,6 +762,14 @@ std::string encode_selected_attachment(const SelectedAttachment& attachment) {
     put_import_state(out, "importState", attachment.import_state);
     put_string(out, "preparedText", attachment.prepared_text);
     out.bool_field("unavailable", attachment.unavailable, false);
+    if (!attachment.image_artifacts.empty()) {
+        out.key("imageArtifacts");
+        out.open_array();
+        for (const ToolImageAttachment& artifact : attachment.image_artifacts) {
+            out.raw_value(encode_tool_image(artifact));
+        }
+        out.close_array();
+    }
     out.close_object();
     return out.take();
 }
@@ -715,38 +876,34 @@ std::vector<SelectedAttachment> NativeBackupMediaPolicy::rewrite_draft_attachmen
     std::vector<SelectedAttachment> result;
     for (const SelectedAttachment& attachment : exportable_draft_attachments(attachments)) {
         std::optional<std::string> file_name = attachment.file_name;
-        if (!file_name.has_value()) file_name = derived_file_name(attachment);
-
-        if (attachment.unavailable) {
-            on_missing();
-            result.push_back(as_unavailable_placeholder(attachment, file_name));
-            continue;
+        if (!file_name.has_value()) {
+            for (const std::string& source : file_name_candidates(attachment)) {
+                const std::optional<std::string> candidate = source_file_name(source);
+                if (candidate.has_value()) {
+                    file_name = candidate;
+                    break;
+                }
+            }
         }
 
-        const std::optional<std::string> primary =
-            first_archived(candidate_sources(attachment), archive_entry);
-        if (!primary.has_value()) {
-            on_missing();
-            result.push_back(as_unavailable_placeholder(attachment, file_name));
-            continue;
+        std::optional<std::string> primary_source;
+        for (const std::string& source : primary_candidates(attachment)) {
+            const std::optional<std::string> entry = archive_entry(source);
+            if (entry.has_value()) {
+                primary_source = entry;
+                break;
+            }
         }
+        if (!primary_source.has_value()) on_missing();
 
-        SelectedAttachment rewritten = attachment;
-        rewritten.uri = *primary;
-        rewritten.local_path = *primary;
+        std::optional<std::pair<std::string, std::string>> primary;
+        if (primary_source.has_value()) {
+            primary = std::make_pair(*primary_source, *primary_source);
+        }
+        SelectedAttachment rewritten =
+            rewrite_draft_media(attachment, primary, archive_entry, on_missing);
         rewritten.file_name = file_name;
-        rewritten.processed_frames =
-            map_not_null_take_if(attachment.processed_frames, [&](const std::string& path) {
-                return archive_entry(path);
-            });
-        rewritten.pre_rendered_paths =
-            map_not_null_take_if(attachment.pre_rendered_paths, [&](const std::string& path) {
-                return archive_entry(path);
-            });
-        rewritten.storage = AttachmentStorage::app_private;
-        rewritten.sandbox_path.reset();
-        rewritten.unavailable = false;
-        result.push_back(rewritten);
+        result.push_back(std::move(rewritten));
     }
     return result;
 }
@@ -756,40 +913,21 @@ std::vector<SelectedAttachment> NativeBackupMediaPolicy::restore_draft_attachmen
     const PathLookup& restored_path) {
     std::vector<SelectedAttachment> result;
     for (const SelectedAttachment& attachment : attachments) {
-        if (attachment.unavailable) {
-            result.push_back(as_unavailable_placeholder(attachment, attachment.file_name));
-            continue;
+        std::optional<std::string> primary_entry;
+        if (!null_or_blank(attachment.local_path)) {
+            primary_entry = attachment.local_path;
+        } else if (!null_or_blank(attachment.uri)) {
+            primary_entry = attachment.uri;
         }
+        std::optional<std::pair<std::string, std::string>> primary;
+        if (primary_entry.has_value()) primary = restored_primary(*primary_entry);
 
-        std::optional<std::string> primary_entry = attachment.local_path;
-        if (null_or_blank(primary_entry)) {
-            primary_entry = json::is_blank(attachment.uri)
-                                ? std::nullopt
-                                : std::optional<std::string>(attachment.uri);
+        SelectedAttachment rewritten =
+            rewrite_draft_media(attachment, primary, restored_path, []() {});
+        if (!rewritten.file_name.has_value() && primary_entry.has_value()) {
+            rewritten.file_name = source_file_name(*primary_entry);
         }
-        const std::optional<std::pair<std::string, std::string>> primary =
-            primary_entry.has_value() ? restored_primary(*primary_entry) : std::nullopt;
-
-        if (!primary.has_value()) {
-            std::optional<std::string> retained = attachment.file_name;
-            if (!retained.has_value() && primary_entry.has_value()) {
-                retained = source_file_name(*primary_entry);
-            }
-            result.push_back(as_unavailable_placeholder(attachment, retained));
-            continue;
-        }
-
-        SelectedAttachment rewritten = attachment;
-        rewritten.uri = primary->second;
-        rewritten.local_path = primary->first;
-        rewritten.processed_frames = map_not_null_take_if(
-            attachment.processed_frames, [&](const std::string& path) { return restored_path(path); });
-        rewritten.pre_rendered_paths = map_not_null_take_if(
-            attachment.pre_rendered_paths, [&](const std::string& path) { return restored_path(path); });
-        rewritten.storage = AttachmentStorage::app_private;
-        rewritten.sandbox_path.reset();
-        rewritten.unavailable = false;
-        result.push_back(rewritten);
+        result.push_back(std::move(rewritten));
     }
     return result;
 }
@@ -801,7 +939,10 @@ std::vector<std::string> NativeBackupMediaPolicy::tool_image_paths(
     if (!segments.has_value()) return {};
     std::vector<std::string> paths;
     for (const MessageSegment& segment : *segments) {
-        for (const ToolImageAttachment& image : segment.tool_images) paths.push_back(image.path);
+        for (const ToolImageAttachment& image : segment.tool_images) {
+            if (image.unavailable) continue;
+            if (not_blank(image.path)) paths.push_back(image.path);
+        }
     }
     return paths;
 }
@@ -810,45 +951,28 @@ std::optional<std::string> NativeBackupMediaPolicy::rewrite_attachment_meta_for_
     const std::optional<std::string>& raw, const std::vector<std::string>& original_image_sources,
     const std::map<int, int>& old_to_new_image_index, const SourceLookup& archive_entry,
     const MissingResource& on_missing) {
-    std::optional<AttachmentMeta> decoded;
-    if (raw.has_value()) decoded = decode_attachment_meta(*raw);
-
-    // Image indices the decoded meta already accounts for; legacy sources must not duplicate them.
-    std::set<int> claimed;
-    if (decoded.has_value()) {
-        for (const AttachmentItem& item : decoded->items) {
-            if (!item.image_index.has_value()) continue;
-            const int count = coerced_count(item.page_count);
-            for (int offset = 0; offset < count; ++offset) claimed.insert(*item.image_index + offset);
-        }
+    std::map<int, std::string> indexed_sources;
+    for (std::size_t at = 0; at < original_image_sources.size(); ++at) {
+        indexed_sources[static_cast<int>(at)] = original_image_sources[at];
     }
-
-    std::vector<AttachmentItem> source_items;
-    if (decoded.has_value()) source_items = decoded->items;
-    for (std::size_t index = 0; index < original_image_sources.size(); ++index) {
-        if (claimed.count(static_cast<int>(index)) != 0) continue;
-        AttachmentItem legacy;
-        legacy.original_uri = original_image_sources[index];
-        legacy.type = "image";
-        legacy.file_name = source_file_name(original_image_sources[index]);
-        legacy.image_index = static_cast<int>(index);
-        source_items.push_back(legacy);
-    }
-
+    const std::vector<AttachmentItem> source_items = attachment_items(raw, indexed_sources);
     if (source_items.empty()) return std::nullopt;
 
     std::vector<AttachmentItem> items;
     for (const AttachmentItem& item : source_items) {
         if (is_local_sandbox(item.storage)) continue;
-        const int original_count = coerced_count(item.page_count);
-        const std::vector<int> surviving =
-            surviving_indices(item.image_index, original_count, old_to_new_image_index);
 
+        const std::vector<ToolImageAttachment> artifacts = rewrite_message_artifacts(
+            item, old_to_new_image_index, indexed_sources, archive_entry, false);
         std::optional<std::string> archived_original_uri;
         if (item.original_uri.has_value() && !item.unavailable && item.type == "video") {
             archived_original_uri = archive_entry(*item.original_uri);
         }
 
+        bool any_unavailable = false;
+        for (const ToolImageAttachment& artifact : artifacts) {
+            any_unavailable = any_unavailable || artifact.unavailable;
+        }
         bool unavailable = false;
         if (item.unavailable) {
             unavailable = true;
@@ -857,7 +981,7 @@ std::optional<std::string> NativeBackupMediaPolicy::rewrite_attachment_meta_for_
         } else if (item.type == "file") {
             unavailable = !item.text_content.has_value();
         } else if (item.type == "image" || item.type == "pdf") {
-            unavailable = surviving.empty();
+            unavailable = artifacts.empty() || any_unavailable;
         }
         if (unavailable) on_missing();
 
@@ -866,36 +990,41 @@ std::optional<std::string> NativeBackupMediaPolicy::rewrite_attachment_meta_for_
         if (!item.file_name.has_value() && item.original_uri.has_value()) {
             rewritten.file_name = source_file_name(*item.original_uri);
         }
-        rewritten.image_index =
-            (unavailable || !item.image_index.has_value()) ? std::nullopt : first_or_null(surviving);
-        rewritten.page_count = (unavailable || !item.page_count.has_value())
-                                   ? std::nullopt
-                                   : std::optional<int>(static_cast<int>(surviving.size()));
+        if (item.image_index.has_value()) {
+            const auto found = old_to_new_image_index.find(*item.image_index);
+            rewritten.image_index =
+                found == old_to_new_image_index.end() ? std::nullopt : std::optional<int>(found->second);
+        } else {
+            rewritten.image_index = std::nullopt;
+        }
+        rewritten.image_artifacts = artifacts;
         if (unavailable) rewritten.text_content.reset();
         rewritten.unavailable = unavailable;
-        items.push_back(rewritten);
+        items.push_back(std::move(rewritten));
     }
     return encode_attachment_meta(AttachmentMeta{std::move(items)});
 }
 
 std::optional<std::string> NativeBackupMediaPolicy::rewrite_tool_image_paths_for_export(
-    const std::optional<std::string>& raw, const SourceLookup& archive_entry) {
+    const std::optional<std::string>& raw, const SourceLookup& archive_entry,
+    const MissingResource& on_missing) {
     if (null_or_blank(raw)) return raw;
-    const std::optional<std::vector<MessageSegment>> decoded = decode_message_segments(*raw);
-    if (!decoded.has_value()) return raw;
-
-    std::vector<MessageSegment> segments = *decoded;
+    std::vector<MessageSegment> segments = strict_message_segments(*raw);
     for (MessageSegment& segment : segments) {
-        std::vector<ToolImageAttachment> kept;
+        std::vector<ToolImageAttachment> rewritten_images;
         for (const ToolImageAttachment& image : segment.tool_images) {
-            const std::optional<std::string> archived = archive_entry(image.path);
-            if (archived.has_value()) {
+            std::optional<std::string> archived;
+            if (!image.unavailable && not_blank(image.path)) archived = archive_entry(image.path);
+            if (!archived.has_value()) {
+                on_missing();
+                rewritten_images.push_back(as_unavailable_placeholder(image));
+            } else {
                 ToolImageAttachment rewritten = image;
                 rewritten.path = *archived;
-                kept.push_back(rewritten);
+                rewritten_images.push_back(std::move(rewritten));
             }
         }
-        segment.tool_images = std::move(kept);
+        segment.tool_images = std::move(rewritten_images);
     }
     return encode_segments(segments);
 }
@@ -903,17 +1032,25 @@ std::optional<std::string> NativeBackupMediaPolicy::rewrite_tool_image_paths_for
 std::optional<std::string> NativeBackupMediaPolicy::restore_attachment_meta(
     const std::optional<std::string>& raw, int archive_version,
     const std::map<int, int>& old_to_new_image_index,
-    const std::map<int, std::string>& legacy_video_uris, const PathLookup& restored_uri) {
-    if (null_or_blank(raw)) return raw;
-    const std::optional<AttachmentMeta> decoded = decode_attachment_meta(*raw);
-    if (!decoded.has_value()) return std::nullopt;
+    const std::map<int, std::string>& legacy_video_uris, const PathLookup& restored_uri,
+    const PathLookup& restored_path, const std::vector<std::string>& original_image_sources,
+    const std::map<int, std::string>& legacy_image_paths) {
+    // attachmentItems(raw, indexedSources): below v4 the legacy path map is the source table.
+    std::map<int, std::string> indexed_sources;
+    if (archive_version < 4) {
+        indexed_sources = legacy_image_paths;
+    } else {
+        for (std::size_t at = 0; at < original_image_sources.size(); ++at) {
+            indexed_sources[static_cast<int>(at)] = original_image_sources[at];
+        }
+    }
+    const std::vector<AttachmentItem> source_items = attachment_items(raw, indexed_sources);
+    if (source_items.empty()) return std::nullopt;
 
     std::vector<AttachmentItem> items;
-    for (const AttachmentItem& item : decoded->items) {
-        const int original_count = coerced_count(item.page_count);
-        const std::vector<int> surviving =
-            surviving_indices(item.image_index, original_count, old_to_new_image_index);
-
+    for (const AttachmentItem& item : source_items) {
+        const std::vector<ToolImageAttachment> artifacts = rewrite_message_artifacts(
+            item, old_to_new_image_index, indexed_sources, restored_path, archive_version < 4);
         std::optional<std::string> restored_original_uri;
         if (item.unavailable) {
             restored_original_uri.reset();
@@ -924,6 +1061,10 @@ std::optional<std::string> NativeBackupMediaPolicy::restore_attachment_meta(
             if (legacy != legacy_video_uris.end()) restored_original_uri = legacy->second;
         }
 
+        bool any_unavailable = false;
+        for (const ToolImageAttachment& artifact : artifacts) {
+            any_unavailable = any_unavailable || artifact.unavailable;
+        }
         bool unavailable = false;
         if (item.unavailable) {
             unavailable = true;
@@ -932,21 +1073,27 @@ std::optional<std::string> NativeBackupMediaPolicy::restore_attachment_meta(
         } else if (item.type == "file") {
             unavailable = !item.text_content.has_value();
         } else if (item.type == "image" || item.type == "pdf") {
-            unavailable = surviving.empty();
+            unavailable = artifacts.empty() || any_unavailable;
         }
 
         AttachmentItem rewritten = item;
         rewritten.original_uri = restored_original_uri;
-        rewritten.image_index =
-            (unavailable || !item.image_index.has_value()) ? std::nullopt : first_or_null(surviving);
-        rewritten.page_count = (unavailable || !item.page_count.has_value())
-                                   ? std::nullopt
-                                   : std::optional<int>(static_cast<int>(surviving.size()));
+        if (!item.file_name.has_value() && item.original_uri.has_value()) {
+            rewritten.file_name = source_file_name(*item.original_uri);
+        }
+        if (item.image_index.has_value()) {
+            const auto found = old_to_new_image_index.find(*item.image_index);
+            rewritten.image_index =
+                found == old_to_new_image_index.end() ? std::nullopt : std::optional<int>(found->second);
+        } else {
+            rewritten.image_index = std::nullopt;
+        }
+        rewritten.image_artifacts = artifacts;
         if (unavailable) rewritten.text_content.reset();
         rewritten.storage = AttachmentStorage::app_private;
         rewritten.sandbox_path.reset();
         rewritten.unavailable = unavailable;
-        items.push_back(rewritten);
+        items.push_back(std::move(rewritten));
     }
     return encode_attachment_meta(AttachmentMeta{std::move(items)});
 }
@@ -954,26 +1101,23 @@ std::optional<std::string> NativeBackupMediaPolicy::restore_attachment_meta(
 std::optional<std::string> NativeBackupMediaPolicy::restore_tool_image_paths(
     const std::optional<std::string>& raw, int archive_version, const PathLookup& restored_path) {
     if (null_or_blank(raw)) return raw;
-    const std::optional<std::vector<MessageSegment>> decoded = decode_message_segments(*raw);
-    if (!decoded.has_value()) return raw;
-
-    std::vector<MessageSegment> segments = *decoded;
+    std::vector<MessageSegment> segments = strict_message_segments(*raw);
     for (MessageSegment& segment : segments) {
-        std::vector<ToolImageAttachment> kept;
+        std::vector<ToolImageAttachment> rewritten_images;
         for (const ToolImageAttachment& image : segment.tool_images) {
-            if (archive_version < 4) {
-                // v1-v3 stored only a device-absolute path. Dropping an unusable thumbnail is
-                // safer than retaining a misleading foreign path.
-                continue;
+            std::optional<std::string> restored;
+            if (archive_version >= 4 && !image.unavailable && not_blank(image.path)) {
+                restored = restored_path(image.path);
             }
-            const std::optional<std::string> restored = restored_path(image.path);
-            if (restored.has_value()) {
+            if (!restored.has_value()) {
+                rewritten_images.push_back(as_unavailable_placeholder(image));
+            } else {
                 ToolImageAttachment rewritten = image;
                 rewritten.path = *restored;
-                kept.push_back(rewritten);
+                rewritten_images.push_back(std::move(rewritten));
             }
         }
-        segment.tool_images = std::move(kept);
+        segment.tool_images = std::move(rewritten_images);
     }
     return encode_segments(segments);
 }

@@ -1,4 +1,7 @@
 name|meta_export_claimed_indices_suppress_the_legacy_items
 fn|rewriteAttachmentMetaForExport
-result|string|{"items":[{"type":"image","file_name":"two.png","image_index":1,"page_count":2},{"type":"image","file_name":"one.png","image_index":0}]}
-missing|0
+call|archiveEntryForSource|/orig/two.png|-
+call|archiveEntryForSource|/orig/three.png|-
+call|archiveEntryForSource|/orig/one.png|-
+result|string|{"items":[{"type":"image","file_name":"two.png","image_index":1,"page_count":2,"unavailable":true,"imageArtifacts":[{"path":"","mimeType":"application/octet-stream","sizeBytes":0,"unavailable":true},{"path":"","mimeType":"application/octet-stream","sizeBytes":0,"unavailable":true}]},{"type":"image","file_name":"one.png","image_index":0,"unavailable":true,"imageArtifacts":[{"path":"","mimeType":"application/octet-stream","sizeBytes":0,"unavailable":true}]}]}
+missing|2

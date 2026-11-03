@@ -1,4 +1,5 @@
 name|meta_export_malformed_raw_falls_back_to_the_legacy_sources
 fn|rewriteAttachmentMetaForExport
-result|string|{"items":[{"type":"image","file_name":"one.png","image_index":3}]}
-missing|0
+call|archiveEntryForSource|/orig/one.png|-
+result|string|{"items":[{"type":"image","file_name":"one.png","image_index":3,"unavailable":true,"imageArtifacts":[{"path":"","mimeType":"application/octet-stream","sizeBytes":0,"unavailable":true}]}]}
+missing|1

@@ -14,6 +14,7 @@ import com.newoether.agora.data.EmbeddingModelConfig
 import com.newoether.agora.data.McpServerConfig
 import com.newoether.agora.data.PortableSettingsArchive
 import com.newoether.agora.data.RestoredCustomFont
+import com.newoether.agora.data.ImageQualitySettings
 import com.newoether.agora.data.SettingsManager
 import com.newoether.agora.data.ShellDeviceConfig
 import java.io.File
@@ -29,6 +30,7 @@ import kotlinx.serialization.json.buildJsonArray
 import kotlinx.serialization.json.buildJsonObject
 import kotlinx.serialization.json.contentOrNull
 import kotlinx.serialization.json.decodeFromJsonElement
+import kotlinx.serialization.json.intOrNull
 import kotlinx.serialization.json.jsonObject
 import kotlinx.serialization.json.put
 
@@ -44,6 +46,20 @@ private inline fun <reified T> nullableValue(root: JsonObject, key: String): T? 
     val element = required(root, key)
     if (element === JsonNull) return null
     return json.decodeFromJsonElement<T>(element)
+}
+
+/** ImageQualitySettings is a plain data class (not @Serializable), so the snapshot is read field by field. */
+private fun imageQualitySettings(root: JsonObject): ImageQualitySettings {
+    val element = root["imageQuality"] as? JsonObject
+        ?: error("settings snapshot is missing `imageQuality`")
+    fun intOf(key: String): Int = (element[key] as? JsonPrimitive)?.intOrNull
+        ?: error("imageQuality.$key is required")
+    return ImageQualitySettings(
+        mode = (element["mode"] as? JsonPrimitive)?.content
+            ?: error("imageQuality.mode is required"),
+        customMaxLongEdge = intOf("customMaxLongEdge"),
+        customJpegQuality = intOf("customJpegQuality"),
+    )
 }
 
 private fun buildSettings(root: JsonObject): SettingsManager = SettingsManager(
@@ -75,6 +91,7 @@ private fun buildSettings(root: JsonObject): SettingsManager = SettingsManager(
         "activeEmbeddingModelId" to value<String>(root, "activeEmbeddingModelId"),
         "customFontName" to value<String>(root, "customFontName"),
         "customFontPath" to value<String>(root, "customFontPath"),
+        "subagentCapsuleDisplayMode" to value<String>(root, "subagentCapsuleDisplayMode"),
     ),
     nullableStrings = mapOf(
         "contextCompactModel" to nullableValue<String>(root, "contextCompactModel"),
@@ -82,6 +99,7 @@ private fun buildSettings(root: JsonObject): SettingsManager = SettingsManager(
         "imageGenModel" to nullableValue<String>(root, "imageGenModel"),
         "imageTranscriptionModel" to nullableValue<String>(root, "imageTranscriptionModel"),
         "activeSystemPromptId" to nullableValue<String>(root, "activeSystemPromptId"),
+        "subagentRecommendedModel" to nullableValue<String>(root, "subagentRecommendedModel"),
     ),
     booleans = mapOf(
         "accessActiveMemory" to value<Boolean>(root, "accessActiveMemory"),
@@ -125,6 +143,9 @@ private fun buildSettings(root: JsonObject): SettingsManager = SettingsManager(
         "titleGenerationNotificationsEnabled" to value<Boolean>(root, "titleGenerationNotificationsEnabled"),
         "visualizeContextRollout" to value<Boolean>(root, "visualizeContextRollout"),
         "webSearchEnabled" to value<Boolean>(root, "webSearchEnabled"),
+        "subagentDeleteEnabled" to value<Boolean>(root, "subagentDeleteEnabled"),
+        "subagentToolsEnabled" to value<Boolean>(root, "subagentToolsEnabled"),
+        "todoEnabled" to value<Boolean>(root, "todoEnabled"),
     ),
     ints = mapOf(
         "contextCompactRetainCount" to value<Int>(root, "contextCompactRetainCount"),
@@ -135,6 +156,9 @@ private fun buildSettings(root: JsonObject): SettingsManager = SettingsManager(
         "searchMatchLimit" to value<Int>(root, "searchMatchLimit"),
         "thinkingBudgetTokens" to value<Int>(root, "thinkingBudgetTokens"),
         "webSearchNumResults" to value<Int>(root, "webSearchNumResults"),
+        "askUserTimeoutMinutes" to value<Int>(root, "askUserTimeoutMinutes"),
+        "subagentMaxConcurrent" to value<Int>(root, "subagentMaxConcurrent"),
+        "subagentMaxTotal" to value<Int>(root, "subagentMaxTotal"),
     ),
     nullableInts = mapOf(
         "defaultMaxTokens" to nullableValue<Int>(root, "defaultMaxTokens"),
@@ -152,6 +176,10 @@ private fun buildSettings(root: JsonObject): SettingsManager = SettingsManager(
         "customModels" to value(root, "customModels"),
         "enabledModels" to value(root, "enabledModels"),
         "imageTranscriptionEnabledModels" to value(root, "imageTranscriptionEnabledModels"),
+        "subagentModelIds" to value(root, "subagentModelIds"),
+        ),
+        nullableStringSets = mapOf(
+            "subagentEnabledModels" to nullableValue(root, "subagentEnabledModels"),
     ),
     stringMaps = mapOf(
         "modelAliases" to value(root, "modelAliases"),
@@ -164,6 +192,7 @@ private fun buildSettings(root: JsonObject): SettingsManager = SettingsManager(
     shellDevices = value(root, "shellDevices"),
     mcpServers = value(root, "mcpServers"),
     customProviders = value<List<CustomProviderConfig>>(root, "customProviders"),
+       imageQualitySettings = imageQualitySettings(root),
 )
 
 private fun stableIdsIn(text: String): Set<String> =

@@ -23,6 +23,7 @@
 
 #include "agora/core/backup_media_policy.hpp"
 #include "agora/core/json.hpp"
+#include "agora/core/sql_boundary.hpp"
 #include "check.hpp"
 
 namespace {
@@ -172,6 +173,24 @@ backup::SelectedAttachment decode_attachment(const json::Value& value) {
     if (const json::Value* unavailable = field(value, "unavailable"); !is_json_null(unavailable)) {
         attachment.unavailable = unavailable->text == "true";
     }
+    if (const json::Value* artifacts = field(value, "imageArtifacts"); !is_json_null(artifacts)) {
+        for (const json::Value& element : artifacts->elements) {
+            backup::ToolImageAttachment artifact;
+            artifact.path = required_field(element, "path");
+            artifact.mime_type = required_field(element, "mimeType");
+            const std::optional<std::int64_t> size = int_field(element, "sizeBytes");
+            if (!size.has_value()) scenario_fail("imageArtifacts sizeBytes is required");
+            artifact.size_bytes = *size;
+            artifact.width = optional_int(element, "width");
+            artifact.height = optional_int(element, "height");
+            artifact.policy_version = int_field_or(element, "policyVersion", 0);
+            if (const json::Value* unavailable = field(element, "unavailable");
+                !is_json_null(unavailable)) {
+                artifact.unavailable = unavailable->text == "true";
+            }
+            attachment.image_artifacts.push_back(std::move(artifact));
+        }
+    }
     return attachment;
 }
 
@@ -268,6 +287,7 @@ class Trace {
                                             : std::string("-")));
     }
     void missing() { ++missing_count; }
+    void error(const std::string& class_name) { lines.push_back("error|" + class_name); }
     void attachments(const std::vector<backup::SelectedAttachment>& values) {
         std::string encoded = "[";
         for (const backup::SelectedAttachment& value : values) {
@@ -339,6 +359,7 @@ std::string run_scenario(const std::filesystem::path& path) {
         return value;
     };
 
+    try {
     if (fn == "exportableDraftAttachments") {
         trace.attachments(backup::NativeBackupMediaPolicy::exportable_draft_attachments(attachments));
 
@@ -369,8 +390,8 @@ std::string run_scenario(const std::filesystem::path& path) {
             [&trace]() { trace.missing(); }));
 
     } else if (fn == "rewriteToolImagePathsForExport") {
-        trace.string_result(
-            backup::NativeBackupMediaPolicy::rewrite_tool_image_paths_for_export(raw, archive_source));
+        trace.string_result(backup::NativeBackupMediaPolicy::rewrite_tool_image_paths_for_export(
+            raw, archive_source, [&trace]() { trace.missing(); }));
 
     } else if (fn == "restoreAttachmentMeta") {
         trace.string_result(backup::NativeBackupMediaPolicy::restore_attachment_meta(
@@ -384,6 +405,10 @@ std::string run_scenario(const std::filesystem::path& path) {
 
     } else {
         scenario_fail(stem + ": unknown function " + fn);
+    }
+    } catch (const agora::core::KotlinError& failure) {
+        // The merged policy lets strict decoders throw; the reference trace pins the class name.
+        trace.error(failure.class_name());
     }
 
     return trace.render();

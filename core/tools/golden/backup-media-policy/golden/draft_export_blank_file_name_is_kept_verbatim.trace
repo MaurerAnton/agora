@@ -1,5 +1,5 @@
 name|draft_export_blank_file_name_is_kept_verbatim
 fn|rewriteDraftAttachmentsForExport
 call|archiveEntryForSource|/tmp/live.bin|media/live.bin
-result|attachments|[{"localId":"a1","uri":"media/live.bin","type":"image","fileName":"","localPath":"media/live.bin"}]
+result|attachments|[{"localId":"a1","uri":"media/live.bin","type":"image","fileName":"","localPath":"media/live.bin","imageArtifacts":[{"path":"media/live.bin","mimeType":"application/octet-stream","sizeBytes":0}]}]
 missing|0

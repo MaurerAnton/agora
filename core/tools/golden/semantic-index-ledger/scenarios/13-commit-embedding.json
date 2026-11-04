@@ -24,6 +24,12 @@
         "dimension": 1,
         "sourceFingerprint": "fp-alpha"
       }
+    ],
+    "conversations": [
+      {
+        "id": "c1",
+        "taskId": null
+      }
     ]
   },
   "steps": [

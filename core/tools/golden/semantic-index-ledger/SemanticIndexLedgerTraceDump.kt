@@ -192,12 +192,19 @@ private suspend fun executeOperation(
         "getWorkCountThroughRevision" -> JsonPrimitive(
             dao.getWorkCountThroughRevision(step.string("modelId"), step.long("maxSourceRevision")),
         )
-        "getReconcileMessagesPage" -> JsonArray(
-            dao.getReconcileMessagesPage(
+        "getFirstReconcileMessageIdsPage" -> JsonArray(
+            dao.getFirstReconcileMessageIdsPage(step.int("limit")).map { JsonPrimitive(it) },
+        )
+        "getReconcileMessageIdsPage" -> JsonArray(
+            dao.getReconcileMessageIdsPage(step.string("afterId"), step.int("limit"))
+                .map { JsonPrimitive(it) },
+        )
+        "getReconcileMessagesByIds" -> JsonArray(
+            dao.getReconcileMessagesByIds(
                 modelId = step.string("modelId"),
                 maxWorkRevision = step.long("maxWorkRevision"),
-                afterId = step.optionalString("afterId"),
-                limit = step.int("limit"),
+                messageIds = step["messageIds"]!!.jsonArray.map { it.jsonPrimitive.content },
+                sourcePrefixBytes = step.int("sourcePrefixBytes"),
             ).map(::reconcileRowJson),
         )
         "getSearchableMessageText" ->
@@ -210,9 +217,6 @@ private suspend fun executeOperation(
             dao.deleteEmbeddingsForMessages(
                 step["messageIds"]!!.jsonArray.map { it.jsonPrimitive.content },
             ),
-        )
-        "deleteEmbeddingsForModel" -> JsonPrimitive(
-            dao.deleteEmbeddingsForModel(step.string("modelId")),
         )
         "deleteAllEmbeddings" -> JsonPrimitive(dao.deleteAllEmbeddings())
         "deleteWorkForModel" -> JsonPrimitive(dao.deleteWorkForModel(step.string("modelId")))
@@ -372,18 +376,38 @@ private fun executeScript(connection: Connection, script: String) {
 
 private fun seed(connection: Connection, seed: JsonObject?) {
     if (seed == null) return
-    for (element in seed["conversations"] as? JsonArray ?: JsonArray(emptyList())) {
+    val conversationRows = seed["conversations"] as? JsonArray ?: JsonArray(emptyList())
+    for (element in conversationRows) {
         val row = element.jsonObject
-        connection.prepareStatement("INSERT INTO conversations (id, taskId) VALUES (?, ?)").use {
+        connection.prepareStatement(
+            "INSERT INTO conversations (id, title, lastUpdated, dataChangedAt, origin, graduated, " +
+                "draftText, hasUnreadGeneration, isPinned, taskId) " +
+                "VALUES (?, '', 0, 0, 'user', 0, '', 0, 0, ?)",
+        ).use {
             it.setString(1, row.string("id"))
             it.setObject(2, row.optionalString("taskId"))
             it.executeUpdate()
         }
     }
-    for (element in seed["messages"] as? JsonArray ?: JsonArray(emptyList())) {
+    val messageRows = seed["messages"] as? JsonArray ?: JsonArray(emptyList())
+    if (messageRows.isNotEmpty()) {
+        // messages.runId is NOT NULL and foreign keys are on; every seeded message rides one run
+        // whose conversation matches its first message (mirrored by the C++ parity harness).
+        connection.prepareStatement(
+            "INSERT INTO runs (id, conversationId, status, activeSlot, startedAt, " +
+                "lastCheckpointAt, currentPass, legacyAmbiguous) " +
+                "VALUES ('r1', ?, 'COMPLETED', NULL, 1, 0, 0, 0)",
+        ).use {
+            it.setString(1, messageRows.first().jsonObject.string("conversationId"))
+            it.executeUpdate()
+        }
+    }
+    for (element in messageRows) {
         val row = element.jsonObject
         connection.prepareStatement(
-            "INSERT INTO messages (id, conversationId, text, participant) VALUES (?, ?, ?, ?)",
+            "INSERT INTO messages (id, conversationId, text, images, tokenCount, status, " +
+                "participant, timestamp, runId, runSequence) " +
+                "VALUES (?, ?, ?, '[]', 0, 'SUCCESS', ?, 0, 'r1', 0)",
         ).use {
             it.setString(1, row.string("id"))
             it.setString(2, row.string("conversationId"))

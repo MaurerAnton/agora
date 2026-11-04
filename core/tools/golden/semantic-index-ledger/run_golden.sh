@@ -1,10 +1,11 @@
 #!/usr/bin/env bash
 # Generates or verifies the golden traces for data/local/SemanticIndexLedger.kt.
 #
-# SemanticIndexLedger.kt and util/Constants.kt compile VERBATIM from the app tree. EmbeddingEntity
-# is lifted out of data/local/ChatEntities.kt by `agora_extract embedding-entity`. Room's annotation processor
-# is the platform boundary: platform/MiniRoom.kt executes the declared @Query SQL on a real SQLite
-# database instead of Room's generated DAO, and platform/schema.sql carries the generated DDL.
+# SemanticIndexLedger.kt and util/Constants.kt compile VERBATIM from the app tree; the
+# SemanticEmbeddingDao -> SemanticMetadataDao cluster rides along with ChatEntities.kt (the
+# data-exporter stand's recipe). Room's annotation processor is the platform boundary:
+# platform/MiniRoom.kt executes the declared @Query SQL on a real SQLite database instead of
+# Room's generated DAO, and platform/schema.sql carries the generated DDL.
 #
 # Usage:
 #   KOTLINX_JARS=... ./run_golden.sh            # verify scenarios against the frozen traces
@@ -13,6 +14,7 @@ set -euo pipefail
 
 here="$(cd "$(dirname "$0")" && pwd)"
 root="$(cd "$here/../../../.." && pwd)"
+citations_stand="$root/core/tools/golden/citations"
 app="$root/app/src/main/java/com/newoether/agora"
 
 kotlinc_bin="${KOTLINC:-kotlinc}"
@@ -22,6 +24,11 @@ if [[ -z "$jars" ]]; then
     echo "error: KOTLINX_JARS is not set (colon-separated paths to the kotlinx-serialization jars)" >&2
     exit 2
 fi
+plugin="${KOTLINX_SERIALIZATION_PLUGIN:-$kotlinc_lib/kotlinx-serialization-compiler-plugin.jar}"
+if [[ ! -f "$plugin" ]]; then
+    echo "error: kotlinx-serialization compiler plugin not found at $plugin" >&2
+    exit 2
+fi
 runtime="$(dirname "$(command -v "$kotlinc_bin")")/../lib/kotlin-stdlib.jar:$kotlinc_lib/kotlin-reflect.jar:$jars"
 
 classes="$here/build/classes"
@@ -29,13 +36,28 @@ fresh="$here/build/golden"
 rm -rf "$here/build"
 mkdir -p "$classes" "$fresh"
 
-echo "Extracting the embedding entity..."
-"${AGORA_EXTRACT:-$root/core/build/agora_extract}" embedding-entity "$app/data/local/ChatEntities.kt" "$here/build/EmbeddingEntity.kt"
-
 sources=(
     "$app/data/local/SemanticIndexLedger.kt"
     "$app/util/Constants.kt"
-    "$here/build/EmbeddingEntity.kt"
+    # The @Transaction default methods ride SemanticEmbeddingDao -> SemanticMetadataDao; entities
+    # and the message model come from the data-exporter stand's recipe (ChatEntities.kt verbatim).
+    "$app/data/local/SemanticMetadataDao.kt"
+    "$app/data/local/SemanticEmbeddingDao.kt"
+    "$app/data/local/SemanticEmbeddingGeneration.kt"
+    "$app/data/local/SemanticSourceMetadata.kt"
+    "$app/data/local/ChatEntities.kt"
+    "$app/data/local/RunEntity.kt"
+    "$app/data/local/MaintenanceDebt.kt"
+    "$app/data/local/RunBranchSelectionIntegrity.kt"
+    "$app/model/ChatMessage.kt"
+    "$app/model/RunState.kt"
+    "$app/model/RuntimeIdentity.kt"
+    "$app/model/ImageArtifact.kt"
+    "$app/model/TokenUsage.kt"
+    "$app/model/AttachmentMeta.kt"
+    "$app/model/MessageSource.kt"
+    "$citations_stand/stubs/androidx/compose/runtime/Immutable.kt"
+    "$citations_stand/stubs/com/mikepenz/markdown/model/State.kt"
     "$here/platform/Room.kt"
     "$here/platform/RoomDatabase.kt"
     "$here/platform/MiniRoom.kt"
@@ -47,7 +69,7 @@ for source in "${sources[@]}"; do
 done
 
 echo "Compiling the Kotlin reference sources..."
-"$kotlinc_bin" -Xjvm-default=all -java-parameters -cp "$runtime" -d "$classes" \
+"$kotlinc_bin" -Xjvm-default=all -java-parameters -Xplugin="$plugin" -cp "$runtime" -d "$classes" \
     "${sources[@]}" 2>&1 | grep -v "^warning:" || true
 [[ -f "$classes/semantic/ledger/golden/SemanticIndexLedgerTraceDumpKt.class" ]] || {
     echo "error: harness classes missing" >&2

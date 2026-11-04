@@ -10,18 +10,10 @@
 package com.newoether.agora.data.local
 
 import androidx.room.Dao
-import androidx.room.Entity
-import androidx.room.PrimaryKey
 import androidx.room.Query
 import androidx.room.RoomDatabase
 import java.sql.Connection
 import stand.room.MiniRoom
-
-@Entity(tableName = "conversations")
-data class ChatEntity(
-    @PrimaryKey val id: String,
-    val taskId: String? = null,
-)
 
 @Dao
 interface ChatDao {
@@ -39,6 +31,8 @@ abstract class ChatDatabase : RoomDatabase() {
     abstract fun chatDao(): ChatDao
 
     abstract fun semanticIndexDao(): SemanticIndexDao
+
+    abstract fun maintenanceDebtDao(): MaintenanceDebtDao
 }
 
 class StandChatDatabase(
@@ -58,6 +52,9 @@ class StandChatDatabase(
     override fun semanticIndexDao(): SemanticIndexDao =
         semanticIndexDaoProxy ?: room.create(SemanticIndexDao::class.java)
             .also { semanticIndexDaoProxy = it }
+
+    override fun maintenanceDebtDao(): MaintenanceDebtDao =
+        room.create(MaintenanceDebtDao::class.java)
 
     override fun onBegin() {
         connection.createStatement().use { it.execute("BEGIN") }

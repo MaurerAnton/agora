@@ -39,7 +39,7 @@ struct WorkEntry {
     void validate() const;
 };
 
-/** One row of getReconcileMessagesPage. */
+/** One row of getReconcileMessagesByIds. */
 struct ReconcileIndexableMessage {
     std::string id;
     std::string text;
@@ -110,19 +110,37 @@ public:
     std::int64_t get_work_count_through_revision(std::string_view model_id,
                                                 std::int64_t max_source_revision);
 
-    std::vector<ReconcileIndexableMessage> get_reconcile_messages_page(
+    /** getFirstReconcileMessageIdsPage: raw id paging over messages. */
+    std::vector<std::string> get_first_reconcile_message_ids_page(std::int32_t limit);
+    /** getReconcileMessageIdsPage: the primary-key seek through the id index. */
+    std::vector<std::string> get_reconcile_message_ids_page(std::string_view after_id,
+                                                            std::int32_t limit);
+    /** getReconcileMessagesByIds: the filtered row read (cacheEligible/eligible/work revision). */
+    std::vector<ReconcileIndexableMessage> get_reconcile_messages_by_ids(
         std::string_view model_id,
         std::int64_t max_work_revision,
-        std::optional<std::string> after_id,
-        std::int32_t limit);
+        const std::vector<std::string>& message_ids,
+        std::int32_t source_prefix_bytes);
 
+    /** getSearchableMessageSource: the stored prefix for an indexable message. */
+    std::optional<std::string> get_searchable_message_source(std::string_view message_id);
+    /** getSearchableMessageFingerprint: the source row's stored fingerprint. */
+    std::optional<std::string> get_searchable_message_fingerprint(std::string_view message_id);
+    /** getSearchableMessageText: the source prefix decoded as UTF-8. */
     std::optional<std::string> get_searchable_message_text(std::string_view message_id);
 
     void upsert_embedding(const EmbeddingEntry& embedding);
 
     std::int64_t delete_embeddings_for_messages(const std::vector<std::string>& message_ids);
 
-    std::int64_t delete_embeddings_for_model(std::string_view model_id);
+    /** advanceEmbeddingGeneration: bump the generation so stored vectors go stale. */
+    std::int64_t advance_embedding_generation(std::string_view model_id);
+    /** invalidateSemanticConversations: mark a model's per-conversation rows stale. */
+    std::int64_t invalidate_semantic_conversations(std::string_view model_id);
+    /** clearSemanticModelCounts: zero a model's per-conversation cache counters. */
+    std::int64_t clear_semantic_model_counts(std::string_view model_id);
+    /** deleteSemanticModelConversations: drop a model's per-conversation rows. */
+    std::int64_t delete_semantic_model_conversations(std::string_view model_id);
 
     std::int64_t delete_all_embeddings();
 

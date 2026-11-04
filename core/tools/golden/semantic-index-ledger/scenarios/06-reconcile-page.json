@@ -110,25 +110,157 @@
   },
   "steps": [
     {
-      "op": "getReconcileMessagesPage",
-      "modelId": "model",
-      "maxWorkRevision": 0,
-      "afterId": null,
+      "op": "getFirstReconcileMessageIdsPage",
       "limit": 10
     },
     {
-      "op": "getReconcileMessagesPage",
+      "op": "sql",
+      "sql": "INSERT INTO semantic_conversations (conversationId, sourceRevision, eligibleCount, cacheEligible) VALUES (?, 0, ?, ?)",
+      "args": [
+        "c1",
+        5,
+        1
+      ]
+    },
+    {
+      "op": "sql",
+      "sql": "INSERT INTO semantic_conversations (conversationId, sourceRevision, eligibleCount, cacheEligible) VALUES (?, 0, ?, ?)",
+      "args": [
+        "task",
+        1,
+        0
+      ]
+    },
+    {
+      "op": "sql",
+      "sql": "INSERT INTO semantic_sources (messageId, conversationId, eligible, sourcePrefix, sourceFingerprint, searchLength, historyEligible) VALUES (?, ?, ?, X'616c706861', NULL, ?, ?)",
+      "args": [
+        "m1",
+        "c1",
+        1,
+        5,
+        1
+      ]
+    },
+    {
+      "op": "sql",
+      "sql": "INSERT INTO semantic_sources (messageId, conversationId, eligible, sourcePrefix, sourceFingerprint, searchLength, historyEligible) VALUES (?, ?, ?, X'62657461', NULL, ?, ?)",
+      "args": [
+        "m2",
+        "c1",
+        1,
+        4,
+        1
+      ]
+    },
+    {
+      "op": "sql",
+      "sql": "INSERT INTO semantic_sources (messageId, conversationId, eligible, sourcePrefix, sourceFingerprint, searchLength, historyEligible) VALUES (?, ?, ?, X'746f6f6c20626f6479', NULL, ?, ?)",
+      "args": [
+        "m4",
+        "c1",
+        1,
+        9,
+        1
+      ]
+    },
+    {
+      "op": "sql",
+      "sql": "INSERT INTO semantic_sources (messageId, conversationId, eligible, sourcePrefix, sourceFingerprint, searchLength, historyEligible) VALUES (?, ?, ?, X'64656c7461', NULL, ?, ?)",
+      "args": [
+        "m10",
+        "c1",
+        1,
+        5,
+        1
+      ]
+    },
+    {
+      "op": "sql",
+      "sql": "INSERT INTO semantic_sources (messageId, conversationId, eligible, sourcePrefix, sourceFingerprint, searchLength, historyEligible) VALUES (?, ?, ?, X'657073696c6f6e', NULL, ?, ?)",
+      "args": [
+        "m11",
+        "c1",
+        1,
+        7,
+        1
+      ]
+    },
+    {
+      "op": "sql",
+      "sql": "INSERT INTO semantic_sources (messageId, conversationId, eligible, sourcePrefix, sourceFingerprint, searchLength, historyEligible) VALUES (?, ?, ?, X'746f6f6c', NULL, ?, ?)",
+      "args": [
+        "tool_1",
+        "c1",
+        0,
+        4,
+        0
+      ]
+    },
+    {
+      "op": "sql",
+      "sql": "INSERT INTO semantic_sources (messageId, conversationId, eligible, sourcePrefix, sourceFingerprint, searchLength, historyEligible) VALUES (?, ?, ?, X'67616d6d61', NULL, ?, ?)",
+      "args": [
+        "m6",
+        "c1",
+        0,
+        5,
+        1
+      ]
+    },
+    {
+      "op": "sql",
+      "sql": "INSERT INTO semantic_sources (messageId, conversationId, eligible, sourcePrefix, sourceFingerprint, searchLength, historyEligible) VALUES (?, ?, ?, X'7461736b206d657373616765', NULL, ?, ?)",
+      "args": [
+        "m5",
+        "task",
+        1,
+        12,
+        1
+      ]
+    },
+    {
+      "op": "getReconcileMessagesByIds",
       "modelId": "model",
       "maxWorkRevision": 0,
+      "messageIds": [
+        "m1",
+        "m2",
+        "m3",
+        "m4",
+        "tool_1",
+        "result_1",
+        "compact_1",
+        "m5",
+        "m6",
+        "m10",
+        "m11"
+      ],
+      "sourcePrefixBytes": 32000
+    },
+    {
+      "op": "getReconcileMessageIdsPage",
       "afterId": "m1",
       "limit": 3
     },
     {
-      "op": "getReconcileMessagesPage",
+      "op": "getReconcileMessagesByIds",
       "modelId": "model",
       "maxWorkRevision": 5,
-      "afterId": null,
-      "limit": 10
+      "messageIds": [
+        "m1",
+        "m2",
+        "m3",
+        "m4",
+        "tool_1",
+        "result_1",
+        "compact_1",
+        "m5",
+        "m6",
+        "m10",
+        "m11"
+      ],
+      "sourcePrefixBytes": 32000
     },
     {
       "op": "upsertWork",
@@ -151,18 +283,42 @@
       }
     },
     {
-      "op": "getReconcileMessagesPage",
+      "op": "getReconcileMessagesByIds",
       "modelId": "model",
       "maxWorkRevision": 4,
-      "afterId": null,
-      "limit": 10
+      "messageIds": [
+        "m1",
+        "m2",
+        "m3",
+        "m4",
+        "tool_1",
+        "result_1",
+        "compact_1",
+        "m5",
+        "m6",
+        "m10",
+        "m11"
+      ],
+      "sourcePrefixBytes": 32000
     },
     {
-      "op": "getReconcileMessagesPage",
+      "op": "getReconcileMessagesByIds",
       "modelId": "model",
       "maxWorkRevision": 5,
-      "afterId": null,
-      "limit": 10
+      "messageIds": [
+        "m1",
+        "m2",
+        "m3",
+        "m4",
+        "tool_1",
+        "result_1",
+        "compact_1",
+        "m5",
+        "m6",
+        "m10",
+        "m11"
+      ],
+      "sourcePrefixBytes": 32000
     },
     {
       "op": "getSearchableMessageText",

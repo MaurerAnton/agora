@@ -42,6 +42,12 @@
         "dimension": 1,
         "sourceFingerprint": "fp-2"
       }
+    ],
+    "conversations": [
+      {
+        "id": "c1",
+        "taskId": null
+      }
     ]
   },
   "steps": [
@@ -111,10 +117,6 @@
         "m1",
         "missing"
       ]
-    },
-    {
-      "op": "deleteEmbeddingsForModel",
-      "modelId": "model"
     },
     {
       "op": "deleteEmbeddingsForMessages",

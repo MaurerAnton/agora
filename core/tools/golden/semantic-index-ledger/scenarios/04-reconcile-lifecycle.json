@@ -7,6 +7,12 @@
         "text": "hello",
         "participant": "USER"
       }
+    ],
+    "conversations": [
+      {
+        "id": "c1",
+        "taskId": null
+      }
     ]
   },
   "steps": [

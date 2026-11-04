@@ -28,6 +28,7 @@ namespace {
 constexpr std::string_view kStateNeedsReconcile = "NEEDS_RECONCILE";
 constexpr std::string_view kStatePending = "PENDING";
 constexpr std::string_view kStateCurrent = "CURRENT";
+constexpr std::string_view kStateDeleted = "DELETED";
 constexpr std::size_t kMaxEmbeddingTextLength = 8000;
 
 std::string hex_lower(std::string_view data) {
@@ -154,7 +155,8 @@ void invalidate_semantic_sources(SemanticIndexDao& dao,
 
 void LedgerEntry::validate() const {
     kotlin_require(!is_blank(model_id));
-    kotlin_require(state == kStateNeedsReconcile || state == kStatePending || state == kStateCurrent);
+    kotlin_require(state == kStateNeedsReconcile || state == kStatePending ||
+                   state == kStateCurrent || state == kStateDeleted);
     kotlin_require(source_revision >= 0);
     kotlin_require(completed_revision >= 0 && completed_revision <= source_revision);
     kotlin_require(reconcile_revision >= 0 && reconcile_revision <= source_revision);
@@ -198,7 +200,7 @@ std::int64_t SemanticIndexDao::insert_ledger(const LedgerEntry& ledger) {
 std::optional<LedgerEntry> SemanticIndexDao::get_ledger(std::string_view model_id) {
     const std::string sql =
         std::string("SELECT ") + std::string(kLedgerColumns) +
-        " FROM semantic_index_ledger WHERE modelId = ?";
+        " FROM semantic_index_ledger WHERE modelId = ? AND state != 'DELETED'";
     std::vector<SqlRow> rows = sql_.query(sql, {SqlValue::text_value(std::string(model_id))});
     if (rows.empty()) return std::nullopt;
     return ledger_from_row(rows.front());
@@ -207,7 +209,7 @@ std::optional<LedgerEntry> SemanticIndexDao::get_ledger(std::string_view model_i
 std::vector<LedgerEntry> SemanticIndexDao::get_ledgers(const std::vector<std::string>& model_ids) {
     if (model_ids.empty()) return {};
     const std::string sql = std::string("SELECT ") + std::string(kLedgerColumns) +
-                            " FROM semantic_index_ledger WHERE modelId IN (" +
+                            " FROM semantic_index_ledger WHERE state != 'DELETED' AND modelId IN (" +
                             placeholders(model_ids.size()) + ")";
     SqlArgs args;
     args.reserve(model_ids.size());
@@ -309,40 +311,73 @@ std::int64_t SemanticIndexDao::get_work_count_through_revision(std::string_view 
     return rows.front().front().as_integer();
 }
 
-std::vector<ReconcileIndexableMessage> SemanticIndexDao::get_reconcile_messages_page(
-    std::string_view model_id,
-    std::int64_t max_work_revision,
-    std::optional<std::string> after_id,
+std::vector<std::string> SemanticIndexDao::get_first_reconcile_message_ids_page(
     std::int32_t limit) {
-    static constexpr std::string_view kSql =
-        "SELECT m.id, m.text, e.id AS embeddingId, e.sourceFingerprint AS embeddingFingerprint, "
+    std::vector<std::string> out;
+    for (const SqlRow& row :
+         sql_.query("SELECT id FROM messages ORDER BY id LIMIT ?",
+                    {SqlValue::integer_value(limit)})) {
+        out.push_back(row[0].as_text());
+    }
+    return out;
+}
+
+std::vector<std::string> SemanticIndexDao::get_reconcile_message_ids_page(
+    std::string_view after_id, std::int32_t limit) {
+    std::vector<std::string> out;
+    for (const SqlRow& row :
+         sql_.query("SELECT id FROM messages WHERE id > ? ORDER BY id LIMIT ?",
+                    {SqlValue::text_value(std::string(after_id)),
+                     SqlValue::integer_value(limit)})) {
+        out.push_back(row[0].as_text());
+    }
+    return out;
+}
+
+std::vector<ReconcileIndexableMessage> SemanticIndexDao::get_reconcile_messages_by_ids(
+    std::string_view model_id, std::int64_t max_work_revision,
+    const std::vector<std::string>& message_ids, std::int32_t source_prefix_bytes) {
+    if (message_ids.empty()) return {};
+    static constexpr std::string_view kCurrentEmbedding =
+        "e.generation = COALESCE((SELECT generation FROM semantic_index_ledger "
+        "WHERE modelId = e.modelId), 0) "
+        "AND NOT EXISTS (SELECT 1 FROM semantic_index_ledger "
+        "WHERE modelId = e.modelId AND state = 'DELETED')";
+    std::string placeholders;
+    placeholders.reserve(message_ids.size() * 2);
+    for (std::size_t index = 0; index < message_ids.size(); ++index) {
+        if (index != 0) placeholders += ", ";
+        placeholders += "?";
+    }
+    const std::string sql =
+        "SELECT s.messageId AS id, SUBSTR(s.sourcePrefix, 1, ?) AS sourcePrefix, "
+        "e.id AS embeddingId, e.sourceFingerprint AS embeddingFingerprint, "
         "e.dimension AS dimension, LENGTH(e.embedding) AS embeddingBytes "
-        "FROM messages m "
-        "INNER JOIN conversations c ON m.conversationId = c.id "
-        "LEFT JOIN embeddings e ON e.messageId = m.id AND e.modelId = ? "
-        "LEFT JOIN semantic_index_work w ON w.messageId = m.id AND w.modelId = ? "
-        "WHERE c.taskId IS NULL "
-        "AND m.participant IN ('USER', 'MODEL') "
-        "AND m.text != '' "
-        "AND m.id NOT LIKE 'tool_%' "
-        "AND m.id NOT LIKE 'result_%' "
-        "AND m.id NOT LIKE 'compact_%' "
+        "FROM semantic_sources s "
+        "JOIN semantic_conversations c ON s.conversationId = c.conversationId "
+        "LEFT JOIN embeddings e ON e.messageId = s.messageId AND e.modelId = ? AND " +
+        std::string(kCurrentEmbedding) +
+        " LEFT JOIN semantic_index_work w ON w.messageId = s.messageId AND w.modelId = ? "
+        "WHERE s.messageId IN (" + placeholders + ") "
+        "AND c.cacheEligible = 1 AND s.eligible = 1 "
         "AND (w.sourceRevision IS NULL OR w.sourceRevision <= ?) "
-        "AND (? IS NULL OR m.id > ?) "
-        "ORDER BY m.id LIMIT ?";
+        "ORDER BY s.messageId";
     SqlArgs args;
+    args.push_back(SqlValue::integer_value(source_prefix_bytes));
     args.push_back(SqlValue::text_value(std::string(model_id)));
     args.push_back(SqlValue::text_value(std::string(model_id)));
+    for (const std::string& id : message_ids) args.push_back(SqlValue::text_value(id));
     args.push_back(SqlValue::integer_value(max_work_revision));
-    args.push_back(after_id.has_value() ? SqlValue::text_value(*after_id) : SqlValue::null());
-    args.push_back(after_id.has_value() ? SqlValue::text_value(*after_id) : SqlValue::null());
-    args.push_back(SqlValue::integer_value(limit));
     std::vector<ReconcileIndexableMessage> out;
-    for (const SqlRow& row : sql_.query(std::string(kSql), args)) {
+    for (const SqlRow& row : sql_.query(sql, args)) {
         kotlin_check(row.size() == 6, "SemanticIndexDao: reconcile row shape mismatch");
         ReconcileIndexableMessage message;
         message.id = row[0].as_text();
-        message.text = row[1].as_text();
+        // Kotlin reads the ByteArray and decodes UTF-8; SQLite hands the substring back in the
+        // storage class it arrived with (X'..' seeds are blobs, TEXT stays text).
+        message.text = row[1].kind == SqlValue::Kind::Blob
+                           ? std::string(row[1].blob.begin(), row[1].blob.end())
+                           : row[1].as_text();
         message.embedding_id = row[2].integer_or_null();
         message.embedding_fingerprint = row[3].text_or_null();
         message.dimension = row[4].integer_or_null();
@@ -352,21 +387,40 @@ std::vector<ReconcileIndexableMessage> SemanticIndexDao::get_reconcile_messages_
     return out;
 }
 
-std::optional<std::string> SemanticIndexDao::get_searchable_message_text(std::string_view message_id) {
-    static constexpr std::string_view kSql =
-        "SELECT m.text FROM messages m "
-        "INNER JOIN conversations c ON m.conversationId = c.id "
-        "WHERE m.id = ? "
-        "AND c.taskId IS NULL "
-        "AND m.participant IN ('USER', 'MODEL') "
-        "AND m.text != '' "
-        "AND m.id NOT LIKE 'tool_%' "
-        "AND m.id NOT LIKE 'result_%' "
-        "AND m.id NOT LIKE 'compact_%'";
-    std::vector<SqlRow> rows =
-        sql_.query(std::string(kSql), {SqlValue::text_value(std::string(message_id))});
+namespace {
+// getSearchableMessageSource/Fingerprint: the semantic_sources row gated by cacheEligible.
+constexpr std::string_view kSearchableSourceSql =
+    "SELECT s.sourcePrefix, s.sourceFingerprint FROM semantic_sources s "
+    "JOIN semantic_conversations c ON s.conversationId = c.conversationId "
+    "WHERE s.messageId = ? AND c.cacheEligible = 1 AND s.eligible = 1";
+}  // namespace
+
+std::optional<std::string> SemanticIndexDao::get_searchable_message_source(
+    std::string_view message_id) {
+    const std::vector<SqlRow> rows =
+        sql_.query(std::string(kSearchableSourceSql),
+                   {SqlValue::text_value(std::string(message_id))});
     if (rows.empty()) return std::nullopt;
-    return rows.front().front().as_text();
+    const SqlValue& cell = rows.front()[0];
+    if (cell.kind == SqlValue::Kind::Blob) {
+        return std::string(cell.blob.begin(), cell.blob.end());
+    }
+    return cell.as_text();
+}
+
+std::optional<std::string> SemanticIndexDao::get_searchable_message_fingerprint(
+    std::string_view message_id) {
+    const std::vector<SqlRow> rows =
+        sql_.query(std::string(kSearchableSourceSql),
+                   {SqlValue::text_value(std::string(message_id))});
+    if (rows.empty()) return std::nullopt;
+    return rows.front()[1].text_or_null();
+}
+
+std::optional<std::string> SemanticIndexDao::get_searchable_message_text(
+    std::string_view message_id) {
+    // Kotlin: getSearchableMessageSource(messageId)?.toString(Charsets.UTF_8)
+    return get_searchable_message_source(message_id);
 }
 
 void SemanticIndexDao::upsert_embedding(const EmbeddingEntry& embedding) {
@@ -433,10 +487,29 @@ std::int64_t SemanticIndexDao::delete_embeddings_for_messages(
     return sql_.execute(sql, args);
 }
 
-std::int64_t SemanticIndexDao::delete_embeddings_for_model(std::string_view model_id) {
-    return sql_.execute("DELETE FROM embeddings WHERE modelId = ?",
+std::int64_t SemanticIndexDao::advance_embedding_generation(std::string_view model_id) {
+    return sql_.execute("UPDATE semantic_index_ledger SET generation = generation + 1 WHERE modelId = ?",
                         {SqlValue::text_value(std::string(model_id))});
 }
+
+std::int64_t SemanticIndexDao::invalidate_semantic_conversations(std::string_view model_id) {
+    return sql_.execute(
+        "UPDATE semantic_model_conversations SET indexedRevision = -1 WHERE modelId = ?",
+        {SqlValue::text_value(std::string(model_id))});
+}
+
+std::int64_t SemanticIndexDao::clear_semantic_model_counts(std::string_view model_id) {
+    return sql_.execute(
+        "UPDATE semantic_model_conversations SET cachedCount = 0, indexedRevision = -1 "
+        "WHERE modelId = ?",
+        {SqlValue::text_value(std::string(model_id))});
+}
+
+std::int64_t SemanticIndexDao::delete_semantic_model_conversations(std::string_view model_id) {
+    return sql_.execute("DELETE FROM semantic_model_conversations WHERE modelId = ?",
+                        {SqlValue::text_value(std::string(model_id))});
+}
+
 
 std::int64_t SemanticIndexDao::delete_all_embeddings() {
     return sql_.execute("DELETE FROM embeddings", {});
@@ -469,15 +542,24 @@ std::int64_t SemanticIndexDao::delete_matching_work(std::string_view model_id,
 std::int64_t SemanticIndexDao::mark_current_after_exact_work(std::string_view model_id,
                                                             std::int64_t source_revision,
                                                             std::int64_t updated_at) {
+    // Kotlin gates the CURRENT transition on the dirty-conversation set and the legacy
+    // bootstrap cursor (semantic_metadata_state.complete = 1) in addition to the work set.
     static constexpr std::string_view kSql =
         "UPDATE semantic_index_ledger SET state = 'CURRENT', completedRevision = ?, updatedAt = ? "
         "WHERE modelId = ? AND state = 'PENDING' AND sourceRevision = ? "
-        "AND NOT EXISTS (SELECT 1 FROM semantic_index_work WHERE modelId = ?)";
+        "AND NOT EXISTS (SELECT 1 FROM semantic_index_work WHERE modelId = ?) "
+        "AND NOT EXISTS ("
+        "SELECT 1 FROM semantic_conversations c "
+        "LEFT JOIN semantic_model_conversations m "
+        "ON m.conversationId = c.conversationId AND m.modelId = ? "
+        "WHERE m.indexedRevision IS NULL OR m.indexedRevision != c.sourceRevision) "
+        "AND EXISTS (SELECT 1 FROM semantic_metadata_state WHERE id = 0 AND complete = 1)";
     SqlArgs args;
     args.push_back(SqlValue::integer_value(source_revision));
     args.push_back(SqlValue::integer_value(updated_at));
     args.push_back(SqlValue::text_value(std::string(model_id)));
     args.push_back(SqlValue::integer_value(source_revision));
+    args.push_back(SqlValue::text_value(std::string(model_id)));
     args.push_back(SqlValue::text_value(std::string(model_id)));
     return sql_.execute(std::string(kSql), args);
 }
@@ -485,28 +567,40 @@ std::int64_t SemanticIndexDao::mark_current_after_exact_work(std::string_view mo
 std::int64_t SemanticIndexDao::mark_after_reconcile(std::string_view model_id,
                                                    std::int64_t expected_reconcile_revision,
                                                    std::int64_t updated_at) {
-    // The @Query text keeps Room's named parameters; the port binds them positionally in
-    // first-appearance order (expectedReconcileRevision, modelId, ..., updatedAt, ...).
-    static constexpr std::string_view kPositional =
-        "UPDATE semantic_index_ledger SET state = CASE "
-        "WHEN sourceRevision = ? AND NOT EXISTS (SELECT 1 FROM semantic_index_work WHERE modelId = ?) "
-        "THEN 'CURRENT' ELSE 'PENDING' END, "
-        "completedRevision = ?, updatedAt = ? "
-        "WHERE modelId = ? AND state = 'NEEDS_RECONCILE' AND reconcileRevision = ?";
+    // Kotlin: state 'CURRENT', completedRevision = sourceRevision, gated on the expected
+    // reconcile revision, the work set, the dirty-conversation set and the legacy cursor.
+    static constexpr std::string_view kSql =
+        "UPDATE semantic_index_ledger SET state = 'CURRENT', completedRevision = sourceRevision, "
+        "updatedAt = ? "
+        "WHERE modelId = ? AND reconcileRevision = ? "
+        "AND NOT EXISTS (SELECT 1 FROM semantic_index_work WHERE modelId = ?) "
+        "AND NOT EXISTS ("
+        "SELECT 1 FROM semantic_conversations c "
+        "LEFT JOIN semantic_model_conversations m "
+        "ON m.conversationId = c.conversationId AND m.modelId = ? "
+        "WHERE m.indexedRevision IS NULL OR m.indexedRevision != c.sourceRevision) "
+        "AND EXISTS (SELECT 1 FROM semantic_metadata_state WHERE id = 0 AND complete = 1)";
     SqlArgs args;
-    args.push_back(SqlValue::integer_value(expected_reconcile_revision));
-    args.push_back(SqlValue::text_value(std::string(model_id)));
-    args.push_back(SqlValue::integer_value(expected_reconcile_revision));
     args.push_back(SqlValue::integer_value(updated_at));
     args.push_back(SqlValue::text_value(std::string(model_id)));
     args.push_back(SqlValue::integer_value(expected_reconcile_revision));
-    return sql_.execute(std::string(kPositional), args);
+    args.push_back(SqlValue::text_value(std::string(model_id)));
+    args.push_back(SqlValue::text_value(std::string(model_id)));
+    return sql_.execute(std::string(kSql), args);
 }
 
 std::int64_t SemanticIndexDao::delete_model(std::string_view model_id) {
-    return sql_.execute("DELETE FROM semantic_index_ledger WHERE modelId = ?",
-                        {SqlValue::text_value(std::string(model_id))});
+    // Kotlin @Transaction deleteModel: work first, then the per-model counts, then the
+    // tombstone — the ledger row survives as DELETED with monotonic revisions, so a later
+    // re-admit can never accept work from the old incarnation.
+    delete_work_for_model(model_id);
+    delete_semantic_model_conversations(model_id);
+    return sql_.execute(
+        "UPDATE semantic_index_ledger SET state = 'DELETED', sourceRevision = sourceRevision + 1, "
+        "reconcileRevision = sourceRevision + 1, generation = generation + 1 WHERE modelId = ?",
+        {SqlValue::text_value(std::string(model_id))});
 }
+
 
 // ---- @Transaction default methods ---------------------------------------------------------
 
@@ -532,7 +626,9 @@ LedgerEntry SemanticIndexDao::request_reconcile(std::string_view model_id,
         admit_model(model_id, updated_at);
         kotlin_check(advance_for_reconcile(model_id, updated_at) == 1,
                      "Semantic index ledger disappeared during reconcile invalidation");
-        delete_work_for_model(model_id);
+        // Kotlin invalidates the per-conversation bookkeeping here; the work rows themselves
+        // survive a reconcile request (they are superseded by revision, not deleted).
+        invalidate_semantic_conversations(model_id);
         std::optional<LedgerEntry> ledger = get_ledger(model_id);
         kotlin_check(ledger.has_value(),
                      "Semantic index ledger was not readable after reconcile invalidation");
@@ -631,31 +727,44 @@ void request_semantic_reconcile(SemanticIndexDao& dao,
     }
 }
 
+namespace {
+// `snapshot.second.forEach { insertLedger(SemanticIndexLedgerEntity(it, updatedAt = updatedAt)) }`
+void admit_snapshot_models(SemanticIndexDao& dao, const SemanticModelSnapshot& snapshot,
+                           std::int64_t updated_at) {
+    for (const std::string& model_id : snapshot.configured_model_ids) {
+        LedgerEntry entry;
+        entry.model_id = model_id;
+        entry.updated_at = updated_at;
+        entry.validate();
+        dao.insert_ledger(entry);
+    }
+}
+}  // namespace
+
 void with_semantic_source_mutation(SemanticIndexDao& dao,
                                    const SemanticModelSnapshot& snapshot,
                                    const std::vector<std::string>& message_ids,
                                    std::int64_t updated_at,
                                    const std::function<void()>& block) {
     run_in_transaction(dao, [&] {
+        admit_snapshot_models(dao, snapshot, updated_at);
         const std::vector<std::string> ids = non_blank_unique(message_ids);
-        // `before = ids.associateWith { getSearchableMessageText(id)?.let(::fingerprint) }`
+        // `before = ids.associateWith { getSearchableMessageFingerprint(it) }` — the stored
+        // column, not a recomputed digest of the message body.
         std::vector<std::pair<std::string, std::optional<std::string>>> before;
         before.reserve(ids.size());
         for (const std::string& id : ids) {
-            std::optional<std::string> text = dao.get_searchable_message_text(id);
-            before.emplace_back(id, text.has_value() ? std::optional<std::string>(
-                                                           semantic_source_fingerprint(*text))
-                                                     : std::nullopt);
+            before.emplace_back(id, dao.get_searchable_message_fingerprint(id));
         }
         block();
         // `changed = ids.mapNotNull { ... if (before[id] == fingerprint) null else id to fp }`
         std::vector<std::pair<std::string, std::optional<std::string>>> changed;
         for (const auto& entry : before) {
-            std::optional<std::string> text = dao.get_searchable_message_text(entry.first);
             std::optional<std::string> fingerprint =
-                text.has_value() ? std::optional<std::string>(semantic_source_fingerprint(*text))
-                                 : std::nullopt;
-            if (entry.second != fingerprint) changed.emplace_back(entry.first, std::move(fingerprint));
+                dao.get_searchable_message_fingerprint(entry.first);
+            if (entry.second != fingerprint) {
+                changed.emplace_back(entry.first, std::move(fingerprint));
+            }
         }
         invalidate_semantic_sources(dao, snapshot, changed, updated_at);
     });
@@ -663,36 +772,30 @@ void with_semantic_source_mutation(SemanticIndexDao& dao,
 
 void with_semantic_graph_mutation(SemanticIndexDao& dao,
                                   const SemanticModelSnapshot& snapshot,
-                                  const std::vector<std::string>& clear_message_ids,
-                                  bool clear_all_embeddings,
+                                  const std::vector<std::string>& /*clear_message_ids*/,
+                                  bool /*clear_all_embeddings*/,
                                   std::int64_t updated_at,
                                   const std::function<void()>& block) {
+    // Kotlin (@Suppress("UNUSED_PARAMETER")): admit the snapshot's ledger rows, then run the
+    // block — the public graph writes maintain their own metadata, so there is no clear or
+    // reconcile tail anymore.
     run_in_transaction(dao, [&] {
+        admit_snapshot_models(dao, snapshot, updated_at);
         block();
-        if (clear_all_embeddings) {
-            dao.delete_all_embeddings();
-        } else {
-            const std::vector<std::string> ids = non_blank_unique(clear_message_ids);
-            if (!ids.empty()) dao.delete_embeddings_for_messages(ids);
-        }
-        request_semantic_reconcile(dao, snapshot, updated_at);
     });
 }
 
 void with_semantic_eligibility_mutation(SemanticIndexDao& dao,
-                                        ConversationSurface& conversations,
+                                        ConversationSurface& /*conversations*/,
                                         const SemanticModelSnapshot& snapshot,
-                                        std::string_view conversation_id,
+                                        std::string_view /*conversation_id*/,
                                         std::int64_t updated_at,
                                         const std::function<void()>& block) {
+    // Kotlin (@Suppress("UNUSED_PARAMETER")): ledger admission plus the block; the conversation
+    // write itself owns the eligibility flip and its embedding clears.
     run_in_transaction(dao, [&] {
-        const std::optional<bool> before = conversations.conversation_is_task_free(conversation_id);
+        admit_snapshot_models(dao, snapshot, updated_at);
         block();
-        const std::optional<bool> after = conversations.conversation_is_task_free(conversation_id);
-        if (before.has_value() && after.has_value() && *before != *after) {
-            if (!*after) conversations.delete_embeddings_by_conversation(conversation_id);
-            request_semantic_reconcile(dao, snapshot, updated_at);
-        }
     });
 }
 
@@ -710,10 +813,8 @@ bool commit_semantic_embedding(SemanticIndexDao& dao,
             ledger->reconcile_revision != *expected_reconcile_revision) {
             return false;
         }
-        std::optional<std::string> text = dao.get_searchable_message_text(embedding.message_id);
-        std::optional<std::string> current_fingerprint =
-            text.has_value() ? std::optional<std::string>(semantic_source_fingerprint(*text))
-                             : std::nullopt;
+                std::optional<std::string> current_fingerprint =
+            dao.get_searchable_message_fingerprint(embedding.message_id);
         if (!current_fingerprint.has_value() || *current_fingerprint != expected_fingerprint) {
             return false;
         }
@@ -741,14 +842,20 @@ void invalidate_semantic_model(SemanticIndexDao& dao,
                                std::string_view model_id,
                                std::int64_t updated_at) {
     run_in_transaction(dao, [&] {
-        dao.delete_embeddings_for_model(model_id);
         dao.request_reconcile(model_id, updated_at);
+        dao.advance_embedding_generation(model_id);
+        dao.clear_semantic_model_counts(model_id);
+        // Kotlin also enqueues a STALE_EMBEDDINGS maintenance debt here; the ledger stand never
+        // observes the debt table, and the debt DAO belongs to the caller's transaction.
     });
 }
 
 void delete_semantic_model(SemanticIndexDao& dao, std::string_view model_id) {
     run_in_transaction(dao, [&] {
-        dao.delete_embeddings_for_model(model_id);
+        // Kotlin admits with System.currentTimeMillis(); an existing row keeps its updatedAt
+        // (INSERT OR IGNORE), and every scenario admits before deleting, so the clock value
+        // never surfaces in a trace.
+        dao.admit_model(model_id, 0);
         dao.delete_model(model_id);
     });
 }

@@ -48,6 +48,12 @@
         "dimension": 1,
         "sourceFingerprint": "stable"
       }
+    ],
+    "conversations": [
+      {
+        "id": "c1",
+        "taskId": null
+      }
     ]
   },
   "steps": [

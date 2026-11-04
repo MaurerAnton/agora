@@ -618,17 +618,34 @@ json::Value dispatch(const std::string& op,
         return json_long(dao.get_work_count_through_revision(
             required_string(step, "modelId"), required_long(step, "maxSourceRevision")));
     }
-    if (op == "getReconcileMessagesPage") {
-        std::vector<json::Value> rows;
-        for (const ReconcileIndexableMessage& row : dao.get_reconcile_messages_page(
-                 required_string(step, "modelId"), required_long(step, "maxWorkRevision"),
-                 optional_string(step, "afterId"),
-                 static_cast<std::int32_t>(required_long(step, "limit")))) {
-            rows.push_back(reconcile_row_json(row));
-        }
-        return json_array(std::move(rows));
+    if (op == "getFirstReconcileMessageIdsPage") {
+    std::vector<json::Value> ids;
+    for (const std::string& id : dao.get_first_reconcile_message_ids_page(
+             static_cast<std::int32_t>(required_long(step, "limit")))) {
+        ids.push_back(json_string(id));
     }
-    if (op == "getSearchableMessageText") {
+    return json_array(std::move(ids));
+}
+if (op == "getReconcileMessageIdsPage") {
+    std::vector<json::Value> ids;
+    for (const std::string& id : dao.get_reconcile_message_ids_page(
+             required_string(step, "afterId"),
+             static_cast<std::int32_t>(required_long(step, "limit")))) {
+        ids.push_back(json_string(id));
+    }
+    return json_array(std::move(ids));
+}
+if (op == "getReconcileMessagesByIds") {
+    std::vector<json::Value> rows;
+    for (const ReconcileIndexableMessage& row : dao.get_reconcile_messages_by_ids(
+             required_string(step, "modelId"), required_long(step, "maxWorkRevision"),
+             string_array(step, "messageIds"),
+             static_cast<std::int32_t>(required_long(step, "sourcePrefixBytes")))) {
+        rows.push_back(reconcile_row_json(row));
+    }
+    return json_array(std::move(rows));
+}
+if (op == "getSearchableMessageText") {
         return optional_json_string(
             dao.get_searchable_message_text(required_string(step, "messageId")));
     }
@@ -641,9 +658,6 @@ json::Value dispatch(const std::string& op,
     if (op == "deleteEmbeddingsForMessages") {
         return json_long(
             dao.delete_embeddings_for_messages(string_array(step, "messageIds")));
-    }
-    if (op == "deleteEmbeddingsForModel") {
-        return json_long(dao.delete_embeddings_for_model(required_string(step, "modelId")));
     }
     if (op == "deleteAllEmbeddings") {
         return json_long(dao.delete_all_embeddings());
@@ -737,20 +751,36 @@ void seed(SqliteExecutor& sql, const json::Value& root) {
     if (const json::Value* conversations = field(*seed_object, "conversations");
         conversations != nullptr) {
         for (const json::Value& row : conversations->elements) {
-            sql.execute("INSERT INTO conversations (id, taskId) VALUES (?, ?)",
-                        {SqlValue::text_value(required_string(row, "id")),
-                         optional_string(row, "taskId").has_value()
-                             ? SqlValue::text_value(*optional_string(row, "taskId"))
-                             : SqlValue::null()});
+            sql.execute(
+                "INSERT INTO conversations (id, title, lastUpdated, dataChangedAt, origin, "
+                "graduated, draftText, hasUnreadGeneration, isPinned, taskId) "
+                "VALUES (?, '', 0, 0, 'user', 0, '', 0, 0, ?)",
+                {SqlValue::text_value(required_string(row, "id")),
+                 optional_string(row, "taskId").has_value()
+                     ? SqlValue::text_value(*optional_string(row, "taskId"))
+                     : SqlValue::null()});
         }
     }
     if (const json::Value* messages = field(*seed_object, "messages"); messages != nullptr) {
+        if (!messages->elements.empty()) {
+            // messages.runId is NOT NULL and foreign keys are on; one run per seed, mirroring
+            // the Kotlin dump (conversation of the first message).
+            sql.execute(
+                "INSERT INTO runs (id, conversationId, status, activeSlot, startedAt, "
+                "lastCheckpointAt, currentPass, legacyAmbiguous) "
+                "VALUES ('r1', ?, 'COMPLETED', NULL, 1, 0, 0, 0)",
+                {SqlValue::text_value(
+                    required_string(messages->elements.front(), "conversationId"))});
+        }
         for (const json::Value& row : messages->elements) {
-            sql.execute("INSERT INTO messages (id, conversationId, text, participant) VALUES (?, ?, ?, ?)",
-                        {SqlValue::text_value(required_string(row, "id")),
-                         SqlValue::text_value(required_string(row, "conversationId")),
-                         SqlValue::text_value(required_string(row, "text")),
-                         SqlValue::text_value(required_string(row, "participant"))});
+            sql.execute(
+                "INSERT INTO messages (id, conversationId, text, images, tokenCount, status, "
+                "participant, timestamp, runId, runSequence) "
+                "VALUES (?, ?, ?, '[]', 0, 'SUCCESS', ?, 0, 'r1', 0)",
+                {SqlValue::text_value(required_string(row, "id")),
+                 SqlValue::text_value(required_string(row, "conversationId")),
+                 SqlValue::text_value(required_string(row, "text")),
+                 SqlValue::text_value(required_string(row, "participant"))});
         }
     }
     if (const json::Value* embeddings = field(*seed_object, "embeddings");

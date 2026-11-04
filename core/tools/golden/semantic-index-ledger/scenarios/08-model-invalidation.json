@@ -27,6 +27,12 @@
         "dimension": 1,
         "sourceFingerprint": "fp"
       }
+    ],
+    "conversations": [
+      {
+        "id": "c1",
+        "taskId": null
+      }
     ]
   },
   "steps": [

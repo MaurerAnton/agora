@@ -16742,18 +16742,6 @@ void profile_chat_search_dao(const fs::path& scenarios) {
                    {"minimumTextLength", number(minimum_text_length)},
                    {"limit", number(limit)}});
     };
-    auto indexable_page = [&](std::optional<std::string> after_id, std::int64_t limit) {
-        return op("getSearchableMessagesPage",
-                  {{"afterId", after_id ? str(*after_id) : null_value()},
-                   {"limit", number(limit)}});
-    };
-    auto unembedded_page = [&](const std::string& model_id, std::optional<std::string> after_id,
-                               std::int64_t limit) {
-        return op("getUnembeddedMessagesPage",
-                  {{"modelId", str(model_id)},
-                   {"afterId", after_id ? str(*after_id) : null_value()},
-                   {"limit", number(limit)}});
-    };
     auto by_ids = [&](std::vector<json::Value> ids) {
         return op("getSearchableMessagesByIds", {{"ids", array(std::move(ids))}});
     };
@@ -16798,15 +16786,6 @@ void profile_chat_search_dao(const fs::path& scenarios) {
                   op("getEmbeddingCountsByModels",
                      {{"modelIds", array(ids_of({"model-unknown"}))}}),
                   op("getIndexableMessageCount", {})}));
-    add("06-indexable-pages",
-        scenario({indexable_page(std::nullopt, 100), indexable_page(std::nullopt, 5),
-                  indexable_page("m-10", 100), indexable_page("m-10", 3),
-                  indexable_page("", 100), indexable_page("zzz", 100),
-                  indexable_page(std::nullopt, 0), unembedded_page("model-a", std::nullopt, 100),
-                  unembedded_page("model-b", std::nullopt, 100),
-                  unembedded_page("model-a", "m-09", 100),
-                  unembedded_page("model-a", std::nullopt, 2),
-                  unembedded_page("model-c", std::nullopt, 100)}));
     add("07-messages-by-ids",
         scenario({by_ids(ids_of({"m-01", "m-16", "m-10", "m-05"})),
                   by_ids(ids_of({"m-01", "m-01", "m-02"})),

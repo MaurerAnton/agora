@@ -36,6 +36,8 @@ import kotlinx.serialization.json.jsonArray
 import kotlinx.serialization.json.jsonObject
 import kotlinx.serialization.json.jsonPrimitive
 import kotlinx.serialization.json.put
+import com.newoether.agora.data.repository.searchConversationMessages
+import com.newoether.agora.data.local.semanticSourceFingerprint
 import stand.room.MiniRoom
 
 private val json = Json
@@ -84,7 +86,11 @@ private fun render(scenarioFile: File): String = runBlocking {
             val op = step.string("op")
             val result = try {
                 executeOperation(op, step, dao)
-            } catch (failure: Throwable) {
+            } catch (thrown: Throwable) {
+                // MiniRoom's proxy wraps checked SQL exceptions in UndeclaredThrowableException;
+                // the frozen traces pin the real cause (same normalization as the backup stand).
+                val failure = (thrown as? java.lang.reflect.UndeclaredThrowableException)
+                    ?.undeclaredThrowable ?: thrown
                 buildJsonObject {
                     put("error", failure::class.simpleName ?: failure::class.java.name)
                     put("message", failure.message ?: "")
@@ -111,7 +117,7 @@ private suspend fun executeOperation(
     dao: ChatSearchDao,
 ): JsonElement = when (op) {
     "searchMessages" -> JsonArray(
-        dao.searchMessages(step.string("query"), step.optionalInt("limit") ?: 10)
+        searchConversationMessages(dao, step.string("query"), step.optionalInt("limit") ?: 10)
             .map(::messageJson),
     )
     "getMessagesWithCitationSegmentsPage" -> JsonArray(
@@ -137,19 +143,6 @@ private suspend fun executeOperation(
         ).map(::embeddingModelCountJson),
     )
     "getIndexableMessageCount" -> JsonPrimitive(dao.getIndexableMessageCount())
-    "getSearchableMessagesPage" -> JsonArray(
-        dao.getSearchableMessagesPage(
-            step.optionalString("afterId"),
-            step.int("limit"),
-        ).map(::indexableMessageJson),
-    )
-    "getUnembeddedMessagesPage" -> JsonArray(
-        dao.getUnembeddedMessagesPage(
-            modelId = step.string("modelId"),
-            afterId = step.optionalString("afterId"),
-            limit = step.int("limit"),
-        ).map(::indexableMessageJson),
-    )
     "getSearchableMessagesByIds" -> JsonArray(
         dao.getSearchableMessagesByIds(
             step["ids"]!!.jsonArray.map { it.jsonPrimitive.content },
@@ -288,6 +281,121 @@ private fun seed(connection: Connection, seed: JsonObject?) {
             it.setString(5, row.optionalString("chunkText") ?: "")
             it.setInt(6, row.optionalInt("dimension") ?: 0)
             it.setObject(7, row.optionalString("sourceFingerprint"))
+            it.executeUpdate()
+        }
+    }
+
+    // The stand assumes the legacy semantic bootstrap already ran: the current count queries read
+    // semantic_metadata_state.complete plus the per-conversation revisions and model counters
+    // instead of the embeddings table directly. Materialize them from the seeded rows with the
+    // same eligibility rule SemanticSourceMetadata.semanticSource uses.
+    connection.createStatement().use {
+        it.execute(
+            "INSERT INTO semantic_metadata_state (id, complete, afterMessageId) " +
+                "VALUES (0, 1, NULL)",
+        )
+    }
+    val conversationTask = mutableMapOf<String, Boolean>()
+    connection.createStatement().use { statement ->
+        statement.executeQuery("SELECT id, taskId FROM conversations").use { rows ->
+            while (rows.next()) {
+                conversationTask[rows.getString(1)] = rows.getString(2) != null
+            }
+        }
+    }
+    val eligibleByConversation = mutableMapOf<String, Int>()
+    fun isEligible(id: String, participant: String, text: String): Boolean {
+        val synthetic = listOf("tool", "result", "compact").any { prefix ->
+            id.length > prefix.length && prefix.indices.all { index ->
+                val char = id[index]
+                (if (char in 'A'..'Z') char + 32 else char) == prefix[index]
+            }
+        }
+        val ordinary = text.isNotEmpty() && (participant == "USER" || participant == "MODEL")
+        return ordinary && !synthetic
+    }
+    connection.createStatement().use { statement ->
+        statement.executeQuery("SELECT id, conversationId, participant, text FROM messages").use { rows ->
+            while (rows.next()) {
+                if (isEligible(rows.getString(1), rows.getString(3), rows.getString(4) ?: "")) {
+                    val conversationId = rows.getString(2)
+                    eligibleByConversation[conversationId] =
+                        (eligibleByConversation[conversationId] ?: 0) + 1
+                }
+            }
+        }
+    }
+    for ((conversationId, hasTask) in conversationTask) {
+        connection.prepareStatement(
+            "INSERT INTO semantic_conversations (conversationId, sourceRevision, eligibleCount, " +
+                "cacheEligible) VALUES (?, 0, ?, ?)",
+        ).use {
+            it.setString(1, conversationId)
+            it.setInt(2, eligibleByConversation[conversationId] ?: 0)
+            it.setBoolean(3, !hasTask)
+            it.executeUpdate()
+        }
+    }
+    // The searchable pages read semantic_sources (historyEligible/searchLength gated), so the
+    // bootstrap materializes one source row per message with SemanticSourceMetadata's rule.
+    connection.createStatement().use { statement ->
+        statement.executeQuery("SELECT id, conversationId, participant, text FROM messages").use { rows ->
+            while (rows.next()) {
+                val id = rows.getString(1)
+                val conversationId = rows.getString(2)
+                val participant = rows.getString(3)
+                val text = rows.getString(4) ?: ""
+                val eligible = isEligible(id, participant, text)
+                val ordinary = text.isNotEmpty() &&
+                    (participant == "USER" || participant == "MODEL")
+                val historyEligible = ordinary &&
+                    listOf("tool_", "result_", "compact_").none { id.startsWith(it) }
+                val end = text.indexOf('\u0000').takeIf { it >= 0 } ?: text.length
+                connection.prepareStatement(
+                    "INSERT INTO semantic_sources (messageId, conversationId, eligible, " +
+                        "sourcePrefix, sourceFingerprint, searchLength, historyEligible) " +
+                        "VALUES (?, ?, ?, ?, ?, ?, ?)",
+                ).use { insert ->
+                    insert.setString(1, id)
+                    insert.setString(2, conversationId)
+                    insert.setBoolean(3, eligible)
+                    insert.setBytes(
+                        4,
+                        (if (eligible) text.take(8001) else "").toByteArray(Charsets.UTF_8),
+                    )
+                    insert.setString(
+                        5,
+                        if (eligible) semanticSourceFingerprint(text.take(8001)) else null,
+                    )
+                    insert.setInt(6, if (ordinary) text.codePointCount(0, end) else 0)
+                    insert.setBoolean(7, historyEligible)
+                    insert.executeUpdate()
+                }
+            }
+        }
+    }
+    val cachedByModel = mutableMapOf<Pair<String, String>, Int>()
+    connection.createStatement().use { statement ->
+        statement.executeQuery(
+            "SELECT e.modelId, m.id, m.conversationId, m.participant, m.text " +
+                "FROM embeddings e JOIN messages m ON m.id = e.messageId",
+        ).use { rows ->
+            while (rows.next()) {
+                if (isEligible(rows.getString(2), rows.getString(4), rows.getString(5) ?: "")) {
+                    val key = rows.getString(1) to rows.getString(3)
+                    cachedByModel[key] = (cachedByModel[key] ?: 0) + 1
+                }
+            }
+        }
+    }
+    for ((key, count) in cachedByModel) {
+        connection.prepareStatement(
+            "INSERT INTO semantic_model_conversations (modelId, conversationId, cachedCount, " +
+                "indexedRevision) VALUES (?, ?, ?, -1)",
+        ).use {
+            it.setString(1, key.first)
+            it.setString(2, key.second)
+            it.setInt(3, count)
             it.executeUpdate()
         }
     }

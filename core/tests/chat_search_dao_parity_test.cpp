@@ -9,6 +9,7 @@
 #include <cstdint>
 #include <filesystem>
 #include <fstream>
+#include <map>
 #include <optional>
 #include <sstream>
 #include <stdexcept>
@@ -21,6 +22,7 @@
 
 #include "agora/core/chat_search_dao.hpp"
 #include "agora/core/json.hpp"
+#include "agora/core/semantic_index_ledger.hpp"
 #include "check.hpp"
 
 namespace {
@@ -572,6 +574,111 @@ void seed(SqliteExecutor& sql, const json::Value& root) {
                  SqlValue::integer_value(optional_long(row, "dimension").value_or(0)),
                  fingerprint.has_value() ? SqlValue::text_value(*fingerprint) : SqlValue::null()});
         }
+    }
+
+    // Mirrors ChatSearchTraceDump.seed's legacy-bootstrap materialization: the current count and
+    // page queries read semantic_metadata_state / semantic_conversations / semantic_sources
+    // instead of the raw messages, so the stand derives those rows with
+    // SemanticSourceMetadata.semanticSource's eligibility rule.
+    sql.execute(
+        "INSERT INTO semantic_metadata_state (id, complete, afterMessageId) VALUES (0, 1, NULL)",
+        {});
+    struct SeedMessage {
+        std::string id;
+        std::string conversation_id;
+        std::string participant;
+        std::string text;
+    };
+    std::vector<SeedMessage> seeded_messages;
+    for (const SqlRow& row : sql.query("SELECT id, conversationId, participant, text FROM messages",
+                                       {})) {
+        seeded_messages.push_back(SeedMessage{row[0].as_text(), row[1].as_text(), row[2].as_text(),
+                                              row[3].as_text()});
+    }
+    const auto lower_prefix_match = [](std::string_view id, std::string_view prefix) {
+        if (id.size() <= prefix.size()) return false;
+        for (std::size_t index = 0; index < prefix.size(); ++index) {
+            char character = id[index];
+            if (character >= 'A' && character <= 'Z') {
+                character = static_cast<char>(character - 'A' + 'a');
+            }
+            if (character != prefix[index]) return false;
+        }
+        return true;
+    };
+    const auto has_prefix = [](std::string_view id, std::string_view prefix) {
+        return id.size() >= prefix.size() && id.compare(0, prefix.size(), prefix) == 0;
+    };
+    const auto is_ordinary = [](const SeedMessage& message) {
+        return !message.text.empty() &&
+               (message.participant == "USER" || message.participant == "MODEL");
+    };
+    const auto is_eligible = [&](const SeedMessage& message) {
+        const bool synthetic = lower_prefix_match(message.id, "tool") ||
+                               lower_prefix_match(message.id, "result") ||
+                               lower_prefix_match(message.id, "compact");
+        return is_ordinary(message) && !synthetic;
+    };
+    std::map<std::string, int> eligible_by_conversation;
+    for (const SeedMessage& message : seeded_messages) {
+        if (is_eligible(message)) eligible_by_conversation[message.conversation_id] += 1;
+    }
+    for (const SqlRow& row : sql.query("SELECT id, taskId FROM conversations", {})) {
+        const auto it = eligible_by_conversation.find(row[0].as_text());
+        sql.execute(
+            "INSERT INTO semantic_conversations (conversationId, sourceRevision, eligibleCount, "
+            "cacheEligible) VALUES (?, 0, ?, ?)",
+            {SqlValue::text_value(row[0].as_text()),
+             SqlValue::integer_value(
+                 it == eligible_by_conversation.end() ? 0 : it->second),
+             SqlValue::bool_value(row[1].is_null())});
+    }
+    for (const SeedMessage& message : seeded_messages) {
+        const bool eligible = is_eligible(message);
+        const bool ordinary = is_ordinary(message);
+        const bool history_eligible =
+            ordinary && !has_prefix(message.id, "tool_") && !has_prefix(message.id, "result_") &&
+            !has_prefix(message.id, "compact_");
+        const std::size_t nul = message.text.find('\0');
+        const std::size_t end = nul == std::string::npos ? message.text.size() : nul;
+        int search_length = 0;
+        if (ordinary) {
+            for (std::size_t index = 0; index < end; ++index) {
+                if ((static_cast<unsigned char>(message.text[index]) & 0xC0) != 0x80) {
+                    ++search_length;
+                }
+            }
+        }
+        const std::string prefix =
+            eligible ? json::take_utf16_units(message.text, 8001) : std::string{};
+        SqlValue prefix_blob;
+        prefix_blob.kind = SqlValue::Kind::Blob;
+        prefix_blob.blob.assign(prefix.begin(), prefix.end());
+        sql.execute(
+            "INSERT INTO semantic_sources (messageId, conversationId, eligible, sourcePrefix, "
+            "sourceFingerprint, searchLength, historyEligible) VALUES (?, ?, ?, ?, ?, ?, ?)",
+            {SqlValue::text_value(message.id), SqlValue::text_value(message.conversation_id),
+             SqlValue::bool_value(eligible), std::move(prefix_blob),
+             eligible ? SqlValue::text_value(
+                            agora::core::semantic_index::semantic_source_fingerprint(prefix))
+                      : SqlValue::null(),
+             SqlValue::integer_value(search_length), SqlValue::bool_value(history_eligible)});
+    }
+    std::map<std::pair<std::string, std::string>, int> cached_by_model;
+    for (const SqlRow& row : sql.query(
+             "SELECT e.modelId, m.id, m.conversationId, m.participant, m.text "
+             "FROM embeddings e JOIN messages m ON m.id = e.messageId",
+             {})) {
+        const SeedMessage message{row[1].as_text(), row[2].as_text(), row[3].as_text(),
+                                  row[4].as_text()};
+        if (is_eligible(message)) cached_by_model[{row[0].as_text(), message.conversation_id}] += 1;
+    }
+    for (const auto& [key, count] : cached_by_model) {
+        sql.execute(
+            "INSERT INTO semantic_model_conversations (modelId, conversationId, cachedCount, "
+            "indexedRevision) VALUES (?, ?, ?, -1)",
+            {SqlValue::text_value(key.first), SqlValue::text_value(key.second),
+             SqlValue::integer_value(count)});
     }
 }
 

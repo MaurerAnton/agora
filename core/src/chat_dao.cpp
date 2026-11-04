@@ -256,7 +256,7 @@ ChatEntity chat_from_row(const SqlRow& row) {
 }
 
 ChatConversation chat_conversation_from_row(const SqlRow& row) {
-    kotlin_check(row.size() == 10, "ChatConversation: row shape mismatch");
+    kotlin_check(row.size() == 11, "ChatConversation: row shape mismatch");
     ChatConversation projection;
     projection.id = row[0].as_text();
     projection.title = row[1].as_text();
@@ -268,6 +268,7 @@ ChatConversation chat_conversation_from_row(const SqlRow& row) {
     projection.has_unread_generation = row[7].as_integer() != 0;
     projection.is_pinned = row[8].as_integer() != 0;
     projection.selected_branches_json = row[9].text_or_null();
+    projection.parent_conversation_id = row[10].text_or_null();
     return projection;
 }
 
@@ -293,7 +294,8 @@ ConversationSettingsImportTransferEntity import_transfer_from_row(const SqlRow& 
 }
 
 EmbeddingEntity embedding_from_row(const SqlRow& row) {
-    kotlin_check(row.size() == 7, "EmbeddingEntity: row shape mismatch");
+    // schema 46 appends the generation column to SELECT * reads.
+    kotlin_check(row.size() == 8, "EmbeddingEntity: row shape mismatch");
     EmbeddingEntity entity;
     entity.id = row[0].as_integer();
     entity.message_id = row[1].as_text();
@@ -302,6 +304,7 @@ EmbeddingEntity embedding_from_row(const SqlRow& row) {
     entity.chunk_text = row[4].as_text();
     entity.dimension = static_cast<int>(row[5].as_integer());
     entity.source_fingerprint = row[6].text_or_null();
+    entity.generation = row.size() > 7 ? row[7].as_integer() : 0;
     return entity;
 }
 
@@ -637,9 +640,12 @@ ChatDao::ChatDao(SqlExecutor& sql)
 
 std::vector<ChatConversation> ChatDao::get_all_conversations() {
     const std::vector<SqlRow> rows = sql_.query(
+        // Navigation never reads branch payloads: selectedBranchesJson is projected as NULL
+        // (upstream ChatDao) and the tree filter keeps root conversations only.
         "SELECT id, title, systemPromptId, modelId, taskId, origin, graduated, "
-        "hasUnreadGeneration, isPinned, selectedBranchesJson FROM conversations "
-        "WHERE taskId IS NULL ORDER BY lastUpdated DESC",
+        "hasUnreadGeneration, isPinned, NULL AS selectedBranchesJson, parentConversationId "
+        "FROM conversations WHERE taskId IS NULL AND parentConversationId IS NULL "
+        "ORDER BY lastUpdated DESC",
         {});
     std::vector<ChatConversation> out;
     out.reserve(rows.size());
@@ -1476,11 +1482,24 @@ int ChatDao::update_message_checkpoint(const MessageStreamCheckpoint& checkpoint
 // ---- deletes -------------------------------------------------------------------------------
 
 void ChatDao::delete_conversation(std::string_view conversation_id) {
+    // Kotlin SemanticMutationDao.deleteConversation clears the conversation's embeddings first —
+    // embeddings carry no foreign key, so the row delete would orphan them.
+    sql_.execute(
+        "DELETE FROM embeddings WHERE messageId IN "
+        "(SELECT id FROM messages WHERE conversationId = ?)",
+        {SqlValue::text_value(std::string(conversation_id))});
     sql_.execute("DELETE FROM conversations WHERE id = ?",
                  {SqlValue::text_value(std::string(conversation_id))});
 }
 
 void ChatDao::delete_messages_by_conversation(std::string_view conversation_id) {
+    // Kotlin deleteMessagesByConversation: embeddings and semantic sources first, rows last.
+    sql_.execute(
+        "DELETE FROM embeddings WHERE messageId IN "
+        "(SELECT id FROM messages WHERE conversationId = ?)",
+        {SqlValue::text_value(std::string(conversation_id))});
+    sql_.execute("DELETE FROM semantic_sources WHERE conversationId = ?",
+                 {SqlValue::text_value(std::string(conversation_id))});
     sql_.execute("DELETE FROM messages WHERE conversationId = ?",
                  {SqlValue::text_value(std::string(conversation_id))});
 }
@@ -1657,7 +1676,11 @@ std::vector<MessageEntity> ChatDao::get_conversation_messages_page(
     return messages_from_rows(rows);
 }
 
-void ChatDao::delete_all_conversations() { sql_.execute("DELETE FROM conversations", {}); }
+void ChatDao::delete_all_conversations() {
+    // Kotlin deleteAllConversations: embeddings go first (they carry no foreign key).
+    sql_.execute("DELETE FROM embeddings", {});
+    sql_.execute("DELETE FROM conversations", {});
+}
 
 std::vector<std::string> ChatDao::find_existing_message_ids(
     const std::vector<std::string>& ids) {
@@ -1682,17 +1705,29 @@ void ChatDao::replace_configured_model_references(
     });
 }
 
-int ChatDao::rename_conversation_provider_model_references(std::string_view old_provider,
+int ChatDao::rename_conversation_provider_model_references(const std::vector<std::string>& ids,
+                                                           std::string_view old_provider,
                                                            std::string_view new_provider,
                                                            std::int64_t at) {
+    // Kotlin: id-scoped update with the provider range predicate (>= 'old:' AND < 'old;').
+    if (ids.empty()) return 0;
+    std::string placeholders;
+    for (std::size_t index = 0; index < ids.size(); ++index) {
+        if (index != 0) placeholders += ", ";
+        placeholders += "?";
+    }
+    SqlArgs args;
+    args.push_back(SqlValue::text_value(std::string(new_provider)));
+    args.push_back(SqlValue::text_value(std::string(old_provider)));
+    args.push_back(SqlValue::integer_value(at));
+    for (const std::string& id : ids) args.push_back(SqlValue::text_value(id));
+    args.push_back(SqlValue::text_value(std::string(old_provider)));
+    args.push_back(SqlValue::text_value(std::string(old_provider)));
     return static_cast<int>(sql_.execute(
         "UPDATE conversations SET modelId = ? || substr(modelId, length(?) + 1), "
-        "dataChangedAt = MAX(dataChangedAt + 1, ?) WHERE substr(modelId, 1, length(?) + 1) = "
-        "? || ':'",
-        {SqlValue::text_value(std::string(new_provider)),
-         SqlValue::text_value(std::string(old_provider)), SqlValue::integer_value(at),
-         SqlValue::text_value(std::string(old_provider)),
-         SqlValue::text_value(std::string(old_provider))}));
+        "dataChangedAt = MAX(dataChangedAt + 1, ?) WHERE id IN (" + placeholders + ") "
+        "AND modelId >= ? || ':' AND modelId < ? || ';'",
+        args));
 }
 
 int ChatDao::touch_conversations_with_message_provider(std::string_view old_provider,
@@ -1716,30 +1751,116 @@ int ChatDao::rename_new_chat_provider_model_reference(std::string_view old_provi
          SqlValue::text_value(std::string(old_provider))}));
 }
 
-int ChatDao::rename_message_provider_model_references(std::string_view old_provider,
+int ChatDao::rename_message_provider_model_references(const std::vector<std::string>& ids,
+                                                      std::string_view old_provider,
                                                       std::string_view new_provider) {
+    if (ids.empty()) return 0;
+    std::string placeholders;
+    for (std::size_t index = 0; index < ids.size(); ++index) {
+        if (index != 0) placeholders += ", ";
+        placeholders += "?";
+    }
+    SqlArgs args;
+    args.push_back(SqlValue::text_value(std::string(new_provider)));
+    // length(oldProvider) inside the SET expression comes before the IN bindings.
+    args.push_back(SqlValue::text_value(std::string(old_provider)));
+    for (const std::string& id : ids) args.push_back(SqlValue::text_value(id));
+    args.push_back(SqlValue::text_value(std::string(old_provider)));
+    args.push_back(SqlValue::text_value(std::string(old_provider)));
     return static_cast<int>(sql_.execute(
         "UPDATE messages SET modelName = ? || substr(modelName, length(?) + 1) WHERE "
-        "substr(modelName, 1, length(?) + 1) = ? || ':'",
-        {SqlValue::text_value(std::string(new_provider)),
-         SqlValue::text_value(std::string(old_provider)),
-         SqlValue::text_value(std::string(old_provider)),
-         SqlValue::text_value(std::string(old_provider))}));
+        "id IN (" + placeholders + ") AND modelName >= ? || ':' AND modelName < ? || ';'",
+        args));
+}
+
+std::vector<std::string> ChatDao::get_provider_conversation_ids(std::string_view old_provider,
+                                                                std::int32_t limit) {
+    std::vector<std::string> out;
+    for (const SqlRow& row : sql_.query(
+             "SELECT id FROM conversations WHERE modelId >= ? || ':' AND modelId < ? || ';' "
+             "ORDER BY modelId LIMIT ?",
+             {SqlValue::text_value(std::string(old_provider)),
+              SqlValue::text_value(std::string(old_provider)), SqlValue::integer_value(limit)})) {
+        out.push_back(row[0].as_text());
+    }
+    return out;
+}
+
+std::vector<ProviderMessageReference> ChatDao::get_provider_message_references(
+    std::string_view old_provider, std::int32_t limit) {
+    std::vector<ProviderMessageReference> out;
+    for (const SqlRow& row : sql_.query(
+             "SELECT id, conversationId FROM messages "
+             "WHERE modelName >= ? || ':' AND modelName < ? || ';' "
+             "ORDER BY modelName, id LIMIT ?",
+             {SqlValue::text_value(std::string(old_provider)),
+              SqlValue::text_value(std::string(old_provider)), SqlValue::integer_value(limit)})) {
+        out.push_back(ProviderMessageReference{row[0].as_text(), row[1].as_text()});
+    }
+    return out;
+}
+
+int ChatDao::touch_provider_message_conversations(const std::vector<std::string>& ids,
+                                                  std::int64_t at) {
+    if (ids.empty()) return 0;
+    std::string placeholders;
+    for (std::size_t index = 0; index < ids.size(); ++index) {
+        if (index != 0) placeholders += ", ";
+        placeholders += "?";
+    }
+    SqlArgs args;
+    args.push_back(SqlValue::integer_value(at));
+    for (const std::string& id : ids) args.push_back(SqlValue::text_value(id));
+    return static_cast<int>(sql_.execute(
+        "UPDATE conversations SET dataChangedAt = MAX(dataChangedAt + 1, ?) WHERE id IN (" +
+        placeholders + ")",
+        args));
+}
+
+bool ChatDao::rename_provider_reference_page(std::string_view old_provider,
+                                             std::string_view new_provider, std::int64_t at) {
+    const std::vector<std::string> conversations =
+        get_provider_conversation_ids(old_provider, 64);
+    if (!conversations.empty()) {
+        rename_conversation_provider_model_references(conversations, old_provider, new_provider,
+                                                      at);
+        return true;
+    }
+    const std::vector<ProviderMessageReference> messages =
+        get_provider_message_references(old_provider, 64);
+    if (!messages.empty()) {
+        std::vector<std::string> touched;
+        std::vector<std::string> message_ids;
+        for (const ProviderMessageReference& reference : messages) {
+            message_ids.push_back(reference.id);
+            if (std::find(touched.begin(), touched.end(), reference.conversation_id) ==
+                touched.end()) {
+                touched.push_back(reference.conversation_id);
+            }
+        }
+        touch_provider_message_conversations(touched, at);
+        const int renamed =
+            rename_message_provider_model_references(message_ids, old_provider, new_provider);
+        kotlin_check(renamed == static_cast<int>(messages.size()),
+                     "Provider identity migration renamed fewer messages than the page held");
+        return true;
+    }
+    rename_new_chat_provider_model_reference(old_provider, new_provider);
+    automation::ChatAutomationDao::rename_task_provider_model_references(old_provider,
+                                                                        new_provider);
+    return false;
 }
 
 void ChatDao::rename_configured_provider_model_references(std::string_view old_provider,
                                                           std::string_view new_provider,
                                                           std::int64_t now_ms) {
-    in_transaction([&] {
-        const std::int64_t at = now_ms;
-        rename_conversation_provider_model_references(old_provider, new_provider, at);
-        rename_new_chat_provider_model_reference(old_provider, new_provider);
-        automation::ChatAutomationDao::rename_task_provider_model_references(old_provider,
-                                                                            new_provider);
-        touch_conversations_with_message_provider(old_provider, at);
-        rename_message_provider_model_references(old_provider, new_provider);
-        return 0;
-    });
+    // Kotlin: "No outer transaction: cancellation leaves the durable alias marker for a safe
+    // retry" — every page commits on its own.
+    if (old_provider == new_provider) return;
+    kotlin_require(!old_provider.empty() && !new_provider.empty());
+    const std::int64_t at = now_ms;
+    while (rename_provider_reference_page(old_provider, new_provider, at)) {
+    }
 }
 
 }  // namespace agora::core::chat_dao

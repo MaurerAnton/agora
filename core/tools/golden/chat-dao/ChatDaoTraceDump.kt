@@ -112,7 +112,11 @@ internal fun render(scenarioFile: File): String = runBlocking {
             val op = step.string("op")
             val result = try {
                 executeOperation(op, step, dao, maskClock)
-            } catch (failure: Throwable) {
+            } catch (thrown: Throwable) {
+                // MiniRoom's proxy wraps checked SQL exceptions in UndeclaredThrowableException;
+                // the frozen traces pin the real cause (same normalization as the backup stand).
+                val failure = (thrown as? java.lang.reflect.UndeclaredThrowableException)
+                    ?.undeclaredThrowable ?: thrown
                 buildJsonObject {
                     put("error", failure::class.simpleName ?: failure::class.java.name)
                     put("message", failure.message ?: "")

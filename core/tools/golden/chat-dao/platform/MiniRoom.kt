@@ -125,7 +125,12 @@ class MiniRoom(
         val function = method.kotlinFunction
             ?: error("MiniRoom: not a Kotlin function: $method")
         val (sql, parameters) = bindParameters(sqlText, namedArguments(method, args))
-        val isSelect = sqlText.trimStart().startsWith("SELECT", ignoreCase = true)
+        // Room resolves the statement kind at build time; the stand approximates it. A
+        // `WITH RECURSIVE` query (getRunCascadeMessageIds) returns rows just like a SELECT,
+        // so it must take the query path instead of executeUpdate.
+        val trimmed = sqlText.trimStart()
+        val isSelect = trimmed.startsWith("SELECT", ignoreCase = true) ||
+            trimmed.startsWith("WITH", ignoreCase = true)
         // Room returns a cold Flow for an observed @Query: the SELECT runs when the flow is
         // collected. The stand has no invalidation bus, so the flow emits the current rows once;
         // that initial emission is the observable part of the DAO contract.

@@ -306,10 +306,6 @@ internal suspend fun executeOperation(
         dao.deleteEmbeddingsByConversation(step.string("conversationId"))
         JsonNull
     }
-    "deleteOrphanedEmbeddings" -> {
-        dao.deleteOrphanedEmbeddings()
-        JsonNull
-    }
     "getLastMessageForConversation" ->
         dao.getLastMessageForConversation(step.string("conversationId"))
             ?.let(::messageJson) ?: JsonNull
@@ -349,8 +345,12 @@ internal suspend fun executeOperation(
     )
     "getAllConversationIds" -> JsonArray(dao.getAllConversationIds().map { JsonPrimitive(it) })
     "getAllTaskIds" -> JsonArray(dao.getAllTaskIds().map { JsonPrimitive(it) })
-    "getMessagesPage" -> JsonArray(
-        dao.getMessagesPage(step.optionalString("afterId"), step.int("limit")).map(::messageJson),
+    "getConversationMessagesPage" -> JsonArray(
+        dao.getConversationMessagesPage(
+            step.string("conversationId"),
+            step.optionalString("afterId"),
+            step.int("limit"),
+        ).map(::messageJson),
     )
     "getConversationMessagesPage" -> JsonArray(
         dao.getConversationMessagesPage(
@@ -374,11 +374,9 @@ internal suspend fun executeOperation(
     }
     "renameConversationProviderModelReferences" -> JsonPrimitive(
         dao.renameConversationProviderModelReferences(
+            (step["ids"] as JsonArray).map { (it as JsonPrimitive).content },
             step.string("oldProvider"), step.string("newProvider"), step.long("at"),
         ),
-    )
-    "touchConversationsWithMessageProvider" -> JsonPrimitive(
-        dao.touchConversationsWithMessageProvider(step.string("oldProvider"), step.long("at")),
     )
     "renameNewChatProviderModelReference" -> JsonPrimitive(
         dao.renameNewChatProviderModelReference(
@@ -387,6 +385,7 @@ internal suspend fun executeOperation(
     )
     "renameMessageProviderModelReferences" -> JsonPrimitive(
         dao.renameMessageProviderModelReferences(
+            (step["ids"] as JsonArray).map { (it as JsonPrimitive).content },
             step.string("oldProvider"), step.string("newProvider"),
         ),
     )

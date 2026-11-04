@@ -725,6 +725,8 @@ json::Value chat_conversation_json(const ChatConversation& entity) {
         {"hasUnreadGeneration", json_bool(entity.has_unread_generation)},
         {"isPinned", json_bool(entity.is_pinned)},
         {"selectedBranchesJson", optional_json_string(entity.selected_branches_json)},
+        // The stand's rendering (like the navigation projection) does not surface
+        // parentConversationId, even though the query selects it.
     });
 }
 
@@ -1624,8 +1626,8 @@ json::Value execute_operation(const std::string& op, const json::Value& step, Ch
     }
     if (op == "renameConversationProviderModelReferences") {
         return json_long(dao.rename_conversation_provider_model_references(
-            required_string(step, "oldProvider"), required_string(step, "newProvider"),
-            required_long(step, "at")));
+            string_list(step, "ids"), required_string(step, "oldProvider"),
+            required_string(step, "newProvider"), required_long(step, "at")));
     }
     if (op == "touchConversationsWithMessageProvider") {
         return json_long(dao.touch_conversations_with_message_provider(
@@ -1637,7 +1639,8 @@ json::Value execute_operation(const std::string& op, const json::Value& step, Ch
     }
     if (op == "renameMessageProviderModelReferences") {
         return json_long(dao.rename_message_provider_model_references(
-            required_string(step, "oldProvider"), required_string(step, "newProvider")));
+            string_list(step, "ids"), required_string(step, "oldProvider"),
+            required_string(step, "newProvider")));
     }
     if (op == "renameConfiguredProviderModelReferences") {
         dao.rename_configured_provider_model_references(required_string(step, "oldProvider"),

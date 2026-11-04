@@ -239,14 +239,16 @@
     },
     {
       "op": "renameConversationProviderModelReferences",
+      "ids": [
+        "c1",
+        "c2",
+        "c3",
+        "c4",
+        "c5"
+      ],
       "oldProvider": "azure",
       "newProvider": "openai",
       "at": 70
-    },
-    {
-      "op": "touchConversationsWithMessageProvider",
-      "oldProvider": "azure",
-      "at": 80
     },
     {
       "op": "renameNewChatProviderModelReference",
@@ -255,6 +257,13 @@
     },
     {
       "op": "renameMessageProviderModelReferences",
+      "ids": [
+        "m1",
+        "m2",
+        "m3",
+        "m4",
+        "m5"
+      ],
       "oldProvider": "azure",
       "newProvider": "openai"
     },

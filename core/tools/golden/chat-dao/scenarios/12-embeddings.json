@@ -190,9 +190,6 @@
       "op": "getAllEmbeddings"
     },
     {
-      "op": "deleteOrphanedEmbeddings"
-    },
-    {
       "op": "deleteEmbeddingsByConversation",
       "conversationId": "c1"
     },
@@ -207,9 +204,6 @@
     {
       "op": "deleteEmbeddingsByConversation",
       "conversationId": "c2"
-    },
-    {
-      "op": "deleteOrphanedEmbeddings"
     },
     {
       "op": "getAllEmbeddings"

@@ -429,17 +429,14 @@
       "op": "getAllTaskIds"
     },
     {
-      "op": "getMessagesPage",
+      "op": "getConversationMessagesPage",
+      "conversationId": "c3",
       "afterId": null,
       "limit": 3
     },
     {
-      "op": "getMessagesPage",
-      "afterId": "m10",
-      "limit": 3
-    },
-    {
-      "op": "getMessagesPage",
+      "op": "getConversationMessagesPage",
+      "conversationId": "c1",
       "afterId": "m5",
       "limit": 2
     },

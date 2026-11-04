@@ -40,6 +40,13 @@ struct ChatConversation {
     bool has_unread_generation = false;
     bool is_pinned = false;
     std::optional<std::string> selected_branches_json;
+    std::optional<std::string> parent_conversation_id;
+};
+
+/** ProviderMessageReference (data/local/ChatProviderIdentityDao.kt). */
+struct ProviderMessageReference {
+    std::string id;
+    std::string conversation_id;
 };
 
 /** DrawerConversationRow (data/local/ChatDao.kt). */
@@ -76,6 +83,7 @@ struct EmbeddingEntity {
     std::string chunk_text;
     int dimension = 0;
     std::optional<std::string> source_fingerprint;
+    std::int64_t generation = 0;
 };
 
 /** MessageStreamCheckpoint (ChatEntities.kt), the @Update projection over MessageEntity. */
@@ -376,7 +384,19 @@ public:
                                              const std::optional<std::string>& new_model_id,
                                              std::int64_t now_ms);
 
-    int rename_conversation_provider_model_references(std::string_view old_provider,
+    /** getProviderConversationIds / getProviderMessageReferences: the identity-migration pages. */
+    std::vector<std::string> get_provider_conversation_ids(std::string_view old_provider,
+                                                           std::int32_t limit);
+    std::vector<ProviderMessageReference> get_provider_message_references(
+        std::string_view old_provider, std::int32_t limit);
+    /** touchProviderMessageConversations: bump dataChangedAt for the affected trees. */
+    int touch_provider_message_conversations(const std::vector<std::string>& ids,
+                                             std::int64_t at);
+    /** renameProviderReferencePage: one crash-safe migration page; false ends the loop. */
+    bool rename_provider_reference_page(std::string_view old_provider,
+                                        std::string_view new_provider, std::int64_t at);
+    int rename_conversation_provider_model_references(const std::vector<std::string>& ids,
+                                                      std::string_view old_provider,
                                                       std::string_view new_provider,
                                                       std::int64_t at);
 
@@ -386,7 +406,8 @@ public:
     int rename_new_chat_provider_model_reference(std::string_view old_provider,
                                                  std::string_view new_provider);
 
-    int rename_message_provider_model_references(std::string_view old_provider,
+    int rename_message_provider_model_references(const std::vector<std::string>& ids,
+                                                 std::string_view old_provider,
                                                  std::string_view new_provider);
 
     void rename_configured_provider_model_references(std::string_view old_provider,

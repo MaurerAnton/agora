@@ -394,9 +394,6 @@
       "conversationId": "c1"
     },
     {
-      "op": "deleteOrphanedEmbeddings"
-    },
-    {
       "op": "deleteMessagesByConversation",
       "conversationId": "c1"
     },

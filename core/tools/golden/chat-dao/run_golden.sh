@@ -32,6 +32,11 @@ fresh="$here/build/golden"
 rm -rf "$here/build"
 mkdir -p "$classes" "$fresh"
 
+# semanticSourceFingerprint without dragging SemanticIndexLedger.kt (and its ChatDatabase
+# extension functions) into this closure.
+"${AGORA_EXTRACT:-$root/core/build/agora_extract}" semantic-fingerprint \
+    "$app/data/local/SemanticIndexLedger.kt" "$here/build/SemanticSourceFingerprint.kt"
+
 sources=(
     "$app/data/local/ChatDao.kt"
     "$app/data/local/ChatDaoRuntimeRecovery.kt"
@@ -77,6 +82,15 @@ sources=(
     "$here/ChatDaoTraceTableDump.kt"
     "$app/model/ImageArtifact.kt"
     "$app/data/local/SemanticMutationDao.kt"
+    "$app/data/local/ChatProviderIdentityDao.kt"
+    "$app/data/local/ChatTodoDao.kt"
+    "$app/data/local/ChatSubagentDao.kt"
+    "$app/data/local/SemanticEmbeddingDao.kt"
+    "$app/data/local/SemanticEmbeddingGeneration.kt"
+    "$app/data/local/SemanticSourceMetadata.kt"
+    "$app/data/local/MaintenanceDebt.kt"
+    "$app/model/SubagentCompletion.kt"
+    "$here/build/SemanticSourceFingerprint.kt"
     "$app/data/local/SemanticMetadataDao.kt"
 )
 for source in "${sources[@]}"; do

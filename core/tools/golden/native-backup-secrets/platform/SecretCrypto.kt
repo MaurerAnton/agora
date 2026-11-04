@@ -4,6 +4,10 @@
 package com.newoether.agora.util
 
 object SecretCrypto {
+    private const val PREFIX = "enc:v1:"
+
+    fun isEncrypted(stored: String): Boolean = stored.startsWith(PREFIX)
+
     fun decrypt(value: String): String = value
     fun encrypt(value: String): String = value
 }

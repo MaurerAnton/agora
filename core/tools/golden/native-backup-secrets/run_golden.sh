@@ -45,6 +45,9 @@ echo "Compiling the Kotlin reference sources..."
     "$here/platform/SecretCrypto.kt" \
     "$here/platform/DebugLog.kt" \
     "$here/platform/SettingsManager.kt" \
+    "$here/platform/ToolCallDisplayModes.kt" \
+    "$here/stubs/androidx/datastore/core/DataStore.kt" \
+    "$here/stubs/androidx/datastore/preferences/core/DatastoreEdit.kt" \
     "$here/NativeBackupSecretsTraceDump.kt" 2>&1 | grep -v "^warning:" || true
 [[ -f "$classes/native/backup/secrets/golden/NativeBackupSecretsTraceDumpKt.class" ]] || {
     echo "error: harness classes missing" >&2

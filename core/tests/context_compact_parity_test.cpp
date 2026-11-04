@@ -755,17 +755,20 @@ void seed(SqliteExecutor& sql, const json::Value& root) {
         conversations != nullptr) {
         for (const json::Value& row : conversations->elements) {
             sql.execute(
-                "INSERT INTO conversations (id, selectedBranchesJson, selectedRunBranchesJson, "
-                "lastUpdated, dataChangedAt) VALUES (?, ?, ?, ?, ?)",
+                // schema 46: the NOT NULL columns the compact stand does not observe get the
+                // Kotlin-side literals (title '', origin user, ...), mirroring the stand driver.
+                "INSERT INTO conversations (id, title, lastUpdated, dataChangedAt, origin, "
+                "graduated, draftText, hasUnreadGeneration, selectedBranchesJson, "
+                "selectedRunBranchesJson) VALUES (?, '', ?, ?, 'user', 0, '', 0, ?, ?)",
                 {SqlValue::text_value(required_string(row, "id")),
+                 SqlValue::integer_value(optional_long(row, "lastUpdated").value_or(0)),
+                 SqlValue::integer_value(optional_long(row, "dataChangedAt").value_or(0)),
                  optional_string(row, "selectedBranchesJson").has_value()
                      ? SqlValue::text_value(*optional_string(row, "selectedBranchesJson"))
                      : SqlValue::null(),
                  optional_string(row, "selectedRunBranchesJson").has_value()
                      ? SqlValue::text_value(*optional_string(row, "selectedRunBranchesJson"))
-                     : SqlValue::null(),
-                 SqlValue::integer_value(optional_long(row, "lastUpdated").value_or(0)),
-                 SqlValue::integer_value(optional_long(row, "dataChangedAt").value_or(0))});
+                     : SqlValue::null()});
         }
     }
     if (const json::Value* runs = field(*seed_object, "runs"); runs != nullptr) {

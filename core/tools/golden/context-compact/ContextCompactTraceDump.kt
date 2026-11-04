@@ -93,7 +93,11 @@ private fun render(scenarioFile: File): String = runBlocking {
             val op = step.string("op")
             val result = try {
                 executeOperation(op, step, dao, connection)
-            } catch (failure: Throwable) {
+            } catch (thrown: Throwable) {
+                // MiniRoom's proxy wraps checked SQL exceptions in UndeclaredThrowableException;
+                // the frozen traces pin the real cause (same normalization as the backup stand).
+                val failure = (thrown as? java.lang.reflect.UndeclaredThrowableException)
+                    ?.undeclaredThrowable ?: thrown
                 buildJsonObject {
                     put("error", failure::class.simpleName ?: failure::class.java.name)
                     put("message", failure.message ?: "")
@@ -344,14 +348,15 @@ private fun seed(connection: Connection, seed: JsonObject?) {
     for (element in seed["conversations"] as? JsonArray ?: JsonArray(emptyList())) {
         val row = element.jsonObject
         connection.prepareStatement(
-            "INSERT INTO conversations (id, selectedBranchesJson, selectedRunBranchesJson, " +
-                "lastUpdated, dataChangedAt) VALUES (?, ?, ?, ?, ?)",
+            "INSERT INTO conversations (id, title, lastUpdated, dataChangedAt, origin, " +
+                "graduated, draftText, hasUnreadGeneration, selectedBranchesJson, " +
+                "selectedRunBranchesJson) VALUES (?, '', ?, ?, 'user', 0, '', 0, ?, ?)",
         ).use {
             it.setString(1, row.string("id"))
-            it.setObject(2, row.optionalString("selectedBranchesJson"))
-            it.setObject(3, row.optionalString("selectedRunBranchesJson"))
-            it.setLong(4, row.optionalLong("lastUpdated") ?: 0L)
-            it.setLong(5, row.optionalLong("dataChangedAt") ?: 0L)
+            it.setLong(2, row.optionalLong("lastUpdated") ?: 0L)
+            it.setLong(3, row.optionalLong("dataChangedAt") ?: 0L)
+            it.setObject(4, row.optionalString("selectedBranchesJson"))
+            it.setObject(5, row.optionalString("selectedRunBranchesJson"))
             it.executeUpdate()
         }
     }

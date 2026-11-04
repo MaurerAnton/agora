@@ -1,4 +1,5 @@
-// Stand-local androidx.room surface for compiling data/local/SemanticIndexLedger.kt verbatim.
+// Stand-local androidx.room surface for compiling ChatContextCompactDao.kt and its semantic
+// parents verbatim (superset taken from the data-exporter stand).
 //
 // Room is a persistence framework: the annotation processor generates DAO implementations and
 // schema DDL at build time. That generated code is the platform boundary of this stand; the
@@ -17,6 +18,18 @@ annotation class Entity(
     val foreignKeys: Array<ForeignKey> = [],
     val indices: Array<Index> = [],
 )
+
+@Target(
+    AnnotationTarget.CLASS,
+    AnnotationTarget.FUNCTION,
+    AnnotationTarget.PROPERTY,
+    AnnotationTarget.PROPERTY_GETTER,
+    AnnotationTarget.FIELD,
+    AnnotationTarget.CONSTRUCTOR,
+    AnnotationTarget.VALUE_PARAMETER,
+)
+@Retention(AnnotationRetention.RUNTIME)
+annotation class Ignore
 
 @Target(AnnotationTarget.CLASS)
 @Retention(AnnotationRetention.RUNTIME)
@@ -47,6 +60,20 @@ annotation class Index(
     val value: Array<String>,
     val unique: Boolean = false,
 )
+
+@Target(
+    AnnotationTarget.FIELD,
+    AnnotationTarget.PROPERTY,
+    AnnotationTarget.VALUE_PARAMETER,
+    AnnotationTarget.FUNCTION,
+    AnnotationTarget.CLASS,
+)
+@Retention(AnnotationRetention.RUNTIME)
+annotation class ColumnInfo(val name: String = "", val defaultValue: String = "")
+
+@Target(AnnotationTarget.FUNCTION)
+@Retention(AnnotationRetention.RUNTIME)
+annotation class TypeConverter
 
 @Target(AnnotationTarget.FUNCTION)
 @Retention(AnnotationRetention.RUNTIME)

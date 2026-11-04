@@ -6,12 +6,3 @@
 // belongs to other modules.
 package com.newoether.agora.data.local
 
-import androidx.room.Entity
-import androidx.room.PrimaryKey
-
-@Entity(tableName = "conversations")
-data class ChatEntity(
-    @PrimaryKey val id: String,
-    val selectedBranchesJson: String? = null,
-    val selectedRunBranchesJson: String? = null,
-)

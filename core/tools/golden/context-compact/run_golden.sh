@@ -33,6 +33,12 @@ fresh="$here/build/golden"
 rm -rf "$here/build"
 mkdir -p "$classes" "$fresh"
 
+# ChatContextCompactDao now rides the semantic mutation stack, which needs the whole ChatEntities
+# family (ChatEntity/MessageStreamCheckpoint/EmbeddingEntity). The fingerprint helper avoids
+# dragging SemanticIndexLedger.kt (and its ChatDatabase extension functions) in here.
+"${AGORA_EXTRACT:-$root/core/build/agora_extract}" semantic-fingerprint \
+    "$app/data/local/SemanticIndexLedger.kt" "$here/build/SemanticSourceFingerprint.kt"
+
 echo "Extracting the message entity..."
 "${AGORA_EXTRACT:-$root/core/build/agora_extract}" message-entity "$app/data/local/ChatEntities.kt" "$here/build/MessageEntity.kt"
 
@@ -51,7 +57,6 @@ sources=(
     "$app/util/Constants.kt"
     "$citations_stand/stubs/androidx/compose/runtime/Immutable.kt"
     "$citations_stand/stubs/com/mikepenz/markdown/model/State.kt"
-    "$here/build/MessageEntity.kt"
     "$here/platform/Room.kt"
     "$here/platform/RoomDatabase.kt"
     "$here/platform/MiniRoom.kt"
@@ -60,6 +65,12 @@ sources=(
     "$here/ContextCompactTraceDump.kt"
     "$app/model/ImageArtifact.kt"
     "$app/data/local/SemanticMutationDao.kt"
+    "$app/data/local/SemanticMetadataDao.kt"
+    "$app/data/local/SemanticEmbeddingDao.kt"
+    "$app/data/local/SemanticEmbeddingGeneration.kt"
+    "$app/data/local/SemanticSourceMetadata.kt"
+    "$app/data/local/ChatEntities.kt"
+    "$here/build/SemanticSourceFingerprint.kt"
 )
 for source in "${sources[@]}"; do
     [[ -f "$source" ]] || { echo "error: missing source $source" >&2; exit 2; }

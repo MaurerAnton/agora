@@ -124,7 +124,13 @@ class MiniRoom(
         val (sql, parameters) = bindParameters(sqlText, namedArguments(method, args))
         connection.prepareStatement(sql).use { statement ->
             bindValues(statement, parameters)
-            if (sqlText.trimStart().startsWith("SELECT", ignoreCase = true)) {
+            // Room resolves the statement kind at build time; the stand approximates it. A
+            // `WITH RECURSIVE` query (deleteRun's cascade) returns rows just like a SELECT, so it
+            // must take the query path instead of executeUpdate.
+            val trimmed = sqlText.trimStart()
+            if (trimmed.startsWith("SELECT", ignoreCase = true) ||
+                trimmed.startsWith("WITH", ignoreCase = true)
+            ) {
                 statement.executeQuery().use { rows -> return readRows(function.returnType, rows) }
             }
             return statement.executeUpdate()

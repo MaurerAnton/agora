@@ -60,6 +60,8 @@ sources=(
     "$app/api/anthropic/AnthropicCitationProjection.kt"
     "$app/api/anthropic/AnthropicStreamEventRouter.kt"
     "$models"
+    "$root/core/tools/golden/openai-request/stubs/okhttp3/OkHttp.kt"
+    "$root/core/tools/golden/openai-request/stubs/okio/Okio.kt"
     "$here/stubs/androidx/compose/runtime/Immutable.kt"
     "$here/stubs/com/mikepenz/markdown/model/State.kt"
     "$here/AnthropicStreamTraceDump.kt"
@@ -67,6 +69,7 @@ sources=(
     "$app/api/ProviderHttpError.kt"
     "$app/util/NetworkRetryPolicy.kt"
     "$app/util/NetworkHttpRetry.kt"
+    "$root/core/tools/golden/conch-network/platform/HttpClient.kt"
     "$app/viewmodel/StreamScope.kt"
     "$root/core/tools/golden/openai-request/stubs/com/newoether/agora/util/ConchExceptions.kt"
 )

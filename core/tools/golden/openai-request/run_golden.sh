@@ -58,6 +58,8 @@ sources=(
     "$app/api/util/StreamingJsonRequestBody.kt"
     "$app/api/util/ImageArtifactProjection.kt"
     "$here/stubs/android/graphics/BitmapFactory.kt"
+    "$root/core/tools/golden/openai-request/stubs/okhttp3/OkHttp.kt"
+    "$root/core/tools/golden/openai-request/stubs/okio/Okio.kt"
     "$here/stubs/androidx/compose/runtime/Immutable.kt"
     "$here/stubs/com/mikepenz/markdown/model/State.kt"
     "$here/stubs/com/newoether/agora/api/HttpClient.kt"

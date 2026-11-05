@@ -799,18 +799,17 @@ std::vector<StreamEvent> AnthropicStreamEventRouter::route(const AnthropicStream
 }
 
 std::vector<StreamEvent> AnthropicStreamEventRouter::report_incomplete_blocks() {
-    std::vector<StreamEvent> output;
+    // Kotlin: malformed open-block failures are only captured for the provider's termination and
+    // retry decision — no event is emitted and reportedError stays false (named open blocks remain
+    // represented by toolCallInFlight in StreamTermination).
     for (const auto& [index, tool] : tool_blocks_) {
         (void)index;
         if (!matches_safe_wire(tool.name, 64)) {
-            reported_error = true;
-            output.push_back(ErrorEvent{sn::ErrorSseParse{
-                std::string("stream_end"),
-                std::string("Provider ended before the tool name was complete")}});
+            capture_parse_error("stream_end", "Provider ended before the tool name was complete");
             break;
         }
     }
-    return output;
+    return {};
 }
 
 void AnthropicStreamEventRouter::capture_parse_error(

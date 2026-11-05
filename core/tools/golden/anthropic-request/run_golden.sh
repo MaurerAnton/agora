@@ -61,6 +61,8 @@ app_sources=(
     "$app/util/AttachmentFiles.kt"
     "$root/core/tools/golden/openai-request/stubs/android/graphics/BitmapFactory.kt"
     "$root/core/tools/golden/openai-request/stubs/com/newoether/agora/api/HttpClient.kt"
+    "$root/core/tools/golden/openai-request/stubs/okhttp3/OkHttp.kt"
+    "$root/core/tools/golden/openai-request/stubs/okio/Okio.kt"
     "$root/core/tools/golden/openai-request/stubs/com/newoether/agora/util/ImageArtifactProcessor.kt"
     "$app/api/util/ToolImageProjection.kt"
 )

@@ -6,6 +6,7 @@
 set -euo pipefail
 
 HERE="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+root="$(cd "$HERE/../../../.." && pwd)"
 SCENARIOS_DIR="$HERE/scenarios"
 GOLDEN_DIR="$HERE/golden"
 BUILD_DIR="$HERE/build"
@@ -22,8 +23,8 @@ if [[ -z "$KOTLINX_JARS" ]]; then
     exit 1
 fi
 
-APP_SRC="/home/user/agora-export-snapshot/app/src/fdroid/java"
-UTIL_SRC="/home/user/agora-export-snapshot/app/src/main/java/com/newoether/agora/util"
+APP_SRC="$root/app/src/fdroid/java"
+UTIL_SRC="$root/app/src/main/java/com/newoether/agora/util"
 
 echo "Compiling trace dump..."
 "$KOTLINC" \

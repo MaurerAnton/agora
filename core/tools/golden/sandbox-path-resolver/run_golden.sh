@@ -12,15 +12,7 @@ GOLDEN_DIR="$HERE/golden"
 BUILD_DIR="$HERE/build"
 OUTPUT_DIR="$BUILD_DIR/golden"
 
-android_classes="$BUILD_DIR/android-classes"
-mkdir -p "$BUILD_DIR" "$OUTPUT_DIR" "$android_classes"
-
-# The sandbox surface now reaches the shell client: android.util.Base64 (vendored from the
-# shell-crypto stand) and the ConchChannelException family (extract profile) come in as platform
-# substitutes, exactly like the conch-network stand.
-javac -nowarn -d "$android_classes" "$root/core/tools/golden/shell-crypto/platform/Base64.java"
-"${AGORA_EXTRACT:-$root/core/build/agora_extract}" conch-exceptions \
-    "$UTIL_SRC/ConchEncryptedHttp.kt" "$BUILD_DIR/ConchExceptions.kt"
+mkdir -p "$BUILD_DIR" "$OUTPUT_DIR"
 
 # Compile the trace dump
 KOTLINC="${KOTLINC:-kotlinc}"
@@ -32,6 +24,16 @@ fi
 
 APP_SRC="$root/app/src/fdroid/java"
 UTIL_SRC="$root/app/src/main/java/com/newoether/agora/util"
+
+android_classes="$BUILD_DIR/android-classes"
+mkdir -p "$android_classes"
+
+# The sandbox surface now reaches the shell client: android.util.Base64 (vendored from the
+# shell-crypto stand) and the ConchChannelException family (extract profile) come in as platform
+# substitutes, exactly like the conch-network stand.
+javac -nowarn -d "$android_classes" "$root/core/tools/golden/shell-crypto/platform/Base64.java"
+"${AGORA_EXTRACT:-$root/core/build/agora_extract}" conch-exceptions \
+    "$UTIL_SRC/ConchEncryptedHttp.kt" "$BUILD_DIR/ConchExceptions.kt"
 
 echo "Compiling trace dump..."
 "$KOTLINC" \

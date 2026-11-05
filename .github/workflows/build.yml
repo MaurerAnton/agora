@@ -255,7 +255,7 @@ jobs:
           # Dispatched freeze: regenerate one stand's golden and publish it as an artifact so the
           # traces can be committed without a local kotlinc run.
           if [ "${{ github.event.inputs.freeze_stand }}" != "" ]; then
-            stands="${{ github.event.inputs.freeze_stand }}"
+            stands=$(echo "${{ github.event.inputs.freeze_stand }}" | tr ',' ' ')
           fi
 
           total=0; failed=""
@@ -282,11 +282,20 @@ jobs:
             exit 1
           fi
           echo "All $total changed golden stands verified."
+      - name: Stage the regenerated golden traces
+        if: ${{ github.event.inputs.freeze_stand != '' }}
+        run: |
+          mkdir -p .ci/frozen
+          for stand in $(echo "${{ github.event.inputs.freeze_stand }}" | tr ',' ' '); do
+            mkdir -p ".ci/frozen/$stand"
+            cp -r "core/tools/golden/$stand/golden/." ".ci/frozen/$stand/"
+          done
+
       - name: Publish regenerated golden traces
         if: ${{ github.event.inputs.freeze_stand != '' }}
         uses: actions/upload-artifact@v4
         with:
-          name: golden-${{ github.event.inputs.freeze_stand }}
-          path: core/tools/golden/${{ github.event.inputs.freeze_stand }}/golden/
+          name: golden-frozen
+          path: .ci/frozen/
           if-no-files-found: error
           retention-days: 7

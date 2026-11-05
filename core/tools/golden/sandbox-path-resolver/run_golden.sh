@@ -12,8 +12,15 @@ GOLDEN_DIR="$HERE/golden"
 BUILD_DIR="$HERE/build"
 OUTPUT_DIR="$BUILD_DIR/golden"
 
-mkdir -p "$BUILD_DIR"
-mkdir -p "$OUTPUT_DIR"
+android_classes="$BUILD_DIR/android-classes"
+mkdir -p "$BUILD_DIR" "$OUTPUT_DIR" "$android_classes"
+
+# The sandbox surface now reaches the shell client: android.util.Base64 (vendored from the
+# shell-crypto stand) and the ConchChannelException family (extract profile) come in as platform
+# substitutes, exactly like the conch-network stand.
+javac -nowarn -d "$android_classes" "$root/core/tools/golden/shell-crypto/platform/Base64.java"
+"${AGORA_EXTRACT:-$root/core/build/agora_extract}" conch-exceptions \
+    "$UTIL_SRC/ConchEncryptedHttp.kt" "$BUILD_DIR/ConchExceptions.kt"
 
 # Compile the trace dump
 KOTLINC="${KOTLINC:-kotlinc}"
@@ -28,16 +35,26 @@ UTIL_SRC="$root/app/src/main/java/com/newoether/agora/util"
 
 echo "Compiling trace dump..."
 "$KOTLINC" \
-    -cp "$KOTLINX_JARS" \
+    -cp "$KOTLINX_JARS:$android_classes" \
     -d "$BUILD_DIR/classes" \
     "$HERE/SandboxPathResolverTraceDump.kt" \
     "$APP_SRC/com/newoether/agora/sandbox/SandboxPathResolver.kt" \
     "$APP_SRC/com/newoether/agora/sandbox/SandboxFileOperations.kt" \
     "$APP_SRC/com/newoether/agora/sandbox/SandboxVirtualPaths.kt" \
-    "$HERE/stubs/com/newoether/agora/util/ShellClient.kt" \
+    "$UTIL_SRC/ShellClient.kt" \
+    "$UTIL_SRC/ShellCrypto.kt" \
     "$UTIL_SRC/PortableGlobMatcher.kt" \
     "$UTIL_SRC/ShellFileText.kt" \
     "$UTIL_SRC/ShellFileEditSnippets.kt" \
+    "$UTIL_SRC/NetworkRetryPolicy.kt" \
+    "$UTIL_SRC/NetworkHttpRetry.kt" \
+    "$UTIL_SRC/ConchNetwork.kt" \
+    "$root/app/src/main/java/com/newoether/agora/api/BoundedWireRead.kt" \
+    "$root/app/src/main/java/com/newoether/agora/viewmodel/StreamScope.kt" \
+    "$root/core/tools/golden/conch-network/platform/HttpClient.kt" \
+    "$root/core/tools/golden/conch-network/platform/okhttp3/OkHttp.kt" \
+    "$root/core/tools/golden/conch-network/platform/okio/Okio.kt" \
+    "$BUILD_DIR/ConchExceptions.kt" \
     "$UTIL_SRC/Constants.kt" \
     "$HERE/stubs/android/system/Os.kt" 2>&1 | head -50
 
@@ -50,7 +67,7 @@ fi
 
 echo "Running ${#SCENARIOS[@]} scenarios..."
 # Run in batch mode
-"$KOTLINC" -cp "$KOTLINX_JARS:$BUILD_DIR/classes" \
+"$KOTLINC" -cp "$KOTLINX_JARS:$BUILD_DIR/classes:$android_classes" \
     -e "sandbox.path.resolver.golden.main(arrayOf(\"--batch\", \"$OUTPUT_DIR\", \"$SCENARIOS_DIR\", \"${SCENARIOS[@]}\"))"
 
 # Verify against the frozen traces; --freeze replaces them (every other stand's contract — the

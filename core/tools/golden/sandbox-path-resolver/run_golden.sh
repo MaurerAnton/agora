@@ -33,7 +33,9 @@ echo "Compiling trace dump..."
     "$APP_SRC/com/newoether/agora/sandbox/SandboxPathResolver.kt" \
     "$APP_SRC/com/newoether/agora/sandbox/SandboxFileOperations.kt" \
     "$UTIL_SRC/ShellClient.kt" \
-    "$UTIL_SRC/Constants.kt" 2>&1 | head -50
+    "$UTIL_SRC/ShellFileText.kt" \
+    "$UTIL_SRC/Constants.kt" \
+    "$HERE/stubs/android/system/Os.kt" 2>&1 | head -50
 
 # Collect scenario files
 SCENARIOS=("$SCENARIOS_DIR"/*.json)
@@ -47,10 +49,25 @@ echo "Running ${#SCENARIOS[@]} scenarios..."
 "$KOTLINC" -cp "$KOTLINX_JARS:$BUILD_DIR/classes" \
     -e "sandbox.path.resolver.golden.main(arrayOf(\"--batch\", \"$OUTPUT_DIR\", \"$SCENARIOS_DIR\", \"${SCENARIOS[@]}\"))"
 
-# Move traces to golden dir
-for trace in "$OUTPUT_DIR"/*.trace; do
-    [[ -e "$trace" ]] || continue
-    cp "$trace" "$GOLDEN_DIR/"
-done
+# Verify against the frozen traces; --freeze replaces them (every other stand's contract — the
+# old script overwrote the golden on every run).
+if [[ "${1:-}" == "--freeze" ]]; then
+    mkdir -p "$GOLDEN_DIR"
+    rm -f "$GOLDEN_DIR"/*.trace
+    for trace in "$OUTPUT_DIR"/*.trace; do
+        [[ -e "$trace" ]] || continue
+        cp "$trace" "$GOLDEN_DIR/"
+    done
+    count=$(ls "$GOLDEN_DIR"/*.trace | wc -l)
+    echo "Frozen $count traces into $GOLDEN_DIR"
+    exit 0
+fi
 
-echo "Golden traces written to $GOLDEN_DIR"
+if diff -r "$GOLDEN_DIR" "$OUTPUT_DIR" > "$BUILD_DIR/diff.txt"; then
+    count=$(ls "$OUTPUT_DIR"/*.trace | wc -l)
+    echo "PARITY OK: $count traces identical to the frozen golden"
+else
+    echo "GOLDEN DRIFT:" >&2
+    head -80 "$BUILD_DIR/diff.txt" >&2
+    exit 1
+fi

@@ -462,11 +462,14 @@ void schema_keys(const fs::path& stand) {
                                      (source[i] >= 'A' && source[i] <= 'Z')))
             ++i;
         static const std::string kSuffix = "PreferencesKey(";
-        if (i - type_start < 1 || source.compare(i, kSuffix.size(), kSuffix) != 0) {
+        // Python's `[a-zA-Z]+PreferencesKey\(` backtracks so the suffix starts inside the
+        // scanned identifier and ends on the '(' that follows it.
+        if (i - type_start < 1 || i + 1 < kSuffix.size() ||
+            source.compare(i + 1 - kSuffix.size(), kSuffix.size(), kSuffix) != 0) {
             pos += anchor.size();
             continue;
         }
-        i += kSuffix.size();
+        ++i;  // i now sits on the '(' itself; the quote check below applies to the next char
         skip_ws(i);
         if (i >= source.size() || source[i] != '"') { pos += anchor.size(); continue; }
         const std::size_t lit_start = ++i;

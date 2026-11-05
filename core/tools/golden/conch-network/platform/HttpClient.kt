@@ -6,7 +6,15 @@
 package com.newoether.agora.api
 
 import okhttp3.OkHttpClient
+import com.newoether.agora.viewmodel.StreamScope
 
 internal object HttpClient {
     val client: OkHttpClient = OkHttpClient()
+
+    // The stand never cancels an in-flight request, which is the read condition
+    // executeWithNetworkRetry threads through its default parameter.
+    fun isRequestCancelled(): Boolean = false
+
+    // No coroutine stream scope exists outside a real generation; a null scope skips registration.
+    fun boundStreamScope(): StreamScope? = null
 }

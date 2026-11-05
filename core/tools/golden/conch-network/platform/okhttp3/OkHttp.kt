@@ -84,7 +84,26 @@ class Request private constructor(
             return this
         }
 
+        fun method(name: String, body: RequestBody?): Builder {
+            method = name
+            this.body = body
+            return this
+        }
+
+        fun tag(type: Class<*>, tag: Any?): Builder {
+            // The stand never reads tags back; NetworkHttpRetry only carries the progress marker
+            // through the builder chain.
+            return this
+        }
+
         fun build(): Request = Request(url, method, headers.build(), body)
+    }
+
+    /** request.newBuilder(): re-seeds a copy through the same builder surface. */
+    fun newBuilder(): Builder = Builder().also { builder ->
+        builder.url(url)
+        builder.method(method, body)
+        for ((name, value) in headers.toList()) builder.header(name, value)
     }
 }
 
@@ -119,6 +138,7 @@ interface Call {
     fun execute(): Response
     fun timeout(): Timeout
     fun isCanceled(): Boolean = false
+    fun cancel() {}
 
     interface Factory {
         fun newCall(request: Request): Call

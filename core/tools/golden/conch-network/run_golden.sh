@@ -39,11 +39,21 @@ runtime="$kotlinc_dir/../lib/kotlin-stdlib.jar:$kotlinc_dir/../lib/kotlin-reflec
 rm -rf "$here/build"
 mkdir -p "$classes" "$fresh"
 
+# ConchNetwork now classifies failures through NetworkRetryPolicy and streams retries through the
+# executeWithNetworkRetry extension (both verbatim); the ConchChannelException family comes from an
+# extract profile so the stand does not compile ConchEncryptedHttp's AEAD stack.
+"${AGORA_EXTRACT:-$root/core/build/agora_extract}" conch-exceptions \
+    "$app/util/ConchEncryptedHttp.kt" "$here/build/ConchExceptions.kt"
+
 echo "Generating scenarios..."
 "${AGORA_SCENARIOS:-$root/core/build/agora_scenarios}" conch-network "$here"
 
 sources=(
     "$app/util/ConchNetwork.kt"
+    "$app/util/NetworkRetryPolicy.kt"
+    "$app/util/NetworkHttpRetry.kt"
+    "$app/viewmodel/StreamScope.kt"
+    "$here/build/ConchExceptions.kt"
     "$app/api/BoundedWireRead.kt"
     "$here/platform/HttpClient.kt"
     "$here/platform/okhttp3/OkHttp.kt"

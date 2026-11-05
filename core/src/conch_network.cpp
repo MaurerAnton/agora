@@ -1,5 +1,7 @@
 #include "agora/core/conch_network.hpp"
 
+#include "agora/core/sql_boundary.hpp"
+
 #include <algorithm>
 #include <stdexcept>
 #include <string>
@@ -39,8 +41,25 @@ TextResponse execute(Transport& transport, const Request& request,
         if (iequals(header.name, "X-Conch-Response-Signature")) signature = header.value;
     }
 
-    std::string body =
-        wire::read_bounded_wire_text(*raw.body, is_successful ? success_limit : CONTROL_LIMIT);
+    // ConchNetwork.readBody: a failed body read on an error response becomes a
+    // NetworkHttpException carrying the status and Retry-After header; successful responses
+    // propagate the bounded-read failure unchanged. NetworkRetryPolicy.throwIfCancelled is
+    // unreachable in the stand (no request is ever cancelled).
+    std::string body;
+    try {
+        body = wire::read_bounded_wire_text(*raw.body,
+                                            is_successful ? success_limit : CONTROL_LIMIT);
+    } catch (const std::exception& failure) {
+        if (is_successful) throw;
+        std::string retry_after;
+        for (const Header& header : raw.headers) {
+            if (iequals(header.name, "Retry-After")) retry_after = header.value;
+        }
+        (void)retry_after;
+        throw KotlinError("NetworkHttpException",
+                          "HTTP " + std::to_string(raw.code) +
+                              ": response body could not be read");
+    }
     return TextResponse{raw.code, std::move(body), is_successful, std::move(signature)};
 }
 

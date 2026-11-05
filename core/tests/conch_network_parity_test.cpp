@@ -21,6 +21,7 @@
 #include "agora/core/conch_network.hpp"
 #include "agora/core/json.hpp"
 #include "agora/core/sha256.hpp"
+#include "agora/core/sql_boundary.hpp"
 #include "check.hpp"
 
 namespace {
@@ -28,6 +29,7 @@ namespace {
 namespace conch = agora::core::conch;
 namespace json = agora::core::json;
 namespace wire = agora::core::wire;
+using agora::core::KotlinError;
 
 std::string read_file(const std::filesystem::path& path) {
     std::ifstream stream(path, std::ios::binary);
@@ -310,6 +312,9 @@ std::string run_conch_scenario(const json::Value& scenario, const std::string& o
                 transport, url, required_string(scenario, "body", stem), headers,
                 optional_long(scenario, "timeoutMillis"));
         }
+    } catch (const KotlinError& error) {
+        error_type = error.class_name();
+        error_message = error.what();
     } catch (const std::invalid_argument& error) {
         error_type = "IllegalArgumentException";
         error_message = error.what();
@@ -347,6 +352,8 @@ std::string run_read_scenario(const json::Value& scenario, const std::string& op
             const std::optional<std::string> line = wire::read_bounded_wire_line(source, limit);
             outcome = object_value({{"line", line ? string_value(*line) : null_value()}});
         }
+    } catch (const KotlinError& error) {
+        outcome = error_value(error.class_name(), error.what());
     } catch (const std::invalid_argument& error) {
         outcome = error_value("IllegalArgumentException", error.what());
     } catch (const std::runtime_error& error) {

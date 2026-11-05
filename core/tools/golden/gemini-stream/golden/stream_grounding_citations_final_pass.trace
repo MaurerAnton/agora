@@ -4,7 +4,5 @@ hosted|streamKey=gemini_google_search_<uuid>|name=google_search|arguments={"quer
 text|hello
 citation|v=1;sourceId=citation_ba1403cc7aa601c0d07ca412;provider=gemini;kind=url;title=Alpha;url=https://a.example/x;fileName=null;location=null;providerSourceId=null;excerpt=null;anchors=[]
 citation|v=1;sourceId=citation_57b3b5eac725703f4dd33b94;provider=gemini;kind=url;title=b.example;url=https://b.example/y;fileName=null;location=null;providerSourceId=null;excerpt=null;anchors=[]
-citation|v=1;sourceId=citation_ba1403cc7aa601c0d07ca412;provider=gemini;kind=url;title=Alpha;url=https://a.example/x;fileName=null;location=null;providerSourceId=null;excerpt=null;anchors=[]
-citation|v=1;sourceId=citation_57b3b5eac725703f4dd33b94;provider=gemini;kind=url;title=b.example;url=https://b.example/y;fileName=null;location=null;providerSourceId=null;excerpt=null;anchors=[]
 term|sawDone=0|finish=-|produced=1|inFlight=0
 streamError|none

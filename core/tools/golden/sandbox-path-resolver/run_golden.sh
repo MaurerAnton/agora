@@ -34,7 +34,8 @@ echo "Compiling trace dump..."
     "$APP_SRC/com/newoether/agora/sandbox/SandboxPathResolver.kt" \
     "$APP_SRC/com/newoether/agora/sandbox/SandboxFileOperations.kt" \
     "$APP_SRC/com/newoether/agora/sandbox/SandboxVirtualPaths.kt" \
-    "$UTIL_SRC/ShellClient.kt" \
+    "$HERE/stubs/com/newoether/agora/util/ShellClient.kt" \
+    "$UTIL_SRC/PortableGlobMatcher.kt" \
     "$UTIL_SRC/ShellFileText.kt" \
     "$UTIL_SRC/ShellFileEditSnippets.kt" \
     "$UTIL_SRC/Constants.kt" \

@@ -168,3 +168,97 @@ jobs:
             apks/*.apk
         env:
           GH_TOKEN: ${{ github.token }}
+  # The golden Kotlin stands (core/tools/golden/<stand>) used to be a developer-only loop.
+  # CI now runs their verify for every stand whose own files changed in the push/PR, so the
+  # repository rule is "never build locally, always use gh ci": C++ via ctest, Kotlin traces
+  # via this job. --freeze stays a local (or dispatched) action when a drift is intentional.
+  golden-stands:
+    name: Golden stands (changed)
+    runs-on: ubuntu-latest
+    timeout-minutes: 50
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: 21
+
+      - name: Install C++ core build dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y --no-install-recommends \
+            libcurl4-openssl-dev \
+            libsqlite3-dev \
+            libssl-dev \
+            libssh2-1-dev \
+            zlib1g-dev
+
+      - name: Cache kotlinc and the jars
+        uses: actions/cache@v4
+        with:
+          path: |
+            .ci/kotlinc
+            .ci/jars
+          key: golden-kotlin-2.3.21-jars-v1
+
+      - name: Provision the stand toolchain and run the changed stands
+        env:
+          BASE_SHA: ${{ github.event.before }}
+          PR_BASE_SHA: ${{ github.event.pull_request.base.sha }}
+          HEAD_SHA: ${{ github.sha }}
+        run: |
+          set -uo pipefail
+          mkdir -p .ci/jars
+          if [ ! -x .ci/kotlinc/bin/kotlinc ]; then
+            curl -fsSL -o /tmp/kotlin.zip \
+              https://github.com/JetBrains/kotlin/releases/download/v2.3.21/kotlin-compiler-2.3.21.zip
+            unzip -q /tmp/kotlin.zip -d .ci
+          fi
+          base=https://repo1.maven.org/maven2
+          fetch() { [ -f ".ci/jars/$2" ] || curl -fsSL -o ".ci/jars/$2" "$base/$1"; }
+          fetch org/jetbrains/kotlinx/kotlinx-serialization-core-jvm/1.11.0/kotlinx-serialization-core-jvm-1.11.0.jar kotlinx-serialization-core-jvm-1.11.0.jar
+          fetch org/jetbrains/kotlinx/kotlinx-serialization-json-jvm/1.11.0/kotlinx-serialization-json-jvm-1.11.0.jar kotlinx-serialization-json-jvm-1.11.0.jar
+          fetch org/jetbrains/kotlinx/kotlinx-coroutines-core-jvm/1.9.0/kotlinx-coroutines-core-jvm-1.9.0.jar kotlinx-coroutines-core-jvm-1.9.0.jar
+          fetch org/xerial/sqlite-jdbc/3.46.1.3/sqlite-jdbc-3.46.1.3.jar sqlite-jdbc-3.46.1.3.jar
+          fetch org/apache/commons/commons-compress/1.27.1/commons-compress-1.27.1.jar commons-compress-1.27.1.jar
+          fetch commons-io/commons-io/2.16.1/commons-io-2.16.1.jar commons-io-2.16.1.jar
+
+          export KOTLINC="$PWD/.ci/kotlinc/bin/kotlinc"
+          plugin=$(ls .ci/kotlinc/lib | grep -E 'serialization.*compiler-plugin.*\.jar$' | head -1 || true)
+          if [ -n "$plugin" ]; then export KOTLINX_SERIALIZATION_PLUGIN="$PWD/.ci/kotlinc/lib/$plugin"; fi
+          export KOTLINX_JARS="$PWD/.ci/jars/kotlinx-serialization-core-jvm-1.11.0.jar:$PWD/.ci/jars/kotlinx-serialization-json-jvm-1.11.0.jar:$PWD/.ci/jars/kotlinx-coroutines-core-jvm-1.9.0.jar:$PWD/.ci/jars/sqlite-jdbc-3.46.1.3.jar:$PWD/.ci/jars/commons-compress-1.27.1.jar:$PWD/.ci/jars/commons-io-2.16.1.jar"
+          export COROUTINES_JAR="$PWD/.ci/jars/kotlinx-coroutines-core-jvm-1.9.0.jar"
+
+          base="$BASE_SHA"
+          if [ "${PR_BASE_SHA:-}" != "" ]; then base="$PR_BASE_SHA"; fi
+          if [ -z "$base" ] || [ "${base:0:8}" = "00000000" ]; then base="HEAD~1"; fi
+          stands=$(git diff --name-only "$base" "$HEAD_SHA" -- core/tools/golden 2>/dev/null \
+                   | cut -d/ -f4 | sort -u)
+
+          # The stand binaries the scripts fall back to (extract/profiles/scenario generator).
+          cmake -S core -B core-build -DCMAKE_BUILD_TYPE=Release
+          cmake --build core-build --target agora_extract agora_scenarios -j2
+
+          total=0; failed=""
+          for stand in $stands; do
+            [ -n "$stand" ] || continue
+            [ -f "core/tools/golden/$stand/run_golden.sh" ] || continue
+            total=$((total + 1))
+            echo "::group::stand $stand"
+            if ! (cd "core/tools/golden/$stand" && timeout 1500 ./run_golden.sh); then
+              failed="$failed $stand"
+            fi
+            echo "::endgroup::"
+          done
+          if [ "$total" -eq 0 ]; then
+            echo "No golden stand changed in $base..$HEAD_SHA"
+            exit 0
+          fi
+          if [ -n "$failed" ]; then
+            echo "Golden stand verify failed:$failed" >&2
+            exit 1
+          fi
+          echo "All $total changed golden stands verified."

@@ -7,6 +7,13 @@ on:
   pull_request:
     branches: [master]
   workflow_dispatch:
+    inputs:
+      freeze_stand:
+        description: >-
+          Golden stand to regenerate (core/tools/golden/<name>): runs run_golden.sh --freeze and
+          uploads the new golden/ traces as an artifact to commit.
+        required: false
+        default: ''
 
 permissions:
   contents: read
@@ -242,13 +249,23 @@ jobs:
           cmake -S core -B core-build -DCMAKE_BUILD_TYPE=Release
           cmake --build core-build --target agora_extract agora_scenarios -j2
 
+          # Dispatched freeze: regenerate one stand's golden and publish it as an artifact so the
+          # traces can be committed without a local kotlinc run.
+          if [ "${{ github.event.inputs.freeze_stand }}" != "" ]; then
+            stands="${{ github.event.inputs.freeze_stand }}"
+          fi
+
           total=0; failed=""
           for stand in $stands; do
             [ -n "$stand" ] || continue
             [ -f "core/tools/golden/$stand/run_golden.sh" ] || continue
             total=$((total + 1))
             echo "::group::stand $stand"
-            if ! (cd "core/tools/golden/$stand" && timeout 1500 ./run_golden.sh); then
+            args=""
+            if [ "${{ github.event.inputs.freeze_stand }}" != "" ]; then
+              args="--freeze"
+            fi
+            if ! (cd "core/tools/golden/$stand" && timeout 1500 ./run_golden.sh $args); then
               failed="$failed $stand"
             fi
             echo "::endgroup::"
@@ -262,3 +279,11 @@ jobs:
             exit 1
           fi
           echo "All $total changed golden stands verified."
+      - name: Publish regenerated golden traces
+        if: ${{ github.event.inputs.freeze_stand != '' }}
+        uses: actions/upload-artifact@v4
+        with:
+          name: golden-${{ github.event.inputs.freeze_stand }}
+          path: core/tools/golden/${{ github.event.inputs.freeze_stand }}/golden/
+          if-no-files-found: error
+          retention-days: 7

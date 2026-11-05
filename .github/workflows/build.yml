@@ -248,6 +248,9 @@ jobs:
           # The stand binaries the scripts fall back to (extract/profiles/scenario generator).
           cmake -S core -B core-build -DCMAKE_BUILD_TYPE=Release
           cmake --build core-build --target agora_extract agora_scenarios -j2
+          # The stand scripts fall back to core/build/<tool>; stage the two binaries there.
+          mkdir -p core/build
+          cp core-build/agora_extract core-build/agora_scenarios core/build/
 
           # Dispatched freeze: regenerate one stand's golden and publish it as an artifact so the
           # traces can be committed without a local kotlinc run.

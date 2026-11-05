@@ -33,8 +33,10 @@ echo "Compiling trace dump..."
     "$HERE/SandboxPathResolverTraceDump.kt" \
     "$APP_SRC/com/newoether/agora/sandbox/SandboxPathResolver.kt" \
     "$APP_SRC/com/newoether/agora/sandbox/SandboxFileOperations.kt" \
+    "$APP_SRC/com/newoether/agora/sandbox/SandboxVirtualPaths.kt" \
     "$UTIL_SRC/ShellClient.kt" \
     "$UTIL_SRC/ShellFileText.kt" \
+    "$UTIL_SRC/ShellFileEditSnippets.kt" \
     "$UTIL_SRC/Constants.kt" \
     "$HERE/stubs/android/system/Os.kt" 2>&1 | head -50
 

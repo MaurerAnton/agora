@@ -1,4 +1,4 @@
 name|automation_loop
 op|automation
 args|loop
-result|MessageSource(kind=LOOP, askUser=[])
+result|MessageSource(kind=LOOP, askUser=[], subagentResults={}, subagentResult=null)

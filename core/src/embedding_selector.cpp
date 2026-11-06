@@ -27,8 +27,9 @@ float decode_big_endian(const std::uint8_t* bytes) {
 class DirectEmbeddingCosineScorer {
 public:
     explicit DirectEmbeddingCosineScorer(const std::vector<float>& query) : query_(query) {
-        float norm = 0.0f;
-        for (float value : query_) norm += value * value;
+        // Kotlin accumulates in Double so an overflowing vector still normalizes to ~1.0.
+        double norm = 0.0;
+        for (float value : query_) norm += static_cast<double>(value) * value;
         query_magnitude_ = std::sqrt(norm);
     }
 
@@ -36,20 +37,20 @@ public:
         if (bytes.size() != query_.size() * static_cast<std::size_t>(kFloatSizeBytes)) {
             throw std::invalid_argument("Failed requirement.");
         }
-        float dot = 0.0f;
-        float norm_b = 0.0f;
+        double dot = 0.0;
+        double norm_b = 0.0;
         for (std::size_t index = 0; index < query_.size(); ++index) {
             const float value_b = decode_big_endian(bytes.data() + index * kFloatSizeBytes);
-            dot += query_[index] * value_b;
-            norm_b += value_b * value_b;
+            dot += static_cast<double>(query_[index]) * value_b;
+            norm_b += static_cast<double>(value_b) * value_b;
         }
-        const float denominator = query_magnitude_ * std::sqrt(norm_b);
-        return denominator == 0.0f ? 0.0f : dot / denominator;
+        const double denominator = query_magnitude_ * std::sqrt(norm_b);
+        return denominator == 0.0 ? 0.0f : static_cast<float>(dot / denominator);
     }
 
 private:
     const std::vector<float>& query_;
-    float query_magnitude_ = 0.0f;
+    double query_magnitude_ = 0.0;
 };
 
 /**
@@ -118,23 +119,18 @@ Selection BoundedSemanticEmbeddingSelector::select(const std::vector<float>& que
                 continue;
             }
 
-            // Kotlin wraps the scoring in runCatching: a failure counts as a skipped row rather
-            // than aborting the search.
-            std::optional<float> score;
-            try {
-                score = scorer.score(row.embedding);
-            } catch (const std::exception&) {
-                score.reset();
-            }
-            if (!score || !std::isfinite(*score)) {
+            // The dimension guard above keeps the scorer's require() reachable only from real
+            // programming errors, so the call sits unguarded exactly like the reference now.
+            const float score = scorer.score(row.embedding);
+            if (!std::isfinite(score)) {
                 ++skipped_invalid_rows;
                 continue;
             }
-            best_score = has_best ? std::max(best_score, *score) : *score;
+            best_score = has_best ? std::max(best_score, score) : score;
             has_best = true;
-            if (*score <= threshold) continue;
+            if (score <= threshold) continue;
 
-            const Candidate candidate{row.id, row.message_id, *score};
+            const Candidate candidate{row.id, row.message_id, score};
             if (retained.size() < static_cast<std::size_t>(limit)) {
                 retained.push(candidate);
             } else if (outranks(candidate, retained.top())) {

@@ -2,6 +2,7 @@
 
 #include <optional>
 #include <string>
+#include <utility>
 #include <vector>
 
 namespace agora::core::message_source {
@@ -18,6 +19,7 @@ enum class Kind {
     Task,
     Loop,
     AskUser,
+    Subagent,
 };
 
 /** Mirrors the Participant enum extracted verbatim from model/ChatMessage.kt. */
@@ -32,9 +34,20 @@ struct AskUserItem {
     std::optional<std::string> answer;  // nullopt: the user left it unanswered
 };
 
+/** Display-only snapshot attached to the exact completion receipt, never a status authority. */
+struct SubagentResult {
+    std::string name;
+    std::string status;
+    std::optional<std::string> error_text;
+    std::optional<std::string> error_code;
+};
+
 struct Source {
     Kind kind = Kind::Task;
     std::vector<AskUserItem> ask_user;
+    /** Exact outbox receipts; insertion-ordered because kotlinx decodes into a LinkedHashMap. */
+    std::vector<std::pair<std::string, std::string>> subagent_results;
+    std::optional<SubagentResult> subagent_result;
 };
 
 /** Stored text for a skipped question; the UI shows its own localized label instead. */
@@ -58,7 +71,7 @@ std::optional<std::string> encode(const std::optional<Source>& source);
 std::optional<std::string> sanitize_imported(const std::optional<std::string>& raw,
                                              Participant participant);
 
-/** MessageSource.forAutomationRequestKind: "task"/"loop" -> source, everything else null. */
+/** MessageSource.forAutomationRequestKind: "task"/"loop"/"subagent" -> source, else null. */
 std::optional<Source> for_automation_request_kind(const std::optional<std::string>& request_kind);
 
 /**

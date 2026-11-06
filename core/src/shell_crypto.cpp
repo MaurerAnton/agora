@@ -138,7 +138,7 @@ DecryptResult decrypt(const AESKey& key, std::string_view encoded) {
     if (body < GCM_TAG_SIZE) {
         // SunJCE refuses to hand a decrypt buffer shorter than the tag to the tag check at all;
         // the frozen trace pins the exact wrapped description.
-        return {std::string{}, "javax.crypto.ShortBufferException: Output buffer invalid"};
+        return {std::string{}, "Input data too short to contain an expected tag length of 16bytes"};
     }
 
     const std::span<const std::uint8_t> nonce_span(raw.data(), GCM_NONCE_SIZE);
@@ -148,8 +148,8 @@ DecryptResult decrypt(const AESKey& key, std::string_view encoded) {
 
     const std::optional<std::vector<std::uint8_t>> plaintext =
         crypto::aes_256_gcm_decrypt(key, nonce, sealed, {});
-    // SunJCE's AEADBadTagException surfaces as "Tag mismatch!" once the tag check runs.
-    if (!plaintext) return {std::string{}, "Tag mismatch!"};
+    // SunJCE's AEADBadTagException surfaces as "Tag mismatch" once the tag check runs.
+    if (!plaintext) return {std::string{}, "Tag mismatch"};
 
     return {std::string(plaintext->begin(), plaintext->end()), std::nullopt};
 }

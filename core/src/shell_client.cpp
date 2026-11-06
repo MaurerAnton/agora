@@ -350,7 +350,7 @@ std::vector<std::uint8_t> decrypt_payload(const crypto::Bytes32& key,
     std::copy(raw.begin(), raw.begin() + 12, nonce.begin());
     const std::span<const std::uint8_t> ciphertext(raw.data() + 12, raw.size() - 12);
     const auto plaintext = crypto::aes_256_gcm_decrypt(key, nonce, ciphertext);
-    if (!plaintext) throw ClientError("Tag mismatch!");  // JDK AEADBadTagException message
+    if (!plaintext) throw ClientError("Tag mismatch");  // JDK AEADBadTagException message
     return *plaintext;
 }
 

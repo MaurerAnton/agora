@@ -31,6 +31,42 @@ std::string file_extension(const std::string& path) {
     return path.substr(dot + 1);
 }
 
+bool is_blank(const std::string& path) {
+    for (char c : path) {
+        if (c != ' ' && c != '\t' && c != '\n' && c != '\r' && c != '\f' && c != '\v') return false;
+    }
+    return true;
+}
+
+bool starts_with_ignore_case(const std::string& text, const std::string_view prefix) {
+    if (text.size() < prefix.size()) return false;
+    for (std::size_t index = 0; index < prefix.size(); ++index) {
+        char lhs = text[index];
+        char rhs = prefix[index];
+        if (lhs >= 'A' && lhs <= 'Z') lhs = static_cast<char>(lhs - 'A' + 'a');
+        if (rhs >= 'A' && rhs <= 'Z') rhs = static_cast<char>(rhs - 'A' + 'a');
+        if (lhs != rhs) return false;
+    }
+    return true;
+}
+
+/**
+ * Kotlin's localCloneSource: only a `file:` URI or an absolute plain path is a local source, so a
+ * relative path resolves to nothing at all.
+ */
+std::optional<std::string> local_clone_source(const std::string& path) {
+    if (is_blank(path)) return std::nullopt;
+    if (starts_with_ignore_case(path, "file:")) {
+        // java.io.File(URI) accepts only authority-less absolute file URIs; every other spelling
+        // falls back to the raw text after the (case-sensitive) "file://" prefix.
+        if (path.rfind("file://", 0) == 0) return path.substr(7);
+        if (path.rfind("file:/", 0) == 0) return path.substr(5);
+        return std::nullopt;
+    }
+    if (path.empty() || path.front() != '/') return std::nullopt;
+    return path;
+}
+
 }  // namespace
 
 std::string FileStore::extension_of(const std::string& path) { return file_extension(path); }
@@ -42,24 +78,30 @@ CloneSession::CloneSession(FileStore& files, std::string destination_dir,
       name_generator_(std::move(name_generator)) {}
 
 std::string CloneSession::clone_backing_path(const std::string& owner_key, const std::string& path) {
-    for (const auto& entry : copied_by_owner_and_source_) {
-        if (entry.owner == owner_key && entry.source == path) return entry.copied;
+    if (committed_) {
+        throw std::logic_error("Attachment clone session is already committed");
     }
-    if (!files_.is_file(path)) return path;
+    if (is_blank(path)) return std::string();
+    const std::optional<std::string> source = local_clone_source(path);
+    if (!source.has_value()) return std::string();
+    for (const auto& entry : copied_by_owner_and_source_) {
+        if (entry.owner == owner_key && entry.source == *source) return entry.copied;
+    }
+    if (!files_.is_file(*source)) return std::string();
     if (!files_.directory_exists(destination_dir_) && !files_.create_directories(destination_dir_)) {
         throw std::runtime_error("Cannot create attachment clone directory");
     }
-    const std::string extension = file_extension(path);
+    const std::string extension = file_extension(*source);
     const std::string suffix = extension.empty() ? std::string() : "." + extension;
     const std::string name = name_generator_() + suffix;
     const std::string destination = destination_dir_ + "/" + name;
-    if (!files_.copy_file(path, destination)) {
+    if (!files_.copy_file(*source, destination)) {
         throw std::runtime_error("Cannot copy attachment backing file");
     }
     created_files_.push_back(destination);
-    // The cache keeps the absolute path, so a repeated reference resolves to the same copy.
+    // The cache keeps the resolved path, so a repeated reference resolves to the same copy.
     const std::string absolute = files_.absolute_path(destination);
-    copied_by_owner_and_source_.push_back(CopiedFile{owner_key, path, absolute});
+    copied_by_owner_and_source_.push_back(CopiedFile{owner_key, *source, absolute});
     return absolute;
 }
 
@@ -89,6 +131,11 @@ void CloneSession::rollback() {
     if (committed_) return;
     for (auto it = created_files_.rbegin(); it != created_files_.rend(); ++it) {
         files_.delete_file(*it);
+        const std::size_t slash = it->find_last_of('/');
+        if (slash != std::string::npos) {
+            // AttachmentFiles.deleteUnownedPaths drops the parent once it is empty.
+            files_.remove_directory_if_empty(it->substr(0, slash));
+        }
     }
     created_files_.clear();
     copied_by_owner_and_source_.clear();

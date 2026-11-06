@@ -39,6 +39,8 @@ const char* kind_name(Kind kind) {
             return "loop";
         case Kind::AskUser:
             return "ask_user";
+        case Kind::Subagent:
+            return "subagent";
     }
     return "task";
 }
@@ -68,6 +70,8 @@ std::optional<Source> decode(const std::optional<std::string>& raw) {
         kind = Kind::Loop;
     } else if (kind_value->text == "ask_user") {
         kind = Kind::AskUser;
+    } else if (kind_value->text == "subagent") {
+        kind = Kind::Subagent;
     } else {
         return std::nullopt;
     }
@@ -93,12 +97,55 @@ std::optional<Source> decode(const std::optional<std::string>& raw) {
         }
     }
 
-    // MessageSource.init: only ASK_USER may carry items.
+    std::vector<std::pair<std::string, std::string>> results;
+    if (const json::Value* receipts = last_member(root, "subagentResults")) {
+        if (receipts->kind != json::Kind::Object) return std::nullopt;
+        for (const json::Member& member : receipts->members) {
+            if (member.value.kind != json::Kind::String) return std::nullopt;
+            results.emplace_back(member.key, member.value.text);
+        }
+    }
+
+    std::optional<SubagentResult> subagent_result;
+    if (const json::Value* snapshot = last_member(root, "subagentResult")) {
+        if (!is_json_null(*snapshot)) {
+            if (snapshot->kind != json::Kind::Object) return std::nullopt;
+            const json::Value* name = last_member(*snapshot, "name");
+            const json::Value* status = last_member(*snapshot, "status");
+            if (name == nullptr || name->kind != json::Kind::String || status == nullptr ||
+                status->kind != json::Kind::String) {
+                return std::nullopt;
+            }
+            SubagentResult parsed;
+            parsed.name = name->text;
+            parsed.status = status->text;
+            const json::Value* error_text = last_member(*snapshot, "errorText");
+            if (error_text != nullptr && !is_json_null(*error_text)) {
+                if (error_text->kind != json::Kind::String) return std::nullopt;
+                parsed.error_text = error_text->text;
+            }
+            const json::Value* error_code = last_member(*snapshot, "errorCode");
+            if (error_code != nullptr && !is_json_null(*error_code)) {
+                if (error_code->kind != json::Kind::String) return std::nullopt;
+                parsed.error_code = error_code->text;
+            }
+            subagent_result = std::move(parsed);
+        }
+    }
+
+    // MessageSource.init: only ASK_USER may carry items, only SUBAGENT carries receipts, and the
+    // display snapshot exists only alongside exactly one receipt.
     if (kind != Kind::AskUser && !items.empty()) return std::nullopt;
+    if (kind != Kind::Subagent && !results.empty()) return std::nullopt;
+    if (subagent_result.has_value() && !(kind == Kind::Subagent && results.size() == 1)) {
+        return std::nullopt;
+    }
 
     Source source;
     source.kind = kind;
     source.ask_user = std::move(items);
+    source.subagent_results = std::move(results);
+    source.subagent_result = std::move(subagent_result);
     return source;
 }
 
@@ -123,6 +170,31 @@ std::optional<std::string> encode(const std::optional<Source>& source) {
         }
         out += ']';
     }
+    if (!source->subagent_results.empty()) {
+        out += ",\"subagentResults\":{";
+        for (std::size_t index = 0; index < source->subagent_results.size(); ++index) {
+            if (index != 0) out += ',';
+            append_string(out, source->subagent_results[index].first);
+            out += ':';
+            append_string(out, source->subagent_results[index].second);
+        }
+        out += '}';
+    }
+    if (source->subagent_result.has_value()) {
+        out += ",\"subagentResult\":{\"name\":";
+        append_string(out, source->subagent_result->name);
+        out += ",\"status\":";
+        append_string(out, source->subagent_result->status);
+        if (source->subagent_result->error_text.has_value()) {
+            out += ",\"errorText\":";
+            append_string(out, *source->subagent_result->error_text);
+        }
+        if (source->subagent_result->error_code.has_value()) {
+            out += ",\"errorCode\":";
+            append_string(out, *source->subagent_result->error_code);
+        }
+        out += '}';
+    }
     out += '}';
     return out;
 }
@@ -143,6 +215,11 @@ std::optional<Source> for_automation_request_kind(const std::optional<std::strin
     if (*request_kind == "loop") {
         Source source;
         source.kind = Kind::Loop;
+        return source;
+    }
+    if (*request_kind == "subagent") {
+        Source source;
+        source.kind = Kind::Subagent;
         return source;
     }
     return std::nullopt;
@@ -172,6 +249,9 @@ std::string describe(const std::optional<Source>& source) {
         case Kind::AskUser:
             out += "ASK_USER";
             break;
+        case Kind::Subagent:
+            out += "SUBAGENT";
+            break;
     }
     out += ", askUser=[";
     for (std::size_t index = 0; index < source->ask_user.size(); ++index) {
@@ -183,7 +263,29 @@ std::string describe(const std::optional<Source>& source) {
         out += item.answer.has_value() ? *item.answer : std::string("null");
         out += ')';
     }
-    out += "])";
+    out += "], subagentResults={";
+    for (std::size_t index = 0; index < source->subagent_results.size(); ++index) {
+        if (index != 0) out += ", ";
+        out += source->subagent_results[index].first;
+        out += '=';
+        out += source->subagent_results[index].second;
+    }
+    out += "}, subagentResult=";
+    if (source->subagent_result.has_value()) {
+        const SubagentResult& snapshot = *source->subagent_result;
+        out += "SubagentResult(name=";
+        out += snapshot.name;
+        out += ", status=";
+        out += snapshot.status;
+        out += ", errorText=";
+        out += snapshot.error_text.has_value() ? *snapshot.error_text : std::string("null");
+        out += ", errorCode=";
+        out += snapshot.error_code.has_value() ? *snapshot.error_code : std::string("null");
+        out += ')';
+    } else {
+        out += "null";
+    }
+    out += ')';
     return out;
 }
 

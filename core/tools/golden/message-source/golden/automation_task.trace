@@ -1,4 +1,4 @@
 name|automation_task
 op|automation
 args|task
-result|MessageSource(kind=TASK, askUser=[])
+result|MessageSource(kind=TASK, askUser=[], subagentResults={}, subagentResult=null)

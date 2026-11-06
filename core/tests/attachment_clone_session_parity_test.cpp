@@ -99,6 +99,15 @@ public:
         std::error_code code;
         return std::filesystem::remove(path, code);
     }
+    bool remove_directory_if_empty(const std::string& path) override {
+        std::error_code code;
+        if (!std::filesystem::is_directory(path, code) || code) return false;
+        code.clear();
+        if (!std::filesystem::is_empty(path, code) || code) return false;
+        code.clear();
+        std::filesystem::remove(path, code);
+        return !code;
+    }
     std::string absolute_path(const std::string& path) const override {
         std::error_code code;
         return std::filesystem::absolute(path, code).string();
@@ -153,6 +162,27 @@ std::string run_scenario(const std::filesystem::path& path) {
         if (at != std::string::npos) masked.replace(at, workspace_prefix.size(), "<workspace>");
         return std::regex_replace(masked, uuid_pattern, "<uuid>");
     };
+    // The dump absolutizes workspace-relative entries on load; mirror it here.
+    const auto absolutize = [&](const std::string& value) {
+        if (value.find(':') != std::string::npos) return value;
+        return std::filesystem::absolute(std::filesystem::path(value)).string();
+    };
+    const auto normalize_local_uris = [&](const std::string& raw) {
+        const std::string needle = "file://platform_clone_workspace/";
+        const std::string replacement = "file://" + workspace_prefix + "/";
+        std::string out;
+        std::size_t at = 0;
+        while (true) {
+            const std::size_t found = raw.find(needle, at);
+            if (found == std::string::npos) {
+                out += raw.substr(at);
+                return out;
+            }
+            out.append(raw, at, found - at);
+            out += replacement;
+            at = found + needle.size();
+        }
+    };
 
     std::string trace = "{\"clones\":[";
     if (const Value* messages = field(root, "messages");
@@ -161,8 +191,13 @@ std::string run_scenario(const std::filesystem::path& path) {
         for (const Value& element : messages->elements) {
             clone::CloneableMessage message;
             message.id = required_string(element, "id");
-            message.images = string_list(element, "images");
+            for (const std::string& value : string_list(element, "images")) {
+                message.images.push_back(absolutize(value));
+            }
             message.attachment_meta = optional_string(element, "attachmentMeta");
+            if (message.attachment_meta.has_value()) {
+                *message.attachment_meta = normalize_local_uris(*message.attachment_meta);
+            }
             const std::optional<std::string> owner = optional_string(element, "ownerKey");
             const clone::CloneableMessage cloned = session.clone_message(message, owner);
             if (!first) trace.push_back(',');
@@ -184,7 +219,7 @@ std::string run_scenario(const std::filesystem::path& path) {
         }
     }
     if (const Value* standalone = field(root, "standaloneMeta"); standalone != nullptr) {
-        const std::string raw = required_string(*standalone, "raw");
+        const std::string raw = normalize_local_uris(required_string(*standalone, "raw"));
         const std::optional<std::string> cloned = clone::clone_attachment_meta(
             raw, [&session](const std::string& path) {
                 return session.clone_backing_path("owner", path);

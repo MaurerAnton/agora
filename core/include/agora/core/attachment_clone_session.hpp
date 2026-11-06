@@ -46,6 +46,9 @@ public:
     /** Deletes a file; false when it could not be deleted. */
     virtual bool delete_file(const std::string& path) = 0;
 
+    /** Removes the directory only when it still exists and is empty; false otherwise. */
+    virtual bool remove_directory_if_empty(const std::string& path) = 0;
+
     /** The absolute path of a (possibly relative) path. */
     virtual std::string absolute_path(const std::string& path) const = 0;
 

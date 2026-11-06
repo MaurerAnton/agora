@@ -4,8 +4,8 @@ threshold|-1.0
 limit|5
 query|1.0,0.0
 candidates|1
-candidate|1|huge|0.0
+candidate|1|huge|1.0
 scanned|1
 skipped|0
-best_score|0.0
+best_score|1.0
 max_retained|1

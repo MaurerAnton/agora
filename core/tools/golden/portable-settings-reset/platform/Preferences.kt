@@ -5,6 +5,8 @@
 // the surviving keys in insertion order and the driver renders the outcome.
 package androidx.datastore.preferences.core
 
+import androidx.datastore.core.DataStore
+
 interface Preferences {
     operator fun <T> get(key: Key<T>): T?
 
@@ -52,6 +54,17 @@ class InMemoryPreferences : MutablePreferences {
 }
 
 fun stringPreferencesKey(name: String): Preferences.Key<String> = Preferences.Key(name)
+
+/**
+ * androidx.datastore Preferences.toMutablePreferences(): the reset policy hands the schema a fresh
+ * mutable view, and the driver inspects the in-memory store it seeded.
+ */
+fun Preferences.toMutablePreferences(): MutablePreferences = InMemoryPreferences()
+
+/** androidx.datastore preferences.core.edit: apply the transform to a fresh in-memory view. */
+suspend fun DataStore<Preferences>.edit(transform: suspend (MutablePreferences) -> Unit) {
+    transform(InMemoryPreferences())
+}
 fun booleanPreferencesKey(name: String): Preferences.Key<Boolean> = Preferences.Key(name)
 fun intPreferencesKey(name: String): Preferences.Key<Int> = Preferences.Key(name)
 fun longPreferencesKey(name: String): Preferences.Key<Long> = Preferences.Key(name)

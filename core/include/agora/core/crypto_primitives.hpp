@@ -95,7 +95,7 @@ std::vector<std::uint8_t> aes_256_gcm_encrypt(std::span<const std::uint8_t, 32> 
                                               std::string_view plaintext,
                                               std::span<const std::uint8_t> aad = {});
 
-/** Decrypts ciphertext || tag; nullopt on any authentication failure (Kotlin's "Tag mismatch!"). */
+/** Decrypts ciphertext || tag; nullopt on any authentication failure (Kotlin's "Tag mismatch"). */
 std::optional<std::vector<std::uint8_t>> aes_256_gcm_decrypt(
     std::span<const std::uint8_t, 32> key, std::span<const std::uint8_t, 12> nonce,
     std::span<const std::uint8_t> ciphertext_and_tag, std::span<const std::uint8_t> aad = {});

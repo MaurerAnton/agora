@@ -1,6 +1,7 @@
 name|retry_http_body
 mode|retry
-delay|5000
+delay|1000
+delayFloor|500
 upstreamFailure|1
-retryHttp|1
+retryHttp|0
 streamRetry|0

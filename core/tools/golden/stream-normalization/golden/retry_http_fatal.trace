@@ -1,6 +1,7 @@
 name|retry_http_fatal
 mode|retry
-delay|5000
+delay|1000
+delayFloor|500
 upstreamFailure|0
 retryHttp|0
 streamRetry|0

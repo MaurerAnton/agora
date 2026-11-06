@@ -11,7 +11,13 @@ on:
       freeze_stand:
         description: >-
           Golden stand to regenerate (core/tools/golden/<name>): runs run_golden.sh --freeze and
-          uploads the new golden/ traces as an artifact to commit.
+          uploads the new golden/ traces as an artifact to commit. Accepts a comma-separated list.
+        required: false
+        default: ''
+      verify_stand:
+        description: >-
+          Golden stand(s) to verify regardless of the push diff (comma-separated list): runs
+          run_golden.sh in verify mode, for refreshing status on unchanged stands.
         required: false
         default: ''
 
@@ -256,6 +262,8 @@ jobs:
           # traces can be committed without a local kotlinc run.
           if [ "${{ github.event.inputs.freeze_stand }}" != "" ]; then
             stands=$(echo "${{ github.event.inputs.freeze_stand }}" | tr ',' ' ')
+          elif [ "${{ github.event.inputs.verify_stand }}" != "" ]; then
+            stands=$(echo "${{ github.event.inputs.verify_stand }}" | tr ',' ' ')
           fi
 
           total=0; failed=""

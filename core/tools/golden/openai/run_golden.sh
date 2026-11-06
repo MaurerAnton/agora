@@ -53,6 +53,9 @@ sources=(
     "$app/util/NetworkHttpRetry.kt"
     "$app/viewmodel/StreamScope.kt"
     "$root/core/tools/golden/openai-request/stubs/com/newoether/agora/util/ConchExceptions.kt"
+    "$root/core/tools/golden/openai-request/stubs/okhttp3/OkHttp.kt"
+    "$root/core/tools/golden/openai-request/stubs/okio/Okio.kt"
+    "$root/core/tools/golden/conch-network/platform/HttpClient.kt"
 )
 for source in "${sources[@]}"; do
     [[ -f "$source" ]] || { echo "error: missing source $source" >&2; exit 2; }

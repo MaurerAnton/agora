@@ -49,6 +49,7 @@ sources=(
     "$app/api/util/MessageConverter.kt"
     "$app/api/util/Base64FileRegistry.kt"
     "$app/api/util/ToolMessages.kt"
+    "$app/api/util/CanonicalToolNames.kt"
     "$app/api/util/ApiMessagePreparation.kt"
     "$app/api/util/ContextWindow.kt"
     "$app/api/util/ContextLimiter.kt"
@@ -103,6 +104,8 @@ sources=(
     "$app/util/NetworkHttpRetry.kt"
     "$app/viewmodel/StreamScope.kt"
     "$root/core/tools/golden/openai-request/stubs/com/newoether/agora/util/ConchExceptions.kt"
+    "$root/core/tools/golden/openai-request/stubs/okhttp3/OkHttp.kt"
+    "$root/core/tools/golden/openai-request/stubs/okio/Okio.kt"
 )
 for source in "${sources[@]}"; do
     [[ -f "$source" ]] || { echo "error: missing source $source" >&2; exit 2; }

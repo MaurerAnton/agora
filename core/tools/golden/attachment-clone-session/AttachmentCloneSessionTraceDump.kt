@@ -34,6 +34,14 @@ private fun mask(value: String): String =
 
 private val workspacePrefix: String = File("platform_clone_workspace").absolutePath
 
+/**
+ * Scenarios describe local references with a workspace-relative `file://` URI; the app persists
+ * absolute ones and only absolute paths resolve to a local source, so the URI is absolutized on
+ * load just like the raw image paths.
+ */
+private fun normalizeLocalUris(raw: String): String =
+    raw.replace("file://platform_clone_workspace/", "file://$workspacePrefix/")
+
 private fun buildMessage(spec: JsonObject): MessageEntity = MessageEntity(
     id = (spec["id"] as JsonPrimitive).content,
     conversationId = (spec["conversationId"] as? JsonPrimitive)?.contentOrNull ?: "c1",
@@ -50,7 +58,9 @@ private fun buildMessage(spec: JsonObject): MessageEntity = MessageEntity(
     participant = Participant.USER,
     timestamp = (spec["timestamp"] as? JsonPrimitive)?.contentOrNull?.toLong() ?: 0L,
     runId = (spec["runId"] as? JsonPrimitive)?.contentOrNull ?: "run-1",
-    attachmentMeta = (spec["attachmentMeta"] as? JsonPrimitive)?.contentOrNull,
+    attachmentMeta = (spec["attachmentMeta"] as? JsonPrimitive)
+        ?.contentOrNull
+        ?.let(::normalizeLocalUris),
 )
 
 fun main(args: Array<String>) {
@@ -106,7 +116,7 @@ private fun render(scenarioFile: File): String {
         }
         if (root["standaloneMeta"] != null) {
             val spec = root["standaloneMeta"]!!.jsonObject
-            val raw = (spec["raw"] as JsonPrimitive).content
+            val raw = normalizeLocalUris((spec["raw"] as JsonPrimitive).content)
             val clone = cloneAttachmentMeta(raw) { path ->
                 session.cloneBackingPath("owner", path)
             }

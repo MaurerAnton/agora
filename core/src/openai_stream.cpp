@@ -10,9 +10,12 @@
 #include <utility>
 
 #include "agora/core/json.hpp"
+#include "agora/core/stream_normalization.hpp"
 #include "jvm_pow10_table.generated.hpp"
 
 namespace agora::core::openai {
+namespace sn = agora::core::stream_normalization;
+
 namespace {
 
 // ---------------------------------------------------------------------------
@@ -74,13 +77,33 @@ bool is_failed_to_generate(const std::optional<std::string>& outcome) {
     return outcome && contains_ignore_case(*outcome, "failed to generate");
 }
 
+/** Bridges the consumer's Error subset onto the shared retry policy. */
+std::optional<sn::GenerationError> to_shared_error(const Error& error) {
+    switch (error.kind) {
+        case Error::Kind::Api:
+            return sn::GenerationError{sn::ErrorApi{error.code, error.type, error.message}};
+        case Error::Kind::Network:
+            return sn::GenerationError{sn::ErrorNetwork{error.status_code, error.message}};
+        case Error::Kind::SseParse:
+            return sn::GenerationError{sn::ErrorSseParse{error.raw_line, error.cause}};
+        case Error::Kind::Timeout:
+            return sn::GenerationError{sn::ErrorTimeout{}};
+        default:
+            return std::nullopt;
+    }
+}
+
+/** ProviderRetryPolicy.requiresResponseReadRetry for the consumer's Error. */
+bool requires_read_retry(const Error& error) {
+    const std::optional<sn::GenerationError> shared = to_shared_error(error);
+    return shared.has_value() &&
+        sn::ProviderRetryPolicy::requires_response_read_retry(&*shared);
+}
+
 /** ProviderRetryPolicy.shouldRetryStreamError. */
 bool should_retry_stream_error(const Error& error) {
-    if (error.kind == Error::Kind::Api || error.kind == Error::Kind::Network) {
-        return contains_ignore_case(error.message, "failed to generate") ||
-               contains_ignore_case(error.message, "the server response could not be read");
-    }
-    return false;
+    const std::optional<sn::GenerationError> shared = to_shared_error(error);
+    return shared.has_value() && sn::ProviderRetryPolicy::should_retry_stream_error(&*shared);
 }
 
 std::string random_uuid_v4() {
@@ -691,13 +714,16 @@ bool Termination::truncated_by_token_cap() const {
 }
 
 bool Termination::is_retryable() const {
-    if (produced_content || already_reported_error || truncated_by_token_cap()) return false;
-    if (timed_out) return true;
-    if (stream_error.kind != Error::Kind::None &&
-        (retryable_stream_error || should_retry_stream_error(stream_error))) {
-        return true;
+    // Same Kotlin semantics as StreamTermination::is_retryable: a response-read failure always
+    // retries, a token cap stays terminal, produced content no longer suppresses the replay, and
+    // the legacy retryableStreamError flag is not consulted.
+    if (already_reported_error) return false;
+    if (requires_read_retry(stream_error)) return true;
+    if (truncated_by_token_cap()) return false;
+    if (stream_error.kind == Error::Kind::None) {
+        return timed_out || tool_call_in_flight || !saw_terminal_marker;
     }
-    return tool_call_in_flight || !saw_terminal_marker;
+    return should_retry_stream_error(stream_error);
 }
 
 Error Termination::to_error(std::string_view provider) const {

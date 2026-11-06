@@ -83,7 +83,7 @@ Key lines (C++ parity test mirrors them exactly):
 - termination: `truncated|0|1`, `retryable|0|1`, `error|none` or `error|<kind>…`
 - malformed: `event|<id>|<name>|<argsJson>|<sig>|<streamKey>`, `result|<text>`
 - carriesOutput: `output|0|1`
-- retry: `delay|<ms>`, `upstreamFailure|0|1`, `retryHttp|0|1`, `streamRetry|0|1`
+- retry: `delay|<ms>` and `delayFloor|<ms>` (the upper and lower bounds of the equal-jitter draw; production uses `Random.Default`, the trace injects deterministic sources), `upstreamFailure|0|1`, `retryHttp|0|1`, `streamRetry|0|1`
 
 ### UUID normalization
 

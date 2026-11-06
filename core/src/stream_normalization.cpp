@@ -2,6 +2,8 @@
 // StreamTermination, carriesModelOutput and the malformed-call stand-in.
 
 #include <algorithm>
+#include <cstdio>
+#include <limits>
 #include <random>
 #include <string>
 #include <utility>
@@ -91,41 +93,328 @@ const std::string& ToolArgumentAccumulator::str() const {
 // ---------------------------------------------------------------------------------------------
 // ProviderRetryPolicy.
 
-std::int64_t ProviderRetryPolicy::delay_millis(int retry_number) {
-    if (retry_number >= 1 && retry_number <= 3) return 5'000;
-    if (retry_number >= 4 && retry_number <= 5) return 30'000;
-    throw IllegalStateError("Invalid retry number: " + std::to_string(retry_number));
+namespace {
+
+/** NetworkRetryPolicy.HTTP_CODES. */
+bool is_transient_http_code(int status_code) {
+    return status_code == 408 || status_code == 425 || status_code == 429 || status_code == 500 ||
+        status_code == 502 || status_code == 503 || status_code == 504 || status_code == 529;
+}
+
+bool is_client_error_status(int status_code) {
+    return status_code >= 400 && status_code <= 499;
+}
+
+std::string trim_copy(std::string value) {
+    const auto first = value.find_first_not_of(" \t\n\r");
+    if (first == std::string::npos) return {};
+    const auto last = value.find_last_not_of(" \t\n\r");
+    return value.substr(first, last - first + 1);
+}
+
+std::string lower_ascii(std::string value) {
+    for (char& c : value) {
+        if (c >= 'A' && c <= 'Z') c = static_cast<char>(c - 'A' + 'a');
+    }
+    return value;
+}
+
+const std::vector<std::string>& retryable_upstream_messages() {
+    static const std::vector<std::string> kMessages = {
+        "failed to generate",
+        "the server response could not be read",
+        "rate limit",
+        "rate_limit",
+        "too many requests",
+        "overloaded",
+        "temporarily unavailable",
+    };
+    return kMessages;
+}
+
+const std::set<std::string>& permanent_error_identifiers() {
+    static const std::set<std::string> kIdentifiers = {
+        "insufficient_quota", "quota_exhausted", "exhausted_quota",
+        "insufficient_balance", "insufficient_funds", "insufficient_credit", "insufficient_credits",
+        "credit_balance_too_low", "credits_exhausted", "billing_hard_limit_reached", "billing_not_active",
+        "usage_limit_reached", "spend_limit_reached",
+        "invalid_api_key", "authentication_error", "unauthenticated", "permission_denied",
+        "permission_error", "unauthorized", "forbidden", "401", "403",
+        "invalid_request", "invalid_request_error", "invalid_argument", "bad_request",
+        "context_length_exceeded", "model_not_found",
+        "unsupported_parameter", "unsupported_value", "content_policy_violation",
+        "400", "404", "422",
+    };
+    return kIdentifiers;
+}
+
+const std::vector<std::string>& permanent_error_messages() {
+    static const std::vector<std::string> kMessages = {
+        "insufficient quota", "quota exhausted", "quota has been exhausted",
+        "exceeded your current quota", "exceeded your monthly quota",
+        "insufficient balance", "insufficient funds", "insufficient credit",
+        "credit balance is too low", "credit balance too low", "credits exhausted",
+        "out of credits", "billing hard limit", "billing limit reached",
+        "billing is not active", "spending limit reached", "spend limit reached",
+        "invalid api key", "incorrect api key", "invalid authentication",
+        "authentication failed", "permission denied", "invalid request",
+        "unsupported parameter", "unsupported value", "context length exceeded",
+        "maximum context length", "model not found", "content policy violation",
+    };
+    return kMessages;
+}
+
+const std::set<std::string>& retryable_error_identifiers() {
+    static const std::set<std::string> kIdentifiers = {
+        "rate_limit_error", "rate_limit_exceeded", "too_many_requests", "overloaded_error",
+        "server_error", "internal_error", "internal_server_error", "unavailable",
+        "resource_exhausted", "failed_to_generate", "408", "425", "429", "500", "502", "503",
+        "504", "529",
+    };
+    return kIdentifiers;
+}
+
+const std::vector<std::string>& transient_messages() {
+    static const std::vector<std::string> kMessages = {
+        "unexpected end of stream", "unexpected end of file", "eofexception",
+        "software caused connection abort", "socket is closed", "socket closed",
+        "connection reset", "connection aborted", "broken pipe", "connection shutdown",
+        "ssl peer shut down incorrectly", "connection closed by peer", "unexpected eof",
+        "stream was reset", "protocol_error", "refused_stream", "timed out", "timeout",
+        "the server response could not be read", "incomplete encrypted event line",
+    };
+    return kMessages;
+}
+
+bool matches_any_ci(const std::optional<std::string>& text, const std::vector<std::string>& needles) {
+    if (!text.has_value()) return false;
+    for (const std::string& needle : needles) {
+        if (detail::contains_ci(*text, needle)) return true;
+    }
+    return false;
+}
+
+/** providerHttpError(status, body) for the plain-text bodies the traces carry. */
+struct HttpErrorParts {
+    std::optional<std::string> code;
+    std::optional<std::string> type;
+    std::string message;
+};
+
+HttpErrorParts provider_http_error_parts(int status_code, const std::optional<std::string>& body) {
+    const std::string trimmed = body.has_value() ? trim_copy(*body) : std::string{};
+    if (trimmed.empty()) {
+        return HttpErrorParts{std::nullopt, std::nullopt, "HTTP " + std::to_string(status_code)};
+    }
+    // The Kotlin reference parses a JSON body into code/type/message. Every pinned trace carries
+    // plain text, which the parser passes through verbatim with the status as the code.
+    return HttpErrorParts{std::to_string(status_code), std::nullopt, trimmed};
+}
+
+std::int64_t days_from_civil(int year, unsigned month, unsigned day) {
+    year -= month <= 2;
+    const int era = (year >= 0 ? year : year - 399) / 400;
+    const unsigned yoe = static_cast<unsigned>(year - era * 400);
+    const unsigned doy = (153 * (month + (month > 2 ? -3 : 9)) + 2) / 5 + day - 1;
+    const unsigned doe = yoe * 365 + yoe / 4 - yoe / 100 + doy;
+    return static_cast<std::int64_t>(era) * 146097 + static_cast<std::int64_t>(doe) - 719468;
+}
+
+std::optional<std::int64_t> parse_http_date_millis(const std::string& raw) {
+    // RFC 1123: "Wed, 21 Oct 2015 07:28:00 GMT".
+    const auto comma = raw.find(',');
+    if (comma == std::string::npos) return std::nullopt;
+    int day = 0;
+    int year = 0;
+    int hour = 0;
+    int minute = 0;
+    int second = 0;
+    char month[4] = {0, 0, 0, 0};
+    char zone[4] = {0, 0, 0, 0};
+    const std::string rest = trim_copy(raw.substr(comma + 1));
+    if (std::sscanf(rest.c_str(), "%d %3s %d %d:%d:%d %3s", &day, month, &year, &hour, &minute,
+                    &second, zone) != 7) {
+        return std::nullopt;
+    }
+    static const char* kMonths[] = {"Jan", "Feb", "Mar", "Apr", "May", "Jun",
+                                    "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"};
+    int month_index = -1;
+    for (int i = 0; i < 12; ++i) {
+        if (lower_ascii(month) == lower_ascii(kMonths[i])) month_index = i;
+    }
+    if (month_index < 0 || lower_ascii(zone) != "gmt" || day < 1 || day > 31 || hour < 0 ||
+        hour > 23 || minute < 0 || minute > 59 || second < 0 || second > 60) {
+        return std::nullopt;
+    }
+    const std::int64_t days = days_from_civil(year, static_cast<unsigned>(month_index + 1),
+                                              static_cast<unsigned>(day));
+    const std::int64_t seconds = days * 86400 + static_cast<std::int64_t>(hour) * 3600 +
+        static_cast<std::int64_t>(minute) * 60 + second;
+    return seconds * 1000;
+}
+
+std::optional<std::int64_t> parse_decimal_long(const std::string& raw) {
+    if (raw.empty()) return std::nullopt;
+    std::size_t index = 0;
+    bool negative = false;
+    if (raw[index] == '+' || raw[index] == '-') {
+        negative = raw[index] == '-';
+        ++index;
+    }
+    if (index == raw.size()) return std::nullopt;
+    std::int64_t value = 0;
+    for (; index < raw.size(); ++index) {
+        const char c = raw[index];
+        if (c < '0' || c > '9') return std::nullopt;
+        if (value > (std::numeric_limits<std::int64_t>::max() - (c - '0')) / 10) {
+            return std::nullopt;
+        }
+        value = value * 10 + (c - '0');
+    }
+    return negative ? -value : value;
+}
+
+}  // namespace
+
+std::int64_t ProviderRetryPolicy::delay_millis(int retry_number,
+                                               const std::optional<std::string>& retry_after,
+                                               std::int64_t now_millis,
+                                               const JitterSource& jitter) {
+    if (retry_number < 1 || retry_number > kMaxRetries) {
+        throw IllegalArgumentError("Invalid retry number: " + std::to_string(retry_number));
+    }
+    // Equal jitter: 0.5–1, 1–2, 2–4, 4–8, 8–16 seconds.
+    const std::int64_t ceiling = 1'000LL << (retry_number - 1);
+    std::int64_t backoff = 0;
+    if (jitter) {
+        backoff = jitter(ceiling / 2, ceiling + 1);
+    } else {
+        static thread_local std::mt19937_64 engine([] {
+            std::random_device device;
+            return (static_cast<std::uint64_t>(device()) << 32) ^ device();
+        }());
+        std::uniform_int_distribution<std::int64_t> distribution(ceiling / 2, ceiling);
+        backoff = distribution(engine);
+    }
+    const std::int64_t retry_after_value = retry_after_millis(retry_after, now_millis).value_or(0);
+    return std::max(backoff, retry_after_value);
+}
+
+std::optional<std::int64_t> ProviderRetryPolicy::retry_after_millis(
+    const std::optional<std::string>& value, std::int64_t now_millis) {
+    if (!value.has_value()) return std::nullopt;
+    const std::string raw = trim_copy(*value);
+    if (raw.empty()) return std::nullopt;
+    if (const std::optional<std::int64_t> seconds = parse_decimal_long(raw); seconds.has_value()) {
+        const std::int64_t limit = std::numeric_limits<std::int64_t>::max() / 1'000;
+        const std::int64_t clamped = std::max<std::int64_t>(0, std::min(*seconds, limit));
+        return clamped * 1'000;
+    }
+    const std::optional<std::int64_t> epoch = parse_http_date_millis(raw);
+    if (!epoch.has_value()) return std::nullopt;
+    return std::max<std::int64_t>(0, *epoch - now_millis);
 }
 
 bool ProviderRetryPolicy::is_failed_to_generate_outcome(const std::optional<std::string>& raw) {
     return raw.has_value() && detail::contains_ci(*raw, "failed to generate");
 }
 
-bool ProviderRetryPolicy::is_unreadable_server_response_failure(const std::optional<std::string>& raw) {
+bool ProviderRetryPolicy::is_transient_message(const std::optional<std::string>& message) {
+    return matches_any_ci(message, transient_messages());
+}
+
+bool ProviderRetryPolicy::is_unreadable_server_response_failure(
+    const std::optional<std::string>& raw) {
     return raw.has_value() && detail::contains_ci(*raw, "the server response could not be read");
 }
 
 bool ProviderRetryPolicy::is_retryable_upstream_failure(const std::optional<std::string>& raw) {
-    if (!raw.has_value()) return false;
-    return detail::contains_ci(*raw, "failed to generate") ||
-        detail::contains_ci(*raw, "the server response could not be read");
+    return matches_any_ci(raw, retryable_upstream_messages());
+}
+
+bool ProviderRetryPolicy::is_permanent_api_failure(const std::optional<std::string>& code,
+                                                   const std::optional<std::string>& type,
+                                                   const std::optional<std::string>& message) {
+    const std::set<std::string>& identifiers = permanent_error_identifiers();
+    for (const std::optional<std::string>* candidate : {&code, &type}) {
+        if (!candidate->has_value()) continue;
+        if (identifiers.count(lower_ascii(trim_copy(**candidate))) != 0) return true;
+    }
+    if (message.has_value()) {
+        for (const std::string& needle : permanent_error_messages()) {
+            if (detail::contains_ci(*message, needle)) return true;
+        }
+    }
+    return false;
+}
+
+bool ProviderRetryPolicy::is_permanent_http_failure(int status_code,
+                                                    const std::optional<std::string>& body) {
+    const bool permanent_status = is_client_error_status(status_code) &&
+        !is_transient_http_code(status_code);
+    if (permanent_status) return true;
+    const HttpErrorParts parts = provider_http_error_parts(status_code, body);
+    return is_permanent_api_failure(parts.code, parts.type, parts.message);
+}
+
+bool ProviderRetryPolicy::is_response_read_http_failure(int status_code,
+                                                        const std::optional<std::string>& body) {
+    if (is_unreadable_server_response_failure(body)) return true;
+    const HttpErrorParts parts = provider_http_error_parts(status_code, body);
+    const bool read_failure = is_unreadable_server_response_failure(parts.message) ||
+        is_transient_message(parts.message);
+    return read_failure && !is_permanent_api_failure(parts.code, parts.type, parts.message);
+}
+
+bool ProviderRetryPolicy::requires_response_read_retry(const GenerationError* error) {
+    if (error == nullptr) return false;
+    if (std::holds_alternative<ErrorSseParse>(*error)) return true;
+    if (std::holds_alternative<ErrorTimeout>(*error)) return true;
+    if (const auto* api = std::get_if<ErrorApi>(error)) {
+        const bool read_failure = is_unreadable_server_response_failure(api->message) ||
+            is_transient_message(api->message);
+        return read_failure && !is_permanent_api_failure(api->code, api->type, api->message);
+    }
+    if (const auto* network = std::get_if<ErrorNetwork>(error)) {
+        const bool status_allows = !is_client_error_status(network->status_code) ||
+            is_transient_http_code(network->status_code);
+        return status_allows && (is_unreadable_server_response_failure(network->message) ||
+                                 is_transient_message(network->message));
+    }
+    return false;
 }
 
 bool ProviderRetryPolicy::should_retry_http(
     int status_code,
     const std::optional<std::string>& body,
     const std::set<int>& retryable_status_codes) {
-    if (retryable_status_codes.count(status_code) != 0) return true;
-    return is_retryable_upstream_failure(body);
+    if (is_permanent_http_failure(status_code, body)) return false;
+    if (is_response_read_http_failure(status_code, body)) return true;
+    if (is_transient_http_code(status_code)) return true;
+    if (!is_client_error_status(status_code) && retryable_status_codes.count(status_code) != 0) {
+        return true;
+    }
+    return !is_client_error_status(status_code) && is_retryable_upstream_failure(body);
 }
 
 bool ProviderRetryPolicy::should_retry_stream_error(const GenerationError* error) {
     if (error == nullptr) return false;
+    if (requires_response_read_retry(error)) return true;
     if (const auto* api = std::get_if<ErrorApi>(error)) {
-        return is_retryable_upstream_failure(api->message);
+        if (is_permanent_api_failure(api->code, api->type, api->message)) return false;
+        const std::set<std::string>& identifiers = retryable_error_identifiers();
+        for (const std::optional<std::string>* candidate : {&api->code, &api->type}) {
+            if (!candidate->has_value()) continue;
+            if (identifiers.count(lower_ascii(trim_copy(**candidate))) != 0) return true;
+        }
+        return is_retryable_upstream_failure(api->message) || is_transient_message(api->message);
     }
     if (const auto* network = std::get_if<ErrorNetwork>(error)) {
-        return is_retryable_upstream_failure(network->message);
+        const bool status_allows = !is_client_error_status(network->status_code) ||
+            is_transient_http_code(network->status_code);
+        return status_allows && (is_transient_http_code(network->status_code) ||
+                                 is_retryable_upstream_failure(network->message) ||
+                                 is_transient_message(network->message));
     }
     return false;
 }
@@ -152,12 +441,20 @@ bool StreamTermination::truncated_by_token_cap() const {
 }
 
 bool StreamTermination::is_retryable() const {
-    return !produced_content && !already_reported_error && !truncated_by_token_cap() &&
-        (timed_out ||
-            (stream_error.has_value() &&
-                (retryable_stream_error || ProviderRetryPolicy::should_retry_stream_error(
-                    stream_error.has_value() ? &*stream_error : nullptr))) ||
-            tool_call_in_flight || !saw_terminal_marker);
+    // Kotlin isRetryable: a response-read failure always consumes the retry budget (even when the
+    // stream reported a token cap), a cap otherwise stays terminal, and produced content no longer
+    // suppresses a replay that never proved its terminal marker. retryableStreamError is a legacy
+    // constructor argument the reference reads nowhere.
+    if (already_reported_error) return false;
+    if (ProviderRetryPolicy::requires_response_read_retry(
+            stream_error.has_value() ? &*stream_error : nullptr)) {
+        return true;
+    }
+    if (truncated_by_token_cap()) return false;
+    if (!stream_error.has_value()) {
+        return timed_out || tool_call_in_flight || !saw_terminal_marker;
+    }
+    return ProviderRetryPolicy::should_retry_stream_error(&*stream_error);
 }
 
 std::optional<GenerationError> StreamTermination::to_error(const std::string& provider) const {

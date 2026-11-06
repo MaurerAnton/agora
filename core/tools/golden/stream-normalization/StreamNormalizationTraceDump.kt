@@ -22,6 +22,8 @@ import com.newoether.agora.api.util.carriesModelOutput
 import com.newoether.agora.api.util.findImplicitThinkingClose
 import com.newoether.agora.api.util.malformedToolCallRequest
 import com.newoether.agora.api.util.malformedToolCallResultText
+import com.newoether.agora.util.NetworkRetryPolicy
+import kotlin.random.Random
 import kotlinx.coroutines.runBlocking
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.json.Json
@@ -371,7 +373,18 @@ fun main(args: Array<String>) {
             }
             "carriesOutput" -> line("output", if (buildEvent(scenario.events.first()).carriesModelOutput()) "1" else "0")
             "retry" -> {
-                line("delay", ProviderRetryPolicy.delayMillis(scenario.retryNumber).toString())
+                // Equal jitter draws from Random.Default in production; the trace pins both ends
+                // of the interval with deterministic sources so the golden stays byte-stable.
+                line(
+                    "delay",
+                    NetworkRetryPolicy.delayMillis(scenario.retryNumber, random = jitterMax)
+                        .toString(),
+                )
+                line(
+                    "delayFloor",
+                    NetworkRetryPolicy.delayMillis(scenario.retryNumber, random = jitterMin)
+                        .toString(),
+                )
                 val body = scenario.body
                 line("upstreamFailure", if (ProviderRetryPolicy.isRetryableUpstreamFailure(body)) "1" else "0")
                 val codes = scenario.retryableStatusCodes.toSet()
@@ -388,4 +401,15 @@ fun main(args: Array<String>) {
         line("error", error.javaClass.simpleName ?: "unknown")
     }
     print(out)
+}
+
+/** Deterministic jitter sources: the upper and lower bounds of the equal-jitter interval. */
+private object jitterMax : Random() {
+    override fun nextBits(bitCount: Int): Int = 0
+    override fun nextLong(from: Long, until: Long): Long = until - 1
+}
+
+private object jitterMin : Random() {
+    override fun nextBits(bitCount: Int): Int = 0
+    override fun nextLong(from: Long, until: Long): Long = from
 }

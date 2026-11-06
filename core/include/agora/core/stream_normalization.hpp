@@ -148,6 +148,11 @@ struct IllegalStateError : std::logic_error {
     explicit IllegalStateError(const std::string& what) : std::logic_error(what) {}
 };
 
+/** Kotlin `require(...)`: the trace driver maps this to IllegalArgumentException. */
+struct IllegalArgumentError : std::invalid_argument {
+    explicit IllegalArgumentError(const std::string& what) : std::invalid_argument(what) {}
+};
+
 /** Returns a dashed lowercase UUID v4; injectable for deterministic tests (as openai_stream). */
 using UuidFn = std::function<std::string()>;
 
@@ -380,15 +385,46 @@ struct ProviderRetryPolicy {
     static constexpr int kMaxRetries = 5;
     static constexpr int kMaxAttempts = kMaxRetries + 1;
 
-    /** Delay before retry number; throws IllegalStateError outside 1..5. */
-    static std::int64_t delay_millis(int retry_number);
+    /**
+     * NetworkRetryPolicy's equal-jitter draw: nextLong(from, until), i.e. the produced value is
+     * in [from, until). The parity harness injects a deterministic source so a trace stays
+     * byte-stable; callers that leave it empty get the production random engine.
+     */
+    using JitterSource =
+        std::function<std::int64_t(std::int64_t from_inclusive, std::int64_t until_exclusive)>;
+
+    /** Delay before retry number; throws IllegalArgumentError outside 1..5. */
+    static std::int64_t delay_millis(int retry_number,
+                                     const std::optional<std::string>& retry_after = std::nullopt,
+                                     std::int64_t now_millis = 0,
+                                     const JitterSource& jitter = {});
+
+    /** Retry-After as milliseconds: numeric seconds or an RFC 1123 GMT date. */
+    static std::optional<std::int64_t> retry_after_millis(
+        const std::optional<std::string>& value, std::int64_t now_millis = 0);
 
     static bool is_failed_to_generate_outcome(const std::optional<std::string>& raw);
+
+    /** NetworkRetryPolicy.isTransientMessage. */
+    static bool is_transient_message(const std::optional<std::string>& message);
 
     /** Exact response-body read failure eligible for pre-output Provider replay. */
     static bool is_unreadable_server_response_failure(const std::optional<std::string>& raw);
 
     static bool is_retryable_upstream_failure(const std::optional<std::string>& raw);
+
+    static bool is_permanent_api_failure(const std::optional<std::string>& code,
+                                         const std::optional<std::string>& type,
+                                         const std::optional<std::string>& message);
+
+    static bool is_permanent_http_failure(int status_code,
+                                          const std::optional<std::string>& body);
+
+    static bool is_response_read_http_failure(int status_code,
+                                              const std::optional<std::string>& body);
+
+    /** ProviderRetryPolicy.requiresResponseReadRetry. */
+    static bool requires_response_read_retry(const GenerationError* error);
 
     static bool should_retry_http(
         int status_code,

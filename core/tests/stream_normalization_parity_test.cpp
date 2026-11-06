@@ -668,7 +668,16 @@ std::string run_scenario(const std::filesystem::path& path) {
             if (scenario.events.empty()) scenario_fail(stem, "carriesOutput requires one event");
             line({"output", sn::carries_model_output(build_event(scenario.events.front())) ? "1" : "0"});
         } else if (scenario.mode == "retry") {
-            line({"delay", std::to_string(sn::ProviderRetryPolicy::delay_millis(scenario.retry_number))});
+            // The production jitter draw is random; the trace pins both bounds of the equal-jitter
+            // interval through deterministic sources.
+            const sn::ProviderRetryPolicy::JitterSource jitter_max =
+                [](std::int64_t, std::int64_t until) { return until - 1; };
+            const sn::ProviderRetryPolicy::JitterSource jitter_min =
+                [](std::int64_t from, std::int64_t) { return from; };
+            line({"delay", std::to_string(sn::ProviderRetryPolicy::delay_millis(
+                                scenario.retry_number, std::nullopt, 0, jitter_max))});
+            line({"delayFloor", std::to_string(sn::ProviderRetryPolicy::delay_millis(
+                                     scenario.retry_number, std::nullopt, 0, jitter_min))});
             line({"upstreamFailure",
                   sn::ProviderRetryPolicy::is_retryable_upstream_failure(scenario.body) ? "1" : "0"});
             const std::set<int> codes(
@@ -685,6 +694,9 @@ std::string run_scenario(const std::filesystem::path& path) {
         } else {
             scenario_fail(stem, "unknown mode: " + scenario.mode);
         }
+    } catch (const sn::IllegalArgumentError&) {
+        // Kotlin require() maps to IllegalArgumentException in the reference trace.
+        line({"error", "IllegalArgumentException"});
     } catch (const sn::IllegalStateError&) {
         // Kotlin error()/check() maps to IllegalStateException in the reference trace.
         line({"error", "IllegalStateException"});

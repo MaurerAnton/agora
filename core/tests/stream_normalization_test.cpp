@@ -139,17 +139,29 @@ TEST(stream_normalization_think_tag_facade) {
 
 TEST(stream_normalization_retry_policy) {
     using Policy = sn::ProviderRetryPolicy;
-    CHECK_EQ(Policy::delay_millis(1), static_cast<std::int64_t>(5000));
-    CHECK_EQ(Policy::delay_millis(3), static_cast<std::int64_t>(5000));
-    CHECK_EQ(Policy::delay_millis(4), static_cast<std::int64_t>(30000));
-    CHECK_EQ(Policy::delay_millis(5), static_cast<std::int64_t>(30000));
+    // Equal jitter: 0.5–1, 1–2, 2–4, 4–8, 8–16 seconds. The harness injects the draw bounds so
+    // the production random engine never reaches a pinned trace.
+    const Policy::JitterSource jitter_max =
+        [](std::int64_t, std::int64_t until) { return until - 1; };
+    const Policy::JitterSource jitter_min =
+        [](std::int64_t from, std::int64_t) { return from; };
+    CHECK_EQ(Policy::delay_millis(1, std::nullopt, 0, jitter_max), static_cast<std::int64_t>(1000));
+    CHECK_EQ(Policy::delay_millis(1, std::nullopt, 0, jitter_min), static_cast<std::int64_t>(500));
+    CHECK_EQ(Policy::delay_millis(3, std::nullopt, 0, jitter_max), static_cast<std::int64_t>(4000));
+    CHECK_EQ(Policy::delay_millis(5, std::nullopt, 0, jitter_max), static_cast<std::int64_t>(16000));
+    CHECK_EQ(Policy::delay_millis(5, std::nullopt, 0, jitter_min), static_cast<std::int64_t>(8000));
+    // Retry-After wins when it is longer than the jitter draw.
+    CHECK_EQ(Policy::delay_millis(1, std::string("7"), 0, jitter_min),
+             static_cast<std::int64_t>(7000));
+    CHECK_EQ(Policy::delay_millis(1, std::string("0"), 0, jitter_max),
+             static_cast<std::int64_t>(1000));
     CHECK_EQ(Policy::kMaxRetries, 5);
     CHECK_EQ(Policy::kMaxAttempts, 6);
 
     bool thrown = false;
     try {
         Policy::delay_millis(0);
-    } catch (const sn::IllegalStateError& error) {
+    } catch (const sn::IllegalArgumentError& error) {
         thrown = true;
         CHECK_EQ(std::string(error.what()), std::string("Invalid retry number: 0"));
     }
@@ -157,7 +169,7 @@ TEST(stream_normalization_retry_policy) {
     thrown = false;
     try {
         Policy::delay_millis(6);
-    } catch (const sn::IllegalStateError&) {
+    } catch (const sn::IllegalArgumentError&) {
         thrown = true;
     }
     CHECK(thrown);
@@ -167,12 +179,14 @@ TEST(stream_normalization_retry_policy) {
     CHECK(Policy::is_unreadable_server_response_failure("THE SERVER RESPONSE COULD NOT BE READ"));
     CHECK(Policy::is_retryable_upstream_failure("upstream: failed to generate"));
     CHECK(Policy::is_retryable_upstream_failure("x the server response could not be read y"));
-    CHECK(!Policy::is_retryable_upstream_failure("rate limited"));
+    CHECK(Policy::is_retryable_upstream_failure("rate limited"));
 
     CHECK(Policy::should_retry_http(429, std::nullopt, {429, 500}));
-    CHECK(!Policy::should_retry_http(429, std::nullopt, {500}));
-    CHECK(Policy::should_retry_http(404, "failed to generate", {}));
+    CHECK(Policy::should_retry_http(429, std::nullopt, {500}));
+    CHECK(!Policy::should_retry_http(404, "failed to generate", {}));
     CHECK(!Policy::should_retry_http(404, "nope", {429}));
+    CHECK(!Policy::should_retry_http(401, "failed to generate: upstream", {}));
+    CHECK(Policy::should_retry_http(200, "failed to generate", {}));
 
     CHECK(!Policy::should_retry_stream_error(nullptr));
     const sn::GenerationError api_retryable{
@@ -185,7 +199,13 @@ TEST(stream_normalization_retry_policy) {
         sn::ErrorNetwork{0, "the server response could not be read"}};
     CHECK(Policy::should_retry_stream_error(&network_retryable));
     const sn::GenerationError sse_parse{sn::ErrorSseParse{"line", "cause"}};
-    CHECK(!Policy::should_retry_stream_error(&sse_parse));
+    CHECK(Policy::should_retry_stream_error(&sse_parse));
+    const sn::GenerationError api_server_error{
+        sn::ErrorApi{std::string("oops"), std::string("server_error"), "boom"}};
+    CHECK(Policy::should_retry_stream_error(&api_server_error));
+    const sn::GenerationError api_blankish{
+        sn::ErrorApi{std::nullopt, std::nullopt, "Provider reported an error in the response stream"}};
+    CHECK(!Policy::should_retry_stream_error(&api_blankish));
 }
 
 TEST(stream_normalization_termination) {
@@ -220,7 +240,9 @@ TEST(stream_normalization_termination) {
 
     termination = sn::StreamTermination{};
     termination.produced_content = true;
-    CHECK(!termination.is_retryable());
+    // Partial output alone is retryable now: without a terminal marker the turn is replayed
+    // rather than persisted truncated (Kotlin dropped the producedContent gate).
+    CHECK(termination.is_retryable());
     termination = sn::StreamTermination{};
     termination.already_reported_error = true;
     CHECK(!termination.is_retryable());

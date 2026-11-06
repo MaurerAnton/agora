@@ -39,7 +39,13 @@ private fun buildMessage(spec: JsonObject): MessageEntity = MessageEntity(
     conversationId = (spec["conversationId"] as? JsonPrimitive)?.contentOrNull ?: "c1",
     parentId = (spec["parentId"] as? JsonPrimitive)?.contentOrNull,
     text = (spec["text"] as? JsonPrimitive)?.contentOrNull ?: "",
-    images = (spec["images"] as? JsonArray)?.map { (it as JsonPrimitive).content } ?: emptyList(),
+    // Scenarios stay machine independent by using workspace-relative entries, while the app
+    // persists image paths as absolute ones and only resolves local sources that way — so
+    // the scenario input is absolutized before it reaches the session.
+    images = (spec["images"] as? JsonArray)
+        ?.map { (it as JsonPrimitive).content }
+        ?.map { value -> if (value.contains(":")) value else File(value).absolutePath }
+    ?: emptyList(),
     status = MessageStatus.SUCCESS,
     participant = Participant.USER,
     timestamp = (spec["timestamp"] as? JsonPrimitive)?.contentOrNull?.toLong() ?: 0L,
